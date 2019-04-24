@@ -146,6 +146,15 @@ class CallableTest extends TestCase
                     $a = new A();
                     foo([$a, "bar"]);',
             ],
+            'callableMethodArrayCallableMissingTypes' => [
+                '<?php
+                    function foo(callable $c): void {}
+
+                    /** @psalm-suppress MissingParamType */
+                    function bar($a, $b) : void {
+                        foo([$a, $b]);
+                    }',
+            ],
             'arrayMapCallableMethod' => [
                 '<?php
                     class A {

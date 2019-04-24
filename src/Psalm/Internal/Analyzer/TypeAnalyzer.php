@@ -1372,11 +1372,10 @@ class TypeAnalyzer
         $lhs = $input_type_part->properties[0];
         $rhs = $input_type_part->properties[1];
 
-        if ($rhs->hasMixed()
-            || $rhs->hasScalar()
-            || !$rhs->isSingleStringLiteral()
-        ) {
-            if (!$rhs->hasString()) {
+        $rhs_low_info = $rhs->hasMixed() || $rhs->hasScalar();
+
+        if ($rhs_low_info || !$rhs->isSingleStringLiteral()) {
+            if (!$rhs_low_info && !$rhs->hasString()) {
                 return 'not-callable';
             }
 
