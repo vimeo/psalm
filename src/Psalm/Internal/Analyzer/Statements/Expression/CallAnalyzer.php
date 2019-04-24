@@ -2157,7 +2157,8 @@ class CallAnalyzer
             foreach ($input_type->getTypes() as $input_type_part) {
                 if ($input_type_part instanceof Type\Atomic\ObjectLike) {
                     $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
-                        $input_type_part
+                        $input_type_part,
+                        $codebase
                     );
 
                     if ($potential_method_id) {

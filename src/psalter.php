@@ -11,14 +11,50 @@ ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 ini_set('memory_limit', '4096M');
 
+gc_collect_cycles();
+gc_disable();
+
+$args = array_slice($argv, 1);
+
+$valid_short_options = ['f:', 'm', 'h', 'r:'];
+$valid_long_options = [
+    'help', 'debug', 'debug-by-line', 'config:', 'file:', 'root:',
+    'plugin:', 'issues:', 'php-version:', 'dry-run', 'safe-types',
+    'find-unused-code', 'threads:',
+];
+
 // get options from command line
-$options = getopt(
-    'f:mhr:',
-    [
-        'help', 'debug', 'debug-by-line', 'config:', 'file:', 'root:',
-        'plugin:', 'issues:', 'php-version:', 'dry-run', 'safe-types',
-        'find-unused-code', 'threads:',
-    ]
+$options = getopt(implode('', $valid_short_options), $valid_long_options);
+
+array_map(
+    /**
+     * @param string $arg
+     *
+     * @return void
+     */
+    function ($arg) use ($valid_long_options, $valid_short_options) {
+        if (substr($arg, 0, 2) === '--' && $arg !== '--') {
+            $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
+
+            if (!in_array($arg_name, $valid_long_options)
+                && !in_array($arg_name . ':', $valid_long_options)
+                && !in_array($arg_name . '::', $valid_long_options)
+            ) {
+                echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                exit(1);
+            }
+        } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
+            $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
+
+            if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
+                echo 'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                exit(1);
+            }
+        }
+    },
+    $args
 );
 
 if (array_key_exists('help', $options)) {
@@ -73,7 +109,7 @@ Options:
     --issues=IssueType1,IssueType2
         If any issues can be fixed automatically, Psalm will update the codebase
 
-    --find-dead-code
+    --find-unused-code
         Include unused code as a candidate for removal
 
     --threads=INT
