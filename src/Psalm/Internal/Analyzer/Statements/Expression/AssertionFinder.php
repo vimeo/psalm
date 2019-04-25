@@ -1028,7 +1028,7 @@ class AssertionFinder
                         if ($var_type->from_docblock) {
                             if (IssueBuffer::accepts(
                                 new RedundantConditionGivenDocblockType(
-                                    'Docblock-asserted type ' . $var_type . ' can never contain an empty array',
+                                    'Docblock-asserted type ' . $var_type . ' can never contain null',
                                     new CodeLocation($source, $conditional)
                                 ),
                                 $source->getSuppressedIssues()
@@ -1038,7 +1038,7 @@ class AssertionFinder
                         } else {
                             if (IssueBuffer::accepts(
                                 new RedundantCondition(
-                                    $var_type . ' can never contain an empty array',
+                                    $var_type . ' can never contain null',
                                     new CodeLocation($source, $conditional)
                                 ),
                                 $source->getSuppressedIssues()
