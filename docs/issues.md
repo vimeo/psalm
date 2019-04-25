@@ -9,6 +9,20 @@ abstract class A {}
 new A();
 ```
 
+### ArgumentTypeCoercion
+
+Emitted when calling a function with an argument which has a less specific type than the function expects
+
+```php
+class A {}
+class B extends A {}
+
+function takesA(A $a) : void {
+    takesB($a);
+}
+function takesB(B $b) : void {}
+```
+
 ### AssignmentToVoid
 
 Emitted when assigning from a function that returns `void`:
@@ -1004,6 +1018,19 @@ function takesInt(int $i) : void {}
 takesInt($_GET['foo']);
 ```
 
+### MixedArgumentTypeCoercion
+
+Emitted when Psalm cannot be sure that part of an array/iterabble argument's type constraints can be fulfilled
+
+```php
+function foo(array $a) : void {
+    takesStringArray($a);
+}
+
+/** @param string[] $a */
+function takesStringArray(array $a) : void {}
+```
+
 ### MixedArrayAccess
 
 Emitted when trying to access an array offset on a value whose type Psalm cannot determine
@@ -1026,6 +1053,22 @@ Emitted when attempting to access an array offset where Psalm cannot determine t
 
 ```php
 echo [1, 2, 3][$_GET['foo']];
+```
+
+### MixedArrayTypeCoercion
+
+Emitted when trying to access an array with a less specific offset than is expected
+
+```php
+/**
+ * @param array<array-key, int> $a
+ * @param array<int, string> $b
+ */
+function foo(array $a, array $b) : void {
+    foreach ($a as $j => $k) {
+        echo $b[$j];
+    }
+}
 ```
 
 ### MixedAssignment
@@ -1097,6 +1140,21 @@ function foo($a) : void {
 }
 ```
 
+### MixedPropertyTypeCoercion
+
+Emitted when Psalm cannot be sure that part of an array/iterabble argument's type constraints can be fulfilled
+
+```php
+class A {
+    /** @var string[] */
+    public $takesStringArray = [];
+}
+
+function foo(A $a, array $arr) : void {
+    $a->takesStringArray = $arr;
+}
+```
+
 ### MixedReturnStatement
 
 Emitted when Psalm cannot determine the type of a given return statement
@@ -1107,25 +1165,25 @@ function foo() : int {
 }
 ```
 
+### MixedReturnTypeCoercion
+
+Emitted when Psalm cannot be sure that part of an array/iterabble return type's constraints can be fulfilled
+
+```php
+/**
+ * @return string[]
+ */
+function foo(array $a) : array {
+    return $a;
+}
+```
+
 ### MixedStringOffsetAssignment
 
 Emitted when assigning a value on a string using a value for which Psalm cannot infer a type
 
 ```php
 "hello"[0] = $_GET['foo'];
-```
-
-### MixedTypeCoercion
-
-Emitted when Psalm cannot be sure that part of an array/iterabble argument's type constraints can be fulfilled
-
-```php
-function foo(array $a) : void {
-    takesStringArray($a);
-}
-
-/** @param string[] $a */
-function takesStringArray(array $a) : void {}
 ```
 
 ### MoreSpecificImplementedParamType
@@ -1392,7 +1450,7 @@ foreach ($arr as $a) {}
 
 ### PossiblyFalseOperand
 
-Emitted when using a possibly `false` value as part of an operation (e.g. `+`, `.`, `^` etc.`)
+Emitted when using a possibly `false` value as part of an operation (e.g. `+`, `.`, `^` etc).
 
 ```php
 function foo(string $a) : void {
@@ -1524,7 +1582,7 @@ foo()->bar();
 
 ### PossiblyInvalidOperand
 
-Emitted when using a possibly invalid value as part of an operation (e.g. `+`, `.`, `^` etc.`)
+Emitted when using a possibly invalid value as part of an operation (e.g. `+`, `.`, `^` etc.
 
 ```php
 function foo() : void {
@@ -1825,6 +1883,24 @@ class A {
 }
 ```
 
+### PropertyTypeCoercion
+
+Emitted when setting a property with an value which has a less specific type than the property expects
+
+```php
+class A {}
+class B extends A {}
+
+function takesA(C $c, A $a) : void {
+    $c->b = $a;
+}
+
+class C {
+    /** @var ?B */
+    public $b;
+}
+```
+
 ### RawObjectIteration
 
 Emitted when iterating over an object’s properties. This issue exists because it may be undesired behaviour (e.g. you may have meant to iterate over an array)
@@ -1939,20 +2015,6 @@ class SomeIterator implements IteratorAggregate
         yield 5;
     }
 }
-```
-
-### TypeCoercion
-
-Emitted when calling a function with an argument which has a less specific type than the function expects
-
-```php
-class A {}
-class B extends A {}
-
-function takesA(A $a) : void {
-    takesB($a);
-}
-function takesB(B $b) : void {}
 ```
 
 ### TypeDoesNotContainNull

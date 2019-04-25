@@ -751,7 +751,7 @@ class MethodSignatureTest extends TestCase
                     }
 
                     (new Y())->boo(new A());',
-                'error_message' => 'TypeCoercion',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'enforceParameterInheritanceWithCapitalizedInheritDoc' => [
                 '<?php
@@ -773,7 +773,7 @@ class MethodSignatureTest extends TestCase
                     }
 
                     (new Y())->boo(new A());',
-                'error_message' => 'TypeCoercion',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'warnAboutMismatchingClassParamDoc' => [
                 '<?php

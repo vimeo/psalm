@@ -26,7 +26,7 @@ use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
-use Psalm\Issue\MixedTypeCoercion;
+use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -401,7 +401,7 @@ class ReturnTypeAnalyzer
                 if ($type_coerced) {
                     if ($type_coerced_from_mixed) {
                         if (IssueBuffer::accepts(
-                            new MixedTypeCoercion(
+                            new MixedReturnTypeCoercion(
                                 'The declared return type \'' . $declared_return_type->getId() . '\' for '
                                     . $cased_method_id . ' is more specific than the inferred return type '
                                     . '\'' . $inferred_return_type->getId() . '\'',

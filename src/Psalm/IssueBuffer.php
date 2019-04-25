@@ -4,7 +4,9 @@ namespace Psalm;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
+use Psalm\Issue\FunctionIssue;
 use Psalm\Issue\MethodIssue;
+use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\PropertyIssue;
 use Psalm\Output\Compact;
 use Psalm\Output\Console;
@@ -163,6 +165,20 @@ class IssueBuffer
             return 'MethodSignatureMismatch';
         }
 
+        if ($issue_type === 'MixedArgumentTypeCoercion'
+            || $issue_type === 'MixedPropertyTypeCoercion'
+            || $issue_type === 'MixedReturnTypeCoercion'
+        ) {
+            return 'MixedTypeCoercion';
+        }
+
+        if ($issue_type === 'ArgumentTypeCoercion'
+            || $issue_type === 'PropertyTypeCoercion'
+            || $issue_type === 'ReturnTypeCoercion'
+        ) {
+            return 'TypeCoercion';
+        }
+
         return null;
     }
 
@@ -192,6 +208,15 @@ class IssueBuffer
             $reporting_level = Config::REPORT_INFO;
         } elseif ($e instanceof MethodIssue
             && $config->getReportingLevelForMethod($issue_type, $e->method_id) === Config::REPORT_INFO
+        ) {
+            $reporting_level = Config::REPORT_INFO;
+        } elseif ($e instanceof FunctionIssue
+            && $config->getReportingLevelForFunction($issue_type, $e->function_id) === Config::REPORT_INFO
+        ) {
+            $reporting_level = Config::REPORT_INFO;
+        } elseif ($e instanceof ArgumentIssue
+            && $e->function_id
+            && $config->getReportingLevelForArgument($issue_type, $e->function_id) === Config::REPORT_INFO
         ) {
             $reporting_level = Config::REPORT_INFO;
         } elseif ($e instanceof PropertyIssue

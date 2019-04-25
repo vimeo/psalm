@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class PossiblyNullArgument extends CodeIssue
+class PossiblyNullArgument extends ArgumentIssue
 {
 }

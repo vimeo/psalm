@@ -1124,7 +1124,7 @@ class ArrayAssignmentTest extends TestCase
                     }
 
                     barBar([1, "2"]);',
-                'error_message' => 'MixedTypeCoercion',
+                'error_message' => 'MixedArgumentTypeCoercion',
                 'error_level' => ['MixedAssignment'],
             ],
             'arrayPropertyAssignment' => [

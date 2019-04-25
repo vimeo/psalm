@@ -15,7 +15,7 @@ use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayAssignment;
 use Psalm\Issue\MixedArrayOffset;
 use Psalm\Issue\MixedStringOffsetAssignment;
-use Psalm\Issue\MixedTypeCoercion;
+use Psalm\Issue\MixedArrayTypeCoercion;
 use Psalm\Issue\NullArrayAccess;
 use Psalm\Issue\NullArrayOffset;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
@@ -409,7 +409,7 @@ class ArrayFetchAnalyzer
                         ) {
                             if ($type_coerced_from_mixed && !$offset_type->isMixed()) {
                                 if (IssueBuffer::accepts(
-                                    new MixedTypeCoercion(
+                                    new MixedArrayTypeCoercion(
                                         'Coercion from array offset type \'' . $offset_type->getId() . '\' '
                                             . 'to the expected type \'' . $expected_offset_type->getId() . '\'',
                                         new CodeLocation($statements_analyzer->getSource(), $stmt)

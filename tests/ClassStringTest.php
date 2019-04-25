@@ -87,7 +87,7 @@ class ClassStringTest extends TestCase
 
                     takesClassConstants(["A", "B"]);',
                 'annotations' => [],
-                'error_levels' => ['TypeCoercion'],
+                'error_levels' => ['ArgumentTypeCoercion'],
             ],
             'singleClassConstantAsConstant' => [
                 '<?php
@@ -577,7 +577,7 @@ class ClassStringTest extends TestCase
                     class B {}
 
                     takesClassConstants(["A", "B"]);',
-                'error_message' => 'TypeCoercion',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'arrayOfNonExistentStringClasses' => [
                 '<?php

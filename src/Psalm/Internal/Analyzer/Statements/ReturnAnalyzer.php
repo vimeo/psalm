@@ -16,7 +16,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
 use Psalm\Issue\LessSpecificReturnStatement;
 use Psalm\Issue\MixedReturnStatement;
-use Psalm\Issue\MixedTypeCoercion;
+use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
@@ -215,7 +215,7 @@ class ReturnAnalyzer
                         if ($type_coerced) {
                             if ($type_coerced_from_mixed) {
                                 if (IssueBuffer::accepts(
-                                    new MixedTypeCoercion(
+                                    new MixedReturnTypeCoercion(
                                         'The type \'' . $stmt->inferredType->getId() . '\' is more general than the'
                                             . ' declared return type \'' . $local_return_type->getId() . '\''
                                             . ' for ' . $cased_method_id,

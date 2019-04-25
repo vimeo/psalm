@@ -66,6 +66,8 @@ class ConfigTest extends TestCase
                 return !empty($issue_name)
                     && $issue_name !== 'MethodIssue'
                     && $issue_name !== 'PropertyIssue'
+                    && $issue_name !== 'FunctionIssue'
+                    && $issue_name !== 'ArgumentIssue'
                     && $issue_name !== 'ClassIssue'
                     && $issue_name !== 'CodeIssue'
                     && $issue_name !== 'PsalmInternalError';

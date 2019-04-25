@@ -1644,7 +1644,7 @@ class FunctionCallTest extends TestCase
                             return $_GET["a"];
                         }
                     );',
-                'error_message' => 'MixedTypeCoercion',
+                'error_message' => 'MixedArgumentTypeCoercion',
                 'error_levels' => ['MissingClosureParamType', 'MissingClosureReturnType'],
             ],
             'invalidScalarArgument' => [
@@ -1719,7 +1719,7 @@ class FunctionCallTest extends TestCase
 
                     function fooFoo(B $b): void {}
                     fooFoo(new A());',
-                'error_message' => 'TypeCoercion',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'arrayTypeCoercion' => [
                 '<?php
@@ -1732,7 +1732,7 @@ class FunctionCallTest extends TestCase
                      */
                     function fooFoo(array $b) {}
                     fooFoo([new A()]);',
-                'error_message' => 'TypeCoercion',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'duplicateParam' => [
                 '<?php
@@ -2129,7 +2129,7 @@ class FunctionCallTest extends TestCase
                     function bar() : void {
                         foo($bar);
                     }',
-                'error_message' => 'NullArgument',
+                'error_message' => 'NullReference',
             ],
             'intCastByRef' => [
                 '<?php

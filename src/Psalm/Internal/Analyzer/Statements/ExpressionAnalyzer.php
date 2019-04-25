@@ -727,7 +727,7 @@ class ExpressionAnalyzer
                         && !strpos($var_id, '::')
                     ) {
                         if (IssueBuffer::accepts(
-                            new \Psalm\Issue\NullArgument(
+                            new \Psalm\Issue\NullReference(
                                 'Not expecting null argument passed by reference',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),

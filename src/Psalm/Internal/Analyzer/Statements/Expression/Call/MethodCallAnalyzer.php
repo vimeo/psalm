@@ -17,14 +17,14 @@ use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedMethodCall;
-use Psalm\Issue\MixedTypeCoercion;
+use Psalm\Issue\MixedPropertyTypeCoercion;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyFalseReference;
 use Psalm\Issue\PossiblyInvalidMethodCall;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\PossiblyUndefinedMethod;
-use Psalm\Issue\TypeCoercion;
+use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedInterfaceMethod;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
@@ -1482,10 +1482,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($type_coerced) {
                         if ($type_coerced_from_mixed) {
                             if (IssueBuffer::accepts(
-                                new MixedTypeCoercion(
+                                new MixedPropertyTypeCoercion(
                                     $prop_name . ' expects \'' . $pseudo_set_type . '\', '
                                         . ' parent type `' . $second_arg_type . '` provided',
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $property_id
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
@@ -1493,10 +1494,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             }
                         } else {
                             if (IssueBuffer::accepts(
-                                new TypeCoercion(
+                                new PropertyTypeCoercion(
                                     $prop_name . ' expects \'' . $pseudo_set_type . '\', '
                                         . ' parent type `' . $second_arg_type . '` provided',
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $property_id
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {

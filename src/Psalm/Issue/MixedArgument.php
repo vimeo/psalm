@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MixedArgument extends CodeIssue
+class MixedArgument extends ArgumentIssue
 {
 }

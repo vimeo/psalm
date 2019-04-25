@@ -32,7 +32,7 @@ class Config
     /**
      * @var array
      */
-    protected static $MIXED_ISSUES = [
+    const MIXED_ISSUES = [
         'MixedArgument',
         'MixedArrayAccess',
         'MixedArrayAssignment',
@@ -47,6 +47,9 @@ class Config
         'MixedReturnStatement',
         'MixedStringOffsetAssignment',
         'MixedTypeCoercion',
+        'MixedArgumentTypeCoercion',
+        'MixedPropertyTypeCoercion',
+        'MixedReturnTypeCoercion',
     ];
 
     /**
@@ -1085,7 +1088,7 @@ class Config
      */
     public function reportIssueInFile($issue_type, $file_path)
     {
-        if (!$this->totally_typed && in_array($issue_type, self::$MIXED_ISSUES, true)) {
+        if (!$this->totally_typed && in_array($issue_type, self::MIXED_ISSUES, true)) {
             return false;
         }
 
@@ -1188,6 +1191,24 @@ class Config
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForMethod($method_id);
+        }
+
+        return self::REPORT_ERROR;
+    }
+
+    public function getReportingLevelForFunction(string $issue_type, string $function_id) : string
+    {
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForFunction($function_id);
+        }
+
+        return self::REPORT_ERROR;
+    }
+
+    public function getReportingLevelForArgument(string $issue_type, string $function_id) : string
+    {
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForArgument($function_id);
         }
 
         return self::REPORT_ERROR;

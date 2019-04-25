@@ -1374,7 +1374,7 @@ class TypeTest extends TestCase
                     class C extends A {}
 
                     function takesB(B $i): void {}',
-                'error_message' => 'TypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:32 - Argument 1 of takesB expects B,'
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:32 - Argument 1 of takesB expects B,'
                     . ' parent type A provided',
             ],
             'intersectionTypeInterfaceCheckAfterInstanceof' => [

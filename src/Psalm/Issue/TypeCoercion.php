@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Issue;
 
-class TypeCoercion extends CodeIssue
+/**
+ * @deprecated use more specific classes
+ * @psalm-suppress UnusedClass
+ */
+class TypeCoercion extends ArgumentIssue
 {
 }

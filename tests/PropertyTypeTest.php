@@ -1706,7 +1706,7 @@ class PropertyTypeTest extends TestCase
                     }
 
                     class B extends A {}',
-                'error_message' => 'TypeCoercion',
+                'error_message' => 'PropertyTypeCoercion',
             ],
             'mixedTypeCoercion' => [
                 '<?php
@@ -1720,7 +1720,7 @@ class PropertyTypeTest extends TestCase
                             $this->foo = $arr;
                         }
                     }',
-                'error_message' => 'MixedTypeCoercion',
+                'error_message' => 'MixedPropertyTypeCoercion',
             ],
             'staticTypeCoercion' => [
                 '<?php
@@ -1735,7 +1735,7 @@ class PropertyTypeTest extends TestCase
                     }
 
                     class B extends A {}',
-                'error_message' => 'TypeCoercion',
+                'error_message' => 'PropertyTypeCoercion',
             ],
             'staticMixedTypeCoercion' => [
                 '<?php
@@ -1749,7 +1749,7 @@ class PropertyTypeTest extends TestCase
                             self::$foo = $arr;
                         }
                     }',
-                'error_message' => 'MixedTypeCoercion',
+                'error_message' => 'MixedPropertyTypeCoercion',
             ],
             'possiblyBadAssignment' => [
                 '<?php

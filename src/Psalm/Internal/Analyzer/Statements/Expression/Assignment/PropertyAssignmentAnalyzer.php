@@ -18,7 +18,7 @@ use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\LoopInvalidation;
 use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\MixedPropertyAssignment;
-use Psalm\Issue\MixedTypeCoercion;
+use Psalm\Issue\MixedPropertyTypeCoercion;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
 use Psalm\Issue\PossiblyFalsePropertyAssignmentValue;
@@ -26,7 +26,7 @@ use Psalm\Issue\PossiblyInvalidPropertyAssignment;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullPropertyAssignment;
 use Psalm\Issue\PossiblyNullPropertyAssignmentValue;
-use Psalm\Issue\TypeCoercion;
+use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
@@ -649,14 +649,15 @@ class PropertyAssignmentAnalyzer
             if ($type_coerced) {
                 if ($type_coerced_from_mixed) {
                     if (IssueBuffer::accepts(
-                        new MixedTypeCoercion(
+                        new MixedPropertyTypeCoercion(
                             $var_id . ' expects \'' . $class_property_type->getId() . '\', '
                                 . ' parent type `' . $assignment_value_type->getId() . '` provided',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?: $stmt,
                                 $context->include_location
-                            )
+                            ),
+                            $property_ids[0]
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -664,14 +665,15 @@ class PropertyAssignmentAnalyzer
                     }
                 } else {
                     if (IssueBuffer::accepts(
-                        new TypeCoercion(
+                        new PropertyTypeCoercion(
                             $var_id . ' expects \'' . $class_property_type->getId() . '\', '
                                 . ' parent type \'' . $assignment_value_type->getId() . '\' provided',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?: $stmt,
                                 $context->include_location
-                            )
+                            ),
+                            $property_ids[0]
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -934,14 +936,15 @@ class PropertyAssignmentAnalyzer
         if ($type_coerced) {
             if ($type_coerced_from_mixed) {
                 if (IssueBuffer::accepts(
-                    new MixedTypeCoercion(
+                    new MixedPropertyTypeCoercion(
                         $var_id . ' expects \'' . $class_property_type . '\', '
                             . ' parent type `' . $assignment_value_type . '` provided',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
-                        )
+                        ),
+                        $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
@@ -949,14 +952,15 @@ class PropertyAssignmentAnalyzer
                 }
             } else {
                 if (IssueBuffer::accepts(
-                    new TypeCoercion(
+                    new PropertyTypeCoercion(
                         $var_id . ' expects \'' . $class_property_type . '\', '
                             . ' parent type \'' . $assignment_value_type . '\' provided',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
-                        )
+                        ),
+                        $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {

@@ -103,6 +103,28 @@ class IssueHandler
         return $this->error_level;
     }
 
+    public function getReportingLevelForFunction(string $function_id) : string
+    {
+        foreach ($this->custom_levels as $custom_level) {
+            if ($custom_level->allowsMethod(strtolower($function_id))) {
+                return $custom_level->getErrorLevel();
+            }
+        }
+
+        return $this->error_level;
+    }
+
+    public function getReportingLevelForArgument(string $function_id) : string
+    {
+        foreach ($this->custom_levels as $custom_level) {
+            if ($custom_level->allowsMethod(strtolower($function_id))) {
+                return $custom_level->getErrorLevel();
+            }
+        }
+
+        return $this->error_level;
+    }
+
     /**
      * @param string $property_id
      *

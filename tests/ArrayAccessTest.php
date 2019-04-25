@@ -319,7 +319,7 @@ class ArrayAccessTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedTypeCoercion'],
+                'error_levels' => ['MixedArrayTypeCoercion'],
             ],
             'allowNegativeStringOffset' => [
                 '<?php

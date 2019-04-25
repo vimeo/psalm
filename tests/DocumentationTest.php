@@ -95,6 +95,10 @@ class DocumentationTest extends TestCase
         $code_blocks['UnrecognizedStatement'] = true;
         $code_blocks['PluginIssue'] = true;
 
+        // these are deprecated
+        $code_blocks['TypeCoercion'] = true;
+        $code_blocks['MixedTypeCoercion'] = true;
+
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);
 

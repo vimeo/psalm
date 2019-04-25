@@ -7,7 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\IssueBuffer;
-use Psalm\Issue\TypeCoercion;
+use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Plugin\Hook\AfterStatementAnalysisInterface;
 use Psalm\StatementsSource;
 
@@ -31,9 +31,10 @@ class EchoChecker implements AfterStatementAnalysisInterface
             foreach ($stmt->exprs as $expr) {
                 if (!isset($expr->inferredType) || $expr->inferredType->hasMixed()) {
                     if (IssueBuffer::accepts(
-                        new TypeCoercion(
+                        new ArgumentTypeCoercion(
                             'Echo requires an unescaped string, ' . $expr->inferredType . ' provided',
-                            new CodeLocation($statements_source, $expr)
+                            new CodeLocation($statements_source, $expr),
+                            'echo'
                         ),
                         $statements_source->getSuppressedIssues()
                     )) {
@@ -51,9 +52,10 @@ class EchoChecker implements AfterStatementAnalysisInterface
                         && !$type instanceof \Psalm\Type\Atomic\THtmlEscapedString
                     ) {
                         if (IssueBuffer::accepts(
-                            new TypeCoercion(
+                            new ArgumentTypeCoercion(
                                 'Echo requires an unescaped string, ' . $expr->inferredType . ' provided',
-                                new CodeLocation($statements_source, $expr)
+                                new CodeLocation($statements_source, $expr),
+                                'echo'
                             ),
                             $statements_source->getSuppressedIssues()
                         )) {

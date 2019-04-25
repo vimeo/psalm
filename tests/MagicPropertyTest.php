@@ -197,7 +197,7 @@ class MagicPropertyTest extends TestCase
                         $a->__set("foo", $b);
                     }',
                 'assertions' => [],
-                'error_level' => ['MixedAssignment', 'MixedTypeCoercion'],
+                'error_level' => ['MixedAssignment', 'MixedPropertyTypeCoercion'],
             ],
             'namedPropertyByVariable' => [
                 '<?php
@@ -785,7 +785,7 @@ class MagicPropertyTest extends TestCase
                         $a = new A();
                         $a->__set("foo", $b);
                     }',
-                'error_message' => 'MixedTypeCoercion',
+                'error_message' => 'MixedPropertyTypeCoercion',
                 'error_levels' => ['MixedAssignment'],
             ],
             'magicInterfacePropertyWrongProperty' => [
