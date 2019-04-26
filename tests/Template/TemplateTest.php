@@ -2070,6 +2070,34 @@ class TemplateTest extends TestCase
                          }
                     }'
             ],
+            'allowTemplateParamsToCoerceToMinimumTypes' => [
+                '<?php
+                    /**
+                     * @psalm-template TKey of array-key
+                     * @psalm-template T
+                     */
+                    class ArrayCollection
+                    {
+                        /**
+                         * @var array<TKey,T>
+                         */
+                        private $elements;
+
+                        /**
+                         * @param array<TKey,T> $elements
+                         */
+                        public function __construct(array $elements = [])
+                        {
+                            $this->elements = $elements;
+                        }
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    $c = new ArrayCollection($_GET["a"]);',
+                [
+                    '$c' => 'ArrayCollection<array-key, mixed>',
+                ],
+            ],
         ];
     }
 

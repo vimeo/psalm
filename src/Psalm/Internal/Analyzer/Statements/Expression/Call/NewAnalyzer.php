@@ -364,7 +364,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             ? explode('::', $declaring_method_id)[0]
                             : $fq_class_name;
 
-                        foreach ($storage->template_types as $template_name => $_) {
+                        foreach ($storage->template_types as $template_name => $base_type) {
                             if (isset($found_generic_params[$template_name][$fq_class_name])) {
                                 $generic_param_types[] = $found_generic_params[$template_name][$fq_class_name][0];
                             } elseif ($storage->template_type_extends && $found_generic_params) {
@@ -375,7 +375,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                     $found_generic_params
                                 );
                             } else {
-                                $generic_param_types[] = Type::getMixed();
+                                $generic_param_types[] = array_values($base_type)[0][0];
                             }
                         }
                     }
