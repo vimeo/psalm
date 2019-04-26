@@ -437,6 +437,10 @@ class ArrayAccessTest extends TestCase
                     /** @psalm-suppress PossiblyInvalidArrayAssignment */
                     $array["key"][] = "testing";'
             ],
+            'singleLetterOffset' => [
+                '<?php
+                    ["s" => "str"]["str"[0]];',
+            ],
         ];
     }
 
