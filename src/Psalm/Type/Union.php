@@ -1071,7 +1071,7 @@ class Union
                                     $new_generic_params = [];
 
                                     foreach ($extends_list as $key => $value) {
-                                        if (is_int($key)) {
+                                        if (is_string($key)) {
                                             $new_generic_params[] = $value;
                                         }
                                     }

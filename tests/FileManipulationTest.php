@@ -1796,6 +1796,27 @@ class FileManipulationTest extends TestCase
                 ['PossiblyUnusedMethod'],
                 true,
             ],
+            'dontRemovePossiblyUnusedMethodWithCallUserFuncCall' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function foo(A $a, string $var) {
+                        call_user_func([$a, $var]);
+                    }',
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function foo(A $a, string $var) {
+                        call_user_func([$a, $var]);
+                    }',
+                '7.1',
+                ['PossiblyUnusedMethod'],
+                true,
+            ],
             'dontRemovePossiblyUnusedMethodWithVariableCallableLhsCall' => [
                 '<?php
                     class A {
