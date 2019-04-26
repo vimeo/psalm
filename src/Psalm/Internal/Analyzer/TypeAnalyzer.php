@@ -946,7 +946,7 @@ class TypeAnalyzer
             return false;
         }
 
-        if ((get_class($input_type_part) === TString::class || get_class($container_type_part) === TSingleLetter::class)
+        if ((get_class($input_type_part) === TString::class || get_class($input_type_part) === TSingleLetter::class)
             && $container_type_part instanceof TLiteralString
         ) {
             $type_coerced = true;
