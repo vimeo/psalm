@@ -107,6 +107,13 @@ class Analyzer
     private $files_to_analyze = [];
 
     /**
+     * We may update fewer files than we analyse (i.e. for dead code detection)
+     *
+     * @var array<string>|null
+     */
+    private $files_to_update = null;
+
+    /**
      * @var array<string, array<string, int>>
      */
     private $analyzed_methods = [];
@@ -149,6 +156,16 @@ class Analyzer
     public function addFiles(array $files_to_analyze)
     {
         $this->files_to_analyze += $files_to_analyze;
+    }
+
+    /**
+     * @param array<string> $files_to_update
+     *
+     * @return void
+     */
+    public function setFilesToUpdate(array $files_to_update)
+    {
+        $this->files_to_update = $files_to_update;
     }
 
     /**
@@ -386,7 +403,9 @@ class Analyzer
         }
 
         if ($alter_code) {
-            foreach ($this->files_to_analyze as $file_path) {
+            $files_to_update = $this->files_to_update !== null ? $this->files_to_update : $this->files_to_analyze;
+
+            foreach ($files_to_update as $file_path) {
                 $this->updateFile($file_path, $project_analyzer->dry_run, true);
             }
         }
