@@ -39,6 +39,7 @@ class FileReferenceCacheProvider
     const CONFIG_HASH_CACHE_NAME = 'config';
     const METHOD_MISSING_MEMBER_CACHE_NAME = 'method_missing_member';
     const FILE_MISSING_MEMBER_CACHE_NAME = 'file_missing_member';
+    const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
 
     /**
      * @var Config
@@ -209,6 +210,35 @@ class FileReferenceCacheProvider
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
      */
+    public function getCachedMixedMemberNameReferences()
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return null;
+        }
+
+        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
+
+        if (!is_readable($cache_location)) {
+            return null;
+        }
+
+        $cache = unserialize((string) file_get_contents($cache_location));
+
+        if (!is_array($cache)) {
+            throw new \UnexpectedValueException('The reference cache must be an array');
+        }
+
+        return $cache;
+    }
+
+    /**
+     * @return ?array
+     *
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedTypeCoercion
+     */
     public function getCachedIssues()
     {
         $cache_directory = $this->config->getCacheDirectory();
@@ -310,6 +340,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MISSING_MEMBER_CACHE_NAME;
 
         file_put_contents($member_cache_location, serialize($member_references));
+    }
+
+    /**
+     * @return void
+     */
+    public function setCachedMixedMemberNameReferences(array $references)
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return;
+        }
+
+        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
+
+        file_put_contents($cache_location, serialize($references));
     }
 
     /**

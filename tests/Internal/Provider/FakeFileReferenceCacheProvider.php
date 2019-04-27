@@ -23,6 +23,9 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     private $cached_file_missing_member_references;
 
     /** @var ?array */
+    private $cached_unknown_member_references;
+
+    /** @var ?array */
     private $cached_issues;
 
     /** @var array<string, array<string, int>> */
@@ -86,6 +89,17 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
      */
+    public function getCachedMixedMemberNameReferences()
+    {
+        return $this->cached_unknown_member_references;
+    }
+
+    /**
+     * @return ?array
+     *
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedTypeCoercion
+     */
     public function getCachedMethodMissingMemberReferences()
     {
         return $this->cached_method_missing_member_references;
@@ -140,6 +154,14 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     public function setCachedFileMissingMemberReferences(array $method_references)
     {
         $this->cached_file_missing_member_references = $method_references;
+    }
+
+    /**
+     * @return void
+     */
+    public function setCachedMixedMemberNameReferences(array $references)
+    {
+        $this->cached_unknown_member_references = $references;
     }
 
     /**

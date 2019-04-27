@@ -470,7 +470,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $has_mixed_method_call = true;
 
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                        $codebase->analyzer->addMixedMemberName(strtolower($stmt->name->name));
+                        $codebase->analyzer->addMixedMemberName(
+                            strtolower($stmt->name->name),
+                            $context->calling_method_id ?: $statements_analyzer->getFileName()
+                        );
                     }
 
                     if ($context->check_methods) {
@@ -561,7 +564,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             if (!$context->ignore_variable_method) {
-                $codebase->analyzer->addMixedMemberName(strtolower($fq_class_name) . '::');
+                $codebase->analyzer->addMixedMemberName(
+                    strtolower($fq_class_name) . '::',
+                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                );
             }
 
             $return_type = Type::getMixed();

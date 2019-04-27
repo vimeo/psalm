@@ -1141,7 +1141,7 @@ class TypeAnalyzer
                     return false;
                 }
             } elseif ($input_type_part instanceof ObjectLike) {
-                $method_id = self::getCallableMethodIdFromObjectLike($input_type_part, $codebase);
+                $method_id = self::getCallableMethodIdFromObjectLike($input_type_part);
 
                 if ($method_id === 'not-callable') {
                     return false;
@@ -1342,7 +1342,7 @@ class TypeAnalyzer
                 }
             }
         } elseif ($input_type_part instanceof ObjectLike) {
-            if ($method_id = self::getCallableMethodIdFromObjectLike($input_type_part, $codebase)) {
+            if ($method_id = self::getCallableMethodIdFromObjectLike($input_type_part)) {
                 try {
                     $method_storage = $codebase->methods->getStorage($method_id);
 
@@ -1361,8 +1361,12 @@ class TypeAnalyzer
     }
 
     /** @return ?string */
-    public static function getCallableMethodIdFromObjectLike(ObjectLike $input_type_part, Codebase $codebase)
-    {
+    public static function getCallableMethodIdFromObjectLike(
+        ObjectLike $input_type_part,
+        Codebase $codebase = null,
+        string $calling_method_id = null,
+        string $file_name = null
+    ) {
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
         ) {
@@ -1379,9 +1383,14 @@ class TypeAnalyzer
                 return 'not-callable';
             }
 
-            foreach ($lhs->getTypes() as $lhs_atomic_type) {
-                if ($lhs_atomic_type instanceof TNamedObject) {
-                    $codebase->analyzer->addMixedMemberName(strtolower($lhs_atomic_type->value) . '::');
+            if ($codebase && ($calling_method_id || $file_name)) {
+                foreach ($lhs->getTypes() as $lhs_atomic_type) {
+                    if ($lhs_atomic_type instanceof TNamedObject) {
+                        $codebase->analyzer->addMixedMemberName(
+                            strtolower($lhs_atomic_type->value) . '::',
+                            $calling_method_id ?: $file_name
+                        );
+                    }
                 }
             }
 
@@ -1404,7 +1413,12 @@ class TypeAnalyzer
         }
 
         if (!$class_name) {
-            $codebase->analyzer->addMixedMemberName(strtolower($method_name));
+            if ($codebase && ($calling_method_id || $file_name)) {
+                $codebase->analyzer->addMixedMemberName(
+                    strtolower($method_name),
+                    $calling_method_id ?: $file_name
+                );
+            }
 
             return null;
         }

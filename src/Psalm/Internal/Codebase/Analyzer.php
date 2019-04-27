@@ -38,7 +38,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
  *     file_references_to_class_members: array<string, array<string,bool>>,
  *     file_references_to_missing_class_members: array<string, array<string,bool>>,
  *     mixed_counts: array<string, array{0: int, 1: int}>,
- *     mixed_member_names: array<string, bool>,
+ *     mixed_member_names: array<string, array<string, bool>>,
  *     file_manipulations: array<string, FileManipulation[]>,
  *     method_references_to_class_members: array<string, array<string,bool>>,
  *     method_references_to_missing_class_members: array<string, array<string,bool>>,
@@ -90,7 +90,7 @@ class Analyzer
     /**
      * Used to store member names of mixed property/method access
      *
-     * @var array<string, bool>
+     * @var array<string, array<string, bool>>
      */
     private $mixed_member_names = [];
 
@@ -261,6 +261,7 @@ class Analyzer
                     $file_reference_provider->setFileReferencesToClassMembers([]);
                     $file_reference_provider->setCallingMethodReferencesToMissingClassMembers([]);
                     $file_reference_provider->setFileReferencesToMissingClassMembers([]);
+                    $file_reference_provider->setReferencesToMixedMemberNames([]);
                 },
                 $analysis_worker,
                 /** @return WorkerData */
@@ -449,6 +450,9 @@ class Analyzer
             = $file_reference_provider->getAllFileReferencesToClassMembers();
         $file_references_to_missing_class_members
             = $file_reference_provider->getAllFileReferencesToMissingClassMembers();
+
+        $references_to_mixed_member_names = $file_reference_provider->getAllReferencesToMixedMemberNames();
+
         $this->mixed_counts = $file_reference_provider->getTypeCoverage();
 
         $classlikes = $codebase->classlikes;
@@ -503,6 +507,7 @@ class Analyzer
                 unset($file_references_to_class_members[$member_id]);
                 unset($method_references_to_missing_class_members[$member_id]);
                 unset($file_references_to_missing_class_members[$member_id]);
+                unset($references_to_mixed_member_names[$member_id]);
 
                 $member_stub = preg_replace('/::.*$/', '::*', $member_id);
 
@@ -522,6 +527,10 @@ class Analyzer
 
             foreach ($method_references_to_missing_class_members as &$referencing_method_ids) {
                 unset($referencing_method_ids[$method_id]);
+            }
+
+            foreach ($references_to_mixed_member_names as &$references) {
+                unset($references[$method_id]);
             }
         }
 
@@ -552,6 +561,10 @@ class Analyzer
 
             foreach ($file_references_to_class_members as &$referencing_file_paths) {
                 unset($referencing_file_paths[$file_path]);
+            }
+
+            foreach ($references_to_mixed_member_names as &$references) {
+                unset($references[$file_path]);
             }
 
             foreach ($file_references_to_missing_class_members as &$referencing_file_paths) {
@@ -587,6 +600,13 @@ class Analyzer
             }
         );
 
+        $references_to_mixed_member_names = array_filter(
+            $references_to_mixed_member_names,
+            function (array $a) : bool {
+                return !!$a;
+            }
+        );
+
         $file_reference_provider->setCallingMethodReferencesToClassMembers(
             $method_references_to_class_members
         );
@@ -601,6 +621,10 @@ class Analyzer
 
         $file_reference_provider->setFileReferencesToMissingClassMembers(
             $file_references_to_missing_class_members
+        );
+
+        $file_reference_provider->setReferencesToMixedMemberNames(
+            $references_to_mixed_member_names
         );
     }
 
@@ -721,7 +745,7 @@ class Analyzer
     }
 
     /**
-     * @return array<string, bool>
+     * @return array<string, array<string, bool>>
      */
     public function getMixedMemberNames() : array
     {
@@ -731,9 +755,9 @@ class Analyzer
     /**
      * @return void
      */
-    public function addMixedMemberName(string $member_id)
+    public function addMixedMemberName(string $member_id, string $reference)
     {
-        $this->mixed_member_names[$member_id] = true;
+        $this->mixed_member_names[$member_id][$reference] = true;
     }
 
     public function hasMixedMemberName(string $member_id) : bool
@@ -742,12 +766,13 @@ class Analyzer
     }
 
     /**
-     * @var array<string, bool> $names
+     * @var array<string, string<bool>> $names
      * @return void
+     * @psalm-suppress MixedPropertyTypeCoercion
      */
     public function addMixedMemberNames(array $names)
     {
-        $this->mixed_member_names += $names;
+        $this->mixed_member_names = array_merge_recursive($this->mixed_member_names, $names);
     }
 
     /**

@@ -2167,7 +2167,9 @@ class CallAnalyzer
                 if ($input_type_part instanceof Type\Atomic\ObjectLike) {
                     $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
                         $input_type_part,
-                        $codebase
+                        $codebase,
+                        $context->calling_method_id,
+                        $statements_analyzer->getFilePath()
                     );
 
                     if ($potential_method_id) {

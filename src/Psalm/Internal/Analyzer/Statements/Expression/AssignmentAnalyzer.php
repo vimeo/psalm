@@ -572,7 +572,10 @@ class AssignmentAnalyzer
                     if ($stmt_var_type->hasObjectType()) {
                         foreach ($stmt_var_type->getTypes() as $type) {
                             if ($type instanceof Type\Atomic\TNamedObject) {
-                                $codebase->analyzer->addMixedMemberName(strtolower($type->value) . '::$');
+                                $codebase->analyzer->addMixedMemberName(
+                                    strtolower($type->value) . '::$',
+                                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                                );
                             }
                         }
                     }

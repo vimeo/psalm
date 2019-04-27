@@ -236,7 +236,10 @@ class PropertyFetchAnalyzer
             }
 
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                $codebase->analyzer->addMixedMemberName('$' . $stmt->name->name);
+                $codebase->analyzer->addMixedMemberName(
+                    '$' . $stmt->name->name,
+                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                );
             }
 
             if (IssueBuffer::accepts(
@@ -295,7 +298,10 @@ class PropertyFetchAnalyzer
             if ($stmt_var_type->hasObjectType() && !$context->ignore_variable_property) {
                 foreach ($stmt_var_type->getTypes() as $type) {
                     if ($type instanceof Type\Atomic\TNamedObject) {
-                        $codebase->analyzer->addMixedMemberName(strtolower($type->value) . '::$');
+                        $codebase->analyzer->addMixedMemberName(
+                            strtolower($type->value) . '::$',
+                            $context->calling_method_id ?: $statements_analyzer->getFileName()
+                        );
                     }
                 }
             }
@@ -816,7 +822,10 @@ class PropertyFetchAnalyzer
 
         if (!$prop_name) {
             if ($fq_class_name) {
-                $codebase->analyzer->addMixedMemberName(strtolower($fq_class_name) . '::$');
+                $codebase->analyzer->addMixedMemberName(
+                    strtolower($fq_class_name) . '::$',
+                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                );
             }
 
             return null;

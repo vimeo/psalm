@@ -140,7 +140,10 @@ class PropertyAssignmentAnalyzer
                 }
 
                 if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                    $codebase->analyzer->addMixedMemberName('$' . $stmt->name->name);
+                    $codebase->analyzer->addMixedMemberName(
+                        '$' . $stmt->name->name,
+                        $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    );
                 }
 
                 if (IssueBuffer::accepts(
@@ -833,7 +836,10 @@ class PropertyAssignmentAnalyzer
 
         if (!$prop_name instanceof PhpParser\Node\Identifier) {
             if ($fq_class_name && !$context->ignore_variable_property) {
-                $codebase->analyzer->addMixedMemberName(strtolower($fq_class_name) . '::$');
+                $codebase->analyzer->addMixedMemberName(
+                    strtolower($fq_class_name) . '::$',
+                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                );
             }
 
             return;

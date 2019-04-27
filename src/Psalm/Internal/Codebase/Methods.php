@@ -118,6 +118,10 @@ class Methods
             }
         }
 
+        if ($calling_method_id) {
+            $calling_method_id = strtolower($calling_method_id);
+        }
+
         $old_method_id = null;
 
         $fq_class_name = $this->classlikes->getUnAliasedName($fq_class_name);

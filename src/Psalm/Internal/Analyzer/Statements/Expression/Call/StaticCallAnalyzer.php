@@ -261,7 +261,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     || $lhs_type_part instanceof Type\Atomic\TClassString
                 ) {
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                        $codebase->analyzer->addMixedMemberName(strtolower($stmt->name->name));
+                        $codebase->analyzer->addMixedMemberName(
+                            strtolower($stmt->name->name),
+                            $context->calling_method_id ?: $statements_analyzer->getFileName()
+                        );
                     }
 
                     if (IssueBuffer::accepts(
@@ -841,7 +844,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
             } else {
                 if (!$context->ignore_variable_method) {
-                    $codebase->analyzer->addMixedMemberName(strtolower($fq_class_name) . '::');
+                    $codebase->analyzer->addMixedMemberName(
+                        strtolower($fq_class_name) . '::',
+                        $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    );
                 }
 
                 if (self::checkFunctionArguments(
