@@ -29,7 +29,7 @@
             <file name="tests/performance/a.test"/>
             <file name="tests/performance/b.test"/>
             <file name="tests/ErrorBaselineTest.php"/>
-            <directory name="vendor/phpunit/phpunit" />
+            <directory name="vendor/phpunit" />
         </ignoreFiles>
     </projectFiles>
 
