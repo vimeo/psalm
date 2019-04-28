@@ -30,6 +30,7 @@ use Psalm\Config;
 class FileReferenceCacheProvider
 {
     const REFERENCE_CACHE_NAME = 'references';
+    const FILE_CLASS_REFERENCE_CACHE_NAME = 'file_class_references';
     const ANALYZED_METHODS_CACHE_NAME = 'analyzed_methods';
     const CLASS_METHOD_CACHE_NAME = 'class_method_references';
     const FILE_CLASS_MEMBER_CACHE_NAME = 'file_class_member_references';
@@ -73,6 +74,35 @@ class FileReferenceCacheProvider
         }
 
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
+
+        if (!is_readable($reference_cache_location)) {
+            return null;
+        }
+
+        $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+
+        if (!is_array($reference_cache)) {
+            throw new \UnexpectedValueException('The reference cache must be an array');
+        }
+
+        return $reference_cache;
+    }
+
+    /**
+     * @return ?array
+     *
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedTypeCoercion
+     */
+    public function getCachedFileClassReferences()
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return null;
+        }
+
+        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_REFERENCE_CACHE_NAME;
 
         if (!is_readable($reference_cache_location)) {
             return null;
@@ -276,6 +306,22 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
         file_put_contents($reference_cache_location, serialize($file_references));
+    }
+
+    /**
+     * @return void
+     */
+    public function setCachedFileClassReferences(array $file_class_references)
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return;
+        }
+
+        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_REFERENCE_CACHE_NAME;
+
+        file_put_contents($reference_cache_location, serialize($file_class_references));
     }
 
     /**

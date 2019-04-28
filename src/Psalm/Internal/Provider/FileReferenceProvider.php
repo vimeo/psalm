@@ -394,6 +394,14 @@ class FileReferenceProvider
 
             self::$file_references = $file_references;
 
+            $file_class_references = $this->cache->getCachedFileClassReferences();
+
+            if ($file_class_references === null) {
+                return false;
+            }
+
+            self::$file_references_to_classes = $file_class_references;
+
             $method_references_to_class_members = $this->cache->getCachedMethodMemberReferences();
 
             if ($method_references_to_class_members === null) {
@@ -496,6 +504,7 @@ class FileReferenceProvider
 
         if ($this->cache) {
             $this->cache->setCachedFileReferences(self::$file_references);
+            $this->cache->setCachedFileClassReferences(self::$file_references_to_classes);
             $this->cache->setCachedMethodMemberReferences(self::$method_references_to_class_members);
             $this->cache->setCachedFileMemberReferences(self::$file_references_to_class_members);
             $this->cache->setCachedMethodMissingMemberReferences(self::$method_references_to_missing_class_members);
