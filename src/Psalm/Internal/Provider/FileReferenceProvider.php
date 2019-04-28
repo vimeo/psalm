@@ -595,6 +595,17 @@ class FileReferenceProvider
     }
 
     /**
+     * @param array<string, array<string,bool>> $references
+     * @psalm-suppress MixedTypeCoercion
+     *
+     * @return void
+     */
+    public function setFileReferencesToClasses(array $references)
+    {
+        self::$file_references_to_classes = $references;
+    }
+
+    /**
      * @return array<string, array<int, CodeLocation>>
      */
     public function getAllClassMethodLocations() : array

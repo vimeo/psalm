@@ -257,6 +257,7 @@ class Analyzer
 
                     $file_reference_provider = $codebase->file_reference_provider;
 
+                    $file_reference_provider->setFileReferencesToClasses([]);
                     $file_reference_provider->setCallingMethodReferencesToClassMembers([]);
                     $file_reference_provider->setFileReferencesToClassMembers([]);
                     $file_reference_provider->setCallingMethodReferencesToMissingClassMembers([]);
@@ -446,6 +447,8 @@ class Analyzer
 
         $all_referencing_methods = $method_references_to_class_members + $method_references_to_missing_class_members;
 
+        $file_references_to_classes = $file_reference_provider->getAllFileReferencesToClasses();
+
         $file_references_to_class_members
             = $file_reference_provider->getAllFileReferencesToClassMembers();
         $file_references_to_missing_class_members
@@ -511,6 +514,11 @@ class Analyzer
 
                 $member_stub = preg_replace('/::.*$/', '::*', $member_id);
 
+                if (strpos($member_id, '::')) {
+                    $fqcln = explode('::', $member_id)[0];
+                    unset($file_references_to_classes[$fqcln]);
+                }
+
                 if (isset($all_referencing_methods[$member_stub])) {
                     $newly_invalidated_methods = array_merge(
                         $all_referencing_methods[$member_stub],
@@ -563,6 +571,10 @@ class Analyzer
                 unset($referencing_file_paths[$file_path]);
             }
 
+            foreach ($file_references_to_classes as &$referencing_file_paths) {
+                unset($referencing_file_paths[$file_path]);
+            }
+
             foreach ($references_to_mixed_member_names as &$references) {
                 unset($references[$file_path]);
             }
@@ -607,6 +619,13 @@ class Analyzer
             }
         );
 
+        $file_references_to_classes = array_filter(
+            $file_references_to_classes,
+            function (array $a) : bool {
+                return !!$a;
+            }
+        );
+
         $file_reference_provider->setCallingMethodReferencesToClassMembers(
             $method_references_to_class_members
         );
@@ -625,6 +644,10 @@ class Analyzer
 
         $file_reference_provider->setReferencesToMixedMemberNames(
             $references_to_mixed_member_names
+        );
+
+        $file_reference_provider->setFileReferencesToClasses(
+            $file_references_to_classes
         );
     }
 

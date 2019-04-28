@@ -646,6 +646,25 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_message' => 'DuplicateMethod',
             ],
+            'unusedClassReferencedInFile' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {}
+
+                            $a = new A();',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {}',
+                    ],
+                ],
+                'error_message' => 'UnusedClass',
+            ],
             'unusedMethodReferencedInFile' => [
                 'file_stages' => [
                     [
@@ -664,7 +683,9 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                             class A {
                                 public function foo() : void {}
-                            }',
+                            }
+
+                            $a = new A();',
                     ],
                 ],
                 'error_message' => 'PossiblyUnusedMethod',
@@ -697,6 +718,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                             class B {
                                 public function bar() : void {
+                                    new A();
                                 }
                             }
 
@@ -725,7 +747,9 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             class A {
                                 /** @var string */
                                 public $foo = "hello";
-                            }',
+                            }
+
+                            $a = new A();',
                     ],
                 ],
                 'error_message' => 'PossiblyUnusedProperty',
@@ -760,6 +784,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                             class B {
                                 public function bar() : void {
+                                    new A();
                                 }
                             }
 
