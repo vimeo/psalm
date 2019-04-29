@@ -5,6 +5,9 @@ use Psalm\Config;
 
 class TestConfig extends Config
 {
+    /** @var Config\ProjectFileFilter|null */
+    private static $cached_project_files = null;
+
     /**
      * @psalm-suppress PossiblyNullPropertyAssignmentValue because cache_directory isn't strictly nullable
      */
@@ -19,19 +22,23 @@ class TestConfig extends Config
 
         $this->base_dir = getcwd() . DIRECTORY_SEPARATOR;
 
-        $this->project_files = Config\ProjectFileFilter::loadFromXMLElement(
-            new \SimpleXMLElement(
-                '<?xml version="1.0"?>
-                <projectFiles>
-                    <directory name="src" />
-                    <ignoreFiles>
-                        <directory name="src/Psalm/Internal/Stubs" />
-                    </ignoreFiles>
-                </projectFiles>'
-            ),
-            $this->base_dir,
-            true
-        );
+        if (!self::$cached_project_files) {
+            self::$cached_project_files = Config\ProjectFileFilter::loadFromXMLElement(
+                new \SimpleXMLElement(
+                    '<?xml version="1.0"?>
+                    <projectFiles>
+                        <directory name="src" />
+                        <ignoreFiles>
+                            <directory name="src/Psalm/Internal/Stubs" />
+                        </ignoreFiles>
+                    </projectFiles>'
+                ),
+                $this->base_dir,
+                true
+            );
+        }
+
+        $this->project_files = self::$cached_project_files;
 
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();

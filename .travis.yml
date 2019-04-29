@@ -4,8 +4,8 @@ language: php
 stages:
   - Code style analysis
   - test
-  - Code coverage analysis
   - Phar build
+  - Code coverage analysis
 
 php:
   - 7.0
