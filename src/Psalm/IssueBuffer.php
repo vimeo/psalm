@@ -168,6 +168,7 @@ class IssueBuffer
         if ($issue_type === 'MixedArgumentTypeCoercion'
             || $issue_type === 'MixedPropertyTypeCoercion'
             || $issue_type === 'MixedReturnTypeCoercion'
+            || $issue_type === 'MixedArrayTypeCoercion'
         ) {
             return 'MixedTypeCoercion';
         }

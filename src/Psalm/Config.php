@@ -37,6 +37,7 @@ class Config
         'MixedArrayAccess',
         'MixedArrayAssignment',
         'MixedArrayOffset',
+        'MixedArrayTypeCoercion',
         'MixedAssignment',
         'MixedFunctionCall',
         'MixedInferredReturnType',
