@@ -1111,7 +1111,8 @@ class Config
             $any_file_path_matched = false;
 
             foreach ($dependent_files as $dependent_file_path) {
-                if (($project_analyzer->full_run || $codebase->analyzer->canReportIssues($dependent_file_path))
+                if (($codebase->analyzer->canReportIssues($dependent_file_path)
+                        || $project_analyzer->canReportIssues($dependent_file_path))
                     && !$this->mustBeIgnored($dependent_file_path)
                 ) {
                     $any_file_path_matched = true;

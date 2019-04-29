@@ -122,6 +122,11 @@ class ProjectAnalyzer
      */
     public $onchange_line_limit;
 
+    /**
+     * @var array<string,string>
+     */
+    private $project_files;
+
     const TYPE_COMPACT = 'compact';
     const TYPE_CONSOLE = 'console';
     const TYPE_PYLINT = 'pylint';
@@ -203,6 +208,26 @@ class ProjectAnalyzer
                 throw new \UnexpectedValueException('Unrecognised report format ' . $reports);
             }
         }
+
+        $project_files = [];
+
+        foreach ($this->config->getProjectDirectories() as $dir_name) {
+            $file_extensions = $this->config->getFileExtensions();
+
+            $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
+
+            foreach ($file_paths as $file_path) {
+                if ($this->config->isInProjectDirs($file_path)) {
+                    $project_files[$file_path] = $file_path;
+                }
+            }
+        }
+
+        foreach ($this->config->getProjectFiles() as $file_path) {
+            $project_files[$file_path] = $file_path;
+        }
+
+        $this->project_files = $project_files;
 
         $this->output_format = $output_format;
         self::$instance = $this;
@@ -324,6 +349,16 @@ class ProjectAnalyzer
     }
 
     /**
+     * @param  string $file_path
+     *
+     * @return bool
+     */
+    public function canReportIssues($file_path)
+    {
+        return isset($this->project_files[$file_path]);
+    }
+
+    /**
      * @param  string  $base_dir
      * @param  bool $is_diff
      *
@@ -361,36 +396,18 @@ class ProjectAnalyzer
             echo 'Scanning files...' . "\n";
         }
 
-        $all_files_to_scan = [];
-
-        foreach ($this->config->getProjectDirectories() as $dir_name) {
-            $file_extensions = $this->config->getFileExtensions();
-
-            $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
-
-            foreach ($file_paths as $file_path) {
-                if ($this->config->isInProjectDirs($file_path)) {
-                    $all_files_to_scan[$file_path] = $file_path;
-                }
-            }
-        }
-
-        foreach ($this->config->getProjectFiles() as $file_path) {
-            $all_files_to_scan[$file_path] = $file_path;
-        }
-
         if ($diff_files === null
             || $deleted_files === null
             || count($diff_files) > 200
             || $this->codebase->find_unused_code) {
-            $this->codebase->scanner->addFilesToDeepScan($all_files_to_scan);
+            $this->codebase->scanner->addFilesToDeepScan($this->project_files);
         }
 
         if ($diff_files === null
             || $deleted_files === null
             || count($diff_files) > 200
         ) {
-            $this->codebase->analyzer->addFiles($all_files_to_scan);
+            $this->codebase->analyzer->addFiles($this->project_files);
 
             $this->config->initializePlugins($this);
 

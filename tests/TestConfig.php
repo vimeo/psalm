@@ -19,8 +19,19 @@ class TestConfig extends Config
 
         $this->base_dir = getcwd() . DIRECTORY_SEPARATOR;
 
-        $this->project_files = new Config\ProjectFileFilter(true);
-        $this->project_files->addDirectory($this->base_dir . 'src');
+        $this->project_files = Config\ProjectFileFilter::loadFromXMLElement(
+            new \SimpleXMLElement(
+                '<?xml version="1.0"?>
+                <projectFiles>
+                    <directory name="src" />
+                    <ignoreFiles>
+                        <directory name="src/Psalm/Internal/Stubs" />
+                    </ignoreFiles>
+                </projectFiles>'
+            ),
+            $this->base_dir,
+            true
+        );
 
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
