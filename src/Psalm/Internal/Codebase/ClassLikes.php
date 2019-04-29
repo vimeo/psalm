@@ -937,7 +937,9 @@ class ClassLikes
                         }
                     }
 
-                    if (!$has_parent_references && !isset($method_storage->used_params[$offset])) {
+                    if (!$has_parent_references
+                        && !$this->file_reference_provider->isMethodParamUsed(strtolower($method_id), $offset)
+                    ) {
                         if (IssueBuffer::accepts(
                             new PossiblyUnusedParam(
                                 'Param #' . $offset . ' is never referenced in this method',

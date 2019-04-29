@@ -41,6 +41,7 @@ class FileReferenceCacheProvider
     const METHOD_MISSING_MEMBER_CACHE_NAME = 'method_missing_member';
     const FILE_MISSING_MEMBER_CACHE_NAME = 'file_missing_member';
     const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
+    const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
 
     /**
      * @var Config
@@ -269,6 +270,35 @@ class FileReferenceCacheProvider
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
      */
+    public function getCachedMethodParamUses()
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return null;
+        }
+
+        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
+
+        if (!is_readable($cache_location)) {
+            return null;
+        }
+
+        $cache = unserialize((string) file_get_contents($cache_location));
+
+        if (!is_array($cache)) {
+            throw new \UnexpectedValueException('The method param use cache must be an array');
+        }
+
+        return $cache;
+    }
+
+    /**
+     * @return ?array
+     *
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedTypeCoercion
+     */
     public function getCachedIssues()
     {
         $cache_directory = $this->config->getCacheDirectory();
@@ -400,6 +430,22 @@ class FileReferenceCacheProvider
         }
 
         $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
+
+        file_put_contents($cache_location, serialize($references));
+    }
+
+    /**
+     * @return void
+     */
+    public function setCachedMethodParamUses(array $references)
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return;
+        }
+
+        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
 
         file_put_contents($cache_location, serialize($references));
     }

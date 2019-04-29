@@ -690,6 +690,68 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_message' => 'PossiblyUnusedMethod',
             ],
+            'unusedStaticMethodReferencedInFile' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public static function foo() : void {}
+                                public static function bar() : void {}
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            \Foo\A::foo();
+                            \Foo\A::bar();',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public static function foo() : void {}
+                                public static function bar() : void {}
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            \Foo\A::bar();',
+                    ],
+                ],
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedParamReferencedInFile' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo(string $s) : void {}
+                            }
+
+                            class B extends A {
+                                public function foo(string $s) : void {
+                                    echo $s;
+                                }
+                            }
+
+                            (new B)->foo("hello");',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo(string $s) : void {}
+                            }
+
+                            class B extends A {
+                            }
+
+                            (new B)->foo("hello");',
+                    ],
+                ],
+                'error_message' => 'PossiblyUnusedParam',
+            ],
             'unusedMethodReferencedInMethod' => [
                 'file_stages' => [
                     [

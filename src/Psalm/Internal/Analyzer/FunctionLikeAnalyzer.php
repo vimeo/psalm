@@ -820,10 +820,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
             }
 
-            if ($storage instanceof MethodStorage && $class_storage) {
+            if ($storage instanceof MethodStorage
+                && $class_storage
+                && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            ) {
+                $method_id_lc = strtolower($this->getMethodId());
+
                 foreach ($storage->params as $i => $_) {
                     if (!isset($storage->unused_params[$i])) {
-                        $storage->used_params[$i] = true;
+                        $codebase->file_reference_provider->addMethodParamUse(
+                            $method_id_lc,
+                            $i,
+                            $method_id_lc
+                        );
 
                         /** @var ClassMethod $this->function */
                         $method_name_lc = strtolower($storage->cased_name);
@@ -833,9 +842,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         }
 
                         foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
-                            $parent_method_storage = $codebase->methods->getStorage($parent_method_id);
-
-                            $parent_method_storage->used_params[$i] = true;
+                            $codebase->file_reference_provider->addMethodParamUse(
+                                strtolower($parent_method_id),
+                                $i,
+                                $method_id_lc
+                            );
                         }
                     }
                 }

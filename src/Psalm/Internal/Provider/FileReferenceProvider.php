@@ -134,6 +134,11 @@ class FileReferenceProvider
     private static $mixed_counts = [];
 
     /**
+     * @var array<string, array<int, array<string, bool>>>
+     */
+    private static $method_param_uses = [];
+
+    /**
      * @var ?FileReferenceCacheProvider
      */
     public $cache;
@@ -268,6 +273,14 @@ class FileReferenceProvider
     }
 
     /**
+     * @return void
+     */
+    public function addMethodParamUse(string $method_id, int $offset, string $referencing_method_id)
+    {
+        self::$method_param_uses[$method_id][$offset][$referencing_method_id] = true;
+    }
+
+    /**
      * @param   string $file
      *
      * @return  array
@@ -376,6 +389,14 @@ class FileReferenceProvider
     }
 
     /**
+     * @return array<string, array<int, array<string, bool>>>
+     */
+    public function getAllMethodParamUses()
+    {
+        return self::$method_param_uses;
+    }
+
+    /**
      * @param bool $force_reload
      * @return bool
      * @psalm-suppress MixedAssignment
@@ -458,6 +479,14 @@ class FileReferenceProvider
 
             self::$issues = $issues;
 
+            $method_param_uses = $this->cache->getCachedMethodParamUses();
+
+            if ($method_param_uses === null) {
+                return false;
+            }
+
+            self::$method_param_uses = $method_param_uses;
+
             $mixed_counts = $this->cache->getTypeCoverage();
 
             if ($mixed_counts === false) {
@@ -510,6 +539,7 @@ class FileReferenceProvider
             $this->cache->setCachedMethodMissingMemberReferences(self::$method_references_to_missing_class_members);
             $this->cache->setCachedFileMissingMemberReferences(self::$file_references_to_missing_class_members);
             $this->cache->setCachedMixedMemberNameReferences(self::$references_to_mixed_member_names);
+            $this->cache->setCachedMethodParamUses(self::$method_param_uses);
             $this->cache->setCachedIssues(self::$issues);
             $this->cache->setFileMapCache(self::$file_maps);
             $this->cache->setTypeCoverage(self::$mixed_counts);
@@ -592,6 +622,11 @@ class FileReferenceProvider
     public function isClassReferenced(string $fq_class_name_lc) : bool
     {
         return isset(self::$file_references_to_classes[$fq_class_name_lc]);
+    }
+
+    public function isMethodParamUsed(string $method_id, int $offset) : bool
+    {
+        return !empty(self::$method_param_uses[$method_id][$offset]);
     }
 
     /**
@@ -682,6 +717,20 @@ class FileReferenceProvider
     }
 
     /**
+     * @param array<string, array<int, array<string, bool>>> $references
+     * @psalm-suppress MixedTypeCoercion
+     *
+     * @return void
+     */
+    public function addMethodParamUses(array $references)
+    {
+        self::$method_param_uses = array_merge_recursive(
+            $references,
+            self::$method_param_uses
+        );
+    }
+
+    /**
      * @param array<string, array<string,bool>> $references
      * @psalm-suppress MixedTypeCoercion
      *
@@ -734,6 +783,17 @@ class FileReferenceProvider
     public function setReferencesToMixedMemberNames(array $references)
     {
         self::$references_to_mixed_member_names = $references;
+    }
+
+    /**
+     * @param array<string, array<int, array<string, bool>>> $references
+     * @psalm-suppress MixedTypeCoercion
+     *
+     * @return void
+     */
+    public function setMethodParamUses(array $references)
+    {
+        self::$method_param_uses = $references;
     }
 
     /**
@@ -912,5 +972,6 @@ class FileReferenceProvider
         self::$analyzed_methods = [];
         self::$issues = [];
         self::$file_maps = [];
+        self::$method_param_uses = [];
     }
 }
