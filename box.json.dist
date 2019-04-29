@@ -10,21 +10,5 @@
     "directories-bin" : ["assets"],
     "compactors" : [
         "KevinGH\\Box\\Compactor\\PhpScoper"
-    ],
-    "finder": [
-        {
-            "notName": "/LICENSE|.*\\.md|.*\\.dist|Makefile|composer\\.json|composer\\.lock/",
-            "exclude": [
-                "build",
-                "bin",
-                "tests",
-                "vendor-bin"
-            ],
-            "in": "vendor"
-        },
-        {
-            "name": "composer.json",
-            "in": "."
-        }
     ]
 }
