@@ -325,6 +325,17 @@ if ($config->find_unused_code) {
 
 if ($find_unused_code) {
     $project_analyzer->getCodebase()->reportUnusedCode();
+} else {
+    foreach ($keyed_issues as $issue_name => $_) {
+        if (strpos($issue_name, 'Unused') !== false) {
+            die(
+                'Error: Psalm can only fix issue '
+                    . $issue_name
+                    . ' if you enable unused code detection with --find-unused-code'
+                    . PHP_EOL
+            );
+        }
+    }
 }
 
 $project_analyzer->alterCodeAfterCompletion(
