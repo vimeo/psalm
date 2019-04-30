@@ -30,6 +30,7 @@ $valid_long_options = [
     'diff-methods',
     'disable-extension:',
     'find-dead-code::',
+    'find-unused-code::',
     'find-references-to:',
     'help',
     'ignore-baseline',
@@ -183,7 +184,8 @@ Options:
         Changes the output format. Possible values: compact, console, emacs, json, pylint, xml
 
     --find-dead-code[=auto]
-        Look for dead code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
+    --find-unused-code[=auto]
+        Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
 
     --find-references-to=[class|method|property]
         Searches the codebase for references to the given fully-qualified class or method,
@@ -425,7 +427,11 @@ $is_diff = isset($options['diff']);
 /** @var false|'always'|'auto' $find_unused_code */
 $find_unused_code = false;
 if (isset($options['find-dead-code'])) {
-    if ($options['find-dead-code'] === 'always') {
+    $options['find-unused-code'] = $options['find-dead-code'];
+}
+
+if (isset($options['find-unused-code'])) {
+    if ($options['find-unused-code'] === 'always') {
         $find_unused_code = 'always';
     } else {
         $find_unused_code = 'auto';
