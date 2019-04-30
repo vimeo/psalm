@@ -712,8 +712,8 @@ class ProjectAnalyzer
 
         if ($this->output_format === ProjectAnalyzer::TYPE_CONSOLE && $this->codebase->collect_references) {
             echo PHP_EOL . 'To whom it may concern: Psalm cannot detect unused classes, methods and properties'
-                . PHP_EOL . 'when running analyzing individual files and folders. Run on the full project to'
-                . PHP_EOL . 'enable complete unused code detection.' . PHP_EOL;
+                . PHP_EOL . 'when analyzing individual files and folders. Run on the full project to enable'
+                . PHP_EOL . 'complete unused code detection.' . PHP_EOL;
         }
     }
 
