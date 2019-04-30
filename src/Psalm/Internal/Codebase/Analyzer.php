@@ -264,6 +264,7 @@ class Analyzer
                     $file_reference_provider->setCallingMethodReferencesToMissingClassMembers([]);
                     $file_reference_provider->setFileReferencesToMissingClassMembers([]);
                     $file_reference_provider->setReferencesToMixedMemberNames([]);
+                    $file_reference_provider->setMethodParamUses([]);
                 },
                 $analysis_worker,
                 /** @return WorkerData */
