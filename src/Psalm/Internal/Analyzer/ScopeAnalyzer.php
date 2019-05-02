@@ -310,7 +310,7 @@ class ScopeAnalyzer
      *
      * @return  bool
      */
-    public static function onlyThrows(array $stmts)
+    public static function onlyThrowsOrExits(array $stmts)
     {
         if (empty($stmts)) {
             return false;
@@ -319,15 +319,12 @@ class ScopeAnalyzer
         for ($i = count($stmts) - 1; $i >= 0; --$i) {
             $stmt = $stmts[$i];
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Throw_
+                || ($stmt instanceof PhpParser\Node\Stmt\Expression
+                    && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
+            ) {
                 return true;
             }
-
-            if ($stmt instanceof PhpParser\Node\Stmt\Nop) {
-                continue;
-            }
-
-            return false;
         }
 
         return false;

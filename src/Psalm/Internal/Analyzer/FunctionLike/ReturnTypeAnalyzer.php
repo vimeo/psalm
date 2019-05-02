@@ -333,7 +333,7 @@ class ReturnTypeAnalyzer
                 return null;
             }
 
-            if (ScopeAnalyzer::onlyThrows($function_stmts)) {
+            if (ScopeAnalyzer::onlyThrowsOrExits($function_stmts)) {
                 // if there's a single throw statement, it's presumably an exception saying this method is not to be
                 // used
                 return null;
