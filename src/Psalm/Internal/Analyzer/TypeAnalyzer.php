@@ -1591,21 +1591,19 @@ class TypeAnalyzer
                     continue;
                 }
 
-                if (!$input_param->isEmpty() &&
-                    !self::isContainedBy(
-                        $codebase,
-                        $input_param,
-                        $container_param,
-                        $input_param->ignore_nullable_issues,
-                        $input_param->ignore_falsable_issues,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast,
-                        $type_coerced_from_scalar,
-                        $allow_interface_equality
-                    )
-                ) {
+                if (!self::isContainedBy(
+                    $codebase,
+                    $input_param,
+                    $container_param,
+                    $input_param->ignore_nullable_issues,
+                    $input_param->ignore_falsable_issues,
+                    $has_scalar_match,
+                    $type_coerced,
+                    $type_coerced_from_mixed,
+                    $to_string_cast,
+                    $type_coerced_from_scalar,
+                    $allow_interface_equality
+                )) {
                     $all_types_contain = false;
                 }
             }
