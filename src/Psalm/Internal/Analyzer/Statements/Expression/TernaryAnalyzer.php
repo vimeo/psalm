@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use \Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -27,22 +28,124 @@ class TernaryAnalyzer
         PhpParser\Node\Expr\Ternary $stmt,
         Context $context
     ) {
-        $pre_referenced_var_ids = $context->referenced_var_ids;
         $context->referenced_var_ids = [];
 
+        $first_if_cond_expr = IfAnalyzer::getDefinitelyEvaluatedExpression($stmt->cond);
+
         $context->inside_conditional = true;
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $context) === false) {
-            return false;
+
+        $pre_condition_vars_in_scope = $context->vars_in_scope;
+
+        $referenced_var_ids = $context->referenced_var_ids;
+        $context->referenced_var_ids = [];
+
+        $pre_assigned_var_ids = $context->assigned_var_ids;
+        $context->assigned_var_ids = [];
+
+        if ($first_if_cond_expr) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $first_if_cond_expr, $context) === false) {
+                return false;
+            }
         }
 
-        $new_referenced_var_ids = $context->referenced_var_ids;
-        $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+        $first_cond_assigned_var_ids = $context->assigned_var_ids;
+        $context->assigned_var_ids = array_merge(
+            $pre_assigned_var_ids,
+            $first_cond_assigned_var_ids
+        );
+
+        /** @var array<string, bool> */
+        $first_cond_referenced_var_ids = $context->referenced_var_ids;
+        $context->referenced_var_ids = array_merge(
+            $referenced_var_ids,
+            $first_cond_referenced_var_ids
+        );
 
         $context->inside_conditional = false;
 
-        $codebase = $statements_analyzer->getCodebase();
-
         $t_if_context = clone $context;
+
+        $t_if_context->inside_conditional = true;
+
+        if ($first_if_cond_expr !== $stmt->cond) {
+            $assigned_var_ids = $context->assigned_var_ids;
+            $t_if_context->assigned_var_ids = [];
+
+            $referenced_var_ids = $context->referenced_var_ids;
+            $t_if_context->referenced_var_ids = [];
+
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $t_if_context) === false) {
+                return false;
+            }
+
+            /** @var array<string, bool> */
+            $more_cond_referenced_var_ids = $t_if_context->referenced_var_ids;
+            $t_if_context->referenced_var_ids = array_merge(
+                $more_cond_referenced_var_ids,
+                $referenced_var_ids
+            );
+
+            $cond_referenced_var_ids = array_merge(
+                $first_cond_referenced_var_ids,
+                $more_cond_referenced_var_ids
+            );
+
+            /** @var array<string, bool> */
+            $more_cond_assigned_var_ids = $t_if_context->assigned_var_ids;
+            $t_if_context->assigned_var_ids = array_merge(
+                $more_cond_assigned_var_ids,
+                $assigned_var_ids
+            );
+
+            $cond_assigned_var_ids = array_merge(
+                $first_cond_assigned_var_ids,
+                $more_cond_assigned_var_ids
+            );
+        } else {
+            $cond_referenced_var_ids = $first_cond_referenced_var_ids;
+
+            $cond_assigned_var_ids = $first_cond_assigned_var_ids;
+        }
+
+        $newish_var_ids = array_map(
+            /**
+             * @param Type\Union $_
+             *
+             * @return true
+             */
+            function (Type\Union $_) {
+                return true;
+            },
+            array_diff_key(
+                $t_if_context->vars_in_scope,
+                $pre_condition_vars_in_scope,
+                $cond_referenced_var_ids,
+                $cond_assigned_var_ids
+            )
+        );
+
+        // get all the var ids that were referened in the conditional, but not assigned in it
+        $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);
+
+        // remove all newly-asserted var ids too
+        $cond_referenced_var_ids = array_filter(
+            $cond_referenced_var_ids,
+            /**
+             * @param string $var_id
+             *
+             * @return bool
+             */
+            function ($var_id) use ($pre_condition_vars_in_scope) {
+                return isset($pre_condition_vars_in_scope[$var_id]);
+            },
+            ARRAY_FILTER_USE_KEY
+        );
+
+        $cond_referenced_var_ids = array_merge($newish_var_ids, $cond_referenced_var_ids);
+
+        $t_if_context->inside_conditional = false;
+
+        $codebase = $statements_analyzer->getCodebase();
 
         $if_clauses = \Psalm\Type\Algebra::getFormula(
             $stmt->cond,
@@ -98,7 +201,7 @@ class TernaryAnalyzer
             )
         );
 
-        $reconcilable_if_types = Algebra::getTruthsFromFormula($ternary_clauses, $new_referenced_var_ids);
+        $reconcilable_if_types = Algebra::getTruthsFromFormula($ternary_clauses, $cond_referenced_var_ids);
 
         $changed_var_ids = [];
 
@@ -107,7 +210,7 @@ class TernaryAnalyzer
                 $reconcilable_if_types,
                 $t_if_context->vars_in_scope,
                 $changed_var_ids,
-                $new_referenced_var_ids,
+                $cond_referenced_var_ids,
                 $statements_analyzer,
                 [],
                 $t_if_context->inside_loop,
@@ -146,7 +249,7 @@ class TernaryAnalyzer
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
                 $changed_var_ids,
-                $new_referenced_var_ids,
+                $cond_referenced_var_ids,
                 $statements_analyzer,
                 [],
                 $t_else_context->inside_loop,

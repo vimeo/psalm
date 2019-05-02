@@ -1653,7 +1653,7 @@ class IfAnalyzer
      *
      * @return PhpParser\Node\Expr|null
      */
-    protected static function getDefinitelyEvaluatedExpression(PhpParser\Node\Expr $stmt)
+    public static function getDefinitelyEvaluatedExpression(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd

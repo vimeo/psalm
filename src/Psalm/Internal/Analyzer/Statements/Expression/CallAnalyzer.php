@@ -1711,8 +1711,6 @@ class CallAnalyzer
         array $array_arg_types,
         bool $check_functions
     ) {
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
-
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$closure_type instanceof Type\Atomic\Fn) {

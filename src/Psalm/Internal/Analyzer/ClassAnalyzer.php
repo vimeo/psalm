@@ -385,8 +385,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $this->fq_class_name . '::' . $method_name
                         );
 
-                        $implementer_fq_class_name = null;
-
                         $implementer_method_storage = null;
                         $implementer_classlike_storage = null;
 

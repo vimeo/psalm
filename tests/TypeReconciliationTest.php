@@ -1309,6 +1309,18 @@ class TypeReconciliationTest extends TestCase
                         echo sprintf("padding-top:%s%%;", 100 * ($height/$width));
                     }'
             ],
+            'notEmptyCheckOnMixedInTernary' => [
+                '<?php
+                    $a = !empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off" ? true : false;',
+            ],
+            'notEmptyCheckOnMixedInIf' => [
+                '<?php
+                    if (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off") {
+                        $a = true;
+                    } else {
+                        $a = false;
+                    }',
+            ],
         ];
     }
 
