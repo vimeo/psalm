@@ -69,7 +69,6 @@ class AssignmentAnalyzer
 
         if ($doc_comment) {
             $file_path = $statements_analyzer->getRootFilePath();
-            $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
 
             $file_storage_provider = $codebase->file_storage_provider;
 
@@ -204,7 +203,6 @@ class AssignmentAnalyzer
             }
         }
 
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         if ($assign_value_type->hasMixed()) {

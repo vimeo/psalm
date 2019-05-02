@@ -897,8 +897,6 @@ class Union
     ) {
         $keys_to_unset = [];
 
-        $new_types = [];
-
         foreach ($this->types as $key => $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam
                 && isset($template_types[$key][$atomic_type->defining_class ?: ''])
@@ -1142,8 +1140,8 @@ class Union
                         $template_type = clone $template_type;
                     }
                 } elseif ($codebase && $atomic_type->defining_class) {
-                    foreach ($template_types as $replacement_key => $template_type_map) {
-                        foreach ($template_type_map as $template_class => $type_map) {
+                    foreach ($template_types as $template_type_map) {
+                        foreach ($template_type_map as $template_class => $_) {
                             if (!$template_class) {
                                 continue;
                             }
