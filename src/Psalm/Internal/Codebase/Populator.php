@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Config;
 use Psalm\Issue\CircularReference;
 use Psalm\IssueBuffer;
@@ -316,11 +317,17 @@ class Populator
                             $declaring_method_storage = $declaring_class_storage->methods[$method_name];
 
                             if ($declaring_method_storage->return_type
-                                && $declaring_method_storage->signature_return_type
                                 && $declaring_method_storage->return_type
                                     !== $declaring_method_storage->signature_return_type
                             ) {
-                                $method_storage->return_type = $declaring_method_storage->return_type;
+                                if ($declaring_method_storage->signature_return_type) {
+                                    $method_storage->return_type = $declaring_method_storage->return_type;
+                                } elseif (TypeAnalyzer::isSimplyContainedBy(
+                                    $declaring_method_storage->return_type,
+                                    $method_storage->signature_return_type
+                                )) {
+                                    $method_storage->return_type = $declaring_method_storage->return_type;
+                                }
                             }
                         }
                     }

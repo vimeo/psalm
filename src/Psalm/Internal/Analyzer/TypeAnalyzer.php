@@ -212,6 +212,38 @@ class TypeAnalyzer
     }
 
     /**
+     * Used for comparing docblock types to signature types before we know about all types
+     *
+     * @param  Type\Union   $input_type
+     * @param  Type\Union   $container_type
+     *
+     * @return bool
+     */
+    public static function isSimplyContainedBy(
+        Type\Union $input_type,
+        Type\Union $container_type
+    ) {
+        if ($input_type->getId() === $container_type->getId()) {
+            return true;
+        }
+
+        if ($input_type->isNullable() && !$container_type->isNullable()) {
+            return false;
+        }
+
+        $input_type_not_null = clone $input_type;
+        $input_type_not_null->removeType('null');
+
+        $container_type_not_null = clone $container_type;
+        $container_type_not_null->removeType('null');
+
+        return (bool) array_intersect_key(
+            $input_type_not_null->getTypes(),
+            $container_type_not_null->getTypes()
+        );
+    }
+
+    /**
      * Does the input param type match the given param type
      *
      * @param  Type\Union   $input_type
