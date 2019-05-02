@@ -28,8 +28,6 @@ class TernaryAnalyzer
         PhpParser\Node\Expr\Ternary $stmt,
         Context $context
     ) {
-        $context->referenced_var_ids = [];
-
         $first_if_cond_expr = IfAnalyzer::getDefinitelyEvaluatedExpression($stmt->cond);
 
         $context->inside_conditional = true;
