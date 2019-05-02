@@ -2128,6 +2128,12 @@ class AssertionFinder
     protected static function hasTypedValueComparison(PhpParser\Node\Expr\BinaryOp $conditional)
     {
         if (isset($conditional->right->inferredType)
+            && ((!$conditional->right instanceof PhpParser\Node\Expr\Variable
+                    && !$conditional->right instanceof PhpParser\Node\Expr\PropertyFetch
+                    && !$conditional->right instanceof PhpParser\Node\Expr\StaticPropertyFetch)
+                || $conditional->left instanceof PhpParser\Node\Expr\Variable
+                || $conditional->left instanceof PhpParser\Node\Expr\PropertyFetch
+                || $conditional->left instanceof PhpParser\Node\Expr\StaticPropertyFetch)
             && count($conditional->right->inferredType->getTypes()) === 1
             && !$conditional->right->inferredType->hasMixed()
         ) {
@@ -2135,6 +2141,9 @@ class AssertionFinder
         }
 
         if (isset($conditional->left->inferredType)
+            && !$conditional->left instanceof PhpParser\Node\Expr\Variable
+            && !$conditional->left instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$conditional->left instanceof PhpParser\Node\Expr\StaticPropertyFetch
             && count($conditional->left->inferredType->getTypes()) === 1
             && !$conditional->left->inferredType->hasMixed()
         ) {

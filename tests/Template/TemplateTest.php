@@ -2625,6 +2625,35 @@ class TemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'noComparisonToEmpty' => [
+                '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Container {
+                        /** @var array<K, V> */
+                        private $c;
+
+                        /** @param array<K, V> $c */
+                        public function __construct(array $c) {
+                            $this->c = $c;
+                        }
+                    }
+
+                    class Test {
+                        /**
+                         * @var Container<int, DateTime>
+                         */
+                        private $c;
+
+                        public function __construct()
+                        {
+                            $this->c = new Container([]);
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue'
+            ],
         ];
     }
 }
