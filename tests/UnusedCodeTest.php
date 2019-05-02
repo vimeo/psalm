@@ -294,7 +294,7 @@ class UnusedCodeTest extends TestCase
                         public function bar() : void {
                             $c = $this->getC();
 
-                            foreach ([1, 2, 3] as $i) {
+                            foreach ([1, 2, 3] as $_) {
                                 try {
                                     $c->foo();
                                 } catch (Exception $e) {}

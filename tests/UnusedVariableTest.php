@@ -1427,6 +1427,17 @@ class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
+            'detectUnusedVarBeforeTryInsideForeach' => [
+                '<?php
+                    function foo() : void {
+                        $unused = 1;
+
+                        while (rand(0, 1)) {
+                            try {} catch (\Exception $e) {}
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
         ];
     }
 }
