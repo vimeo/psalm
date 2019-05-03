@@ -365,7 +365,11 @@ class Reconciler
                     }
                 }
 
-                return Type::parseString($new_var_type, null, $template_type_map);
+                try {
+                    return Type::parseString($new_var_type, null, $template_type_map);
+                } catch (\Exception $e) {
+                    return Type::getMixed();
+                }
             }
 
             return Type::getMixed();

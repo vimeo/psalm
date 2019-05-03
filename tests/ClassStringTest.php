@@ -557,6 +557,18 @@ class ClassStringTest extends TestCase
                         return array_merge($generic_classes, $literal_classes);
                     }',
             ],
+            'noCrashWithIsSubclassOfNonExistentVariable' => [
+                '<?php
+                    class A {}
+
+                    function foo() : void {
+                        /**
+                         * @psalm-suppress UndefinedVariable
+                         * @psalm-suppress MixedArgument
+                         */
+                        if (!is_subclass_of($s, A::class)) {}
+                    }',
+            ],
         ];
     }
 
