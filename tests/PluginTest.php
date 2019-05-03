@@ -770,4 +770,59 @@ class PluginTest extends TestCase
         $this->project_analyzer->check('tests/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
     }
+
+    /**
+     * @return void
+     */
+    public function testPluginFilenameCanBeAbsolute()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                sprintf(
+                    '<?xml version="1.0"?>
+                    <psalm>
+                        <projectFiles>
+                            <directory name="src" />
+                        </projectFiles>
+                        <plugins>
+                            <plugin filename="%s/examples/plugins/StringChecker.php" />
+                        </plugins>
+                    </psalm>',
+                    __DIR__.'/..'
+                )
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage does-not-exist/plugins/StringChecker.php
+     *
+     * @return void
+     */
+    public function testPluginInvalidAbsoluteFilenameThrowsException()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                sprintf(
+                    '<?xml version="1.0"?>
+                    <psalm>
+                        <projectFiles>
+                            <directory name="src" />
+                        </projectFiles>
+                        <plugins>
+                            <plugin filename="%s/does-not-exist/plugins/StringChecker.php" />
+                        </plugins>
+                    </psalm>',
+                    __DIR__.'/..'
+                )
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+    }
 }

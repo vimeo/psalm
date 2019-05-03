@@ -24,9 +24,16 @@ Here are a couple of example plugins:
  - [FunctionCasingChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/FunctionCasingChecker.php) - checks that your functions and methods are correctly-cased
 
 To ensure your plugin runs when Psalm does, add it to your [config](configuration.md):
-```php
+```xml
     <plugins>
         <plugin filename="src/plugins/SomePlugin.php" />
+    </plugins>
+```
+
+You can also specify an absolute path to your plugin:
+```xml
+    <plugins>
+        <plugin filename="/path/to/SomePlugin.php" />
     </plugins>
 ```
 
