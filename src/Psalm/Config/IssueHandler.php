@@ -140,4 +140,42 @@ class IssueHandler
 
         return $this->error_level;
     }
+
+    /**
+     * @return       string[]
+     * @psalm-return array<mixed, string>
+     */
+    public static function getAllIssueTypes()
+    {
+        return array_filter(
+            array_map(
+                /**
+                 * @param string $file_name
+                 *
+                 * @return string
+                 */
+                function ($file_name) {
+                    return substr($file_name, 0, -4);
+                },
+                scandir(dirname(__DIR__) . '/Issue')
+            ),
+            /**
+             * @param string $issue_name
+             *
+             * @return bool
+             */
+            function ($issue_name) {
+                return !empty($issue_name)
+                    && $issue_name !== 'MethodIssue'
+                    && $issue_name !== 'PropertyIssue'
+                    && $issue_name !== 'FunctionIssue'
+                    && $issue_name !== 'ArgumentIssue'
+                    && $issue_name !== 'ClassIssue'
+                    && $issue_name !== 'CodeIssue'
+                    && $issue_name !== 'PsalmInternalError'
+                    && $issue_name !== 'ParseError'
+                    && $issue_name !== 'PluginIssue';
+            }
+        );
+    }
 }

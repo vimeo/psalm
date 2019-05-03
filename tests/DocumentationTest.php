@@ -85,7 +85,10 @@ class DocumentationTest extends TestCase
      */
     public function testAllIssuesCovered()
     {
-        $all_issues = ConfigTest::getAllIssues();
+        $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
+        $all_issues[] = 'ParseError';
+        $all_issues[] = 'PluginIssue';
+
         sort($all_issues);
 
         $code_blocks = self::getCodeBlocksFromDocs();
