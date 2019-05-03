@@ -1,13 +1,5 @@
 <?php
 
-ini_set('display_startup_errors', '1');
-ini_set('html_errors', '1');
-ini_set('memory_limit', '-1');
-error_reporting(E_ALL);
+require_once(__DIR__.'/../src/command_functions.php');
 
-foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $file) {
-    if (file_exists($file)) {
-        require $file;
-        break;
-    }
-}
+return require_once(__DIR__.'/../vendor/autoload.php');

@@ -786,9 +786,11 @@ class Config
             if (isset($config_xml->plugins->plugin)) {
                 /** @var \SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->plugin as $plugin) {
-                    $plugin_file_name = $plugin['filename'];
+                    $plugin_file_name = (string) $plugin['filename'];
 
-                    $path = $config->base_dir . $plugin_file_name;
+                    $path = isAbsolutePath($plugin_file_name)
+                        ? $plugin_file_name
+                        : $config->base_dir . $plugin_file_name;
 
                     $config->addPluginPath($path);
                 }
