@@ -4,6 +4,12 @@ namespace Psalm;
 use Composer\Autoload\ClassLoader;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Issue\ClassIssue;
+use Psalm\Issue\CodeIssue;
+use Psalm\Issue\FunctionIssue;
+use Psalm\Issue\MethodIssue;
+use Psalm\Issue\ArgumentIssue;
+use Psalm\Issue\PropertyIssue;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
@@ -1154,6 +1160,111 @@ class Config
     }
 
     /**
+     * @var string[] $suppressed_issues
+     */
+    public function getReportingLevelForIssue(CodeIssue $e, array $suppressed_issues = []) : string
+    {
+        $fqcn_parts = explode('\\', get_class($e));
+        $issue_type = array_pop($fqcn_parts);
+
+        if (in_array($issue_type, $suppressed_issues, true)) {
+            return self::REPORT_SUPPRESS;
+        }
+
+        $reporting_level = null;
+
+        if ($e instanceof ClassIssue) {
+            $reporting_level = $this->getReportingLevelForClass($issue_type, $e->fq_classlike_name);
+        } elseif ($e instanceof MethodIssue) {
+            $reporting_level = $this->getReportingLevelForMethod($issue_type, $e->method_id);
+        } elseif ($e instanceof FunctionIssue) {
+            $reporting_level = $this->getReportingLevelForFunction($issue_type, $e->function_id);
+        } elseif ($e instanceof PropertyIssue) {
+            $reporting_level = $this->getReportingLevelForProperty($issue_type, $e->property_id);
+        } elseif ($e instanceof ArgumentIssue && $e->function_id) {
+            $reporting_level = $this->getReportingLevelForArgument($issue_type, $e->function_id);
+        }
+
+        if ($reporting_level === null) {
+            $reporting_level = $this->getReportingLevelForFile($issue_type, $e->getFilePath());
+        }
+
+        $parent_issue_type = self::getParentIssueType($issue_type);
+
+        if ($parent_issue_type && in_array($parent_issue_type, $suppressed_issues, true)) {
+            return self::REPORT_SUPPRESS;
+        }
+
+        if ($parent_issue_type && $reporting_level === Config::REPORT_ERROR) {
+            $parent_reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+
+            if ($parent_reporting_level !== $reporting_level) {
+                return $parent_reporting_level;
+            }
+        }
+
+        return $reporting_level;
+    }
+
+    /**
+     * @param  string $issue_type
+     * @return string|null
+     */
+    private static function getParentIssueType($issue_type)
+    {
+        if (strpos($issue_type, 'Possibly') === 0) {
+            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type);
+
+            if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
+                $stripped_issue_type = 'Invalid' . $stripped_issue_type;
+            }
+
+            return $stripped_issue_type;
+        }
+
+        if (preg_match('/^(False|Null)[A-Z]/', $issue_type)) {
+            return preg_replace('/^(False|Null)/', 'Invalid', $issue_type);
+        }
+
+        if ($issue_type === 'UndefinedInterfaceMethod') {
+            return 'UndefinedMethod';
+        }
+
+        if ($issue_type === 'UninitializedProperty') {
+            return 'PropertyNotSetInConstructor';
+        }
+
+        if ($issue_type === 'InvalidDocblockParamName') {
+            return 'InvalidDocblock';
+        }
+
+        if ($issue_type === 'UnusedClosureParam') {
+            return 'UnusedParam';
+        }
+
+        if ($issue_type === 'TraitMethodSignatureMismatch') {
+            return 'MethodSignatureMismatch';
+        }
+
+        if ($issue_type === 'MixedArgumentTypeCoercion'
+            || $issue_type === 'MixedPropertyTypeCoercion'
+            || $issue_type === 'MixedReturnTypeCoercion'
+            || $issue_type === 'MixedArrayTypeCoercion'
+        ) {
+            return 'MixedTypeCoercion';
+        }
+
+        if ($issue_type === 'ArgumentTypeCoercion'
+            || $issue_type === 'PropertyTypeCoercion'
+            || $issue_type === 'ReturnTypeCoercion'
+        ) {
+            return 'TypeCoercion';
+        }
+
+        return null;
+    }
+
+    /**
      * @param   string $issue_type
      * @param   string $file_path
      *
@@ -1172,63 +1283,59 @@ class Config
      * @param   string $issue_type
      * @param   string $fq_classlike_name
      *
-     * @return  string
+     * @return  string|null
      */
     public function getReportingLevelForClass($issue_type, $fq_classlike_name)
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForClass($fq_classlike_name);
         }
-
-        return self::REPORT_ERROR;
     }
 
     /**
      * @param   string $issue_type
      * @param   string $method_id
      *
-     * @return  string
+     * @return  string|null
      */
     public function getReportingLevelForMethod($issue_type, $method_id)
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForMethod($method_id);
         }
-
-        return self::REPORT_ERROR;
     }
 
-    public function getReportingLevelForFunction(string $issue_type, string $function_id) : string
+    /**
+     * @return  string|null
+     */
+    public function getReportingLevelForFunction(string $issue_type, string $function_id)
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForFunction($function_id);
         }
-
-        return self::REPORT_ERROR;
     }
 
-    public function getReportingLevelForArgument(string $issue_type, string $function_id) : string
+    /**
+     * @return  string|null
+     */
+    public function getReportingLevelForArgument(string $issue_type, string $function_id)
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForArgument($function_id);
         }
-
-        return self::REPORT_ERROR;
     }
 
     /**
      * @param   string $issue_type
      * @param   string $property_id
      *
-     * @return  string
+     * @return  string|null
      */
     public function getReportingLevelForProperty($issue_type, $property_id)
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForProperty($property_id);
         }
-
-        return self::REPORT_ERROR;
     }
 
     /**

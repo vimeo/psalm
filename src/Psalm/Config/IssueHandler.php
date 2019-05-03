@@ -74,7 +74,7 @@ class IssueHandler
     /**
      * @param string $fq_classlike_name
      *
-     * @return string
+     * @return string|null
      */
     public function getReportingLevelForClass($fq_classlike_name)
     {
@@ -83,14 +83,12 @@ class IssueHandler
                 return $custom_level->getErrorLevel();
             }
         }
-
-        return $this->error_level;
     }
 
     /**
      * @param string $method_id
      *
-     * @return string
+     * @return string|null
      */
     public function getReportingLevelForMethod($method_id)
     {
@@ -99,36 +97,36 @@ class IssueHandler
                 return $custom_level->getErrorLevel();
             }
         }
-
-        return $this->error_level;
     }
 
-    public function getReportingLevelForFunction(string $function_id) : string
+    /**
+     * @return string|null
+     */
+    public function getReportingLevelForFunction(string $function_id)
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($function_id))) {
                 return $custom_level->getErrorLevel();
             }
         }
-
-        return $this->error_level;
     }
 
-    public function getReportingLevelForArgument(string $function_id) : string
+    /**
+     * @return string|null
+     */
+    public function getReportingLevelForArgument(string $function_id)
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($function_id))) {
                 return $custom_level->getErrorLevel();
             }
         }
-
-        return $this->error_level;
     }
 
     /**
      * @param string $property_id
      *
-     * @return string
+     * @return string|null
      */
     public function getReportingLevelForProperty($property_id)
     {
@@ -137,8 +135,6 @@ class IssueHandler
                 return $custom_level->getErrorLevel();
             }
         }
-
-        return $this->error_level;
     }
 
     /**

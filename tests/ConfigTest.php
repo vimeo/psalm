@@ -394,7 +394,18 @@ class ConfigTest extends TestCase
                             <errorLevel type="suppress">
                                 <referencedFunction name="fooBar" />
                             </errorLevel>
+                            <errorLevel type="info">
+                                <directory name="examples" />
+                            </errorLevel>
                         </UndefinedFunction>
+                        <PossiblyInvalidArgument>
+                            <errorLevel type="suppress">
+                                <directory name="tests" />
+                            </errorLevel>
+                            <errorLevel type="info">
+                                <directory name="examples" />
+                            </errorLevel>
+                        </PossiblyInvalidArgument>
                         <UndefinedPropertyFetch>
                             <errorLevel type="suppress">
                                 <referencedProperty name="Psalm\Bodger::$find3" />
@@ -420,6 +431,22 @@ class ConfigTest extends TestCase
             $config->getReportingLevelForFile(
                 'MissingReturnType',
                 realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')
+            )
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'PossiblyInvalidArgument',
+                realpath('src/psalm.php')
+            )
+        );
+
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'PossiblyInvalidArgument',
+                realpath('examples/TemplateChecker.php')
             )
         );
 
@@ -456,7 +483,7 @@ class ConfigTest extends TestCase
         );
 
         $this->assertSame(
-            'error',
+            null,
             $config->getReportingLevelForClass(
                 'UndefinedClass',
                 'Psalm\Bodger'
@@ -488,7 +515,7 @@ class ConfigTest extends TestCase
         );
 
         $this->assertSame(
-            'error',
+            null,
             $config->getReportingLevelForProperty(
                 'UndefinedMethod',
                 'Psalm\Bodger::$find3'
@@ -496,7 +523,7 @@ class ConfigTest extends TestCase
         );
 
         $this->assertSame(
-            'error',
+            null,
             $config->getReportingLevelForProperty(
                 'UndefinedMethod',
                 'Psalm\Bodger::$find4'
