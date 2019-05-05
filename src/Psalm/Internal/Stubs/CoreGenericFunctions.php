@@ -57,7 +57,7 @@ function array_intersect_key(array $arr, array $arr2, array $arr3 = null, array 
  *
  * @param array<mixed, TKey> $arr
  * @param array<mixed, TValue> $arr2
- * @return array<TKey, TValue>
+ * @return array<TKey, TValue>|false
  */
 function array_combine(array $arr, array $arr2) {}
 
@@ -126,6 +126,7 @@ function array_search($needle, array $haystack, bool $strict = false) {}
  * @param array<mixed,T> $arr
  * @param callable(T,T):int $callback
  * @param-out array<int,T> $arr
+ * @return bool
  */
 function usort(array &$arr, callable $callback): bool {}
 
@@ -133,7 +134,7 @@ function usort(array &$arr, callable $callback): bool {}
  * @psalm-template T
  *
  * @param array<string, T> $arr
- * @return array<string, T>
+ * @return array<string, T>|false
  */
 function array_change_key_case(array $arr, int $case = CASE_LOWER) {}
 
