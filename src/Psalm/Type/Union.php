@@ -93,6 +93,12 @@ class Union
     public $possibly_undefined_from_try = false;
 
     /**
+     * Whether or not this union had a template, since replaced
+     * @var bool
+     */
+    public $had_template = false;
+
+    /**
      * @var array<string, TLiteralString>
      */
     private $literal_string_types = [];
@@ -259,6 +265,47 @@ class Union
             }
 
             $s .= $type . '|';
+        }
+
+        return substr($s, 0, -1) ?: '';
+    }
+
+    public function getKey() : string
+    {
+        if (empty($this->types)) {
+            return '';
+        }
+        $s = '';
+
+        $printed_int = false;
+        $printed_float = false;
+        $printed_string = false;
+
+        foreach ($this->types as $type) {
+            if ($type instanceof TLiteralFloat) {
+                if ($printed_float) {
+                    continue;
+                }
+
+                $s .= 'float|';
+                $printed_float = true;
+            } elseif ($type instanceof TLiteralString) {
+                if ($printed_string) {
+                    continue;
+                }
+
+                $s .= 'string|';
+                $printed_string = true;
+            } elseif ($type instanceof TLiteralInt) {
+                if ($printed_int) {
+                    continue;
+                }
+
+                $s .= 'int|';
+                $printed_int = true;
+            } else {
+                $s .= $type->getKey() . '|';
+            }
         }
 
         return substr($s, 0, -1) ?: '';
@@ -785,7 +832,9 @@ class Union
      */
     public function isGenerator()
     {
-        return count($this->types) === 1 && isset($this->types['Generator']);
+        return count($this->types) === 1
+            && (($single_type = reset($this->types)) instanceof TNamedObject)
+            && ($single_type->value === 'Generator');
     }
 
     /**
@@ -898,6 +947,10 @@ class Union
         $keys_to_unset = [];
 
         foreach ($this->types as $key => $atomic_type) {
+            if ($bracket_pos = strpos($key, '<')) {
+                $key = substr($key, 0, $bracket_pos);
+            }
+
             if ($atomic_type instanceof Type\Atomic\TTemplateParam
                 && isset($template_types[$key][$atomic_type->defining_class ?: ''])
             ) {
@@ -924,6 +977,8 @@ class Union
                                 }
                             }
                         }
+
+                        $this->had_template = true;
 
                         if ($input_type) {
                             $generic_param = clone $input_type;
@@ -971,6 +1026,8 @@ class Union
 
                     $this->types[$class_string->getKey()] = $class_string;
 
+                    $this->had_template = true;
+
                     if ($input_type) {
                         $valid_input_atomic_types = [];
 
@@ -1017,6 +1074,10 @@ class Union
 
                 if ($input_type && $codebase) {
                     foreach ($input_type->types as $input_key => $atomic_input_type) {
+                        if ($bracket_pos = strpos($input_key, '<')) {
+                            $input_key = substr($input_key, 0, $bracket_pos);
+                        }
+
                         if ($input_key === $key) {
                             $matching_atomic_type = $atomic_input_type;
                             break;
@@ -1350,6 +1411,11 @@ class Union
         }
 
         return true;
+    }
+
+    public function hasLiteralValue() : bool
+    {
+        return $this->literal_int_types || $this->literal_string_types || $this->literal_float_types;
     }
 
     /**

@@ -905,7 +905,7 @@ class Populator
     {
         $atomic_types = $candidate->getTypes();
 
-        if (isset($atomic_types['array']) && count($atomic_types) > 1) {
+        if (isset($atomic_types['array']) && count($atomic_types) > 1 && !isset($atomic_types['null'])) {
             $iterator_name = null;
             $generic_params = null;
 
@@ -947,6 +947,7 @@ class Populator
                 }
 
                 $candidate->removeType('array');
+                $candidate->removeType($iterator_name);
                 $candidate->addType($generic_iterator);
             }
         }

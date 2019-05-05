@@ -653,6 +653,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $template_types,
                     $codebase
                 );
+
+                $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
+                    $template_types,
+                    $codebase
+                );
             }
 
             // treat void as null when comparing against docblock implementer

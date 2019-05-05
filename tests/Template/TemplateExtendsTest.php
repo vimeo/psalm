@@ -1547,6 +1547,7 @@ class TemplateExtendsTest extends TestCase
                 '<?php
                     /**
                      * @template E
+                     * @template-extends \IteratorAggregate<int, E>
                      */
                     interface Collection extends \IteratorAggregate
                     {
