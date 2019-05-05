@@ -126,7 +126,6 @@ function array_search($needle, array $haystack, bool $strict = false) {}
  * @param array<mixed,T> $arr
  * @param callable(T,T):int $callback
  * @param-out array<int,T> $arr
- * @return bool
  */
 function usort(array &$arr, callable $callback): bool {}
 
