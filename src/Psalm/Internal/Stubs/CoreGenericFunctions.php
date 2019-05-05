@@ -58,6 +58,7 @@ function array_intersect_key(array $arr, array $arr2, array $arr3 = null, array 
  * @param array<mixed, TKey> $arr
  * @param array<mixed, TValue> $arr2
  * @return array<TKey, TValue>|false
+ * @psalm-ignore-falsable-return
  */
 function array_combine(array $arr, array $arr2) {}
 
