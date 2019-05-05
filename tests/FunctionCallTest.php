@@ -209,7 +209,14 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    '$c' => 'array<string, int>',
+                    '$c' => 'array<string, int>|false',
+                ],
+            ],
+            'arrayCombineFalse' => [
+                '<?php
+                    $c = array_combine(["a", "b"], [1, 2, 3]);',
+                'assertions' => [
+                    '$c' => 'array<string, int>|false',
                 ],
             ],
             'arrayMerge' => [
