@@ -160,7 +160,7 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position inside the text document
-     * @psalm-return Promise<Location|Hover>
+     * @psalm-return Promise<Location>|Promise<Hover>
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
@@ -244,7 +244,7 @@ class TextDocument
      *
      * @param TextDocumentIdentifier The text document
      * @param Position $position The position
-     * @psalm-return Promise<CompletionItem[]|CompletionList>
+     * @psalm-return Promise<array<empty, empty>>|Promise<CompletionList>
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
