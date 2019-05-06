@@ -401,15 +401,52 @@ class CommentAnalyzer
             foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
 
-                if (count($template_type) > 2
-                    && in_array(strtolower($template_type[1]), ['as', 'super', 'of'], true)
+                $template_name = array_shift($template_type);
+
+                if (count($template_type) > 1
+                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
                 ) {
+                    $template_modifier = strtolower(array_shift($template_type));
                     $info->templates[] = [
-                        $template_type[0],
-                        strtolower($template_type[1]), $template_type[2]
+                        $template_name,
+                        $template_modifier,
+                        implode(' ', $template_type),
+                        false
                     ];
                 } else {
-                    $info->templates[] = [$template_type[0]];
+                    $info->templates[] = [$template_name, null, null, false];
+                }
+            }
+        }
+
+        if (isset($comments['specials']['template-covariant'])
+            || isset($comments['specials']['psalm-template-covariant'])
+        ) {
+            $all_templates =
+                (isset($comments['specials']['template-covariant'])
+                    ? $comments['specials']['template-covariant']
+                    : [])
+                + (isset($comments['specials']['psalm-template-covariant'])
+                    ? $comments['specials']['psalm-template-covariant']
+                    : []);
+
+            foreach ($all_templates as $template_line) {
+                $template_type = preg_split('/[\s]+/', $template_line);
+
+                $template_name = array_shift($template_type);
+
+                if (count($template_type) > 1
+                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
+                ) {
+                    $template_modifier = strtolower(array_shift($template_type));
+                    $info->templates[] = [
+                        $template_name,
+                        $template_modifier,
+                        implode(' ', $template_type),
+                        true
+                    ];
+                } else {
+                    $info->templates[] = [$template_name, null, null, true];
                 }
             }
         }
@@ -549,10 +586,43 @@ class CommentAnalyzer
                     $info->templates[] = [
                         $template_name,
                         $template_modifier,
-                        implode(' ', $template_type)
+                        implode(' ', $template_type),
+                        false
                     ];
                 } else {
-                    $info->templates[] = [$template_name];
+                    $info->templates[] = [$template_name, null, null, false];
+                }
+            }
+        }
+
+        if (isset($comments['specials']['template-covariant'])
+            || isset($comments['specials']['psalm-template-covariant'])
+        ) {
+            $all_templates =
+                (isset($comments['specials']['template-covariant'])
+                    ? $comments['specials']['template-covariant']
+                    : [])
+                + (isset($comments['specials']['psalm-template-covariant'])
+                    ? $comments['specials']['psalm-template-covariant']
+                    : []);
+
+            foreach ($all_templates as $template_line) {
+                $template_type = preg_split('/[\s]+/', $template_line);
+
+                $template_name = array_shift($template_type);
+
+                if (count($template_type) > 1
+                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
+                ) {
+                    $template_modifier = strtolower(array_shift($template_type));
+                    $info->templates[] = [
+                        $template_name,
+                        $template_modifier,
+                        implode(' ', $template_type),
+                        true
+                    ];
+                } else {
+                    $info->templates[] = [$template_name, null, null, true];
                 }
             }
         }

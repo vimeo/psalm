@@ -878,14 +878,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 if ($docblock_info->templates) {
                     $storage->template_types = [];
 
-                    foreach ($docblock_info->templates as $template_type) {
-                        $template_name = $template_type[0];
-                        if (count($template_type) === 3) {
-                            if (trim($template_type[2])) {
+                    foreach ($docblock_info->templates as $i => $template_map) {
+                        $template_name = $template_map[0];
+
+                        if ($template_map[1] !== null && $template_map[2] !== null) {
+                            if (trim($template_map[2])) {
                                 try {
                                     $template_type = Type::parseTokens(
                                         Type::fixUpLocalType(
-                                            $template_type[2],
+                                            $template_map[2],
                                             $this->aliases,
                                             null,
                                             $this->type_aliases
@@ -919,6 +920,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             }
                         } else {
                             $storage->template_types[$template_name][$fq_classlike_name] = [Type::getMixed()];
+                            $storage->template_covariants[$i] = $template_map[3];
                         }
                     }
 
@@ -1755,8 +1757,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($docblock_info->templates) {
             $storage->template_types = [];
 
-            foreach ($docblock_info->templates as $template_map) {
-                if (count($template_map) === 3) {
+            foreach ($docblock_info->templates as $i => $template_map) {
+                $template_name = $template_map[0];
+
+                if ($template_map[1] !== null && $template_map[2] !== null) {
                     if (trim($template_map[2])) {
                         $template_type = Type::parseTokens(
                             Type::fixUpLocalType(
@@ -1769,7 +1773,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     } else {
                         if (IssueBuffer::accepts(
                             new InvalidDocblock(
-                                'Template missing as type',
+                                'Template ' . $template_name . ' missing as type',
                                 new CodeLocation($this->file_scanner, $stmt, null, true)
                             )
                         )) {
@@ -1781,10 +1785,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $template_type = Type::getMixed();
                 }
 
-                if (isset($template_types[$template_map[0]])) {
+                if (isset($template_types[$template_name])) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
-                            'Duplicate template param in docblock for '
+                            'Duplicate template param ' . $template_name . ' in docblock for '
                                 . $cased_function_id,
                             new CodeLocation($this->file_scanner, $stmt, null, true)
                         )
@@ -1793,9 +1797,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     $storage->has_docblock_issues = true;
                 } else {
-                    $storage->template_types[$template_map[0]] = [
+                    $storage->template_types[$template_name] = [
                         '' => [$template_type]
                     ];
+
+                    $storage->template_covariants[$i] = $template_map[3];
                 }
             }
 

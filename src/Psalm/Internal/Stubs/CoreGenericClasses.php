@@ -4,8 +4,8 @@
  * Interface to detect if a class is traversable using &foreach;.
  * @link http://php.net/manual/en/class.traversable.php
  *
- * @template TKey
- * @template TValue
+ * @template-covariant TKey
+ * @template-covariant TValue
  */
 interface Traversable {
 }
@@ -14,8 +14,8 @@ interface Traversable {
  * Interface to create an external Iterator.
  * @link http://php.net/manual/en/class.iteratoraggregate.php
  *
- * @template TKey
- * @template TValue
+ * @template-covariant TKey
+ * @template-covariant TValue
  *
  * @template-extends Traversable<TKey, TValue>
  */
@@ -36,8 +36,8 @@ interface IteratorAggregate extends Traversable {
  * themselves internally.
  * @link http://php.net/manual/en/class.iterator.php
  *
- * @template TKey
- * @template TValue
+ * @template-covariant TKey
+ * @template-covariant TValue
  *
  * @template-extends Traversable<TKey, TValue>
  */
@@ -86,10 +86,10 @@ interface Iterator extends Traversable {
 }
 
 /**
- * @template TKey
- * @template TValue
- * @template TSend
- * @template TReturn
+ * @template-covariant TKey
+ * @template-covariant TValue
+ * @template-covariant TSend
+ * @template-covariant TReturn
  *
  * @template-implements Traversable<TKey, TValue>
  */
@@ -452,8 +452,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
 /**
  * The Seekable iterator.
  * @link https://php.net/manual/en/class.seekableiterator.php
- * @template TKey
- * @template TValue
+ * @template-covariant TKey
+ * @template-covariant TValue
  * @template-extends Iterator<TKey, TValue>
  */
 interface SeekableIterator extends Iterator {
@@ -725,7 +725,7 @@ class DOMElement extends DOMNode  {
 }
 
 /**
- * @template TNode as DOMNode
+ * @template-covariant TNode as DOMNode
  * @template-implements Traversable<int, TNode>
  */
 class DOMNodeList implements Traversable, Countable {
@@ -1155,7 +1155,7 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
 }
 
 /**
- * @template T as object
+ * @template-covariant T as object
  *
  * @property-read class-string<T> $name
  */

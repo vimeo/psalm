@@ -276,7 +276,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayObjectAndParamsWithEmptyArray' => [
-                'ArrayObject<int, string>|array<empty, empty>',
+                'array<empty, empty>|ArrayObject<int, string>',
                 [
                     'ArrayObject<int, string>',
                     'array<empty, empty>',
@@ -316,7 +316,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'aAndAOfB' => [
-                'A',
+                'A<B>|A',
                 [
                     'A',
                     'A<B>',
@@ -377,6 +377,27 @@ class TypeCombinationTest extends TestCase
                 [
                     'array{a:string, b?:int}',
                     'string',
+                ],
+            ],
+            'traversableAorB' => [
+                'Traversable<mixed, A|B>',
+                [
+                    'Traversable<A>',
+                    'Traversable<B>',
+                ],
+            ],
+            'iterableAorB' => [
+                'iterable<mixed, A|B>',
+                [
+                    'iterable<A>',
+                    'iterable<B>',
+                ],
+            ],
+            'FooAorB' => [
+                'Foo<A>|Foo<B>',
+                [
+                    'Foo<A>',
+                    'Foo<B>',
                 ],
             ],
         ];

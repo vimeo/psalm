@@ -2098,6 +2098,56 @@ class TemplateTest extends TestCase
                     '$c' => 'ArrayCollection<array-key, mixed>',
                 ],
             ],
+            'doNotCombineTypes' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @template T
+                     */
+                    class C {
+                        /**
+                         * @var T
+                         */
+                        private $t;
+
+                        /**
+                         * @param T $t
+                         */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @return T
+                         */
+                        public function get() {
+                            return $this->t;
+                        }
+                    }
+
+                    /**
+                     * @param C<A> $a
+                     * @param C<B> $b
+                     * @return C<A>|C<B>
+                     */
+                    function randomCollection(C $a, C $b) : C {
+                        if (rand(0, 1)) {
+                            return $a;
+                        }
+
+                        return $b;
+                    }
+
+                    $random_collection = randomCollection(new C(new A), new C(new B));
+
+                    $a_or_b = $random_collection->get();',
+                [
+                    '$random_collection' => 'C<A>|C<B>',
+                    '$a_or_b' => 'B|A',
+                ],
+            ],
         ];
     }
 
@@ -2653,6 +2703,37 @@ class TemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue'
+            ],
+            'preventDogCatSnafu' => [
+                '<?php
+                    class Animal {}
+                    class Dog extends Animal {}
+                    class Cat extends Animal {}
+
+                    /**
+                     * @template T
+                     */
+                    class Collection {
+                        /**
+                         * @param T $t
+                         */
+                        public function add($t) : void {}
+                    }
+
+                    /**
+                     * @param Collection<Animal> $list
+                     */
+                    function addAnimal(Collection $list) : void {
+                        $list->add(new Cat());
+                    }
+
+                    /**
+                     * @param Collection<Dog> $list
+                     */
+                    function takesDogList(Collection $list) : void {
+                        addAnimal($list); // this should be an error
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

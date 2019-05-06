@@ -1547,6 +1547,7 @@ class TemplateExtendsTest extends TestCase
                 '<?php
                     /**
                      * @template E
+                     * @template-extends \IteratorAggregate<int, E>
                      */
                     interface Collection extends \IteratorAggregate
                     {
@@ -1766,6 +1767,51 @@ class TemplateExtendsTest extends TestCase
                             }
                         }
                     }',
+            ],
+            'allowPassingToCovariantCollection' => [
+                '<?php
+                    abstract class Animal {
+                        abstract public function getSound() : string;
+                    }
+                    class Dog extends Animal {
+                        public function getSound() : string {
+                            return "Woof!";
+                        }
+                    }
+                    class Cat extends Animal {
+                        public function getSound() : string {
+                            return "Miaow";
+                        }
+                    }
+
+                    /**
+                     * @template-covariant TValue
+                     * @template-extends \ArrayObject<int,TValue>
+                     */
+                    class Collection extends \ArrayObject {
+                        /**
+                         * @param array<int,TValue> $kv
+                         */
+                        public function __construct(array $kv) {
+                            parent::__construct($kv);
+                        }
+                    }
+
+                    /**
+                     * @param Collection<Animal> $list
+                     */
+                    function getSounds(Traversable $list) : void {
+                        foreach ($list as $l) {
+                            $l->getSound();
+                        }
+                    }
+
+                    /**
+                     * @param Collection<Dog> $list
+                     */
+                    function takesDogList(Collection $list) : void {
+                        getSounds($list); // this probably should not be an error
+                    }'
             ],
         ];
     }

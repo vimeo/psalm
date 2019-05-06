@@ -110,6 +110,11 @@ class FunctionLikeStorage
     public $template_types;
 
     /**
+     * @var array<int, bool>|null
+     */
+    public $template_covariants;
+
+    /**
      * @var bool
      */
     public $has_template_return_type;

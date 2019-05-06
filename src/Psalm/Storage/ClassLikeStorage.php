@@ -278,6 +278,11 @@ class ClassLikeStorage
     public $template_types;
 
     /**
+     * @var array<int, bool>|null
+     */
+    public $template_covariants;
+
+    /**
      * @var array<string, array<int|string, Type\Union>>|null
      */
     public $template_type_extends;

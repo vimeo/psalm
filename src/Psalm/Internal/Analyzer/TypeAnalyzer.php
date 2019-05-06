@@ -1605,6 +1605,40 @@ class TypeAnalyzer
                     $allow_interface_equality
                 )) {
                     $all_types_contain = false;
+                } elseif (!$input_type_part instanceof TIterable
+                    && !$container_param->had_template
+                    && !$input_param->had_template
+                    && !$container_param->hasTemplate()
+                    && !$input_param->hasTemplate()
+                    && !$input_param->hasLiteralValue()
+                ) {
+                    $input_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
+
+                    if (!($input_storage->template_covariants[$i] ?? false)) {
+                        // Make sure types are basically the same
+                        if (!self::isContainedBy(
+                            $codebase,
+                            $container_param,
+                            $input_param,
+                            $container_param->ignore_nullable_issues,
+                            $container_param->ignore_falsable_issues,
+                            $has_scalar_match,
+                            $type_coerced,
+                            $type_coerced_from_mixed,
+                            $to_string_cast,
+                            $type_coerced_from_scalar,
+                            $allow_interface_equality
+                        ) || $type_coerced
+                        ) {
+                            if ($container_param->hasMixed() || $container_param->isArrayKey()) {
+                                $type_coerced_from_mixed = true;
+                            } else {
+                                $all_types_contain = false;
+                            }
+
+                            $type_coerced = false;
+                        }
+                    }
                 }
             }
         }

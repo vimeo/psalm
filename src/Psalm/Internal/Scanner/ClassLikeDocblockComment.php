@@ -21,7 +21,7 @@ class ClassLikeDocblockComment
     public $internal = false;
 
     /**
-     * @var array<int, array<int, string>>
+     * @var array<int, array{string, ?string, ?string, bool}>
      */
     public $templates = [];
 

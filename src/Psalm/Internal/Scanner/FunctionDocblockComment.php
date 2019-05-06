@@ -80,7 +80,7 @@ class FunctionDocblockComment
     public $return_type_line_number;
 
     /**
-     * @var array<int, array<int, string>>
+     * @var array<int, array{string, ?string, ?string, bool}>
      */
     public $templates = [];
 

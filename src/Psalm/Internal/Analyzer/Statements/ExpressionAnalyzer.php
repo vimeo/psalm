@@ -1010,6 +1010,7 @@ class ExpressionAnalyzer
         $fleshed_out_type->possibly_undefined = $return_type->possibly_undefined;
         $fleshed_out_type->by_ref = $return_type->by_ref;
         $fleshed_out_type->initialized = $return_type->initialized;
+        $fleshed_out_type->had_template = $return_type->had_template;
 
         return $fleshed_out_type;
     }
