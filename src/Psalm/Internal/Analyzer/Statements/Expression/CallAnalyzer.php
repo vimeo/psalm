@@ -240,7 +240,8 @@ class CallAnalyzer
             $args,
             $method_params,
             $method_id,
-            $context
+            $context,
+            $generic_params
         ) === false) {
             return false;
         }
@@ -313,6 +314,7 @@ class CallAnalyzer
      * @param   StatementsAnalyzer                       $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
+     * @param   array<string, array<string, array{Type\Union, 1?:int}>>|null   $generic_params
      * @param   string|null                             $method_id
      * @param   Context                                 $context
      *
@@ -323,7 +325,8 @@ class CallAnalyzer
         array $args,
         $function_params,
         $method_id,
-        Context $context
+        Context $context,
+        $generic_params = null
     ) {
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
@@ -348,20 +351,16 @@ class CallAnalyzer
 
         foreach ($args as $argument_offset => $arg) {
             if ($function_params !== null) {
-                $by_ref = $argument_offset < count($function_params)
-                    ? $function_params[$argument_offset]->by_ref
-                    : $last_param && $last_param->is_variadic && $last_param->by_ref;
+                $param = $argument_offset < count($function_params)
+                    ? $function_params[$argument_offset]
+                    : ($last_param && $last_param->is_variadic ? $last_param : null);
+
+                $by_ref = $param && $param->by_ref;
 
                 $by_ref_type = null;
 
-                if ($by_ref && $last_param) {
-                    if ($argument_offset < count($function_params)) {
-                        $by_ref_type = $function_params[$argument_offset]->type;
-                    } else {
-                        $by_ref_type = $last_param->type;
-                    }
-
-                    $by_ref_type = $by_ref_type ? clone $by_ref_type : Type::getMixed();
+                if ($by_ref && $param) {
+                    $by_ref_type = $param->type ? clone $param->type : Type::getMixed();
                 }
 
                 if ($by_ref
@@ -396,6 +395,57 @@ class CallAnalyzer
                 ) {
                     $context->inside_class_exists = true;
                     $toggled_class_exists = true;
+                }
+
+                if ($arg->value instanceof PhpParser\Node\Expr\Closure
+                    && $generic_params
+                    && $param
+                    && $param->type
+                    && !$arg->value->getDocComment()
+                    && !array_filter(
+                        $arg->value->params,
+                        function (PhpParser\Node\Param $closure_param) : bool {
+                            return !!$closure_param->type;
+                        }
+                    )
+                ) {
+                    $replaced_type = clone $param->type;
+
+                    $empty_generic_params = [];
+
+                    $codebase = $statements_analyzer->getCodebase();
+
+                    $replaced_type->replaceTemplateTypesWithStandins(
+                        $generic_params,
+                        $empty_generic_params,
+                        $codebase,
+                        null
+                    );
+
+                    $replaced_type->replaceTemplateTypesWithArgTypes(
+                        $generic_params
+                    );
+
+                    $closure_id = $statements_analyzer->getFilePath()
+                        . ':' . $arg->value->getLine()
+                        . ':' . (int)$arg->value->getAttribute('startFilePos')
+                        . ':-:closure';
+
+                    $closure_storage = $codebase->getClosureStorage($statements_analyzer->getFilePath(), $closure_id);
+
+                    foreach ($replaced_type->getTypes() as $replaced_type_part) {
+                        if ($replaced_type_part instanceof Type\Atomic\TCallable
+                            || $replaced_type_part instanceof Type\Atomic\Fn
+                        ) {
+                            foreach ($closure_storage->params as $closure_param_offset => $param_storage) {
+                                if (isset($replaced_type_part->params[$closure_param_offset]->type)
+                                    && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
+                                ) {
+                                    $param_storage->type = $replaced_type_part->params[$closure_param_offset]->type;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
