@@ -969,10 +969,6 @@ class Reconciler
         }
 
         if (substr($new_var_type, 0, 4) === 'isa-') {
-            if ($existing_var_type->hasMixed()) {
-                return Type::getMixed();
-            }
-
             $new_var_type = substr($new_var_type, 4);
 
             $allow_string_comparison = false;
@@ -980,6 +976,23 @@ class Reconciler
             if (substr($new_var_type, 0, 7) === 'string-') {
                 $new_var_type = substr($new_var_type, 7);
                 $allow_string_comparison = true;
+            }
+
+            if ($existing_var_type->hasMixed()) {
+                $type = new Type\Union([
+                    new Type\Atomic\TNamedObject($new_var_type)
+                ]);
+
+                if ($allow_string_comparison) {
+                    $type->addType(
+                        new Type\Atomic\TClassString(
+                            $new_var_type,
+                            new Type\Atomic\TNamedObject($new_var_type)
+                        )
+                    );
+                }
+
+                return $type;
             }
 
             $existing_has_object = $existing_var_type->hasObjectType();
