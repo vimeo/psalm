@@ -56,7 +56,8 @@ class ReturnTypeAnalyzer
         Type\Union $return_type = null,
         $fq_class_name = null,
         CodeLocation $return_type_location = null,
-        array $compatible_method_ids = []
+        array $compatible_method_ids = [],
+        bool $closure_inside_call = false
     ) {
         $suppressed_issues = $function_like_analyzer->getSuppressedIssues();
         $codebase = $source->getCodebase();
@@ -246,36 +247,38 @@ class ReturnTypeAnalyzer
 
         if (!$return_type) {
             if ($function instanceof Closure) {
-                if ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingClosureReturnType'])
-                ) {
-                    if ($inferred_return_type->hasMixed() || $inferred_return_type->isNull()) {
+                if (!$closure_inside_call || $inferred_return_type->isMixed()) {
+                    if ($codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['MissingClosureReturnType'])
+                    ) {
+                        if ($inferred_return_type->hasMixed() || $inferred_return_type->isNull()) {
+                            return null;
+                        }
+
+                        self::addOrUpdateReturnType(
+                            $function,
+                            $project_analyzer,
+                            $inferred_return_type,
+                            $source,
+                            $function_like_analyzer,
+                            ($project_analyzer->only_replace_php_types_with_non_docblock_types
+                                || $unsafe_return_type)
+                                && $inferred_return_type->from_docblock,
+                            $function_like_storage
+                        );
+
                         return null;
                     }
 
-                    self::addOrUpdateReturnType(
-                        $function,
-                        $project_analyzer,
-                        $inferred_return_type,
-                        $source,
-                        $function_like_analyzer,
-                        ($project_analyzer->only_replace_php_types_with_non_docblock_types
-                            || $unsafe_return_type)
-                            && $inferred_return_type->from_docblock,
-                        $function_like_storage
-                    );
-
-                    return null;
-                }
-
-                if (IssueBuffer::accepts(
-                    new MissingClosureReturnType(
-                        'Closure does not have a return type, expecting ' . $inferred_return_type,
-                        new CodeLocation($function_like_analyzer, $function, null, true)
-                    ),
-                    $suppressed_issues
-                )) {
-                    // fall through
+                    if (IssueBuffer::accepts(
+                        new MissingClosureReturnType(
+                            'Closure does not have a return type, expecting ' . $inferred_return_type,
+                            new CodeLocation($function_like_analyzer, $function, null, true)
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
                 }
 
                 return null;

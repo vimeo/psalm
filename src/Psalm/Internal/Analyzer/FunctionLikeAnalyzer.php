@@ -708,7 +708,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 $statements_analyzer,
                 $storage->return_type,
                 $this->source->getFQCLN(),
-                $storage->return_type_location
+                $storage->return_type_location,
+                $global_context && $global_context->inside_call
             );
 
             $closure_yield_types = [];
@@ -931,7 +932,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         StatementsAnalyzer $statements_analyzer,
         Type\Union $return_type = null,
         $fq_class_name = null,
-        CodeLocation $return_type_location = null
+        CodeLocation $return_type_location = null,
+        bool $closure_inside_call = false
     ) {
         ReturnTypeAnalyzer::verifyReturnType(
             $this->function,
@@ -939,7 +941,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $this,
             $return_type,
             $fq_class_name,
-            $return_type_location
+            $return_type_location,
+            [],
+            $closure_inside_call
         );
     }
 

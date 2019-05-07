@@ -2178,7 +2178,7 @@ class TemplateTest extends TestCase
                      */
                     function expandOptions(Collection $collection) : Collection {
                         return $collection->map(
-                            function ($optional) : string {
+                            function ($optional) {
                                 return $optional->get();
                             }
                         );

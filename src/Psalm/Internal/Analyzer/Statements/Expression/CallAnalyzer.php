@@ -448,8 +448,16 @@ class CallAnalyzer
                     }
                 }
 
+                $was_inside_call = $context->inside_call;
+
+                $context->inside_call = true;
+
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                     return false;
+                }
+
+                if (!$was_inside_call) {
+                    $context->inside_call = false;
                 }
 
                 if ($context->collect_references

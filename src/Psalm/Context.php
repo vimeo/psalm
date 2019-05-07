@@ -63,6 +63,13 @@ class Context
     public $inside_class_exists = false;
 
     /**
+     * Whether or not we're inside a function/method call
+     *
+     * @var bool
+     */
+    public $inside_call = false;
+
+    /**
      * @var null|CodeLocation
      */
     public $include_location = null;
