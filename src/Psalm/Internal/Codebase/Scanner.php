@@ -386,12 +386,19 @@ class Scanner
                 ++$i;
             }
 
+            if ($this->debug_output) {
+                echo 'Forking process for scanning' . PHP_EOL;
+            }
+
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new \Psalm\Internal\Fork\Pool(
                 $process_file_paths,
-                /** @return void */
                 function () {
+                    if ($this->debug_output) {
+                        echo 'Initialising forked process for scanning' . PHP_EOL;
+                    }
+
                     $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
                     $codebase = $project_analyzer->getCodebase();
                     $statements_provider = $codebase->statements_provider;
@@ -401,12 +408,20 @@ class Scanner
                     $codebase->classlike_storage_provider->deleteAll();
 
                     $statements_provider->resetDiffs();
+
+                    if ($this->debug_output) {
+                        echo 'Have initialised forked process for scanning' . PHP_EOL;
+                    }
                 },
                 $scanner_worker,
                 /**
                  * @return PoolData
                 */
                 function () {
+                    if ($this->debug_output) {
+                        echo 'Collecting data from forked scanner process' . PHP_EOL;
+                    }
+
                     $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
                     $codebase = $project_analyzer->getCodebase();
                     $statements_provider = $codebase->statements_provider;
