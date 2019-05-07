@@ -1627,6 +1627,18 @@ class FunctionCallTest extends TestCase
                     '$seconds' => 'string|int|float',
                 ],
             ],
+            'inferArrayMapReturnType' => [
+                '<?php
+                    /** @return array<string> */
+                    function Foo(DateTime ...$dateTimes) : array {
+                        return array_map(
+                            function ($dateTime) {
+                                return (string) ($dateTime->format("c"));
+                            },
+                            $dateTimes
+                        );
+                    }',
+            ],
         ];
     }
 
@@ -1646,6 +1658,16 @@ class FunctionCallTest extends TestCase
                     );',
                 'error_message' => 'MixedArgumentTypeCoercion',
                 'error_levels' => ['MissingClosureParamType', 'MissingClosureReturnType'],
+            ],
+            'arrayFilterUseMethodOnInferrableInt' => [
+                '<?php
+                    $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
+                'error_message' => 'InvalidMethodCall',
+            ],
+            'arrayMapUseMethodOnInferrableInt' => [
+                '<?php
+                    $a = array_map(function ($i) { return $i->foo(); }, [1, 2, 3, 4]);',
+                'error_message' => 'InvalidMethodCall',
             ],
             'invalidScalarArgument' => [
                 '<?php
