@@ -400,6 +400,27 @@ class TypeCombinationTest extends TestCase
                     'Foo<B>',
                 ],
             ],
+            'traversableOfMixed' => [
+                'Traversable<mixed, mixed>',
+                [
+                    'Traversable',
+                    'Traversable<mixed, mixed>',
+                ],
+            ],
+            'traversableAndIterator' => [
+                'Traversable&Iterator',
+                [
+                    'Traversable&Iterator',
+                    'Traversable&Iterator',
+                ],
+            ],
+            'traversableOfMixedAndIterator' => [
+                'Traversable<mixed, mixed>&Iterator',
+                [
+                    'Traversable<mixed, mixed>&Iterator',
+                    'Traversable<mixed, mixed>&Iterator',
+                ],
+            ],
         ];
     }
 

@@ -30,6 +30,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
@@ -95,6 +96,11 @@ class TypeCombination
 
     /** @var array<string, Atomic\TLiteralFloat>|null */
     private $floats = [];
+
+    /**
+     * @var array<int, TNamedObject|TTemplateParam|TIterable>|null
+     */
+    private $extra_types;
 
     /**
      * Combines types together
@@ -390,11 +396,23 @@ class TypeCombination
             $new_types[] = $array_type;
         }
 
+        if ($combination->extra_types) {
+            $combination->extra_types = array_values(
+                self::combineTypes($combination->extra_types, $codebase)->getTypes()
+            );
+        }
+
         foreach ($combination->builtin_type_params as $generic_type => $generic_type_params) {
             if ($generic_type === 'iterable') {
                 $new_types[] = new TIterable($generic_type_params);
             } else {
-                $new_types[] = new TGenericObject($generic_type, $generic_type_params);
+                $generic_object = new TGenericObject($generic_type, $generic_type_params);
+                $generic_object->extra_types = $combination->extra_types;
+                $new_types[] = $generic_object;
+
+                if ($combination->named_object_types) {
+                    unset($combination->named_object_types[$generic_type]);
+                }
             }
         }
 
@@ -630,6 +648,15 @@ class TypeCombination
                         true
                     )
                 ];
+            }
+        }
+
+        if ($type instanceof TNamedObject || $type instanceof TTemplateParam || $type instanceof TIterable) {
+            if ($type->extra_types) {
+                $combination->extra_types = array_merge(
+                    $combination->extra_types ?: [],
+                    $type->extra_types
+                );
             }
         }
 
