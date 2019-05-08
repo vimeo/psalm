@@ -133,6 +133,7 @@ class ProjectAnalyzer
     const TYPE_JSON = 'json';
     const TYPE_EMACS = 'emacs';
     const TYPE_XML = 'xml';
+    const TYPE_CHECKSTYLE = 'checkstyle';
     const TYPE_TEXT = 'text';
 
     const SUPPORTED_OUTPUT_TYPES = [
@@ -142,6 +143,7 @@ class ProjectAnalyzer
         self::TYPE_JSON,
         self::TYPE_EMACS,
         self::TYPE_XML,
+        self::TYPE_CHECKSTYLE,
         self::TYPE_TEXT,
     ];
 
@@ -188,10 +190,8 @@ class ProjectAnalyzer
         }
 
         if ($reports) {
-            /**
-             * @var array<string,string>
-             */
             $mapping = [
+                'checkstyle.xml' => self::TYPE_CHECKSTYLE,
                 '.xml' => self::TYPE_XML,
                 '.json' => self::TYPE_JSON,
                 '.txt' => self::TYPE_TEXT,

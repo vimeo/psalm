@@ -3,6 +3,7 @@ namespace Psalm;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\CodeIssue;
+use Psalm\Output\Checkstyle;
 use Psalm\Output\Compact;
 use Psalm\Output\Console;
 use Psalm\Output\Emacs;
@@ -383,6 +384,10 @@ class IssueBuffer
 
             case ProjectAnalyzer::TYPE_PYLINT:
                 $output = new Pylint(self::$issues_data, $use_color, $show_snippet, $show_info);
+                break;
+
+            case ProjectAnalyzer::TYPE_CHECKSTYLE:
+                $output = new Checkstyle(self::$issues_data, $use_color, $show_snippet, $show_info);
                 break;
 
             case ProjectAnalyzer::TYPE_XML:

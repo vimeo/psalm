@@ -254,6 +254,26 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
             IssueBuffer::getOutput(ProjectAnalyzer::TYPE_COMPACT, false)
         );
 
+        $this->assertSame(
+            '<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle>
+<file name="somefile.php">
+ <error line="3" column="10" severity="error" message="UndefinedVariable: Cannot find referenced variable $as_you"/>
+</file>
+<file name="somefile.php">
+ <error line="2" column="42" severity="error" message="MixedInferredReturnType: Could not verify return type \'string|null\' for psalmCanVerify"/>
+</file>
+<file name="somefile.php">
+ <error line="7" column="6" severity="error" message="UndefinedConstant: Const CHANGE_ME is not defined"/>
+</file>
+<file name="somefile.php">
+ <error line="15" column="6" severity="error" message="PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10"/>
+</file>
+</checkstyle>
+',
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_CHECKSTYLE, false)
+        );
+
         // FIXME: The XML parser only return strings, all int value are casted, so the assertSame failed
         //$this->assertSame(
         //    ['report' => ['item' => $issue_data]],
@@ -288,6 +308,14 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
 </report>
 ',
             IssueBuffer::getOutput(ProjectAnalyzer::TYPE_XML, false)
+        );
+
+        $this->assertSame(
+            '<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle>
+</checkstyle>
+',
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_CHECKSTYLE, false)
         );
 
         ob_start();
