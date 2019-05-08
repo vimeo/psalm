@@ -70,7 +70,7 @@ class FileReferenceCacheProvider
     {
         $cache_directory = $this->config->getCacheDirectory();
 
-        if (!$cache_directory) {
+        if (!$cache_directory || $this->config_changed) {
             return null;
         }
 

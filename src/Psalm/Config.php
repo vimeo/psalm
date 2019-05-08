@@ -479,7 +479,7 @@ class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents);
-            $config->hash = sha1($file_contents);
+            $config->hash = sha1($file_contents . \PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage()

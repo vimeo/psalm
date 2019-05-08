@@ -46,7 +46,7 @@ class ClassLikeStorageCacheProvider
             $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
         }
 
-        $this->modified_timestamps .= PSALM_VERSION . $this->config->hash;
+        $this->modified_timestamps .= $this->config->hash;
     }
 
     /**
