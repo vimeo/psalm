@@ -584,6 +584,39 @@ class ForeachAnalyzer
                                 $key_type_part = $array_atomic_type->type_params[0];
                                 $value_type_part = $array_atomic_type->type_params[1];
                             } else {
+                                if ($array_atomic_type instanceof Type\Atomic\TNamedObject
+                                    && $codebase->classImplements(
+                                        $array_atomic_type->value,
+                                        'Traversable'
+                                    )
+                                ) {
+                                    $generic_storage = $codebase->classlike_storage_provider->get(
+                                        $array_atomic_type->value
+                                    );
+
+                                    // The collection might be an iterator, in which case
+                                    // we want to call the iterator function
+                                    if (!isset($generic_storage->template_type_extends['traversable'])
+                                        || ($generic_storage
+                                                ->template_type_extends['traversable']['TKey']->isMixed()
+                                            && $generic_storage
+                                                ->template_type_extends['traversable']['TValue']->isMixed())
+                                    ) {
+                                        self::handleIterable(
+                                            $statements_analyzer,
+                                            $array_atomic_type,
+                                            $fake_method_call,
+                                            $codebase,
+                                            $context,
+                                            $key_type,
+                                            $value_type,
+                                            $has_valid_iterator
+                                        );
+
+                                        continue;
+                                    }
+                                }
+
                                 if ($array_atomic_type instanceof Type\Atomic\TIterable
                                     || ($array_atomic_type instanceof Type\Atomic\TNamedObject
                                         && (strtolower($array_atomic_type->value) === 'traversable'
