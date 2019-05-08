@@ -585,6 +585,7 @@ class ForeachAnalyzer
                                 $value_type_part = $array_atomic_type->type_params[1];
                             } else {
                                 if ($array_atomic_type instanceof Type\Atomic\TNamedObject
+                                    && $codebase->classExists($array_atomic_type->value)
                                     && $codebase->classImplements(
                                         $array_atomic_type->value,
                                         'Traversable'
