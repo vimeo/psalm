@@ -24,7 +24,7 @@ class FileProvider
             return $this->temp_files[strtolower($file_path)];
         }
 
-        if (isset($this->temp_files[strtolower($file_path)])) {
+        if (isset($this->open_files[strtolower($file_path)])) {
             return $this->open_files[strtolower($file_path)];
         }
 
