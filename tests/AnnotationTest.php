@@ -967,6 +967,21 @@ class AnnotationTest extends TestCase
                     '$b' => 'array<array-key, int>',
                 ]
             ],
+            'allowLessSpecificDocblockTypeOnParent' => [
+                '<?php
+                    abstract class Foo {
+                        /**
+                         * @return array|string
+                         */
+                        abstract public function getTargets();
+                    }
+
+                    class Bar extends Foo {
+                        public function getTargets(): string {
+                            return "baz";
+                        }
+                    }',
+            ],
         ];
     }
 
