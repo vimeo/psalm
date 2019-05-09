@@ -123,6 +123,11 @@ class ProjectAnalyzer
     public $onchange_line_limit;
 
     /**
+     * @var bool
+     */
+    public $provide_completion = false;
+
+    /**
      * @var array<string,string>
      */
     private $project_files;

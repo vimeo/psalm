@@ -169,16 +169,19 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                             }
 
+                            // changes "): {" to ") {"
                             $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $fake_class);
 
                             // allows autocompletion
-                            $hacky_class_fix = str_replace(["->\n", "::\n"], "~;\n", $hacky_class_fix);
+                            $hacky_class_fix = preg_replace('/(->|::)(\n\s*if\s*\()/', '~;$2', $hacky_class_fix);
 
-                            /** @var array<PhpParser\Node\Stmt> */
-                            $replacement_stmts = $this->parser->parse(
-                                $hacky_class_fix,
-                                $error_handler
-                            ) ?: [];
+                            if ($hacky_class_fix !== $fake_class) {
+                                /** @var array<PhpParser\Node\Stmt> */
+                                $replacement_stmts = $this->parser->parse(
+                                    $hacky_class_fix,
+                                    $error_handler
+                                ) ?: [];
+                            }
 
                             if (!$replacement_stmts
                                 || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike

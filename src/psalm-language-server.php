@@ -26,7 +26,8 @@ $valid_long_options = [
     'version',
     'tcp:',
     'tcp-server',
-    'disable-on-change::'
+    'disable-on-change::',
+    'enable-autocomplete',
 ];
 
 $args = array_slice($argv, 1);
@@ -53,6 +54,7 @@ array_map(
             ) {
                 echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
                     . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                error_log('Bad argument');
                 exit(1);
             }
         } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
@@ -61,6 +63,7 @@ array_map(
             if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
                 echo 'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
                     . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                error_log('Bad argument');
                 exit(1);
             }
         }
@@ -130,6 +133,9 @@ Options:
     --disable-on-change[=line-number-threshold]
         If added, the language server will not respond to onChange events.
         You can also specify a line count over which Psalm will not run on-change events.
+
+    --enable-autocomplete
+        EXPERIMENTAL: Turns on autocompletion for methods and properties
 HELP;
 
     exit;
@@ -234,6 +240,10 @@ $project_analyzer = new ProjectAnalyzer(
 
 if (isset($options['disable-on-change'])) {
     $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
+}
+
+if (isset($options['enable-autocomplete'])) {
+    $project_analyzer->provide_completion = true;
 }
 
 $config->visitComposerAutoloadFiles($project_analyzer);
