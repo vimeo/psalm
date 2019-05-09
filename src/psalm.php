@@ -345,7 +345,7 @@ if (isset($options['i'])) {
     ));
 
     $level = 3;
-    $source_dir = 'src';
+    $source_dir = null;
 
     if (count($args)) {
         if (count($args) > 2) {
@@ -363,31 +363,13 @@ if (isset($options['i'])) {
         $source_dir = $args[0];
     }
 
-    if (!is_dir($source_dir)) {
-        $bad_dir_path = getcwd() . DIRECTORY_SEPARATOR . $source_dir;
-
-        if (!isset($args[0])) {
-            die('Please specify a directory - the default, "src", was not found in this project.' . PHP_EOL);
-        }
-
-        die('The given path "' . $bad_dir_path . '" does not appear to be a directory' . PHP_EOL);
+    try {
+        $template_contents = Psalm\Config\Creator::getContents($current_dir, $source_dir, $level);
+    } catch (Psalm\Exception\ConfigCreationException $e) {
+        die($e->getMessage() . PHP_EOL);
     }
 
-    $template_file_name = dirname(__DIR__) . '/assets/config_levels/' . $level . '.xml';
-
-    if (!file_exists($template_file_name)) {
-        die('Could not open config template ' . $template_file_name . PHP_EOL);
-    }
-
-    $template = (string)file_get_contents($template_file_name);
-
-    $template = str_replace(
-        '<directory name="src" />',
-        '<directory name="' . $source_dir . '" />',
-        $template
-    );
-
-    if (!file_put_contents($current_dir . 'psalm.xml', $template)) {
+    if (!file_put_contents($current_dir . 'psalm.xml', $template_contents)) {
         die('Could not write to psalm.xml' . PHP_EOL);
     }
 
@@ -450,7 +432,7 @@ try {
         $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
     }
 } catch (Psalm\Exception\ConfigException $e) {
-    echo $e->getMessage();
+    echo $e->getMessage() . PHP_EOL;
     exit(1);
 }
 

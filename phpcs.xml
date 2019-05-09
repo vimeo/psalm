@@ -12,7 +12,7 @@
 
     <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
     <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
-    <exclude-pattern>tests/fixtures/stubs/</exclude-pattern>
+    <exclude-pattern>tests/fixtures/</exclude-pattern>
     <rule ref="Generic.Files.LineLength">
         <exclude-pattern>tests</exclude-pattern>
     </rule>
