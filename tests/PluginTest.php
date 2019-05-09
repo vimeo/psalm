@@ -449,7 +449,7 @@ class PluginTest extends TestCase
     /** @return void */
     public function testInheritedHookHandlersAreCalled()
     {
-        require_once __DIR__ . '/stubs/extending_plugin_entrypoint.php';
+        require_once __DIR__ . '/fixtures/stubs/extending_plugin_entrypoint.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -754,7 +754,7 @@ class PluginTest extends TestCase
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
-                        <directory name="tests/DummyProject" />
+                        <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                     <plugins>
                         <pluginClass class="Psalm\\Test\\Plugin\\AfterAnalysisPlugin" />
@@ -767,7 +767,7 @@ class PluginTest extends TestCase
 
         $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
 
-        $this->project_analyzer->check('tests/DummyProject', true);
+        $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
     }
 

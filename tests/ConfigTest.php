@@ -141,7 +141,7 @@ class ConfigTest extends TestCase
      */
     public function testIgnoreSymlinkedProjectDirectory()
     {
-        @unlink(__DIR__ . '/symlinktest/ignored/b');
+        @unlink(__DIR__ . '/fixtures/symlinktest/ignored/b');
 
         $no_symlinking_error = 'symlink(): Cannot create symlink, error code(1314)';
         $last_error = error_get_last();
@@ -150,7 +150,7 @@ class ConfigTest extends TestCase
             !isset($last_error['message']) ||
             $no_symlinking_error !== $last_error['message'];
 
-        @symlink(__DIR__ . '/symlinktest/a', __DIR__ . '/symlinktest/ignored/b');
+        @symlink(__DIR__ . '/fixtures/symlinktest/a', __DIR__ . '/fixtures/symlinktest/ignored/b');
 
         if ($check_symlink_error) {
             $last_error = error_get_last();
@@ -170,7 +170,7 @@ class ConfigTest extends TestCase
                     <projectFiles>
                         <directory name="tests" />
                         <ignoreFiles>
-                            <directory name="tests/symlinktest/ignored" />
+                            <directory name="tests/fixtures/symlinktest/ignored" />
                         </ignoreFiles>
                     </projectFiles>
                 </psalm>'
@@ -180,7 +180,7 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('tests/AnnotationTest.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('tests/symlinktest/a/ignoreme.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('tests/fixtures/symlinktest/a/ignoreme.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
 
         $regex = '/^unlink\([^\)]+\): (?:Permission denied|No such file or directory)$/';
@@ -190,7 +190,7 @@ class ConfigTest extends TestCase
             !is_array($last_error) ||
             !preg_match($regex, $last_error['message']);
 
-        @unlink(__DIR__ . '/symlinktest/ignored/b');
+        @unlink(__DIR__ . '/fixtures/symlinktest/ignored/b');
 
         if ($check_unlink_error) {
             $last_error = error_get_last();

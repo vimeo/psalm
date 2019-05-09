@@ -18,17 +18,13 @@
         <directory name="examples"/>
         <ignoreFiles>
             <file name="src/Psalm/Internal/CallMap.php"/>
-            <directory name="src/Psalm/Internal/Stubs"/>
-            <directory name="tests/stubs"/>
-            <directory name="tests/DummyProject"/>
-            <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php"/>
-            <file name="vendor/symfony/console/Command/Command.php"/>
-            <directory name="vendor/netresearch/jsonmapper" />
             <file name="src/Psalm/Internal/Traverser/CustomTraverser.php"/>
-            <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
-            <file name="tests/performance/a.test"/>
-            <file name="tests/performance/b.test"/>
             <file name="tests/ErrorBaselineTest.php"/>
+            <file name="vendor/symfony/console/Command/Command.php"/>
+            <directory name="src/Psalm/Internal/Stubs"/>
+            <directory name="tests/fixtures"/>
+            <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
+            <directory name="vendor/netresearch/jsonmapper" />
             <directory name="vendor/phpunit" />
         </ignoreFiles>
     </projectFiles>

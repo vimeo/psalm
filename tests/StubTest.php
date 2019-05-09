@@ -97,7 +97,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/systemclass.php" />
+                        <file name="tests/fixtures/stubs/systemclass.php" />
                     </stubs>
                 </psalm>'
             )
@@ -134,7 +134,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/systemclass.php" />
+                        <file name="tests/fixtures/stubs/systemclass.php" />
                     </stubs>
                 </psalm>'
             )
@@ -171,7 +171,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/phpstorm.meta.php" />
+                        <file name="tests/fixtures/stubs/phpstorm.meta.php" />
                     </stubs>
                 </psalm>'
             )
@@ -259,7 +259,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/namespaced_class.php" />
+                        <file name="tests/fixtures/stubs/namespaced_class.php" />
                     </stubs>
                 </psalm>'
             )
@@ -297,7 +297,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -329,7 +329,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -364,7 +364,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -426,7 +426,7 @@ class StubTest extends TestCase
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
-                    autoloader="tests/stubs/polyfill.php"
+                    autoloader="tests/fixtures/stubs/polyfill.php"
                 >
                     <projectFiles>
                         <directory name="src" />
@@ -457,7 +457,7 @@ class StubTest extends TestCase
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
-                    autoloader="tests/stubs/class_alias.php"
+                    autoloader="tests/fixtures/stubs/class_alias.php"
                 >
                     <projectFiles>
                         <directory name="src" />
@@ -522,7 +522,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -555,7 +555,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -620,7 +620,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/namespaced_functions.php" />
+                        <file name="tests/fixtures/stubs/namespaced_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -652,7 +652,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/conditional_namespaced_functions.php" />
+                        <file name="tests/fixtures/stubs/conditional_namespaced_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -684,7 +684,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/DomainException.php" />
+                        <file name="tests/fixtures/stubs/DomainException.php" />
                     </stubs>
                 </psalm>'
             )
@@ -716,7 +716,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.php" />
                     </stubs>
                 </psalm>'
             )
@@ -765,7 +765,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.php" />
                     </stubs>
                 </psalm>'
             )
@@ -804,7 +804,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.php" />
                     </stubs>
                 </psalm>'
             )
@@ -851,7 +851,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.php" />
                     </stubs>
                 </psalm>'
             )
