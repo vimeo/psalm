@@ -133,7 +133,7 @@ class DocComment
                         'ignore-nullable-return', 'override-property-visibility',
                         'override-method-visibility', 'seal-properties', 'seal-methods',
                         'generator-return', 'ignore-falsable-return', 'variadic',
-                        'ignore-variable-method', 'ignore-variable-property',
+                        'ignore-variable-method', 'ignore-variable-property', 'internal',
                     ]
                 )) {
                     throw new DocblockParseException('Unrecognised annotation @psalm-' . $special_key);
