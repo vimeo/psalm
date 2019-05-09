@@ -989,7 +989,8 @@ class ArrayFetchAnalyzer
         }
 
         if ($array_access_type === null) {
-            throw new \InvalidArgumentException('This is a bad place');
+            // shouldn’t happen, but don’t crash
+            return Type::getMixed();
         }
 
         if ($in_assignment) {

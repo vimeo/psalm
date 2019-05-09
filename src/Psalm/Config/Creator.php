@@ -98,7 +98,13 @@ class Creator
                     );
 
                     foreach ($php_files as $php_file) {
+                        $php_file = str_replace($current_dir . DIRECTORY_SEPARATOR, '', $php_file);
+
                         $parts = explode(DIRECTORY_SEPARATOR, $php_file);
+
+                        if (!$parts[0]) {
+                            array_shift($parts);
+                        }
 
                         if ($parts[0] === 'vendor') {
                             continue;
