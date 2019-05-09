@@ -42,6 +42,7 @@ class CommentAnalyzer
         $came_from_line_number = null,
         array $type_aliases = null
     ) {
+
         $var_id = null;
 
         $var_type_tokens = null;
@@ -661,6 +662,10 @@ class CommentAnalyzer
 
         if (isset($comments['specials']['internal'])) {
             $info->internal = true;
+        }
+
+        if (isset($comments['specials']['psalm-internal'])) {
+            $info->psalmInternal = reset($comments['specials']['psalm-internal']);
         }
 
         if (isset($comments['specials']['psalm-seal-properties'])) {

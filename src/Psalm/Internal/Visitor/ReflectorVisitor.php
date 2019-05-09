@@ -972,6 +972,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->deprecated = $docblock_info->deprecated;
                 $storage->internal = $docblock_info->internal;
+                $storage->psalmInternal = $docblock_info->psalmInternal;
 
                 $storage->sealed_properties = $docblock_info->sealed_properties;
                 $storage->sealed_methods = $docblock_info->sealed_methods;
