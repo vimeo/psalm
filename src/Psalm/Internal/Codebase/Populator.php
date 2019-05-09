@@ -322,13 +322,11 @@ class Populator
                             ) {
                                 if ($declaring_method_storage->signature_return_type) {
                                     $method_storage->return_type = $declaring_method_storage->return_type;
-                                    $method_storage->imported_return_type = true;
                                 } elseif (TypeAnalyzer::isSimplyContainedBy(
                                     $declaring_method_storage->return_type,
                                     $method_storage->signature_return_type
                                 )) {
                                     $method_storage->return_type = $declaring_method_storage->return_type;
-                                    $method_storage->imported_return_type = true;
                                 }
                             }
                         }

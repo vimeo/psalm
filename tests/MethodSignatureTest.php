@@ -447,6 +447,26 @@ class MethodSignatureTest extends TestCase
                     (new C)->f("b", 3, 0.5);
                     (new C)->f("b", 3, 0.5, 0.8);',
             ],
+            'allowLessSpecificDocblockTypeOnParent' => [
+                '<?php
+                    abstract class Foo {
+                        /**
+                         * @return array|string
+                         */
+                        abstract public function getTargets();
+                    }
+
+                    class Bar extends Foo {
+                        public function getTargets(): string {
+                            return "baz";
+                        }
+                    }
+
+                    $a = (new Bar)->getTargets();',
+                [
+                    '$a' => 'string',
+                ]
+            ],
         ];
     }
 

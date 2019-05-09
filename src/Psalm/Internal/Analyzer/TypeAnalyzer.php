@@ -237,7 +237,7 @@ class TypeAnalyzer
         $container_type_not_null = clone $container_type;
         $container_type_not_null->removeType('null');
 
-        return (bool) array_intersect_key(
+        return !array_diff_key(
             $input_type_not_null->getTypes(),
             $container_type_not_null->getTypes()
         );

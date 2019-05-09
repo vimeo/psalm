@@ -655,12 +655,11 @@ class ReturnTypeAnalyzer
             $context->self
         );
 
-        if ((!$storage instanceof MethodStorage || !$storage->imported_return_type)
-            && !TypeAnalyzer::isContainedBy(
-                $codebase,
-                $fleshed_out_return_type,
-                $fleshed_out_signature_type
-            )
+        if (!TypeAnalyzer::isContainedBy(
+            $codebase,
+            $fleshed_out_return_type,
+            $fleshed_out_signature_type
+        )
         ) {
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['MismatchingDocblockReturnType'])
