@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Tests;
+namespace Psalm\Tests\Config;
 
 use Psalm\Codebase;
 use Psalm\Config;
@@ -8,8 +8,9 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestConfig;
 
-class PluginTest extends TestCase
+class PluginTest extends \Psalm\Tests\TestCase
 {
     /** @var TestConfig */
     protected static $config;
@@ -68,7 +69,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -104,7 +105,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -144,7 +145,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -181,7 +182,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -216,7 +217,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -256,7 +257,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -292,7 +293,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -345,7 +346,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -379,7 +380,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -418,7 +419,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -449,11 +450,11 @@ class PluginTest extends TestCase
     /** @return void */
     public function testInheritedHookHandlersAreCalled()
     {
-        require_once __DIR__ . '/fixtures/stubs/extending_plugin_entrypoint.php';
+        require_once dirname(__DIR__) . '/fixtures/stubs/extending_plugin_entrypoint.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -478,7 +479,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -514,14 +515,14 @@ class PluginTest extends TestCase
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Plugin\\PropertyPlugin" />
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
                     </plugins>
                 </psalm>'
             )
@@ -552,14 +553,14 @@ class PluginTest extends TestCase
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>'
             )
@@ -591,14 +592,14 @@ class PluginTest extends TestCase
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Plugin\\FunctionPlugin" />
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
                     </plugins>
                 </psalm>'
             )
@@ -629,14 +630,14 @@ class PluginTest extends TestCase
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Plugin\\PropertyPlugin" />
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
                     </plugins>
                 </psalm>'
             )
@@ -672,14 +673,14 @@ class PluginTest extends TestCase
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>'
             )
@@ -715,14 +716,14 @@ class PluginTest extends TestCase
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Plugin\\FunctionPlugin" />
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
                     </plugins>
                 </psalm>'
             )
@@ -750,14 +751,14 @@ class PluginTest extends TestCase
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Plugin\\AfterAnalysisPlugin" />
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\AfterAnalysisPlugin" />
                     </plugins>
                 </psalm>'
             )
@@ -778,7 +779,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 sprintf(
                     '<?xml version="1.0"?>
                     <psalm>
@@ -789,7 +790,7 @@ class PluginTest extends TestCase
                             <plugin filename="%s/examples/plugins/StringChecker.php" />
                         </plugins>
                     </psalm>',
-                    __DIR__.'/..'
+                    __DIR__.'/../..'
                 )
             )
         );
@@ -807,7 +808,7 @@ class PluginTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 sprintf(
                     '<?xml version="1.0"?>
                     <psalm>

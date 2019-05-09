@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Test\Plugin\Hook;
+namespace Psalm\Test\Config\Plugin\Hook;
 
 use Psalm\Codebase;
 use Psalm\Plugin\Hook\{

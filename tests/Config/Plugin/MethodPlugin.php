@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Test\Plugin;
+namespace Psalm\Test\Config\Plugin;
 
 use Psalm\Plugin;
 use SimpleXMLElement;

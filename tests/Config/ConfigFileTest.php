@@ -1,11 +1,11 @@
 <?php
-namespace Psalm\Tests;
+namespace Psalm\Tests\Config;
 
 use Psalm\Config;
 use Psalm\Internal\PluginManager\ConfigFile;
 
 /** @group PluginManager */
-class ConfigFileTest extends TestCase
+class ConfigFileTest extends \Psalm\Tests\TestCase
 {
     /** @var string */
     private $file_path;

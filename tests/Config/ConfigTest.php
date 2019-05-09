@@ -1,12 +1,13 @@
 <?php
-namespace Psalm\Tests;
+namespace Psalm\Tests\Config;
 
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestConfig;
 
-class ConfigTest extends TestCase
+class ConfigTest extends \Psalm\Tests\TestCase
 {
     /** @var TestConfig */
     protected static $config;
@@ -89,7 +90,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -116,7 +117,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -141,7 +142,7 @@ class ConfigTest extends TestCase
      */
     public function testIgnoreSymlinkedProjectDirectory()
     {
-        @unlink(__DIR__ . '/fixtures/symlinktest/ignored/b');
+        @unlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
 
         $no_symlinking_error = 'symlink(): Cannot create symlink, error code(1314)';
         $last_error = error_get_last();
@@ -150,7 +151,7 @@ class ConfigTest extends TestCase
             !isset($last_error['message']) ||
             $no_symlinking_error !== $last_error['message'];
 
-        @symlink(__DIR__ . '/fixtures/symlinktest/a', __DIR__ . '/fixtures/symlinktest/ignored/b');
+        @symlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/a', dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
 
         if ($check_symlink_error) {
             $last_error = error_get_last();
@@ -164,7 +165,7 @@ class ConfigTest extends TestCase
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -214,7 +215,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -242,7 +243,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -270,7 +271,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -301,7 +302,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -332,7 +333,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -360,7 +361,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -569,7 +570,7 @@ class ConfigTest extends TestCase
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -594,7 +595,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -619,7 +620,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm
                     requireVoidReturnType="true">
@@ -648,7 +649,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm
                     requireVoidReturnType="false">
@@ -677,7 +678,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm memoizeMethodCallResults="true">
                     <projectFiles>
@@ -725,7 +726,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
@@ -760,7 +761,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <exitFunctions>
@@ -830,7 +831,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm></psalm>'
             )
@@ -857,7 +858,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <forbiddenFunctions>
@@ -888,7 +889,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm forbidEcho="true"></psalm>'
             )
@@ -912,7 +913,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm></psalm>'
             )
@@ -940,7 +941,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <forbiddenFunctions>
@@ -972,7 +973,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <issueHandlers>
@@ -1024,7 +1025,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <issueHandlers>
@@ -1073,7 +1074,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <issueHandlers>
@@ -1127,8 +1128,8 @@ class ConfigTest extends TestCase
     {
         foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {
             Config::loadFromXMLFile(
-                realpath(dirname(__DIR__) . '/assets/config_levels/' . $file_name),
-                dirname(__DIR__)
+                realpath(dirname(__DIR__, 2) . '/assets/config_levels/' . $file_name),
+                dirname(__DIR__, 2)
             );
         }
     }
@@ -1140,7 +1141,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
                     <globals>
@@ -1238,7 +1239,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm checkForThrowsDocblock="true" checkForThrowsInGlobalScope="true">
                     <ignoreExceptions>
@@ -1285,7 +1286,7 @@ class ConfigTest extends TestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
-                dirname(__DIR__),
+                dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm checkForThrowsDocblock="true" checkForThrowsInGlobalScope="true">
                     <ignoreExceptions>

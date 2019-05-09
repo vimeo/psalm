@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Tests;
+namespace Psalm\Tests\Config;
 
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\Config;
@@ -8,7 +8,7 @@ use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\PluginManager\PluginList;
 
 /** @group PluginManager */
-class PluginListTest extends TestCase
+class PluginListTest extends \Psalm\Tests\TestCase
 {
     /** @var ObjectProphecy<ConfigFile> */
     private $config_file;
