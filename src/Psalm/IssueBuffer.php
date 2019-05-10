@@ -8,6 +8,7 @@ use Psalm\Output\Compact;
 use Psalm\Output\Console;
 use Psalm\Output\Emacs;
 use Psalm\Output\Json;
+use Psalm\Output\JsonSummary;
 use Psalm\Output\Pylint;
 use Psalm\Output\Text;
 use Psalm\Output\Xml;
@@ -270,7 +271,8 @@ class IssueBuffer
                 $project_analyzer->output_format,
                 $project_analyzer->use_color,
                 $project_analyzer->show_snippet,
-                $project_analyzer->show_info
+                $project_analyzer->show_info,
+                $codebase->analyzer->getTotalTypeCoverage($codebase)
             );
         }
 
@@ -299,7 +301,13 @@ class IssueBuffer
         foreach ($project_analyzer->reports as $format => $path) {
             file_put_contents(
                 $path,
-                self::getOutput($format, $project_analyzer->use_color)
+                self::getOutput(
+                    $format,
+                    $project_analyzer->use_color,
+                    true,
+                    true,
+                    $codebase->analyzer->getTotalTypeCoverage($codebase)
+                )
             );
         }
 
@@ -360,11 +368,20 @@ class IssueBuffer
      * @param bool   $use_color
      * @param bool   $show_snippet
      * @param bool   $show_info
+     * @param array{int, int} $mixed_counts
      *
      * @return string
      */
-    public static function getOutput($format, $use_color, $show_snippet = true, $show_info = true)
-    {
+    public static function getOutput(
+        string $format,
+        bool $use_color,
+        bool $show_snippet = true,
+        bool $show_info = true,
+        array $mixed_counts = [0, 0]
+    ) {
+        $total_expression_count = $mixed_counts[0] + $mixed_counts[1];
+        $mixed_expression_count = $mixed_counts[0];
+
         switch ($format) {
             case ProjectAnalyzer::TYPE_COMPACT:
                 $output = new Compact(self::$issues_data, $use_color, $show_snippet, $show_info);
@@ -380,6 +397,17 @@ class IssueBuffer
 
             case ProjectAnalyzer::TYPE_JSON:
                 $output = new Json(self::$issues_data, $use_color, $show_snippet, $show_info);
+                break;
+
+            case ProjectAnalyzer::TYPE_JSON_SUMMARY:
+                $output = new JsonSummary(
+                    self::$issues_data,
+                    $use_color,
+                    $show_snippet,
+                    $show_info,
+                    $mixed_expression_count,
+                    $total_expression_count
+                );
                 break;
 
             case ProjectAnalyzer::TYPE_PYLINT:

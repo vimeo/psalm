@@ -136,6 +136,7 @@ class ProjectAnalyzer
     const TYPE_CONSOLE = 'console';
     const TYPE_PYLINT = 'pylint';
     const TYPE_JSON = 'json';
+    const TYPE_JSON_SUMMARY = 'json-summary';
     const TYPE_EMACS = 'emacs';
     const TYPE_XML = 'xml';
     const TYPE_CHECKSTYLE = 'checkstyle';
@@ -146,6 +147,7 @@ class ProjectAnalyzer
         self::TYPE_CONSOLE,
         self::TYPE_PYLINT,
         self::TYPE_JSON,
+        self::TYPE_JSON_SUMMARY,
         self::TYPE_EMACS,
         self::TYPE_XML,
         self::TYPE_CHECKSTYLE,
@@ -197,6 +199,7 @@ class ProjectAnalyzer
         if ($reports) {
             $mapping = [
                 'checkstyle.xml' => self::TYPE_CHECKSTYLE,
+                'summary.json' => self::TYPE_JSON_SUMMARY,
                 '.xml' => self::TYPE_XML,
                 '.json' => self::TYPE_JSON,
                 '.txt' => self::TYPE_TEXT,

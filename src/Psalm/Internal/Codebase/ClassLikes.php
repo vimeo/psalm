@@ -837,7 +837,11 @@ class ClassLikes
                     }
 
                     foreach ($classlike_storage->class_implements as $fq_interface_name) {
-                        $interface_storage = $this->classlike_storage_provider->get($fq_interface_name);
+                        try {
+                            $interface_storage = $this->classlike_storage_provider->get($fq_interface_name);
+                        } catch (\InvalidArgumentException $e) {
+                            continue;
+                        }
 
                         if ($codebase->analyzer->hasMixedMemberName(
                             strtolower($fq_interface_name) . '::'

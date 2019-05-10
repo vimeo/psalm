@@ -43,11 +43,11 @@ class Creator
                 throw new ConfigCreationException('Invalid composer.json at ' . $composer_json_location);
             }
 
-            $replacements = self::getPsr4Paths($current_dir, $composer_json);
+            $replacements = self::getPsr4Or0Paths($current_dir, $composer_json);
 
             if (!$replacements) {
                 throw new ConfigCreationException(
-                    'Could not located any PSR-4-compatible paths in ' . $composer_json_location
+                    'Could not located any PSR-0 or PSR-4-compatible paths in ' . $composer_json_location
                 );
             }
         }
@@ -73,17 +73,23 @@ class Creator
      * @return string[]
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedOperand
+     * @psalm-suppress MixedArgument
      */
-    private static function getPsr4Paths(string $current_dir, array $composer_json) : array
+    private static function getPsr4Or0Paths(string $current_dir, array $composer_json) : array
     {
-        if (!isset($composer_json['autoload']['psr-4'])) {
-            return [];
+        $psr_paths = array_merge(
+            $composer_json['autoload']['psr-4'] ?? [],
+            $composer_json['autoload']['psr-0'] ?? []
+        );
+
+        if (!$psr_paths) {
+            return self::guessPhpFileDirs($current_dir);
         }
 
         $nodes = [];
 
         /** @var string|string[] $path */
-        foreach ($composer_json['autoload']['psr-4'] as $paths) {
+        foreach ($psr_paths as $paths) {
             if (!is_array($paths)) {
                 $paths = [$paths];
             }
@@ -91,32 +97,10 @@ class Creator
             /** @var string $path */
             foreach ($paths as $path) {
                 if ($path === '') {
-                    /** @var string[] */
-                    $php_files = array_merge(
-                        glob($current_dir . DIRECTORY_SEPARATOR . '*.php'),
-                        glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php'),
-                        glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php')
+                    $nodes = array_merge(
+                        $nodes,
+                        self::guessPhpFileDirs($current_dir)
                     );
-
-                    foreach ($php_files as $php_file) {
-                        $php_file = str_replace($current_dir . DIRECTORY_SEPARATOR, '', $php_file);
-
-                        $parts = explode(DIRECTORY_SEPARATOR, $php_file);
-
-                        if (!$parts[0]) {
-                            array_shift($parts);
-                        }
-
-                        if ($parts[0] === 'vendor' || $parts[0] === 'tests') {
-                            continue;
-                        }
-
-                        if (count($parts) === 1) {
-                            $nodes[] = '<file name="' . $php_file . '" />';
-                        } else {
-                            $nodes[] = '<file name="' . $parts[0] . '" />';
-                        }
-                    }
 
                     continue;
                 }
@@ -132,6 +116,45 @@ class Creator
         $nodes = array_unique($nodes);
 
         sort($nodes);
+
+        return $nodes;
+    }
+
+    /**
+     * @return string[]
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedOperand
+     */
+    private static function guessPhpFileDirs(string $current_dir) : array
+    {
+        $nodes = [];
+
+        /** @var string[] */
+        $php_files = array_merge(
+            glob($current_dir . DIRECTORY_SEPARATOR . '*.php'),
+            glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php'),
+            glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php')
+        );
+
+        foreach ($php_files as $php_file) {
+            $php_file = str_replace($current_dir . DIRECTORY_SEPARATOR, '', $php_file);
+
+            $parts = explode(DIRECTORY_SEPARATOR, $php_file);
+
+            if (!$parts[0]) {
+                array_shift($parts);
+            }
+
+            if ($parts[0] === 'vendor' || $parts[0] === 'tests') {
+                continue;
+            }
+
+            if (count($parts) === 1) {
+                $nodes[] = '<file name="' . $php_file . '" />';
+            } else {
+                $nodes[] = '<file name="' . $parts[0] . '" />';
+            }
+        }
 
         return $nodes;
     }
