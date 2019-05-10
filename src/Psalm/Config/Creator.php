@@ -88,6 +88,7 @@ class Creator
                 $paths = [$paths];
             }
 
+            /** @var string $path */
             foreach ($paths as $path) {
                 if ($path === '') {
                     /** @var string[] */
@@ -106,7 +107,7 @@ class Creator
                             array_shift($parts);
                         }
 
-                        if ($parts[0] === 'vendor') {
+                        if ($parts[0] === 'vendor' || $parts[0] === 'tests') {
                             continue;
                         }
 
@@ -116,7 +117,13 @@ class Creator
                             $nodes[] = '<file name="' . $parts[0] . '" />';
                         }
                     }
-                } else {
+
+                    continue;
+                }
+
+                $path = preg_replace('@[\\\\/]$@', '', $path);
+
+                if ($path !== 'tests') {
                     $nodes[] = '<directory name="' . $path . '" />';
                 }
             }
