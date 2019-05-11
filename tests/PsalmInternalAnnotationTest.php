@@ -12,7 +12,6 @@ class PsalmInternalAnnotationTest extends TestCase
      */
     public function providerValidCodeParse()
     {
-        // commented out entries are not yet implemented
         return [
             'internalMethodWithCall' => [
                 '<?php
@@ -36,9 +35,9 @@ class PsalmInternalAnnotationTest extends TestCase
             ],
             'internalClassWithStaticCall' => [
                 '<?php
-                    namespace A {
+                    namespace A\B {
                         /**
-                         * @psalm-internal
+                         * @psalm-internal A
                          */
                         class Foo {
                             public static function barBar(): void {
@@ -46,40 +45,40 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }
 
-                    namespace A\B {
+                    namespace A\B\C {
                         class Bat {
                             public function batBat() : void {
-                                \A\Foo::barBar();
+                                \A\B\Foo::barBar();
                             }
                         }
                     }',
             ],
-//            'internalClassExtendingNamespaceWithStaticCall' => [
-//                '<?php
-//                    namespace A {
-//                        /**
-//                         * @psalm-internal
-//                         */
-//                        class Foo extends \B\Foo {
-//                            public function __construct() {
-//                                parent::__construct();
-//                            }
-//                            public static function barBar(): void {
-//                            }
-//                        }
-//                    }
-//
-//                    namespace B {
-//                        class Foo {
-//                            public function __construct() {
-//                                static::barBar();
-//                            }
-//
-//                            public static function barBar(): void {
-//                            }
-//                        }
-//                    }',
-//            ],
+            'internalClassExtendingNamespaceWithStaticCall' => [
+                '<?php
+                    namespace A {
+                        /**
+                         * @psalm-internal A
+                         */
+                        class Foo extends \B\Foo {
+                            public function __construct() {
+                                parent::__construct();
+                            }
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        class Foo {
+                            public function __construct() {
+                                static::barBar();
+                            }
+
+                            public static function barBar(): void {
+                            }
+                        }
+                    }',
+            ],
             'internalClassWithNew' => [
                 '<?php
                     namespace A\B {
@@ -150,31 +149,31 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }',
             ],
-//            'internalMethodInTraitWithCall' => [
-//                '<?php
-//                    namespace A {
-//                        /**
-//                         * @psalm-internal
-//                         */
-//                        trait T {
-//                            public static function barBar(): void {
-//                            }
-//                        }
-//
-//                        class Foo {
-//                            use T;
-//
-//                        }
-//                    }
-//
-//                    namespace B {
-//                        class Bat {
-//                            public function batBat() : void {
-//                                \A\Foo::barBar();
-//                            }
-//                        }
-//                    }',
-//            ],
+            'internalMethodInTraitWithCall' => [
+                '<?php
+                    namespace A {
+                        /**
+                         * @psalm-internal A
+                         */
+                        trait T {
+                            public static function barBar(): void {
+                            }
+                        }
+
+                        class Foo {
+                            use T;
+
+                        }
+                    }
+
+                    namespace B {
+                        class Bat {
+                            public function batBat() : void {
+                                \A\Foo::barBar();
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -183,7 +182,6 @@ class PsalmInternalAnnotationTest extends TestCase
      */
     public function providerInvalidCodeParse()
     {
-        // commented out entries are not yet implemented
         return [
             'internalMethodWithCall' => [
                 '<?php
@@ -300,6 +298,37 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'A\B\Foo::$foo is marked internal to A\B',
+            ],
+            'internalClassMissingNamespace' => [
+                    '<?php
+
+                    /** @psalm-internal */
+                    class Foo {}
+
+                    ',
+                    'error_message' => 'psalm-internal annotation used without specifying namespace',
+            ],
+            'internalPropertyMissingNamespace' => [
+                '<?php
+                    class Foo {
+                        /** 
+                          * @var int
+                          * @psalm-internal 
+                          */
+                        var $bar;
+                    }
+                    ',
+                'error_message' => 'psalm-internal annotation used without specifying namespace',
+            ],
+            'internalMethodMissingNamespace' => [
+                '<?php
+                    class Foo {
+                        /** @psalm-internal */
+                        function Bar(): void {}
+                    }
+
+                    ',
+                'error_message' => 'psalm-internal annotation used without specifying namespace',
             ],
         ];
     }
