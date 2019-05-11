@@ -126,6 +126,12 @@ class CommentAnalyzer
                 $var_comment->deprecated = isset($comments['specials']['deprecated']);
                 $var_comment->internal = isset($comments['specials']['internal']);
                 if (isset($comments['specials']['psalm-internal'])) {
+                    $psalmInternal = reset($comments['specials']['psalm-internal']);
+                    if ($psalmInternal) {
+                        $var_comment->psalmInternal = $psalmInternal;
+                    } else {
+                        throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
+                    }
                     $var_comment->psalmInternal = reset($comments['specials']['psalm-internal']);
                 }
 
@@ -376,6 +382,12 @@ class CommentAnalyzer
         }
 
         if (isset($comments['specials']['psalm-internal'])) {
+            $psalmInternal = reset($comments['specials']['psalm-internal']);
+            if ($psalmInternal) {
+                $info->psalmInternal = $psalmInternal;
+            } else {
+                throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
+            }
             $info->psalmInternal = reset($comments['specials']['psalm-internal']);
         }
 
@@ -672,7 +684,12 @@ class CommentAnalyzer
         }
 
         if (isset($comments['specials']['psalm-internal'])) {
-            $info->psalmInternal = reset($comments['specials']['psalm-internal']);
+            $psalmInternal = reset($comments['specials']['psalm-internal']);
+            if ($psalmInternal) {
+                $info->psalmInternal = $psalmInternal;
+            } else {
+                throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
+            }
         }
 
         if (isset($comments['specials']['psalm-seal-properties'])) {
