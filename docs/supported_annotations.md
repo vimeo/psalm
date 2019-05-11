@@ -19,6 +19,8 @@ Psalm uses the following PHPDoc tags to understand your code:
   Used to specify what properties can be written on object that uses `__set`
 - [`@deprecated`](https://docs.phpdoc.org/references/phpdoc/tags/deprecated.html)
   Used to mark functions, methods, classes and interfaces as being deprecated
+- [`@internal`](https://docs.phpdoc.org/references/phpdoc/tags/internal.html)
+   used to mark classes, functions and properties that are internal to an application or library.
 
 ### Off-label usage of the `@var` tag
 
@@ -235,6 +237,39 @@ $a = new A();
 $a->bar = 5; // this call fails
 ```
 
+### `@psalm-internal`
+
+Used to mark a class, property or function as internal to a given namespace. Psalm treats this slightly differently to
+the PHPDoc `@internal` tag. For `@internal`, an issue is raised if the calling code is in a namespace completly
+unrelated to the namespace of the calling code, i.e. not sharing the first element of the namespace.
+
+In contrast for `@psalm-internal`, the docbloc line must specify a namespace. An issue is raised of the calling code
+is not within the given namespace.
+
+```PHP
+namespace A\B {
+    /**
+    * @psalm-internal A\B
+    */
+    class Foo { }
+}
+
+namespace A\B\C {
+    class Bat {
+        public function batBat(): void {
+            $a = new \A\B\Foo();  // this is fine
+        }
+    }
+}
+
+namespace A\C {
+    class Bat {
+        public function batBat(): void {
+            $a = new \A\B\Foo();  // error
+        }
+    }
+}
+```
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
