@@ -16,44 +16,44 @@ class PsalmInternalAnnotationTest extends TestCase
         return [
 //            'internalMethodWithCall' => [
 //                '<?php
-//                    namespace A {
+//                    namespace A\B {
 //                        class Foo {
 //                            /**
-//                             * @psalm-internal
+//                             * @psalm-internal A\B
 //                             */
 //                            public static function barBar(): void {
 //                            }
 //                        }
 //                    }
 //
-//                    namespace A\B {
+//                    namespace A\B\C {
 //                        class Bat {
 //                            public function batBat() : void {
-//                                \A\Foo::barBar();
+//                                \A\B\Foo::barBar();
 //                            }
 //                        }
 //                    }',
 //            ],
-//            'internalClassWithStaticCall' => [
-//                '<?php
-//                    namespace A {
-//                        /**
-//                         * @psalm-internal
-//                         */
-//                        class Foo {
-//                            public static function barBar(): void {
-//                            }
-//                        }
-//                    }
-//
-//                    namespace A\B {
-//                        class Bat {
-//                            public function batBat() : void {
-//                                \A\Foo::barBar();
-//                            }
-//                        }
-//                    }',
-//            ],
+            'internalClassWithStaticCall' => [
+                '<?php
+                    namespace A {
+                        /**
+                         * @psalm-internal
+                         */
+                        class Foo {
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace A\B {
+                        class Bat {
+                            public function batBat() : void {
+                                \A\Foo::barBar();
+                            }
+                        }
+                    }',
+            ],
 //            'internalClassExtendingNamespaceWithStaticCall' => [
 //                '<?php
 //                    namespace A {
@@ -187,46 +187,46 @@ class PsalmInternalAnnotationTest extends TestCase
         return [
 //            'internalMethodWithCall' => [
 //                '<?php
-//                    namespace A {
+//                    namespace A\B {
 //                        class Foo {
 //                            /**
-//                             * @psalm-internal
+//                             * @psalm-internal A\B
 //                             */
 //                            public static function barBar(): void {
 //                            }
 //                        }
 //                    }
 //
-//                    namespace B {
+//                    namespace A\C {
 //                        class Bat {
-//                            public function batBat() {
-//                                \A\Foo::barBar();
+//                            public function batBat(): void {
+//                                \A\B\Foo::barBar();
 //                            }
 //                        }
 //                    }',
 //                'error_message' => 'InternalMethod',
 //            ],
-//            'internalClassWithStaticCall' => [
-//                '<?php
-//                    namespace A {
-//                        /**
-//                         * @psalm-internal
-//                         */
-//                        class Foo {
-//                            public static function barBar(): void {
-//                            }
-//                        }
-//                    }
-//
-//                    namespace B {
-//                        class Bat {
-//                            public function batBat() {
-//                                \A\Foo::barBar();
-//                            }
-//                        }
-//                    }',
-//                'error_message' => 'InternalClass',
-//            ],
+            'internalClassWithStaticCall' => [
+                '<?php
+                    namespace A\B {
+                        /**
+                         * @psalm-internal A\B
+                         */
+                        class Foo {
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace A\C {
+                        class Bat {
+                            public function batBat(): void {
+                                \A\B\Foo::barBar();
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalClass',
+            ],
 //            'internalClassWithNew' => [
 //                '<?php
 //                    namespace A {
@@ -238,7 +238,7 @@ class PsalmInternalAnnotationTest extends TestCase
 //
 //                    namespace B {
 //                        class Bat {
-//                            public function batBat() {
+//                            public function batBat(): void {
 //                                $a = new \A\Foo();
 //                            }
 //                        }
