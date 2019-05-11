@@ -47,5 +47,5 @@ class VarDocblockComment
      *
      * @var null|string
      */
-    public $psalmInternal = null;
+    public $psalm_internal = null;
 }

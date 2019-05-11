@@ -972,7 +972,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->deprecated = $docblock_info->deprecated;
                 $storage->internal = $docblock_info->internal;
-                $storage->psalmInternal = $docblock_info->psalmInternal;
+                $storage->psalm_internal = $docblock_info->psalm_internal;
 
                 $storage->sealed_properties = $docblock_info->sealed_properties;
                 $storage->sealed_methods = $docblock_info->sealed_methods;
@@ -1721,8 +1721,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->internal = true;
         }
 
-        if ($docblock_info->psalmInternal) {
-            $storage->psalmInternal = $docblock_info->psalmInternal;
+        if ($docblock_info->psalm_internal) {
+            $storage->psalm_internal = $docblock_info->psalm_internal;
         }
 
         if ($docblock_info->variadic) {
@@ -2557,7 +2557,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $property_storage->has_default = $property->default ? true : false;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
             $property_storage->internal = $var_comment ? $var_comment->internal : false;
-            $property_storage->psalmInternal = $var_comment ? $var_comment->psalmInternal : null;
+            $property_storage->psalm_internal = $var_comment ? $var_comment->psalm_internal : null;
 
             if (!$signature_type && !$doc_var_group_type) {
                 if ($property->default) {

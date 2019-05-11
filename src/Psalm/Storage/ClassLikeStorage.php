@@ -87,7 +87,7 @@ class ClassLikeStorage
     /**
      * @var null|string
      */
-    public $psalmInternal = null;
+    public $psalm_internal = null;
 
     /**
      * @var array<string, bool>

@@ -72,7 +72,7 @@ class PropertyStorage
     /**
      * @var null|string
      */
-    public $psalmInternal = null;
+    public $psalm_internal = null;
 
     public function getInfo() : string
     {

@@ -43,7 +43,7 @@ class FunctionDocblockComment
      *
      * @var null|string
      */
-    public $psalmInternal = null;
+    public $psalm_internal = null;
 
     /**
      * Whether or not the function is internal
