@@ -130,26 +130,26 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }',
             ],
-//            'internalPropertySet' => [
-//                '<?php
-//                    namespace A {
-//                        class Foo {
-//                            /**
-//                             * @psalm-internal
-//                             * @var ?int
-//                             */
-//                            public $foo;
-//                        }
-//                    }
-//                    namespace A\B {
-//                        class Bat {
-//                            public function batBat() : void {
-//                                $a = new \A\Foo;
-//                                $a->foo = 5;
-//                            }
-//                        }
-//                    }',
-//            ],
+            'internalPropertySet' => [
+                '<?php
+                    namespace A\B {
+                        class Foo {
+                            /**
+                             * @psalm-internal A\B
+                             * @var ?int
+                             */
+                            public $foo;
+                        }
+                    }
+                    namespace A\B\C {
+                        class Bat {
+                            public function batBat() : void {
+                                $a = new \A\B\Foo;
+                                $a->foo = 5;
+                            }
+                        }
+                    }',
+            ],
 //            'internalMethodInTraitWithCall' => [
 //                '<?php
 //                    namespace A {
@@ -280,27 +280,27 @@ class PsalmInternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'A\B\Foo::$foo is marked internal to A\B',
             ],
-//            'internalPropertySet' => [
-//                '<?php
-//                    namespace A {
-//                        class Foo {
-//                            /**
-//                             * @psalm-internal
-//                             * @var ?int
-//                             */
-//                            public $foo;
-//                        }
-//                    }
-//                    namespace B {
-//                        class Bat {
-//                            public function batBat() : void {
-//                                $a = new \A\Foo;
-//                                $a->foo = 5;
-//                            }
-//                        }
-//                    }',
-//                'error_message' => 'InternalProperty',
-//            ],
+            'internalPropertySet' => [
+                '<?php
+                    namespace A\B {
+                        class Foo {
+                            /**
+                             * @psalm-internal A\B
+                             * @var ?int
+                             */
+                            public $foo;
+                        }
+                    }
+                    namespace A\C {
+                        class Bat {
+                            public function batBat() : void {
+                                $a = new \A\B\Foo;
+                                $a->foo = 5;
+                            }
+                        }
+                    }',
+                'error_message' => 'A\B\Foo::$foo is marked internal to A\B',
+            ],
         ];
     }
 }
