@@ -211,8 +211,6 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            $declaring_class = explode('::', $method_id)[0];
-
             if (strpos($context->self, trim($storage->psalmInternal, '\\') . '\\') !== 0) {
                 if (IssueBuffer::accepts(
                     new InternalMethod(
