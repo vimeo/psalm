@@ -211,15 +211,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                if (
-                    $parent_class_storage->psalmInternal &&
+                if ($parent_class_storage->psalmInternal &&
                     strpos($fq_class_name, trim($parent_class_storage->psalmInternal, '\\') . '\\') !== 0
                 ) {
                     if (IssueBuffer::accepts(
                         new InternalClass(
                             $parent_fq_class_name . ' is internal to ' . $parent_class_storage->psalmInternal,
                             $code_location
-
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
