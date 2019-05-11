@@ -584,7 +584,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 if ($class_storage->psalmInternal
                     && $context->self
                     && strpos($context->self, trim($class_storage->psalmInternal, '\\') . '\\') !== 0
-            ) {
+                ) {
                     if (IssueBuffer::accepts(
                         new InternalClass(
                             $fq_class_name . ' is marked internal to ' . $class_storage->psalmInternal,
