@@ -39,7 +39,7 @@ class FunctionDocblockComment
     public $deprecated = false;
 
     /**
-     * If set, the class is internal to the given namespace.
+     * If set, the function is internal to the given namespace.
      *
      * @var null|string
      */
