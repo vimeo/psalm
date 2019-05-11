@@ -1715,6 +1715,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->internal = true;
         }
 
+        if ($docblock_info->psalmInternal) {
+            $storage->psalmInternal = $docblock_info->psalmInternal;
+        }
+
         if ($docblock_info->variadic) {
             $storage->variadic = true;
         }

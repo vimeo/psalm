@@ -39,6 +39,13 @@ class FunctionDocblockComment
     public $deprecated = false;
 
     /**
+     * If set, the class is internal to the given namespace.
+     *
+     * @var null|string
+     */
+    public $psalmInternal = null;
+
+    /**
      * Whether or not the function is internal
      *
      * @var bool
