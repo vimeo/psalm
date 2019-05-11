@@ -496,11 +496,11 @@ class PropertyAssignmentAnalyzer
                         }
                     }
 
-                    if ($property_storage->psalmInternal && $context->self) {
-                        if (strpos($context->self, trim($property_storage->psalmInternal, '\\') . '\\') !== 0) {
+                    if ($property_storage->psalm_internal && $context->self) {
+                        if (strpos($context->self, trim($property_storage->psalm_internal, '\\') . '\\') !== 0) {
                             if (IssueBuffer::accepts(
                                 new InternalProperty(
-                                    $property_id . ' is marked internal to ' . $property_storage->psalmInternal,
+                                    $property_id . ' is marked internal to ' . $property_storage->psalm_internal,
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id
                                 ),

@@ -126,13 +126,13 @@ class CommentAnalyzer
                 $var_comment->deprecated = isset($comments['specials']['deprecated']);
                 $var_comment->internal = isset($comments['specials']['internal']);
                 if (isset($comments['specials']['psalm-internal'])) {
-                    $psalmInternal = reset($comments['specials']['psalm-internal']);
-                    if ($psalmInternal) {
-                        $var_comment->psalmInternal = $psalmInternal;
+                    $psalm_internal = reset($comments['specials']['psalm-internal']);
+                    if ($psalm_internal) {
+                        $var_comment->psalm_internal = $psalm_internal;
                     } else {
                         throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
                     }
-                    $var_comment->psalmInternal = reset($comments['specials']['psalm-internal']);
+                    $var_comment->psalm_internal = reset($comments['specials']['psalm-internal']);
                 }
 
                 $var_comments[] = $var_comment;
@@ -382,13 +382,13 @@ class CommentAnalyzer
         }
 
         if (isset($comments['specials']['psalm-internal'])) {
-            $psalmInternal = reset($comments['specials']['psalm-internal']);
-            if ($psalmInternal) {
-                $info->psalmInternal = $psalmInternal;
+            $psalm_internal = reset($comments['specials']['psalm-internal']);
+            if ($psalm_internal) {
+                $info->psalm_internal = $psalm_internal;
             } else {
                 throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
             }
-            $info->psalmInternal = reset($comments['specials']['psalm-internal']);
+            $info->psalm_internal = reset($comments['specials']['psalm-internal']);
         }
 
         if (isset($comments['specials']['psalm-suppress'])) {
@@ -684,9 +684,9 @@ class CommentAnalyzer
         }
 
         if (isset($comments['specials']['psalm-internal'])) {
-            $psalmInternal = reset($comments['specials']['psalm-internal']);
-            if ($psalmInternal) {
-                $info->psalmInternal = $psalmInternal;
+            $psalm_internal = reset($comments['specials']['psalm-internal']);
+            if ($psalm_internal) {
+                $info->psalm_internal = $psalm_internal;
             } else {
                 throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
             }

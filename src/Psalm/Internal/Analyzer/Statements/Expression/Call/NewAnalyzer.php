@@ -309,11 +309,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 }
 
 
-                if ($storage->psalmInternal && $context->self) {
-                    if (strpos($context->self, trim($storage->psalmInternal, '\\') . '\\') !== 0) {
+                if ($storage->psalm_internal && $context->self) {
+                    if (strpos($context->self, trim($storage->psalm_internal, '\\') . '\\') !== 0) {
                         if (IssueBuffer::accepts(
                             new InternalClass(
-                                $fq_class_name . ' is marked internal to ' . $storage->psalmInternal,
+                                $fq_class_name . ' is marked internal to ' . $storage->psalm_internal,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()

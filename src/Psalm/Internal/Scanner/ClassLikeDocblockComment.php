@@ -25,7 +25,7 @@ class ClassLikeDocblockComment
      *
      * @var null|string
      */
-    public $psalmInternal = null;
+    public $psalm_internal = null;
 
     /**
      * @var array<int, array{string, ?string, ?string, bool}>
