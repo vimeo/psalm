@@ -496,6 +496,21 @@ class PropertyAssignmentAnalyzer
                         }
                     }
 
+                    if ($property_storage->psalmInternal && $context->self) {
+                        if (strpos($context->self, trim($property_storage->psalmInternal, '\\') . '\\') !== 0) {
+                            if (IssueBuffer::accepts(
+                                new InternalProperty(
+                                    $property_id . ' is marked internal to ' . $property_storage->psalmInternal,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $property_id
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+
                     if ($property_storage->internal && $context->self) {
                         $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
                         $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_property_class);
