@@ -308,6 +308,21 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
+
+                if ($storage->psalmInternal && $context->self) {
+                    if (strpos($context->self, trim($storage->psalmInternal, '\\') . '\\') !== 0) {
+                        if (IssueBuffer::accepts(
+                            new InternalClass(
+                                $fq_class_name . ' is marked internal to ' . $storage->psalmInternal,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+
                 if ($storage->internal && $context->self) {
                     $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
                     $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $fq_class_name);

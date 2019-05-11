@@ -80,23 +80,23 @@ class PsalmInternalAnnotationTest extends TestCase
 //                        }
 //                    }',
 //            ],
-//            'internalClassWithNew' => [
-//                '<?php
-//                    namespace A {
-//                        /**
-//                         * @psalm-internal
-//                         */
-//                        class Foo { }
-//                    }
-//
-//                    namespace A\B {
-//                        class Bat {
-//                            public function batBat() : void {
-//                                $a = new \A\Foo();
-//                            }
-//                        }
-//                    }',
-//            ],
+            'internalClassWithNew' => [
+                '<?php
+                    namespace A\B {
+                        /**
+                         * @psalm-internal A\B
+                         */
+                        class Foo { }
+                    }
+
+                    namespace A\B\C {
+                        class Bat {
+                            public function batBat() : void {
+                                $a = new \A\B\Foo();
+                            }
+                        }
+                    }',
+            ],
             'internalClassWithExtends' => [
                 '<?php
                     namespace A\B {
@@ -227,24 +227,24 @@ class PsalmInternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InternalClass',
             ],
-//            'internalClassWithNew' => [
-//                '<?php
-//                    namespace A {
-//                        /**
-//                         * @psalm-internal
-//                         */
-//                        class Foo { }
-//                    }
-//
-//                    namespace B {
-//                        class Bat {
-//                            public function batBat(): void {
-//                                $a = new \A\Foo();
-//                            }
-//                        }
-//                    }',
-//                'error_message' => 'InternalClass',
-//            ],
+            'internalClassWithNew' => [
+                '<?php
+                    namespace A\B {
+                        /**
+                         * @psalm-internal A\B
+                         */
+                        class Foo { }
+                    }
+
+                    namespace A\C {
+                        class Bat {
+                            public function batBat(): void {
+                                $a = new \A\B\Foo();
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalClass',
+            ],
             'internalClassWithExtends' => [
                 '<?php
                     namespace A\B {
