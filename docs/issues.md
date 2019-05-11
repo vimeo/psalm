@@ -367,7 +367,8 @@ echo (new A)->foo;
 
 ### InternalClass
 
-Emitted when attempting to access a class marked as internal an unrelated namespace or class.
+Emitted when attempting to access a class marked as internal an unrelated namespace or class, or attempting
+to access a class marked as psalm-internal to a different namespace.
 
 ```php
 namespace A {
@@ -388,7 +389,8 @@ namespace B {
 
 ### InternalMethod
 
-Emitted when attempting to access a method marked as internal an unrelated namespace or class.
+Emitted when attempting to access a method marked as internal an unrelated namespace or class, or attempting
+to access a method marked as psalm-internal to a different namespace.
 
 ```php
 namespace A {
@@ -411,7 +413,8 @@ namespace B {
 
 ### InternalProperty
 
-Emitted when attempting to access a property marked as internal from an unrelated namespace or class.
+Emitted when attempting to access a property marked as internal from an unrelated namespace or class, or attempting
+to access a property marked as psalm-internal to a different namespace.
 
 ```php
 namespace A {
