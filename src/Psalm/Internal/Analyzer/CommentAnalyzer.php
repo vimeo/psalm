@@ -125,6 +125,9 @@ class CommentAnalyzer
                 $var_comment->line_number = $var_line_number;
                 $var_comment->deprecated = isset($comments['specials']['deprecated']);
                 $var_comment->internal = isset($comments['specials']['internal']);
+                if (isset($comments['specials']['psalm-internal'])) {
+                    $var_comment->psalmInternal = reset($comments['specials']['psalm-internal']);
+                }
 
                 $var_comments[] = $var_comment;
             }

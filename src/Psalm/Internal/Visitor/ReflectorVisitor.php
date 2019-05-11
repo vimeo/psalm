@@ -2557,6 +2557,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $property_storage->has_default = $property->default ? true : false;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
             $property_storage->internal = $var_comment ? $var_comment->internal : false;
+            $property_storage->psalmInternal = $var_comment ? $var_comment->psalmInternal : null;
 
             if (!$signature_type && !$doc_var_group_type) {
                 if ($property->default) {
