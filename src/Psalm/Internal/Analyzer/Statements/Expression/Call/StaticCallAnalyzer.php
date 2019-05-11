@@ -581,9 +581,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
-                if($class_storage->psalmInternal){
-                    xdebug_break();
-                }
                 if ($class_storage->psalmInternal
                     && $context->self
                     && strpos($context->self, trim($class_storage->psalmInternal, '\\') . '\\') !== 0
