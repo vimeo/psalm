@@ -75,6 +75,11 @@ class FunctionLikeStorage
     public $internal;
 
     /**
+     * @var null|string
+     */
+    public $psalmInternal;
+
+    /**
      * @var bool
      */
     public $variadic;

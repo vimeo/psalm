@@ -372,6 +372,10 @@ class CommentAnalyzer
             $info->internal = true;
         }
 
+        if (isset($comments['specials']['psalm-internal'])) {
+            $info->psalmInternal = reset($comments['specials']['psalm-internal']);
+        }
+
         if (isset($comments['specials']['psalm-suppress'])) {
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
                 $info->suppress[] = preg_split('/[\s]+/', $suppress_entry)[0];

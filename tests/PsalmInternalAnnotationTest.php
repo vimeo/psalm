@@ -14,26 +14,26 @@ class PsalmInternalAnnotationTest extends TestCase
     {
         // commented out entries are not yet implemented
         return [
-//            'internalMethodWithCall' => [
-//                '<?php
-//                    namespace A\B {
-//                        class Foo {
-//                            /**
-//                             * @psalm-internal A\B
-//                             */
-//                            public static function barBar(): void {
-//                            }
-//                        }
-//                    }
-//
-//                    namespace A\B\C {
-//                        class Bat {
-//                            public function batBat() : void {
-//                                \A\B\Foo::barBar();
-//                            }
-//                        }
-//                    }',
-//            ],
+            'internalMethodWithCall' => [
+                '<?php
+                    namespace A\B {
+                        class Foo {
+                            /**
+                             * @psalm-internal A\B
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace A\B\C {
+                        class Bat {
+                            public function batBat() : void {
+                                \A\B\Foo::barBar();
+                            }
+                        }
+                    }',
+            ],
             'internalClassWithStaticCall' => [
                 '<?php
                     namespace A {
@@ -185,27 +185,27 @@ class PsalmInternalAnnotationTest extends TestCase
     {
         // commented out entries are not yet implemented
         return [
-//            'internalMethodWithCall' => [
-//                '<?php
-//                    namespace A\B {
-//                        class Foo {
-//                            /**
-//                             * @psalm-internal A\B
-//                             */
-//                            public static function barBar(): void {
-//                            }
-//                        }
-//                    }
-//
-//                    namespace A\C {
-//                        class Bat {
-//                            public function batBat(): void {
-//                                \A\B\Foo::barBar();
-//                            }
-//                        }
-//                    }',
-//                'error_message' => 'InternalMethod',
-//            ],
+            'internalMethodWithCall' => [
+                '<?php
+                    namespace A\B {
+                        class Foo {
+                            /**
+                             * @psalm-internal A\B
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace A\C {
+                        class Bat {
+                            public function batBat(): void {
+                                \A\B\Foo::barBar();
+                            }
+                        }
+                    }',
+                'error_message' => 'The method A\B\Foo::barBar has been marked as internal to A\B',
+            ],
             'internalClassWithStaticCall' => [
                 '<?php
                     namespace A\B {

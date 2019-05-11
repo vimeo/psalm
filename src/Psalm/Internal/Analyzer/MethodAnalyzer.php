@@ -207,6 +207,28 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
+        if ($storage->psalmInternal
+            && $context->self
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            $declaring_class = explode('::', $method_id)[0];
+
+            if (strpos($context->self, trim($storage->psalmInternal, '\\') . '\\') !== 0) {
+                if (IssueBuffer::accepts(
+                    new InternalMethod(
+                        'The method ' . $codebase_methods->getCasedMethodId($method_id) .
+                        ' has been marked as internal to ' . $storage->psalmInternal,
+                        $code_location,
+                        $method_id
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
+                }
+            }
+        }
+
         if ($storage->internal
             && $context->self
             && !$context->collect_initializations
