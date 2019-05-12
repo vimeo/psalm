@@ -22,8 +22,6 @@ class GitInfoCollector
 
     /**
      * Constructor.
-     *
-     * @param GitCommand $command Git command
      */
     public function __construct()
     {

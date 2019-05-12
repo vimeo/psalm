@@ -329,7 +329,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if ($stmt->name instanceof PhpParser\Node\Identifier && !$is_mock) {
                 $method_name_lc = strtolower($stmt->name->name);
                 $method_id = $fq_class_name . '::' . $method_name_lc;
-                $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
                 $args = $stmt->args;
 
@@ -346,7 +345,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         if ($codebase->methods->methodExists($intersection_method_id)) {
                             $method_id = $intersection_method_id;
                             $fq_class_name = $intersection_type->value;
-                            $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
                             break;
                         }
                     }
