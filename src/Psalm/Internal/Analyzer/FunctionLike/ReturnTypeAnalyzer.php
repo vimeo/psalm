@@ -250,6 +250,7 @@ class ReturnTypeAnalyzer
                 if (!$closure_inside_call || $inferred_return_type->isMixed()) {
                     if ($codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['MissingClosureReturnType'])
+                        && !in_array('MissingClosureReturnType', $suppressed_issues)
                     ) {
                         if ($inferred_return_type->hasMixed() || $inferred_return_type->isNull()) {
                             return null;
@@ -286,6 +287,7 @@ class ReturnTypeAnalyzer
 
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['MissingReturnType'])
+                && !in_array('MissingReturnType', $suppressed_issues)
             ) {
                 if ($inferred_return_type->hasMixed() || $inferred_return_type->isNull()) {
                     return null;
@@ -430,6 +432,7 @@ class ReturnTypeAnalyzer
                 } else {
                     if ($codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
+                        && !in_array('InvalidReturnType', $suppressed_issues)
                     ) {
                         self::addOrUpdateReturnType(
                             $function,
@@ -458,7 +461,8 @@ class ReturnTypeAnalyzer
                     }
                 }
             } elseif ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['LessSpecificReturnType'])
+                && isset($project_analyzer->getIssuesToFix()['LessSpecificReturnType'])
+                && !in_array('LessSpecificReturnType', $suppressed_issues)
             ) {
                 if (!TypeAnalyzer::isContainedBy(
                     $codebase,
@@ -521,6 +525,7 @@ class ReturnTypeAnalyzer
             ) {
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['InvalidNullableReturnType'])
+                    && !in_array('InvalidNullableReturnType', $suppressed_issues)
                     && !$inferred_return_type->isNull()
                 ) {
                     self::addOrUpdateReturnType(
