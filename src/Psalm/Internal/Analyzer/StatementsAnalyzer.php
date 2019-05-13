@@ -347,15 +347,13 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 $case_scope->break_vars = [];
                             }
 
-                            foreach ($context->vars_in_scope as $var_id => $type) {
-                                if (isset($case_scope->break_vars[$var_id])) {
-                                    $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
-                                        $type,
-                                        $case_scope->break_vars[$var_id]
-                                    );
-                                } else {
-                                    $case_scope->break_vars[$var_id] = $type;
-                                }
+                            if (isset($case_scope->break_vars[$var_id])) {
+                                $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
+                                    $type,
+                                    $case_scope->break_vars[$var_id]
+                                );
+                            } else {
+                                $case_scope->break_vars[$var_id] = $type;
                             }
                         }
                     }
@@ -731,12 +729,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             if ($ignore_variable_property) {
                 $context->ignore_variable_property = false;
-                $ignore_variable_property = false;
             }
 
             if ($ignore_variable_method) {
                 $context->ignore_variable_method = false;
-                $ignore_variable_method = false;
             }
         }
 

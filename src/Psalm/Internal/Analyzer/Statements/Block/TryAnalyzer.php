@@ -199,8 +199,6 @@ class TryAnalyzer
                 $fq_catch_classes[] = $fq_catch_class;
             }
 
-            $potentially_caught_classes = array_flip($fq_catch_classes);
-
             if ($catch_context->collect_exceptions) {
                 foreach ($fq_catch_classes as $fq_catch_class) {
                     $fq_catch_class_lower = strtolower($fq_catch_class);
@@ -331,13 +329,6 @@ class TryAnalyzer
                         $statements_analyzer->registerVariableUses($locations);
                     }
                 }
-            }
-
-            if ($context->collect_exceptions) {
-                $potentially_caught_classes = array_diff_key(
-                    $potentially_caught_classes,
-                    $context->possibly_thrown_exceptions
-                );
             }
 
             if ($catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {

@@ -211,7 +211,6 @@ class FileDiffer
                     $new_text_length--;
                 }
 
-                $old_diff_text = substr($old_diff_text, $j);
                 $new_diff_text = substr($new_diff_text, $j);
 
                 if ($last_change === null || $j) {

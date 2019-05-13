@@ -459,7 +459,7 @@ class Methods
                 || $atomic_type instanceof Type\Atomic\TIterable
                 || $atomic_type instanceof Type\Atomic\TGenericObject
             ) {
-                foreach ($atomic_type->type_params as $type_param) {
+                foreach ($atomic_type->type_params as &$type_param) {
                     $type_param = self::localizeParamType(
                         $codebase,
                         $type_param,

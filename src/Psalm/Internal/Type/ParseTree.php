@@ -158,8 +158,6 @@ class ParseTree
                         throw new TypeParseTreeException('Cannot parse comma without a parent node');
                     }
 
-                    $current_parent = $current_leaf->parent;
-
                     $context_node = $current_leaf;
 
                     if ($context_node instanceof ParseTree\GenericTree
