@@ -30,10 +30,11 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
      * @param string $php_version
      * @param string[] $issues_to_fix
      * @param bool $safe_types
+     * @param bool $allow_backwards_incompatible_changes
      *
      * @return void
      */
-    public function testValidCode($input_code, $output_code, $php_version, array $issues_to_fix, $safe_types)
+    public function testValidCode($input_code, $output_code, $php_version, array $issues_to_fix, $safe_types, bool $allow_backwards_incompatible_changes = true)
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -77,6 +78,7 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
             false,
             $safe_types
         );
+        $this->project_analyzer->getCodebase()->allow_backwards_incompatible_changes = $allow_backwards_incompatible_changes;
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
 

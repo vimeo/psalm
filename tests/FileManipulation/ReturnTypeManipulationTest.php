@@ -1132,6 +1132,82 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 ['InvalidReturnType'],
                 false,
             ],
+            'fixInvalidIntReturnTypeJustInPhpDocWhenDisallowingBackwardsIncompatibleChanges' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int
+                         */
+                        protected function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return void
+                         */
+                        protected function foo() {}
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false,
+            ],
+            'fixInvalidIntReturnTypeInFinalMethodWhenDisallowingBackwardsIncompatibleChanges' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int
+                         */
+                        protected final function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return void
+                         */
+                        protected final function foo(): void {}
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false,
+            ],
+            'fixInvalidIntReturnTypeInFinalClassWhenDisallowingBackwardsIncompatibleChanges' => [
+                '<?php
+                    final class A {
+                        /**
+                         * @return int
+                         */
+                        protected function foo() {}
+                    }',
+                '<?php
+                    final class A {
+                        /**
+                         * @return void
+                         */
+                        protected function foo(): void {}
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false,
+            ],
+            'fixInvalidIntReturnTypeInFunctionWhenDisallowingBackwardsIncompatibleChanges' => [
+                '<?php
+                    /**
+                     * @return int
+                     */
+                    function foo() {}',
+                '<?php
+                    /**
+                     * @return void
+                     */
+                    function foo(): void {}',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false,
+            ],
         ];
     }
 }
