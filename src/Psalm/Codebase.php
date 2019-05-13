@@ -176,6 +176,11 @@ class Codebase
     public $diff_methods = false;
 
     /**
+     * @var bool
+     */
+    public $allow_backwards_incompatible_changes = true;
+
+    /**
      * @var int
      */
     public $php_major_version = PHP_MAJOR_VERSION;

@@ -721,14 +721,31 @@ class ReturnTypeAnalyzer
             $function_like_analyzer->getMethodId(),
             $function
         );
+
+        $codebase = $project_analyzer->getCodebase();
+        $is_final = true;
+        $fqcln = $source->getFQCLN();
+        if ($fqcln !== null) {
+            $class_storage = $codebase->classlike_storage_provider->get($fqcln);
+            assert($function instanceof ClassMethod);
+            $is_final = $function->isFinal() || $class_storage->final;
+        }
+
+        $allow_native_type = !$docblock_only
+            && $codebase->php_major_version >= 7
+            && (
+                $codebase->allow_backwards_incompatible_changes
+                || $is_final
+            );
+
         $manipulator->setReturnType(
-            !$docblock_only && $project_analyzer->getCodebase()->php_major_version >= 7
+            $allow_native_type
                 ? $inferred_return_type->toPhpString(
                     $source->getNamespace(),
                     $source->getAliasedClassesFlipped(),
                     $source->getFQCLN(),
-                    $project_analyzer->getCodebase()->php_major_version,
-                    $project_analyzer->getCodebase()->php_minor_version
+                    $codebase->php_major_version,
+                    $codebase->php_minor_version
                 ) : null,
             $inferred_return_type->toNamespacedString(
                 $source->getNamespace(),

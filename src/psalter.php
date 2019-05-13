@@ -21,6 +21,7 @@ $valid_long_options = [
     'help', 'debug', 'debug-by-line', 'config:', 'file:', 'root:',
     'plugin:', 'issues:', 'php-version:', 'dry-run', 'safe-types',
     'find-unused-code', 'threads:', 'codeowner:',
+    'allow-backwards-incompatible-changes:',
 ];
 
 // get options from command line
@@ -117,6 +118,9 @@ Options:
 
     --codeowner=[codeowner]
         You can specify a GitHub code ownership group, and only that owner's code will be updated.
+
+    --allow-backwards-incompatible-changes=BOOL
+        Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
 HELP;
 
     exit;
@@ -300,6 +304,20 @@ if (isset($options['codeowner'])) {
             die('User/group ' . $desired_codeowner . ' does not own any PHP files' . PHP_EOL);
         }
     }
+}
+
+if (isset($options['allow-backwards-incompatible-changes'])) {
+    $allow_backwards_incompatible_changes = filter_var(
+        $options['allow-backwards-incompatible-changes'],
+        FILTER_VALIDATE_BOOLEAN,
+        ['flags' => FILTER_NULL_ON_FAILURE]
+    );
+
+    if ($allow_backwards_incompatible_changes === null) {
+        die('--allow-backwards-incompatible-changes expectes a boolean value [true|false|1|0]' . PHP_EOL);
+    }
+
+    $project_analyzer->getCodebase()->allow_backwards_incompatible_changes = $allow_backwards_incompatible_changes;
 }
 
 $plugins = [];
