@@ -848,6 +848,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                     }
                                 }
                             } else {
+                                $atomic_root_type->sealed = false;
+
                                 $root_type->addType(
                                     $atomic_root_type->getGenericArrayType()
                                 );
