@@ -594,15 +594,15 @@ class UnusedVariableTest extends TestCase
             ],
             'loopTypeChangedInIfAndBreakWithReference' => [
                 '<?php
-                    $a = false;
+                    $a = 1;
 
                     while (rand(0, 1)) {
                         if (rand(0, 1)) {
-                            $a = true;
+                            $a = 2;
                             break;
                         }
 
-                        $a = false;
+                        $a = 3;
                     }
 
                     echo $a;',
@@ -1503,6 +1503,37 @@ class UnusedVariableTest extends TestCase
                                 $a = 2;
                                 echo $a;
                             }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideLoopAfterAssignment' => [
+                '<?php
+                    function foo() : void {
+                        foreach ([1, 2, 3] as $i) {
+                            $i = $i;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideLoopAfterAssignmentWithAddition' => [
+                '<?php
+                    function foo() : void {
+                        foreach ([1, 2, 3] as $i) {
+                            $i = $i + 1;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideLoopCalledInFunction' => [
+                '<?php
+                    function foo(int $s) : int {
+                        return $s;
+                    }
+
+                    function bar() : void {
+                        foreach ([1, 2, 3] as $i) {
+                            $i = foo($i);
                         }
                     }',
                 'error_message' => 'UnusedVariable',

@@ -90,6 +90,8 @@ class LoopAnalyzer
 
         $loop_scope->loop_context->parent_context = $loop_scope->loop_parent_context;
 
+        $pre_outer_context = $loop_scope->loop_parent_context;
+
         if ($assignment_depth === 0 || $has_break_statement) {
             $inner_context = clone $loop_scope->loop_context;
             $inner_context->loop_scope = $loop_scope;
@@ -248,6 +250,14 @@ class LoopAnalyzer
                         // the where conditional
                         if (!$is_do) {
                             $vars_to_remove[] = $var_id;
+                        }
+                    }
+                }
+
+                if ($inner_context->collect_references) {
+                    foreach ($inner_context->unreferenced_vars as $var_id => $_) {
+                        if (!isset($pre_outer_context->vars_in_scope[$var_id])) {
+                            unset($inner_context->unreferenced_vars[$var_id]);
                         }
                     }
                 }
@@ -423,7 +433,10 @@ class LoopAnalyzer
         }
 
         $loop_scope->loop_context->referenced_var_ids = array_merge(
-            $inner_context->referenced_var_ids,
+            array_intersect_key(
+                $inner_context->referenced_var_ids,
+                $pre_outer_context->vars_in_scope
+            ),
             $loop_scope->loop_context->referenced_var_ids
         );
 
@@ -437,7 +450,10 @@ class LoopAnalyzer
             }
 
             foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
-                if (!isset($new_referenced_var_ids[$var_id]) || $has_break_statement) {
+                if (!isset($new_referenced_var_ids[$var_id])
+                    || !isset($pre_outer_context->vars_in_scope[$var_id])
+                    || $has_break_statement
+                ) {
                     if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
                         $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;
                     } else {
