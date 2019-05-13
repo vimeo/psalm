@@ -1037,6 +1037,25 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 ['LessSpecificReturnType'],
                 true,
             ],
+            'fixInvalidIntReturnTypeJustInPhpDoc' => [
+                '<?php
+                    class Command {
+                        /**
+                         * @return int
+                         */
+                        protected function execute() {}
+                    }',
+                '<?php
+                    class Command {
+                        /**
+                         * @return void
+                         */
+                        protected function execute() {}
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+            ],
         ];
     }
 }
