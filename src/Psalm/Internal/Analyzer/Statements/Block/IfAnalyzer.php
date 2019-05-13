@@ -530,7 +530,9 @@ class IfAnalyzer
                     || !isset($context->vars_in_scope[$var_id])
                 ) {
                     $context->unreferenced_vars[$var_id] = $locations;
-                } elseif (isset($if_scope->possibly_assigned_var_ids[$var_id])) {
+                } elseif (isset($if_scope->possibly_assigned_var_ids[$var_id])
+                    || isset($if_context->possibly_assigned_var_ids[$var_id])
+                ) {
                     if (!isset($context->unreferenced_vars[$var_id])) {
                         $context->unreferenced_vars[$var_id] = $locations;
                     } else {

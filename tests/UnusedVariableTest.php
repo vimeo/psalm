@@ -921,6 +921,20 @@ class UnusedVariableTest extends TestCase
                         }
                     }',
             ],
+            'useParamInsideIfLoop' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                            }
+                        }
+
+                        echo $a;
+                    }',
+            ],
         ];
     }
 
@@ -1434,6 +1448,61 @@ class UnusedVariableTest extends TestCase
 
                         while (rand(0, 1)) {
                             try {} catch (\Exception $e) {}
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideIfLoop' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideIfElseLoop' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                        } else {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideIfElseifLoop' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                        } elseif (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideIfLoopWithEchoInside' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                                echo $a;
+                            }
                         }
                     }',
                 'error_message' => 'UnusedVariable',

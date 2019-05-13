@@ -2069,7 +2069,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         if ($docblock_info->template_typeofs) {
             foreach ($docblock_info->template_typeofs as $template_typeof) {
-                foreach ($storage->params as $i => $param) {
+                foreach ($storage->params as $param) {
                     if ($param->name === $template_typeof['param_name']) {
                         $param_type_nullable = $param->type && $param->type->isNullable();
 
