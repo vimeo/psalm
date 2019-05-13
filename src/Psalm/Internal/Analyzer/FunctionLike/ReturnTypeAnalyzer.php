@@ -344,13 +344,20 @@ class ReturnTypeAnalyzer
                 return null;
             }
 
-            if ($codebase->alter_code && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])) {
+            if ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
+                && !in_array('InvalidReturnType', $suppressed_issues)
+            ) {
                 self::addOrUpdateReturnType(
                     $function,
                     $project_analyzer,
                     Type::getVoid(),
                     $source,
-                    $function_like_analyzer
+                    $function_like_analyzer,
+                    $compatible_method_ids
+                        || (($project_analyzer->only_replace_php_types_with_non_docblock_types
+                            || $unsafe_return_type)
+                        && $inferred_return_type->from_docblock)
                 );
 
                 return null;

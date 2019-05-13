@@ -1037,6 +1037,101 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 ['LessSpecificReturnType'],
                 true,
             ],
+            'addMissingReturnTypeWhenParentHasNone' => [
+                '<?php
+                    class A {
+                        /** @psalm-suppress MissingReturnType */
+                        public function foo() {
+                            return;
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo() {
+                            return;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /** @psalm-suppress MissingReturnType */
+                        public function foo() {
+                            return;
+                        }
+                    }
+
+                    class B extends A {
+                        /**
+                         * @return void
+                         */
+                        public function foo() {
+                            return;
+                        }
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+            ],
+            'dontAddMissingReturnTypeWhenChildHasNone' => [
+                '<?php
+                    class A {
+                        public function foo() {}
+                    }
+
+                    class B extends A {
+                        /** @psalm-suppress MissingReturnType */
+                        public function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return void
+                         */
+                        public function foo() {}
+                    }
+
+                    class B extends A {
+                        /** @psalm-suppress MissingReturnType */
+                        public function foo() {}
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+            ],
+            'fixInvalidIntReturnTypeJustInPhpDoc' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        protected function foo() {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @return int
+                         */
+                        protected function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return int
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        protected function foo() {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @return void
+                         */
+                        protected function foo() {}
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+            ],
         ];
     }
 }
