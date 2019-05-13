@@ -421,6 +421,13 @@ class TypeCombinationTest extends TestCase
                     'Traversable<mixed, mixed>&Iterator',
                 ],
             ],
+            'objectLikePlusArrayEqualsArray' => [
+                'array<string, int>',
+                [
+                    'array<"a"|"b"|"c", 1|2|3>',
+                    'array{a:1|2, b:2|3, c:1|3}',
+                ],
+            ],
         ];
     }
 
