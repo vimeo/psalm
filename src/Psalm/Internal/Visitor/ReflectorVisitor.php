@@ -1279,7 +1279,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage = new FunctionLikeStorage();
 
             if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
-                if (isset($this->file_storage->functions[$function_id])) {
+                if (isset($this->file_storage->functions[$function_id])
+                    && ($this->codebase->register_stub_files
+                        || !$this->codebase->functions->hasStubbedFunction($function_id))
+                ) {
                     $this->codebase->functions->addGlobalFunction(
                         $function_id,
                         $this->file_storage->functions[$function_id]
@@ -1331,7 +1334,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
 
-            if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+            if ($this->codebase->register_stub_files
+                || ($this->codebase->register_autoload_files
+                    && !$this->codebase->functions->hasStubbedFunction($function_id))
+            ) {
                 $this->codebase->functions->addGlobalFunction($function_id, $storage);
             }
 
