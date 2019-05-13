@@ -419,7 +419,8 @@ class UnusedCodeTest extends TestCase
                     }
 
                     (new A)->foo(4);',
-                'error_message' => 'PossiblyUnusedParam',
+                'error_message' => 'PossiblyUnusedParam - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:49 - Param #1 is never referenced in this method',
             ],
             'unusedParam' => [
                 '<?php

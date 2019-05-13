@@ -946,7 +946,7 @@ class ClassLikes
                     ) {
                         if (IssueBuffer::accepts(
                             new PossiblyUnusedParam(
-                                'Param #' . $offset . ' is never referenced in this method',
+                                'Param #' . ($offset + 1) . ' is never referenced in this method',
                                 $code_location
                             ),
                             $method_storage->suppressed_issues
