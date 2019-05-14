@@ -908,18 +908,42 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                             }
                         }
                     } else {
-                        if (IssueBuffer::accepts(
-                            new ImplementedParamTypeMismatch(
-                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                                    $implementer_method_storage_param_type->getId() . '\', expecting \'' .
-                                    $guide_method_storage_param_type->getId() . '\' as defined by ' .
-                                    $cased_guide_method_id,
-                                $implementer_method_storage->params[$i]->location
-                                    ?: $code_location
-                            ),
-                            $suppressed_issues
+                        if (TypeAnalyzer::isContainedBy(
+                            $codebase,
+                            $implementer_method_storage_param_type,
+                            $guide_method_storage_param_type,
+                            !$guide_classlike_storage->user_defined,
+                            !$guide_classlike_storage->user_defined
                         )) {
-                            return false;
+                            if (IssueBuffer::accepts(
+                                new MoreSpecificImplementedParamType(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                                        . ' has the more specific type \'' .
+                                        $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                        $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                        $cased_guide_method_id,
+                                    $implementer_method_storage->params[$i]->location
+                                        ?: $code_location
+                                ),
+                                $suppressed_issues
+                            )) {
+                                return false;
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new ImplementedParamTypeMismatch(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                                        . ' has wrong type \'' .
+                                        $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                        $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                        $cased_guide_method_id,
+                                    $implementer_method_storage->params[$i]->location
+                                        ?: $code_location
+                                ),
+                                $suppressed_issues
+                            )) {
+                                return false;
+                            }
                         }
                     }
                 }
