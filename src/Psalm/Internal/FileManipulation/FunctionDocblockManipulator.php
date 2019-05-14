@@ -59,15 +59,6 @@ class FunctionDocblockManipulator
     /** @var null|string */
     private $new_psalm_return_type;
 
-    /** @var array<string, int> */
-    private $param_typehint_area_starts = [];
-
-    /** @var array<string, int> */
-    private $param_typehint_starts = [];
-
-    /** @var array<string, int> */
-    private $param_typehint_ends = [];
-
     /** @var array<string, string> */
     private $new_php_param_types = [];
 
