@@ -415,7 +415,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $function_param->type_location,
                         $storage->suppressed_issues,
                         [],
-                        false
+                        false,
+                        $this->function instanceof ClassMethod
+                            && strtolower($this->function->name->name) !== '__construct'
                     ) === false) {
                         $check_stmts = false;
                     }

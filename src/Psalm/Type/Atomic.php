@@ -280,7 +280,8 @@ abstract class Atomic
         CodeLocation $code_location,
         array $suppressed_issues,
         array $phantom_classes = [],
-        $inferred = true
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
     ) {
         if ($this->checked) {
             return;
@@ -359,6 +360,32 @@ abstract class Atomic
         }
 
         if ($this instanceof TTemplateParam) {
+            if ($prevent_template_covariance && $this->defining_class) {
+                $codebase = $source->getCodebase();
+
+                $class_storage = $codebase->classlike_storage_provider->get($this->defining_class);
+
+                $template_offset = $class_storage->template_types
+                    ? array_search($this->param_name, array_keys($class_storage->template_types))
+                    : false;
+
+                if ($template_offset !== false
+                    && $class_storage->template_covariants
+                    && $class_storage->template_covariants[$template_offset]
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidTemplateParam(
+                            'Template param ' . $this->defining_class . ' is marked covariant and cannot be used'
+                                . ' as input to a function',
+                            $code_location
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
             $this->as->check($source, $code_location, $suppressed_issues, $phantom_classes, $inferred);
         }
 
@@ -424,7 +451,8 @@ abstract class Atomic
                             $code_location,
                             $suppressed_issues,
                             $phantom_classes,
-                            $inferred
+                            $inferred,
+                            $prevent_template_covariance
                         );
                     }
                 }
@@ -436,7 +464,8 @@ abstract class Atomic
                     $code_location,
                     $suppressed_issues,
                     $phantom_classes,
-                    $inferred
+                    $inferred,
+                    $prevent_template_covariance
                 );
             }
         }
@@ -499,7 +528,8 @@ abstract class Atomic
                     $code_location,
                     $suppressed_issues,
                     $phantom_classes,
-                    $inferred
+                    $inferred,
+                    $prevent_template_covariance
                 ) === false) {
                     return false;
                 }

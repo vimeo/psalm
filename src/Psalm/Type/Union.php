@@ -1469,7 +1469,8 @@ class Union
         CodeLocation $code_location,
         array $suppressed_issues,
         array $phantom_classes = [],
-        $inferred = true
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
     ) {
         if ($this->checked) {
             return;
@@ -1483,7 +1484,8 @@ class Union
                 $code_location,
                 $suppressed_issues,
                 $phantom_classes,
-                $inferred
+                $inferred,
+                $prevent_template_covariance
             ) === false) {
                 $all_good = false;
             }

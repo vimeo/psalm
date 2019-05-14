@@ -2788,6 +2788,19 @@ class TemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'preventCovariantParamUsage' => [
+                '<?php
+                    /**
+                     * @template-covariant T
+                     */
+                    class Covariant {
+                        /**
+                         * @param T $value
+                         */
+                        public function set($value): void {}
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
         ];
     }
 }
