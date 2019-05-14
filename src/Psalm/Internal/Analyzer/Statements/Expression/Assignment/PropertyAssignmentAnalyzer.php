@@ -5,6 +5,7 @@ use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\PropertyProperty;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
@@ -497,7 +498,7 @@ class PropertyAssignmentAnalyzer
                     }
 
                     if ($property_storage->psalm_internal && $context->self) {
-                        if (strpos($context->self, trim($property_storage->psalm_internal, '\\') . '\\') !== 0) {
+                        if (! NamespaceAnalyzer::isWithin($context->self, $property_storage->psalm_internal)) {
                             if (IssueBuffer::accepts(
                                 new InternalProperty(
                                     $property_id . ' is marked internal to ' . $property_storage->psalm_internal,

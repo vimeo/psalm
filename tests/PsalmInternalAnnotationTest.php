@@ -33,6 +33,42 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'internalMethodWithCallWithCaseMisMatched' => [
+                '<?php
+                    namespace A\B {
+                        class Foo {
+                            /**
+                             * @psalm-internal A\B
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace a\b\c {
+                        class Bat {
+                            public function batBat() : void {
+                                \A\B\Foo::barBar();
+                            }
+                        }
+                    }',
+            ],
+            'internalToClassMethodWithCall' => [
+                '<?php
+                    namespace A\B {
+                        class Foo {
+                            /**
+                             * @psalm-internal A\B\Foo
+                             */
+                            public static function barBar(): void {
+                            }
+                            
+                            public static function foo(): void {
+                                self::barBar();
+                            }
+                        }
+                    }',
+            ],
             'internalClassWithStaticCall' => [
                 '<?php
                     namespace A\B {
@@ -203,6 +239,27 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'The method A\B\Foo::barBar has been marked as internal to A\B',
+            ],
+            'internalToClassMethodWithCall' => [
+                '<?php
+                    namespace A\B {
+                        class Foo {
+                            /**
+                             * @psalm-internal A\B\Foo
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace A\C {
+                        class Bat {
+                            public function batBat(): void {
+                                \A\B\Foo::barBar();
+                            }
+                        }
+                    }',
+                'error_message' => 'The method A\B\Foo::barBar has been marked as internal to A\B\Foo',
             ],
             'internalClassWithStaticCall' => [
                 '<?php

@@ -166,4 +166,20 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     {
         return $this->source;
     }
+
+    /**
+     * @param string $namespace Generally a namespace, but may also be a fully qualified class name (FQCN)_.
+     * @param string $className Generally a FQCN, but may be a FQCN
+     *
+     * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparision.
+     *
+     * @return bool
+     */
+    public static function isWithin(string $className, string $namespace): bool
+    {
+        $className = strtolower(trim($className, '\\') . '\\');
+        $namespace = strtolower(trim($namespace, '\\') . '\\');
+
+        return $className === $namespace || strpos($className, $namespace) === 0;
+    }
 }

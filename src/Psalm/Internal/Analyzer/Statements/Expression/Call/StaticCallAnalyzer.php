@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
@@ -583,7 +584,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if ($class_storage->psalm_internal
                     && $context->self
-                    && strpos($context->self, trim($class_storage->psalm_internal, '\\') . '\\') !== 0
+                    && ! NamespaceAnalyzer::isWithin($context->self, $class_storage->psalm_internal)
                 ) {
                     if (IssueBuffer::accepts(
                         new InternalClass(

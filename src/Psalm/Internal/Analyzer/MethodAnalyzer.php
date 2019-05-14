@@ -211,7 +211,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            if (strpos($context->self, trim($storage->psalm_internal, '\\') . '\\') !== 0) {
+            if (! NamespaceAnalyzer::isWithin($context->self, $storage->psalm_internal)
+            ) {
                 if (IssueBuffer::accepts(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id) .

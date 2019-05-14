@@ -212,7 +212,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
 
                 if ($parent_class_storage->psalm_internal &&
-                    strpos($fq_class_name, trim($parent_class_storage->psalm_internal, '\\') . '\\') !== 0
+                    ! NamespaceAnalyzer::isWithin($fq_class_name, $parent_class_storage->psalm_internal)
                 ) {
                     if (IssueBuffer::accepts(
                         new InternalClass(
