@@ -133,6 +133,10 @@ class CommentAnalyzer
                         throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
                     }
                     $var_comment->psalm_internal = reset($comments['specials']['psalm-internal']);
+
+                    if (!$var_comment->internal) {
+                            throw new DocblockParseException('@psalm-internal annotation used without @internal');
+                    }
                 }
 
                 $var_comments[] = $var_comment;
@@ -386,10 +390,16 @@ class CommentAnalyzer
             if ($psalm_internal) {
                 $info->psalm_internal = $psalm_internal;
             } else {
-                throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
+                throw new DocblockParseException('@psalm-internal annotation used without specifying namespace');
             }
             $info->psalm_internal = reset($comments['specials']['psalm-internal']);
+
+            if (! $info->internal) {
+                throw new DocblockParseException('@psalm-internal annotation used without @internal');
+            }
         }
+
+
 
         if (isset($comments['specials']['psalm-suppress'])) {
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
@@ -689,6 +699,10 @@ class CommentAnalyzer
                 $info->psalm_internal = $psalm_internal;
             } else {
                 throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
+            }
+
+            if (! $info->internal) {
+                throw new DocblockParseException('@psalm-internal annotation used without @internal');
             }
         }
 
