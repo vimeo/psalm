@@ -243,7 +243,7 @@ Used to mark a class, property or function as internal to a given namespace. Psa
 the PHPDoc `@internal` tag. For `@internal`, an issue is raised if the calling code is in a namespace completly
 unrelated to the namespace of the calling code, i.e. not sharing the first element of the namespace.
 
-In contrast for `@psalm-internal`, the docbloc line must specify a namespace. An issue is raised of the calling code
+In contrast for `@psalm-internal`, the docbloc line must specify a namespace. An issue is raised if the calling code
 is not within the given namespace.
 
 As other tools do not support `@psalm-internal`, it may only be used in conjuction with `@internal`.
