@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
@@ -310,7 +311,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
 
                 if ($storage->psalm_internal && $context->self) {
-                    if (strpos($context->self, trim($storage->psalm_internal, '\\') . '\\') !== 0) {
+                    if (! NamespaceAnalyzer::isWithin($context->self, $storage->psalm_internal)) {
                         if (IssueBuffer::accepts(
                             new InternalClass(
                                 $fq_class_name . ' is marked internal to ' . $storage->psalm_internal,
