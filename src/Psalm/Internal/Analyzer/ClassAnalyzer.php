@@ -1517,15 +1517,42 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($parent_storage->template_types && $storage->template_type_extends) {
+            $i = 0;
+
             foreach ($parent_storage->template_types as $template_name => $type_map) {
                 foreach ($type_map as $template_type) {
                     $parent_class_lc = strtolower($parent_storage->name);
-                    if (!$template_type[0]->isMixed()
-                        && isset($storage->template_type_extends[$parent_class_lc][$template_name])
-                    ) {
+                    if (isset($storage->template_type_extends[$parent_class_lc][$template_name])) {
                         $extended_type = $storage->template_type_extends[$parent_class_lc][$template_name];
 
-                        if (!TypeAnalyzer::isContainedBy($codebase, $extended_type, $template_type[0])) {
+                        if (isset($parent_storage->template_covariants[$i])
+                            && !$parent_storage->template_covariants[$i]
+                            && $parent_storage->user_defined
+                        ) {
+                            foreach ($extended_type->getTypes() as $t) {
+                                if ($t instanceof Type\Atomic\TTemplateParam
+                                    && ($local_offset
+                                        = array_search($t->param_name, array_keys($storage->template_types)))
+                                        !== false
+                                    && $storage->template_covariants[$local_offset]
+                                ) {
+                                    if (IssueBuffer::accepts(
+                                        new InvalidTemplateParam(
+                                            'Cannot extend an invariant template param ' . $template_name
+                                                . ' from an invariant context',
+                                            $code_location
+                                        ),
+                                        array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                                    )) {
+                                        // fall through
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!$template_type[0]->isMixed()
+                            && !TypeAnalyzer::isContainedBy($codebase, $extended_type, $template_type[0])
+                        ) {
                             if (IssueBuffer::accepts(
                                 new InvalidTemplateParam(
                                     'Extended template param ' . $template_name
@@ -1540,6 +1567,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
                 }
+
+                $i++;
             }
         }
     }

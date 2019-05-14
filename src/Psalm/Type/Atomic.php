@@ -370,7 +370,7 @@ abstract class Atomic
                     : false;
 
                 if ($template_offset !== false
-                    && $class_storage->template_covariants
+                    && isset($class_storage->template_covariants[$template_offset])
                     && $class_storage->template_covariants[$template_offset]
                 ) {
                     if (IssueBuffer::accepts(

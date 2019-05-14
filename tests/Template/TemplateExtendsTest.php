@@ -2575,6 +2575,26 @@ class TemplateExtendsTest extends TestCase
                     }',
                 'error_message' => 'MixedArgument - src/somefile.php:31:29 - Argument 1 of ord cannot be mixed, expecting string'
             ],
+            'preventExtendingWithCovariance' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class InvariantFoo
+                    {
+                        /**
+                         * @param T $value
+                         */
+                        public function set($value): void {}
+                    }
+
+                    /**
+                     * @template-covariant T
+                     * @extends InvariantFoo<T>
+                     */
+                    class CovariantFoo extends InvariantFoo {}',
+                'error_message' => 'InvalidTemplateParam'
+            ],
         ];
     }
 }
