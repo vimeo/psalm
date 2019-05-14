@@ -234,10 +234,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             && !$context->collect_mutations
         ) {
             $declaring_class = explode('::', $method_id)[0];
-            $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
-            $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_class);
-
-            if (strtolower($self_root) !== strtolower($declaring_root)) {
+            if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_class)) {
                 if (IssueBuffer::accepts(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id) .

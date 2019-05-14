@@ -194,11 +194,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $class_context ? $class_context->include_location : null,
                         true
                     );
-
-                    $self_root = preg_replace('/^([^\\\]+).*/', '$1', $fq_class_name);
-                    $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $parent_fq_class_name);
-
-                    if (strtolower($self_root) !== strtolower($declaring_root)) {
+                    if (! NamespaceAnalyzer::nameSpaceRootsMatch($fq_class_name, $parent_fq_class_name)) {
                         if (IssueBuffer::accepts(
                             new InternalClass(
                                 $parent_fq_class_name . ' is marked internal',
