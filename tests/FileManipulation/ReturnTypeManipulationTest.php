@@ -1226,7 +1226,6 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 ['MissingReturnType'],
                 false,
             ],
-
         ];
     }
 }
