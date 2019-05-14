@@ -1541,6 +1541,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         ) {
                             foreach ($extended_type->getTypes() as $t) {
                                 if ($t instanceof Type\Atomic\TTemplateParam
+                                    && $storage->template_types
+                                    && $storage->template_covariants
                                     && ($local_offset
                                         = array_search($t->param_name, array_keys($storage->template_types)))
                                         !== false
