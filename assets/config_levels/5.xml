@@ -102,5 +102,6 @@
         <TypeDoesNotContainNull errorLevel="info" />
         <MissingDocblockType errorLevel="info" />
         <ImplementedReturnTypeMismatch errorLevel="info" />
+        <ImplementedParamTypeMismatch errorLevel="info" />
     </issueHandlers>
 </psalm>

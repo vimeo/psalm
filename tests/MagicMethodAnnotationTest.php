@@ -522,7 +522,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /** @method D foo(int $s) */
                     class B extends A {}',
-                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:11:21',
+                'error_message' => 'ImplementedParamTypeMismatch - src/somefile.php:11:21',
             ],
         ];
     }

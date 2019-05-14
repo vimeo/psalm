@@ -102,6 +102,7 @@
         <TypeDoesNotContainNull errorLevel="info" />
         <MissingDocblockType errorLevel="info" />
         <ImplementedReturnTypeMismatch errorLevel="info" />
+        <ImplementedParamTypeMismatch errorLevel="info" />
 
         <!-- level 6 issues - really bad things -->
 

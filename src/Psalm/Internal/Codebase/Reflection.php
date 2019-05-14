@@ -306,7 +306,7 @@ class Reflection
 
         $is_optional = (bool)$param->isOptional();
 
-        return new FunctionLikeParameter(
+        $parameter = new FunctionLikeParameter(
             $param_name,
             (bool)$param->isPassedByReference(),
             $param_type,
@@ -316,6 +316,10 @@ class Reflection
             $param_type->isNullable(),
             $param->isVariadic()
         );
+
+        $parameter->signature_type = Type::getMixed();
+
+        return $parameter;
     }
 
     /**

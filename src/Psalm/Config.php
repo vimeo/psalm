@@ -1248,6 +1248,10 @@ class Config
             return 'MethodSignatureMismatch';
         }
 
+        if ($issue_type === 'ImplementedParamTypeMismatch') {
+            return 'MoreSpecificImplementedParamType';
+        }
+
         if ($issue_type === 'MixedArgumentTypeCoercion'
             || $issue_type === 'MixedPropertyTypeCoercion'
             || $issue_type === 'MixedReturnTypeCoercion'

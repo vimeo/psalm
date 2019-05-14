@@ -11908,7 +11908,7 @@ return [
 'SoapClient::__setCookie' => ['', 'name'=>'string', 'value='=>'string'],
 'SoapClient::__setLocation' => ['string', 'new_location='=>'string'],
 'SoapClient::__setSoapHeaders' => ['bool', 'soapheaders='=>''],
-'SoapClient::__soapCall' => ['', 'function_name'=>'string', 'arguments'=>'array', 'options='=>'array', 'input_headers='=>'', '&w_output_headers='=>'array'],
+'SoapClient::__soapCall' => ['', 'function_name'=>'string', 'arguments'=>'array', 'options='=>'array', 'input_headers='=>'SoapHeader|array', '&w_output_headers='=>'array'],
 'SoapClient::SoapClient' => ['object', 'wsdl'=>'mixed', 'options='=>'array'],
 'SoapFault::__clone' => ['void'],
 'SoapFault::__construct' => ['void', 'faultcode'=>'string', 'faultstring'=>'string', 'faultactor='=>'string', 'detail='=>'string', 'faultname='=>'string', 'headerfault='=>'string'],

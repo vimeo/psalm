@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Issue\DeprecatedMethod;
+use Psalm\Issue\ImplementedParamTypeMismatch;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalMethod;
@@ -734,6 +735,57 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             $implementer_param = $implementer_method_storage->params[$i];
 
             if ($prevent_method_signature_mismatch
+                && !$guide_classlike_storage->user_defined
+                && $guide_param->type
+            ) {
+                $implementer_param_type = $implementer_method_storage->params[$i]->signature_type;
+
+                $guide_param_signature_type = $guide_param->type;
+
+                $or_null_guide_param_signature_type = $guide_param->signature_type
+                    ? clone $guide_param->signature_type
+                    : null;
+
+                if ($or_null_guide_param_signature_type) {
+                    $or_null_guide_param_signature_type->addType(new Type\Atomic\TNull);
+                }
+
+                if ($cased_guide_method_id === 'Serializable::unserialize') {
+                    $guide_param_signature_type = null;
+                    $or_null_guide_param_signature_type = null;
+                }
+
+                if (!$guide_param->type->hasMixed()
+                    && !$guide_param->type->from_docblock
+                    && ($implementer_param_type || $guide_param_signature_type)
+                ) {
+                    if ($implementer_param_type
+                        && (!$guide_param_signature_type
+                            || strtolower($implementer_param_type->getId())
+                                !== strtolower($guide_param_signature_type->getId()))
+                        && (!$or_null_guide_param_signature_type
+                            || strtolower($implementer_param_type->getId())
+                                !== strtolower($or_null_guide_param_signature_type->getId()))
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new MethodSignatureMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                    $implementer_param_type . '\', expecting \'' .
+                                    $guide_param_signature_type . '\' as defined by ' .
+                                    $cased_guide_method_id,
+                                $implementer_method_storage->params[$i]->location
+                                    ?: $code_location
+                            )
+                        )) {
+                            return false;
+                        }
+
+                        return null;
+                    }
+                }
+            }
+
+            if ($prevent_method_signature_mismatch
                 && $guide_classlike_storage->user_defined
                 && $implementer_param->signature_type
             ) {
@@ -790,8 +842,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 }
             }
 
-            if ($guide_classlike_storage->user_defined
-                && $implementer_param->type
+            if ($implementer_param->type
                 && $guide_param->type
                 && $implementer_param->type->getId() !== $guide_param->type->getId()
             ) {
@@ -832,21 +883,44 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $codebase,
                     $guide_method_storage_param_type,
                     $implementer_method_storage_param_type,
-                    false,
-                    false
+                    !$guide_classlike_storage->user_defined,
+                    !$guide_classlike_storage->user_defined,
+                    $has_scalar_match,
+                    $type_coerced,
+                    $type_coerced_from_mixed
                 )) {
-                    if (IssueBuffer::accepts(
-                        new MoreSpecificImplementedParamType(
-                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                                $implementer_method_storage_param_type->getId() . '\', expecting \'' .
-                                $guide_method_storage_param_type->getId() . '\' as defined by ' .
-                                $cased_guide_method_id,
-                            $implementer_method_storage->params[$i]->location
-                                ?: $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
-                        return false;
+                    // is the declared return type more specific than the inferred one?
+                    if ($type_coerced) {
+                        if ($guide_classlike_storage->user_defined) {
+                            if (IssueBuffer::accepts(
+                                new MoreSpecificImplementedParamType(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                                        . ' has the more specific type \'' .
+                                        $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                        $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                        $cased_guide_method_id,
+                                    $implementer_method_storage->params[$i]->location
+                                        ?: $code_location
+                                ),
+                                $suppressed_issues
+                            )) {
+                                return false;
+                            }
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new ImplementedParamTypeMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                    $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                    $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                    $cased_guide_method_id,
+                                $implementer_method_storage->params[$i]->location
+                                    ?: $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            return false;
+                        }
                     }
                 }
             }
@@ -857,49 +931,6 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' is' .
                             ($implementer_param->by_ref ? '' : ' not') . ' passed by reference, but argument ' .
                             ($i + 1) . ' of ' . $cased_guide_method_id . ' is' . ($guide_param->by_ref ? '' : ' not'),
-                        $implementer_method_storage->params[$i]->location
-                            ?: $code_location
-                    )
-                )) {
-                    return false;
-                }
-
-                return null;
-            }
-
-            $implemeneter_param_type = $implementer_method_storage->params[$i]->type;
-
-            $or_null_guide_type = $guide_param->signature_type
-                ? clone $guide_param->signature_type
-                : null;
-
-            if ($or_null_guide_type) {
-                $or_null_guide_type->addType(new Type\Atomic\TNull);
-            }
-
-            if (!$guide_classlike_storage->user_defined
-                && $guide_param->type
-                && !$guide_param->type->hasMixed()
-                && !$guide_param->type->from_docblock
-                && ($cased_guide_method_id !== 'SoapClient::__soapCall' || $implemeneter_param_type)
-                && (
-                    !$implemeneter_param_type
-                    || (
-                        strtolower($implemeneter_param_type->getId()) !== strtolower($guide_param->type->getId())
-                        && (
-                            !$or_null_guide_type
-                            || strtolower($implemeneter_param_type->getId())
-                                !== strtolower($or_null_guide_type->getId())
-                        )
-                    )
-                )
-            ) {
-                if (IssueBuffer::accepts(
-                    new MethodSignatureMismatch(
-                        'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                            $implemeneter_param_type . '\', expecting \'' .
-                            $guide_param->type . '\' as defined by ' .
-                            $cased_guide_method_id,
                         $implementer_method_storage->params[$i]->location
                             ?: $code_location
                     )
