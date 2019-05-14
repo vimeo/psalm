@@ -611,10 +611,7 @@ class PropertyFetchAnalyzer
                 }
 
                 if ($property_storage->internal && $context->self) {
-                    $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
-                    $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_property_class);
-
-                    if (strtolower($self_root) !== strtolower($declaring_root)) {
+                    if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_property_class)) {
                         if (IssueBuffer::accepts(
                             new InternalProperty(
                                 $property_id . ' is marked internal',
