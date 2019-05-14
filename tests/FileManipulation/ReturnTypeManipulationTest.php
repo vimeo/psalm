@@ -1208,6 +1208,25 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 false,
                 false,
             ],
+            'noEmptyArrayAnnotation' => [
+                '<?php
+                    function foo() {
+                        return [];
+                    }',
+                '<?php
+                    /**
+                     * @return array
+                     *
+                     * @psalm-return array<empty, empty>
+                     */
+                    function foo(): array {
+                        return [];
+                    }',
+                '7.3',
+                ['MissingReturnType'],
+                false,
+            ],
+
         ];
     }
 }

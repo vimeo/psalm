@@ -243,7 +243,7 @@ class FunctionDocblockManipulator
      */
     public function setReturnType($php_type, $new_type, $phpdoc_type, $is_php_compatible, $description)
     {
-        $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<empty, empty>'], '', $new_type);
+        $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>'], '', $new_type);
 
         $this->new_php_return_type = $php_type;
         $this->new_phpdoc_return_type = $phpdoc_type;
