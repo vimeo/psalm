@@ -22,13 +22,13 @@ class Checkstyle extends Output
                 $issue_data['message']
             );
 
-            $output .= '<file name="' . htmlentities($issue_data['file_name']) . '">' . "\n";
+            $output .= '<file name="' . htmlspecialchars($issue_data['file_name']) . '">' . "\n";
             $output .= ' ';
             $output .= '<error';
             $output .= ' line="' . $issue_data['line_from'] . '"';
             $output .= ' column="' . $issue_data['column_from'] . '"';
             $output .= ' severity="' . $issue_data['severity'] . '"';
-            $output .= ' message="' . htmlentities($message) . '"';
+            $output .= ' message="' . htmlspecialchars($message) . '"';
             $output .= '/>' . "\n";
             $output .= '</file>' . "\n";
         }
