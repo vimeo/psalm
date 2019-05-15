@@ -993,6 +993,8 @@ class Codebase
         } catch (\UnexpectedValueException $e) {
             error_log($e->getMessage());
             return null;
+        } catch (\InvalidArgumentException $e) {
+            return null;
         }
     }
 
