@@ -2,7 +2,7 @@
 
 ## Union Types
 
-An annotation of the form `Type1 | Type2 | Type3` is a _Union Type_. `Type1`, `Type2` and `Type3` are all acceptable possible types of that union type.
+An annotation of the form `Type1|Type2|Type3` is a _Union Type_. `Type1`, `Type2` and `Type3` are all acceptable possible types of that union type.
 
 For example, after this statement
 ```php
@@ -44,6 +44,19 @@ function takesClassName(string $s) : void {}
 #### Generic object types
 
 Psalm supports using generic object types like `ArrayObject<int, string>`. Any generic object should be typehinted with appropriate [`@template` tags](templated_annotations.md).
+
+### Intersection types
+
+An annotation of the form `Type1&Type2&Type3` is an _Intersection Type_. Any value must satisfy `Type1`, `Type2` and `Type3` simultaneously.
+
+For example, after this statement in a PHPUnit test:
+```php
+
+$hare = $this->createMock(Hare::class);
+```
+`$hare` will be an instance of a class that extends `Hare`, and implements `\PHPUnit\Framework\MockObject\MockObject`. So
+`$hare` is typed as `Hare&\PHPUnit\Framework\MockObject\MockObject`. You can use this syntax whenever a value is
+required to implement multiple interfaces. Only *object types* may be used within an intersection.
 
 ### Array types
 
@@ -110,6 +123,11 @@ Psalm also allows you to specify values in types.
 #### null
 
 This is the `null` value, destroyer of worlds. Use it sparingly. Psalm supports you writing `?Foo` to mean `null|Foo`.
+
+#### no-return
+
+`no-return` is the 'return type' for a function that can never actually return, such as `die()`, `exit()`, or a function that
+always throws an exception. It may also be written as `never-return` or `never-returns`, and  is also known as the *bottom type*.
 
 #### true, false
 
