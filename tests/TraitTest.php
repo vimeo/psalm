@@ -1047,7 +1047,7 @@ class TraitTest extends TestCase
                       /** @var T|null */
                       public $hm;
                     }',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedDocblockClass',
             ],
         ];
     }

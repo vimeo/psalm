@@ -1050,6 +1050,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
+        $extended_union_type->setFromDocblock();
+
         foreach ($extended_union_type->getTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
                 if (IssueBuffer::accepts(
@@ -1134,6 +1136,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
+        $implemented_union_type->setFromDocblock();
+
         foreach ($implemented_union_type->getTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
                 if (IssueBuffer::accepts(
@@ -1215,6 +1219,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             )) {
             }
         }
+
+        $used_union_type->setFromDocblock();
 
         foreach ($used_union_type->getTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {

@@ -165,7 +165,7 @@ class EnumTest extends TestCase
 
                     /** @psalm-param "foo"|"bar"|C::A|C::B $s */
                     function foo($s) : void {}',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'selfClassConstBadValue' => [
                 '<?php
@@ -221,7 +221,7 @@ class EnumTest extends TestCase
                     {
                         return 5;
                     }',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'nonExistentClassConstant' => [
                 '<?php

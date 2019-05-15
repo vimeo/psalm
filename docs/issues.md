@@ -2084,6 +2084,17 @@ Emitted when referencing a constant that doesn’t exist
 echo FOO_BAR;
 ```
 
+### UndefinedDocblockClass
+
+Emitted when referencing a class that doesn’t exist from a docblock
+
+```php
+/**
+ * @param DoesNotExist $a
+ */
+function foo($a) : void {}
+```
+
 ### UndefinedFunction
 
 Emitted when referencing a function that doesn't exist

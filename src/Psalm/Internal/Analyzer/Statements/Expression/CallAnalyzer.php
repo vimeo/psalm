@@ -2905,6 +2905,18 @@ class CallAnalyzer
             foreach ($changed_vars as $changed_var) {
                 if (isset($op_vars_in_scope[$changed_var])) {
                     $op_vars_in_scope[$changed_var]->from_docblock = true;
+
+                    foreach ($op_vars_in_scope[$changed_var]->getTypes() as $changed_atomic_type) {
+                        $changed_atomic_type->from_docblock = true;
+
+                        if ($changed_atomic_type instanceof Type\Atomic\TNamedObject
+                            && $changed_atomic_type->extra_types
+                        ) {
+                            foreach ($changed_atomic_type->extra_types as $extra_type) {
+                                $extra_type->from_docblock = true;
+                            }
+                        }
+                    }
                 }
             }
 

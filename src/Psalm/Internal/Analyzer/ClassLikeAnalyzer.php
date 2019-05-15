@@ -12,6 +12,7 @@ use Psalm\Issue\InvalidClass;
 use Psalm\Issue\MissingDependency;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
@@ -183,9 +184,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         $fq_class_name,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $inferred = true,
+        bool $inferred = true,
         bool $allow_trait = false,
-        bool $allow_interface = true
+        bool $allow_interface = true,
+        bool $from_docblock = false
     ) {
         $codebase = $statements_source->getCodebase();
         if (empty($fq_class_name)) {
@@ -242,15 +244,28 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
         if (!$class_exists && !$interface_exists) {
             if (!$allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $code_location)) {
-                if (IssueBuffer::accepts(
-                    new UndefinedClass(
-                        'Class or interface ' . $fq_class_name . ' does not exist',
-                        $code_location,
-                        $fq_class_name
-                    ),
-                    $suppressed_issues
-                )) {
-                    return false;
+                if ($from_docblock) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedDocblockClass(
+                            'Docblock-defined class or interface ' . $fq_class_name . ' does not exist',
+                            $code_location,
+                            $fq_class_name
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new UndefinedClass(
+                            'Class or interface ' . $fq_class_name . ' does not exist',
+                            $code_location,
+                            $fq_class_name
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
                 }
             }
 

@@ -854,7 +854,7 @@ class AssertTest extends TestCase
                     assertInstanceOf($bar, Bar::class);
 
                     $bar->sayHello();',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'detectRedundantCondition' => [
                 '<?php

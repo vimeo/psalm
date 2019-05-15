@@ -1177,6 +1177,26 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass',
             ],
+            'undefinedDocblockClassCall' => [
+                '<?php
+                    class B {
+                        /**
+                         * @return A
+                         * @psalm-suppress UndefinedDocblockClass
+                         * @psalm-suppress InvalidReturnStatement
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        public function foo() {
+                            return new stdClass();
+                        }
+
+                        public function bar() {
+                            $this->foo()->bar();
+                        }
+                    }
+                    ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
             'preventBadObjectLikeFormat' => [
                 '<?php
                     /**
@@ -1321,7 +1341,7 @@ class AnnotationTest extends TestCase
                 '<?php
                     /** @var Foo */
                     $a = $_GET["foo"];',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'badPsalmType' => [
                 '<?php

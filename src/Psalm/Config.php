@@ -1252,6 +1252,10 @@ class Config
             return 'MoreSpecificImplementedParamType';
         }
 
+        if ($issue_type === 'UndefinedDocblockClass') {
+            return 'UndefinedClass';
+        }
+
         if ($issue_type === 'MixedArgumentTypeCoercion'
             || $issue_type === 'MixedPropertyTypeCoercion'
             || $issue_type === 'MixedReturnTypeCoercion'

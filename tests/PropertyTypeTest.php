@@ -2106,7 +2106,7 @@ class PropertyTypeTest extends TestCase
                         /** @var B */
                         public $foo;
                     }',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'abstractClassWithNoConstructorButChild' => [
                 '<?php

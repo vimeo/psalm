@@ -294,7 +294,10 @@ abstract class Atomic
                     $this->value,
                     $code_location,
                     $suppressed_issues,
-                    $inferred
+                    $inferred,
+                    false,
+                    true,
+                    $this->from_docblock
                 ) === false
             ) {
                 return false;
@@ -312,7 +315,10 @@ abstract class Atomic
                             $extra_type->value,
                             $code_location,
                             $suppressed_issues,
-                            $inferred
+                            $inferred,
+                            false,
+                            true,
+                            $this->from_docblock
                         ) === false
                     ) {
                         return false;
@@ -327,7 +333,10 @@ abstract class Atomic
                 $this->value,
                 $code_location,
                 $suppressed_issues,
-                $inferred
+                $inferred,
+                false,
+                true,
+                $this->from_docblock
             ) === false
             ) {
                 return false;
@@ -351,7 +360,10 @@ abstract class Atomic
                     $this->as,
                     $code_location,
                     $suppressed_issues,
-                    $inferred
+                    $inferred,
+                    false,
+                    true,
+                    $this->from_docblock
                 ) === false
                 ) {
                     return false;
@@ -403,7 +415,10 @@ abstract class Atomic
                 $fq_classlike_name,
                 $code_location,
                 $suppressed_issues,
-                $inferred
+                $inferred,
+                false,
+                true,
+                $this->from_docblock
             ) === false
             ) {
                 return false;
