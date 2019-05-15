@@ -8,7 +8,7 @@ use Psalm\Tests\Internal\Provider;
 class ReturnTypeManipulationTest extends FileManipulationTest
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{string,string,string,string[],bool,5?:bool}>
      */
     public function providerValidCodeParse()
     {
@@ -1225,6 +1225,58 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 '7.3',
                 ['MissingReturnType'],
                 false,
+            ],
+            'dontReplaceValidReturnTypePreventingBackwardsIncompatibility' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int[]|null
+                         */
+                        public function foo(): ?array {
+                            return ["hello"];
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return string[]
+                         *
+                         * @psalm-return array{0:string}
+                         */
+                        public function foo(): ?array {
+                            return ["hello"];
+                        }
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false
+            ],
+            'dontReplaceValidReturnTypeAllowBackwardsIncompatibility' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int[]|null
+                         */
+                        public function foo(): ?array {
+                            return ["hello"];
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return string[]
+                         *
+                         * @psalm-return array{0:string}
+                         */
+                        public function foo(): array {
+                            return ["hello"];
+                        }
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                true
             ],
         ];
     }

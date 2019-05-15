@@ -354,7 +354,8 @@ class FunctionDocblockManipulator
                         ': ' . $manipulator->new_php_return_type
                     );
                 }
-            } elseif ($manipulator->return_typehint_colon_start
+            } elseif ($manipulator->new_php_return_type === ''
+                && $manipulator->return_typehint_colon_start
                 && $manipulator->new_phpdoc_return_type
                 && $manipulator->return_typehint_start
                 && $manipulator->return_typehint_end

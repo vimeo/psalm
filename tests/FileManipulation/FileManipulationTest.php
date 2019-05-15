@@ -34,8 +34,14 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
      *
      * @return void
      */
-    public function testValidCode($input_code, $output_code, $php_version, array $issues_to_fix, $safe_types, bool $allow_backwards_incompatible_changes = true)
-    {
+    public function testValidCode(
+        $input_code,
+        $output_code,
+        $php_version,
+        array $issues_to_fix,
+        $safe_types,
+        bool $allow_backwards_incompatible_changes = true
+    ) {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');

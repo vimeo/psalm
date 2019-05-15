@@ -263,7 +263,7 @@ class ReturnTypeAnalyzer
                             $source,
                             $function_like_analyzer,
                             ($project_analyzer->only_replace_php_types_with_non_docblock_types
-                                || $unsafe_return_type)
+                                    || $unsafe_return_type)
                                 && $inferred_return_type->from_docblock,
                             $function_like_storage
                         );
@@ -300,9 +300,9 @@ class ReturnTypeAnalyzer
                     $source,
                     $function_like_analyzer,
                     $compatible_method_ids
-                    || (($project_analyzer->only_replace_php_types_with_non_docblock_types
-                            || $unsafe_return_type)
-                        && $inferred_return_type->from_docblock),
+                        || (($project_analyzer->only_replace_php_types_with_non_docblock_types
+                                || $unsafe_return_type)
+                            && $inferred_return_type->from_docblock),
                     $function_like_storage
                 );
 
@@ -356,8 +356,8 @@ class ReturnTypeAnalyzer
                     $function_like_analyzer,
                     $compatible_method_ids
                         || (($project_analyzer->only_replace_php_types_with_non_docblock_types
-                            || $unsafe_return_type)
-                        && $inferred_return_type->from_docblock)
+                                || $unsafe_return_type)
+                            && $inferred_return_type->from_docblock)
                 );
 
                 return null;
@@ -448,7 +448,7 @@ class ReturnTypeAnalyzer
                             $source,
                             $function_like_analyzer,
                             ($project_analyzer->only_replace_php_types_with_non_docblock_types
-                                || $unsafe_return_type)
+                                    || $unsafe_return_type)
                                 && $inferred_return_type->from_docblock,
                             $function_like_storage
                         );
@@ -485,9 +485,9 @@ class ReturnTypeAnalyzer
                         $source,
                         $function_like_analyzer,
                         $compatible_method_ids
-                        || (($project_analyzer->only_replace_php_types_with_non_docblock_types
-                            || $unsafe_return_type)
-                        && $inferred_return_type->from_docblock),
+                            || (($project_analyzer->only_replace_php_types_with_non_docblock_types
+                                    || $unsafe_return_type)
+                                && $inferred_return_type->from_docblock),
                         $function_like_storage
                     );
 
@@ -542,7 +542,7 @@ class ReturnTypeAnalyzer
                         $source,
                         $function_like_analyzer,
                         ($project_analyzer->only_replace_php_types_with_non_docblock_types
-                            || $unsafe_return_type)
+                                || $unsafe_return_type)
                             && $inferred_return_type->from_docblock,
                         $function_like_storage
                     );
@@ -578,7 +578,7 @@ class ReturnTypeAnalyzer
                         $source,
                         $function_like_analyzer,
                         ($project_analyzer->only_replace_php_types_with_non_docblock_types
-                            || $unsafe_return_type)
+                                || $unsafe_return_type)
                             && $inferred_return_type->from_docblock,
                         $function_like_storage
                     );
@@ -736,11 +736,12 @@ class ReturnTypeAnalyzer
             && (
                 $codebase->allow_backwards_incompatible_changes
                 || $is_final
+                || !$function instanceof PhpParser\Node\Stmt\ClassMethod
             );
 
         $manipulator->setReturnType(
             $allow_native_type
-                ? $inferred_return_type->toPhpString(
+                ? (string) $inferred_return_type->toPhpString(
                     $source->getNamespace(),
                     $source->getAliasedClassesFlipped(),
                     $source->getFQCLN(),
