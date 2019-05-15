@@ -291,6 +291,13 @@ class TryAnalyzer
 
             $statements_analyzer->analyze($catch->stmts, $catch_context);
 
+            // recalculate in case there's a no-return clause
+            $catch_actions[$i] = ScopeAnalyzer::getFinalControlActions(
+                $catch->stmts,
+                $codebase->config->exit_functions,
+                $context->inside_case
+            );
+
             foreach ($issues_to_suppress as $issue_to_suppress) {
                 if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
                     $statements_analyzer->removeSuppressedIssues([$issue_to_suppress]);

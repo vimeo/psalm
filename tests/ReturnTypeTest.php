@@ -563,7 +563,7 @@ class ReturnTypeTest extends TestCase
 
                     class B extends A {
                         /**
-                         * @return no-return
+                         * @return never-returns
                          */
                         public function foo() {
                             exit();
