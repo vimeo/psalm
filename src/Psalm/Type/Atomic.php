@@ -605,6 +605,21 @@ abstract class Atomic
             }
         }
 
+        if ($this instanceof TNamedObject
+            || $this instanceof TIterable
+            || $this instanceof TTemplateParam
+        ) {
+            if ($this->extra_types) {
+                foreach ($this->extra_types as $extra_type) {
+                    $extra_type->queueClassLikesForScanning(
+                        $codebase,
+                        $file_storage,
+                        $phantom_classes
+                    );
+                }
+            }
+        }
+
         if ($this instanceof TScalarClassConstant) {
             $codebase->scanner->queueClassLikeForScanning(
                 $this->fq_classlike_name,

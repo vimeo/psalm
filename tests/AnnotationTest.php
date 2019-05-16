@@ -967,6 +967,13 @@ class AnnotationTest extends TestCase
                     '$b' => 'array<array-key, int>',
                 ]
             ],
+            'noExceptionOnIntersection' => [
+                '<?php
+                    class Foo {
+                        /** @var null|\DateTime&\DateTimeImmutable */
+                        private $s = null;
+                    }',
+            ],
         ];
     }
 
