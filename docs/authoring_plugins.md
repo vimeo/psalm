@@ -9,14 +9,27 @@ class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
 }
 ```
 
-`Psalm\Plugin\Hook\*` offers six interfaces that you can implement:
+`Psalm\Plugin\Hook\*` offers 19 interfaces that you can implement:
 
- - `AfterStatementAnalysisInterface` - called after Psalm evaluates each statement
- - `AfterExpressionAnalysisInterface` - called after Psalm evaluates each expression
- - `AfterClassLikeVisitInterface` - called after Psalm crawls the parsed Abstract Syntax Tree for a class-like (class, interface, trait). Due to caching the AST is crawled the first time Psalm sees the file, and is only re-crawled if the file changes, the cache is cleared, or you're disabling cache with `--no-cache`
- - `AfterClassLikeExistenceCheckInterface` - called after Psalm analyzes a reference to a class-like
- - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call
- - `AfterFunctionCallAnalysisInterface` - called after Psalm analyzes a function call
+- `AfterAnalysisInterface` - called after Psalm has completed its analysis. Use this hook if you want to do something with the analysis results.
+- `AfterClassLikeAnalysisInterface` - called after Psalm has completed its analysis of a given class.
+- `AfterClassLikeExistenceCheckInterface` - called after Psalm analyzes a reference to a class, interface or trait.
+- `AfterClassLikeVisitInterface` - called after Psalm crawls the parsed Abstract Syntax Tree for a class-like (class, interface, trait). Due to caching the AST is crawled the first time Psalm sees the file, and is only re-crawled if the file changes, the cache is cleared, or you're disabling cache with `--no-cache`/`--no-reflection-cache`. Use this if you want to collect or modify information about a class before Psalm begins its analysis.
+- `AfterCodebasePopulatedInterface` - called after Psalm has scanned necessary files and populated codebase data.
+- `AfterExpressionAnalysisInterface` - called after Psalm evaluates an expression.
+- `AfterFunctionCallAnalysisInterface` - called after Psalm evaluates an function call.
+- `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
+- `AfterStatementAnalysisInterface` - called after Psalm evaluates an statement.
+- `FunctionExistenceProviderInterface` - can be used to override Psalm's builtin function existence checks for one or more functions.
+- `FunctionParamsProviderInterface.php` - can be used to override Psalm's builtin function paramter lookup for one or more functions.
+- `FunctionReturnTypeProviderInterface` - can be used to override Psalm's builtin function return type lookup for one or more functions.
+- `MethodExistenceProviderInterface` - can be used to override Psalm's builtin method existence checks for one or more classes.
+- `MethodParamsProviderInterface` - can be used to override Psalm's builtin method paramter lookup for one or more classes.
+- `MethodReturnTypeProviderInterface` - can be used to override Psalm's builtin method return type lookup for one or more classes.
+- `MethodVisibilityProviderInterface` - can be used to override Psalm's builtin method visibility checks for one or more classes.
+- `PropertyExistenceProviderInterface` - can be used to override Psalm's builtin property existence checks for one or more classes.
+- `PropertyTypeProviderInterface` - can be used to override Psalm's builtin property type lookup for one or more classes.
+- `PropertyVisibilityProviderInterface` - can be used to override Psalm's builtin property visibility checks for one or more classes.
 
 Here are a couple of example plugins:
  - [StringChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/StringChecker.php) - checks class references in strings
