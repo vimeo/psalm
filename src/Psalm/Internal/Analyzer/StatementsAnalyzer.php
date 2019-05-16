@@ -193,7 +193,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
 
             if ($project_analyzer->debug_lines) {
-                echo $this->getFilePath() . ':' . $stmt->getLine() . "\n";
+                fwrite(STDERR, $this->getFilePath() . ':' . $stmt->getLine() . "\n");
             }
 
             /*

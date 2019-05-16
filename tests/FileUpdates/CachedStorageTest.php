@@ -37,7 +37,7 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
             true,
             ProjectAnalyzer::TYPE_CONSOLE,
             1,
-            false
+            null
         );
         $this->project_analyzer->setPhpVersion('7.3');
     }
