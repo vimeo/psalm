@@ -10,6 +10,8 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Progress\Progress;
+use Psalm\Progress\DefaultProgress;
 use Psalm\Type;
 
 /**
@@ -75,9 +77,9 @@ class ProjectAnalyzer
     public $output_format;
 
     /**
-     * @var bool
+     * @var Progress
      */
-    public $debug_output = false;
+    public $progress;
 
     /**
      * @var bool
@@ -159,7 +161,6 @@ class ProjectAnalyzer
      * @param bool          $show_info
      * @param string        $output_format
      * @param int           $threads
-     * @param bool          $debug_output
      * @param string        $reports
      * @param bool          $show_snippet
      */
@@ -170,10 +171,14 @@ class ProjectAnalyzer
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,
         $threads = 1,
-        $debug_output = false,
+        Progress $progress = null,
         $reports = null,
         $show_snippet = true
     ) {
+        if ($progress === null) {
+            $progress = new DefaultProgress();
+        }
+
         $this->parser_cache_provider = $providers->parser_cache_provider;
         $this->file_provider = $providers->file_provider;
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
@@ -181,7 +186,7 @@ class ProjectAnalyzer
 
         $this->use_color = $use_color;
         $this->show_info = $show_info;
-        $this->debug_output = $debug_output;
+        $this->progress = $progress;
         $this->threads = $threads;
         $this->config = $config;
         $this->show_snippet = $show_snippet;
@@ -189,7 +194,7 @@ class ProjectAnalyzer
         $this->codebase = new Codebase(
             $config,
             $providers,
-            $debug_output
+            $progress
         );
 
         if (!in_array($output_format, self::SUPPORTED_OUTPUT_TYPES, true)) {
@@ -400,9 +405,7 @@ class ProjectAnalyzer
             }
         }
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . "\n";
-        }
+        $this->progress->startScanningFiles();
 
         if ($diff_files === null
             || $deleted_files === null
@@ -421,10 +424,8 @@ class ProjectAnalyzer
 
             $this->codebase->scanFiles($this->threads);
         } else {
-            if ($this->debug_output) {
-                echo count($diff_files) . ' changed files: ' . "\n";
-                echo '    ' . implode("\n    ", $diff_files) . "\n";
-            }
+            $this->progress->debug(count($diff_files) . ' changed files: ' . "\n");
+            $this->progress->debug('    ' . implode("\n    ", $diff_files) . "\n");
 
             if ($diff_files || $this->codebase->find_unused_code) {
                 $file_list = $this->getReferencedFilesFromDiff($diff_files);
@@ -440,11 +441,9 @@ class ProjectAnalyzer
             }
         }
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . "\n";
-        }
+        $this->progress->startAnalyzingFiles();
 
-        $this->config->visitStubFiles($this->codebase, $this->debug_output);
+        $this->config->visitStubFiles($this->codebase, $this->progress);
 
         $plugin_classes = $this->config->after_codebase_populated;
 
@@ -461,8 +460,8 @@ class ProjectAnalyzer
                 $is_diff ? $this->parser_cache_provider->getLastGoodRun() : $start_checks
             );
 
-            if ($this->debug_output && $removed_parser_files) {
-                echo 'Removed ' . $removed_parser_files . ' old parser caches' . "\n";
+            if ($removed_parser_files) {
+                $this->progress->debug('Removed ' . $removed_parser_files . ' old parser caches' . "\n");
             }
 
             if ($is_diff) {
@@ -482,7 +481,7 @@ class ProjectAnalyzer
 
         $this->codebase->classlikes->checkClassReferences(
             $this->codebase->methods,
-            $this->debug_output
+            $this->progress
         );
     }
 
@@ -526,19 +525,15 @@ class ProjectAnalyzer
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . "\n";
-        }
+        $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
 
         $this->codebase->scanFiles($this->threads);
 
-        $this->config->visitStubFiles($this->codebase, $this->debug_output);
+        $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . "\n";
-        }
+        $this->progress->startAnalyzingFiles();
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
     }
@@ -634,9 +629,7 @@ class ProjectAnalyzer
             }
 
             if (!$config->isInProjectDirs($file_path)) {
-                if ($this->debug_output) {
-                    echo 'skipping ' . $file_path . "\n";
-                }
+                $this->progress->debug('skipping ' . $file_path . "\n");
 
                 continue;
             }
@@ -654,9 +647,7 @@ class ProjectAnalyzer
      */
     public function checkFile($file_path)
     {
-        if ($this->debug_output) {
-            echo 'Checking ' . $file_path . "\n";
-        }
+        $this->progress->debug('Checking ' . $file_path . "\n");
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
@@ -664,19 +655,15 @@ class ProjectAnalyzer
 
         $this->file_reference_provider->loadReferenceCache();
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . "\n";
-        }
+        $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
 
         $this->codebase->scanFiles($this->threads);
 
-        $this->config->visitStubFiles($this->codebase, $this->debug_output);
+        $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . "\n";
-        }
+        $this->progress->startAnalyzingFiles();
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
     }
@@ -688,9 +675,7 @@ class ProjectAnalyzer
     public function checkPaths(array $paths_to_check)
     {
         foreach ($paths_to_check as $path) {
-            if ($this->debug_output) {
-                echo 'Checking ' . $path . "\n";
-            }
+            $this->progress->debug('Checking ' . $path . "\n");
 
             if (is_dir($path)) {
                 $this->checkDirWithConfig($path, $this->config, true);
@@ -702,26 +687,25 @@ class ProjectAnalyzer
 
         $this->file_reference_provider->loadReferenceCache();
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . "\n";
-        }
+        $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
 
         $this->codebase->scanFiles($this->threads);
 
-        $this->config->visitStubFiles($this->codebase, $this->debug_output);
+        $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . "\n";
-        }
+        $this->progress->startAnalyzingFiles();
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
 
         if ($this->output_format === ProjectAnalyzer::TYPE_CONSOLE && $this->codebase->collect_references) {
-            echo PHP_EOL . 'To whom it may concern: Psalm cannot detect unused classes, methods and properties'
+            fwrite(
+                STDERR,
+                PHP_EOL . 'To whom it may concern: Psalm cannot detect unused classes, methods and properties'
                 . PHP_EOL . 'when analyzing individual files and folders. Run on the full project to enable'
-                . PHP_EOL . 'complete unused code detection.' . PHP_EOL;
+                . PHP_EOL . 'complete unused code detection.' . PHP_EOL
+            );
         }
     }
 

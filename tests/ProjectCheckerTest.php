@@ -4,8 +4,11 @@ namespace Psalm\Tests;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Progress\EchoProgress;
+use Psalm\Tests\Progress\VoidProgress;
 
 class ProjectCheckerTest extends TestCase
 {
@@ -55,7 +58,12 @@ class ProjectCheckerTest extends TestCase
                 new Provider\FileStorageInstanceCacheProvider(),
                 new Provider\ClassLikeStorageInstanceCacheProvider(),
                 new Provider\FakeFileReferenceCacheProvider()
-            )
+            ),
+            true,
+            true,
+            ProjectAnalyzer::TYPE_CONSOLE,
+            1,
+            new VoidProgress()
         );
     }
 
@@ -75,6 +83,8 @@ class ProjectCheckerTest extends TestCase
                 </psalm>'
             )
         );
+
+        $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
         $this->project_analyzer->check('tests/fixtures/DummyProject');
@@ -260,6 +270,8 @@ class Bat
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
         $output = ob_get_clean();
@@ -293,6 +305,8 @@ class Bat
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
         $this->project_analyzer->checkPaths(['tests/fixtures/DummyProject/Bar.php']);
         $output = ob_get_clean();
@@ -325,6 +339,8 @@ class Bat
                 </psalm>'
             )
         );
+
+        $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
         $this->project_analyzer->checkFile('tests/fixtures/DummyProject/Bar.php');
