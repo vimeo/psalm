@@ -20,6 +20,7 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
@@ -425,15 +426,28 @@ class PropertyFetchAnalyzer
                 }
 
                 if (!$class_exists && !$interface_exists) {
-                    if (IssueBuffer::accepts(
-                        new UndefinedClass(
-                            'Cannot set properties of undefined class ' . $lhs_type_part->value,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $lhs_type_part->value
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if ($lhs_type_part->from_docblock) {
+                        if (IssueBuffer::accepts(
+                            new UndefinedDocblockClass(
+                                'Cannot set properties of undefined docblock class ' . $lhs_type_part->value,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $lhs_type_part->value
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new UndefinedClass(
+                                'Cannot set properties of undefined class ' . $lhs_type_part->value,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $lhs_type_part->value
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
 
                     return null;
