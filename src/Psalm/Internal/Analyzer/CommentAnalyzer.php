@@ -991,13 +991,17 @@ class CommentAnalyzer
                     continue;
                 }
 
-                if ($next_char === '|') {
-                    ++$i;
-                    $type .= $next_char;
-                    continue;
+                if ($next_char === '|' || $next_char === '&') {
+                    $nexter_char = $i < $l - 2 ? $return_block[$i + 2] : null;
+
+                    if ($nexter_char === ' ') {
+                        ++$i;
+                        $type .= $next_char;
+                        continue;
+                    }
                 }
 
-                if ($last_char === '|') {
+                if ($last_char === '|' || $last_char === '&') {
                     continue;
                 }
 
