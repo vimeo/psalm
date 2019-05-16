@@ -12,7 +12,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 
@@ -102,6 +102,8 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             $unaffected_analyzed_methods,
             $codebase->analyzer->getAnalyzedMethods()
         );
+
+        echo ' ';
     }
 
     /**

@@ -21,7 +21,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
 
@@ -37,7 +37,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
@@ -60,13 +60,13 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidClass
      *
-     * @return                   void
+     * @return void
      */
     public function testStringAnalyzerPlugin()
     {
+        $this->expectExceptionMessage('InvalidClass');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -96,13 +96,13 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidClass
      *
-     * @return                   void
+     * @return void
      */
     public function testStringAnalyzerPluginWithClassConstant()
     {
+        $this->expectExceptionMessage('InvalidClass');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -136,13 +136,13 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedMethod
      *
-     * @return                   void
+     * @return void
      */
     public function testStringAnalyzerPluginWithClassConstantConcat()
     {
+        $this->expectExceptionMessage('UndefinedMethod');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -176,7 +176,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testEchoAnalyzerPluginWithJustHtml()
     {
@@ -208,13 +208,13 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeCoercion
      *
-     * @return                   void
+     * @return void
      */
     public function testEchoAnalyzerPluginWithUnescapedConcatenatedString()
     {
+        $this->expectExceptionMessage('TypeCoercion');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -248,13 +248,13 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeCoercion
      *
-     * @return                   void
+     * @return void
      */
     public function testEchoAnalyzerPluginWithUnescapedString()
     {
+        $this->expectExceptionMessage('TypeCoercion');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -287,7 +287,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testEchoAnalyzerPluginWithEscapedString()
     {
@@ -337,13 +337,13 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage NoFloatAssignment
      *
-     * @return                   void
+     * @return void
      */
     public function testFloatCheckerPlugin()
     {
+        $this->expectExceptionMessage('NoFloatAssignment');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -619,13 +619,13 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidPropertyAssignmentValue
      *
-     * @return                   void
+     * @return void
      */
     public function testPropertyProviderHooksInvalidAssignment()
     {
+        $this->expectExceptionMessage('InvalidPropertyAssignmentValue');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         require_once __DIR__ . '/Plugin/PropertyPlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -662,13 +662,13 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidScalarArgument
      *
-     * @return                   void
+     * @return void
      */
     public function testMethodProviderHooksInvalidArg()
     {
+        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         require_once __DIR__ . '/Plugin/MethodPlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -705,13 +705,13 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidScalarArgument
      *
-     * @return                   void
+     * @return void
      */
     public function testFunctionProviderHooksInvalidArg()
     {
+        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -798,14 +798,11 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage does-not-exist/plugins/StringChecker.php
-     *
-     * @return void
-     */
-    public function testPluginInvalidAbsoluteFilenameThrowsException()
+    public function testPluginInvalidAbsoluteFilenameThrowsException() : void
     {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('does-not-exist/plugins/StringChecker.php');
+
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,

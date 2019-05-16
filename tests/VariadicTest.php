@@ -8,13 +8,12 @@ class VariadicTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidScalarArgument
-     *
      * @return                   void
      */
     public function testVariadicArrayBadParam()
     {
+        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->addFile(
             'somefile.php',
             '<?php

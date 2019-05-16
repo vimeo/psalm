@@ -131,6 +131,8 @@ class IssueBuffer
         }
 
         if ($config->throw_exception) {
+            \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
+
             throw new Exception\CodeException(
                 $issue_type
                     . ' - ' . $e->getShortLocation()

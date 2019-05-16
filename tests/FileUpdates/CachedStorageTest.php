@@ -12,7 +12,7 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 

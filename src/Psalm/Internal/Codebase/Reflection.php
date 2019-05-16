@@ -495,4 +495,9 @@ class Reflection
 
         throw new \UnexpectedValueException('Expecting to have a function for ' . $function_id);
     }
+
+    public static function clearCache() : void
+    {
+        self::$builtin_functions = [];
+    }
 }

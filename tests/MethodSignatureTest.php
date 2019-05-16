@@ -110,13 +110,12 @@ class MethodSignatureTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage ImplementedParamTypeMismatch
-     *
-     * @return                   void
+     * @return void
      */
     public function testExtendDocblockParamTypeWithWrongDocblockParam()
     {
+        $this->expectExceptionMessage('ImplementedParamTypeMismatch');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
 
@@ -151,14 +150,11 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MethodSignatureMismatch
-     *
-     * @return                   void
-     */
-    public function testExtendDocblockParamTypeWithWrongParam()
+    public function testExtendDocblockParamTypeWithWrongParam() : void
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
 

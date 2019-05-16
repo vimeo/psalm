@@ -11,10 +11,7 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
 
-    /**
-     * @return void
-     */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();

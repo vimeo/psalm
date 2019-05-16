@@ -10,13 +10,13 @@ class PropertyTypeTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage NullableReturnStatement
      *
-     * @return                   void
+     * @return void
      */
     public function testForgetPropertyAssignments()
     {
+        $this->expectExceptionMessage('NullableReturnStatement');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         Config::getInstance()->remember_property_assignments_after_call = false;
 
         $this->addFile(
@@ -44,7 +44,7 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testForgetPropertyAssignmentsInBranchWithThrow()
     {

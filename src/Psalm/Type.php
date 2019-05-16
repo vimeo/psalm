@@ -1235,4 +1235,9 @@ abstract class Type
 
         return $combined_type;
     }
+
+    public static function clearCache() : void
+    {
+        self::$memoized_tokens = [];
+    }
 }

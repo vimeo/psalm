@@ -22,7 +22,7 @@ class TestCase extends BaseTestCase
     /**
      * @return void
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass() : void
     {
         ini_set('memory_limit', '-1');
 
@@ -41,7 +41,7 @@ class TestCase extends BaseTestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 
@@ -67,6 +67,11 @@ class TestCase extends BaseTestCase
         );
 
         $this->project_analyzer->setPhpVersion('7.3');
+    }
+
+    public function tearDown() : void
+    {
+        FileAnalyzer::clearCache();
     }
 
     /**

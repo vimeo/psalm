@@ -10,13 +10,13 @@ class ClassStringTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidStringClass
      *
-     * @return                   void
+     * @return void
      */
     public function testDontAllowStringStandInForNewClass()
     {
+        $this->expectExceptionMessage('InvalidStringClass');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         Config::getInstance()->allow_string_standin_for_class = false;
 
         $this->addFile(
@@ -33,13 +33,13 @@ class ClassStringTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidStringClass
      *
-     * @return                   void
+     * @return void
      */
     public function testDontAllowStringStandInForStaticMethodCall()
     {
+        $this->expectExceptionMessage('InvalidStringClass');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         Config::getInstance()->allow_string_standin_for_class = false;
 
         $this->addFile(

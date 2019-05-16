@@ -6,7 +6,7 @@ use Psalm\Internal\PluginManager\Command\ShowCommand;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
-use Muglug\PackageVersions\Versions;
+use PackageVersions\Versions;
 
 $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
 $vendor_dir = getVendorDir($current_dir);

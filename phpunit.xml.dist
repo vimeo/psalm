@@ -8,7 +8,7 @@
          beStrictAboutTestsThatDoNotTestAnything="false"
          beStrictAboutTodoAnnotatedTests="true"
          verbose="true">
-    <testsuite name="default">
+    <testsuite name="psalm">
         <directory>tests</directory>
     </testsuite>
 

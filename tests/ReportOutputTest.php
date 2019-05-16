@@ -12,7 +12,7 @@ class ReportOutputTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
         // case, so don't run a `parent::setUp()` call here.
@@ -60,12 +60,12 @@ class ReportOutputTest extends TestCase
     }
 
     /**
-     * @expectedException \UnexpectedValueException
      *
      * @return void
      */
     public function testReportFormatException()
     {
+        $this->expectException(\UnexpectedValueException::class);
         $config = new TestConfig();
         $config->throw_exception = false;
 

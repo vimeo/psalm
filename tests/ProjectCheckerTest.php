@@ -18,7 +18,7 @@ class ProjectCheckerTest extends TestCase
     /**
      * @return void
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
 
@@ -34,7 +34,7 @@ class ProjectCheckerTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();

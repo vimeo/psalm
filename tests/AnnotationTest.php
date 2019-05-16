@@ -134,13 +134,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidScalarArgument
-     *
-     * @return                   void
+     * @return void
      */
     public function testPhpStormGenericsInvalidArgument()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('InvalidScalarArgument');
+
         Config::getInstance()->allow_phpstorm_generics = true;
 
         $this->addFile(
@@ -159,13 +159,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyInvalidMethodCall
-     *
-     * @return                   void
+     * @return void
      */
     public function testPhpStormGenericsNoTypehint()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('PossiblyInvalidMethodCall');
+
         Config::getInstance()->allow_phpstorm_generics = true;
 
         $this->addFile(
@@ -181,13 +181,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidParamDefault
-     *
-     * @return                   void
+     * @return void
      */
     public function testInvalidParamDefault()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('InvalidParamDefault');
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -224,13 +224,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidParamDefault
-     *
-     * @return                   void
+     * @return void
      */
     public function testInvalidTypehintParamDefaultButAllowedInConfig()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('InvalidParamDefault');
+
         Config::getInstance()->add_param_default_to_docblock_type = true;
 
         $this->addFile(
@@ -998,7 +998,43 @@ class AnnotationTest extends TestCase
     public function providerInvalidCodeParse()
     {
         return [
-            'invalidReturn' => [
+            'invalidClassMethodReturn' => [
+                '<?php
+                    class C {
+                        /**
+                         * @return $thus
+                         */
+                        public function barBar() {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MissingDocblockType',
+            ],
+            'invalidClassMethodReturnClass' => [
+                '<?php
+                    class C {
+                        /**
+                         * @return 1
+                         */
+                        public static function barBar() {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidClassMethodReturnBrackets' => [
+                '<?php
+                    class C {
+                        /**
+                         * @return []
+                         */
+                        public static function barBar() {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidInterfaceMethodReturn' => [
                 '<?php
                     interface I {
                         /**
@@ -1008,7 +1044,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingDocblockType',
             ],
-            'invalidReturnClass' => [
+            'invalidInterfaceMethodReturnClass' => [
                 '<?php
                     interface I {
                         /**
@@ -1018,7 +1054,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'invalidReturnBrackets' => [
+            'invalidInterfaceMethodReturnBrackets' => [
                 '<?php
                     interface I {
                         /**

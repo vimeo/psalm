@@ -6,10 +6,7 @@ class ValueTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function setUp()
+    public function setUp() : void
     {
         \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
 

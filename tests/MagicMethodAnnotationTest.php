@@ -44,13 +44,13 @@ class MagicMethodAnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedMethod
      *
      * @return void
      */
     public function testAnnotationWithoutCallConfig()
     {
+        $this->expectExceptionMessage('UndefinedMethod');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = false;
 
         $this->addFile(

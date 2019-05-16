@@ -48,11 +48,6 @@ class StatementsProvider
      */
     private $diff_map = [];
 
-    /**
-     * @var PhpParser\Parser|null
-     */
-    protected static $parser;
-
     public function __construct(
         FileProvider $file_provider,
         ParserCacheProvider $parser_cache_provider = null,
@@ -344,15 +339,13 @@ class StatementsProvider
         array $existing_statements = null,
         array $file_changes = null
     ) {
-        if (!self::$parser) {
-            $attributes = [
-                'comments', 'startLine', 'startFilePos', 'endFilePos',
-            ];
+        $attributes = [
+            'comments', 'startLine', 'startFilePos', 'endFilePos',
+        ];
 
-            $lexer = new PhpParser\Lexer([ 'usedAttributes' => $attributes ]);
+        $lexer = new PhpParser\Lexer([ 'usedAttributes' => $attributes ]);
 
-            self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
-        }
+        $parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
 
         $used_cached_statements = false;
 
@@ -361,7 +354,7 @@ class StatementsProvider
         if ($existing_statements && $file_changes && $existing_file_contents) {
             $clashing_traverser = new \Psalm\Internal\Traverser\CustomTraverser;
             $offset_analyzer = new \Psalm\Internal\Visitor\PartialParserVisitor(
-                self::$parser,
+                $parser,
                 $error_handler,
                 $file_changes,
                 $existing_file_contents,
@@ -376,7 +369,7 @@ class StatementsProvider
             } else {
                 try {
                     /** @var array<int, \PhpParser\Node\Stmt> */
-                    $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+                    $stmts = $parser->parse($file_contents, $error_handler) ?: [];
                 } catch (\Throwable $t) {
                     $stmts = [];
 
@@ -386,7 +379,7 @@ class StatementsProvider
         } else {
             try {
                 /** @var array<int, \PhpParser\Node\Stmt> */
-                $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+                $stmts = $parser->parse($file_contents, $error_handler) ?: [];
             } catch (\Throwable $t) {
                 $stmts = [];
 

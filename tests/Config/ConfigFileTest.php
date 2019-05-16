@@ -11,13 +11,13 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
     private $file_path;
 
     /** @return void */
-    public function setUp()
+    public function setUp() : void
     {
         $this->file_path = tempnam(sys_get_temp_dir(), 'psalm-test-config');
     }
 
     /** @return void */
-    public function tearDown()
+    public function tearDown() : void
     {
         @unlink($this->file_path);
     }

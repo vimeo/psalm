@@ -253,4 +253,9 @@ class Functions
 
         return isset($file_storage->functions[$function_id]) && $file_storage->functions[$function_id]->variadic;
     }
+
+    public static function clearCache() : void
+    {
+        self::$stubbed_functions = [];
+    }
 }

@@ -23,7 +23,7 @@ class PsalmPluginTest extends TestCase
     /** @var Application */
     private $app;
 
-    public function setUp()
+    public function setUp() : void
     {
         $this->plugin_list = $this->prophesize(PluginList::class);
         $this->plugin_list_factory = $this->prophesize(PluginListFactory::class);
@@ -59,8 +59,8 @@ class PsalmPluginTest extends TestCase
         $show_command->execute([]);
 
         $output = $show_command->getDisplay();
-        $this->assertContains('No plugins enabled', $output);
-        $this->assertContains('No plugins available', $output);
+        $this->assertStringContainsString('No plugins enabled', $output);
+        $this->assertStringContainsString('No plugins available', $output);
     }
 
     /**
@@ -76,8 +76,8 @@ class PsalmPluginTest extends TestCase
         $show_command->execute([]);
 
         $output = $show_command->getDisplay();
-        $this->assertContains('vendor/package', $output);
-        $this->assertContains('a\b\c', $output);
+        $this->assertStringContainsString('vendor/package', $output);
+        $this->assertStringContainsString('a\b\c', $output);
     }
 
     /**
@@ -93,8 +93,8 @@ class PsalmPluginTest extends TestCase
         $show_command->execute([]);
 
         $output = $show_command->getDisplay();
-        $this->assertContains('vendor/package', $output);
-        $this->assertContains('a\b\c', $output);
+        $this->assertStringContainsString('vendor/package', $output);
+        $this->assertStringContainsString('a\b\c', $output);
     }
 
     /**
@@ -128,8 +128,8 @@ class PsalmPluginTest extends TestCase
 
         $output = $show_command->getDisplay();
 
-        $this->assertContains('Package', $output);
-        $this->assertContains('Class', $output);
+        $this->assertStringContainsString('Package', $output);
+        $this->assertStringContainsString('Class', $output);
     }
 
     /**
@@ -142,7 +142,7 @@ class PsalmPluginTest extends TestCase
         $list_command = new CommandTester($this->app->find('list'));
         $list_command->execute([]);
         $output = $list_command->getDisplay();
-        $this->assertContains($command, $output);
+        $this->assertStringContainsString($command, $output);
     }
 
     /**
@@ -183,8 +183,8 @@ class PsalmPluginTest extends TestCase
 
         $output = $enable_command->getDisplay();
 
-        $this->assertContains('ERROR', $output);
-        $this->assertContains('Unknown plugin', $output);
+        $this->assertStringContainsString('ERROR', $output);
+        $this->assertStringContainsString('Unknown plugin', $output);
         $this->assertNotSame(0, $enable_command->getStatusCode());
     }
 
@@ -207,7 +207,7 @@ class PsalmPluginTest extends TestCase
         $enable_command->execute(['pluginName' => 'vendor/package']);
 
         $output = $enable_command->getDisplay();
-        $this->assertContains('Plugin already enabled', $output);
+        $this->assertStringContainsString('Plugin already enabled', $output);
         $this->assertNotSame(0, $enable_command->getStatusCode());
     }
 
@@ -233,7 +233,7 @@ class PsalmPluginTest extends TestCase
         $enable_command->execute(['pluginName' => 'vendor/package']);
 
         $output = $enable_command->getDisplay();
-        $this->assertContains('Plugin enabled', $output);
+        $this->assertStringContainsString('Plugin enabled', $output);
         $this->assertSame(0, $enable_command->getStatusCode());
     }
 
@@ -261,8 +261,8 @@ class PsalmPluginTest extends TestCase
 
         $output = $disable_command->getDisplay();
 
-        $this->assertContains('ERROR', $output);
-        $this->assertContains('Unknown plugin', $output);
+        $this->assertStringContainsString('ERROR', $output);
+        $this->assertStringContainsString('Unknown plugin', $output);
         $this->assertNotSame(0, $disable_command->getStatusCode());
     }
 
@@ -285,7 +285,7 @@ class PsalmPluginTest extends TestCase
         $disable_command->execute(['pluginName' => 'vendor/package']);
 
         $output = $disable_command->getDisplay();
-        $this->assertContains('Plugin already disabled', $output);
+        $this->assertStringContainsString('Plugin already disabled', $output);
         $this->assertNotSame(0, $disable_command->getStatusCode());
     }
 
@@ -311,7 +311,7 @@ class PsalmPluginTest extends TestCase
         $disable_command->execute(['pluginName' => 'vendor/package']);
 
         $output = $disable_command->getDisplay();
-        $this->assertContains('Plugin disabled', $output);
+        $this->assertStringContainsString('Plugin disabled', $output);
         $this->assertSame(0, $disable_command->getStatusCode());
     }
 

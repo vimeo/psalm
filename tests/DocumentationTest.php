@@ -62,7 +62,7 @@ class DocumentationTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();

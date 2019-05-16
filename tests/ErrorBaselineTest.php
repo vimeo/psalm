@@ -15,7 +15,7 @@ class ErrorBaselineTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         $this->fileProvider = $this->prophesize(FileProvider::class);
     }

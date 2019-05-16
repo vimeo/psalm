@@ -8,7 +8,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
@@ -279,22 +279,22 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testInvalidType()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array(A)');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBracketedUnionAndIntersection()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('(A|B)&C');
     }
 
@@ -482,172 +482,172 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testCallableWithBadVariadic()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('callable(int, ...string) : void');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testCallableWithTrailingColon()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('callable(int):');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testCallableWithAnotherBadVariadic()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('callable(int, string..) : void');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testCallableWithVariadicAndDefault()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('callable(int, string...=) : void');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadVariadic()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('string...');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadFullStop()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('string.');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadSemicolon()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('string;');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadGenericString()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('string<T>');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadAmpersand()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('&array');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadColon()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString(':array');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadBrackets()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('max(a)');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testMoreBadBrackets()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('max(a):void');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testGeneratorWithWBadBrackets()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('Generator{string, A}');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadEquals()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('=array');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadBar()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('|array');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testBadColonDash()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array|string:-');
     }
 
     /**
-     * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
      */
     public function testDoubleBar()
     {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('PDO||Closure|numeric');
     }
 
@@ -837,11 +837,14 @@ class TypeParseTest extends TestCase
      */
     public function testReflectionTypeParse()
     {
-        /** @psalm-suppress UnusedParam */
-        function someFunction(string $param, array $param2, int $param3 = null) : string
-        {
-            return 'hello';
+        if (!function_exists('Psalm\Tests\someFunction')) {
+            /** @psalm-suppress UnusedParam */
+            function someFunction(string $param, array $param2, int $param3 = null) : string
+            {
+                return 'hello';
+            }
         }
+
 
         $reflectionFunc = new \ReflectionFunction('Psalm\Tests\someFunction');
         $reflectionParams = $reflectionFunc->getParameters();

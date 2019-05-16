@@ -19,7 +19,7 @@ class PluginListTest extends \Psalm\Tests\TestCase
     /** @var ObjectProphecy<ComposerLock> */
     private $composer_lock;
 
-    public function setUp()
+    public function setUp() : void
     {
         $this->config = $this->prophesize(Config::class);
         /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */

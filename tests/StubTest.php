@@ -14,7 +14,7 @@ class StubTest extends TestCase
     /**
      * @return void
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
 
@@ -30,7 +30,7 @@ class StubTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
@@ -58,13 +58,12 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\ConfigException
-     * @expectedExceptionMessage Cannot resolve stubfile path
-     *
-     * @return                   void
+     * @return void
      */
     public function testNonexistentStubFile()
     {
+        $this->expectException(\Psalm\Exception\ConfigException::class);
+        $this->expectExceptionMessage('Cannot resolve stubfile path');
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
@@ -347,13 +346,13 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidScalarArgument
      *
-     * @return                   void
+     * @return void
      */
     public function testStubVariadicFunctionWrongArgType()
     {
+        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -382,13 +381,13 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TooManyArguments
      *
-     * @return                   void
+     * @return void
      */
     public function testUserVariadicWithFalseVariadic()
     {
+        $this->expectExceptionMessage('TooManyArguments');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -575,13 +574,13 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist
      *
-     * @return                   void
+     * @return void
      */
     public function testNoStubFunction()
     {
+        $this->expectExceptionMessage('UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -787,13 +786,12 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeCoercion
-     *
-     * @return                   void
+     * @return void
      */
     public function testStubFileWithPartialClassDefinitionWithCoercion()
     {
+        $this->expectExceptionMessage('TypeCoercion');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -834,13 +832,13 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidReturnStatement
      *
-     * @return                   void
+     * @return void
      */
     public function testStubFileWithPartialClassDefinitionGeneralReturnType()
     {
+        $this->expectExceptionMessage('InvalidReturnStatement');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
