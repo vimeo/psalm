@@ -1,6 +1,6 @@
 # Configuration
 
-Psalm uses an XML config file. A barebones example looks like this:
+Psalm uses an XML config file (by default, `psalm.xml`). A barebones example looks like this:
 
 ```xml
 <?xml version="1.0"?>
