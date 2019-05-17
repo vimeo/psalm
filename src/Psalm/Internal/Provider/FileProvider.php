@@ -89,7 +89,7 @@ class FileProvider
      */
     public function isOpen(string $file_path)
     {
-        return isset($this->open_files[strtolower($file_path)]);
+        return isset($this->temp_files[strtolower($file_path)]) || isset($this->open_files[strtolower($file_path)]);
     }
 
     /**
