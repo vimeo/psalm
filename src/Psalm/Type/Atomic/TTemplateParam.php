@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type;
 use Psalm\Type\Union;
 
 class TTemplateParam extends \Psalm\Type\Atomic
@@ -112,5 +113,15 @@ class TTemplateParam extends \Psalm\Type\Atomic
     public function canBeFullyExpressedInPhp()
     {
         return false;
+    }
+
+    /**
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
+     *
+     * @return void
+     */
+    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    {
+        $this->replaceIntersectionTemplateTypesWithArgTypes($template_types);
     }
 }

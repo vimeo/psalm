@@ -197,5 +197,9 @@ trait GenericTrait
         foreach ($this->type_params as $type_param) {
             $type_param->replaceTemplateTypesWithArgTypes($template_types);
         }
+
+        if ($this instanceof TGenericObject || $this instanceof TIterable) {
+            $this->replaceIntersectionTemplateTypesWithArgTypes($template_types);
+        }
     }
 }

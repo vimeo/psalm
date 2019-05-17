@@ -9,12 +9,14 @@ use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Internal\Type\TypeCombination;
 
 class Union
@@ -1187,18 +1189,31 @@ class Union
         $is_mixed = false;
 
         foreach ($this->types as $key => $atomic_type) {
+            $atomic_type->replaceTemplateTypesWithArgTypes($template_types);
+
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $keys_to_unset[] = $key;
 
                 $template_type = null;
 
-                if (isset($template_types[$key][$atomic_type->defining_class ?: ''])) {
-                    $template_type = $template_types[$key][$atomic_type->defining_class ?: ''][0];
+                if (isset($template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''])) {
+                    $template_type = $template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''][0];
 
                     if (!$atomic_type->as->isMixed() && $template_type->isMixed()) {
                         $template_type = clone $atomic_type->as;
                     } else {
                         $template_type = clone $template_type;
+                    }
+
+                    if ($atomic_type->extra_types) {
+                        foreach ($template_type->getTypes() as $atomic_template_type) {
+                            if ($atomic_template_type instanceof TNamedObject
+                                || $atomic_template_type instanceof TTemplateParam
+                                || $atomic_template_type instanceof TIterable
+                            ) {
+                                $atomic_template_type->extra_types = $atomic_type->extra_types;
+                            }
+                        }
                     }
                 } elseif ($codebase && $atomic_type->defining_class) {
                     foreach ($template_types as $template_type_map) {
@@ -1266,8 +1281,6 @@ class Union
                         $keys_to_unset[] = $key;
                     }
                 }
-            } else {
-                $atomic_type->replaceTemplateTypesWithArgTypes($template_types);
             }
         }
 
