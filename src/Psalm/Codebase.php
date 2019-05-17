@@ -1091,15 +1091,22 @@ class Codebase
 
         krsort($type_map);
 
+        $gap = null;
+
         foreach ($type_map as $start_pos => list($end_pos, $possible_type)) {
             if ($offset < $start_pos) {
                 continue;
             }
 
             if ($offset - $end_pos === 2 || $offset - $end_pos === 3) {
-                $recent_type = $possible_type;
+                $candidate_gap = substr($file_contents, $end_pos, 2);
 
-                break;
+                if ($candidate_gap === '->' || $candidate_gap === '::') {
+                    $gap = $candidate_gap;
+                    $recent_type = $possible_type;
+
+                    break;
+                }
             }
 
             if ($offset - $end_pos > 3) {
@@ -1109,11 +1116,10 @@ class Codebase
 
         if (!$recent_type
             || $recent_type === 'mixed'
+            || !$gap
         ) {
             return null;
         }
-
-        $gap = substr($file_contents, $end_pos, 2);
 
         return [$recent_type, $gap];
     }

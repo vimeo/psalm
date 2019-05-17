@@ -902,10 +902,14 @@ class Analyzer
     /**
      * @return void
      */
-    public function addNodeType(string $file_path, PhpParser\Node $node, string $node_type)
-    {
+    public function addNodeType(
+        string $file_path,
+        PhpParser\Node $node,
+        string $node_type,
+        PhpParser\Node $parent_node = null
+    ) {
         $this->type_map[$file_path][(int)$node->getAttribute('startFilePos')] = [
-            (int)$node->getAttribute('endFilePos') + 1,
+            ($parent_node ? (int)$parent_node->getAttribute('endFilePos') : (int)$node->getAttribute('endFilePos')) + 1,
             $node_type
         ];
     }
