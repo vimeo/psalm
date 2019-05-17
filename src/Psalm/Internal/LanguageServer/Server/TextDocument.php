@@ -264,61 +264,7 @@ class TextDocument
         $completion_items = [];
 
         if ($gap === '->' || $gap === '::') {
-            $instance_completion_items = [];
-            $static_completion_items = [];
-
-            try {
-                $class_storage = $this->codebase->classlike_storage_provider->get($recent_type);
-
-                foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
-                    $method_storage = $this->codebase->methods->getStorage($declaring_method_id);
-
-                    $instance_completion_items[] = new CompletionItem(
-                        (string)$method_storage,
-                        CompletionItemKind::METHOD,
-                        null,
-                        null,
-                        null,
-                        null,
-                        $method_storage->cased_name . '()'
-                    );
-                }
-
-                foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
-                    $property_storage = $this->codebase->properties->getStorage(
-                        $declaring_class . '::$' . $property_name
-                    );
-
-                    $instance_completion_items[] = new CompletionItem(
-                        $property_storage->getInfo() . ' $' . $property_name,
-                        CompletionItemKind::PROPERTY,
-                        null,
-                        null,
-                        null,
-                        null,
-                        ($gap === '::' ? '$' : '') . $property_name
-                    );
-                }
-
-                foreach ($class_storage->class_constant_locations as $const_name => $_) {
-                    $static_completion_items[] = new CompletionItem(
-                        'const ' . $const_name,
-                        CompletionItemKind::VARIABLE,
-                        null,
-                        null,
-                        null,
-                        null,
-                        $const_name
-                    );
-                }
-            } catch (\Exception $e) {
-                error_log($e->getMessage());
-                return new Success([]);
-            }
-
-            $completion_items = $gap === '->'
-                ? $instance_completion_items
-                : array_merge($instance_completion_items, $static_completion_items);
+            $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap);
 
             error_log('Found ' . count($completion_items) . ' items');
         }

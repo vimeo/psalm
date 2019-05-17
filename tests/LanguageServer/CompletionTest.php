@@ -201,4 +201,60 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $this->assertSame(['B\C', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 39)));
     }
+
+    /**
+     * @return void
+     */
+    public function testCompletionOnTemplatedThisProperty()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                /** @template T */
+                class C {
+                    /** @var T */
+                    private $t;
+
+                    /** @param T $t */
+                    public function __construct($t) {
+                        $this->t = $t;
+                    }
+
+                    public function otherFunction() : void
+                }
+
+                class A {
+                    /** @var C<string> */
+                    protected $cee_me;
+
+                    public function __construct() {
+                        $this->cee_me = new C("hello");
+                    }
+
+                    public function foo() : void {
+                        $this->cee_me->
+                    }
+                }'
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(25, 39));
+
+        $this->assertSame(['B\C<string>', '->'], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+
+        $this->assertCount(3, $completion_items);
+    }
 }
