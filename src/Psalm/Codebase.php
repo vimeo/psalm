@@ -1113,7 +1113,7 @@ class Codebase
             return null;
         }
 
-        $gap = substr($file_contents, $end_pos, $offset - $end_pos);
+        $gap = substr($file_contents, $end_pos, 2);
 
         return [$recent_type, $gap];
     }
