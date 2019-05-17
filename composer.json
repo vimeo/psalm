@@ -14,7 +14,6 @@
         "nikic/php-parser": "^4.0.2 || ^4.1",
         "openlss/lib-array2xml": "^0.0.10||^0.5.1",
         "ocramius/package-versions": "^1.2",
-        "php-cs-fixer/diff": "^1.2",
         "composer/xdebug-handler": "^1.1",
         "felixfbecker/language-server-protocol": "^1.2",
         "felixfbecker/advanced-json-rpc": "^3.0.3",
@@ -24,7 +23,8 @@
         "symfony/console": "^3.3||^4.0",
         "amphp/amp": "^2.1",
         "amphp/byte-stream": "^1.5",
-        "phpmyadmin/sql-parser": "^5.0"
+        "phpmyadmin/sql-parser": "^5.0",
+        "sebastian/diff": "^3.0"
     },
     "bin": ["psalm", "psalter", "psalm-language-server", "psalm-plugin"],
     "autoload": {

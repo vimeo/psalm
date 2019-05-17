@@ -1091,8 +1091,8 @@ class Analyzer
             if ($dry_run) {
                 echo $file_path . ':' . "\n";
 
-                $differ = new \PhpCsFixer\Diff\v2_0\Differ(
-                    new \PhpCsFixer\Diff\GeckoPackages\DiffOutputBuilder\UnifiedDiffOutputBuilder([
+                $differ = new \SebastianBergmann\Diff\Differ(
+                    new \SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder([
                         'fromFile' => 'Original',
                         'toFile' => 'New',
                     ])
