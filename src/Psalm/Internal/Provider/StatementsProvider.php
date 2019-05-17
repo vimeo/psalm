@@ -48,6 +48,11 @@ class StatementsProvider
      */
     private $diff_map = [];
 
+    /**
+     * @var PhpParser\Lexer|null
+     */
+    private static $lexer;
+
     public function __construct(
         FileProvider $file_provider,
         ParserCacheProvider $parser_cache_provider = null,
@@ -343,9 +348,11 @@ class StatementsProvider
             'comments', 'startLine', 'startFilePos', 'endFilePos',
         ];
 
-        $lexer = new PhpParser\Lexer([ 'usedAttributes' => $attributes ]);
+        if (!self::$lexer) {
+            self::$lexer = new PhpParser\Lexer([ 'usedAttributes' => $attributes ]);
+        }
 
-        $parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
+        $parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, self::$lexer);
 
         $used_cached_statements = false;
 

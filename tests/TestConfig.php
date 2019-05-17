@@ -48,4 +48,9 @@ class TestConfig extends Config
     {
         return false;
     }
+
+    public function getProjectDirectories()
+    {
+        return [];
+    }
 }
