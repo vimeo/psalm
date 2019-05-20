@@ -64,6 +64,7 @@ class TryAnalyzer
         $assigned_var_ids = $try_context->assigned_var_ids;
         $context->assigned_var_ids = [];
 
+        $old_referenced_var_ids = $try_context->referenced_var_ids;
         $old_unreferenced_vars = $try_context->unreferenced_vars;
         $newly_unreferenced_vars = [];
         $reassigned_vars = [];
@@ -78,6 +79,11 @@ class TryAnalyzer
         $context->assigned_var_ids = array_merge(
             $assigned_var_ids,
             $newly_assigned_var_ids
+        );
+
+        $possibly_referenced_var_ids = array_diff(
+            $context->referenced_var_ids,
+            $old_referenced_var_ids
         );
 
         if ($try_context !== $context) {
@@ -96,7 +102,7 @@ class TryAnalyzer
 
             $try_context->vars_possibly_in_scope = $context->vars_possibly_in_scope;
 
-            $context->referenced_var_ids = array_merge(
+            $context->referenced_var_ids = array_intersect_key(
                 $try_context->referenced_var_ids,
                 $context->referenced_var_ids
             );
@@ -304,9 +310,14 @@ class TryAnalyzer
                 }
             }
 
-            $context->referenced_var_ids = array_merge(
+            $context->referenced_var_ids = array_intersect_key(
                 $catch_context->referenced_var_ids,
                 $context->referenced_var_ids
+            );
+
+            $possibly_referenced_var_ids = array_merge(
+                $catch_context->referenced_var_ids,
+                $possibly_referenced_var_ids
             );
 
             if ($context->collect_references && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {
@@ -369,6 +380,21 @@ class TryAnalyzer
             $context->loop_scope->final_actions[] = ScopeAnalyzer::ACTION_NONE;
         }
 
+        $newly_referenced_var_ids = array_diff_key(
+            $context->referenced_var_ids,
+            $old_referenced_var_ids
+        );
+
+        if ($context->collect_references) {
+            foreach ($old_unreferenced_vars as $var_id => $locations) {
+                if ((isset($context->unreferenced_vars[$var_id]) && $context->unreferenced_vars[$var_id] !== $locations)
+                    || (!isset($newly_referenced_var_ids[$var_id]) && isset($possibly_referenced_var_ids[$var_id]))
+                ) {
+                    $statements_analyzer->registerVariableUses($locations);
+                }
+            }
+        }
+
         if ($stmt->finally) {
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
@@ -383,16 +409,6 @@ class TryAnalyzer
             foreach ($issues_to_suppress as $issue_to_suppress) {
                 if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
                     $statements_analyzer->removeSuppressedIssues([$issue_to_suppress]);
-                }
-            }
-        }
-
-        if ($context->collect_references) {
-            foreach ($old_unreferenced_vars as $var_id => $locations) {
-                if (isset($context->unreferenced_vars[$var_id])
-                    && $context->unreferenced_vars[$var_id] !== $locations
-                ) {
-                    $statements_analyzer->registerVariableUses($locations);
                 }
             }
         }
