@@ -189,7 +189,10 @@ class LoopAnalyzer
              * @var array<string, bool>
              */
             $new_referenced_var_ids = $inner_context->referenced_var_ids;
-            $inner_context->referenced_var_ids = $old_referenced_var_ids + $inner_context->referenced_var_ids;
+            $inner_context->referenced_var_ids = array_intersect_key(
+                $old_referenced_var_ids,
+                $inner_context->referenced_var_ids
+            );
 
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();

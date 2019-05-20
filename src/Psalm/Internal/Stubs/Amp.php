@@ -22,7 +22,7 @@ function call(callable $gen) : Promise {}
  */
 interface Promise {
     /**
-     * @param callable(\Throwable|null $exception, TReturn|null $result):void
+     * @param callable(?\Throwable, ?TReturn):void $onResolved
      * @return void
      */
     function onResolve(callable $onResolved);
@@ -39,7 +39,7 @@ class Success implements Promise {
      */
     public function __construct($value = null) {}
     /**
-     * @param callable(\Throwable|null $exception, TReturn|null $result):void
+     * @param callable(?Throwable, ?TReturn):void $onResolved
      * @return void
      */
     function onResolve(callable $onResolved) {}

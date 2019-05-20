@@ -173,6 +173,7 @@ class ForeachAnalyzer
 
             if ($context->collect_references && !isset($foreach_context->byref_constraints[$key_var_id])) {
                 $foreach_context->unreferenced_vars[$key_var_id] = [$location->getHash() => $location];
+                unset($foreach_context->referenced_var_ids[$key_var_id]);
             }
 
             if (!$statements_analyzer->hasVariable($key_var_id)) {
@@ -267,7 +268,7 @@ class ForeachAnalyzer
             $context->vars_possibly_in_scope
         );
 
-        $context->referenced_var_ids = array_merge(
+        $context->referenced_var_ids = array_intersect_key(
             $foreach_context->referenced_var_ids,
             $context->referenced_var_ids
         );

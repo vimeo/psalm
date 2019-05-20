@@ -130,21 +130,19 @@ class ForAnalyzer
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
 
-        $context->referenced_var_ids =
-            $for_context->referenced_var_ids + $context->referenced_var_ids;
+        $context->referenced_var_ids = array_intersect_key(
+            $for_context->referenced_var_ids,
+            $context->referenced_var_ids
+        );
 
         if ($context->collect_references) {
-            $context->unreferenced_vars = array_intersect_key(
-                $for_context->unreferenced_vars,
-                $context->unreferenced_vars
-            );
-        }
-
-        if ($context->collect_references) {
-            $context->unreferenced_vars = array_intersect_key(
-                $for_context->unreferenced_vars,
-                $context->unreferenced_vars
-            );
+            foreach ($for_context->unreferenced_vars as $var_id => $locations) {
+                if (isset($context->unreferenced_vars[$var_id])) {
+                    $context->unreferenced_vars[$var_id] += $locations;
+                } else {
+                    $context->unreferenced_vars[$var_id] = $locations;
+                }
+            }
         }
 
         if ($context->collect_exceptions) {

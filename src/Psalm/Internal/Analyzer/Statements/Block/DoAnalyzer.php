@@ -70,7 +70,7 @@ class DoAnalyzer
                 continue;
             }
 
-            if ($do_context->hasVariable($var)) {
+            if (isset($do_context->vars_in_scope[$var])) {
                 if ($do_context->vars_in_scope[$var]->getId() !== $type->getId()) {
                     $do_context->vars_in_scope[$var] = Type::combineUnionTypes($do_context->vars_in_scope[$var], $type);
                 }
