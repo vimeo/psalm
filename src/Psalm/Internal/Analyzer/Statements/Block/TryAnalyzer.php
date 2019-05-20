@@ -51,7 +51,7 @@ class TryAnalyzer
          */
         $context->possibly_thrown_exceptions = [];
 
-        if ($all_catches_leave) {
+        if ($all_catches_leave && !$stmt->finally) {
             $try_context = $context;
         } else {
             $try_context = clone $context;
