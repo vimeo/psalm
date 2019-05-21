@@ -1591,6 +1591,10 @@ class TypeAnalyzer
                     continue;
                 }
 
+                if ($input_param->isEmpty()) {
+                    continue;
+                }
+
                 if (!self::isContainedBy(
                     $codebase,
                     $input_param,
