@@ -1586,6 +1586,15 @@ class CallAnalyzer
                 $static_fq_class_name
             );
 
+            $fleshed_out_signature_type = $function_param->signature_type
+                ? ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $function_param->signature_type,
+                    $self_fq_class_name,
+                    $static_fq_class_name
+                )
+                : null;
+
             if ($arg->unpack) {
                 if ($arg_type->hasMixed()) {
                     if (!$context->collect_initializations
@@ -1647,6 +1656,7 @@ class CallAnalyzer
                 $statements_analyzer,
                 $arg_type,
                 $fleshed_out_type,
+                $fleshed_out_signature_type,
                 $cased_method_id,
                 $argument_offset,
                 new CodeLocation($statements_analyzer->getSource(), $arg->value),
@@ -2171,6 +2181,7 @@ class CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Type\Union $input_type,
         Type\Union $param_type,
+        ?Type\Union $signature_param_type,
         $cased_method_id,
         $argument_offset,
         CodeLocation $code_location,
@@ -2227,6 +2238,21 @@ class CallAnalyzer
                 $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
+            }
+
+            if (!$by_ref
+                && !($variadic xor $unpack)
+                && $cased_method_id !== 'echo'
+            ) {
+                self::coerceValueAfterGatekeeperArgument(
+                    $statements_analyzer,
+                    $input_type,
+                    $input_expr,
+                    $param_type,
+                    $signature_param_type,
+                    $context,
+                    $unpack
+                );
             }
 
             return null;
@@ -2587,47 +2613,71 @@ class CallAnalyzer
         }
 
         if ($type_match_found
-            && !$param_type->hasMixed()
-            && !$param_type->from_docblock
-            && !($variadic xor $unpack)
             && !$by_ref
+            && !($variadic xor $unpack)
             && $cased_method_id !== 'echo'
         ) {
-            $var_id = ExpressionAnalyzer::getVarId(
+            self::coerceValueAfterGatekeeperArgument(
+                $statements_analyzer,
+                $input_type,
                 $input_expr,
-                $statements_analyzer->getFQCLN(),
-                $statements_analyzer
+                $param_type,
+                $signature_param_type,
+                $context,
+                $unpack
             );
-
-            if ($var_id) {
-                if ($input_type->isNullable() && !$param_type->isNullable()) {
-                    $input_type->removeType('null');
-                }
-
-                if ($input_type->getId() === $param_type->getId()) {
-                    $input_type->from_docblock = false;
-
-                    foreach ($input_type->getTypes() as $atomic_type) {
-                        $atomic_type->from_docblock = false;
-                    }
-                }
-
-                $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
-
-                if ($unpack) {
-                    $input_type = new Type\Union([
-                        new TArray([
-                            Type::getInt(),
-                            $input_type
-                        ]),
-                    ]);
-                }
-
-                $context->vars_in_scope[$var_id] = $input_type;
-            }
         }
 
         return null;
+    }
+
+    private static function coerceValueAfterGatekeeperArgument(
+        StatementsAnalyzer $statements_analyzer,
+        Type\Union $input_type,
+        PhpParser\Node\Expr $input_expr,
+        Type\Union $param_type,
+        ?Type\Union $signature_param_type,
+        Context $context,
+        bool $unpack
+    ) : void {
+        if ($param_type->hasMixed() || ($param_type->from_docblock && !$input_type->isMixed())) {
+            return;
+        }
+
+        $var_id = ExpressionAnalyzer::getVarId(
+            $input_expr,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
+        );
+
+        if ($var_id) {
+            if ($input_type->isNullable() && !$param_type->isNullable()) {
+                $input_type->removeType('null');
+            }
+
+            if ($input_type->getId() === $param_type->getId()) {
+                $input_type->from_docblock = false;
+
+                foreach ($input_type->getTypes() as $atomic_type) {
+                    $atomic_type->from_docblock = false;
+                }
+            } elseif ($input_type->isMixed() && $signature_param_type) {
+                $input_type = clone $signature_param_type;
+            }
+
+            $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
+
+            if ($unpack) {
+                $input_type = new Type\Union([
+                    new TArray([
+                        Type::getInt(),
+                        $input_type
+                    ]),
+                ]);
+            }
+
+            $context->vars_in_scope[$var_id] = $input_type;
+        }
     }
 
     /**

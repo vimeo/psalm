@@ -435,7 +435,7 @@ abstract class Type
 
                     $tree_type = $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
 
-                    return new FunctionLikeParameter(
+                    $param = new FunctionLikeParameter(
                         '',
                         false,
                         $tree_type,
@@ -445,6 +445,11 @@ abstract class Type
                         false,
                         $is_variadic
                     );
+
+                    // type is not authoratative
+                    $param->signature_type = null;
+
+                    return $param;
                 },
                 $parse_tree->children
             );

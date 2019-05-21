@@ -454,6 +454,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $this,
                             $expr->inferredType,
                             Type::getString(),
+                            null,
                             'echo',
                             (int)$i,
                             new CodeLocation($this->getSource(), $expr),

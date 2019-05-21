@@ -1646,6 +1646,21 @@ class FunctionCallTest extends TestCase
                         );
                     }',
             ],
+            'noImplicitAssignmentToStringFromMixedWithDocblockTypes' => [
+                '<?php
+                    /** @param string $s */
+                    function takesString($s) : void {}
+                    function takesInt(int $i) : void {}
+
+                    /**
+                     * @param mixed $s
+                     * @psalm-suppress MixedArgument
+                     */
+                    function bar($s) : void {
+                        takesString($s);
+                        takesInt($s);
+                    }',
+            ],
         ];
     }
 
@@ -2167,7 +2182,23 @@ class FunctionCallTest extends TestCase
                     $a = rand(0, 1) ? null : 5;
                     /** @psalm-suppress MixedArgument */
                     foo((int) $a);',
-                'InvalidPassByReference',
+                'error_message' => 'InvalidPassByReference',
+            ],
+            'implicitAssignmentToStringFromMixed' => [
+                '<?php
+                    /** @param "a"|"b" $s */
+                    function takesString(string $s) : void {}
+                    function takesInt(int $i) : void {}
+
+                    /**
+                     * @param mixed $s
+                     * @psalm-suppress MixedArgument
+                     */
+                    function bar($s) : void {
+                        takesString($s);
+                        takesInt($s);
+                    }',
+                'error_message' => 'InvalidScalarArgument'
             ],
         ];
     }

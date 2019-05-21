@@ -56,12 +56,12 @@ class CallMap
             $call_map_functions[] = $call_map[$call_map_key . '\'' . $i];
         }
 
-        $function_type_options = [];
+        $function_param_options = [];
 
         foreach ($call_map_functions as $call_map_function_args) {
             array_shift($call_map_function_args);
 
-            $function_types = [];
+            $function_params = [];
 
             /** @var string $arg_name - key type changed with above array_shift */
             foreach ($call_map_function_args as $arg_name => $arg_type) {
@@ -88,7 +88,7 @@ class CallMap
                     ? Type::parseString($arg_type)
                     : Type::getMixed();
 
-                $function_types[] = new FunctionLikeParameter(
+                $function_param = new FunctionLikeParameter(
                     $arg_name,
                     $by_reference,
                     $param_type,
@@ -98,12 +98,16 @@ class CallMap
                     false,
                     $variadic
                 );
+
+                $function_param->signature_type = null;
+
+                $function_params[] = $function_param;
             }
 
-            $function_type_options[] = $function_types;
+            $function_param_options[] = $function_params;
         }
 
-        return $function_type_options;
+        return $function_param_options;
     }
 
     /**

@@ -112,17 +112,21 @@ class ParamTypeManipulationTest extends FileManipulationTest
             ],
             'noParamTypeButConcatAndStringUsage' => [
                 '<?php
+                    function takesString(string $s) : void {}
+
                     function fooFoo($a): void {
                         echo $a . "foo";
-                        echo substr($a, 4, 2);
+                        echo takesString($a);
                     }',
                 '<?php
+                    function takesString(string $s) : void {}
+
                     /**
                      * @param string $a
                      */
                     function fooFoo($a): void {
                         echo $a . "foo";
-                        echo substr($a, 4, 2);
+                        echo takesString($a);
                     }',
                 '7.1',
                 ['MissingParamType'],
@@ -130,16 +134,20 @@ class ParamTypeManipulationTest extends FileManipulationTest
             ],
             'noParamTypeButConcatAndStringUsageReversed' => [
                 '<?php
+                    function takesString(string $s) : void {}
+
                     function fooFoo($a): void {
-                        echo substr($a, 4, 2);
+                        echo takesString($a);
                         echo $a . "foo";
                     }',
                 '<?php
+                    function takesString(string $s) : void {}
+
                     /**
                      * @param string $a
                      */
                     function fooFoo($a): void {
-                        echo substr($a, 4, 2);
+                        echo takesString($a);
                         echo $a . "foo";
                     }',
                 '7.1',
