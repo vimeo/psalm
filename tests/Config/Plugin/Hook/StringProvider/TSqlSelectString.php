@@ -1,7 +1,8 @@
 <?php
-namespace Psalm\Type\Atomic;
 
-class TSqlSelectString extends TLiteralString
+namespace Psalm\Test\Config\Plugin\Hook\StringProvider;
+
+class TSqlSelectString extends \Psalm\Type\Atomic\TLiteralString
 {
     /**
      * @return string
@@ -10,7 +11,6 @@ class TSqlSelectString extends TLiteralString
     {
         return 'sql-select-string';
     }
-
     /**
      * @return string
      */
@@ -18,7 +18,6 @@ class TSqlSelectString extends TLiteralString
     {
         return 'sql-select-string(' . $this->value . ')';
     }
-
     /**
      * @return bool
      */

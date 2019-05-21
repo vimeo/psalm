@@ -321,6 +321,13 @@ class Config
     public $after_statement_checks = [];
 
     /**
+     * Static methods to be called after method checks have completed
+     *
+     * @var class-string<Hook\StringInterpreterInterface>[]
+     */
+    public $string_interpreters = [];
+
+    /**
      * Static methods to be called after classlike exists checks have completed
      *
      * @var class-string<Hook\AfterClassLikeExistenceCheckInterface>[]

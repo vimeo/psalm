@@ -618,6 +618,46 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /** @return void */
+    public function testSqlStringProviderHooks()
+    {
+        require_once __DIR__ . '/Plugin/SqlStringProviderPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\SqlStringProviderPlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $a = "select * from videos;";'
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $this->assertTrue(isset($context->vars_in_scope['$a']));
+
+        foreach ($context->vars_in_scope['$a']->getTypes() as $type) {
+            $this->assertInstanceOf(\Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString::class, $type);
+        }
+    }
+
     /**
      *
      * @return void
