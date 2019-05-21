@@ -2640,8 +2640,33 @@ class CallAnalyzer
         Context $context,
         bool $unpack
     ) : void {
-        if ($param_type->hasMixed() || ($param_type->from_docblock && !$input_type->isMixed())) {
+        if ($param_type->hasMixed()) {
             return;
+        }
+
+        if ($param_type->from_docblock && !$input_type->isMixed()) {
+            $input_type_changed = false;
+
+            foreach ($param_type->getTypes() as $param_atomic_type) {
+                if ($param_atomic_type instanceof Type\Atomic\TGenericObject) {
+                    foreach ($input_type->getTypes() as $input_atomic_type) {
+                        if ($input_atomic_type instanceof Type\Atomic\TGenericObject
+                            && $input_atomic_type->value === $param_atomic_type->value
+                        ) {
+                            foreach ($input_atomic_type->type_params as $i => $type_param) {
+                                if ($type_param->isEmpty() && isset($param_atomic_type->type_params[$i])) {
+                                    $input_type_changed = true;
+                                    $input_atomic_type->type_params[$i] = clone $param_atomic_type->type_params[$i];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!$input_type_changed) {
+                return;
+            }
         }
 
         $var_id = ExpressionAnalyzer::getVarId(
