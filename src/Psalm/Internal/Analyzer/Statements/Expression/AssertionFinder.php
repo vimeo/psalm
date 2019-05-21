@@ -1664,9 +1664,13 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'iterable']];
             }
-        } elseif (self::hasClassOrInterfaceExistsCheck($expr)) {
+        } elseif (self::hasClassExistsCheck($expr)) {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'class-string']];
+            }
+        } elseif (self::hasInterfaceExistsCheck($expr)) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = [[$prefix . 'interface-string']];
             }
         } elseif (self::hasFunctionExistsCheck($expr)) {
             if ($first_var_name) {
@@ -2285,11 +2289,26 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasClassOrInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name
-            && (($function_name = strtolower($stmt->name->parts[0])) === 'class_exists'
-                || $function_name === 'interface_exists')
+            && strtolower($stmt->name->parts[0]) === 'class_exists'
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
+     * @return  bool
+     */
+    protected static function hasInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name
+            && strtolower($stmt->name->parts[0]) === 'interface_exists'
         ) {
             return true;
         }

@@ -2165,9 +2165,13 @@ class Reconciler
                     }
                 }
             }
-        } elseif ($scalar_type === 'string' || $scalar_type === 'class-string' || $scalar_type === 'callable-string') {
+        } elseif ($scalar_type === 'string'
+            || $scalar_type === 'class-string'
+            || $scalar_type === 'interface-string'
+            || $scalar_type === 'callable-string'
+        ) {
             if ($existing_var_type->hasMixed() || $existing_var_type->hasScalar()) {
-                if ($scalar_type === 'class-string') {
+                if ($scalar_type === 'class-string' || $scalar_type === 'interface-string') {
                     return new Type\Union([new Type\Atomic\TLiteralClassString($value)]);
                 }
 
@@ -2205,7 +2209,7 @@ class Reconciler
                         );
                     }
                 } else {
-                    if ($scalar_type === 'class-string') {
+                    if ($scalar_type === 'class-string' || $scalar_type === 'interface-string') {
                         $existing_var_type = new Type\Union([new Type\Atomic\TLiteralClassString($value)]);
                     } else {
                         $existing_var_type = new Type\Union([new Type\Atomic\TLiteralString($value)]);
@@ -2349,7 +2353,11 @@ class Reconciler
                     $did_remove_type = true;
                 }
             }
-        } elseif ($scalar_type === 'string' || $scalar_type === 'class-string' || $scalar_type === 'callable-string') {
+        } elseif ($scalar_type === 'string'
+            || $scalar_type === 'class-string'
+            || $scalar_type === 'interface-string'
+            || $scalar_type === 'callable-string'
+        ) {
             if ($existing_var_type->hasString() && $existing_string_types = $existing_var_type->getLiteralStrings()) {
                 $did_match_literal_type = true;
 
