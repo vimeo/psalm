@@ -2688,6 +2688,10 @@ class CallAnalyzer
                 }
             } elseif ($input_type->isMixed() && $signature_param_type) {
                 $input_type = clone $signature_param_type;
+
+                if ($input_type->isNullable()) {
+                    $input_type->ignore_nullable_issues = true;
+                }
             }
 
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
