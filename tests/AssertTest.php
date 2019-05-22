@@ -718,6 +718,48 @@ class AssertTest extends TestCase
                         unset($options["a"], $options["b"]);
                     }',
             ],
+            'assertStaticMethodIfFalse' => [
+                '<?php
+                    class StringUtility {
+                        /**
+                         * @psalm-assert-if-false !null $yStr
+                         */
+                        public static function isNull(?string $yStr): bool {
+                            if ($yStr === null) {
+                                return true;
+                            }
+                            return false;
+                        }
+                    }
+
+                    function test(?string $in) : void {
+                        $str = "test";
+                        if(!StringUtility::isNull($in)) {
+                            $str .= $in;
+                        }
+                    }',
+            ],
+            'assertStaticMethodIfTrue' => [
+                '<?php
+                    class StringUtility {
+                        /**
+                         * @psalm-assert-if-true !null $yStr
+                         */
+                        public static function isNotNull(?string $yStr): bool {
+                            if ($yStr === null) {
+                                return true;
+                            }
+                            return false;
+                        }
+                    }
+
+                    function test(?string $in) : void {
+                        $str = "test";
+                        if(StringUtility::isNotNull($in)) {
+                            $str .= $in;
+                        }
+                    }',
+            ],
         ];
     }
 

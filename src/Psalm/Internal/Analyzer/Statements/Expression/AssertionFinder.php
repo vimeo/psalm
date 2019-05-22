@@ -288,7 +288,9 @@ class AssertionFinder
             return;
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\MethodCall) {
+        if ($conditional instanceof PhpParser\Node\Expr\MethodCall
+            || $conditional instanceof PhpParser\Node\Expr\StaticCall
+        ) {
             $conditional->assertions = self::processCustomAssertion($conditional, $this_class_name, $source, false);
             return;
         }
