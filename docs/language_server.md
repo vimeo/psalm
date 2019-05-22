@@ -70,7 +70,7 @@ let g:ale_linters = { 'php': ['php', 'psalm'] }
 
 **vim-lsp**
 
-I got it working with [vim-lsp](https://github.com/prabirshrestha/vim-lsp)
+I also got it working with [vim-lsp](https://github.com/prabirshrestha/vim-lsp)
 
 This is the config I used (for Vim):
 
