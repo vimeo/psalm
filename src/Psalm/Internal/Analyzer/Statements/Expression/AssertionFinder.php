@@ -1750,7 +1750,7 @@ class AssertionFinder
     }
 
     /**
-     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall      $expr
+     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      * @param  string|null  $this_class_name
      * @param  FileSource   $source
      * @param  bool         $negate
