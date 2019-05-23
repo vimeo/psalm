@@ -2521,8 +2521,6 @@ class Reconciler
                         );
 
                         $base_atomic_type->had_mixed_value = true;
-
-                        $new_base_type->addType($base_atomic_type);
                     } else {
                         $base_atomic_type = clone $base_atomic_type;
                         $base_atomic_type->properties[$array_key_offset] = clone $result_type;
