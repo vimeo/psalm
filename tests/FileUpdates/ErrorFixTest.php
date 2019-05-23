@@ -46,18 +46,14 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
     /**
      * @dataProvider providerTestErrorFix
      *
-     * @param array<string, string> $start_files
-     * @param array<string, string> $middle_files
-     * @param array<string, string> $end_files
+     * @param array<int, array<string, string>> $files
      * @param array<int, int> $error_counts
      * @param array<string, string> $error_levels
      *
      * @return void
      */
     public function testErrorFix(
-        array $start_files,
-        array $middle_files,
-        array $end_files,
+        array $files,
         array $error_counts,
         array $error_levels = []
     ) {
@@ -71,135 +67,119 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
-        // first batch
-        foreach ($start_files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
-            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        for ($i = 0; $i < count($files); $i++) {
+            $batch = $files[$i];
+
+            foreach ($batch as $file_path => $contents) {
+                $this->file_provider->registerFile($file_path, $contents);
+
+                if ($i === 0) {
+                    $codebase->addFilesToAnalyze([$file_path => $file_path]);
+                }
+            }
+
+            if ($i === 0) {
+                $codebase->scanFiles();
+            } else {
+                $codebase->reloadFiles($this->project_analyzer, array_keys($batch));
+            }
+
+            $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+            $data = \Psalm\IssueBuffer::clear();
+
+            $this->assertSame($error_counts[$i], count($data));
         }
-
-        $codebase->scanFiles();
-
-        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-        $data = \Psalm\IssueBuffer::clear();
-
-        $this->assertSame($error_counts[0], count($data));
-
-        // second batch
-        foreach ($middle_files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
-        }
-
-        $codebase->reloadFiles($this->project_analyzer, array_keys($middle_files));
-
-        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-        $data = \Psalm\IssueBuffer::clear();
-
-        $this->assertSame($error_counts[1], count($data));
-
-        // third batch
-        foreach ($end_files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
-        }
-
-        $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
-
-        foreach ($end_files as $file_path => $_) {
-            $codebase->addFilesToAnalyze([$file_path => $file_path]);
-        }
-
-        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-        $data = \Psalm\IssueBuffer::clear();
-
-        $this->assertSame($error_counts[2], count($data));
     }
 
     /**
-     * @return array<string,array{start_files:array<string,string>,middle_files:array<string,string>,end_files:array<string,string>,error_counts:array<int,int>,error_levels?:array<string,string>}>
+     * @return array<string,array{files: array<int, array<string,string>>,error_counts:array<int,int>,error_levels?:array<string,string>}>
      */
     public function providerTestErrorFix()
     {
         return [
             'fixMissingColonSyntaxError' => [
-                'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            public function foo() : void {
-                                $a = 5;
-                                echo $a;
-                            }
-                        }',
-                ],
-                'middle_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                public function foo() : void {
+                                    $a = 5;
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            public function foo() : void {
-                                $a = 5
-                                echo $a;
-                            }
-                        }',
-                ],
-                'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                public function foo() : void {
+                                    $a = 5
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            public function foo() : void {
-                                $a = 5;
-                                echo $a;
-                            }
-                        }',
+                            class A {
+                                public function foo() : void {
+                                    $a = 5;
+                                    echo $a;
+                                }
+                            }',
+                    ],
                 ],
                 'error_counts' => [0, 1, 0],
             ],
             'addReturnTypesToSingleMethod' => [
-                'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            public function foo() {
-                                return 5;
-                            }
+                            class A {
+                                public function foo() {
+                                    return 5;
+                                }
 
-                            public function bar() {
-                                return $this->foo();
-                            }
-                        }',
-                ],
-                'middle_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                                public function bar() {
+                                    return $this->foo();
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            public function foo() : int {
-                                return 5;
-                            }
+                            class A {
+                                public function foo() : int {
+                                    return 5;
+                                }
 
-                            public function bar() {
-                                return $this->foo();
-                            }
-                        }',
-                ],
-                'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                                public function bar() {
+                                    return $this->foo();
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            public function foo() : int {
-                                return 5;
-                            }
+                            class A {
+                                public function foo() : int {
+                                    return 5;
+                                }
 
-                            public function bar() : int {
-                                return $this->foo();
-                            }
-                        }',
+                                public function bar() : int {
+                                    return $this->foo();
+                                }
+                            }',
+                    ],
                 ],
                 'error_counts' => [2, 1, 0],
                 [
@@ -207,164 +187,170 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                 ],
             ],
             'traitMethodRenameFirstCorrect' => [
-                'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            use T;
-                            public function foo() : void {
-                                echo $this->bar();
-                            }
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
 
-                        trait T {
-                            public function bar() : string {
-                                return "hello";
-                            }
-                        }',
-                ],
-                'middle_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            use T;
-                            public function foo() : void {
-                                echo $this->bar();
-                            }
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
 
-                        trait T {
-                            public function bat() : string {
-                                return "hello";
-                            }
-                        }',
-                ],
-                'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                            trait T {
+                                public function bat() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            use T;
-                            public function foo() : void {
-                                echo $this->bar();
-                            }
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
 
-                        trait T {
-                            public function bar() : string {
-                                return "hello";
-                            }
-                        }',
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
                 ],
                 'error_counts' => [0, 1, 0],
             ],
             'traitMethodRenameFirstError' => [
-                'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            use T;
-                            public function foo() : void {
-                                echo $this->bar();
-                            }
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
 
-                        trait T {
-                            public function bat() : string {
-                                return "hello";
-                            }
-                        }',
-                ],
-                'middle_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                            trait T {
+                                public function bat() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            use T;
-                            public function foo() : void {
-                                echo $this->bar();
-                            }
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
 
-                        trait T {
-                            public function bar() : string {
-                                return "hello";
-                            }
-                        }',
-                ],
-                'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            use T;
-                            public function foo() : void {
-                                echo $this->bar();
-                            }
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
 
-                        trait T {
-                            public function bar() : string {
-                                return "hello";
-                            }
-                        }',
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
                 ],
                 'error_counts' => [1, 0, 0],
             ],
             'addSuppressions' => [
-                'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        class C {
-                            public function foo(array $a) : void {
-                                foreach ($a as $b) {
-                                    $b->bar();
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class C {
+                                public function foo(array $a) : void {
+                                    foreach ($a as $b) {
+                                        $b->bar();
+                                    }
                                 }
-                            }
-                        }',
-                ],
-                'middle_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        class C {
-                            public function foo(array $a) : void {
-                                /**
-                                 * @psalm-suppress MixedAssignment
-                                 */
-                                foreach ($a as $b) {
-                                    $b->bar();
-                                }
-                            }
-                        }',
-                ],
-                'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        class C {
-                            public function foo(array $a) : void {
-                                /**
-                                 * @psalm-suppress MixedAssignment
-                                 */
-                                foreach ($a as $b) {
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class C {
+                                public function foo(array $a) : void {
                                     /**
-                                     * @psalm-suppress MixedMethodCall
+                                     * @psalm-suppress MixedAssignment
                                      */
-                                    $b->bar();
+                                    foreach ($a as $b) {
+                                        $b->bar();
+                                    }
                                 }
-                            }
-                        }',
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class C {
+                                public function foo(array $a) : void {
+                                    /**
+                                     * @psalm-suppress MixedAssignment
+                                     */
+                                    foreach ($a as $b) {
+                                        /**
+                                         * @psalm-suppress MixedMethodCall
+                                         */
+                                        $b->bar();
+                                    }
+                                }
+                            }',
+                    ],
                 ],
                 'error_counts' => [2, 1, 0],
             ],
