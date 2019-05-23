@@ -53,6 +53,25 @@ class BadFormatTest extends TestCase
      *
      * @return void
      */
+    public function testInterfaceWithProperties()
+    {
+        $this->expectExceptionMessage('ParseError - somefile.php:3');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface foo {
+                    public static $foo = ["bar"];
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     *
+     * @return void
+     */
     public function testTypingReturnType()
     {
         $this->expectExceptionMessage('ParseError - somefile.php:5');

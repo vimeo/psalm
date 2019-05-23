@@ -89,6 +89,15 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $method_analyzer->analyze(new \Psalm\Context($this->getFQCLN()));
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                \Psalm\IssueBuffer::add(
+                    new \Psalm\Issue\ParseError(
+                        'Interfaces cannot have properties',
+                        new CodeLocation($this, $stmt)
+                    )
+                );
+
+                return;
             }
         }
     }
