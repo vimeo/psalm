@@ -387,7 +387,7 @@ class FileReferenceTest extends TestCase
                 [],
                 []
             ],
-            'constantRefs' => [
+            'traitAbstractRefs' => [
                 '<?php
                     namespace Ns;
 
