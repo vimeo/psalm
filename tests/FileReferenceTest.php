@@ -387,6 +387,34 @@ class FileReferenceTest extends TestCase
                 [],
                 []
             ],
+            'constantRefs' => [
+                '<?php
+                    namespace Ns;
+
+                    abstract class A {
+                        public function foo() : void {}
+                    }
+
+                    trait T {
+                        public function bar(A $a) : void {
+                            $a->foo();
+                        }
+                    }
+
+                    class C {
+                        use T;
+                    }',
+                [
+                    'ns\a::foo' => [
+                        'ns\c::bar' => true,
+                    ],
+                ],
+                [],
+                [],
+                [],
+                [],
+                []
+            ],
         ];
     }
 }
