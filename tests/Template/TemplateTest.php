@@ -2290,6 +2290,39 @@ class TemplateTest extends TestCase
                     '$a' => 'string'
                 ]
             ],
+            'templateAsArray' => [
+                '<?php
+                    /**
+                     * @template DATA as array<string, scalar|array|object|null>
+                     */
+                    abstract class Foo {
+                        /**
+                         * @var DATA
+                         */
+                        protected $data;
+
+                        /**
+                         * @param DATA $data
+                         */
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+
+                        /**
+                         * @return scalar|array|object|null
+                         */
+                        public function __get(string $property) {
+                            return $this->data[$property] ?? null;
+                        }
+
+                        /**
+                         * @param scalar|array|object|null $value
+                         */
+                        public function __set(string $property, $value) {
+                            $this->data[$property] = $value;
+                        }
+                    }',
+            ],
         ];
     }
 

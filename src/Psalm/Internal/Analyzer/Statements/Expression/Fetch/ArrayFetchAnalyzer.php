@@ -105,6 +105,7 @@ class ArrayFetchAnalyzer
         if ($keyed_array_var_id
             && $context->hasVariable($keyed_array_var_id)
             && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
+            && !$context->vars_in_scope[$keyed_array_var_id]->isVanillaMixed()
         ) {
             $stmt->inferredType = clone $context->vars_in_scope[$keyed_array_var_id];
 
@@ -197,7 +198,10 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id, $statements_analyzer)) {
+        if ($keyed_array_var_id
+            && $context->hasVariable($keyed_array_var_id, $statements_analyzer)
+            && (!isset($stmt->inferredType) || $stmt->inferredType->isVanillaMixed())
+        ) {
             $stmt->inferredType = $context->vars_in_scope[$keyed_array_var_id];
         }
 
@@ -316,7 +320,51 @@ class ArrayFetchAnalyzer
             }
         }
 
-        foreach ($array_type->getTypes() as &$type) {
+        foreach ($array_type->getTypes() as $type_string => $type) {
+            if ($type instanceof TMixed || $type instanceof TTemplateParam || $type instanceof TEmpty) {
+                if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingle()) {
+                    if (!$context->collect_initializations
+                        && !$context->collect_mutations
+                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                        && (!(($parent_source = $statements_analyzer->getSource())
+                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                            || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    ) {
+                        $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                    }
+
+                    if (!$context->inside_isset) {
+                        if ($in_assignment) {
+                            if (IssueBuffer::accepts(
+                                new MixedArrayAssignment(
+                                    'Cannot access array value on mixed variable ' . $array_var_id,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new MixedArrayAccess(
+                                    'Cannot access array value on mixed variable ' . $array_var_id,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+
+                    $has_valid_offset = true;
+                    $array_access_type = Type::getMixed();
+                    break;
+                }
+
+                $type = array_values($type->as->getTypes())[0];
+            }
+
             if ($type instanceof TNull) {
                 if ($array_type->ignore_nullable_issues) {
                     continue;
@@ -376,8 +424,9 @@ class ArrayFetchAnalyzer
                     && $key_value !== null
                 ) {
                     // ok, type becomes an ObjectLike
-
+                    $array_type->removeType($type_string);
                     $type = new ObjectLike([$key_value => new Type\Union([new TEmpty])]);
+                    $array_type->addType($type);
                 }
 
                 $offset_type = self::replaceOffsetTypeWithInts($offset_type);
@@ -583,16 +632,20 @@ class ArrayFetchAnalyzer
 
                                 if (!$stmt->dim && $property_count) {
                                     ++$property_count;
+                                    $array_type->removeType($type_string);
                                     $type = new TNonEmptyArray([
                                         $new_key_type,
                                         $generic_params,
                                     ]);
+                                    $array_type->addType($type);
                                     $type->count = $property_count;
                                 } else {
+                                    $array_type->removeType($type_string);
                                     $type = new TArray([
                                         $new_key_type,
                                         $generic_params,
                                     ]);
+                                    $array_type->addType($type);
                                 }
 
                                 if (!$array_access_type) {
@@ -705,46 +758,6 @@ class ArrayFetchAnalyzer
                 }
 
                 continue;
-            }
-
-            if ($type instanceof TMixed || $type instanceof TTemplateParam || $type instanceof TEmpty) {
-                if (!$context->collect_initializations
-                    && !$context->collect_mutations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
-
-                if (!$context->inside_isset) {
-                    if ($in_assignment) {
-                        if (IssueBuffer::accepts(
-                            new MixedArrayAssignment(
-                                'Cannot access array value on mixed variable ' . $array_var_id,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } else {
-                        if (IssueBuffer::accepts(
-                            new MixedArrayAccess(
-                                'Cannot access array value on mixed variable ' . $array_var_id,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-
-                $has_valid_offset = true;
-                $array_access_type = Type::getMixed();
-                break;
             }
 
             if (!$context->collect_initializations

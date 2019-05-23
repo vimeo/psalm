@@ -63,7 +63,7 @@ class ArrayAccessTest extends TestCase
                     /** @psalm-suppress UndefinedClass */
                     if (!isset($a->arr["bat"]) || strlen($a->arr["bat"])) { }',
                 'assertions' => [],
-                'error_levels' => ['MixedArgument'],
+                'error_levels' => ['MixedArgument', 'MixedArrayAccess'],
             ],
             'notEmptyIntOffset' => [
                 '<?php

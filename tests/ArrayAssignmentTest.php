@@ -188,9 +188,9 @@ class ArrayAssignmentTest extends TestCase
             'implicitIndexedIntArrayCreation' => [
                 '<?php
                     $foo = [];
-                    $foo[0] = "hello";
-                    $foo[1] = "hello";
-                    $foo[2] = "hello";
+                    $foo[0] = "a";
+                    $foo[1] = "b";
+                    $foo[2] = "c";
 
                     $bar = [0, 1, 2];
 
@@ -368,8 +368,8 @@ class ArrayAssignmentTest extends TestCase
                     $c = [];
                     $c[$b][$b][] = "bam";',
                 'assertions' => [
-                    '$a' => 'non-empty-array<string, array<int, string>>',
-                    '$c' => 'non-empty-array<string, array<string, array<int, string>>>',
+                    '$a' => 'array{boop:array<int, string>}',
+                    '$c' => 'array{boop:array<string, array<int, string>>}',
                 ],
             ],
             'assignExplicitValueToGeneric' => [
@@ -475,7 +475,7 @@ class ArrayAssignmentTest extends TestCase
                     $b[$string] = 5;
                     $b[0] = 3;',
                 'assertions' => [
-                    '$b' => 'array{0:int, c:int}',
+                    '$b' => 'array{c:int, 0:int}',
                 ],
             ],
             'updateStringIntKey3' => [
