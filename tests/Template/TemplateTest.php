@@ -2262,7 +2262,7 @@ class TemplateTest extends TestCase
                      */
                     class PropertyBag {
                         /** @var array<P,V> */
-                        protected array $data = [];
+                        protected $data = [];
 
                         /** @param array<P,V> $data */
                         public function __construct(array $data) {
