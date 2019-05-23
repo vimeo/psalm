@@ -2503,44 +2503,48 @@ class Reconciler
 
         $base_key = implode($key_parts);
 
-        if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
-            $base_atomic_types = $existing_types[$base_key]->getTypes();
+        if (isset($existing_types[$base_key]) && $array_key_offset !== false && !$has_not_isset) {
+            foreach ($existing_types[$base_key]->getTypes() as $base_atomic_type) {
+                if ($base_atomic_type instanceof Type\Atomic\ObjectLike
+                    || ($base_atomic_type instanceof Type\Atomic\TArray
+                        && $base_atomic_type->type_params[0]->isArrayKey()
+                        && $base_atomic_type->type_params[1]->isMixed())
+                ) {
+                    $new_base_type = clone $existing_types[$base_key];
 
-            if (isset($base_atomic_types['array'])
-                && ($base_atomic_types['array'] instanceof Type\Atomic\ObjectLike
-                    || ($base_atomic_types['array'] instanceof Type\Atomic\TArray
-                        && $base_atomic_types['array']->type_params[0]->isArrayKey()
-                        && $base_atomic_types['array']->type_params[1]->isMixed())
-                        && !$has_not_isset)
-            ) {
-                if ($base_atomic_types['array'] instanceof Type\Atomic\TArray) {
-                    $new_objectlike = new Type\Atomic\ObjectLike(
-                        [
-                            $array_key_offset => clone $result_type
-                        ],
-                        null
-                    );
+                    if ($base_atomic_type instanceof Type\Atomic\TArray) {
+                        $base_atomic_type = new Type\Atomic\ObjectLike(
+                            [
+                                $array_key_offset => clone $result_type
+                            ],
+                            null
+                        );
 
-                    $new_objectlike->had_mixed_value = true;
+                        $base_atomic_type->had_mixed_value = true;
 
-                    $existing_types[$base_key]->addType($new_objectlike);
-                } else {
-                    $base_atomic_types['array']->properties[$array_key_offset] = clone $result_type;
+                        $new_base_type->addType($base_atomic_type);
+                    } else {
+                        $base_atomic_type = clone $base_atomic_type;
+                        $base_atomic_type->properties[$array_key_offset] = clone $result_type;
+                    }
+
+                    $new_base_type->addType($base_atomic_type);
+
+                    $changed_var_ids[] = $base_key . '[' . $array_key . ']';
+
+                    if ($key_parts[count($key_parts) - 1] === ']') {
+                        self::adjustObjectLikeType(
+                            $key_parts,
+                            $existing_types,
+                            $changed_var_ids,
+                            $new_base_type,
+                            $has_not_isset
+                        );
+                    }
+
+                    $existing_types[$base_key] = $new_base_type;
+                    break;
                 }
-
-                $changed_var_ids[] = $base_key . '[' . $array_key . ']';
-
-                if ($key_parts[count($key_parts) - 1] === ']') {
-                    self::adjustObjectLikeType(
-                        $key_parts,
-                        $existing_types,
-                        $changed_var_ids,
-                        $existing_types[$base_key],
-                        $has_not_isset
-                    );
-                }
-
-                $existing_types[$base_key]->bustCache();
             }
         }
     }

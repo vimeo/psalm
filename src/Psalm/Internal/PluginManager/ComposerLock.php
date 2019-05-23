@@ -27,6 +27,8 @@ class ComposerLock
             && isset($package['type'])
             && $package['type'] === 'psalm-plugin'
             && isset($package['extra']['psalm']['pluginClass'])
+            && is_array($package['extra'])
+            && is_array($package['extra']['psalm'])
             && is_string($package['extra']['psalm']['pluginClass']);
     }
 

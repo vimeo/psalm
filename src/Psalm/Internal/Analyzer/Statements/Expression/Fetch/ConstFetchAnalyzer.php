@@ -380,7 +380,7 @@ class ConstFetchAnalyzer
                     return Type::getFloat();
             }
 
-            if (isset($predefined_constants[$fq_const_name])) {
+            if ($fq_const_name && isset($predefined_constants[$fq_const_name])) {
                 return ClassLikeAnalyzer::getTypeFromValue($predefined_constants[$fq_const_name]);
             }
 

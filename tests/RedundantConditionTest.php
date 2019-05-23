@@ -307,8 +307,22 @@ class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
             ],
-            'nullToMixedWithNullCheckNoContinue' => [
+            'nullToMixedWithNullCheckWithArraykey' => [
                 '<?php
+                    /** @return array<array-key, mixed> */
+                    function getStrings(): array {
+                        return ["hello", "world", 50];
+                    }
+
+                    $a = getStrings();
+
+                    if (is_string($a[0]) && strlen($a[0]) > 3) {}',
+                'assignments' => [],
+                'error_levels' => [],
+            ],
+            'nullToMixedWithNullCheckWithIntKey' => [
+                '<?php
+                    /** @return array<int, mixed> */
                     function getStrings(): array {
                         return ["hello", "world", 50];
                     }
