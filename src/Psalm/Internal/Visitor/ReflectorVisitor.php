@@ -1798,6 +1798,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 )
                             )) {
                             }
+
+                            $template_type = Type::getMixed();
                         }
                     } else {
                         if (IssueBuffer::accepts(
