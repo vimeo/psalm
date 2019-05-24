@@ -1779,16 +1779,26 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 if ($template_map[1] !== null && $template_map[2] !== null) {
                     if (trim($template_map[2])) {
-                        $template_type = Type::parseTokens(
-                            Type::fixUpLocalType(
-                                $template_map[2],
-                                $this->aliases,
-                                $storage->template_types,
-                                $this->type_aliases
-                            ),
-                            null,
-                            $storage->template_types
-                        );
+                        try {
+                            $template_type = Type::parseTokens(
+                                Type::fixUpLocalType(
+                                    $template_map[2],
+                                    $this->aliases,
+                                    $storage->template_types + ($template_types ?: []),
+                                    $this->type_aliases
+                                ),
+                                null,
+                                $storage->template_types + ($template_types ?: [])
+                            );
+                        } catch (TypeParseTreeException $e) {
+                            if (IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    'Template ' . $template_name . ' has invalid as type - ' . $e->getMessage(),
+                                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                                )
+                            )) {
+                            }
+                        }
                     } else {
                         if (IssueBuffer::accepts(
                             new InvalidDocblock(

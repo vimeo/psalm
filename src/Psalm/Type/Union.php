@@ -970,6 +970,31 @@ class Union
                             }
                         } else {
                             foreach ($replacement_type->getTypes() as $replacement_atomic_type) {
+                                // @codingStandardsIgnoreStart
+                                if ($replacement_atomic_type instanceof Type\Atomic\TTemplateKeyOf
+                                    && isset($template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class ?: ''][0])
+                                ) {
+                                    $keyed_template = $template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class ?: ''][0];
+
+                                    if ($keyed_template->isSingle()) {
+                                        $keyed_template = array_values($keyed_template->getTypes())[0];
+                                    }
+
+                                    if ($keyed_template instanceof Type\Atomic\ObjectLike
+                                        || $keyed_template instanceof Type\Atomic\TArray
+                                    ) {
+                                        if ($keyed_template instanceof Type\Atomic\ObjectLike) {
+                                            $key_type = $keyed_template->getGenericKeyType();
+                                        } else {
+                                            $key_type = $keyed_template->type_params[0];
+                                        }
+
+                                        $generic_params[$key][$atomic_type->defining_class ?: ''][0]
+                                            = clone $key_type;
+                                    }
+                                }
+                                // @codingStandardsIgnoreEnd
+
                                 $this->types[$replacement_atomic_type->getKey()] = clone $replacement_atomic_type;
                             }
 
@@ -1069,6 +1094,41 @@ class Union
                             $generic_param,
                             $depth
                         ];
+                    }
+                }
+            } elseif ($atomic_type instanceof Type\Atomic\TTemplateIndexedAccess) {
+                if ($replace) {
+                    if (isset($template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''])
+                        && isset($generic_params[$atomic_type->offset_param_name][''])
+                    ) {
+                        $array_template_type
+                            = $template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''][0];
+                        $offset_template_type
+                            = $generic_params[$atomic_type->offset_param_name][''][0];
+
+                        if ($array_template_type->isSingle()
+                            && $offset_template_type->isSingle()
+                            && !$array_template_type->isMixed()
+                            && !$offset_template_type->isMixed()
+                        ) {
+                            $array_template_type = array_values($array_template_type->types)[0];
+                            $offset_template_type = array_values($offset_template_type->types)[0];
+
+                            if ($array_template_type instanceof Type\Atomic\ObjectLike
+                                && ($offset_template_type instanceof Type\Atomic\TLiteralString
+                                    || $offset_template_type instanceof Type\Atomic\TLiteralInt)
+                                && isset($array_template_type->properties[$offset_template_type->value])
+                            ) {
+                                $replacement_type
+                                    = clone $array_template_type->properties[$offset_template_type->value];
+
+                                $keys_to_unset[] = $key;
+
+                                foreach ($replacement_type->getTypes() as $replacement_atomic_type) {
+                                    $this->types[$replacement_atomic_type->getKey()] = clone $replacement_atomic_type;
+                                }
+                            }
+                        }
                     }
                 }
             } else {
@@ -1287,12 +1347,12 @@ class Union
                 $template_type = null;
 
                 if (isset($template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''])
-                    && isset($template_types[$atomic_type->offset_param_name][$atomic_type->defining_class ?: ''])
+                    && isset($template_types[$atomic_type->offset_param_name][''])
                 ) {
                     $array_template_type
                         = $template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''][0];
                     $offset_template_type
-                        = $template_types[$atomic_type->offset_param_name][$atomic_type->defining_class ?: ''][0];
+                        = $template_types[$atomic_type->offset_param_name][''][0];
 
 
                     if ($array_template_type->isSingle()

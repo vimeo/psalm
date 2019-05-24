@@ -345,9 +345,29 @@ class PropertyAssignmentAnalyzer
                             $property_exists = true;
                             continue;
                         }
-
-                        $context->vars_in_scope[$var_id] = Type::getMixed();
                     }
+
+                    $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                        $stmt->var,
+                        new PhpParser\Node\Identifier('__set', $stmt->name->getAttributes()),
+                        [
+                            new PhpParser\Node\Arg(
+                                new PhpParser\Node\Scalar\String_(
+                                    $prop_name,
+                                    $stmt->name->getAttributes()
+                                )
+                            ),
+                            new PhpParser\Node\Arg(
+                                $assignment_value
+                            )
+                        ]
+                    );
+
+                    \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                        $statements_analyzer,
+                        $fake_method_call,
+                        $context
+                    );
 
                     /*
                      * If we have an explicit list of all allowed magic properties on the class, and we're

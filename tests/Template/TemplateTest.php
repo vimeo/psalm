@@ -2347,6 +2347,42 @@ class TemplateTest extends TestCase
                     '$c' => 'int',
                 ]
             ],
+            'keyOfClassTemplate' => [
+                '<?php
+                    /**
+                     * @template TData as array
+                     */
+                    abstract class DataBag {
+                        /**
+                         * @var TData
+                         */
+                        protected $data;
+
+                        /**
+                         * @param TData $data
+                         */
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+
+                        /**
+                         * @param key-of<TData> $property
+                         */
+                        public function __get(string $property) {
+                            return $this->data[$property] ?? null;
+                        }
+
+                        /**
+                         * @template K as key-of<TData>
+                         *
+                         * @param K $property
+                         * @param TData[K] $value
+                         */
+                        public function __set(string $property, $value) {
+                            $this->data[$property] = $value;
+                        }
+                    }'
+            ],
         ];
     }
 

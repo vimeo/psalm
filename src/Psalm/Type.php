@@ -288,7 +288,9 @@ abstract class Type
                 }
 
                 if (!$param_union_types[0] instanceof Atomic\TScalarClassConstant) {
-                    throw new TypeParseTreeException('Untemplated key-of param should be a class constant');
+                    throw new TypeParseTreeException(
+                        'Untemplated key-of param ' . $param_name . ' should be a class constant'
+                    );
                 }
 
                 return new Atomic\TKeyOfClassConstant(
@@ -540,7 +542,18 @@ abstract class Type
                 throw new TypeParseTreeException('Unrecognised template param ' . $array_param_name);
             }
 
-            $offset_defining_class = array_keys($template_type_map[$offset_param_name])[0];
+            $offset_template_data = $template_type_map[$offset_param_name];
+
+            $offset_defining_class = array_keys($offset_template_data)[0];
+
+            if (!$offset_defining_class && $offset_template_data[''][0]->isSingle()) {
+                $offset_template_type = array_values($offset_template_data[''][0]->getTypes())[0];
+
+                if ($offset_template_type instanceof Type\Atomic\TTemplateKeyOf) {
+                    $offset_defining_class = (string) $offset_template_type->defining_class;
+                }
+            }
+
             $array_defining_class = array_keys($template_type_map[$array_param_name])[0];
 
             if ($offset_defining_class !== $array_defining_class) {
@@ -550,7 +563,7 @@ abstract class Type
             return new Atomic\TTemplateIndexedAccess(
                 $array_param_name,
                 $offset_param_name,
-                $offset_defining_class
+                $array_defining_class
             );
         }
 
