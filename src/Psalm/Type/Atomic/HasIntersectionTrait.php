@@ -3,6 +3,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Codebase;
 
 trait HasIntersectionTrait
 {
@@ -73,7 +74,7 @@ trait HasIntersectionTrait
      *
      * @return void
      */
-    public function replaceIntersectionTemplateTypesWithArgTypes(array $template_types)
+    public function replaceIntersectionTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
     {
         if (!$this->extra_types) {
             return;
@@ -91,6 +92,7 @@ trait HasIntersectionTrait
                     }
                 }
             } else {
+                $extra_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
                 $new_types[] = $extra_type;
             }
         }

@@ -1247,7 +1247,7 @@ class Union
         $is_mixed = false;
 
         foreach ($this->types as $key => $atomic_type) {
-            $atomic_type->replaceTemplateTypesWithArgTypes($template_types);
+            $atomic_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
 
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $keys_to_unset[] = $key;

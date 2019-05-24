@@ -328,7 +328,7 @@ class ObjectLike extends \Psalm\Type\Atomic
      *
      * @return void
      */
-    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
     {
         foreach ($this->properties as $property) {
             $property->replaceTemplateTypesWithArgTypes($template_types);

@@ -192,14 +192,14 @@ trait GenericTrait
      *
      * @return void
      */
-    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
     {
         foreach ($this->type_params as $type_param) {
-            $type_param->replaceTemplateTypesWithArgTypes($template_types);
+            $type_param->replaceTemplateTypesWithArgTypes($template_types, $codebase);
         }
 
         if ($this instanceof TGenericObject || $this instanceof TIterable) {
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_types);
+            $this->replaceIntersectionTemplateTypesWithArgTypes($template_types, $codebase);
         }
     }
 }

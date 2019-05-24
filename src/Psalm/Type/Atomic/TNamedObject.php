@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -125,8 +126,8 @@ class TNamedObject extends Atomic
      *
      * @return void
      */
-    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
     {
-        $this->replaceIntersectionTemplateTypesWithArgTypes($template_types);
+        $this->replaceIntersectionTemplateTypesWithArgTypes($template_types, $codebase);
     }
 }

@@ -230,7 +230,7 @@ trait CallableTrait
      *
      * @return void
      */
-    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
     {
         if ($this->params) {
             foreach ($this->params as $param) {
@@ -238,12 +238,12 @@ trait CallableTrait
                     continue;
                 }
 
-                $param->type->replaceTemplateTypesWithArgTypes($template_types);
+                $param->type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
             }
         }
 
         if ($this->return_type) {
-            $this->return_type->replaceTemplateTypesWithArgTypes($template_types);
+            $this->return_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
         }
     }
 
