@@ -1455,7 +1455,7 @@ class CallAnalyzer
                         $generic_params = [];
                     }
 
-                    $original_by_ref_type = $by_ref_type;
+                    $original_by_ref_type = clone $by_ref_type;
 
                     $by_ref_type = clone $by_ref_type;
 
