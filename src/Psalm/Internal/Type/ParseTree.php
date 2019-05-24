@@ -66,13 +66,31 @@ class ParseTree
                         throw new TypeParseTreeException('Unexpected token ' . $type_token);
                     }
 
+                    $indexed_access = false;
+
                     if ($next_token !== ']') {
-                        throw new TypeParseTreeException('Unexpected token ' . $type_token);
+                        $next_next_token = $i + 2 < $c ? $type_tokens[$i + 2] : null;
+
+                        if ($next_next_token === ']') {
+                            $indexed_access = true;
+                            ++$i;
+                        } else {
+                            throw new TypeParseTreeException('Unexpected token ' . $type_token);
+                        }
                     }
 
                     $current_parent = $current_leaf->parent;
 
-                    $new_parent_leaf = new ParseTree\GenericTree('array', $current_parent);
+                    if ($indexed_access) {
+                        if (!$next_token) {
+                            throw new TypeParseTreeException('Unexpected token ' . $next_token);
+                        }
+
+                        $new_parent_leaf = new ParseTree\IndexedAccessTree($next_token, $current_parent);
+                    } else {
+                        $new_parent_leaf = new ParseTree\GenericTree('array', $current_parent);
+                    }
+
                     $current_leaf->parent = $new_parent_leaf;
                     $new_parent_leaf->children = [$current_leaf];
 

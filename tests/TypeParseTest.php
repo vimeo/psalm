@@ -709,6 +709,46 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testKeyOfClassConstant()
+    {
+        $this->assertSame(
+            'key-of<Foo\Baz::BAR>',
+            (string)Type::parseString('key-of<Foo\Baz::BAR>')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testKeyOfTemplate()
+    {
+        $this->assertSame(
+            'key-of<T>',
+            (string)Type::parseString('key-of<T>', null, ['T' => ['' => [Type::getArray()]]])
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testIndexedAccess()
+    {
+        $this->assertSame(
+            'T[K]',
+            (string)Type::parseString(
+                'T[K]',
+                null,
+                [
+                    'T' => ['' => [Type::getArray()]],
+                    'K' => ['' => [new Type\Union([new Type\Atomic\TTemplateKeyOf('T', null)])]]
+                ]
+            )
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testCombineCallables()
     {
         $this->assertSame(

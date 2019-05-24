@@ -75,6 +75,7 @@ abstract class Type
         'never-return' => true,
         'never-returns' => true,
         'array-key' => true,
+        'key-of' => true,
     ];
 
     /**
@@ -266,6 +267,34 @@ abstract class Type
                 }
 
                 return new TClassString($class_name, $param_union_types[0]);
+            }
+
+            if ($generic_type_value === 'key-of') {
+                $param_name = (string) $generic_params[0];
+
+                if (isset($template_type_map[$param_name])) {
+                    $defining_class = array_keys($template_type_map[$param_name])[0];
+
+                    return new Atomic\TTemplateKeyOf(
+                        $param_name,
+                        $defining_class
+                    );
+                }
+
+                $param_union_types = array_values($generic_params[0]->getTypes());
+
+                if (count($param_union_types) > 1) {
+                    throw new TypeParseTreeException('Union types are not allowed in key-of type');
+                }
+
+                if (!$param_union_types[0] instanceof Atomic\TScalarClassConstant) {
+                    throw new TypeParseTreeException('Untemplated key-of param should be a class constant');
+                }
+
+                return new Atomic\TKeyOfClassConstant(
+                    $param_union_types[0]->fq_classlike_name,
+                    $param_union_types[0]->const_name
+                );
             }
 
             if (isset(self::PSALM_RESERVED_WORDS[$generic_type_value])
@@ -493,6 +522,36 @@ abstract class Type
             || $parse_tree instanceof ParseTree\MethodWithReturnTypeTree
         ) {
             throw new TypeParseTreeException('Misplaced brackets');
+        }
+
+        if ($parse_tree instanceof ParseTree\IndexedAccessTree) {
+            if (!isset($parse_tree->children[0]) || !$parse_tree->children[0] instanceof ParseTree\Value) {
+                throw new TypeParseTreeException('Unrecognised indexed access');
+            }
+
+            $offset_param_name = $parse_tree->value;
+            $array_param_name = $parse_tree->children[0]->value;
+
+            if (!isset($template_type_map[$offset_param_name])) {
+                throw new TypeParseTreeException('Unrecognised template param ' . $offset_param_name);
+            }
+
+            if (!isset($template_type_map[$array_param_name])) {
+                throw new TypeParseTreeException('Unrecognised template param ' . $array_param_name);
+            }
+
+            $offset_defining_class = array_keys($template_type_map[$offset_param_name])[0];
+            $array_defining_class = array_keys($template_type_map[$array_param_name])[0];
+
+            if ($offset_defining_class !== $array_defining_class) {
+                throw new TypeParseTreeException('Template params are defined in different locations');
+            }
+
+            return new Atomic\TTemplateIndexedAccess(
+                $array_param_name,
+                $offset_param_name,
+                $offset_defining_class
+            );
         }
 
         if (!$parse_tree instanceof ParseTree\Value) {
