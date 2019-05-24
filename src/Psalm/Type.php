@@ -1306,6 +1306,107 @@ abstract class Type
         return $combined_type;
     }
 
+    /**
+     * Combines two union types into one via an intersection
+     *
+     * @param  Union  $type_1
+     * @param  Union  $type_2
+     *
+     * @return Union
+     */
+    public static function intersectUnionTypes(
+        Union $type_1,
+        Union $type_2
+    ) {
+        if ($type_1->isMixed() && $type_2->isMixed()) {
+            $combined_type = Type::getMixed();
+        } else {
+            $both_failed_reconciliation = false;
+
+            if ($type_1->failed_reconciliation) {
+                if ($type_2->failed_reconciliation) {
+                    $both_failed_reconciliation = true;
+                } else {
+                    return $type_2;
+                }
+            } elseif ($type_2->failed_reconciliation) {
+                return $type_1;
+            }
+
+            if ($type_1->isMixed() && !$type_2->isMixed()) {
+                $combined_type = clone $type_2;
+            } elseif (!$type_1->isMixed() && $type_2->isMixed()) {
+                $combined_type = clone $type_1;
+            } else {
+                $combined_type = clone $type_1;
+
+                foreach ($combined_type->getTypes() as $type_1_atomic) {
+                    foreach ($type_2->getTypes() as $type_2_atomic) {
+                        if (($type_1_atomic instanceof TIterable
+                                || $type_1_atomic instanceof TNamedObject
+                                || $type_1_atomic instanceof TTemplateParam)
+                            && ($type_2_atomic instanceof TIterable
+                                || $type_2_atomic instanceof TNamedObject
+                                || $type_2_atomic instanceof TTemplateParam)
+                        ) {
+                            if (!$type_1_atomic->extra_types) {
+                                $type_1_atomic->extra_types = [];
+                            }
+
+                            $type_2_atomic_clone = clone $type_2_atomic;
+
+                            $type_2_atomic_clone->extra_types = [];
+
+                            $type_1_atomic->extra_types[] = $type_2_atomic_clone;
+
+                            $type_2_atomic_intersection_types = $type_2_atomic->getIntersectionTypes();
+
+                            if ($type_2_atomic_intersection_types) {
+                                foreach ($type_2_atomic_intersection_types as $type_2_intersection_type) {
+                                    $type_1_atomic->extra_types[] = clone $type_2_intersection_type;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!$type_1->initialized && !$type_2->initialized) {
+                $combined_type->initialized = false;
+            }
+
+            if ($type_1->possibly_undefined_from_try && $type_2->possibly_undefined_from_try) {
+                $combined_type->possibly_undefined_from_try = true;
+            }
+
+            if ($type_1->from_docblock && $type_2->from_docblock) {
+                $combined_type->from_docblock = true;
+            }
+
+            if ($type_1->from_calculation && $type_2->from_calculation) {
+                $combined_type->from_calculation = true;
+            }
+
+            if ($type_1->ignore_nullable_issues && $type_2->ignore_nullable_issues) {
+                $combined_type->ignore_nullable_issues = true;
+            }
+
+            if ($type_1->ignore_falsable_issues && $type_2->ignore_falsable_issues) {
+                $combined_type->ignore_falsable_issues = true;
+            }
+
+            if ($both_failed_reconciliation) {
+                $combined_type->failed_reconciliation = true;
+            }
+        }
+
+        if ($type_1->possibly_undefined && $type_2->possibly_undefined) {
+            $combined_type->possibly_undefined = true;
+        }
+
+        return $combined_type;
+    }
+
     public static function clearCache() : void
     {
         self::$memoized_tokens = [];

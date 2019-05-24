@@ -400,7 +400,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         &$invalid_method_call_types,
         &$existent_method_ids,
         &$non_existent_class_method_ids,
-        &$non_existent_interface_method_ids
+        &$non_existent_interface_method_ids,
+        bool &$check_visibility = true
     ) {
         $config = $codebase->config;
 
@@ -520,8 +521,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $fq_class_name = $lhs_type_part->value;
 
-        $intersection_types = $lhs_type_part->getIntersectionTypes();
-
         $is_mock = ExpressionAnalyzer::isMock($fq_class_name);
 
         $has_mock = $has_mock || $is_mock;
@@ -568,6 +567,54 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             return false;
         }
 
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        $check_visibility = $check_visibility && !$class_storage->override_method_visibility;
+
+        $intersection_types = $lhs_type_part->getIntersectionTypes();
+
+        $all_intersection_return_type = null;
+        $all_intersection_existent_method_ids = [];
+
+        if ($intersection_types) {
+            foreach ($intersection_types as $intersection_type) {
+                $i_non_existent_class_method_ids = [];
+                $i_non_existent_interface_method_ids = [];
+
+                $intersection_return_type = null;
+
+                self::analyzeAtomicCall(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $context,
+                    $intersection_type,
+                    $lhs_var_id,
+                    $intersection_return_type,
+                    $returns_by_ref,
+                    $has_mock,
+                    $has_valid_method_call_type,
+                    $has_mixed_method_call,
+                    $invalid_method_call_types,
+                    $all_intersection_existent_method_ids,
+                    $i_non_existent_class_method_ids,
+                    $i_non_existent_interface_method_ids,
+                    $check_visibility
+                );
+
+                if ($intersection_return_type) {
+                    if (!$all_intersection_return_type || $all_intersection_return_type->isMixed()) {
+                        $all_intersection_return_type = $intersection_return_type;
+                    } else {
+                        $all_intersection_return_type = Type::intersectUnionTypes(
+                            $all_intersection_return_type,
+                            $intersection_return_type
+                        );
+                    }
+                }
+            }
+        }
+
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
@@ -603,8 +650,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $statements_analyzer->getSource()
             )
         ) {
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
             $interface_has_method = false;
 
             if ($class_storage->abstract && $class_storage->class_implements) {
@@ -667,6 +712,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $fq_class_name,
                             $fq_class_name
                         );
+
+                        if ($all_intersection_return_type) {
+                            $return_type_candidate = Type::intersectUnionTypes(
+                                $all_intersection_return_type,
+                                $return_type_candidate
+                            );
+                        }
 
                         if (!$return_type) {
                             $return_type = $return_type_candidate;
@@ -733,78 +785,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $fq_class_name = $context->self;
         }
 
-        $check_visibility = true;
-
-        if ($intersection_types) {
-            foreach ($intersection_types as $intersection_type) {
-                if ($intersection_type instanceof TNamedObject
-                    && $codebase->interfaceExists($intersection_type->value)
-                ) {
-                    $interface_storage = $codebase->classlike_storage_provider->get($intersection_type->value);
-
-                    $check_visibility = $check_visibility && !$interface_storage->override_method_visibility;
-                }
-            }
-        }
-
         $is_interface = false;
 
         if ($codebase->interfaceExists($fq_class_name)) {
             $is_interface = true;
-        }
-
-        if ($intersection_types && !$codebase->methodExists($method_id)) {
-            if ($is_interface) {
-                $interface_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-                $check_visibility = $check_visibility && !$interface_storage->override_method_visibility;
-            }
-
-            foreach ($intersection_types as $intersection_type) {
-                if ($intersection_type instanceof Type\Atomic\TTemplateParam) {
-                    if (!$intersection_type->as->isMixed()
-                        && !$intersection_type->as->hasObject()
-                    ) {
-                        $intersection_type = array_values(
-                            $intersection_type->as->getTypes()
-                        )[0];
-
-                        if (!$intersection_type instanceof TNamedObject) {
-                            throw new \UnexpectedValueException(
-                                'Shouldn’t get a non-object generic param here'
-                            );
-                        }
-
-                        $intersection_type->from_docblock = true;
-                    } else {
-                        continue;
-                    }
-                }
-
-                $method_id = $intersection_type->value . '::' . $method_name_lc;
-                $fq_class_name = $intersection_type->value;
-
-                $does_class_exist = ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                    $statements_analyzer,
-                    $fq_class_name,
-                    new CodeLocation($source, $stmt->var),
-                    $statements_analyzer->getSuppressedIssues(),
-                    false,
-                    false,
-                    true,
-                    $intersection_type->from_docblock
-                );
-
-                if (!$does_class_exist) {
-                    return false;
-                }
-
-                if ($codebase->methodExists($method_id)) {
-                    $is_interface = $codebase->interfaceExists($fq_class_name);
-
-                    break;
-                }
-            }
         }
 
         $source_method_id = $source instanceof FunctionLikeAnalyzer
@@ -854,6 +838,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($pseudo_method_storage->return_type) {
                         $return_type_candidate = clone $pseudo_method_storage->return_type;
 
+                        if ($all_intersection_return_type) {
+                            $return_type_candidate = Type::intersectUnionTypes(
+                                $all_intersection_return_type,
+                                $return_type_candidate
+                            );
+                        }
+
                         if (!$return_type) {
                             $return_type = $return_type_candidate;
                         } else {
@@ -867,6 +858,18 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     return;
                 }
+            }
+
+            if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
+                $existent_method_ids = array_merge($existent_method_ids, $all_intersection_existent_method_ids);
+
+                if (!$return_type) {
+                    $return_type = $all_intersection_return_type;
+                } else {
+                    $return_type = Type::combineUnionTypes($all_intersection_return_type, $return_type);
+                }
+
+                return;
             }
 
             if ($is_interface) {
@@ -1193,10 +1196,23 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         if ($return_type_candidate) {
+            if ($all_intersection_return_type) {
+                $return_type_candidate = Type::intersectUnionTypes(
+                    $all_intersection_return_type,
+                    $return_type_candidate
+                );
+            }
+
             if (!$return_type) {
                 $return_type = $return_type_candidate;
             } else {
                 $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
+            }
+        } elseif ($all_intersection_return_type) {
+            if (!$return_type) {
+                $return_type = $all_intersection_return_type;
+            } else {
+                $return_type = Type::combineUnionTypes($all_intersection_return_type, $return_type);
             }
         } else {
             $return_type = Type::getMixed();

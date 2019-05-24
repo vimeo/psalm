@@ -504,6 +504,12 @@ class InterfaceTest extends TestCase
                         if ($i instanceof A) {
                             $i->foo();
                         }
+                    }
+
+                    function takeA(A $a) : void {
+                        if ($a instanceof I) {
+                            $a->foo();
+                        }
                     }',
             ],
             'docblockParamInheritance' => [
@@ -554,6 +560,26 @@ class InterfaceTest extends TestCase
                     function f(I $c): void {
                         $c->current();
                     }'
+            ],
+            'intersectMixedTypes' => [
+                '<?php
+                    interface IFoo {
+                        function foo();
+                    }
+
+                    interface IBar {
+                        function foo() : string;
+                    }
+
+                    /** @param IFoo&IBar $i */
+                    function iFooFirst($i) : string {
+                        return $i->foo();
+                    }
+
+                    /** @param IBar&IFoo $i */
+                    function iBarFirst($i) : string {
+                        return $i->foo();
+                    }',
             ],
         ];
     }
