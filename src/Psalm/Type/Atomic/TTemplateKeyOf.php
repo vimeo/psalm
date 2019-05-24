@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TTemplateKeyOf extends Scalar
+class TTemplateKeyOf extends TArrayKey
 {
     /**
      * @var string
@@ -64,6 +64,9 @@ class TTemplateKeyOf extends Scalar
         return null;
     }
 
+    /**
+     * @return false
+     */
     public function canBeFullyExpressedInPhp()
     {
         return false;

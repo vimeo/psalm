@@ -1281,6 +1281,49 @@ class Union
                         $keys_to_unset[] = $key;
                     }
                 }
+            } elseif ($atomic_type instanceof Type\Atomic\TTemplateIndexedAccess) {
+                $keys_to_unset[] = $key;
+
+                $template_type = null;
+
+                if (isset($template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''])
+                    && isset($template_types[$atomic_type->offset_param_name][$atomic_type->defining_class ?: ''])
+                ) {
+                    $array_template_type
+                        = $template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''][0];
+                    $offset_template_type
+                        = $template_types[$atomic_type->offset_param_name][$atomic_type->defining_class ?: ''][0];
+
+
+                    if ($array_template_type->isSingle()
+                        && $offset_template_type->isSingle()
+                        && !$array_template_type->isMixed()
+                        && !$offset_template_type->isMixed()
+                    ) {
+                        $array_template_type = array_values($array_template_type->types)[0];
+                        $offset_template_type = array_values($offset_template_type->types)[0];
+
+                        if ($array_template_type instanceof Type\Atomic\ObjectLike
+                            && ($offset_template_type instanceof Type\Atomic\TLiteralString
+                                || $offset_template_type instanceof Type\Atomic\TLiteralInt)
+                            && isset($array_template_type->properties[$offset_template_type->value])
+                        ) {
+                            $template_type = clone $array_template_type->properties[$offset_template_type->value];
+                        }
+                    }
+                }
+
+                if ($template_type) {
+                    foreach ($template_type->types as $template_type_part) {
+                        if ($template_type_part instanceof Type\Atomic\TMixed) {
+                            $is_mixed = true;
+                        }
+
+                        $new_types[$template_type_part->getKey()] = $template_type_part;
+                    }
+                } else {
+                    $new_types[$key] = new Type\Atomic\TMixed();
+                }
             }
         }
 

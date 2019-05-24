@@ -1783,9 +1783,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             Type::fixUpLocalType(
                                 $template_map[2],
                                 $this->aliases,
-                                null,
+                                $storage->template_types,
                                 $this->type_aliases
-                            )
+                            ),
+                            null,
+                            $storage->template_types
                         );
                     } else {
                         if (IssueBuffer::accepts(
@@ -1952,6 +1954,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             null,
                             $this->function_template_types + $this->class_template_types
                         );
+
                         $storage->return_type->setFromDocblock();
 
                         if ($storage->signature_return_type) {

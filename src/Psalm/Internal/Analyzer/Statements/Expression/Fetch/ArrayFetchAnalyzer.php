@@ -321,6 +321,8 @@ class ArrayFetchAnalyzer
         }
 
         foreach ($array_type->getTypes() as $type_string => $type) {
+            $original_type = $type;
+
             if ($type instanceof TMixed || $type instanceof TTemplateParam || $type instanceof TEmpty) {
                 if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingle()) {
                     if (!$context->collect_initializations
@@ -362,7 +364,7 @@ class ArrayFetchAnalyzer
                     break;
                 }
 
-                $type = array_values($type->as->getTypes())[0];
+                $type = clone array_values($type->as->getTypes())[0];
             }
 
             if ($type instanceof TNull) {
@@ -479,6 +481,29 @@ class ArrayFetchAnalyzer
                                 $has_valid_offset = true;
                             }
                         } else {
+                            if ($original_type instanceof TTemplateParam) {
+                                foreach ($offset_type->getTypes() as $offset_atomic_type) {
+                                    if ($offset_atomic_type instanceof TTemplateParam) {
+                                        foreach ($offset_atomic_type->as->getTypes() as $offset_as) {
+                                            if ($offset_as instanceof Type\Atomic\TTemplateKeyOf
+                                                && $offset_as->param_name === $original_type->param_name
+                                                && $offset_as->defining_class === $original_type->defining_class
+                                                && $offset_atomic_type->defining_class
+                                                    === $original_type->defining_class
+                                            ) {
+                                                $type->type_params[1] = new Type\Union([
+                                                    new Type\Atomic\TTemplateIndexedAccess(
+                                                        $offset_as->param_name,
+                                                        $offset_atomic_type->param_name,
+                                                        $offset_as->defining_class
+                                                    )
+                                                ]);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             $has_valid_offset = true;
                         }
                     }

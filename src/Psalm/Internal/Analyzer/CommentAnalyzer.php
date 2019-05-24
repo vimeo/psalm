@@ -567,9 +567,7 @@ class CommentAnalyzer
 
         $line_parts = self::splitDocLine($return_block);
 
-        if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
-            && $line_parts[0][0] !== '{'
-        ) {
+        if ($line_parts[0][0] !== '{') {
             if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
                 throw new IncorrectDocblockException('Misplaced variable');
             }
