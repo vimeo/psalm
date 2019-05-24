@@ -1080,8 +1080,6 @@ class Union
                                         $input_atomic_type->as
                                     );
                                 }
-                            } elseif (get_class($input_atomic_type) === Type\Atomic\TString::class) {
-                                $valid_input_atomic_types[] = new Type\Atomic\TObject();
                             }
                         }
 
