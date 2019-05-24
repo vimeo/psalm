@@ -1314,7 +1314,11 @@ class Union
                         $new_types[$template_type_part->getKey()] = $template_type_part;
                     }
                 } else {
-                    $new_types[$key] = $atomic_type;
+                    if ($atomic_type->as->isSingle()) {
+                        $new_types[$key] = array_values($atomic_type->as->getTypes())[0];
+                    } else {
+                        $new_types[$key] = new Type\Atomic\TMixed;
+                    }
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
                 $template_type = isset($template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''])

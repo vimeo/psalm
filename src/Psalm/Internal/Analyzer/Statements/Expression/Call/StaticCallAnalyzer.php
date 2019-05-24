@@ -752,7 +752,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($return_type_candidate) {
                         $return_type_candidate = clone $return_type_candidate;
 
-                        if ($found_generic_params) {
+                        if ($found_generic_params !== null) {
                             $return_type_candidate->replaceTemplateTypesWithArgTypes(
                                 $found_generic_params
                             );
