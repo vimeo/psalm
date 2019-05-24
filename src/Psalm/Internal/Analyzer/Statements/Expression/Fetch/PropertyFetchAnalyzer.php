@@ -492,11 +492,21 @@ class PropertyFetchAnalyzer
                     ]
                 );
 
+                $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+                if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                    $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
+                }
+
                 \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
                     $statements_analyzer,
                     $fake_method_call,
                     $context
                 );
+
+                if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                    $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
+                }
 
                 $stmt->inferredType = $fake_method_call->inferredType ?? Type::getMixed();
 
