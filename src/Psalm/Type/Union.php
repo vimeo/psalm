@@ -1080,20 +1080,20 @@ class Union
                                         $input_atomic_type->as
                                     );
                                 }
+                            } elseif (get_class($input_atomic_type) === Type\Atomic\TString::class) {
+                                $valid_input_atomic_types[] = new Type\Atomic\TObject();
                             }
                         }
 
                         if ($valid_input_atomic_types) {
                             $generic_param = new Union($valid_input_atomic_types);
                             $generic_param->setFromDocblock();
-                        } else {
-                            $generic_param = Type::getMixed();
-                        }
 
-                        $generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''] = [
-                            $generic_param,
-                            $depth
-                        ];
+                            $generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''] = [
+                                $generic_param,
+                                $depth
+                            ];
+                        }
                     }
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TTemplateIndexedAccess) {
