@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Internal\Type\TypeCombination;
@@ -145,6 +146,15 @@ class Union
 
         foreach ($types as $type) {
             $key = $type->getKey();
+
+            if ($type instanceof TNever) {
+                if (! empty($this->types)) {
+                    continue;
+                }
+            } else {
+                unset($this->types['never-return']);
+            }
+
             $this->types[$key] = $type;
 
             if ($type instanceof TLiteralInt) {

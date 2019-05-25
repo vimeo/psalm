@@ -549,6 +549,26 @@ class ReturnTypeTest extends TestCase
                         exit();
                     }',
             ],
+            'neverReturnsUnion' => [
+                '<?php
+                    namespace Foo;
+                    /**
+                     * @return never-returns|int
+                     */
+                    function foo() : int {
+                        return 3;
+                    }',
+            ],
+            'neverReturnsReversed' => [
+                '<?php
+                    namespace Foo;
+                    /**
+                     * @return never-returns|int
+                     */
+                    function foo() : int {
+                        return 3;
+                    }',
+            ],
             'neverReturnsCovariance' => [
                 '<?php
                     namespace Foo;
