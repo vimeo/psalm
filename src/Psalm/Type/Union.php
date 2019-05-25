@@ -1009,10 +1009,16 @@ class Union
 
                         if ($input_type) {
                             $generic_param = clone $input_type;
+
+                            if ($this->isNullable() && $generic_param->isNullable()) {
+                                $generic_param->removeType('null');
+                            }
+
                             $generic_param->setFromDocblock();
 
                             if (isset($generic_params[$key][$atomic_type->defining_class ?: ''][0])) {
                                 $existing_depth = $generic_params[$key][$atomic_type->defining_class ?: ''][1] ?? -1;
+
                                 if ($existing_depth > $depth) {
                                     continue;
                                 }
