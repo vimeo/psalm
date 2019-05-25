@@ -826,7 +826,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $implementer_param->signature_type,
                     $implementer_classlike_storage->name,
                     $implementer_classlike_storage->name,
-                    $implementer_classlike_storage->parent_class,
+                    $implementer_classlike_storage->parent_class
                 );
 
                 if (!TypeAnalyzer::isContainedByInPhp(
