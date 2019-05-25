@@ -525,6 +525,14 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return null|string
      */
+    public function getParentFQCLN()
+    {
+        return null;
+    }
+
+    /**
+     * @return null|string
+     */
     public function getClassName()
     {
         return null;

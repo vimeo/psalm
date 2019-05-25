@@ -589,7 +589,8 @@ class PropertyAssignmentAnalyzer
                         $codebase,
                         $class_property_type,
                         $fq_class_name,
-                        $lhs_type_part
+                        $lhs_type_part,
+                        $class_storage->parent_class
                     );
 
                     if (!$class_property_type->hasMixed() && $assignment_value_type->hasMixed()) {
@@ -969,7 +970,8 @@ class PropertyAssignmentAnalyzer
             $codebase,
             $class_property_type,
             $fq_class_name,
-            $fq_class_name
+            $fq_class_name,
+            $class_storage->parent_class
         );
 
         $type_match_found = TypeAnalyzer::isContainedBy(

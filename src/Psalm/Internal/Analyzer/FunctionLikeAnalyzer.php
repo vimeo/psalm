@@ -267,7 +267,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $codebase,
                     $storage->return_type,
                     $context->self,
-                    $context->self
+                    $context->self,
+                    $this->getParentFQCLN()
                 );
             } else {
                 $closure_return_type = Type::getMixed();
@@ -385,7 +386,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $codebase,
                     $signature_type,
                     $context->self,
-                    $context->self
+                    $context->self,
+                    $this->getParentFQCLN()
                 );
             }
 
@@ -406,7 +408,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $codebase,
                     $param_type,
                     $context->self,
-                    $context->self
+                    $context->self,
+                    $this->getParentFQCLN()
                 );
 
                 if ($function_param->type_location) {
@@ -430,7 +433,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $codebase,
                         $param_type,
                         $context->self,
-                        $context->self
+                        $context->self,
+                        $this->getParentFQCLN()
                     );
                 } else {
                     $param_type = Type::getMixed();
@@ -1425,7 +1429,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $this->codebase,
             $storage_return_type,
             $this->getFQCLN(),
-            $this->getFQCLN()
+            $this->getFQCLN(),
+            $this->getParentFQCLN()
         );
 
         return $this->local_return_type;

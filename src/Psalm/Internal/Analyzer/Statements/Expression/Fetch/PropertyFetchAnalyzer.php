@@ -695,7 +695,8 @@ class PropertyFetchAnalyzer
                     $codebase,
                     clone $class_property_type,
                     $declaring_property_class,
-                    $declaring_property_class
+                    $declaring_property_class,
+                    $declaring_class_storage->parent_class
                 );
 
                 if ($lhs_type_part instanceof TGenericObject) {
@@ -988,7 +989,8 @@ class PropertyFetchAnalyzer
                     $codebase,
                     clone $property->type,
                     $declaring_property_class,
-                    $declaring_property_class
+                    $declaring_property_class,
+                    $class_storage->parent_class
                 );
             } else {
                 $context->vars_in_scope[$var_id] = Type::getMixed();

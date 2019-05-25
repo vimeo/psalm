@@ -587,7 +587,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $codebase,
                     $property_type,
                     $this->fq_class_name,
-                    $this->fq_class_name
+                    $this->fq_class_name,
+                    $this->parent_fq_class_name
                 )
                 : $property_type;
 
@@ -637,7 +638,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $codebase,
                     $property_type,
                     $this->fq_class_name,
-                    $this->fq_class_name
+                    $this->fq_class_name,
+                    $this->parent_fq_class_name
                 )
                 : $property_type;
 

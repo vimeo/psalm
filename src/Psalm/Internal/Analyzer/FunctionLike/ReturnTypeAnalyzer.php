@@ -214,7 +214,8 @@ class ReturnTypeAnalyzer
                 $codebase,
                 $inferred_return_type,
                 $source->getFQCLN(),
-                $source->getFQCLN()
+                $source->getFQCLN(),
+                $source->getParentFQCLN()
             )
         );
 
@@ -325,12 +326,20 @@ class ReturnTypeAnalyzer
 
         $self_fq_class_name = $fq_class_name ?: $source->getFQCLN();
 
+        $parent_class = null;
+
+        if ($self_fq_class_name) {
+            $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
+            $parent_class = $classlike_storage->parent_class;
+        }
+
         // passing it through fleshOutTypes eradicates errant $ vars
         $declared_return_type = ExpressionAnalyzer::fleshOutType(
             $codebase,
             $return_type,
             $self_fq_class_name,
-            $self_fq_class_name
+            $self_fq_class_name,
+            $parent_class
         );
 
         if (!$inferred_return_type_parts && !$inferred_yield_types) {
@@ -620,12 +629,20 @@ class ReturnTypeAnalyzer
             return;
         }
 
+        $parent_class = null;
+
+        if ($context->self) {
+            $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
+            $parent_class = $classlike_storage->parent_class;
+        }
+
         if (!$storage->signature_return_type || $storage->signature_return_type === $storage->return_type) {
             $fleshed_out_return_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $storage->return_type,
                 $context->self,
-                $context->self
+                $context->self,
+                $parent_class
             );
 
             $fleshed_out_return_type->check(
@@ -643,7 +660,8 @@ class ReturnTypeAnalyzer
             $codebase,
             $storage->signature_return_type,
             $context->self,
-            $context->self
+            $context->self,
+            $parent_class
         );
 
         if ($fleshed_out_signature_type->check(
@@ -664,7 +682,8 @@ class ReturnTypeAnalyzer
             $codebase,
             $storage->return_type,
             $context->self,
-            $context->self
+            $context->self,
+            $parent_class
         );
 
         if (!TypeAnalyzer::isContainedBy(

@@ -106,7 +106,8 @@ class ForeachAnalyzer
                 $codebase,
                 $var_comment->type,
                 $context->self,
-                $context->self
+                $context->self,
+                $statements_analyzer->getParentFQCLN()
             );
 
             if (isset($context->vars_in_scope[$var_comment->var_id])
@@ -221,7 +222,8 @@ class ForeachAnalyzer
                 $codebase,
                 $var_comment->type,
                 $context->self,
-                $context->self
+                $context->self,
+                $statements_analyzer->getParentFQCLN()
             );
 
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;

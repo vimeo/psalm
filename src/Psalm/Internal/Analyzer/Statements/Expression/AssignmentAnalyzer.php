@@ -112,7 +112,8 @@ class AssignmentAnalyzer
                         $codebase,
                         $var_comment->type,
                         $context->self,
-                        $context->self
+                        $context->self,
+                        $statements_analyzer->getParentFQCLN()
                     );
 
                     $var_comment_type->setFromDocblock();
@@ -496,7 +497,8 @@ class AssignmentAnalyzer
                                     $codebase,
                                     $var_comment->type,
                                     $context->self,
-                                    $context->self
+                                    $context->self,
+                                    $statements_analyzer->getParentFQCLN()
                                 );
 
                                 $var_comment_type->setFromDocblock();

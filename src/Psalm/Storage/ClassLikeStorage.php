@@ -146,6 +146,13 @@ class ClassLikeStorage
     public $parent_interfaces = [];
 
     /**
+     * There can only be one direct parent class
+     *
+     * @var ?string
+     */
+    public $parent_class;
+
+    /**
      * Parent classes
      *
      * @var array<string, string>

@@ -986,8 +986,9 @@ class ExpressionAnalyzer
     public static function fleshOutType(
         Codebase $codebase,
         Type\Union $return_type,
-        $self_class = null,
-        $static_class_type = null
+        ?string $self_class,
+        $static_class_type,
+        ?string $parent_class
     ) {
         $return_type = clone $return_type;
 
@@ -998,7 +999,8 @@ class ExpressionAnalyzer
                 $codebase,
                 $return_type_part,
                 $self_class,
-                $static_class_type
+                $static_class_type,
+                $parent_class
             );
         }
 
@@ -1025,8 +1027,9 @@ class ExpressionAnalyzer
     private static function fleshOutAtomicType(
         Codebase $codebase,
         Type\Atomic &$return_type,
-        $self_class,
-        $static_class_type = null
+        ?string $self_class,
+        $static_class_type,
+        ?string $parent_class
     ) {
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
@@ -1039,7 +1042,8 @@ class ExpressionAnalyzer
                         $codebase,
                         $extra_type,
                         $self_class,
-                        $static_class_type
+                        $static_class_type,
+                        $parent_class
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
@@ -1080,13 +1084,13 @@ class ExpressionAnalyzer
 
                     $return_type->value = $self_class;
                 } elseif ($return_type_lc === 'parent') {
-                    if (!$self_class) {
+                    if (!$parent_class) {
                         throw new \UnexpectedValueException(
-                            'Cannot handle ' . $return_type->value . ' when $self_class is empty'
+                            'Cannot handle ' . $return_type->value . ' when $parent_class is empty'
                         );
                     }
 
-                    $return_type->value = $self_class;
+                    $return_type->value = $parent_class;
                 } else {
                     $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
                 }
@@ -1128,7 +1132,8 @@ class ExpressionAnalyzer
                     $codebase,
                     $type_param,
                     $self_class,
-                    $static_class_type
+                    $static_class_type,
+                    $parent_class
                 );
             }
         } elseif ($return_type instanceof Type\Atomic\ObjectLike) {
@@ -1137,7 +1142,8 @@ class ExpressionAnalyzer
                     $codebase,
                     $property_type,
                     $self_class,
-                    $static_class_type
+                    $static_class_type,
+                    $parent_class
                 );
             }
         }
@@ -1150,7 +1156,8 @@ class ExpressionAnalyzer
                             $codebase,
                             $param->type,
                             $self_class,
-                            $static_class_type
+                            $static_class_type,
+                            $parent_class
                         );
                     }
                 }
@@ -1160,7 +1167,8 @@ class ExpressionAnalyzer
                     $codebase,
                     $return_type->return_type,
                     $self_class,
-                    $static_class_type
+                    $static_class_type,
+                    $parent_class
                 );
             }
         }
@@ -1335,7 +1343,8 @@ class ExpressionAnalyzer
                     $codebase,
                     $var_comment->type,
                     $context->self,
-                    $context->self ? new Type\Atomic\TNamedObject($context->self) : null
+                    $context->self ? new Type\Atomic\TNamedObject($context->self) : null,
+                    $statements_analyzer->getParentFQCLN()
                 );
 
                 if (!$var_comment->var_id) {

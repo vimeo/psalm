@@ -558,7 +558,8 @@ abstract class Atomic
                         $codebase,
                         $type_param,
                         $source->getFQCLN(),
-                        $source->getFQCLN()
+                        $source->getFQCLN(),
+                        $source->getParentFQCLN()
                     );
 
                     if (!TypeAnalyzer::isContainedBy($codebase, $type_param, $expected_type_param)) {

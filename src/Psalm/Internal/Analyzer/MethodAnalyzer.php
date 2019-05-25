@@ -565,7 +565,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $codebase,
                 $guide_method_storage->signature_return_type,
                 $guide_classlike_storage->name,
-                $guide_classlike_storage->name
+                $guide_classlike_storage->name,
+                $guide_classlike_storage->parent_class
             );
 
             $implementer_signature_return_type = $implementer_method_storage->signature_return_type
@@ -573,7 +574,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $codebase,
                     $implementer_method_storage->signature_return_type,
                     $implementer_classlike_storage->name,
-                    $implementer_classlike_storage->name
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->parent_class
                 ) : null;
 
             if (!TypeAnalyzer::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type)) {
@@ -618,14 +620,16 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $codebase,
                 $implementer_method_storage->return_type,
                 $implementer_classlike_storage->name,
-                $implementer_called_class_name
+                $implementer_called_class_name,
+                $implementer_classlike_storage->parent_class
             );
 
             $guide_method_storage_return_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $guide_method_storage->return_type,
                 $guide_classlike_storage->name,
-                $guide_classlike_storage->name
+                $guide_classlike_storage->name,
+                $guide_classlike_storage->parent_class
             );
 
             $guide_class_name_lc = strtolower($guide_classlike_storage->name);
@@ -812,7 +816,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         $codebase,
                         $guide_param->signature_type,
                         $guide_classlike_storage->name,
-                        $guide_classlike_storage->name
+                        $guide_classlike_storage->name,
+                        $guide_classlike_storage->parent_class
                     )
                     : null;
 
@@ -820,7 +825,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $codebase,
                     $implementer_param->signature_type,
                     $implementer_classlike_storage->name,
-                    $implementer_classlike_storage->name
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->parent_class,
                 );
 
                 if (!TypeAnalyzer::isContainedByInPhp(
@@ -868,14 +874,16 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $codebase,
                     $implementer_param->type,
                     $implementer_classlike_storage->name,
-                    $implementer_called_class_name
+                    $implementer_called_class_name,
+                    $implementer_classlike_storage->parent_class,
                 );
 
                 $guide_method_storage_param_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
                     $guide_param->type,
                     $guide_classlike_storage->name,
-                    $guide_classlike_storage->name
+                    $guide_classlike_storage->name,
+                    $guide_classlike_storage->parent_class,
                 );
 
                 $guide_class_name_lc = strtolower($guide_classlike_storage->name);

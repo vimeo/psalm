@@ -181,7 +181,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     $codebase,
                                     $return_type,
                                     $self_class,
-                                    $self_class
+                                    $self_class,
+                                    $statements_source->getParentFQCLN()
                                 );
 
                                 if ($mapping_return_type) {

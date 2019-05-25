@@ -662,7 +662,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         $comment_type = ExpressionAnalyzer::fleshOutType(
                             $codebase,
                             $var_comment->type,
-                            $context->self
+                            $context->self,
+                            $context->self,
+                            $this->getParentFQCLN()
                         );
 
                         $context->vars_in_scope[$var_comment->var_id] = $comment_type;
@@ -937,7 +939,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $codebase,
                             $var_comment->type,
                             $context->self,
-                            $context->self
+                            $context->self,
+                            $this->getParentFQCLN()
                         );
 
                         $var_comment_type->setFromDocblock();

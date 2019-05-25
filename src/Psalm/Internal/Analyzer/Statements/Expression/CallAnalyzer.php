@@ -1579,11 +1579,19 @@ class CallAnalyzer
                 return;
             }
 
+            $parent_class = null;
+
+            if ($self_fq_class_name) {
+                $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
+                $parent_class = $classlike_storage->parent_class;
+            }
+
             $fleshed_out_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $param_type,
                 $self_fq_class_name,
-                $static_fq_class_name
+                $static_fq_class_name,
+                $parent_class
             );
 
             $fleshed_out_signature_type = $function_param->signature_type
@@ -1591,7 +1599,8 @@ class CallAnalyzer
                     $codebase,
                     $function_param->signature_type,
                     $self_fq_class_name,
-                    $static_fq_class_name
+                    $static_fq_class_name,
+                    $parent_class
                 )
                 : null;
 

@@ -710,7 +710,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $codebase,
                             $return_type_candidate,
                             $fq_class_name,
-                            $fq_class_name
+                            $fq_class_name,
+                            $class_storage->parent_class
                         );
 
                         if ($all_intersection_return_type) {
@@ -1022,7 +1023,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $codebase,
                         $return_type_candidate,
                         $fq_class_name,
-                        $lhs_type_part
+                        $lhs_type_part,
+                        $class_storage->parent_class
                     );
                 } else {
                     $name_code_location = new CodeLocation($source, $stmt->name);
@@ -1092,7 +1094,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $codebase,
                             $return_type_candidate,
                             $self_fq_class_name,
-                            $lhs_type_part
+                            $lhs_type_part,
+                            $class_storage->parent_class
                         );
 
                         $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
@@ -1496,7 +1499,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $codebase,
                         $class_storage->pseudo_property_set_types['$' . $prop_name],
                         $fq_class_name,
-                        new Type\Atomic\TNamedObject($fq_class_name)
+                        new Type\Atomic\TNamedObject($fq_class_name),
+                        $class_storage->parent_class
                     );
 
                     $type_match_found = TypeAnalyzer::isContainedBy(

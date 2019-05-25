@@ -70,7 +70,8 @@ class ReturnAnalyzer
                     $codebase,
                     $var_comment->type,
                     $context->self,
-                    $context->self
+                    $context->self,
+                    $statements_analyzer->getParentFQCLN()
                 );
 
                 if (!$var_comment->var_id) {
@@ -133,7 +134,8 @@ class ReturnAnalyzer
                         $codebase,
                         $stmt->inferredType,
                         $source->getFQCLN(),
-                        $source->getFQCLN()
+                        $source->getFQCLN(),
+                        $source->getParentFQCLN()
                     );
 
                     $local_return_type = $source->getLocalReturnType($storage->return_type);

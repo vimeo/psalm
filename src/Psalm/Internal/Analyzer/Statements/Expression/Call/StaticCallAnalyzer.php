@@ -409,7 +409,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     $codebase,
                                     $return_type_candidate,
                                     $fq_class_name,
-                                    $fq_class_name
+                                    $fq_class_name,
+                                    $class_storage->parent_class
                                 );
 
                                 if (!isset($stmt->inferredType)) {
@@ -762,7 +763,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $codebase,
                             $return_type_candidate,
                             $self_fq_class_name,
-                            $fq_class_name
+                            $fq_class_name,
+                            $class_storage->parent_class
                         );
 
                         $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
