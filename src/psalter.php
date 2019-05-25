@@ -19,7 +19,7 @@ $args = array_slice($argv, 1);
 $valid_short_options = ['f:', 'm', 'h', 'r:'];
 $valid_long_options = [
     'help', 'debug', 'debug-by-line', 'config:', 'file:', 'root:',
-    'plugin:', 'issues:', 'php-version:', 'dry-run', 'safe-types',
+    'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
     'find-unused-code', 'threads:', 'codeowner:',
     'allow-backwards-incompatible-changes:',
 ];
@@ -111,6 +111,9 @@ Options:
         If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as possible,
         use --issues=all
 
+     --list-supported-issues
+        Display the list of issues that psalter knows how to fix
+
     --find-unused-code
         Include unused code as a candidate for removal
 
@@ -127,9 +130,12 @@ HELP;
     exit;
 }
 
-if (!isset($options['issues']) && (!isset($options['plugin']) || $options['plugin'] === false)) {
-    die('Please specify the issues you want to fix with --issues=IssueOne,IssueTwo '
-        . 'or --issues=all, or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
+if (!isset($options['issues']) &&
+    !isset($options['list-supported-issues']) &&
+    (!isset($options['plugin']) || $options['plugin'] === false)
+) {
+    die('Please specify the issues you want to fix with --issues=IssueOne,IssueTwo or --issues=all, ' .
+        'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
 }
 
 if (isset($options['root'])) {
@@ -181,6 +187,11 @@ $providers = new Psalm\Internal\Provider\Providers(
     new Psalm\Internal\Provider\FileStorageCacheProvider($config),
     new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config)
 );
+
+if (array_key_exists('list-supported-issues', $options)) {
+    echo 'Supported issues: ' . implode(',', ProjectAnalyzer::getSupportedIssuesToFix()) . PHP_EOL;
+    exit();
+}
 
 $project_analyzer = new ProjectAnalyzer(
     $config,
@@ -362,7 +373,7 @@ $project_analyzer->alterCodeAfterCompletion(
     array_key_exists('safe-types', $options)
 );
 
-if ($keyed_issues === ['all' => true]){
+if ($keyed_issues === ['all' => true]) {
     $project_analyzer->setAllIssuesToFix();
 } else {
     try {

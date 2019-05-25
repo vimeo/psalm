@@ -855,7 +855,7 @@ class ProjectAnalyzer
      */
     public function setIssuesToFix(array $issues)
     {
-        $supported_issues_to_fix = $this->getSupportedIssuesToFix();
+        $supported_issues_to_fix = static::getSupportedIssuesToFix();
 
         $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
 
@@ -871,7 +871,7 @@ class ProjectAnalyzer
 
     public function setAllIssuesToFix(): void
     {
-        $this->setIssuesToFix(array_fill_keys($this->getSupportedIssuesToFix(), true));
+        $this->setIssuesToFix(array_fill_keys(static::getSupportedIssuesToFix(), true));
     }
 
     /**
@@ -1029,7 +1029,7 @@ class ProjectAnalyzer
     /**
      * @return array<int,string>
      */
-    private function getSupportedIssuesToFix(): array
+    public static function getSupportedIssuesToFix(): array
     {
         return array_map(
             /** @param class-string $issue_class */
