@@ -9,7 +9,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
-use Psalm\Tests\Progress\VoidProgress;
 use Psalm\Tests\TestConfig;
 
 class PluginTest extends \Psalm\Tests\TestCase
@@ -62,7 +61,7 @@ class PluginTest extends \Psalm\Tests\TestCase
             true,
             ProjectAnalyzer::TYPE_CONSOLE,
             1,
-            new VoidProgress()
+            null
         );
     }
 

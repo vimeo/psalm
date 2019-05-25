@@ -4,6 +4,7 @@ namespace Psalm\Internal\Provider;
 use PhpParser;
 use Psalm\Progress\Progress;
 use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\VoidProgress;
 
 /**
  * @internal
@@ -74,7 +75,7 @@ class StatementsProvider
     public function getStatementsForFile($file_path, Progress $progress = null)
     {
         if ($progress === null) {
-            $progress = new DefaultProgress();
+            $progress = new VoidProgress();
         }
 
         $from_cache = false;
