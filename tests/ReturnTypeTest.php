@@ -559,7 +559,7 @@ class ReturnTypeTest extends TestCase
                         return 3;
                     }',
             ],
-            'neverReturnsReversed' => [
+            'neverReturnsUnionReversed' => [
                 '<?php
                     namespace Foo;
                     /**
