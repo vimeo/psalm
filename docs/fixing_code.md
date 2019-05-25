@@ -253,6 +253,34 @@ function foo() : string {
 Running `vendor/bin/psalter --issues=PossiblyUndefinedVariable` on
 
 ```php
+function foo()
+{
+    if (rand(0, 1)) {
+      $a = 5;
+    }
+    echo $a;
+}
+```
+
+gives
+
+```php
+function foo()
+{
+    $a = null;
+    if (rand(0, 1)) {
+      $a = 5;
+    }
+    echo $a;
+}
+```
+
+
+### PossiblyUndefinedGlobalVariable
+
+Running `vendor/bin/psalter --issues=PossiblyUndefinedGlobalVariable` on
+
+```php
 if (rand(0, 1)) {
   $a = 5;
 }
