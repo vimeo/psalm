@@ -172,7 +172,7 @@ class ProjectAnalyzer
     ];
 
     /**
-     * @var array<int,class-string<CodeIssue>>
+     * @var array<int, class-string<CodeIssue>>
      */
     const SUPPORTED_ISSUES_TO_FIX = [
         InvalidFalsableReturnType::class,
@@ -871,7 +871,10 @@ class ProjectAnalyzer
 
     public function setAllIssuesToFix(): void
     {
-        $this->setIssuesToFix(array_fill_keys(static::getSupportedIssuesToFix(), true));
+        /** @var array<string, true> $keyed_issues */
+        $keyed_issues = array_fill_keys(static::getSupportedIssuesToFix(), true);
+
+        $this->setIssuesToFix($keyed_issues);
     }
 
     /**
@@ -1027,7 +1030,7 @@ class ProjectAnalyzer
     }
 
     /**
-     * @return array<int,string>
+     * @return array<string>
      */
     public static function getSupportedIssuesToFix(): array
     {
@@ -1037,7 +1040,7 @@ class ProjectAnalyzer
                 $parts = explode('\\', $issue_class);
                 return end($parts);
             },
-            static::SUPPORTED_ISSUES_TO_FIX
+            self::SUPPORTED_ISSUES_TO_FIX
         );
     }
 }
