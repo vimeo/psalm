@@ -360,7 +360,13 @@ $project_analyzer->alterCodeAfterCompletion(
     array_key_exists('dry-run', $options),
     array_key_exists('safe-types', $options)
 );
-$project_analyzer->setIssuesToFix($keyed_issues);
+
+try {
+    $project_analyzer->setIssuesToFix($keyed_issues);
+} catch (\Psalm\Exception\UnsupportedIssueToFixException $e)
+{
+    die($e->getMessage() . PHP_EOL);
+}
 
 $start_time = microtime(true);
 
