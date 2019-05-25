@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Progress\VoidProgress;
 use Psalm\Tests\TestConfig;
 
 class CompletionTest extends \Psalm\Tests\TestCase
@@ -39,7 +40,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
             true,
             ProjectAnalyzer::TYPE_CONSOLE,
             1,
-            null
+            new VoidProgress()
         );
         $this->project_analyzer->setPhpVersion('7.3');
         $this->project_analyzer->getCodebase()->store_node_types = true;
