@@ -6,7 +6,7 @@ use PhpParser\NodeTraverser;
 use Psalm\Codebase;
 use Psalm\FileSource;
 use Psalm\Progress\Progress;
-use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Storage\FileStorage;
 use Psalm\Internal\Visitor\ReflectorVisitor;
 
@@ -54,7 +54,7 @@ class FileScanner implements FileSource
         Progress $progress = null
     ) {
         if ($progress === null) {
-            $progress = new DefaultProgress();
+            $progress = new VoidProgress();
         }
 
         if ((!$this->will_analyze || $file_storage->deep_scan)

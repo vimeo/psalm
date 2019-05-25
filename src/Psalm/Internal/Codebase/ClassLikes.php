@@ -18,7 +18,7 @@ use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Progress\Progress;
-use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
@@ -670,7 +670,7 @@ class ClassLikes
     public function checkClassReferences(Methods $methods, Progress $progress = null)
     {
         if ($progress === null) {
-            $progress = new DefaultProgress();
+            $progress = new VoidProgress();
         }
 
         $progress->debug('Checking class references' . PHP_EOL);

@@ -11,7 +11,7 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Progress\Progress;
-use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Type;
 
 /**
@@ -176,7 +176,7 @@ class ProjectAnalyzer
         $show_snippet = true
     ) {
         if ($progress === null) {
-            $progress = new DefaultProgress();
+            $progress = new VoidProgress();
         }
 
         $this->parser_cache_provider = $providers->parser_cache_provider;
