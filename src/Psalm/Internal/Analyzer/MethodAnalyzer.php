@@ -875,7 +875,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $implementer_param->type,
                     $implementer_classlike_storage->name,
                     $implementer_called_class_name,
-                    $implementer_classlike_storage->parent_class,
+                    $implementer_classlike_storage->parent_class
                 );
 
                 $guide_method_storage_param_type = ExpressionAnalyzer::fleshOutType(
@@ -883,7 +883,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $guide_param->type,
                     $guide_classlike_storage->name,
                     $guide_classlike_storage->name,
-                    $guide_classlike_storage->parent_class,
+                    $guide_classlike_storage->parent_class
                 );
 
                 $guide_class_name_lc = strtolower($guide_classlike_storage->name);
