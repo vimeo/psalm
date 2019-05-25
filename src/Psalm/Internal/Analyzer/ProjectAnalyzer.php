@@ -855,14 +855,7 @@ class ProjectAnalyzer
      */
     public function setIssuesToFix(array $issues)
     {
-        $supported_issues_to_fix = array_map(
-            /** @param class-string $issue_class */
-            function (string $issue_class): string {
-                $parts = explode('\\', $issue_class);
-                return end($parts);
-            },
-            static::SUPPORTED_ISSUES_TO_FIX
-        );
+        $supported_issues_to_fix = $this->getSupportedIssuesToFix();
 
         $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
 
@@ -874,6 +867,11 @@ class ProjectAnalyzer
         }
 
         $this->issues_to_fix = $issues;
+    }
+
+    public function setAllIssuesToFix(): void
+    {
+        $this->setIssuesToFix(array_fill_keys($this->getSupportedIssuesToFix(), true));
     }
 
     /**
@@ -1026,5 +1024,20 @@ class ProjectAnalyzer
         }
 
         throw new \LogicException('failed to detect number of CPUs!');
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function getSupportedIssuesToFix(): array
+    {
+        return array_map(
+            /** @param class-string $issue_class */
+            function (string $issue_class): string {
+                $parts = explode('\\', $issue_class);
+                return end($parts);
+            },
+            static::SUPPORTED_ISSUES_TO_FIX
+        );
     }
 }

@@ -36,7 +36,8 @@ The above example plugin converts all unnecessarily qualified classnames in your
 
 ## Supported fixes
 
-This initial release provides support for the following alterations, corresponding to the names of issues Psalm finds:
+This initial release provides support for the following alterations, corresponding to the names of issues Psalm finds.
+To fix all of these at once, run `vendor/bin/psalter --issues=all`
 
 ### MissingReturnType
 

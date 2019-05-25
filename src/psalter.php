@@ -108,7 +108,8 @@ Options:
     --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
 
     --issues=IssueType1,IssueType2
-        If any issues can be fixed automatically, Psalm will update the codebase
+        If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as possible,
+        use --issues=all
 
     --find-unused-code
         Include unused code as a candidate for removal
@@ -128,7 +129,7 @@ HELP;
 
 if (!isset($options['issues']) && (!isset($options['plugin']) || $options['plugin'] === false)) {
     die('Please specify the issues you want to fix with --issues=IssueOne,IssueTwo '
-        . 'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
+        . 'or --issues=all, or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
 }
 
 if (isset($options['root'])) {
@@ -361,11 +362,14 @@ $project_analyzer->alterCodeAfterCompletion(
     array_key_exists('safe-types', $options)
 );
 
-try {
-    $project_analyzer->setIssuesToFix($keyed_issues);
-} catch (\Psalm\Exception\UnsupportedIssueToFixException $e)
-{
-    die($e->getMessage() . PHP_EOL);
+if ($keyed_issues === ['all' => true]){
+    $project_analyzer->setAllIssuesToFix();
+} else {
+    try {
+        $project_analyzer->setIssuesToFix($keyed_issues);
+    } catch (\Psalm\Exception\UnsupportedIssueToFixException $e) {
+        die($e->getMessage() . PHP_EOL);
+    }
 }
 
 $start_time = microtime(true);
