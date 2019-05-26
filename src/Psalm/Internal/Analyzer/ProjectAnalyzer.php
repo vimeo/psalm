@@ -862,7 +862,7 @@ class ProjectAnalyzer
         if (! empty($unsupportedIssues)) {
             throw new UnsupportedIssueToFixException(
                 'Psalm doesn\'t know how to fix issue(s): ' . implode(', ', $unsupportedIssues) . PHP_EOL
-                . 'Supported issues to fix are: ' . implode(', ', $supported_issues_to_fix)
+                . 'Supported issues to fix are: ' . implode(',', $supported_issues_to_fix)
             );
         }
 

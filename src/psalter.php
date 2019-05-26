@@ -190,7 +190,7 @@ $providers = new Psalm\Internal\Provider\Providers(
 );
 
 if (array_key_exists('list-supported-issues', $options)) {
-    echo 'Supported issues: ' . implode(',', ProjectAnalyzer::getSupportedIssuesToFix()) . PHP_EOL;
+    echo implode(',', ProjectAnalyzer::getSupportedIssuesToFix()) . PHP_EOL;
     exit();
 }
 
