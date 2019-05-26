@@ -125,6 +125,7 @@ Options:
 
     --allow-backwards-incompatible-changes=BOOL
         Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
+
 HELP;
 
     exit;
