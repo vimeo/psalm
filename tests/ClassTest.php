@@ -395,7 +395,7 @@ class ClassTest extends TestCase
                 '<?php
                     /**
                      * @param class-string $class
-                     * @return ?class-string
+                     * @return string
                      */
                     function autoload(string $class) : string {
                         if (class_exists($class, false)) {
