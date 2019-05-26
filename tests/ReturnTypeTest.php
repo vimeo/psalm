@@ -563,7 +563,7 @@ class ReturnTypeTest extends TestCase
                 '<?php
                     namespace Foo;
                     /**
-                     * @return never-returns|int
+                     * @return int|never-returns
                      */
                     function foo() : int {
                         return 3;
