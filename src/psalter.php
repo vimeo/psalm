@@ -21,7 +21,7 @@ $args = array_slice($argv, 1);
 $valid_short_options = ['f:', 'm', 'h', 'r:'];
 $valid_long_options = [
     'help', 'debug', 'debug-by-line', 'config:', 'file:', 'root:',
-    'plugin:', 'issues:', 'php-version:', 'dry-run', 'safe-types',
+    'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
     'find-unused-code', 'threads:', 'codeowner:',
     'allow-backwards-incompatible-changes:',
 ];
@@ -116,7 +116,11 @@ Options:
     --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
 
     --issues=IssueType1,IssueType2
-        If any issues can be fixed automatically, Psalm will update the codebase
+        If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as possible,
+        use --issues=all
+
+     --list-supported-issues
+        Display the list of issues that psalter knows how to fix
 
     --find-unused-code
         Include unused code as a candidate for removal
@@ -129,14 +133,19 @@ Options:
 
     --allow-backwards-incompatible-changes=BOOL
         Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
+
 HELP;
 
     exit;
 }
 
-if (!isset($options['issues']) && (!isset($options['plugin']) || $options['plugin'] === false)) {
-    die('Please specify the issues you want to fix with --issues=IssueOne,IssueTwo '
-        . 'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
+if (!isset($options['issues']) &&
+    !isset($options['list-supported-issues']) &&
+    (!isset($options['plugin']) || $options['plugin'] === false)
+) {
+    fwrite(STDERR, 'Please specify the issues you want to fix with --issues=IssueOne,IssueTwo or --issues=all, ' .
+        'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
+    exit(1);
 }
 
 if (isset($options['root'])) {
@@ -188,6 +197,11 @@ $providers = new Psalm\Internal\Provider\Providers(
     new Psalm\Internal\Provider\FileStorageCacheProvider($config),
     new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config)
 );
+
+if (array_key_exists('list-supported-issues', $options)) {
+    echo implode(',', ProjectAnalyzer::getSupportedIssuesToFix()) . PHP_EOL;
+    exit();
+}
 
 $debug = array_key_exists('debug', $options);
 $progress = $debug
@@ -373,7 +387,17 @@ $project_analyzer->alterCodeAfterCompletion(
     array_key_exists('dry-run', $options),
     array_key_exists('safe-types', $options)
 );
-$project_analyzer->setIssuesToFix($keyed_issues);
+
+if ($keyed_issues === ['all' => true]) {
+    $project_analyzer->setAllIssuesToFix();
+} else {
+    try {
+        $project_analyzer->setIssuesToFix($keyed_issues);
+    } catch (\Psalm\Exception\UnsupportedIssueToFixException $e) {
+        fwrite(STDERR, $e->getMessage() . PHP_EOL);
+        exit(1);
+    }
+}
 
 $start_time = microtime(true);
 

@@ -36,7 +36,8 @@ The above example plugin converts all unnecessarily qualified classnames in your
 
 ## Supported fixes
 
-This initial release provides support for the following alterations, corresponding to the names of issues Psalm finds:
+This initial release provides support for the following alterations, corresponding to the names of issues Psalm finds.
+To fix all of these at once, run `vendor/bin/psalter --issues=all`
 
 ### MissingReturnType
 
@@ -251,6 +252,34 @@ function foo() : string {
 ### PossiblyUndefinedVariable
 
 Running `vendor/bin/psalter --issues=PossiblyUndefinedVariable` on
+
+```php
+function foo()
+{
+    if (rand(0, 1)) {
+      $a = 5;
+    }
+    echo $a;
+}
+```
+
+gives
+
+```php
+function foo()
+{
+    $a = null;
+    if (rand(0, 1)) {
+      $a = 5;
+    }
+    echo $a;
+}
+```
+
+
+### PossiblyUndefinedGlobalVariable
+
+Running `vendor/bin/psalter --issues=PossiblyUndefinedGlobalVariable` on
 
 ```php
 if (rand(0, 1)) {

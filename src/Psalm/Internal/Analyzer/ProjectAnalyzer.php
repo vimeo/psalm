@@ -4,15 +4,32 @@ namespace Psalm\Internal\Analyzer;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\Internal\LanguageServer\{LanguageServer, ProtocolStreamReader, ProtocolStreamWriter};
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Issue\InvalidFalsableReturnType;
+use Psalm\Issue\InvalidNullableReturnType;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\Issue\LessSpecificReturnType;
+use Psalm\Issue\MismatchingDocblockParamType;
+use Psalm\Issue\MismatchingDocblockReturnType;
+use Psalm\Issue\MissingClosureReturnType;
+use Psalm\Issue\MissingParamType;
+use Psalm\Issue\MissingReturnType;
+use Psalm\Issue\PossiblyUndefinedGlobalVariable;
+use Psalm\Issue\PossiblyUndefinedVariable;
+use Psalm\Issue\PossiblyUnusedMethod;
+use Psalm\Issue\PossiblyUnusedProperty;
+use Psalm\Issue\UnusedMethod;
+use Psalm\Issue\UnusedProperty;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Type;
+use Psalm\Issue\CodeIssue;
 
 /**
  * @internal
@@ -154,6 +171,27 @@ class ProjectAnalyzer
         self::TYPE_XML,
         self::TYPE_CHECKSTYLE,
         self::TYPE_TEXT,
+    ];
+
+    /**
+     * @var array<int, class-string<CodeIssue>>
+     */
+    const SUPPORTED_ISSUES_TO_FIX = [
+        InvalidFalsableReturnType::class,
+        InvalidNullableReturnType::class,
+        InvalidReturnType::class,
+        LessSpecificReturnType::class,
+        MismatchingDocblockParamType::class,
+        MismatchingDocblockReturnType::class,
+        MissingClosureReturnType::class,
+        MissingParamType::class,
+        MissingReturnType::class,
+        PossiblyUndefinedGlobalVariable::class,
+        PossiblyUndefinedVariable::class,
+        PossiblyUnusedMethod::class,
+        PossiblyUnusedProperty::class,
+        UnusedMethod::class,
+        UnusedProperty::class,
     ];
 
     /**
@@ -795,12 +833,32 @@ class ProjectAnalyzer
 
     /**
      * @param array<string, bool> $issues
+     * @throws UnsupportedIssueToFixException
      *
      * @return void
      */
     public function setIssuesToFix(array $issues)
     {
+        $supported_issues_to_fix = static::getSupportedIssuesToFix();
+
+        $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
+
+        if (! empty($unsupportedIssues)) {
+            throw new UnsupportedIssueToFixException(
+                'Psalm doesn\'t know how to fix issue(s): ' . implode(', ', $unsupportedIssues) . PHP_EOL
+                . 'Supported issues to fix are: ' . implode(',', $supported_issues_to_fix)
+            );
+        }
+
         $this->issues_to_fix = $issues;
+    }
+
+    public function setAllIssuesToFix(): void
+    {
+        /** @var array<string, true> $keyed_issues */
+        $keyed_issues = array_fill_keys(static::getSupportedIssuesToFix(), true);
+
+        $this->setIssuesToFix($keyed_issues);
     }
 
     /**
@@ -953,5 +1011,20 @@ class ProjectAnalyzer
         }
 
         throw new \LogicException('failed to detect number of CPUs!');
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getSupportedIssuesToFix(): array
+    {
+        return array_map(
+            /** @param class-string $issue_class */
+            function (string $issue_class): string {
+                $parts = explode('\\', $issue_class);
+                return end($parts);
+            },
+            self::SUPPORTED_ISSUES_TO_FIX
+        );
     }
 }
