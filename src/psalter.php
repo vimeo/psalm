@@ -145,6 +145,7 @@ if (!isset($options['issues']) &&
 ) {
     fwrite(STDERR, 'Please specify the issues you want to fix with --issues=IssueOne,IssueTwo or --issues=all, ' .
         'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
+    exit(1);
 }
 
 if (isset($options['root'])) {
@@ -394,6 +395,7 @@ if ($keyed_issues === ['all' => true]) {
         $project_analyzer->setIssuesToFix($keyed_issues);
     } catch (\Psalm\Exception\UnsupportedIssueToFixException $e) {
         fwrite(STDERR, $e->getMessage() . PHP_EOL);
+        exit(1);
     }
 }
 
