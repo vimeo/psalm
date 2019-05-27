@@ -744,9 +744,9 @@ class ReturnTypeAnalyzer
         $codebase = $project_analyzer->getCodebase();
         $is_final = true;
         $fqcln = $source->getFQCLN();
-        if ($fqcln !== null) {
+
+        if ($fqcln !== null && $function instanceof ClassMethod) {
             $class_storage = $codebase->classlike_storage_provider->get($fqcln);
-            assert($function instanceof ClassMethod);
             $is_final = $function->isFinal() || $class_storage->final;
         }
 
