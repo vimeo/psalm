@@ -441,7 +441,26 @@ class ArrayAccessTest extends TestCase
                 '<?php
                     ["s" => "str"]["str"[0]];',
             ],
-            'assertConstantOffsets' => [
+            'assertConstantOffsetsInMethod' => [
+                '<?php
+                    class C {
+                        public const ARR = [
+                            "a" => ["foo" => true],
+                            "b" => []
+                        ];
+
+                        public function bar(string $key): bool {
+                            if (!array_key_exists($key, self::ARR) || !array_key_exists("foo", self::ARR[$key])) {
+                                return false;
+                            }
+
+                            return self::ARR[$key]["foo"];
+                        }
+                    }',
+                [],
+                ['MixedReturnStatement', 'MixedInferredReturnType']
+            ],
+            'assertConstantOffsetsInFunction' => [
                 '<?php
                     class C {
                         public const ARR = [
@@ -451,7 +470,7 @@ class ArrayAccessTest extends TestCase
                     }
 
                     function bar(string $key): bool {
-                        if (!array_key_exists($key, C::ARR) || !array_key_exists(\'foo\', C::ARR[$key])) {
+                        if (!array_key_exists($key, C::ARR) || !array_key_exists("foo", C::ARR[$key])) {
                             return false;
                         }
 

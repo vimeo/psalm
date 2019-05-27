@@ -948,6 +948,10 @@ class ExpressionAnalyzer
             $resolved_name = $stmt->class->getAttribute('resolvedName');
 
             if ($resolved_name) {
+                if (($resolved_name === 'self' || $resolved_name === 'static') && $this_class_name) {
+                    $resolved_name = $this_class_name;
+                }
+
                 return $resolved_name . '::' . $stmt->name;
             }
         }
