@@ -189,6 +189,7 @@ abstract class Atomic
 
         if (isset($template_type_map[$value])) {
             $first_class = array_keys($template_type_map[$value])[0];
+
             return new TTemplateParam(
                 $value,
                 $template_type_map[$value][$first_class][0],

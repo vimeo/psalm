@@ -488,8 +488,6 @@ class ArrayFetchAnalyzer
                                             if ($offset_as instanceof Type\Atomic\TTemplateKeyOf
                                                 && $offset_as->param_name === $original_type->param_name
                                                 && $offset_as->defining_class === $original_type->defining_class
-                                                && $offset_atomic_type->defining_class
-                                                    === $original_type->defining_class
                                             ) {
                                                 $type->type_params[1] = new Type\Union([
                                                     new Type\Atomic\TTemplateIndexedAccess(
