@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\Progress\EchoProgress;
+use Psalm\Tests\Progress\VoidProgress;
 
 class ProjectCheckerTest extends TestCase
 {
@@ -62,7 +63,7 @@ class ProjectCheckerTest extends TestCase
             true,
             ProjectAnalyzer::TYPE_CONSOLE,
             1,
-            null
+            new VoidProgress()
         );
     }
 

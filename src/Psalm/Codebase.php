@@ -13,7 +13,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Progress\Progress;
-use Psalm\Progress\VoidProgress;
+use Psalm\Progress\DefaultProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
@@ -198,7 +198,7 @@ class Codebase
         Progress $progress = null
     ) {
         if ($progress === null) {
-            $progress = new VoidProgress();
+            $progress = new DefaultProgress();
         }
 
         $this->config = $config;

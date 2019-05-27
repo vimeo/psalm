@@ -18,7 +18,7 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Plugin\Hook;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Progress\Progress;
-use Psalm\Progress\VoidProgress;
+use Psalm\Progress\DefaultProgress;
 use SimpleXMLElement;
 
 class Config
@@ -1441,7 +1441,7 @@ class Config
     public function visitStubFiles(Codebase $codebase, Progress $progress = null)
     {
         if ($progress === null) {
-            $progress = new VoidProgress();
+            $progress = new DefaultProgress();
         }
 
         $codebase->register_stub_files = true;
@@ -1554,7 +1554,7 @@ class Config
     public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, Progress $progress = null)
     {
         if ($progress === null) {
-            $progress = new VoidProgress();
+            $progress = new DefaultProgress();
         }
 
         $this->collectPredefinedConstants();

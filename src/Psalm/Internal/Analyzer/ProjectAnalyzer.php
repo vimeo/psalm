@@ -27,7 +27,7 @@ use Psalm\Issue\PossiblyUnusedProperty;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\Progress\Progress;
-use Psalm\Progress\VoidProgress;
+use Psalm\Progress\DefaultProgress;
 use Psalm\Type;
 use Psalm\Issue\CodeIssue;
 
@@ -214,7 +214,7 @@ class ProjectAnalyzer
         $show_snippet = true
     ) {
         if ($progress === null) {
-            $progress = new VoidProgress();
+            $progress = new DefaultProgress();
         }
 
         $this->parser_cache_provider = $providers->parser_cache_provider;
