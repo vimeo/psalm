@@ -2296,7 +2296,18 @@ class AssertionFinder
         if ($stmt->name instanceof PhpParser\Node\Name
             && strtolower($stmt->name->parts[0]) === 'class_exists'
         ) {
-            return true;
+            if (!isset($stmt->args[1])) {
+                return true;
+            }
+
+            $second_arg = $stmt->args[1]->value;
+
+            if ($second_arg instanceof PhpParser\Node\Expr\ConstFetch
+                && $second_arg->name instanceof PhpParser\Node\Name
+                && strtolower($second_arg->name->parts[0]) === 'true'
+            ) {
+                return true;
+            }
         }
 
         return false;

@@ -11,6 +11,7 @@ use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Progress\Progress;
 
 /**
  * @psalm-type  IssueData = array{
@@ -77,9 +78,9 @@ class Analyzer
     private $file_storage_provider;
 
     /**
-     * @var bool
+     * @var Progress
      */
-    private $debug_output;
+    private $progress;
 
     /**
      * Used to store counts of mixed vs non-mixed variables
@@ -134,19 +135,16 @@ class Analyzer
      */
     private $type_map = [];
 
-    /**
-     * @param bool $debug_output
-     */
     public function __construct(
         Config $config,
         FileProvider $file_provider,
         FileStorageProvider $file_storage_provider,
-        $debug_output
+        Progress $progress
     ) {
         $this->config = $config;
         $this->file_provider = $file_provider;
         $this->file_storage_provider = $file_storage_provider;
-        $this->debug_output = $debug_output;
+        $this->progress = $progress;
     }
 
     /**
@@ -199,9 +197,7 @@ class Analyzer
             $file_analyzer = new FileAnalyzer($project_analyzer, $file_path, $file_name);
         }
 
-        if ($this->debug_output) {
-            echo 'Getting ' . $file_path . "\n";
-        }
+        $this->progress->debug('Getting ' . $file_path . "\n");
 
         return $file_analyzer;
     }
@@ -225,17 +221,23 @@ class Analyzer
              * @param int $_
              * @param string $file_path
              *
-             * @return void
+             * @return array
              */
             function ($_, $file_path) use ($project_analyzer, $filetype_analyzers) {
                 $file_analyzer = $this->getFileAnalyzer($project_analyzer, $file_path, $filetype_analyzers);
 
-                if ($this->debug_output) {
-                    echo 'Analyzing ' . $file_analyzer->getFilePath() . "\n";
-                }
+                $this->progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
 
                 $file_analyzer->analyze(null);
+
+                return $this->getFileIssues($file_path);
             };
+
+        $this->progress->start(count($this->files_to_analyze));
+
+        $task_done_closure = function (array $issues): void {
+            $this->progress->taskDone(count($issues) === 0);
+        };
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
             $process_file_paths = [];
@@ -274,9 +276,7 @@ class Analyzer
                     $analyzer = $codebase->analyzer;
                     $file_reference_provider = $codebase->file_reference_provider;
 
-                    if ($this->debug_output) {
-                        echo 'Gathering data for forked process' . "\n";
-                    }
+                    $this->progress->debug('Gathering data for forked process' . "\n");
 
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
@@ -300,12 +300,11 @@ class Analyzer
                         'class_method_locations' => $file_reference_provider->getAllClassMethodLocations(),
                         'class_property_locations' => $file_reference_provider->getAllClassPropertyLocations(),
                     ];
-                }
+                },
+                $task_done_closure
             );
 
-            if ($this->debug_output) {
-                echo 'Forking analysis' . "\n";
-            }
+            $this->progress->debug('Forking analysis' . "\n");
 
             // Wait for all tasks to complete and collect the results.
             /**
@@ -313,9 +312,7 @@ class Analyzer
              */
             $forked_pool_data = $pool->wait();
 
-            if ($this->debug_output) {
-                echo 'Collecting forked analysis results' . "\n";
-            }
+            $this->progress->debug('Collecting forked analysis results' . "\n");
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
@@ -385,12 +382,17 @@ class Analyzer
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $analysis_worker($i, $file_path);
                 ++$i;
+
+                $issues = $this->getFileIssues($file_path);
+                $task_done_closure($issues);
             }
 
             foreach (IssueBuffer::getIssuesData() as $issue_data) {
                 $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
             }
         }
+
+        $this->progress->finish();
 
         $codebase = $project_analyzer->getCodebase();
 
@@ -417,6 +419,13 @@ class Analyzer
                 $this->updateFile($file_path, $project_analyzer->dry_run, true);
             }
         }
+    }
+
+    private function getFileIssues(string $file_path): array
+    {
+        return array_filter(IssueBuffer::getIssuesData(), function (array $issue) use ($file_path): bool {
+            return $issue['file_path'] === $file_path;
+        });
     }
 
     /**

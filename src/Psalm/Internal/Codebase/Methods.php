@@ -528,38 +528,20 @@ class Methods
      */
     public function getMethodReturnType($method_id, &$self_class, array $args = null)
     {
-        $checked_for_pseudo_method = false;
+        list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
 
-        if ($this->config->use_phpdoc_method_without_magic_or_parent) {
-            list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
+        $original_fq_class_name = $this->classlikes->getUnAliasedName($original_fq_class_name);
 
-            $original_fq_class_name = $this->classlikes->getUnAliasedName($original_fq_class_name);
+        $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
 
-            $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
-
-            if (isset($original_class_storage->pseudo_methods[strtolower($original_method_name)])) {
-                return $original_class_storage->pseudo_methods[strtolower($original_method_name)]->return_type;
-            }
-
-            $checked_for_pseudo_method = true;
+        if (isset($original_class_storage->pseudo_methods[strtolower($original_method_name)])) {
+            return $original_class_storage->pseudo_methods[strtolower($original_method_name)]->return_type;
         }
 
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {
             return null;
-        }
-
-        if (!$checked_for_pseudo_method) {
-            list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
-
-            $original_fq_class_name = $this->classlikes->getUnAliasedName($original_fq_class_name);
-
-            $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
-
-            if (isset($original_class_storage->pseudo_methods[strtolower($original_method_name)])) {
-                return $original_class_storage->pseudo_methods[strtolower($original_method_name)]->return_type;
-            }
         }
 
         $appearing_method_id = $this->getAppearingMethodId($method_id);

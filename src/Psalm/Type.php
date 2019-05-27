@@ -1340,7 +1340,7 @@ abstract class Type
             } else {
                 $combined_type = clone $type_1;
 
-                foreach ($combined_type->getTypes() as $type_1_atomic) {
+                foreach ($combined_type->getTypes() as $t1_key => $type_1_atomic) {
                     foreach ($type_2->getTypes() as $type_2_atomic) {
                         if (($type_1_atomic instanceof TIterable
                                 || $type_1_atomic instanceof TNamedObject
@@ -1366,6 +1366,11 @@ abstract class Type
                                     $type_1_atomic->extra_types[] = clone $type_2_intersection_type;
                                 }
                             }
+                        }
+
+                        if ($type_1_atomic instanceof TObject && $type_2_atomic instanceof TNamedObject) {
+                            $combined_type->removeType($t1_key);
+                            $combined_type->addType(clone $type_2_atomic);
                         }
                     }
                 }

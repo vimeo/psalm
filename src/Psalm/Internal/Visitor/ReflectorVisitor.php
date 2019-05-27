@@ -419,6 +419,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         && $node->cond->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
                         && class_exists($node->cond->expr->args[0]->value->value, false)
                     ) {
+                        /** @psalm-suppress ArgumentTypeCoercion - special case where the class is internal  */
                         $reflection_class = new \ReflectionClass($node->cond->expr->args[0]->value->value);
 
                         if ($reflection_class->getFileName() !== $this->file_path) {

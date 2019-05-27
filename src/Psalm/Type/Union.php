@@ -1010,7 +1010,7 @@ class Union
                         if ($input_type) {
                             $generic_param = clone $input_type;
 
-                            if ($this->isNullable() && $generic_param->isNullable()) {
+                            if ($this->isNullable() && $generic_param->isNullable() && !$generic_param->isNull()) {
                                 $generic_param->removeType('null');
                             }
 

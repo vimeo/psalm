@@ -801,64 +801,64 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $context->calling_method_id,
             $method_id !== $source_method_id ? new CodeLocation($source, $stmt->name) : null
         )) {
-            if ($config->use_phpdoc_method_without_magic_or_parent) {
-                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                if (isset($class_storage->pseudo_methods[$method_name_lc])) {
-                    $has_valid_method_call_type = true;
-                    $existent_method_ids[] = $method_id;
+            if (($is_interface || $config->use_phpdoc_method_without_magic_or_parent)
+                && isset($class_storage->pseudo_methods[$method_name_lc])
+            ) {
+                $has_valid_method_call_type = true;
+                $existent_method_ids[] = $method_id;
 
-                    $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+                $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
-                    if (self::checkFunctionArguments(
-                        $statements_analyzer,
-                        $args,
-                        $pseudo_method_storage->params,
-                        $method_id,
-                        $context
-                    ) === false) {
-                        return false;
+                if (self::checkFunctionArguments(
+                    $statements_analyzer,
+                    $args,
+                    $pseudo_method_storage->params,
+                    $method_id,
+                    $context
+                ) === false) {
+                    return false;
+                }
+
+                $generic_params = [];
+
+                if (self::checkFunctionLikeArgumentsMatch(
+                    $statements_analyzer,
+                    $args,
+                    null,
+                    $pseudo_method_storage->params,
+                    $pseudo_method_storage,
+                    null,
+                    $generic_params,
+                    new CodeLocation($source, $stmt->name),
+                    $context
+                ) === false) {
+                    return false;
+                }
+
+                if ($pseudo_method_storage->return_type) {
+                    $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+                    if ($all_intersection_return_type) {
+                        $return_type_candidate = Type::intersectUnionTypes(
+                            $all_intersection_return_type,
+                            $return_type_candidate
+                        );
                     }
 
-                    $generic_params = [];
-
-                    if (self::checkFunctionLikeArgumentsMatch(
-                        $statements_analyzer,
-                        $args,
-                        null,
-                        $pseudo_method_storage->params,
-                        $pseudo_method_storage,
-                        null,
-                        $generic_params,
-                        new CodeLocation($source, $stmt->name),
-                        $context
-                    ) === false) {
-                        return false;
+                    if (!$return_type) {
+                        $return_type = $return_type_candidate;
+                    } else {
+                        $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
                     }
-
-                    if ($pseudo_method_storage->return_type) {
-                        $return_type_candidate = clone $pseudo_method_storage->return_type;
-
-                        if ($all_intersection_return_type) {
-                            $return_type_candidate = Type::intersectUnionTypes(
-                                $all_intersection_return_type,
-                                $return_type_candidate
-                            );
-                        }
-
-                        if (!$return_type) {
-                            $return_type = $return_type_candidate;
-                        } else {
-                            $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
-                        }
-
-                        return;
-                    }
-
-                    $return_type = Type::getMixed();
 
                     return;
                 }
+
+                $return_type = Type::getMixed();
+
+                return;
             }
 
             if ($all_intersection_return_type && $all_intersection_existent_method_ids) {

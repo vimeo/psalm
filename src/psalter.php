@@ -4,6 +4,8 @@ require_once('command_functions.php');
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
 use Psalm\IssueBuffer;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\DefaultProgress;
 
 // show all errors
 error_reporting(-1);
@@ -41,16 +43,22 @@ array_map(
                 && !in_array($arg_name . ':', $valid_long_options)
                 && !in_array($arg_name . '::', $valid_long_options)
             ) {
-                echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL
+                );
                 exit(1);
             }
         } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
 
             if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
-                echo 'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL
+                );
                 exit(1);
             }
         }
@@ -194,6 +202,11 @@ if (array_key_exists('list-supported-issues', $options)) {
     exit();
 }
 
+$debug = array_key_exists('debug', $options);
+$progress = $debug
+    ? new DebugProgress()
+    : new DefaultProgress();
+
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
@@ -201,7 +214,7 @@ $project_analyzer = new ProjectAnalyzer(
     false,
     ProjectAnalyzer::TYPE_CONSOLE,
     $threads,
-    array_key_exists('debug', $options)
+    $progress
 );
 
 if (array_key_exists('debug-by-line', $options)) {
