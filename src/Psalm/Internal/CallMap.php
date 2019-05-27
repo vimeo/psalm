@@ -6883,7 +6883,7 @@ return [
 'm_verifyconnection' => ['bool', 'conn'=>'resource', 'tf'=>'int'],
 'm_verifysslcert' => ['bool', 'conn'=>'resource', 'tf'=>'int'],
 'magic_quotes_runtime' => ['bool', 'new_setting'=>'bool'],
-'mail' => ['bool', 'to'=>'string', 'subject'=>'string', 'message'=>'string', 'additional_headers='=>'string', 'additional_parameters='=>'string'],
+'mail' => ['bool', 'to'=>'string', 'subject'=>'string', 'message'=>'string', 'additional_headers='=>'string|array|null', 'additional_parameters='=>'string|null'],
 'mailparse_determine_best_xfer_encoding' => ['string', 'fp'=>'resource'],
 'mailparse_msg_create' => ['resource'],
 'mailparse_msg_extract_part' => ['void', 'mimemail'=>'resource', 'msgbody'=>'string', 'callbackfunc='=>'callable'],
