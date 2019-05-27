@@ -143,7 +143,7 @@ if (!isset($options['issues']) &&
     !isset($options['list-supported-issues']) &&
     (!isset($options['plugin']) || $options['plugin'] === false)
 ) {
-    die('Please specify the issues you want to fix with --issues=IssueOne,IssueTwo or --issues=all, ' .
+    fwrite(STDERR, 'Please specify the issues you want to fix with --issues=IssueOne,IssueTwo or --issues=all, ' .
         'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
 }
 
@@ -393,7 +393,7 @@ if ($keyed_issues === ['all' => true]) {
     try {
         $project_analyzer->setIssuesToFix($keyed_issues);
     } catch (\Psalm\Exception\UnsupportedIssueToFixException $e) {
-        die($e->getMessage() . PHP_EOL);
+        fwrite(STDERR, $e->getMessage() . PHP_EOL);
     }
 }
 
