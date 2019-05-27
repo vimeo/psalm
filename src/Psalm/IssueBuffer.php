@@ -135,7 +135,7 @@ class IssueBuffer
 
             throw new Exception\CodeException(
                 $issue_type
-                    . ' - ' . $e->getShortLocation()
+                    . ' - ' . $e->getShortLocationWithPrevious()
                     . ':' . $e->getLocation()->getColumn()
                     . ' - ' . $e->getMessage()
             );

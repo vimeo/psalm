@@ -41,7 +41,7 @@ abstract class CodeIssue
     /**
      * @return string
      */
-    public function getShortLocation()
+    public function getShortLocationWithPrevious()
     {
         $previous_text = '';
 
@@ -51,6 +51,14 @@ abstract class CodeIssue
         }
 
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber() . $previous_text;
+    }
+
+    /**
+     * @return string
+     */
+    public function getShortLocation()
+    {
+        return $this->code_location->file_name . ':' . $this->code_location->getLineNumber();
     }
 
     /**
