@@ -1,12 +1,17 @@
 <?php
 namespace Psalm\Tests\Progress;
 
-use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\Progress;
 
-class EchoProgress extends DefaultProgress
+class EchoProgress extends Progress
 {
-    protected function write(string $message): void
+    public function startScanningFiles(): void
     {
-        echo $message;
+        echo 'Scanning files...' . "\n";
+    }
+
+    public function startAnalyzingFiles(): void
+    {
+        echo 'Analyzing files...' . "\n";
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Progress;
 
 class DebugProgress extends Progress
@@ -10,16 +11,16 @@ class DebugProgress extends Progress
 
     public function debug(string $message): void
     {
-        $this->write($message);
+        fwrite(STDERR, $message);
     }
 
     public function startScanningFiles(): void
     {
-        $this->write('Scanning files...' . "\n");
+        fwrite(STDERR, 'Scanning files...' . "\n");
     }
 
     public function startAnalyzingFiles(): void
     {
-        $this->write('Analyzing files...' . "\n");
+        fwrite(STDERR, 'Analyzing files...' . "\n");
     }
 }

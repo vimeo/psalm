@@ -231,12 +231,6 @@ class Analyzer
                 $file_analyzer->analyze(null);
             };
 
-        $this->progress->start(count($this->files_to_analyze));
-
-        $task_done_closure = function (): void {
-            $this->progress->taskDone(true);
-        };
-
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
             $process_file_paths = [];
 
@@ -298,8 +292,7 @@ class Analyzer
                         'class_method_locations' => $file_reference_provider->getAllClassMethodLocations(),
                         'class_property_locations' => $file_reference_provider->getAllClassPropertyLocations(),
                     ];
-                },
-                $task_done_closure
+                }
             );
 
             $this->progress->debug('Forking analysis' . "\n");
@@ -380,15 +373,12 @@ class Analyzer
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $analysis_worker($i, $file_path);
                 ++$i;
-                $task_done_closure();
             }
 
             foreach (IssueBuffer::getIssuesData() as $issue_data) {
                 $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
             }
         }
-
-        $this->progress->finish();
 
         $codebase = $project_analyzer->getCodebase();
 

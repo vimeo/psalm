@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Progress;
 
 abstract class Progress
@@ -18,22 +19,5 @@ abstract class Progress
 
     public function startAnalyzingFiles(): void
     {
-    }
-
-    public function start(int $number_of_tasks): void
-    {
-    }
-
-    public function taskDone(bool $successful): void
-    {
-    }
-
-    public function finish(): void
-    {
-    }
-
-    protected function write(string $message): void
-    {
-        fwrite(STDERR, $message);
     }
 }
