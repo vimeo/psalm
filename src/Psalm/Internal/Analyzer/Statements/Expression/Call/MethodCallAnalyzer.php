@@ -51,7 +51,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
-        Context $context
+        Context $context,
+        bool $real_method_call = true
     ) {
         $stmt->inferredType = null;
 
@@ -343,6 +344,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && !$invalid_method_call_types
             && $existent_method_ids
             && ($class_type->from_docblock || $class_type->isNullable())
+            && $real_method_call
         ) {
             $keys_to_remove = [];
 

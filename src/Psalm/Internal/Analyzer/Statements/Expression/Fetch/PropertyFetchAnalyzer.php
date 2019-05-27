@@ -501,7 +501,8 @@ class PropertyFetchAnalyzer
                 \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
                     $statements_analyzer,
                     $fake_method_call,
-                    $context
+                    $context,
+                    false
                 );
 
                 if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {

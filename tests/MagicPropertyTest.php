@@ -320,6 +320,22 @@ class MagicPropertyTest extends TestCase
                 'assertions' => [],
                 'error_level' => ['MixedArgument'],
             ],
+            'dontAssumeNonNullAfterPossibleMagicFetch' => [
+                '<?php
+                    class C {
+                        public function __get(string $name) : string {
+                            return "hello";
+                        }
+                    }
+
+                    function foo(?C $c) : void {
+                        echo $c->foo;
+
+                        if ($c) {}
+                    }',
+                'assertions' => [],
+                'error_level' => ['PossiblyNullPropertyFetch'],
+            ],
             'accessInMagicGet' => [
                 '<?php
                     class X {
