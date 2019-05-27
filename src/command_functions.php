@@ -64,7 +64,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
                     . 'to specify a particular project to run Psalm on.';
             }
 
-            fwrite(STDERR, $error_message . PHP_EOL);
+            echo $error_message . PHP_EOL;
             exit(1);
         }
     }
@@ -88,15 +88,13 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
 
     if ($first_autoloader === null && !$in_phar) {
         if (!$autoload_files) {
-            fwrite(STDERR, 'Failed to find a valid Composer autoloader' . "\n");
+            echo 'Failed to find a valid Composer autoloader' . "\n";
         } else {
-            fwrite(STDERR, 'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n");
+            echo 'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n";
         }
 
-        fwrite(
-            STDERR,
-            'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n"
-        );
+        echo 'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n";
+
         exit(1);
     }
 
@@ -196,19 +194,19 @@ function getPathsToCheck($f_paths)
 
         foreach ($filtered_input_paths as $path_to_check) {
             if ($path_to_check[0] === '-') {
-                fwrite(STDERR, 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
+                echo 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL;
                 exit(1);
             }
 
             if (!file_exists($path_to_check)) {
-                fwrite(STDERR, 'Cannot locate ' . $path_to_check . PHP_EOL);
+                echo 'Cannot locate ' . $path_to_check . PHP_EOL;
                 exit(1);
             }
 
             $path_to_check = realpath($path_to_check);
 
             if (!$path_to_check) {
-                fwrite(STDERR, 'Error getting realpath for file' . PHP_EOL);
+                echo 'Error getting realpath for file' . PHP_EOL;
                 exit(1);
             }
 

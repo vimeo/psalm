@@ -17,8 +17,6 @@ use Psalm\Issue\UnusedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
-use Psalm\Progress\Progress;
-use Psalm\Progress\DefaultProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
@@ -667,13 +665,11 @@ class ClassLikes
     /**
      * @return void
      */
-    public function checkClassReferences(Methods $methods, Progress $progress = null)
+    public function checkClassReferences(Methods $methods, bool $debug_output = false)
     {
-        if ($progress === null) {
-            $progress = new DefaultProgress();
+        if ($debug_output) {
+            echo 'Checking class references' . PHP_EOL;
         }
-
-        $progress->debug('Checking class references' . PHP_EOL);
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {

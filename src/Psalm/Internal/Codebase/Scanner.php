@@ -7,7 +7,6 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
-use Psalm\Progress\Progress;
 
 /**
  * @psalm-type  IssueData = array{
@@ -128,9 +127,9 @@ class Scanner
     private $config;
 
     /**
-     * @var Progress
+     * @var bool
      */
-    private $progress;
+    private $debug_output;
 
     /**
      * @var FileStorageProvider
@@ -152,6 +151,9 @@ class Scanner
      */
     private $is_forked = false;
 
+    /**
+     * @param bool $debug_output
+     */
     public function __construct(
         Codebase $codebase,
         Config $config,
@@ -159,12 +161,12 @@ class Scanner
         FileProvider $file_provider,
         Reflection $reflection,
         FileReferenceProvider $file_reference_provider,
-        Progress $progress
+        $debug_output
     ) {
         $this->codebase = $codebase;
         $this->reflection = $reflection;
         $this->file_provider = $file_provider;
-        $this->progress = $progress;
+        $this->debug_output = $debug_output;
         $this->file_storage_provider = $file_storage_provider;
         $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
@@ -384,14 +386,18 @@ class Scanner
                 ++$i;
             }
 
-            $this->progress->debug('Forking process for scanning' . PHP_EOL);
+            if ($this->debug_output) {
+                echo 'Forking process for scanning' . PHP_EOL;
+            }
 
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new \Psalm\Internal\Fork\Pool(
                 $process_file_paths,
                 function () {
-                    $this->progress->debug('Initialising forked process for scanning' . PHP_EOL);
+                    if ($this->debug_output) {
+                        echo 'Initialising forked process for scanning' . PHP_EOL;
+                    }
 
                     $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
                     $codebase = $project_analyzer->getCodebase();
@@ -403,14 +409,18 @@ class Scanner
 
                     $statements_provider->resetDiffs();
 
-                    $this->progress->debug('Have initialised forked process for scanning' . PHP_EOL);
+                    if ($this->debug_output) {
+                        echo 'Have initialised forked process for scanning' . PHP_EOL;
+                    }
                 },
                 $scanner_worker,
                 /**
                  * @return PoolData
                 */
                 function () {
-                    $this->progress->debug('Collecting data from forked scanner process' . PHP_EOL);
+                    if ($this->debug_output) {
+                        echo 'Collecting data from forked scanner process' . PHP_EOL;
+                    }
 
                     $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
                     $codebase = $project_analyzer->getCodebase();
@@ -510,7 +520,9 @@ class Scanner
                         continue;
                     }
 
-                    $this->progress->debug('Using reflection to get metadata for ' . $fq_classlike_name . "\n");
+                    if ($this->debug_output) {
+                        echo 'Using reflection to get metadata for ' . $fq_classlike_name . "\n";
+                    }
 
                     /** @psalm-suppress TypeCoercion */
                     $reflected_class = new \ReflectionClass($fq_classlike_name);
@@ -584,7 +596,7 @@ class Scanner
             $this->codebase,
             $file_storage,
             $from_cache,
-            $this->progress
+            $this->debug_output
         );
 
         if (!$from_cache) {
@@ -698,7 +710,9 @@ class Scanner
         $composer_file_path = $this->config->getComposerFilePathForClassLike($fq_class_name);
 
         if ($composer_file_path && file_exists($composer_file_path)) {
-            $this->progress->debug('Using composer to locate file for ' . $fq_class_name . "\n");
+            if ($this->debug_output) {
+                echo 'Using composer to locate file for ' . $fq_class_name . "\n";
+            }
 
             $classlikes->addFullyQualifiedClassLikeName(
                 $fq_class_name_lc,
@@ -710,10 +724,14 @@ class Scanner
 
         $old_level = error_reporting();
 
-        $this->progress->setErrorReporting();
+        if (!$this->debug_output) {
+            error_reporting(E_ERROR);
+        }
 
         try {
-            $this->progress->debug('Using reflection to locate file for ' . $fq_class_name . "\n");
+            if ($this->debug_output) {
+                echo 'Using reflection to locate file for ' . $fq_class_name . "\n";
+            }
 
             /** @psalm-suppress TypeCoercion */
             $reflected_class = new \ReflectionClass($fq_class_name);

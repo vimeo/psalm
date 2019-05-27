@@ -6,7 +6,6 @@ use Psalm;
 use Psalm\Checker\CommentChecker;
 use Psalm\Codebase;
 use Psalm\DocComment;
-use Psalm\Progress\Progress;
 use Psalm\Storage\FileStorage;
 
 class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
@@ -15,6 +14,7 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 
     /**
      * @param bool $storage_from_cache
+     * @param bool $debug_output
      *
      * @return void
      */
@@ -22,11 +22,11 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
         Codebase $codebase,
         FileStorage $file_storage,
         $storage_from_cache = false,
-        Progress $progress = null
+        $debug_output = false
     ) {
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
-            $progress
+            $debug_output
         );
 
         if (empty($stmts)) {
@@ -62,6 +62,6 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 
         $codebase->scanner->queueClassLikeForScanning(self::VIEW_CLASS, $this->file_path);
 
-        parent::scan($codebase, $file_storage, $storage_from_cache, $progress);
+        parent::scan($codebase, $file_storage, $storage_from_cache, $debug_output);
     }
 }

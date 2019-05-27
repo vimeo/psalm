@@ -11,7 +11,6 @@ use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
-use Psalm\Progress\Progress;
 
 /**
  * @psalm-type  IssueData = array{
@@ -78,9 +77,9 @@ class Analyzer
     private $file_storage_provider;
 
     /**
-     * @var Progress
+     * @var bool
      */
-    private $progress;
+    private $debug_output;
 
     /**
      * Used to store counts of mixed vs non-mixed variables
@@ -135,16 +134,19 @@ class Analyzer
      */
     private $type_map = [];
 
+    /**
+     * @param bool $debug_output
+     */
     public function __construct(
         Config $config,
         FileProvider $file_provider,
         FileStorageProvider $file_storage_provider,
-        Progress $progress
+        $debug_output
     ) {
         $this->config = $config;
         $this->file_provider = $file_provider;
         $this->file_storage_provider = $file_storage_provider;
-        $this->progress = $progress;
+        $this->debug_output = $debug_output;
     }
 
     /**
@@ -197,7 +199,9 @@ class Analyzer
             $file_analyzer = new FileAnalyzer($project_analyzer, $file_path, $file_name);
         }
 
-        $this->progress->debug('Getting ' . $file_path . "\n");
+        if ($this->debug_output) {
+            echo 'Getting ' . $file_path . "\n";
+        }
 
         return $file_analyzer;
     }
@@ -226,7 +230,9 @@ class Analyzer
             function ($_, $file_path) use ($project_analyzer, $filetype_analyzers) {
                 $file_analyzer = $this->getFileAnalyzer($project_analyzer, $file_path, $filetype_analyzers);
 
-                $this->progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
+                if ($this->debug_output) {
+                    echo 'Analyzing ' . $file_analyzer->getFilePath() . "\n";
+                }
 
                 $file_analyzer->analyze(null);
             };
@@ -268,7 +274,9 @@ class Analyzer
                     $analyzer = $codebase->analyzer;
                     $file_reference_provider = $codebase->file_reference_provider;
 
-                    $this->progress->debug('Gathering data for forked process' . "\n");
+                    if ($this->debug_output) {
+                        echo 'Gathering data for forked process' . "\n";
+                    }
 
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
@@ -295,7 +303,9 @@ class Analyzer
                 }
             );
 
-            $this->progress->debug('Forking analysis' . "\n");
+            if ($this->debug_output) {
+                echo 'Forking analysis' . "\n";
+            }
 
             // Wait for all tasks to complete and collect the results.
             /**
@@ -303,7 +313,9 @@ class Analyzer
              */
             $forked_pool_data = $pool->wait();
 
-            $this->progress->debug('Collecting forked analysis results' . "\n");
+            if ($this->debug_output) {
+                echo 'Collecting forked analysis results' . "\n";
+            }
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);

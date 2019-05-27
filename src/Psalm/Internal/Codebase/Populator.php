@@ -9,7 +9,6 @@ use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
-use Psalm\Progress\Progress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -32,9 +31,9 @@ class Populator
     private $file_storage_provider;
 
     /**
-     * @var Progress
+     * @var bool
      */
-    private $progress;
+    private $debug_output;
 
     /**
      * @var ClassLikes
@@ -51,18 +50,21 @@ class Populator
      */
     private $file_reference_provider;
 
+    /**
+     * @param bool $debug_output
+     */
     public function __construct(
         Config $config,
         ClassLikeStorageProvider $classlike_storage_provider,
         FileStorageProvider $file_storage_provider,
         ClassLikes $classlikes,
         FileReferenceProvider $file_reference_provider,
-        Progress $progress
+        $debug_output
     ) {
         $this->classlike_storage_provider = $classlike_storage_provider;
         $this->file_storage_provider = $file_storage_provider;
         $this->classlikes = $classlikes;
-        $this->progress = $progress;
+        $this->debug_output = $debug_output;
         $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
     }
@@ -72,15 +74,21 @@ class Populator
      */
     public function populateCodebase(\Psalm\Codebase $codebase)
     {
-        $this->progress->debug('ClassLikeStorage is populating' . "\n");
+        if ($this->debug_output) {
+            echo 'ClassLikeStorage is populating' . "\n";
+        }
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
         }
 
-        $this->progress->debug('ClassLikeStorage is populated' . "\n");
+        if ($this->debug_output) {
+            echo 'ClassLikeStorage is populated' . "\n";
+        }
 
-        $this->progress->debug('FileStorage is populating' . "\n");
+        if ($this->debug_output) {
+            echo 'FileStorage is populating' . "\n";
+        }
 
         $all_file_storage = $this->file_storage_provider->getNew();
 
@@ -167,7 +175,9 @@ class Populator
             }
         }
 
-        $this->progress->debug('FileStorage is populated' . "\n");
+        if ($this->debug_output) {
+            echo 'FileStorage is populated' . "\n";
+        }
 
         $this->classlike_storage_provider->populated();
         $this->file_storage_provider->populated();
@@ -261,7 +271,9 @@ class Populator
 
         $this->populateOverriddenMethods($storage);
 
-        $this->progress->debug('Have populated ' . $storage->name . "\n");
+        if ($this->debug_output) {
+            echo 'Have populated ' . $storage->name . "\n";
+        }
 
         $storage->populated = true;
     }
@@ -445,7 +457,9 @@ class Populator
             );
             $parent_storage = $storage_provider->get($parent_storage_class);
         } catch (\InvalidArgumentException $e) {
-            $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
+            if ($this->debug_output) {
+                echo 'Populator could not find dependency (' . __LINE__ . ")\n";
+            }
 
             $storage->invalid_dependencies[] = $parent_storage_class;
             $parent_storage = null;
@@ -557,7 +571,9 @@ class Populator
                 );
                 $parent_interface_storage = $storage_provider->get($parent_interface_lc);
             } catch (\InvalidArgumentException $e) {
-                $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
+                if ($this->debug_output) {
+                    echo 'Populator could not find dependency (' . __LINE__ . ")\n";
+                }
 
                 $storage->invalid_dependencies[] = $parent_interface_lc;
                 continue;
@@ -645,7 +661,9 @@ class Populator
                 );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
             } catch (\InvalidArgumentException $e) {
-                $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
+                if ($this->debug_output) {
+                    echo 'Populator could not find dependency (' . __LINE__ . ")\n";
+                }
 
                 $storage->invalid_dependencies[] = $implemented_interface_lc;
                 continue;

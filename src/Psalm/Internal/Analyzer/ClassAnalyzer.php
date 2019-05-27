@@ -1370,9 +1370,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             && !$class_context->collect_mutations
             && !$is_fake
         ) {
-            $project_analyzer->progress->debug(
-                'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n"
-            );
+            if ($project_analyzer->debug_output) {
+                echo 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n";
+            }
 
             $existing_issues = $codebase->analyzer->getExistingIssuesForFile(
                 $source->getFilePath(),

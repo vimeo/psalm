@@ -12,8 +12,6 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
-use Psalm\Progress\Progress;
-use Psalm\Progress\DefaultProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
@@ -82,9 +80,9 @@ class Codebase
     public $statements_provider;
 
     /**
-     * @var Progress
+     * @var bool
      */
-    private $progress;
+    private $debug_output = false;
 
     /**
      * @var array<string, Type\Union>
@@ -192,22 +190,22 @@ class Codebase
      */
     public $php_minor_version = PHP_MINOR_VERSION;
 
+    /**
+     * @param bool $debug_output
+     */
     public function __construct(
         Config $config,
         Providers $providers,
-        Progress $progress = null
+        $debug_output = false
     ) {
-        if ($progress === null) {
-            $progress = new DefaultProgress();
-        }
-
         $this->config = $config;
         $this->file_storage_provider = $providers->file_storage_provider;
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
-        $this->progress = $progress;
+        $this->debug_output = $debug_output;
         $this->file_provider = $providers->file_provider;
         $this->file_reference_provider = $providers->file_reference_provider;
         $this->statements_provider = $providers->statements_provider;
+        $this->debug_output = $debug_output;
 
         self::$stubbed_constants = [];
 
@@ -220,7 +218,7 @@ class Codebase
             $providers->file_provider,
             $this->reflection,
             $providers->file_reference_provider,
-            $progress
+            $debug_output
         );
 
         $this->loadAnalyzer();
@@ -252,7 +250,7 @@ class Codebase
             $providers->file_storage_provider,
             $this->classlikes,
             $providers->file_reference_provider,
-            $progress
+            $debug_output
         );
 
         $this->loadAnalyzer();
@@ -267,7 +265,7 @@ class Codebase
             $this->config,
             $this->file_provider,
             $this->file_storage_provider,
-            $this->progress
+            $this->debug_output
         );
     }
 
@@ -415,7 +413,7 @@ class Codebase
     {
         return $this->statements_provider->getStatementsForFile(
             $file_path,
-            $this->progress
+            $this->debug_output
         );
     }
 

@@ -52,11 +52,8 @@ array_map(
                 && !in_array($arg_name . ':', $valid_long_options)
                 && !in_array($arg_name . '::', $valid_long_options)
             ) {
-                fwrite(
-                    STDERR,
-                    'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL
-                );
+                echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
                 error_log('Bad argument');
                 exit(1);
             }
@@ -64,11 +61,8 @@ array_map(
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
 
             if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
-                fwrite(
-                    STDERR,
-                    'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL
-                );
+                echo 'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
                 error_log('Bad argument');
                 exit(1);
             }
@@ -99,7 +93,7 @@ if (isset($options['config'])) {
 }
 
 if (isset($options['c']) && is_array($options['c'])) {
-    fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
+    echo 'Too many config files provided' . PHP_EOL;
     exit(1);
 }
 
@@ -148,7 +142,7 @@ HELP;
 }
 
 if (getcwd() === false) {
-    fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
+    echo 'Cannot get current working directory' . PHP_EOL;
     exit(1);
 }
 
@@ -162,10 +156,7 @@ if (isset($options['r']) && is_string($options['r'])) {
     $root_path = realpath($options['r']);
 
     if (!$root_path) {
-        fwrite(
-            STDERR,
-            'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL
-        );
+        echo 'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL;
         exit(1);
     }
 
@@ -198,13 +189,13 @@ $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($o
 
 if ($path_to_config === false) {
     /** @psalm-suppress InvalidCast */
-    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
+    echo 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL;
     exit(1);
 }
 
 if (isset($options['tcp'])) {
     if (!is_string($options['tcp'])) {
-        fwrite(STDERR, 'tcp url should be a string' . PHP_EOL);
+        echo 'tcp url should be a string' . PHP_EOL;
         exit(1);
     }
 }
@@ -219,7 +210,7 @@ try {
         $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
     }
 } catch (Psalm\Exception\ConfigException $e) {
-    fwrite(STDERR, $e->getMessage());
+    echo $e->getMessage();
     exit(1);
 }
 

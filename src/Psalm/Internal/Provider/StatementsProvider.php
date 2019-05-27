@@ -2,8 +2,6 @@
 namespace Psalm\Internal\Provider;
 
 use PhpParser;
-use Psalm\Progress\Progress;
-use Psalm\Progress\DefaultProgress;
 
 /**
  * @internal
@@ -67,16 +65,13 @@ class StatementsProvider
     }
 
     /**
-     * @param string    $file_path
+     * @param  string  $file_path
+     * @param  bool    $debug_output
      *
      * @return array<int, \PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile($file_path, Progress $progress = null)
+    public function getStatementsForFile($file_path, $debug_output = false)
     {
-        if ($progress === null) {
-            $progress = new DefaultProgress();
-        }
-
         $from_cache = false;
 
         $version = (string) PHP_PARSER_VERSION . $this->this_modified_time;
@@ -85,7 +80,9 @@ class StatementsProvider
         $modified_time = $this->file_provider->getModifiedTime($file_path);
 
         if (!$this->parser_cache_provider) {
-            $progress->debug('Parsing ' . $file_path . "\n");
+            if ($debug_output) {
+                echo 'Parsing ' . $file_path . "\n";
+            }
 
             $stmts = self::parseStatements($file_contents, $file_path);
 
@@ -101,7 +98,9 @@ class StatementsProvider
         );
 
         if ($stmts === null) {
-            $progress->debug('Parsing ' . $file_path . "\n");
+            if ($debug_output) {
+                echo 'Parsing ' . $file_path . "\n";
+            }
 
             $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_path);
 

@@ -5,7 +5,6 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
-use Psalm\Tests\Progress\VoidProgress;
 use Psalm\Tests\TestConfig;
 
 class AnalyzedMethodTest extends \Psalm\Tests\TestCase
@@ -38,7 +37,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             true,
             ProjectAnalyzer::TYPE_CONSOLE,
             1,
-            new VoidProgress()
+            false
         );
         $this->project_analyzer->setPhpVersion('7.3');
     }

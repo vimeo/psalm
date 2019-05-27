@@ -17,8 +17,6 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Plugin\Hook;
 use Psalm\PluginRegistrationSocket;
-use Psalm\Progress\Progress;
-use Psalm\Progress\DefaultProgress;
 use SimpleXMLElement;
 
 class Config
@@ -1436,14 +1434,12 @@ class Config
     }
 
     /**
+     * @param bool $debug
+     *
      * @return void
      */
-    public function visitStubFiles(Codebase $codebase, Progress $progress = null)
+    public function visitStubFiles(Codebase $codebase, $debug = false)
     {
-        if ($progress === null) {
-            $progress = new DefaultProgress();
-        }
-
         $codebase->register_stub_files = true;
 
         // note: don't realpath $generic_stubs_path, or phar version will fail
@@ -1472,11 +1468,15 @@ class Config
             $codebase->scanner->addFileToShallowScan($file_path);
         }
 
-        $progress->debug('Registering stub files' . "\n");
+        if ($debug) {
+            echo 'Registering stub files' . "\n";
+        }
 
         $codebase->scanFiles();
 
-        $progress->debug('Finished registering stub files' . "\n");
+        if ($debug) {
+            echo 'Finished registering stub files' . "\n";
+        }
 
         $codebase->register_stub_files = false;
     }
@@ -1546,17 +1546,15 @@ class Config
     }
 
     /**
+     * @param bool $debug
+     *
      * @return void
      *
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
-    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, Progress $progress = null)
+    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, $debug = false)
     {
-        if ($progress === null) {
-            $progress = new DefaultProgress();
-        }
-
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
 
@@ -1612,11 +1610,15 @@ class Config
                 $codebase->scanner->addFileToDeepScan($file_path);
             }
 
-            $progress->debug('Registering autoloaded files' . "\n");
+            if ($debug) {
+                echo 'Registering autoloaded files' . "\n";
+            }
 
             $codebase->scanner->scanFiles($codebase->classlikes);
 
-            $progress->debug('Finished registering autoloaded files' . "\n");
+            if ($debug) {
+                echo 'Finished registering autoloaded files' . "\n";
+            }
 
             $codebase->register_autoload_files = false;
         }

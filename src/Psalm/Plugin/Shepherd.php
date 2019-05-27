@@ -21,7 +21,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
         SourceControlInfo $source_control_info = null
     ) {
         if (!function_exists('curl_init')) {
-            fwrite(STDERR, 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL);
+            echo 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL;
             return;
         }
 
@@ -67,115 +67,115 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             $return = curl_exec($ch);
 
             if ($return !== '') {
-                fwrite(STDERR, 'Error with Psalm Shepherd:' . PHP_EOL);
+                echo 'Error with Psalm Shepherd:' . PHP_EOL;
 
                 if ($return === false) {
                     /** @var array */
                     $curl_info = curl_getinfo($ch);
 
                     if (($curl_info['ssl_verify_result'] ?? 0) !== 0) {
-                        fwrite(STDERR, 'Curl SSL error: ');
+                        echo 'Curl SSL error: ';
 
                         switch ($curl_info['ssl_verify_result']) {
                             case 2:
-                                fwrite(STDERR, 'unable to get issuer certificate');
+                                echo 'unable to get issuer certificate';
                                 break;
                             case 3:
-                                fwrite(STDERR, 'unable to get certificate CRL');
+                                echo 'unable to get certificate CRL';
                                 break;
                             case 4:
-                                fwrite(STDERR, 'unable to decrypt certificate’s signature');
+                                echo 'unable to decrypt certificate’s signature';
                                 break;
                             case 5:
-                                fwrite(STDERR, 'unable to decrypt CRL’s signature');
+                                echo 'unable to decrypt CRL’s signature';
                                 break;
                             case 6:
-                                fwrite(STDERR, 'unable to decode issuer public key');
+                                echo 'unable to decode issuer public key';
                                 break;
                             case 7:
-                                fwrite(STDERR, 'certificate signature failure');
+                                echo 'certificate signature failure';
                                 break;
                             case 8:
-                                fwrite(STDERR, 'CRL signature failure');
+                                echo 'CRL signature failure';
                                 break;
                             case 9:
-                                fwrite(STDERR, 'certificate is not yet valid');
+                                echo 'certificate is not yet valid';
                                 break;
                             case 10:
-                                fwrite(STDERR, 'certificate has expired');
+                                echo 'certificate has expired';
                                 break;
                             case 11:
-                                fwrite(STDERR, 'CRL is not yet valid');
+                                echo 'CRL is not yet valid';
                                 break;
                             case 12:
-                                fwrite(STDERR, 'CRL has expired');
+                                echo 'CRL has expired';
                                 break;
                             case 13:
-                                fwrite(STDERR, 'format error in certificate’s notBefore field');
+                                echo 'format error in certificate’s notBefore field';
                                 break;
                             case 14:
-                                fwrite(STDERR, 'format error in certificate’s notAfter field');
+                                echo 'format error in certificate’s notAfter field';
                                 break;
                             case 15:
-                                fwrite(STDERR, 'format error in CRL’s lastUpdate field');
+                                echo 'format error in CRL’s lastUpdate field';
                                 break;
                             case 16:
-                                fwrite(STDERR, 'format error in CRL’s nextUpdate field');
+                                echo 'format error in CRL’s nextUpdate field';
                                 break;
                             case 17:
-                                fwrite(STDERR, 'out of memory');
+                                echo 'out of memory';
                                 break;
                             case 18:
-                                fwrite(STDERR, 'self signed certificate');
+                                echo 'self signed certificate';
                                 break;
                             case 19:
-                                fwrite(STDERR, 'self signed certificate in certificate chain');
+                                echo 'self signed certificate in certificate chain';
                                 break;
                             case 20:
-                                fwrite(STDERR, 'unable to get local issuer certificate');
+                                echo 'unable to get local issuer certificate';
                                 break;
                             case 21:
-                                fwrite(STDERR, 'unable to verify the first certificate');
+                                echo 'unable to verify the first certificate';
                                 break;
                             case 22:
-                                fwrite(STDERR, 'certificate chain too long');
+                                echo 'certificate chain too long';
                                 break;
                             case 23:
-                                fwrite(STDERR, 'certificate revoked');
+                                echo 'certificate revoked';
                                 break;
                             case 24:
-                                fwrite(STDERR, 'invalid CA certificate');
+                                echo 'invalid CA certificate';
                                 break;
                             case 25:
-                                fwrite(STDERR, 'path length constraint exceeded');
+                                echo 'path length constraint exceeded';
                                 break;
                             case 26:
-                                fwrite(STDERR, 'unsupported certificate purpose');
+                                echo 'unsupported certificate purpose';
                                 break;
                             case 27:
-                                fwrite(STDERR, 'certificate not trusted');
+                                echo 'certificate not trusted';
                                 break;
                             case 28:
-                                fwrite(STDERR, 'certificate rejected');
+                                echo 'certificate rejected';
                                 break;
                             case 29:
-                                fwrite(STDERR, 'subject issuer mismatch');
+                                echo 'subject issuer mismatch';
                                 break;
                             case 30:
-                                fwrite(STDERR, 'authority and subject key identifier mismatch');
+                                echo 'authority and subject key identifier mismatch';
                                 break;
                             case 31:
-                                fwrite(STDERR, 'authority and issuer serial number mismatch');
+                                echo 'authority and issuer serial number mismatch';
                                 break;
                             case 32:
-                                fwrite(STDERR, 'key usage does not include certificate signing');
+                                echo 'key usage does not include certificate signing';
                                 break;
                             case 50:
-                                fwrite(STDERR, 'application verification failure');
+                                echo 'application verification failure';
                                 break;
                         }
 
-                        fwrite(STDERR, PHP_EOL);
+                        echo PHP_EOL;
                     } else {
                         echo var_export(curl_getinfo($ch), true) . PHP_EOL;
                     }
