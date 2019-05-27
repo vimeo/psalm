@@ -53,6 +53,11 @@ class StatementsProvider
      */
     private static $lexer;
 
+    /**
+     * @var PhpParser\Parser|null
+     */
+    private static $parser;
+
     public function __construct(
         FileProvider $file_provider,
         ParserCacheProvider $parser_cache_provider = null,
@@ -352,7 +357,13 @@ class StatementsProvider
             self::$lexer = new PhpParser\Lexer([ 'usedAttributes' => $attributes ]);
         }
 
-        $parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, self::$lexer);
+        if (!self::$parser) {
+            $attributes = [
+                'comments', 'startLine', 'startFilePos', 'endFilePos',
+            ];
+
+            self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, self::$lexer);
+        }
 
         $used_cached_statements = false;
 
@@ -361,7 +372,7 @@ class StatementsProvider
         if ($existing_statements && $file_changes && $existing_file_contents) {
             $clashing_traverser = new \Psalm\Internal\Traverser\CustomTraverser;
             $offset_analyzer = new \Psalm\Internal\Visitor\PartialParserVisitor(
-                $parser,
+                self::$parser,
                 $error_handler,
                 $file_changes,
                 $existing_file_contents,
@@ -376,7 +387,7 @@ class StatementsProvider
             } else {
                 try {
                     /** @var array<int, \PhpParser\Node\Stmt> */
-                    $stmts = $parser->parse($file_contents, $error_handler) ?: [];
+                    $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
                 } catch (\Throwable $t) {
                     $stmts = [];
 
@@ -386,7 +397,7 @@ class StatementsProvider
         } else {
             try {
                 /** @var array<int, \PhpParser\Node\Stmt> */
-                $stmts = $parser->parse($file_contents, $error_handler) ?: [];
+                $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
             } catch (\Throwable $t) {
                 $stmts = [];
 
