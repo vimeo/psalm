@@ -221,7 +221,7 @@ class Analyzer
              * @param int $_
              * @param string $file_path
              *
-             * @return array
+             * @return void
              */
             function ($_, $file_path) use ($project_analyzer, $filetype_analyzers) {
                 $file_analyzer = $this->getFileAnalyzer($project_analyzer, $file_path, $filetype_analyzers);
@@ -229,14 +229,12 @@ class Analyzer
                 $this->progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
 
                 $file_analyzer->analyze(null);
-
-                return $this->getFileIssues($file_path);
             };
 
         $this->progress->start(count($this->files_to_analyze));
 
-        $task_done_closure = function (array $issues): void {
-            $this->progress->taskDone(count($issues) === 0);
+        $task_done_closure = function (): void {
+            $this->progress->taskDone(true);
         };
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
@@ -382,9 +380,7 @@ class Analyzer
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $analysis_worker($i, $file_path);
                 ++$i;
-
-                $issues = $this->getFileIssues($file_path);
-                $task_done_closure($issues);
+                $task_done_closure();
             }
 
             foreach (IssueBuffer::getIssuesData() as $issue_data) {
@@ -419,13 +415,6 @@ class Analyzer
                 $this->updateFile($file_path, $project_analyzer->dry_run, true);
             }
         }
-    }
-
-    private function getFileIssues(string $file_path): array
-    {
-        return array_filter(IssueBuffer::getIssuesData(), function (array $issue) use ($file_path): bool {
-            return $issue['file_path'] === $file_path;
-        });
     }
 
     /**

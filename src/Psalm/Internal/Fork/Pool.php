@@ -38,7 +38,7 @@ class Pool
      * This closure must return an array (to be gathered).
      * @param \Closure $shutdown_closure
      * A closure to execute upon shutting down a child
-     * @param ?\Closure(mixed $data): void $task_done_closure
+     * @param ?\Closure(): void $task_done_closure
      * A closure to execute when a task is done
      *
      * @psalm-suppress MixedAssignment
@@ -130,8 +130,8 @@ class Pool
         // Get the work for this process
         $task_data_iterator = array_values($process_task_data_iterator)[$proc_id];
         foreach ($task_data_iterator as $i => $task_data) {
-            $task_result = $task_closure($i, $task_data);
-            $task_done_message = new ForkTaskDoneMessage($task_result);
+            $task_closure($i, $task_data);
+            $task_done_message = new ForkTaskDoneMessage();
             fwrite($write_stream, base64_encode(serialize($task_done_message)) . PHP_EOL);
         }
 
@@ -249,7 +249,7 @@ class Pool
                         $terminationMessages[] = $message->data;
                     } elseif ($message instanceof ForkTaskDoneMessage) {
                         if ($this->task_done_closure !== null) {
-                            ($this->task_done_closure)($message->data);
+                            ($this->task_done_closure)();
                         }
                     } else {
                         error_log('Child should return ForkMessage - response type=' . gettype($message));
