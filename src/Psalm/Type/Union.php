@@ -1053,6 +1053,8 @@ class Union
                 && isset($template_types[$atomic_type->param_name])
             ) {
                 if ($replace) {
+                    $was_single = $this->isSingle();
+
                     $class_string = new Type\Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
 
                     $keys_to_unset[] = $key;
@@ -1085,6 +1087,8 @@ class Union
                                     $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
                                         $input_atomic_type->as
                                     );
+                                } else {
+                                    $valid_input_atomic_types[] = new Type\Atomic\TObject();
                                 }
                             }
                         }
@@ -1095,6 +1099,11 @@ class Union
 
                             $generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''] = [
                                 $generic_param,
+                                $depth
+                            ];
+                        } elseif ($was_single) {
+                            $generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''] = [
+                                Type::getMixed(),
                                 $depth
                             ];
                         }

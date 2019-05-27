@@ -280,6 +280,131 @@ class AssertTest extends TestCase
 
                     $bar->sayHello();',
             ],
+            'assertInstanceofTemplatedClassMethodUnknownClass' => [
+                '<?php
+                    namespace Bar;
+
+                    class C {
+                        /**
+                         * @template T
+                         * @param class-string<T> $expected
+                         * @param mixed  $actual
+                         * @psalm-assert T $actual
+                         */
+                        public function assertInstanceOf($expected, $actual) : void {}
+
+                        /**
+                         * @param class-string $c
+                         */
+                        function bar(string $c, object $e) : void {
+                            $this->assertInstanceOf($c, $e);
+                            echo $e->getCode();
+                        }
+                    }',
+                [],
+                ['MixedArgument', 'MixedMethodCall'],
+            ],
+            'assertInstanceofTemplatedClassMethodUnknownStringClass' => [
+                '<?php
+                    namespace Bar;
+
+                    class C {
+                        /**
+                         * @template T
+                         * @param class-string<T> $expected
+                         * @param mixed  $actual
+                         * @psalm-assert T $actual
+                         */
+                        public function assertInstanceOf($expected, $actual) : void {}
+
+                        function bar(string $c, object $e) : void {
+                            $this->assertInstanceOf($c, $e);
+                            echo $e->getCode();
+                        }
+                    }',
+                [],
+                ['MixedArgument', 'MixedMethodCall', 'ArgumentTypeCoercion'],
+            ],
+            'assertInstanceofTemplatedFunctionUnknownClass' => [
+                '<?php
+                    namespace Bar;
+
+                    /**
+                     * @template T
+                     * @param class-string<T> $expected
+                     * @param mixed  $actual
+                     * @psalm-assert T $actual
+                     */
+                    function assertInstanceOf($expected, $actual) : void {}
+
+                    /**
+                     * @param class-string $c
+                     */
+                    function bar(string $c, object $e) : void {
+                        assertInstanceOf($c, $e);
+                        echo $e->getCode();
+                    }',
+                [],
+                ['MixedArgument', 'MixedMethodCall'],
+            ],
+            'assertInstanceofTemplatedFunctionUnknownStringClass' => [
+                '<?php
+                    namespace Bar;
+
+                    /**
+                     * @template T
+                     * @param class-string<T> $expected
+                     * @param mixed  $actual
+                     * @psalm-assert T $actual
+                     */
+                    function assertInstanceOf($expected, $actual) : void {}
+
+                    function bar(string $c, object $e) : void {
+                        assertInstanceOf($c, $e);
+                        echo $e->getCode();
+                    }',
+                [],
+                ['MixedArgument', 'MixedMethodCall', 'ArgumentTypeCoercion'],
+            ],
+            'assertTemplatedTypeString' => [
+                '<?php
+                    interface Foo {
+                        function bat() : void;
+                    }
+
+                    /**
+                     * @param mixed $value
+                     * @param class-string $type
+                     * @template T
+                     * @template-typeof T $type
+                     * @psalm-assert T $value
+                     */
+                    function assertInstanceOf($value, string $type): void {
+                        // some code
+                    }
+
+                    function getFoo() : Foo {
+                        return new class implements Foo {
+                            public function bat(): void {
+                                echo "Hello";
+                            }
+                        };
+                    }
+
+                    $f = getFoo();
+                    /**
+                     * @var mixed
+                     * @psalm-suppress MixedAssignment
+                     */
+                    $class = "hello";
+
+                    /** @psalm-suppress MixedArgument */
+                    assertInstanceOf($f, $class);
+                    $f->bat();',
+                [
+                    '$f' => 'Foo',
+                ]
+            ],
             'dontBleedBadAssertVarIntoContext' => [
                 '<?php
                     namespace Bar;
