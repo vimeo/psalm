@@ -93,10 +93,10 @@ class Reconciler
                 $base_key = array_shift($key_parts);
 
                 if (!isset($new_types[$base_key])) {
-                    $new_types[$base_key] = [['!=bool'], ['!=int'], ['=isset']];
+                    $new_types[$base_key] = [['!~bool'], ['!~int'], ['=isset']];
                 } else {
-                    $new_types[$base_key][] = ['!=bool'];
-                    $new_types[$base_key][] = ['!=int'];
+                    $new_types[$base_key][] = ['!~bool'];
+                    $new_types[$base_key][] = ['!~int'];
                     $new_types[$base_key][] = ['=isset'];
                 }
 
@@ -129,10 +129,10 @@ class Reconciler
                     }
 
                     if (!isset($new_types[$base_key])) {
-                        $new_types[$base_key] = [['!=bool'], ['!=int'], ['=isset']];
+                        $new_types[$base_key] = [['!~bool'], ['!~int'], ['=isset']];
                     } else {
-                        $new_types[$base_key][] = ['!=bool'];
-                        $new_types[$base_key][] = ['!=int'];
+                        $new_types[$base_key][] = ['!~bool'];
+                        $new_types[$base_key][] = ['!~int'];
                         $new_types[$base_key][] = ['=isset'];
                     }
                 }
@@ -1969,6 +1969,33 @@ class Reconciler
                         $existing_var_type->removeType($part_name);
                     }
                 }
+            }
+        }
+
+        if ($is_strict_equality
+            && $new_var_type !== 'isset'
+            && ($key !== '$this'
+                || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer))
+        ) {
+            $new_var_type = Type::parseString($new_var_type);
+
+            if ($key
+                && $code_location
+                && !TypeAnalyzer::canExpressionTypesBeIdentical(
+                    $statements_analyzer->getCodebase(),
+                    $existing_var_type,
+                    $new_var_type
+                )
+            ) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    '!=' . $new_var_type,
+                    true,
+                    $code_location,
+                    $suppressed_issues
+                );
             }
         }
 
