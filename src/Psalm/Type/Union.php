@@ -970,6 +970,8 @@ class Union
                             }
                         } else {
                             foreach ($replacement_type->getTypes() as $replacement_atomic_type) {
+                                $replacements_found = false;
+
                                 // @codingStandardsIgnoreStart
                                 if ($replacement_atomic_type instanceof Type\Atomic\TTemplateKeyOf
                                     && isset($template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class ?: ''][0])
@@ -989,13 +991,21 @@ class Union
                                             $key_type = $keyed_template->type_params[0];
                                         }
 
+                                        $replacements_found = true;
+
+                                        foreach ($key_type->getTypes() as $key_type_atomic) {
+                                            $this->types[$key_type_atomic->getKey()] = clone $key_type_atomic;
+                                        }
+
                                         $generic_params[$key][$atomic_type->defining_class ?: ''][0]
                                             = clone $key_type;
                                     }
                                 }
                                 // @codingStandardsIgnoreEnd
 
-                                $this->types[$replacement_atomic_type->getKey()] = clone $replacement_atomic_type;
+                                if (!$replacements_found) {
+                                    $this->types[$replacement_atomic_type->getKey()] = clone $replacement_atomic_type;
+                                }
                             }
 
                             foreach ($replacement_type->getTypes() as $replacement_key => $_) {
