@@ -1666,9 +1666,13 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'iterable']];
             }
-        } elseif (self::hasClassExistsCheck($expr)) {
+        } elseif ($class_exists_check_type = self::hasClassExistsCheck($expr)) {
             if ($first_var_name) {
-                $if_types[$first_var_name] = [[$prefix . 'class-string']];
+                if ($class_exists_check_type === 2) {
+                    $if_types[$first_var_name] = [[$prefix . 'class-string']];
+                } elseif (!$prefix) {
+                    $if_types[$first_var_name] = [['=class-string']];
+                }
             }
         } elseif (self::hasInterfaceExistsCheck($expr)) {
             if ($first_var_name) {
@@ -2289,7 +2293,7 @@ class AssertionFinder
     /**
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
      *
-     * @return  bool
+     * @return  0|1|2
      */
     protected static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
@@ -2297,7 +2301,7 @@ class AssertionFinder
             && strtolower($stmt->name->parts[0]) === 'class_exists'
         ) {
             if (!isset($stmt->args[1])) {
-                return true;
+                return 2;
             }
 
             $second_arg = $stmt->args[1]->value;
@@ -2306,11 +2310,13 @@ class AssertionFinder
                 && $second_arg->name instanceof PhpParser\Node\Name
                 && strtolower($second_arg->name->parts[0]) === 'true'
             ) {
-                return true;
+                return 2;
             }
+
+            return 1;
         }
 
-        return false;
+        return 0;
     }
 
     /**
