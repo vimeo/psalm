@@ -98,7 +98,7 @@ class TypeCombination
     private $floats = [];
 
     /**
-     * @var array<int, TNamedObject|TTemplateParam|TIterable>|null
+     * @var array<string, TNamedObject|TTemplateParam|TIterable>|null
      */
     private $extra_types;
 
@@ -400,7 +400,7 @@ class TypeCombination
 
         if ($combination->extra_types) {
             $combination->extra_types = array_values(
-                self::combineTypes($combination->extra_types, $codebase)->getTypes()
+                self::combineTypes(array_values($combination->extra_types), $codebase)->getTypes()
             );
         }
 

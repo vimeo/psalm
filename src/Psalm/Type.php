@@ -359,6 +359,8 @@ abstract class Type
                 $parse_tree->children
             );
 
+            $keyed_intersection_types = [];
+
             foreach ($intersection_types as $intersection_type) {
                 if (!$intersection_type instanceof TNamedObject
                     && !$intersection_type instanceof TTemplateParam
@@ -368,13 +370,13 @@ abstract class Type
                         'Intersection types must all be objects, ' . get_class($intersection_type) . ' provided'
                     );
                 }
+
+                $keyed_intersection_types[$intersection_type->getKey()] = $intersection_type;
             }
 
-            /** @var TNamedObject|TTemplateParam */
-            $first_type = array_shift($intersection_types);
+            $first_type = array_shift($keyed_intersection_types);
 
-            /** @var array<int, TNamedObject|TTemplateParam> $intersection_types */
-            $first_type->extra_types = $intersection_types;
+            $first_type->extra_types = $keyed_intersection_types;
 
             return $first_type;
         }
@@ -1357,13 +1359,14 @@ abstract class Type
 
                             $type_2_atomic_clone->extra_types = [];
 
-                            $type_1_atomic->extra_types[] = $type_2_atomic_clone;
+                            $type_1_atomic->extra_types[$type_2_atomic_clone->getKey()] = $type_2_atomic_clone;
 
                             $type_2_atomic_intersection_types = $type_2_atomic->getIntersectionTypes();
 
                             if ($type_2_atomic_intersection_types) {
                                 foreach ($type_2_atomic_intersection_types as $type_2_intersection_type) {
-                                    $type_1_atomic->extra_types[] = clone $type_2_intersection_type;
+                                    $type_1_atomic->extra_types[$type_2_intersection_type->getKey()]
+                                        = clone $type_2_intersection_type;
                                 }
                             }
                         }

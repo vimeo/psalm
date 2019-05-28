@@ -190,6 +190,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $codebase,
                 $context,
                 $lhs_type_part,
+                $lhs_type_part instanceof Type\Atomic\TNamedObject ? $lhs_type_part : null,
                 $lhs_var_id,
                 $return_type,
                 $returns_by_ref,
@@ -393,6 +394,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         Codebase $codebase,
         Context $context,
         Type\Atomic $lhs_type_part,
+        ?Type\Atomic\TNamedObject $static_type,
         $lhs_var_id,
         &$return_type,
         &$returns_by_ref,
@@ -591,6 +593,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $codebase,
                     $context,
                     $intersection_type,
+                    $lhs_type_part,
                     $lhs_var_id,
                     $intersection_return_type,
                     $returns_by_ref,
@@ -1025,7 +1028,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $codebase,
                         $return_type_candidate,
                         $fq_class_name,
-                        $lhs_type_part,
+                        $static_type,
                         $class_storage->parent_class
                     );
                 } else {
@@ -1096,7 +1099,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $codebase,
                             $return_type_candidate,
                             $self_fq_class_name,
-                            $lhs_type_part,
+                            $static_type,
                             $class_storage->parent_class
                         );
 

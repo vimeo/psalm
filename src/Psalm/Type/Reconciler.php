@@ -558,7 +558,13 @@ class Reconciler
                 $array_atomic_type = $existing_var_atomic_types['array'];
 
                 if ($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
-                    || ($array_atomic_type instanceof Type\Atomic\ObjectLike && $array_atomic_type->sealed)
+                    || ($array_atomic_type instanceof Type\Atomic\ObjectLike
+                        && array_filter(
+                            $array_atomic_type->properties,
+                            function (Type\Union $t) {
+                                return !$t->possibly_undefined;
+                            }
+                        ))
                 ) {
                     $did_remove_type = true;
 

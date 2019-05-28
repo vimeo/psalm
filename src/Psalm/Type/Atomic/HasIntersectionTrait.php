@@ -8,7 +8,7 @@ use Psalm\Codebase;
 trait HasIntersectionTrait
 {
     /**
-     * @var array<int, TNamedObject|TTemplateParam|TIterable>|null
+     * @var array<string, TNamedObject|TTemplateParam|TIterable>|null
      */
     public $extra_types;
 
@@ -58,11 +58,11 @@ trait HasIntersectionTrait
      */
     public function addIntersectionType(TNamedObject $type)
     {
-        $this->extra_types[] = $type;
+        $this->extra_types[$type->getKey()] = $type;
     }
 
     /**
-     * @return array<int, TNamedObject|TTemplateParam|TIterable>|null
+     * @return array<string, TNamedObject|TTemplateParam|TIterable>|null
      */
     public function getIntersectionTypes()
     {
@@ -88,12 +88,12 @@ trait HasIntersectionTrait
 
                 foreach ($template_type->getTypes() as $template_type_part) {
                     if ($template_type_part instanceof TNamedObject) {
-                        $new_types[] = $template_type_part;
+                        $new_types[$template_type_part->getKey()] = $template_type_part;
                     }
                 }
             } else {
                 $extra_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
-                $new_types[] = $extra_type;
+                $new_types[$extra_type->getKey()] = $extra_type;
             }
         }
 
