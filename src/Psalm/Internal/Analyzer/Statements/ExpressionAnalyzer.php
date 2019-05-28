@@ -999,13 +999,19 @@ class ExpressionAnalyzer
         $new_return_type_parts = [];
 
         foreach ($return_type->getTypes() as $return_type_part) {
-            $new_return_type_parts[] = self::fleshOutAtomicType(
+            $parts = self::fleshOutAtomicType(
                 $codebase,
                 $return_type_part,
                 $self_class,
                 $static_class_type,
                 $parent_class
             );
+
+            if (is_array($parts)) {
+                $new_return_type_parts = array_merge($new_return_type_parts, $parts);
+            } else {
+                $new_return_type_parts[] = $parts;
+            }
         }
 
         $fleshed_out_type = new Type\Union($new_return_type_parts);
@@ -1026,7 +1032,7 @@ class ExpressionAnalyzer
      * @param  string|null  $self_class
      * @param  string|Type\Atomic\TNamedObject|null $static_class_type
      *
-     * @return Type\Atomic
+     * @return Type\Atomic|array<int, Type\Atomic>
      */
     private static function fleshOutAtomicType(
         Codebase $codebase,
@@ -1123,6 +1129,43 @@ class ExpressionAnalyzer
                         $const_type = clone $const_type;
 
                         return array_values($const_type->getTypes())[0];
+                    }
+                }
+            }
+
+            return $return_type;
+        }
+
+        if ($return_type instanceof Type\Atomic\TKeyOfClassConstant
+            || $return_type instanceof Type\Atomic\TValueOfClassConstant
+        ) {
+            if ($return_type->fq_classlike_name === 'self' && $self_class) {
+                $return_type->fq_classlike_name = $self_class;
+            }
+
+            if ($codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+                $class_constants = $codebase->classlikes->getConstantsForClass(
+                    $return_type->fq_classlike_name,
+                    \ReflectionProperty::IS_PRIVATE
+                );
+
+                if (isset($class_constants[$return_type->const_name])) {
+                    $const_type = $class_constants[$return_type->const_name];
+
+                    foreach ($const_type->getTypes() as $const_type_atomic) {
+                        if ($const_type_atomic instanceof Type\Atomic\ObjectLike
+                            || $const_type_atomic instanceof Type\Atomic\TArray
+                        ) {
+                            if ($const_type_atomic instanceof Type\Atomic\ObjectLike) {
+                                $const_type_atomic = $const_type_atomic->getGenericArrayType();
+                            }
+
+                            if ($return_type instanceof Type\Atomic\TKeyOfClassConstant) {
+                                return array_values($const_type_atomic->type_params[0]->getTypes());
+                            }
+
+                            return array_values($const_type_atomic->type_params[1]->getTypes());
+                        }
                     }
                 }
             }

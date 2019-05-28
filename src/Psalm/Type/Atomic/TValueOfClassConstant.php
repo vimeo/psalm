@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TKeyOfClassConstant extends Scalar
+class TValueOfClassConstant extends \Psalm\Type\Atomic
 {
     /** @var string */
     public $fq_classlike_name;
@@ -24,7 +24,7 @@ class TKeyOfClassConstant extends Scalar
      */
     public function getKey()
     {
-        return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
+        return 'value-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
     /**
@@ -32,7 +32,7 @@ class TKeyOfClassConstant extends Scalar
      */
     public function __toString()
     {
-        return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
+        return 'value-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
     /**
@@ -78,15 +78,15 @@ class TKeyOfClassConstant extends Scalar
     public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
         if ($this->fq_classlike_name === 'static') {
-            return 'key-of<static::' . $this->const_name . '>';
+            return 'value-of<static::' . $this->const_name . '>';
         }
 
         if ($this->fq_classlike_name === $this_class) {
-            return 'key-of<self::' . $this->const_name . '>';
+            return 'value-of<self::' . $this->const_name . '>';
         }
 
         if ($namespace && stripos($this->fq_classlike_name, $namespace . '\\') === 0) {
-            return 'key-of<' . preg_replace(
+            return 'value-of<' . preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
                 $this->fq_classlike_name
@@ -94,18 +94,18 @@ class TKeyOfClassConstant extends Scalar
         }
 
         if (!$namespace && stripos($this->fq_classlike_name, '\\') === false) {
-            return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
+            return 'value-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
         }
 
         if (isset($aliased_classes[strtolower($this->fq_classlike_name)])) {
-            return 'key-of<'
+            return 'value-of<'
                 . $aliased_classes[strtolower($this->fq_classlike_name)]
                 . '::'
                 . $this->const_name
                 . '>';
         }
 
-        return 'key-of<\\' . $this->fq_classlike_name . '::' . $this->const_name . '>';
+        return 'value-of<\\' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
     /**

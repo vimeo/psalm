@@ -749,6 +749,17 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testValueOfClassConstant()
+    {
+        $this->assertSame(
+            'value-of<Foo\Baz::BAR>',
+            (string)Type::parseString('value-of<Foo\Baz::BAR>')
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testCombineCallables()
     {
         $this->assertSame(

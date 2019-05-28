@@ -76,6 +76,7 @@ abstract class Type
         'never-returns' => true,
         'array-key' => true,
         'key-of' => true,
+        'value-of' => true,
     ];
 
     /**
@@ -294,6 +295,36 @@ abstract class Type
                 }
 
                 return new Atomic\TKeyOfClassConstant(
+                    $param_union_types[0]->fq_classlike_name,
+                    $param_union_types[0]->const_name
+                );
+            }
+
+            if ($generic_type_value === 'value-of') {
+                $param_name = (string) $generic_params[0];
+
+                if (isset($template_type_map[$param_name])) {
+                    $defining_class = array_keys($template_type_map[$param_name])[0];
+
+                    return new Atomic\TTemplateKeyOf(
+                        $param_name,
+                        $defining_class
+                    );
+                }
+
+                $param_union_types = array_values($generic_params[0]->getTypes());
+
+                if (count($param_union_types) > 1) {
+                    throw new TypeParseTreeException('Union types are not allowed in value-of type');
+                }
+
+                if (!$param_union_types[0] instanceof Atomic\TScalarClassConstant) {
+                    throw new TypeParseTreeException(
+                        'Untemplated value-of param ' . $param_name . ' should be a class constant'
+                    );
+                }
+
+                return new Atomic\TValueOfClassConstant(
                     $param_union_types[0]->fq_classlike_name,
                     $param_union_types[0]->const_name
                 );

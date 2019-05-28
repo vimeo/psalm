@@ -593,6 +593,36 @@ class ValueTest extends TestCase
                     }
                 ',
             ],
+            'keyOf' => [
+                '<?php
+                    class A {
+                        const C = [
+                            1 => "a",
+                            2 => "b",
+                            3 => "c"
+                        ];
+
+                        /**
+                         * @param key-of<A::C> $i
+                         */
+                        public static function foo(int $i) : void {}
+                    }'
+            ],
+            'valueOf' => [
+                '<?php
+                    class A {
+                        const C = [
+                            1 => "a",
+                            2 => "b",
+                            3 => "c"
+                        ];
+
+                        /**
+                         * @param value-of<A::C> $j
+                         */
+                        public static function bar(string $j) : void {}
+                    }'
+            ],
         ];
     }
 
