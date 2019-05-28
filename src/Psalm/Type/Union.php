@@ -1007,7 +1007,16 @@ class Union
 
                         $this->had_template = true;
 
-                        if ($input_type) {
+                        if ($input_type
+                            && ($atomic_type->as->isMixed()
+                                || !$codebase
+                                || TypeAnalyzer::isContainedBy(
+                                    $codebase,
+                                    $input_type,
+                                    $atomic_type->as
+                                )
+                            )
+                        ) {
                             $generic_param = clone $input_type;
 
                             if ($this->isNullable() && $generic_param->isNullable() && !$generic_param->isNull()) {

@@ -626,7 +626,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+                'error_levels' => ['MixedAssignment', 'MixedArgument', 'MixedArgumentTypeCoercion'],
             ],
             'compact' => [
                 '<?php
