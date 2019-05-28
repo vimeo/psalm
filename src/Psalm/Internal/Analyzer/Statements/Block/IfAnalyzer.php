@@ -904,6 +904,7 @@ class IfAnalyzer
             return false;
         }
 
+        /** @var array<string, bool> */
         $new_referenced_var_ids = $elseif_context->referenced_var_ids;
         $elseif_context->referenced_var_ids = array_merge(
             $referenced_var_ids,

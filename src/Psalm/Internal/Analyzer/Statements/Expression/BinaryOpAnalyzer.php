@@ -80,6 +80,7 @@ class BinaryOpAnalyzer
                 return false;
             }
 
+            /** @var array<string, bool> */
             $new_referenced_var_ids = $context->referenced_var_ids;
             $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
 
