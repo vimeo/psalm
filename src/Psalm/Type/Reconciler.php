@@ -339,8 +339,9 @@ class Reconciler
             $is_equality = true;
         }
 
-        if ($existing_var_type === null && is_string($key) &&
-            $statements_analyzer->isSuperGlobal($key)
+        if ($existing_var_type === null
+            && is_string($key)
+            && $statements_analyzer->isSuperGlobal($key)
         ) {
             $existing_var_type = $statements_analyzer->getGlobalType($key);
         }
@@ -2655,7 +2656,22 @@ class Reconciler
         $base_key = array_shift($key_parts);
 
         if (!isset($existing_keys[$base_key])) {
-            return null;
+            if (strpos($base_key, '::')) {
+                list($fq_class_name, $const_name) = explode('::', $base_key);
+
+                $all_class_constants = $codebase->classlikes->getConstantsForClass(
+                    $fq_class_name,
+                    \ReflectionProperty::IS_PRIVATE
+                );
+
+                if (isset($all_class_constants[$const_name])) {
+                    $existing_keys[$base_key] = clone $all_class_constants[$const_name];
+                } else {
+                    return null;
+                }
+            } else {
+                return null;
+            }
         }
 
         while ($key_parts) {
