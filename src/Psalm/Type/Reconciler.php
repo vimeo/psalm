@@ -1451,13 +1451,15 @@ class Reconciler
             }
 
             return self::handleLiteralNegatedEquality(
+                $statements_analyzer,
                 $new_var_type,
                 $bracket_pos,
                 $existing_var_type,
                 $old_var_type_string,
                 $key,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
+                $is_strict_equality
             );
         }
 
@@ -2362,13 +2364,15 @@ class Reconciler
      * @return Type\Union
      */
     private static function handleLiteralNegatedEquality(
-        $new_var_type,
-        $bracket_pos,
+        StatementsAnalyzer $statements_analyzer,
+        string $new_var_type,
+        int $bracket_pos,
         Type\Union $existing_var_type,
-        $old_var_type_string,
-        $key,
-        $code_location,
-        $suppressed_issues
+        string $old_var_type_string,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        bool $is_strict_equality
     ) {
         $scalar_type = substr($new_var_type, 0, $bracket_pos);
 
@@ -2377,56 +2381,93 @@ class Reconciler
         $did_remove_type = false;
         $did_match_literal_type = false;
 
+        $scalar_var_type = null;
+
         if ($scalar_type === 'int') {
-            if ($existing_var_type->hasInt() && $existing_int_types = $existing_var_type->getLiteralInts()) {
-                $did_match_literal_type = true;
+            if ($existing_var_type->hasInt()) {
+                if ($existing_int_types = $existing_var_type->getLiteralInts()) {
+                    $did_match_literal_type = true;
 
-                if (isset($existing_int_types[$new_var_type])) {
-                    $existing_var_type->removeType($new_var_type);
+                    if (isset($existing_int_types[$new_var_type])) {
+                        $existing_var_type->removeType($new_var_type);
 
-                    $did_remove_type = true;
+                        $did_remove_type = true;
+                    }
                 }
+            } else {
+                $scalar_value = substr($new_var_type, $bracket_pos + 1, -1);
+                $scalar_var_type = Type::getInt(false, (int) $scalar_value);
             }
         } elseif ($scalar_type === 'string'
             || $scalar_type === 'class-string'
             || $scalar_type === 'interface-string'
             || $scalar_type === 'callable-string'
         ) {
-            if ($existing_var_type->hasString() && $existing_string_types = $existing_var_type->getLiteralStrings()) {
-                $did_match_literal_type = true;
+            if ($existing_var_type->hasString()) {
+                if ($existing_string_types = $existing_var_type->getLiteralStrings()) {
+                    $did_match_literal_type = true;
 
-                if (isset($existing_string_types[$new_var_type])) {
-                    $existing_var_type->removeType($new_var_type);
+                    if (isset($existing_string_types[$new_var_type])) {
+                        $existing_var_type->removeType($new_var_type);
 
-                    $did_remove_type = true;
+                        $did_remove_type = true;
+                    }
                 }
+            } elseif ($scalar_type === 'string') {
+                $scalar_value = substr($new_var_type, $bracket_pos + 1, -1);
+                $scalar_var_type = Type::getString($scalar_value);
             }
         } elseif ($scalar_type === 'float') {
-            if ($existing_var_type->hasFloat() && $existing_float_types = $existing_var_type->getLiteralFloats()) {
-                $did_match_literal_type = true;
+            if ($existing_var_type->hasFloat()) {
+                if ($existing_float_types = $existing_var_type->getLiteralFloats()) {
+                    $did_match_literal_type = true;
 
-                if (isset($existing_float_types[$new_var_type])) {
-                    $existing_var_type->removeType($new_var_type);
+                    if (isset($existing_float_types[$new_var_type])) {
+                        $existing_var_type->removeType($new_var_type);
 
-                    $did_remove_type = true;
+                        $did_remove_type = true;
+                    }
                 }
+            } else {
+                $scalar_value = substr($new_var_type, $bracket_pos + 1, -1);
+                $scalar_var_type = Type::getFloat((float) $scalar_value);
             }
         }
 
-        if ($key
-            && $code_location
-            && $did_match_literal_type
-            && (!$did_remove_type || count($existing_var_atomic_types) === 1)
-        ) {
-            self::triggerIssueForImpossible(
-                $existing_var_type,
-                $old_var_type_string,
-                $key,
-                $new_var_type,
-                !$did_remove_type,
-                $code_location,
-                $suppressed_issues
-            );
+        if ($key && $code_location) {
+            if ($did_match_literal_type
+                && (!$did_remove_type || count($existing_var_atomic_types) === 1)
+            ) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $new_var_type,
+                    !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            } elseif ($scalar_var_type
+                && $is_strict_equality
+                && ($key !== '$this'
+                    || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer))
+            ) {
+                if (!TypeAnalyzer::canExpressionTypesBeIdentical(
+                    $statements_analyzer->getCodebase(),
+                    $existing_var_type,
+                    $scalar_var_type
+                )) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $key,
+                        '!=' . $new_var_type,
+                        true,
+                        $code_location,
+                        $suppressed_issues
+                    );
+                }
+            }
         }
 
         return $existing_var_type;
@@ -2443,10 +2484,10 @@ class Reconciler
      */
     private static function triggerIssueForImpossible(
         Union $existing_var_type,
-        $old_var_type_string,
-        $key,
-        $new_var_type,
-        $redundant,
+        string $old_var_type_string,
+        string $key,
+        string $new_var_type,
+        bool $redundant,
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
