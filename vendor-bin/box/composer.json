@@ -2,6 +2,7 @@
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"require": {
-		"humbug/box": "^3.6"
+		"humbug/box": "^3.4",
+        "roave/better-reflection": "3.4"
 	}
 }
