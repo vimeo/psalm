@@ -712,7 +712,7 @@ abstract class Atomic
      */
     public function shallowEquals(Atomic $other)
     {
-        return strtolower($this->getKey()) === strtolower($other->getKey())
+        return $this->getKey() === $other->getKey()
             && !($other instanceof ObjectLike && $this instanceof ObjectLike);
     }
 

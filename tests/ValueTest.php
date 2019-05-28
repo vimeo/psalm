@@ -842,6 +842,11 @@ class ValueTest extends TestCase
                     A::bar("d");',
                 'error_message' => 'InvalidArgument'
             ],
+            'casedComparison' => [
+                '<?php
+                    if ("C" === "c") {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ]
         ];
     }
 }
