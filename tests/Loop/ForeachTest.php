@@ -683,7 +683,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                     'MixedAssignment', 'UndefinedThisPropertyAssignment',
                 ],
             ],
-            'intersectionIterator' => [
+            'SKIPPED-intersectionIterator' => [
                 '<?php
                     /**
                      * @param \Traversable<int, int>&\Countable $object
