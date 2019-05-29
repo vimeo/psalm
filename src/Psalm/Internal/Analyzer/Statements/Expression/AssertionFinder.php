@@ -1905,7 +1905,7 @@ class AssertionFinder
      *
      * @return  int|null
      */
-    protected static function hasFalseVariable(PhpParser\Node\Expr\BinaryOp $conditional)
+    public static function hasFalseVariable(PhpParser\Node\Expr\BinaryOp $conditional)
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
             && strtolower($conditional->right->name->parts[0]) === 'false'

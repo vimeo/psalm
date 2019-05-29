@@ -173,6 +173,38 @@ class Algebra
             }
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+            $false_pos = AssertionFinder::hasFalseVariable($conditional);
+
+            if ($false_pos === AssertionFinder::ASSIGNMENT_TO_RIGHT
+                && ($conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)
+            ) {
+                $inside_negation = !$inside_negation;
+
+                return self::getFormula(
+                    $conditional->left,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation
+                );
+            } elseif ($false_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
+                && ($conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)
+            ) {
+                $inside_negation = !$inside_negation;
+
+                return self::getFormula(
+                    $conditional->right,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation
+                );
+            }
+        }
+
         AssertionFinder::scrapeAssertions(
             $conditional,
             $this_class_name,
