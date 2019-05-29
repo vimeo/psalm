@@ -1,5 +1,6 @@
 /build/
 /vendor/
+/extra/
 .DS_Store
 /.php_cs.cache
 /.php_cs
