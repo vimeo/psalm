@@ -402,7 +402,11 @@ abstract class Type
                     );
                 }
 
-                $keyed_intersection_types[$intersection_type->getKey()] = $intersection_type;
+                $keyed_intersection_types[
+                    $intersection_type instanceof TIterable
+                        ? $intersection_type->getId()
+                        : $intersection_type->getKey()
+                    ] = $intersection_type;
             }
 
             $first_type = array_shift($keyed_intersection_types);

@@ -908,9 +908,10 @@ class Populator
         if (isset($atomic_types['array']) && count($atomic_types) > 1 && !isset($atomic_types['null'])) {
             $iterator_name = null;
             $generic_params = null;
+            $iterator_key = null;
 
             try {
-                foreach ($atomic_types as $type) {
+                foreach ($atomic_types as $type_key => $type) {
                     if ($type instanceof Type\Atomic\TIterable
                         || ($type instanceof Type\Atomic\TNamedObject
                             && (!$type->from_docblock || $is_property)
@@ -927,6 +928,7 @@ class Populator
                             ))
                     ) {
                         $iterator_name = $type->value;
+                        $iterator_key = $type_key;
                     } elseif ($type instanceof Type\Atomic\TArray) {
                         $generic_params = $type->type_params;
                     }
@@ -935,7 +937,7 @@ class Populator
                 // ignore class-not-found issues
             }
 
-            if ($iterator_name && $generic_params) {
+            if ($iterator_name && $iterator_key && $generic_params) {
                 if ($iterator_name === 'iterable') {
                     $generic_iterator = new Type\Atomic\TIterable($generic_params);
                 } else {
@@ -947,7 +949,7 @@ class Populator
                 }
 
                 $candidate->removeType('array');
-                $candidate->removeType($iterator_name);
+                $candidate->removeType($iterator_key);
                 $candidate->addType($generic_iterator);
             }
         }

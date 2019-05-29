@@ -39,6 +39,27 @@ class TIterable extends Atomic
         return 'iterable';
     }
 
+    public function getId()
+    {
+        $s = '';
+        foreach ($this->type_params as $type_param) {
+            $s .= $type_param->getKey() . ', ';
+        }
+
+        $extra_types = '';
+
+        if ($this->extra_types) {
+            $extra_types = '&' . implode('&', $this->extra_types);
+        }
+
+        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
+    }
+
+    public function __toString()
+    {
+        return $this->getId();
+    }
+
     /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes

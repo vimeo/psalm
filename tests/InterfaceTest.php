@@ -618,6 +618,27 @@ class InterfaceTest extends TestCase
                         foo($i);
                     }'
             ],
+            'intersectIterators' => [
+                '<?php
+                    class A {} function takesA(A $p): void {}
+                    class B {} function takesB(B $p): void {}
+
+                    /** @psalm-param iterable<A>&iterable<B> $i */
+                    function takesIntersectionOfIterables(iterable $i): void {
+                        foreach ($i as $c) {
+                            takesA($c);
+                            takesB($c);
+                        }
+                    }
+
+                    /** @psalm-param iterable<A&B> $i */
+                    function takesIterableOfIntersections(iterable $i): void {
+                        foreach ($i as $c) {
+                            takesA($c);
+                            takesB($c);
+                        }
+                    }'
+            ],
         ];
     }
 

@@ -408,19 +408,62 @@ class ForeachAnalyzer
                 $has_valid_iterator = true;
                 $value_type = Type::getMixed();
             } elseif ($iterator_atomic_type instanceof Type\Atomic\TIterable) {
-                $value_type_part = $iterator_atomic_type->type_params[1];
-                $key_type_part = $iterator_atomic_type->type_params[0];
+                if ($iterator_atomic_type->extra_types) {
+                    $iterator_atomic_type_copy = clone $iterator_atomic_type;
+                    $iterator_atomic_type_copy->extra_types = [];
+                    $iterator_atomic_types = [$iterator_atomic_type_copy];
+                    $iterator_atomic_types = array_merge(
+                        $iterator_atomic_types,
+                        $iterator_atomic_type->extra_types
+                    );
+                } else {
+                    $iterator_atomic_types = [$iterator_atomic_type];
+                }
+
+                $intersection_value_type = null;
+                $intersection_key_type = null;
+
+                foreach ($iterator_atomic_types as $iat) {
+                    if (!$iat instanceof Type\Atomic\TIterable) {
+                        continue;
+                    }
+
+                    $value_type_part = $iat->type_params[1];
+                    $key_type_part = $iat->type_params[0];
+
+                    if (!$intersection_value_type) {
+                        $intersection_value_type = $value_type_part;
+                    } else {
+                        $intersection_value_type = Type::intersectUnionTypes(
+                            $intersection_value_type,
+                            $value_type_part
+                        );
+                    }
+
+                    if (!$intersection_key_type) {
+                        $intersection_key_type = $key_type_part;
+                    } else {
+                        $intersection_key_type = Type::intersectUnionTypes(
+                            $intersection_key_type,
+                            $key_type_part
+                        );
+                    }
+                }
+
+                if (!$intersection_value_type || !$intersection_key_type) {
+                    throw new \UnexpectedValueException('Should not happen');
+                }
 
                 if (!$value_type) {
-                    $value_type = $value_type_part;
+                    $value_type = $intersection_value_type;
                 } else {
-                    $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                    $value_type = Type::combineUnionTypes($value_type, $intersection_value_type);
                 }
 
                 if (!$key_type) {
-                    $key_type = $key_type_part;
+                    $key_type = $intersection_key_type;
                 } else {
-                    $key_type = Type::combineUnionTypes($key_type, $key_type_part);
+                    $key_type = Type::combineUnionTypes($key_type, $intersection_key_type);
                 }
 
                 $has_valid_iterator = true;

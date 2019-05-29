@@ -206,6 +206,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testIntersectionOfIterables()
+    {
+        $this->assertSame('iterable<mixed, A>&iterable<mixed, B>', (string) Type::parseString('iterable<A>&iterable<B>'));
+    }
+
+    /**
+     * @return void
+     */
     public function testPhpDocSimpleArray()
     {
         $this->assertSame('array<array-key, A>', (string) Type::parseString('A[]'));
