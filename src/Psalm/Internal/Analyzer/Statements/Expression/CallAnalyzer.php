@@ -2347,6 +2347,7 @@ class CallAnalyzer
             && !$input_type->hasArray()
             && !$param_type->from_docblock
             && $cased_method_id !== 'echo'
+            && $cased_method_id !== 'sprintf'
         ) {
             $scalar_type_match_found = false;
 

@@ -97,6 +97,12 @@ class TypeAnalyzer
             $scalar_type_match_found = false;
             $all_to_string_cast = true;
 
+            $all_type_coerced = null;
+            $all_type_coerced_from_mixed = null;
+
+            $some_type_coerced = false;
+            $some_type_coerced_from_mixed = false;
+
             if ($input_type_part instanceof TArrayKey
                 && ($container_type->hasInt() && $container_type->hasString())
             ) {
@@ -119,6 +125,8 @@ class TypeAnalyzer
                 }
 
                 $atomic_to_string_cast = false;
+                $atomic_type_coerced = false;
+                $atomic_type_coerced_from_mixed = false;
 
                 $is_atomic_contained_by = self::isAtomicContainedBy(
                     $codebase,
@@ -127,8 +135,8 @@ class TypeAnalyzer
                     $allow_interface_equality,
                     true,
                     $scalar_type_match_found,
-                    $type_coerced,
-                    $type_coerced_from_mixed,
+                    $atomic_type_coerced,
+                    $atomic_type_coerced_from_mixed,
                     $atomic_to_string_cast,
                     $type_coerced_from_scalar
                 );
@@ -142,12 +150,35 @@ class TypeAnalyzer
                     $is_atomic_contained_by = true;
                 }
 
-                if ($is_atomic_contained_by) {
-                    $type_match_found = true;
+                if ($atomic_type_coerced) {
+                    $some_type_coerced = true;
                 }
 
-                if ($atomic_to_string_cast !== true && $type_match_found) {
-                    $all_to_string_cast = false;
+                if ($atomic_type_coerced_from_mixed) {
+                    $some_type_coerced_from_mixed = true;
+                }
+
+                if ($atomic_type_coerced !== true || $all_type_coerced === false) {
+                    $all_type_coerced = false;
+                } else {
+                    $all_type_coerced = true;
+                }
+
+                if ($atomic_type_coerced_from_mixed !== true || $all_type_coerced_from_mixed === false) {
+                    $all_type_coerced_from_mixed = false;
+                } else {
+                    $all_type_coerced_from_mixed = true;
+                }
+
+                if ($is_atomic_contained_by) {
+                    $type_match_found = true;
+
+                    if ($atomic_to_string_cast !== true) {
+                        $all_to_string_cast = false;
+                    }
+
+                    $all_type_coerced_from_mixed = false;
+                    $all_type_coerced = false;
                 }
             }
 
@@ -158,7 +189,23 @@ class TypeAnalyzer
                 $to_string_cast = true;
             }
 
+            if ($all_type_coerced) {
+                $type_coerced = true;
+            }
+
+            if ($all_type_coerced_from_mixed) {
+                $type_coerced_from_mixed = true;
+            }
+
             if (!$type_match_found) {
+                if ($some_type_coerced) {
+                    $type_coerced = true;
+                }
+
+                if ($some_type_coerced_from_mixed) {
+                    $type_coerced_from_mixed = true;
+                }
+
                 if (!$scalar_type_match_found) {
                     $has_scalar_match = false;
                 }
