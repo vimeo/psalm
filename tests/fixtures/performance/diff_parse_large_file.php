@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 
 gc_disable();
 
-require __DIR__ . '../../../vendor/autoload.php';
+require dirname(__DIR__, 3) . '/vendor/autoload.php';
 
 $a = file_get_contents(__DIR__ . '/a.test');
 $b = file_get_contents(__DIR__ . '/b.test');
