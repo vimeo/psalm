@@ -250,6 +250,48 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
+            'addMissingObjectLikeReturnTypeWithNestedArrays' => [
+                '<?php
+                    function foo() {
+                        return [
+                            "a" => 1,
+                            "b" => 2,
+                            "c" => [
+                                "a" => 1,
+                                "b" => 2,
+                                "c" => [
+                                    "a" => 1,
+                                    "b" => 2,
+                                    "c" => 3,
+                                ],
+                            ],
+                        ];
+                    }',
+                '<?php
+                    /**
+                     * @return ((int[]|int)[]|int)[]
+                     *
+                     * @psalm-return array{ a: int, b: int, c: array{ a: int, b: int, c: array{ a: int, b: int, c: int } } }
+                     */
+                    function foo(): array {
+                        return [
+                            "a" => 1,
+                            "b" => 2,
+                            "c" => [
+                                "a" => 1,
+                                "b" => 2,
+                                "c" => [
+                                    "a" => 1,
+                                    "b" => 2,
+                                    "c" => 3,
+                                ],
+                            ],
+                        ];
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                true,
+            ],
             'addMissingObjectLikeReturnTypeSeparateStatements70' => [
                 '<?php
                     function foo() {
