@@ -130,11 +130,7 @@ class Pool
         // Get the work for this process
         $task_data_iterator = array_values($process_task_data_iterator)[$proc_id];
         foreach ($task_data_iterator as $i => $task_data) {
-            $task_result = $task_closure($i, $task_data);
-            $task_done_message = new ForkTaskDoneMessage($task_result);
-            $serialized_message = base64_encode(serialize($task_done_message)) . PHP_EOL;
-            // don’t care if this message doesn’t get through
-            @fwrite($write_stream, $serialized_message);
+            $task_closure($i, $task_data);
         }
 
         // Execute each child's shutdown closure before
@@ -144,20 +140,7 @@ class Pool
         // Serialize this child's produced results and send them to the parent.
         $process_done_message = new ForkProcessDoneMessage($results ?: []);
         $serialized_message = base64_encode(serialize($process_done_message)) . PHP_EOL;
-        $bytes_written = @fwrite($write_stream, $serialized_message);
-        if (strlen($serialized_message) !== $bytes_written) {
-            $retries = 0;
-            while (!$bytes_written && $retries < 10) {
-                ++$retries;
-                usleep(100000);
-                $bytes_written = @fwrite($write_stream, $serialized_message);
-            }
-
-            if (strlen($serialized_message) !== $bytes_written) {
-                error_log('Could not send ForkProcessDoneMessage to parent process, terminating.');
-                exit(self::EXIT_FAILURE);
-            }
-        }
+        fwrite($write_stream, $serialized_message);
 
         fclose($write_stream);
 
@@ -278,6 +261,11 @@ class Pool
 
                 // If the stream has closed, stop trying to select on it.
                 if (feof($file)) {
+                    if ($content[intval($file)] !== '') {
+                        error_log('Child did not send full message before closing the connection');
+                        $this->did_have_error = true;
+                    }
+
                     fclose($file);
                     unset($streams[intval($file)]);
                 }
