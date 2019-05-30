@@ -1,79 +1,37 @@
 <?php
 namespace Psalm\Progress;
 
-class DefaultProgress extends Progress
+class DefaultProgress extends LongProgress
 {
-    public const NUMBER_OF_COLUMNS = 60;
-
-    /** @var int|null */
-    private $number_of_tasks;
-
-    /** @var int */
-    private $progress = 0;
-
-    /** @var bool */
-    private $print_failures = false;
-
-    public function __construct(bool $print_failures = true)
-    {
-        $this->print_failures = $print_failures;
-    }
-
-    public function startScanningFiles(): void
-    {
-        $this->write('Scanning files...' . "\n");
-    }
-
-    public function startAnalyzingFiles(): void
-    {
-        $this->write('Analyzing files...' . "\n\n");
-    }
-
-    public function start(int $number_of_tasks): void
-    {
-        $this->number_of_tasks = $number_of_tasks;
-        $this->progress = 0;
-    }
+    const TOO_MANY_FILES = 1500;
 
     public function taskDone(bool $successful): void
     {
-        if ($successful || !$this->print_failures) {
-            $this->write('_');
+        if ($this->number_of_tasks > self::TOO_MANY_FILES) {
+            ++$this->progress;
+
+            $expected_bars = round(($this->progress / $this->number_of_tasks) * self::NUMBER_OF_COLUMNS);
+
+            $inner_progress = str_repeat(self::doesTerminalSupportUtf8() ? '░' : 'X', $expected_bars);
+
+            if ($expected_bars !== self::NUMBER_OF_COLUMNS) {
+                $expected_bars--;
+            }
+
+            $progress_bar = $inner_progress . str_repeat(' ', self::NUMBER_OF_COLUMNS - $expected_bars);
+
+            $this->write($progress_bar . ' ' . $this->getOverview() . "\r");
         } else {
-            $this->write('F');
+            parent::taskDone($successful);
         }
-
-        ++$this->progress;
-
-        if (($this->progress % self::NUMBER_OF_COLUMNS) !== 0) {
-            return;
-        }
-
-        $this->printOverview();
-        $this->write(PHP_EOL);
     }
 
     public function finish(): void
     {
-        $this->write(PHP_EOL);
-    }
-
-    private function printOverview(): void
-    {
-        if ($this->number_of_tasks === null) {
-            throw new \LogicException('Progress::start() should be called before Progress::startDone()');
+        if ($this->number_of_tasks > self::TOO_MANY_FILES) {
+            $this->write(str_repeat(' ', self::NUMBER_OF_COLUMNS + strlen($this->getOverview()) + 1) . "\r");
+        } else {
+            parent::finish();
         }
-
-        $leadingSpaces = 1 + strlen((string) $this->number_of_tasks) - strlen((string) $this->progress);
-        $percentage = round($this->progress / $this->number_of_tasks * 100);
-        $message = sprintf(
-            '%s%s / %s (%s%%)',
-            str_repeat(' ', $leadingSpaces),
-            $this->progress,
-            $this->number_of_tasks,
-            $percentage
-        );
-
-        $this->write($message);
     }
 }
