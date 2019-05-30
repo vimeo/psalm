@@ -18,7 +18,7 @@ class DefaultProgress extends Progress
 
     public function startAnalyzingFiles(): void
     {
-        $this->write('Analyzing files...' . "\n");
+        $this->write('Analyzing files...' . "\n\n");
     }
 
     public function start(int $number_of_tasks): void
