@@ -138,8 +138,7 @@ class Pool
         $results = $shutdown_closure();
 
         // Serialize this child's produced results and send them to the parent.
-        $process_done_message = new ForkProcessDoneMessage($results ?: []);
-        $serialized_message = base64_encode(serialize($process_done_message)) . PHP_EOL;
+        $serialized_message = serialize($results ?: []);
         fwrite($write_stream, $serialized_message);
 
         fclose($write_stream);
@@ -217,8 +216,6 @@ class Pool
         /** @var array<int, string> $content */
         $content = array_fill_keys(array_keys($streams), '');
 
-        $terminationMessages = [];
-
         // Read the data off of all the stream.
         while (count($streams) > 0) {
             $needs_read = array_values($streams);
@@ -239,40 +236,36 @@ class Pool
                     $content[intval($file)] .= $buffer;
                 }
 
-                if (strpos($buffer, PHP_EOL) !== false) {
-                    $serialized_messages = explode(PHP_EOL, $content[intval($file)]);
-                    $content[intval($file)] = array_pop($serialized_messages);
-
-                    foreach ($serialized_messages as $serialized_message) {
-                        $message = unserialize(base64_decode($serialized_message));
-
-                        if ($message instanceof ForkProcessDoneMessage) {
-                            $terminationMessages[] = $message->data;
-                        } elseif ($message instanceof ForkTaskDoneMessage) {
-                            if ($this->task_done_closure !== null) {
-                                ($this->task_done_closure)($message->data);
-                            }
-                        } else {
-                            error_log('Child should return ForkMessage - response type=' . gettype($message));
-                            $this->did_have_error = true;
-                        }
-                    }
-                }
-
                 // If the stream has closed, stop trying to select on it.
                 if (feof($file)) {
-                    if ($content[intval($file)] !== '') {
-                        error_log('Child did not send full message before closing the connection');
-                        $this->did_have_error = true;
-                    }
-
                     fclose($file);
                     unset($streams[intval($file)]);
                 }
             }
         }
 
-        return array_values($terminationMessages);
+        return array_values(
+            array_map(
+                /**
+                 * @param string $data
+                 *
+                 * @return array
+                 */
+                function ($data) {
+                    /** @var array */
+                    $result = unserialize($data);
+                    /** @psalm-suppress DocblockTypeContradiction */
+                    if (!\is_array($result)) {
+                        error_log(
+                            'Child terminated without returning a serialized array - response type=' . gettype($result)
+                        );
+                        $this->did_have_error = true;
+                    }
+                    return $result;
+                },
+                $content
+            )
+        );
     }
 
     /**

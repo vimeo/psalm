@@ -8,7 +8,6 @@ class ForkTaskDoneMessage implements ForkMessage
 
     /**
      * @param mixed $data
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function __construct($data)
     {
