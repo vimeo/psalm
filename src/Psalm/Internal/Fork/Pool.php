@@ -132,7 +132,12 @@ class Pool
         foreach ($task_data_iterator as $i => $task_data) {
             $task_result = $task_closure($i, $task_data);
             $task_done_message = new ForkTaskDoneMessage($task_result);
-            fwrite($write_stream, base64_encode(serialize($task_done_message)) . PHP_EOL);
+            $serialized_message = base64_encode(serialize($task_done_message)) . PHP_EOL;
+            $bytes_written = @fwrite($write_stream, $serialized_message);
+            if (strlen($serialized_message) !== $bytes_written) {
+                error_log('Could not send data to parent process, terminating.');
+                exit(self::EXIT_FAILURE);
+            }
         }
 
         // Execute each child's shutdown closure before
@@ -141,7 +146,12 @@ class Pool
 
         // Serialize this child's produced results and send them to the parent.
         $process_done_message = new ForkProcessDoneMessage($results ?: []);
-        fwrite($write_stream, base64_encode(serialize($process_done_message)) . PHP_EOL);
+        $serialized_message = base64_encode(serialize($process_done_message)) . PHP_EOL;
+        $bytes_written = @fwrite($write_stream, $serialized_message);
+        if (strlen($serialized_message) !== $bytes_written) {
+            error_log('Could not send data to parent process, terminating.');
+            exit(self::EXIT_FAILURE);
+        }
 
         fclose($write_stream);
 
@@ -236,29 +246,37 @@ class Pool
             // For each stream that was ready, read the content.
             foreach ($needs_read as $file) {
                 $buffer = fread($file, 1024);
-                if ($buffer) {
+                if ($buffer !== false) {
                     $content[intval($file)] .= $buffer;
                 }
 
-                if (strpos($buffer, PHP_EOL) === strlen($buffer) - 1) {
-                    $serializedMessage = $content[intval($file)];
-                    $content[intval($file)] = '';
-                    $message = unserialize(base64_decode($serializedMessage));
+                if (strpos($buffer, PHP_EOL) !== false) {
+                    $serialized_messages = explode(PHP_EOL, $content[intval($file)]);
+                    $content[intval($file)] = array_pop($serialized_messages);
 
-                    if ($message instanceof ForkProcessDoneMessage) {
-                        $terminationMessages[] = $message->data;
-                    } elseif ($message instanceof ForkTaskDoneMessage) {
-                        if ($this->task_done_closure !== null) {
-                            ($this->task_done_closure)($message->data);
+                    foreach ($serialized_messages as $serialized_message) {
+                        $message = unserialize(base64_decode($serialized_message));
+
+                        if ($message instanceof ForkProcessDoneMessage) {
+                            $terminationMessages[] = $message->data;
+                        } elseif ($message instanceof ForkTaskDoneMessage) {
+                            if ($this->task_done_closure !== null) {
+                                ($this->task_done_closure)($message->data);
+                            }
+                        } else {
+                            error_log('Child should return ForkMessage - response type=' . gettype($message));
+                            $this->did_have_error = true;
                         }
-                    } else {
-                        error_log('Child should return ForkMessage - response type=' . gettype($message));
-                        $this->did_have_error = true;
                     }
                 }
 
                 // If the stream has closed, stop trying to select on it.
                 if (feof($file)) {
+                    if ($content[intval($file)] !== '') {
+                        error_log('Child did not send full message before closing the connection');
+                        $this->did_have_error = true;
+                    }
+
                     fclose($file);
                     unset($streams[intval($file)]);
                 }
