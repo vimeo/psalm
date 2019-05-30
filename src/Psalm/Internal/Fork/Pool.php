@@ -147,7 +147,8 @@ class Pool
         $bytes_written = @fwrite($write_stream, $serialized_message);
         if (strlen($serialized_message) !== $bytes_written) {
             $retries = 0;
-            while (!$bytes_written && (++$retries) < 10) {
+            while (!$bytes_written && $retries < 10) {
+                ++$retries;
                 usleep(100000);
                 $bytes_written = @fwrite($write_stream, $serialized_message);
             }
