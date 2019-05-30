@@ -30,7 +30,7 @@ class DefaultProgress extends Progress
     public function taskDone(bool $successful): void
     {
         if ($successful) {
-            $this->write(':');
+            $this->write('_');
         } else {
             $this->write('F');
         }
