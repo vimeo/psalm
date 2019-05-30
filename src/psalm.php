@@ -8,6 +8,7 @@ use Psalm\Config;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\VoidProgress;
 
 // show all errors
 error_reporting(-1);
@@ -57,6 +58,7 @@ $valid_long_options = [
     'alter',
     'language-server',
     'shepherd::',
+    'no-progress',
 ];
 
 gc_collect_cycles();
@@ -242,6 +244,9 @@ Options:
 
     --generate-json-map=PATH
         Generate a map of node references and types in JSON format, saved to the given path.
+
+    --no-progress
+        Disable the progress indicator
 
     --alter
         Run Psalter
@@ -484,7 +489,7 @@ if (isset($options['clear-global-cache'])) {
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 $progress = $debug
     ? new DebugProgress()
-    : new DefaultProgress();
+    : (isset($options['no-progress']) ? new VoidProgress() : new DefaultProgress());
 
 if (isset($options['no-cache'])) {
     $providers = new Provider\Providers(
