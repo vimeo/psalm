@@ -146,8 +146,16 @@ class Pool
         $serialized_message = base64_encode(serialize($process_done_message)) . PHP_EOL;
         $bytes_written = @fwrite($write_stream, $serialized_message);
         if (strlen($serialized_message) !== $bytes_written) {
-            error_log('Could not send ForkProcessDoneMessage to parent process, terminating.');
-            exit(self::EXIT_FAILURE);
+            $retries = 0;
+            while (!$bytes_written && (++$retries) < 10) {
+                usleep(100000);
+                $bytes_written = @fwrite($write_stream, $serialized_message);
+            }
+
+            if (strlen($serialized_message) !== $bytes_written) {
+                error_log('Could not send ForkProcessDoneMessage to parent process, terminating.');
+                exit(self::EXIT_FAILURE);
+            }
         }
 
         fclose($write_stream);
