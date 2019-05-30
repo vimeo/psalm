@@ -173,7 +173,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0:string}
+                     * @psalm-return array{ 0: string }
                      */
                     function foo() {
                         return ["hello"];
@@ -191,7 +191,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0:string}
+                     * @psalm-return array{ 0: string }
                      */
                     function foo(): array {
                         return ["hello"];
@@ -209,7 +209,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a:string, b?:string}
+                     * @psalm-return array{ a: string, b?: string }
                      */
                     function foo(): array {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
@@ -234,7 +234,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return int[]
                      *
-                     * @psalm-return array{a?:int, b?:int}
+                     * @psalm-return array{ a?: int, b?: int }
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -267,7 +267,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a:string, b?:string}
+                     * @psalm-return array{ a: string, b?: string }
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -890,7 +890,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                             /**
                              * @return \A\B\C[]
                              *
-                             * @psalm-return array{0:\A\B\C}
+                             * @psalm-return array{ 0: \A\B\C }
                              */
                             public function getArrayOfC(): array {
                                 return [new \A\B\C];
@@ -1241,7 +1241,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0:string}
+                         * @psalm-return array{ 0: string }
                          */
                         public function foo(): ?array {
                             return ["hello"];
@@ -1267,7 +1267,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0:string}
+                         * @psalm-return array{ 0: string }
                          */
                         public function foo(): array {
                             return ["hello"];
