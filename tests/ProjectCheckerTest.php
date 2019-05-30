@@ -89,7 +89,7 @@ class ProjectCheckerTest extends TestCase
         $this->project_analyzer->check('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -275,7 +275,7 @@ class Bat
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -310,7 +310,7 @@ class Bat
         $this->project_analyzer->checkPaths(['tests/fixtures/DummyProject/Bar.php']);
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -345,7 +345,7 @@ class Bat
         $this->project_analyzer->checkFile('tests/fixtures/DummyProject/Bar.php');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
