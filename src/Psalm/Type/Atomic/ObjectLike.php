@@ -114,7 +114,7 @@ class ObjectLike extends \Psalm\Type\Atomic
         }
 
         /** @psalm-suppress MixedOperand */
-        return static::KEY . '{' .
+        return static::KEY . '{ ' .
                 implode(
                     ', ',
                     array_map(
@@ -133,7 +133,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                             $this_class,
                             $use_phpdoc_format
                         ) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->toNamespacedString(
+                            return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->toNamespacedString(
                                 $namespace,
                                 $aliased_classes,
                                 $this_class,
@@ -144,7 +144,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                         $this->properties
                     )
                 ) .
-                '}';
+                ' }';
     }
 
     /**
