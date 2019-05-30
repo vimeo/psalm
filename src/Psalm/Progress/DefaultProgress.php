@@ -11,6 +11,14 @@ class DefaultProgress extends Progress
     /** @var int */
     private $progress = 0;
 
+    /** @var bool */
+    private $print_failures = false;
+
+    public function __construct(bool $print_failures = true)
+    {
+        $this->print_failures = $print_failures;
+    }
+
     public function startScanningFiles(): void
     {
         $this->write('Scanning files...' . "\n");
@@ -29,7 +37,7 @@ class DefaultProgress extends Progress
 
     public function taskDone(bool $successful): void
     {
-        if ($successful) {
+        if ($successful || !$this->print_failures) {
             $this->write('_');
         } else {
             $this->write('F');

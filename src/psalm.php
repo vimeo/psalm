@@ -489,7 +489,7 @@ if (isset($options['clear-global-cache'])) {
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 $progress = $debug
     ? new DebugProgress()
-    : (isset($options['no-progress']) ? new VoidProgress() : new DefaultProgress());
+    : (isset($options['no-progress']) ? new VoidProgress() : new DefaultProgress(!$config->error_baseline));
 
 if (isset($options['no-cache'])) {
     $providers = new Provider\Providers(
