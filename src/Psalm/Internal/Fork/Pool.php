@@ -24,6 +24,9 @@ class Pool
     /** @var bool */
     private $did_have_error = false;
 
+    /** @var ?\Closure(): void */
+    private $task_done_closure;
+
     /**
      * @param array[] $process_task_data_iterator
      * An array of task data items to be divided up among the
@@ -35,6 +38,8 @@ class Pool
      * This closure must return an array (to be gathered).
      * @param \Closure $shutdown_closure
      * A closure to execute upon shutting down a child
+     * @param ?\Closure(): void $task_done_closure
+     * A closure to execute when a task is done
      *
      * @psalm-suppress MixedAssignment
      */
@@ -42,9 +47,11 @@ class Pool
         array $process_task_data_iterator,
         \Closure $startup_closure,
         \Closure $task_closure,
-        \Closure $shutdown_closure
+        \Closure $shutdown_closure,
+        ?\Closure $task_done_closure = null
     ) {
         $pool_size = count($process_task_data_iterator);
+        $this->task_done_closure = $task_done_closure;
 
         \assert(
             $pool_size > 1,
@@ -124,6 +131,8 @@ class Pool
         $task_data_iterator = array_values($process_task_data_iterator)[$proc_id];
         foreach ($task_data_iterator as $i => $task_data) {
             $task_closure($i, $task_data);
+            $task_done_message = new ForkTaskDoneMessage();
+            fwrite($write_stream, base64_encode(serialize($task_done_message)) . PHP_EOL);
         }
 
         // Execute each child's shutdown closure before
@@ -131,7 +140,8 @@ class Pool
         $results = $shutdown_closure();
 
         // Serialize this child's produced results and send them to the parent.
-        fwrite($write_stream, serialize($results ?: []));
+        $process_done_message = new ForkProcessDoneMessage($results ?: []);
+        fwrite($write_stream, base64_encode(serialize($process_done_message)) . PHP_EOL);
 
         fclose($write_stream);
 
@@ -205,7 +215,10 @@ class Pool
 
         // Create an array for the content received on each stream,
         // indexed by resource id.
+        /** @var array<int, string> $content */
         $content = array_fill_keys(array_keys($streams), '');
+
+        $terminationMessages = [];
 
         // Read the data off of all the stream.
         while (count($streams) > 0) {
@@ -227,6 +240,23 @@ class Pool
                     $content[intval($file)] .= $buffer;
                 }
 
+                if (strpos($buffer, PHP_EOL) === strlen($buffer) - 1) {
+                    $serializedMessage = $content[intval($file)];
+                    $content[intval($file)] = '';
+                    $message = unserialize(base64_decode($serializedMessage));
+
+                    if ($message instanceof ForkProcessDoneMessage) {
+                        $terminationMessages[] = $message->data;
+                    } elseif ($message instanceof ForkTaskDoneMessage) {
+                        if ($this->task_done_closure !== null) {
+                            ($this->task_done_closure)();
+                        }
+                    } else {
+                        error_log('Child should return ForkMessage - response type=' . gettype($message));
+                        $this->did_have_error = true;
+                    }
+                }
+
                 // If the stream has closed, stop trying to select on it.
                 if (feof($file)) {
                     fclose($file);
@@ -235,30 +265,7 @@ class Pool
             }
         }
 
-        // Unmarshal the content into its original form.
-        return array_values(
-            array_map(
-                /**
-                 * @param string $data
-                 *
-                 * @return array
-                 */
-                function ($data) {
-                    /** @var array */
-                    $result = unserialize($data);
-                    /** @psalm-suppress DocblockTypeContradiction */
-                    if (!\is_array($result)) {
-                        error_log(
-                            'Child terminated without returning a serialized array - response type=' . gettype($result)
-                        );
-                        $this->did_have_error = true;
-                    }
-
-                    return $result;
-                },
-                $content
-            )
-        );
+        return array_values($terminationMessages);
     }
 
     /**
