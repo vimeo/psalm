@@ -3,6 +3,7 @@ language: php
 
 stages:
   - Code style analysis
+  - Threaded execution
   - test
   - Phar build
   - Code coverage analysis
@@ -77,6 +78,12 @@ jobs:
       env: DEPS="high"
       script:
         - vendor/bin/phpcs
+        
+    - stage: Threaded execution
+      php: 7.3
+      env: DEPS="high"
+      script:
+        - ./psalm --threads=2
 
       # always build phar, but only deploy on tag builds
     - stage: Phar build
