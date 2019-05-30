@@ -52,7 +52,7 @@ class StubTest extends TestCase
         );
         $project_analyzer->setPhpVersion('7.3');
 
-        $config->visitComposerAutoloadFiles($project_analyzer, false);
+        $config->visitComposerAutoloadFiles($project_analyzer, null);
 
         return $project_analyzer;
     }

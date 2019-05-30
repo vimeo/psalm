@@ -26,7 +26,7 @@ class TypeParseTest extends TestCase
             true,
             \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_CONSOLE,
             1,
-            false
+            null
         );
     }
 
