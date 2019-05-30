@@ -318,7 +318,7 @@ class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InternalProperty',
             ],
-            'magicPropertyGetInternalImplicit' => [
+            'magicPropertyGetInternalExplicit' => [
                 '<?php
                     namespace A {
                         class Foo {

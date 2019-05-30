@@ -513,7 +513,7 @@ class PropertyFetchAnalyzer
                     $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
                 }
 
-                if (!in_array('InternalMethof', $suppressed_issues, true)) {
+                if (!in_array('InternalMethod', $suppressed_issues, true)) {
                     $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
                 }
 
