@@ -38,7 +38,7 @@ class LongProgress extends Progress
     public function taskDone(bool $successful): void
     {
         if ($successful || !$this->print_failures) {
-            $this->write(self::doesTerminalSupportUtf8() ? '▒' : '_');
+            $this->write(self::doesTerminalSupportUtf8() ? '░' : '_');
         } else {
             $this->write('F');
         }
