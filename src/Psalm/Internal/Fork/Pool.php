@@ -133,11 +133,7 @@ class Pool
             $task_result = $task_closure($i, $task_data);
             $task_done_message = new ForkTaskDoneMessage($task_result);
             $serialized_message = base64_encode(serialize($task_done_message)) . PHP_EOL;
-            $bytes_written = @fwrite($write_stream, $serialized_message);
-            if (strlen($serialized_message) !== $bytes_written) {
-                error_log('Could not send data to parent process, terminating.');
-                exit(self::EXIT_FAILURE);
-            }
+            fwrite($write_stream, $serialized_message);
         }
 
         // Execute each child's shutdown closure before
@@ -147,11 +143,7 @@ class Pool
         // Serialize this child's produced results and send them to the parent.
         $process_done_message = new ForkProcessDoneMessage($results ?: []);
         $serialized_message = base64_encode(serialize($process_done_message)) . PHP_EOL;
-        $bytes_written = @fwrite($write_stream, $serialized_message);
-        if (strlen($serialized_message) !== $bytes_written) {
-            error_log('Could not send data to parent process, terminating.');
-            exit(self::EXIT_FAILURE);
-        }
+        fwrite($write_stream, $serialized_message);
 
         fclose($write_stream);
 
