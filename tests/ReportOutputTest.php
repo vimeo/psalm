@@ -53,7 +53,7 @@ class ReportOutputTest extends TestCase
                 true,
                 ProjectAnalyzer::TYPE_CONSOLE,
                 1,
-                false,
+                null,
                 '/tmp/report' . $extension
             );
         }
@@ -79,7 +79,7 @@ class ReportOutputTest extends TestCase
             true,
             ProjectAnalyzer::TYPE_CONSOLE,
             1,
-            false,
+            null,
             '/tmp/report.log'
         );
     }
