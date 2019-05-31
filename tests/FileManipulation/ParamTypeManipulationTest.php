@@ -85,6 +85,30 @@ class ParamTypeManipulationTest extends FileManipulationTest
                 ['MissingParamType'],
                 true,
             ],
+            'noStringParamTypeParent' => [
+                '<?php
+                    class C {
+                        public function fooFoo($a): void {}
+                    }
+
+                    class D extends C {}
+
+                    (new D)->fooFoo("hello");',
+                '<?php
+                    class C {
+                        /**
+                         * @param string $a
+                         */
+                        public function fooFoo($a): void {}
+                    }
+
+                    class D extends C {}
+
+                    (new D)->fooFoo("hello");',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
             'stringParamTypeNoOp' => [
                 '<?php
                     class C {

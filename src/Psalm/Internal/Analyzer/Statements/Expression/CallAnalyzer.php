@@ -2220,15 +2220,19 @@ class CallAnalyzer
                 && strpos($cased_method_id, '::')
                 && !strpos($cased_method_id, '__')
             ) {
-                $method_storage = $codebase->methods->getStorage($cased_method_id);
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($cased_method_id);
 
-                if (!isset($method_storage->possible_param_types[$argument_offset])) {
-                    $method_storage->possible_param_types[$argument_offset] = clone $input_type;
-                } else {
-                    $method_storage->possible_param_types[$argument_offset] = Type::combineUnionTypes(
-                        $method_storage->possible_param_types[$argument_offset],
-                        clone $input_type
-                    );
+                if ($declaring_method_id) {
+                    $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+                    if (!isset($method_storage->possible_param_types[$argument_offset])) {
+                        $method_storage->possible_param_types[$argument_offset] = clone $input_type;
+                    } else {
+                        $method_storage->possible_param_types[$argument_offset] = Type::combineUnionTypes(
+                            $method_storage->possible_param_types[$argument_offset],
+                            clone $input_type
+                        );
+                    }
                 }
             }
 
