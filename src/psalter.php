@@ -370,7 +370,7 @@ if ($config->find_unused_code) {
 
 foreach ($keyed_issues as $issue_name => $_) {
     // MissingParamType requires the scanning of all files to inform possible params
-    if (strpos($issue_name, 'Unused') !== false || $issue_name === 'MissingParamType') {
+    if (strpos($issue_name, 'Unused') !== false || $issue_name === 'MissingParamType' || $issue_name === 'all') {
         $find_unused_code = true;
     }
 }
