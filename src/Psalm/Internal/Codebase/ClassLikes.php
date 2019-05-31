@@ -931,6 +931,11 @@ class ClassLikes
                     && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
                 ) {
                     if ($method_storage->possible_param_types && $method_storage->location) {
+                        $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
+                            $method_id,
+                            $method_storage->location->file_path
+                        );
+
                         foreach ($method_storage->possible_param_types as $offset => $possible_type) {
                             if (!isset($method_storage->params[$offset])) {
                                 continue;
@@ -941,11 +946,6 @@ class ClassLikes
                             if ($possible_type->hasMixed() || $possible_type->isNull()) {
                                 continue;
                             }
-
-                            $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
-                                $method_id,
-                                $method_storage->location->file_path
-                            );
 
                             $function_analyzer->addOrUpdateParamType(
                                 $project_analyzer,
