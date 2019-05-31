@@ -516,6 +516,7 @@ class Union
             }
 
             unset($this->types['class-string']);
+            unset($this->types['trait-string']);
         } elseif ($type_string === 'int' && $this->literal_int_types) {
             foreach ($this->literal_int_types as $literal_key => $_) {
                 unset($this->types[$literal_key]);
@@ -646,6 +647,7 @@ class Union
     {
         return isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
             || isset($this->types['array-key'])
             || $this->literal_string_types
@@ -727,6 +729,7 @@ class Union
             || isset($this->types['float'])
             || isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['trait-string'])
             || isset($this->types['bool'])
             || isset($this->types['false'])
             || isset($this->types['true'])
@@ -1529,6 +1532,7 @@ class Union
 
         return isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
             || $this->literal_string_types;
     }

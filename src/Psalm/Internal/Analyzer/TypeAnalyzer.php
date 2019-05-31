@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 
 /**
@@ -1090,6 +1091,16 @@ class TypeAnalyzer
                 $type_coerced,
                 $type_coerced_from_mixed
             );
+        }
+
+        if ($container_type_part instanceof TString && $input_type_part instanceof TTraitString) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TTraitString && get_class($input_type_part) === TString::class) {
+            $type_coerced = true;
+
+            return false;
         }
 
         if (($input_type_part instanceof TClassString

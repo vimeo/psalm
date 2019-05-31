@@ -1674,6 +1674,14 @@ class AssertionFinder
                     $if_types[$first_var_name] = [['=class-string']];
                 }
             }
+        } elseif ($class_exists_check_type = self::hasTraitExistsCheck($expr)) {
+            if ($first_var_name) {
+                if ($class_exists_check_type === 2) {
+                    $if_types[$first_var_name] = [[$prefix . 'trait-string']];
+                } elseif (!$prefix) {
+                    $if_types[$first_var_name] = [['=trait-string']];
+                }
+            }
         } elseif (self::hasInterfaceExistsCheck($expr)) {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'interface-string']];
@@ -2299,6 +2307,35 @@ class AssertionFinder
     {
         if ($stmt->name instanceof PhpParser\Node\Name
             && strtolower($stmt->name->parts[0]) === 'class_exists'
+        ) {
+            if (!isset($stmt->args[1])) {
+                return 2;
+            }
+
+            $second_arg = $stmt->args[1]->value;
+
+            if ($second_arg instanceof PhpParser\Node\Expr\ConstFetch
+                && $second_arg->name instanceof PhpParser\Node\Name
+                && strtolower($second_arg->name->parts[0]) === 'true'
+            ) {
+                return 2;
+            }
+
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
+     * @return  0|1|2
+     */
+    protected static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name
+            && strtolower($stmt->name->parts[0]) === 'trait_exists'
         ) {
             if (!isset($stmt->args[1])) {
                 return 2;

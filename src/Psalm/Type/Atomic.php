@@ -45,6 +45,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TScalarClassConstant;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
 
@@ -165,6 +166,9 @@ abstract class Atomic
             case 'class-string':
             case 'interface-string':
                 return new TClassString();
+
+            case 'trait-string':
+                return new TTraitString();
 
             case 'callable-string':
                 return new TCallableString();

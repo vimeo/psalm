@@ -2205,9 +2205,13 @@ class Reconciler
             || $scalar_type === 'class-string'
             || $scalar_type === 'interface-string'
             || $scalar_type === 'callable-string'
+            || $scalar_type === 'trait-string'
         ) {
             if ($existing_var_type->hasMixed() || $existing_var_type->hasScalar()) {
-                if ($scalar_type === 'class-string' || $scalar_type === 'interface-string') {
+                if ($scalar_type === 'class-string'
+                    || $scalar_type === 'interface-string'
+                    || $scalar_type === 'trait-string'
+                ) {
                     return new Type\Union([new Type\Atomic\TLiteralClassString($value)]);
                 }
 
@@ -2245,7 +2249,10 @@ class Reconciler
                         );
                     }
                 } else {
-                    if ($scalar_type === 'class-string' || $scalar_type === 'interface-string') {
+                    if ($scalar_type === 'class-string'
+                        || $scalar_type === 'interface-string'
+                        || $scalar_type === 'trait-string'
+                    ) {
                         $existing_var_type = new Type\Union([new Type\Atomic\TLiteralClassString($value)]);
                     } else {
                         $existing_var_type = new Type\Union([new Type\Atomic\TLiteralString($value)]);
@@ -2401,6 +2408,7 @@ class Reconciler
         } elseif ($scalar_type === 'string'
             || $scalar_type === 'class-string'
             || $scalar_type === 'interface-string'
+            || $scalar_type === 'trait-string'
             || $scalar_type === 'callable-string'
         ) {
             if ($existing_var_type->hasString()) {
