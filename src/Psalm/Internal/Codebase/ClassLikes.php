@@ -927,6 +927,36 @@ class ClassLikes
                     }
                 }
             } else {
+                if ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
+                ) {
+                    if ($method_storage->possible_param_types && $method_storage->location) {
+                        foreach ($method_storage->possible_param_types as $offset => $possible_type) {
+                            if (!isset($method_storage->params[$offset])) {
+                                continue;
+                            }
+
+                            $param_name = $method_storage->params[$offset]->name;
+
+                            if ($possible_type->hasMixed() || $possible_type->isNull()) {
+                                continue;
+                            }
+
+                            $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
+                                $method_id,
+                                $method_storage->location->file_path
+                            );
+
+                            $function_analyzer->addOrUpdateParamType(
+                                $project_analyzer,
+                                $param_name,
+                                $possible_type,
+                                true
+                            );
+                        }
+                    }
+                }
+
                 foreach ($method_storage->unused_params as $offset => $code_location) {
                     $has_parent_references = false;
 

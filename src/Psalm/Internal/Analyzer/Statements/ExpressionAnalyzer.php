@@ -1548,16 +1548,6 @@ class ExpressionAnalyzer
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
     ) {
-        $function_storage = null;
-
-        if ($context->infer_types) {
-            $source_analyzer = $statements_analyzer->getSource();
-
-            if ($source_analyzer instanceof FunctionLikeAnalyzer) {
-                $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
-            }
-        }
-
         /** @var PhpParser\Node\Expr $part */
         foreach ($stmt->parts as $part) {
             if (self::analyze($statements_analyzer, $part, $context) === false) {
@@ -1566,20 +1556,6 @@ class ExpressionAnalyzer
 
             if (isset($part->inferredType)) {
                 self::castStringAttempt($statements_analyzer, $part);
-            }
-
-            if ($function_storage
-                && $part instanceof PhpParser\Node\Expr\Variable
-                && is_string($part->name)
-                && isset($part->inferredType)
-            ) {
-                $context->inferType(
-                    $part->name,
-                    $function_storage,
-                    $part->inferredType,
-                    new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt, new Type\Atomic\TFloat]),
-                    $statements_analyzer->getCodebase()
-                );
             }
         }
 

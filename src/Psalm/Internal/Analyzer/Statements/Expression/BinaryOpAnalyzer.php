@@ -541,42 +541,6 @@ class BinaryOpAnalyzer
             ) {
                 $stmt->inferredType = Type::getBool();
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div) {
-                if ($context->infer_types
-                    && isset($stmt->left->inferredType)
-                    && isset($stmt->right->inferredType)
-                    && ($stmt->left->inferredType->isMixed() || $stmt->right->inferredType->isMixed())
-                ) {
-                    $source_analyzer = $statements_analyzer->getSource();
-
-                    if ($source_analyzer instanceof FunctionLikeAnalyzer) {
-                        $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
-
-                        if ($stmt->left instanceof PhpParser\Node\Expr\Variable
-                            && is_string($stmt->left->name)
-                        ) {
-                            $context->inferType(
-                                $stmt->left->name,
-                                $function_storage,
-                                $stmt->left->inferredType,
-                                new Type\Union([new TInt, new TFloat]),
-                                $codebase
-                            );
-                        }
-
-                        if ($stmt->right instanceof PhpParser\Node\Expr\Variable
-                            && is_string($stmt->right->name)
-                        ) {
-                            $context->inferType(
-                                $stmt->right->name,
-                                $function_storage,
-                                $stmt->right->inferredType,
-                                new Type\Union([new TInt, new TFloat]),
-                                $codebase
-                            );
-                        }
-                    }
-                }
-
                 self::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
                     $stmt->left,
@@ -662,49 +626,6 @@ class BinaryOpAnalyzer
         $left_type = isset($left->inferredType) ? $left->inferredType : null;
         $right_type = isset($right->inferredType) ? $right->inferredType : null;
         $config = Config::getInstance();
-
-        if ($codebase
-            && $statements_source
-            && $context
-            && $context->infer_types
-            && $left_type
-            && $right_type
-            && ($left_type->isVanillaMixed() || $right_type->isVanillaMixed())
-            && ($left_type->hasDefinitelyNumericType() || $right_type->hasDefinitelyNumericType())
-        ) {
-            $source_analyzer = $statements_source->getSource();
-            if ($source_analyzer instanceof FunctionLikeAnalyzer
-                && $statements_source instanceof StatementsAnalyzer
-            ) {
-                $function_storage = $source_analyzer->getFunctionLikeStorage($statements_source);
-
-                if ($left instanceof PhpParser\Node\Expr\Variable
-                    && is_string($left->name)
-                    && isset($left->inferredType)
-                ) {
-                    $context->inferType(
-                        $left->name,
-                        $function_storage,
-                        $left->inferredType,
-                        new Type\Union([new TInt, new TFloat]),
-                        $codebase
-                    );
-                }
-
-                if ($right instanceof PhpParser\Node\Expr\Variable
-                    && is_string($right->name)
-                    && isset($right->inferredType)
-                ) {
-                    $context->inferType(
-                        $right->name,
-                        $function_storage,
-                        $right->inferredType,
-                        new Type\Union([new TInt, new TFloat]),
-                        $codebase
-                    );
-                }
-            }
-        }
 
         if ($left_type && $right_type) {
             if ($left_type->isNull()) {
@@ -1247,44 +1168,6 @@ class BinaryOpAnalyzer
         $left_type = isset($left->inferredType) ? $left->inferredType : null;
         $right_type = isset($right->inferredType) ? $right->inferredType : null;
         $config = Config::getInstance();
-
-        if ($context->infer_types
-            && $left_type
-            && $right_type
-            && ($left_type->isMixed() || $right_type->isMixed())
-        ) {
-            $source_analyzer = $statements_analyzer->getSource();
-
-            if ($source_analyzer instanceof FunctionLikeAnalyzer) {
-                $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
-
-                if ($left instanceof PhpParser\Node\Expr\Variable
-                    && is_string($left->name)
-                    && isset($left->inferredType)
-                ) {
-                    $context->inferType(
-                        $left->name,
-                        $function_storage,
-                        $left->inferredType,
-                        new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt]),
-                        $codebase
-                    );
-                }
-
-                if ($right instanceof PhpParser\Node\Expr\Variable
-                    && is_string($right->name)
-                    && isset($right->inferredType)
-                ) {
-                    $context->inferType(
-                        $right->name,
-                        $function_storage,
-                        $right->inferredType,
-                        new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt]),
-                        $codebase
-                    );
-                }
-            }
-        }
 
         if ($left_type && $right_type) {
             $result_type = Type::getString();

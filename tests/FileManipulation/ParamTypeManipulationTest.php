@@ -67,271 +67,37 @@ class ParamTypeManipulationTest extends FileManipulationTest
             ],
             'noStringParamType' => [
                 '<?php
-                    function fooFoo($a): void {
-                        echo substr($a, 4, 2);
-                    }',
-                '<?php
-                    /**
-                     * @param string $a
-                     */
-                    function fooFoo($a): void {
-                        echo substr($a, 4, 2);
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'stringParamTypeAndConcatNoop' => [
-                '<?php
-                    function fooFoo(string $a): void {
-                        echo $a . "foo";
-                    }',
-                '<?php
-                    function fooFoo(string $a): void {
-                        echo $a . "foo";
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'noParamTypeButConcat' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo $a . "foo";
-                    }',
-                '<?php
-                    /**
-                     * @param string|int $a
-                     */
-                    function fooFoo($a): void {
-                        echo $a . "foo";
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'noParamTypeButConcatAndStringUsage' => [
-                '<?php
-                    function takesString(string $s) : void {}
-
-                    function fooFoo($a): void {
-                        echo $a . "foo";
-                        echo takesString($a);
-                    }',
-                '<?php
-                    function takesString(string $s) : void {}
-
-                    /**
-                     * @param string $a
-                     */
-                    function fooFoo($a): void {
-                        echo $a . "foo";
-                        echo takesString($a);
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'noParamTypeButConcatAndStringUsageReversed' => [
-                '<?php
-                    function takesString(string $s) : void {}
-
-                    function fooFoo($a): void {
-                        echo takesString($a);
-                        echo $a . "foo";
-                    }',
-                '<?php
-                    function takesString(string $s) : void {}
-
-                    /**
-                     * @param string $a
-                     */
-                    function fooFoo($a): void {
-                        echo takesString($a);
-                        echo $a . "foo";
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'noParamTypeButAddition' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo $a + 5;
-                    }',
-                '<?php
-                    /**
-                     * @param int|float $a
-                     */
-                    function fooFoo($a): void {
-                        echo $a + 5;
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'noParamTypeButAdditionAndDefault' => [
-                '<?php
-                    function fooFoo($a = 5): void {
-                        takesInt($a);
+                    class C {
+                        public function fooFoo($a): void {}
                     }
 
-                    function takesInt(int $i) {}',
+                    (new C)->fooFoo("hello");',
                 '<?php
-                    /**
-                     * @param int $a
-                     */
-                    function fooFoo($a = 5): void {
-                        takesInt($a);
+                    class C {
+                        /**
+                         * @param string $a
+                         */
+                        public function fooFoo($a): void {}
                     }
 
-                    function takesInt(int $i) {}',
+                    (new C)->fooFoo("hello");',
                 '7.1',
                 ['MissingParamType'],
                 true,
             ],
-            'noParamTypeButIntUseAndNullCheck' => [
+            'stringParamTypeNoOp' => [
                 '<?php
-                    function fooFoo($a): void {
-                        if ($a === null) {
-                            return;
-                        }
-                        takesInt($a);
+                    class C {
+                        public function fooFoo(string $a): void {}
                     }
 
-                    function takesInt(int $i) {}',
+                    (new C)->fooFoo("hello");',
                 '<?php
-                    /**
-                     * @param null|int $a
-                     */
-                    function fooFoo($a): void {
-                        if ($a === null) {
-                            return;
-                        }
-                        takesInt($a);
+                    class C {
+                        public function fooFoo(string $a): void {}
                     }
 
-                    function takesInt(int $i) {}',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'noParamTypeButDivision' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo $a / 5;
-                    }',
-                '<?php
-                    /**
-                     * @param int|float $a
-                     */
-                    function fooFoo($a): void {
-                        echo $a / 5;
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'noParamTypeButTemplatedString' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo "$a";
-                    }',
-                '<?php
-                    /**
-                     * @param string|int|float $a
-                     */
-                    function fooFoo($a): void {
-                        echo "$a";
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'noParamTypeButTemplatedStringAntStringUsage' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo "$a";
-                        echo substr($a, 4, 2);
-                    }',
-                '<?php
-                    /**
-                     * @param string $a
-                     */
-                    function fooFoo($a): void {
-                        echo "$a";
-                        echo substr($a, 4, 2);
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'noStringIntParamType' => [
-                '<?php
-                    function fooFoo($a): void {
-                        if (is_string($a)) {
-                            echo substr($a, 4, 2);
-                        } else {
-                            echo substr("hello", $a, 2);
-                        }
-                    }',
-                '<?php
-                    /**
-                     * @param int|string $a
-                     */
-                    function fooFoo($a): void {
-                        if (is_string($a)) {
-                            echo substr($a, 4, 2);
-                        } else {
-                            echo substr("hello", $a, 2);
-                        }
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'alreadyHasCheck' => [
-                '<?php
-                    function takesString(string $s): void {}
-
-                    function shouldTakeString($s): void {
-                        if (is_string($s)) {
-                            takesString($s);
-                        }
-                    }',
-                '<?php
-                    function takesString(string $s): void {}
-
-                    function shouldTakeString($s): void {
-                        if (is_string($s)) {
-                            takesString($s);
-                        }
-                    }',
-                '7.1',
-                ['MissingParamType'],
-                true,
-            ],
-            'isSetBeforeInferrence' => [
-                '<?php
-                    function takesString(string $s): void {}
-
-                    /** @return mixed */
-                    function returnsMixed() {}
-
-                    function shouldTakeString($s): void {
-                        $s = returnsMixed();
-                        takesString($s);
-                    }',
-                '<?php
-                    function takesString(string $s): void {}
-
-                    /** @return mixed */
-                    function returnsMixed() {}
-
-                    function shouldTakeString($s): void {
-                        $s = returnsMixed();
-                        takesString($s);
-                    }',
+                    (new C)->fooFoo("hello");',
                 '7.1',
                 ['MissingParamType'],
                 true,

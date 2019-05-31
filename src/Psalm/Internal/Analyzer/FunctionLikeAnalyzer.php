@@ -67,11 +67,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     protected $return_vars_in_scope = [];
 
     /**
-     * @var array<string, Type\Union>
-     */
-    protected $possible_param_types = [];
-
-    /**
      * @var ?array<string, bool>
      */
     protected $return_vars_possibly_in_scope = [];
@@ -660,24 +655,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 && $function_param->location
                 && !isset($implemented_docblock_param_types[$offset])
             ) {
-                if ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
-                ) {
-                    $possible_type = $this->possible_param_types[$function_param->name] ?? null;
-
-                    if (!$possible_type || $possible_type->hasMixed() || $possible_type->isNull()) {
-                        continue;
-                    }
-
-                    self::addOrUpdateParamType(
-                        $project_analyzer,
-                        $function_param->name,
-                        $possible_type
-                    );
-
-                    continue;
-                }
-
                 if ($this->function instanceof Closure) {
                     IssueBuffer::accepts(
                         new MissingClosureParamType(
@@ -959,7 +936,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      *
      * @return void
      */
-    private function addOrUpdateParamType(
+    public function addOrUpdateParamType(
         ProjectAnalyzer $project_analyzer,
         $param_name,
         Type\Union $inferred_return_type,
@@ -1035,54 +1012,40 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         Codebase $codebase,
         PhpParser\Node $stmt = null
     ) {
-        if ($context->infer_types) {
-            foreach ($context->possible_param_types as $var_id => $type) {
-                if (isset($this->possible_param_types[$var_id])) {
-                    $this->possible_param_types[$var_id] = Type::combineUnionTypes(
-                        $this->possible_param_types[$var_id],
-                        $type,
-                        $codebase
-                    );
-                } else {
-                    $this->possible_param_types[$var_id] = clone $type;
+        $storage = $this->getFunctionLikeStorage($statements_analyzer);
+
+        foreach ($storage->params as $i => $param) {
+            if ($param->by_ref && isset($context->vars_in_scope['$' . $param->name]) && !$param->is_variadic) {
+                $actual_type = $context->vars_in_scope['$' . $param->name];
+                $param_out_type = $param->type;
+
+                if (isset($storage->param_out_types[$i])) {
+                    $param_out_type = $storage->param_out_types[$i];
                 }
-            }
-        } else {
-            $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
-            foreach ($storage->params as $i => $param) {
-                if ($param->by_ref && isset($context->vars_in_scope['$' . $param->name]) && !$param->is_variadic) {
-                    $actual_type = $context->vars_in_scope['$' . $param->name];
-                    $param_out_type = $param->type;
-
-                    if (isset($storage->param_out_types[$i])) {
-                        $param_out_type = $storage->param_out_types[$i];
-                    }
-
-                    if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
-                        if (!TypeAnalyzer::isContainedBy(
-                            $codebase,
-                            $actual_type,
-                            $param_out_type,
-                            $actual_type->ignore_nullable_issues,
-                            $actual_type->ignore_falsable_issues
-                        )
-                        ) {
-                            if (IssueBuffer::accepts(
-                                new ReferenceConstraintViolation(
-                                    'Variable ' . '$' . $param->name . ' is limited to values of type '
-                                        . $param_out_type->getId()
-                                        . ' because it is passed by reference, '
-                                        . $actual_type->getId() . ' type found. Use @param-out to specify '
-                                        . 'a different output type',
-                                    $stmt
-                                        ? new CodeLocation($this, $stmt)
-                                        : $param->location
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
+                    if (!TypeAnalyzer::isContainedBy(
+                        $codebase,
+                        $actual_type,
+                        $param_out_type,
+                        $actual_type->ignore_nullable_issues,
+                        $actual_type->ignore_falsable_issues
+                    )
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new ReferenceConstraintViolation(
+                                'Variable ' . '$' . $param->name . ' is limited to values of type '
+                                    . $param_out_type->getId()
+                                    . ' because it is passed by reference, '
+                                    . $actual_type->getId() . ' type found. Use @param-out to specify '
+                                    . 'a different output type',
+                                $stmt
+                                    ? new CodeLocation($this, $stmt)
+                                    : $param->location
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
                         }
                     }
                 }

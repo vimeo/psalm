@@ -953,6 +953,28 @@ class ProjectAnalyzer
         $file_analyzer->interface_analyzers_to_analyze = [];
     }
 
+    public function getFunctionLikeAnalyzer(string $method_id, string $file_path) : FunctionLikeAnalyzer
+    {
+        $file_analyzer = new FileAnalyzer(
+            $this,
+            $file_path,
+            $this->config->shortenFileName($file_path)
+        );
+
+        $stmts = $this->codebase->getStatementsForFile(
+            $file_analyzer->getFilePath()
+        );
+
+        $file_analyzer->populateCheckers($stmts);
+
+        $function_analyzer = $file_analyzer->getFunctionLikeAnalyzer($method_id);
+
+        $file_analyzer->class_analyzers_to_analyze = [];
+        $file_analyzer->interface_analyzers_to_analyze = [];
+
+        return $function_analyzer;
+    }
+
     /**
      * Adapted from https://gist.github.com/divinity76/01ef9ca99c111565a72d3a8a6e42f7fb
      * returns number of cpu cores
