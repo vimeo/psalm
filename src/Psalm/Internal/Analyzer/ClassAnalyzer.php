@@ -1004,10 +1004,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 list(,$property_name) = explode('::$', $property_id);
 
                 if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
-                    throw new \UnexpectedValueException('$this->' . $property_name . ' should be in scope');
+                    $end_type = Type::getVoid();
+                    $end_type->initialized = false;
+                } else {
+                    $end_type = $method_context->vars_in_scope['$this->' . $property_name];
                 }
-
-                $end_type = $method_context->vars_in_scope['$this->' . $property_name];
 
                 $constructor_class_property_storage = $property_storage;
 

@@ -135,6 +135,7 @@ class PropertyFetchAnalyzer
                 if ($property_id
                     && $source instanceof FunctionLikeAnalyzer
                     && $source->getMethodName() === '__construct'
+                    && !$context->inside_unset
                 ) {
                     if (IssueBuffer::accepts(
                         new UninitializedProperty(

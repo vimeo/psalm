@@ -2374,6 +2374,18 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:15'
             ],
+            'noCrashWhenUnsettingPropertyWithoutDefaultInConstructor' => [
+                '<?php
+                    class A {
+                        /** @var bool */
+                        private $foo;
+
+                        public function __construct() {
+                            unset($this->foo);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor'
+            ],
         ];
     }
 }
