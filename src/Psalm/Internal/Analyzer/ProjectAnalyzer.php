@@ -479,8 +479,6 @@ class ProjectAnalyzer
             }
         }
 
-        $this->progress->startAnalyzingFiles();
-
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
         $plugin_classes = $this->config->after_codebase_populated;
@@ -490,6 +488,8 @@ class ProjectAnalyzer
                 $plugin_fq_class_name::afterCodebasePopulated($this->codebase);
             }
         }
+
+        $this->progress->startAnalyzingFiles();
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
 

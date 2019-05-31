@@ -136,10 +136,17 @@ class Pool
             $task_result = $task_closure($i, $task_data);
             $task_done_message = new ForkTaskDoneMessage($task_result);
             $serialized_message = $task_done_buffer . base64_encode(serialize($task_done_message)) . PHP_EOL;
-            $bytes_written = @fwrite($write_stream, $serialized_message);
 
-            if (strlen($serialized_message) !== $bytes_written) {
-                $task_done_buffer = substr($serialized_message, $bytes_written);
+            if (strlen($serialized_message) > 200) {
+                $bytes_written = @fwrite($write_stream, $serialized_message);
+
+                if (strlen($serialized_message) !== $bytes_written) {
+                    $task_done_buffer = substr($serialized_message, $bytes_written);
+                } else {
+                    $task_done_buffer = '';
+                }
+            } else {
+                $task_done_buffer = $serialized_message;
             }
         }
 
