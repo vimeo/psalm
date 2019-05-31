@@ -486,6 +486,16 @@ if (isset($options['clear-global-cache'])) {
     exit;
 }
 
+if (isset($_SERVER['TRAVIS'])
+    || isset($_SERVER['CIRCLECI'])
+    || isset($_SERVER['CIRCLECI'])
+    || isset($_SERVER['APPVEYOR'])
+    || isset($_SERVER['JENKINS_URL'])
+    || isset($_SERVER['SCRUTINIZER'])
+) {
+    $options['no-progress'] = true;
+}
+
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 $progress = $debug
     ? new DebugProgress()
