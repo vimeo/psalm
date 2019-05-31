@@ -172,7 +172,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         }
     }
 
-    public function getFunctionLikeAnalyzer(string $method_name) : FunctionLikeAnalyzer
+    public function getFunctionLikeAnalyzer(string $method_name) : ?FunctionLikeAnalyzer
     {
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
@@ -182,7 +182,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             }
         }
 
-        throw new \UnexpectedValueException('Should return a function analyzer');
+        return null;
     }
 
     /**

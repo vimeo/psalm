@@ -169,11 +169,6 @@ class FunctionLikeStorage
      */
     public $unused_docblock_params;
 
-    /**
-     * @var array<int, Type\Union>|null
-     */
-    public $possible_param_types;
-
     public function __toString()
     {
         $symbol_text = 'function ' . $this->cased_name . '(' . implode(

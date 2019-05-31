@@ -340,12 +340,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
-    public function getFunctionLikeAnalyzer(string $method_id) : FunctionLikeAnalyzer
+    public function getFunctionLikeAnalyzer(string $method_id) : ?FunctionLikeAnalyzer
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
         if (!isset($this->class_analyzers_to_analyze[strtolower($fq_class_name)])) {
-            throw new \UnexpectedValueException('Should not happen');
+            return null;
         }
 
         $class_analyzer_to_examine = $this->class_analyzers_to_analyze[strtolower($fq_class_name)];

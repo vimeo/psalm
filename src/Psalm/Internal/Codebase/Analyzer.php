@@ -51,7 +51,8 @@ use Psalm\Progress\Progress;
  *     >,
  *     class_locations: array<string, array<int, \Psalm\CodeLocation>>,
  *     class_method_locations: array<string, array<int, \Psalm\CodeLocation>>,
- *     class_property_locations: array<string, array<int, \Psalm\CodeLocation>>
+ *     class_property_locations: array<string, array<int, \Psalm\CodeLocation>>,
+ *     possible_method_param_types: array<string, array<int, \Psalm\Type\Union>>
  * }
  */
 
@@ -134,6 +135,11 @@ class Analyzer
      * @var array<string, array<int, array{0: int, 1: string}>>
      */
     private $type_map = [];
+
+    /**
+     * @var array<string, array<int, \Psalm\Type\Union>>
+     */
+    public $possible_method_param_types = [];
 
     public function __construct(
         Config $config,
@@ -299,6 +305,7 @@ class Analyzer
                         'class_locations' => $file_reference_provider->getAllClassLocations(),
                         'class_method_locations' => $file_reference_provider->getAllClassMethodLocations(),
                         'class_property_locations' => $file_reference_provider->getAllClassPropertyLocations(),
+                        'possible_method_param_types' => $analyzer->getPossibleMethodParamTypes(),
                     ];
                 },
                 $task_done_closure
@@ -360,6 +367,26 @@ class Analyzer
                     } else {
                         $this->mixed_counts[$file_path][0] += $mixed_count;
                         $this->mixed_counts[$file_path][1] += $nonmixed_count;
+                    }
+                }
+
+                foreach ($pool_data['possible_method_param_types'] as $declaring_method_id => $possible_param_types) {
+                    if (!isset($this->possible_method_param_types[$declaring_method_id])) {
+                        $this->possible_method_param_types[$declaring_method_id] = $possible_param_types;
+                    } else {
+                        foreach ($possible_param_types as $offset => $possible_param_type) {
+                            if (!isset($this->possible_method_param_types[$declaring_method_id][$offset])) {
+                                $this->possible_method_param_types[$declaring_method_id][$offset]
+                                    = $possible_param_type;
+                            } else {
+                                $this->possible_method_param_types[$declaring_method_id][$offset]
+                                    = \Psalm\Type::combineUnionTypes(
+                                        $this->possible_method_param_types[$declaring_method_id][$offset],
+                                        $possible_param_type,
+                                        $codebase
+                                    );
+                            }
+                        }
                     }
                 }
 
@@ -1221,6 +1248,14 @@ class Analyzer
             $this->reference_map[$file_path] ?? [],
             $this->type_map[$file_path] ?? []
         ];
+    }
+
+    /**
+     * @return array<string, array<int, \Psalm\Type\Union>>
+     */
+    public function getPossibleMethodParamTypes()
+    {
+        return $this->possible_method_param_types;
     }
 
     /**

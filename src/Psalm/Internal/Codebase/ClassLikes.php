@@ -929,30 +929,43 @@ class ClassLikes
             } else {
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
+                    && isset($codebase->analyzer->possible_method_param_types[strtolower($method_id)])
                 ) {
-                    if ($method_storage->possible_param_types && $method_storage->location) {
+                    if ($method_storage->location) {
                         $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
                             $method_id,
                             $method_storage->location->file_path
                         );
 
-                        foreach ($method_storage->possible_param_types as $offset => $possible_type) {
-                            if (!isset($method_storage->params[$offset])) {
-                                continue;
+                        $possible_param_types
+                            = $codebase->analyzer->possible_method_param_types[strtolower($method_id)];
+
+                        if ($function_analyzer && $possible_param_types) {
+                            foreach ($possible_param_types as $offset => $possible_type) {
+                                if (!isset($method_storage->params[$offset])) {
+                                    continue;
+                                }
+
+                                $param_name = $method_storage->params[$offset]->name;
+
+                                if ($possible_type->hasMixed() || $possible_type->isNull()) {
+                                    continue;
+                                }
+
+                                if ($method_storage->params[$offset]->default_type) {
+                                    $possible_type = \Psalm\Type::combineUnionTypes(
+                                        $possible_type,
+                                        $method_storage->params[$offset]->default_type
+                                    );
+                                }
+
+                                $function_analyzer->addOrUpdateParamType(
+                                    $project_analyzer,
+                                    $param_name,
+                                    $possible_type,
+                                    true
+                                );
                             }
-
-                            $param_name = $method_storage->params[$offset]->name;
-
-                            if ($possible_type->hasMixed() || $possible_type->isNull()) {
-                                continue;
-                            }
-
-                            $function_analyzer->addOrUpdateParamType(
-                                $project_analyzer,
-                                $param_name,
-                                $possible_type,
-                                true
-                            );
                         }
                     }
                 }

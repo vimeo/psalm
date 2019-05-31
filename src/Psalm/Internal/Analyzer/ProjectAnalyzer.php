@@ -953,7 +953,7 @@ class ProjectAnalyzer
         $file_analyzer->interface_analyzers_to_analyze = [];
     }
 
-    public function getFunctionLikeAnalyzer(string $method_id, string $file_path) : FunctionLikeAnalyzer
+    public function getFunctionLikeAnalyzer(string $method_id, string $file_path) : ?FunctionLikeAnalyzer
     {
         $file_analyzer = new FileAnalyzer(
             $this,
