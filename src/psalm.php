@@ -486,8 +486,8 @@ if (isset($options['clear-global-cache'])) {
     exit;
 }
 
+// disable progressbar on CI
 if (isset($_SERVER['TRAVIS'])
-    || isset($_SERVER['CIRCLECI'])
     || isset($_SERVER['CIRCLECI'])
     || isset($_SERVER['APPVEYOR'])
     || isset($_SERVER['JENKINS_URL'])
