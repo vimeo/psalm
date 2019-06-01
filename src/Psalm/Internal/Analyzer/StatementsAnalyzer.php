@@ -958,7 +958,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             && $var_comment->line_number
                             && $var_comment_type->hasNamedObject()
                         ) {
-                            $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+                            $destination_method_id
+                                = $codebase->method_migrations[strtolower($context->calling_method_id)];
 
                             $codebase->classlikes->airliftDocblockType(
                                 $var_comment_type,
