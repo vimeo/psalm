@@ -13,16 +13,15 @@ class DocComment
      * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
      *
      * @param  string|\PhpParser\Comment\Doc  $docblock
-     * @param  int     $line_number
      * @param  bool    $preserve_format
      *
      * @return array Array of the main comment and specials
      * @psalm-return array{description:string, specials:array<string, array<int, string>>}
+     * @psalm-suppress PossiblyUnusedParam
      */
-    public static function parse($docblock, ?int $line_number = null, bool $preserve_format = false)
+    public static function parse($docblock, ?int $line_number = null)
     {
         if (!is_string($docblock)) {
-            $line_number = $docblock->getLine();
             $docblock = $docblock->getText();
         }
 
