@@ -84,7 +84,7 @@ jobs:
       env: DEPS="high"
       script:
         - bin/build-phar.sh
-        - if [[ "$TRAVIS_PULL_REQUEST" = 'false' ]]; then bin/travis-deploy-phar.sh; fi
+        - if [[ "$TRAVIS_REPO_SLUG" = 'vimeo/psalm' && "$TRAVIS_PULL_REQUEST" = 'false' ]]; then bin/travis-deploy-phar.sh; fi
       before_deploy:
         - echo $GPG_ENCRYPTION | gpg --passphrase-fd 0 keys.asc.gpg
         - gpg --batch --yes --import keys.asc
