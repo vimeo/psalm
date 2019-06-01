@@ -28,14 +28,40 @@ class DocComment
 
         // Strip off comments.
         $docblock = trim($docblock);
-        $docblock = preg_replace('@^/\*\*@', '', $docblock);
+
+        $docblock = preg_replace('@^/\*\*@', '', $docblock, -1, $count);
+
+        $start_offset = 3;
+
         $docblock = preg_replace('@\*/$@', '', $docblock);
-        $docblock = preg_replace('@^[ \t]*\*@m', '', $docblock);
 
         // Normalize multi-line @specials.
         $lines = explode("\n", $docblock);
 
-        $line_map = [];
+        $char_map = [];
+        $cursor = 0;
+        $line_offset = 0;
+
+        foreach ($lines as $k => $line) {
+            $trimmed_line = preg_replace('@^[ \t]*\*@', '', $line);
+            $start_offset += strlen($line) - strlen($trimmed_line);
+
+            $lines[$k] = $trimmed_line;
+
+            while ($cursor < $line_offset + strlen($trimmed_line)) {
+                $char_map[$cursor] = $cursor + $start_offset;
+                ++$cursor;
+            }
+
+            $char_map[$cursor] = $cursor + $start_offset;
+            ++$cursor;
+
+            $line_offset += strlen($trimmed_line) + 1;
+        }
+
+        $docblock = implode("\n", $lines);
+
+        $special = [];
 
         $last = false;
         foreach ($lines as $k => $line) {
@@ -45,57 +71,35 @@ class DocComment
                 $last = false;
             } elseif ($last !== false) {
                 $old_last_line = $lines[$last];
-                $lines[$last] = rtrim($old_last_line)
-                    . ($preserve_format || trim($old_last_line) === '@return' ? "\n" . $line : ' ' . trim($line));
-
-                $old_line_number = $line_map[$old_last_line];
-                unset($line_map[$old_last_line]);
-                $line_map[$lines[$last]] = $old_line_number;
+                $lines[$last] = $old_last_line . "\n" . $line;
 
                 unset($lines[$k]);
             }
-
-            $line_map[$line] = $line_number++;
         }
 
-        $special = [];
+        $line_offset = 0;
 
-        if ($preserve_format) {
-            foreach ($lines as $m => $line) {
-                if (preg_match('/^\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches)) {
-                    /** @var string[] $matches */
-                    list($full_match, $type, $data) = $matches;
+        foreach ($lines as $line) {
+            if (preg_match('/^\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
+                /** @var array<int, array{string, int}> $matches */
+                list($full_match_info, $type_info, $data_info) = $matches;
 
-                    $docblock = str_replace($full_match, '', $docblock);
+                list($full_match) = $full_match_info;
+                list($type) = $type_info;
+                list($data, $data_offset) = $data_info;
 
-                    if (empty($special[$type])) {
-                        $special[$type] = [];
-                    }
+                $docblock = str_replace($full_match, '', $docblock);
 
-                    $line_number = isset($line_map[$full_match]) ? $line_map[$full_match] : (int)$m;
-
-                    $special[$type][$line_number] = rtrim($data);
+                if (empty($special[$type])) {
+                    $special[$type] = [];
                 }
+
+                $data_offset += $line_offset;
+
+                $special[$type][$char_map[$data_offset]] = $data;
             }
-        } else {
-            $docblock = implode("\n", $lines);
 
-            // Parse @specials.
-            if (preg_match_all('/^\s?@([\w\-:]+)[\t ]*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER)) {
-                $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
-                /** @var string[] $match */
-                foreach ($matches as $m => $match) {
-                    list($_, $type, $data) = $match;
-
-                    if (empty($special[$type])) {
-                        $special[$type] = [];
-                    }
-
-                    $line_number = isset($line_map[$_]) ? $line_map[$_] : (int)$m;
-
-                    $special[$type][$line_number] = $data;
-                }
-            }
+            $line_offset += strlen($line) + 1;
         }
 
         $docblock = str_replace("\t", '  ', $docblock);

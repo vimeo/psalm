@@ -453,6 +453,31 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $bounds[1]
                 );
             }
+
+            foreach ($params as $function_param) {
+                if ($function_param->type
+                    && $function_param->type_location
+                    && $function_param->type_location !== $function_param->signature_type_location
+                ) {
+                    $bounds = $function_param->type_location->getSelectionBounds();
+
+                    $replace_type = ExpressionAnalyzer::fleshOutType(
+                        $codebase,
+                        $function_param->type,
+                        $context->self,
+                        $context->self,
+                        $this->getParentFQCLN()
+                    );
+
+                    $codebase->classlikes->airliftDocblockType(
+                        $replace_type,
+                        explode('::', $destination_method_id)[0],
+                        $statements_analyzer->getFilePath(),
+                        $bounds[0],
+                        $bounds[1]
+                    );
+                }
+            }
         }
 
         foreach ($params as $offset => $function_param) {

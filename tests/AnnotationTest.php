@@ -1509,6 +1509,12 @@ class AnnotationTest extends TestCase
                     foo($c);',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'identifyReturnType' => [
+                '<?php
+                    /** @return array{hello: string} */
+                    function foo() {}',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
+            ],
         ];
     }
 }

@@ -46,6 +46,8 @@ class CommentAnalyzer
         $var_comments = [];
         $comments = DocComment::parse($comment);
 
+        $comment_text = $comment->getText();
+
         if (!isset($comments['specials']['var']) && !isset($comments['specials']['psalm-var'])) {
             return [];
         }
@@ -56,8 +58,7 @@ class CommentAnalyzer
             $all_vars = (isset($comments['specials']['var']) ? $comments['specials']['var'] : [])
                 + (isset($comments['specials']['psalm-var']) ? $comments['specials']['psalm-var'] : []);
 
-            /** @var int $line_number */
-            foreach ($all_vars as $line_number => $var_line) {
+            foreach ($all_vars as $offset => $var_line) {
                 $var_line = trim($var_line);
 
                 if (!$var_line) {
@@ -69,19 +70,19 @@ class CommentAnalyzer
 
                 $line_parts = self::splitDocLine($var_line);
 
+                $line_number = $comment->getLine() + substr_count($comment_text, "\n", 0, $offset);
+
                 if ($line_parts && $line_parts[0]) {
                     if ($line_parts[0][0] === '$' && $line_parts[0] !== '$this') {
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
 
-                    if (($start_offset = strpos($comment->getText(), $line_parts[0])) !== false) {
-                        $type_start = $start_offset + $comment->getFilePos();
-                        $type_end = $type_start + strlen($line_parts[0]);
-                    }
+                    $type_start = $offset + $comment->getFilePos();
+                    $type_end = $type_start + strlen($line_parts[0]);
 
                     try {
                         $var_type_tokens = Type::fixUpLocalType(
-                            $line_parts[0],
+                            str_replace("\n", '', $line_parts[0]),
                             $aliases,
                             $template_type_map,
                             $type_aliases
@@ -228,7 +229,7 @@ class CommentAnalyzer
                 array_shift($var_line_parts);
             }
 
-            $type_string = implode('', $var_line_parts);
+            $type_string = str_replace("\n", '', implode('', $var_line_parts));
 
             try {
                 $type_tokens = Type::fixUpLocalType(
@@ -259,6 +260,8 @@ class CommentAnalyzer
     {
         $comments = DocComment::parse($comment);
 
+        $comment_text = $comment->getText();
+
         $info = new FunctionDocblockComment();
 
         if (isset($comments['specials']['return']) || isset($comments['specials']['psalm-return'])) {
@@ -269,8 +272,7 @@ class CommentAnalyzer
 
             self::extractReturnType(
                 $comment,
-                (string) reset($return_specials),
-                array_keys($return_specials)[0],
+                $return_specials,
                 $info
             );
         }
@@ -280,7 +282,7 @@ class CommentAnalyzer
                 + (isset($comments['specials']['psalm-param']) ? $comments['specials']['psalm-param'] : []);
 
             /** @var string $param */
-            foreach ($all_params as $line_number => $param) {
+            foreach ($all_params as $offset => $param) {
                 $line_parts = self::splitDocLine($param);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
@@ -299,10 +301,15 @@ class CommentAnalyzer
 
                         $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
 
+                        $start = $offset + $comment->getFilePos();
+                        $end = $start + strlen($line_parts[0]);
+
                         $info->params[] = [
-                            'name' => $line_parts[1],
-                            'type' => $line_parts[0],
-                            'line_number' => (int)$line_number,
+                            'name' => trim($line_parts[1]),
+                            'type' => str_replace("\n", '', $line_parts[0]),
+                            'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
+                            'start' => $start,
+                            'end' => $end,
                         ];
                     }
                 } else {
@@ -313,7 +320,7 @@ class CommentAnalyzer
 
         if (isset($comments['specials']['param-out'])) {
             /** @var string $param */
-            foreach ($comments['specials']['param-out'] as $line_number => $param) {
+            foreach ($comments['specials']['param-out'] as $offset => $param) {
                 $line_parts = self::splitDocLine($param);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
@@ -336,9 +343,9 @@ class CommentAnalyzer
                         $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
 
                         $info->params_out[] = [
-                            'name' => $line_parts[1],
-                            'type' => $line_parts[0],
-                            'line_number' => (int)$line_number,
+                            'name' => trim($line_parts[1]),
+                            'type' => str_replace("\n", '', $line_parts[0]),
+                            'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
                         ];
                     }
                 } else {
@@ -348,7 +355,7 @@ class CommentAnalyzer
         }
 
         if (isset($comments['specials']['global'])) {
-            foreach ($comments['specials']['global'] as $line_number => $global) {
+            foreach ($comments['specials']['global'] as $offset => $global) {
                 $line_parts = self::splitDocLine($global);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
@@ -373,7 +380,7 @@ class CommentAnalyzer
                         $info->globals[] = [
                             'name' => $line_parts[1],
                             'type' => $line_parts[0],
-                            'line_number' => (int)$line_number,
+                            'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
                         ];
                     }
                 } else {
@@ -554,44 +561,49 @@ class CommentAnalyzer
     }
 
     /**
+     * @param array<int, string> $return_specials
      * @return void
      */
     private static function extractReturnType(
         PhpParser\Comment\Doc $comment,
-        string $return_block,
-        int $line_number,
+        array $return_specials,
         FunctionDocblockComment $info
     ) {
-        $return_lines = explode("\n", $return_block);
+        foreach ($return_specials as $offset => $return_block) {
+            $return_lines = explode("\n", $return_block);
 
-        if (!trim($return_lines[0])) {
-            return;
-        }
-
-        $return_block = trim($return_block);
-
-        if (!$return_block) {
-            return;
-        }
-
-        $line_parts = self::splitDocLine($return_block);
-
-        if ($line_parts[0][0] !== '{') {
-            if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
-                throw new IncorrectDocblockException('Misplaced variable');
+            if (!trim($return_lines[0])) {
+                return;
             }
 
-            if (($start_offset = strpos($comment->getText(), $line_parts[0])) !== false) {
-                $info->return_type_start = $start_offset + $comment->getFilePos();
-                $info->return_type_end = $info->return_type_start + strlen($line_parts[0]);
+            $return_block = trim($return_block);
+
+            if (!$return_block) {
+                return;
             }
 
-            $info->return_type = array_shift($line_parts);
-            $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
+            $line_parts = self::splitDocLine($return_block);
 
-            $info->return_type_line_number = $line_number;
-        } else {
-            throw new DocblockParseException('Badly-formatted @return type');
+            if ($line_parts[0][0] !== '{') {
+                if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
+                    throw new IncorrectDocblockException('Misplaced variable');
+                }
+
+                $start = $offset + $comment->getFilePos();
+                $end = $start + strlen($line_parts[0]);
+
+                $info->return_type = str_replace("\n", '', array_shift($line_parts));
+                $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
+
+                $info->return_type_line_number
+                    = $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset);
+                $info->return_type_start = $start;
+                $info->return_type_end = $end;
+            } else {
+                throw new DocblockParseException('Badly-formatted @return type');
+            }
+
+            break;
         }
     }
 
@@ -739,7 +751,7 @@ class CommentAnalyzer
             $all_methods = (isset($comments['specials']['method']) ? $comments['specials']['method'] : [])
                 + (isset($comments['specials']['psalm-method']) ? $comments['specials']['psalm-method'] : []);
 
-            foreach ($all_methods as $line_number => $method_entry) {
+            foreach ($all_methods as $offset => $method_entry) {
                 $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
                 $docblock_lines = [];
@@ -845,7 +857,7 @@ class CommentAnalyzer
                     $statements[0]->stmts[0]->setDocComment(
                         new \PhpParser\Comment\Doc(
                             $doc_comment->getText(),
-                            $line_number,
+                            $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset),
                             $node_doc_comment->getFilePos()
                         )
                     );
@@ -855,10 +867,10 @@ class CommentAnalyzer
             }
         }
 
-        self::addMagicPropertyToInfo($info, $comments['specials'], 'property');
-        self::addMagicPropertyToInfo($info, $comments['specials'], 'psalm-property');
-        self::addMagicPropertyToInfo($info, $comments['specials'], 'property-read');
-        self::addMagicPropertyToInfo($info, $comments['specials'], 'property-write');
+        self::addMagicPropertyToInfo($comment, $info, $comments['specials'], 'property');
+        self::addMagicPropertyToInfo($comment, $info, $comments['specials'], 'psalm-property');
+        self::addMagicPropertyToInfo($comment, $info, $comments['specials'], 'property-read');
+        self::addMagicPropertyToInfo($comment, $info, $comments['specials'], 'property-write');
 
         return $info;
     }
@@ -872,10 +884,15 @@ class CommentAnalyzer
      *
      * @return void
      */
-    protected static function addMagicPropertyToInfo(ClassLikeDocblockComment $info, array $specials, $property_tag)
-    {
+    protected static function addMagicPropertyToInfo(
+        PhpParser\Comment\Doc $comment,
+        ClassLikeDocblockComment $info,
+        array $specials,
+        string $property_tag
+    ) : void {
         $magic_property_comments = isset($specials[$property_tag]) ? $specials[$property_tag] : [];
-        foreach ($magic_property_comments as $line_number => $property) {
+
+        foreach ($magic_property_comments as $offset => $property) {
             $line_parts = self::splitDocLine($property);
 
             if (count($line_parts) === 1 && $line_parts[0][0] === '$') {
@@ -902,7 +919,7 @@ class CommentAnalyzer
                     $info->properties[] = [
                         'name' => $line_parts[1],
                         'type' => $line_parts[0],
-                        'line_number' => $line_number,
+                        'line_number' => $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset),
                         'tag' => $property_tag,
                     ];
                 } else {

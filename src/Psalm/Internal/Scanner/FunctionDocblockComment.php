@@ -32,7 +32,7 @@ class FunctionDocblockComment
     public $return_type_line_number;
 
     /**
-     * @var array<int, array{name:string, type:string, line_number: int}>
+     * @var array<int, array{name:string, type:string, line_number: int, start: int, end: int}>
      */
     public $params = [];
 

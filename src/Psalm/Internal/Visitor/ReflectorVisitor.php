@@ -1948,7 +1948,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $docblock_return_type = $docblock_info->return_type;
 
-            if ($docblock_info->return_type_line_number
+            if (!$fake_method
+                && $docblock_info->return_type_line_number
                 && $docblock_info->return_type_start
                 && $docblock_info->return_type_end
             ) {
@@ -2265,7 +2266,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
     /**
      * @param  FunctionLikeStorage          $storage
-     * @param  array<int, array{type:string,name:string,line_number:int}>  $docblock_params
+     * @param  array<int, array{type:string,name:string,line_number:int,start:int,end:int}>  $docblock_params
      * @param  PhpParser\Node\FunctionLike  $function
      *
      * @return void
@@ -2304,19 +2305,22 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
 
-            $docblock_type_location = new CodeLocation(
-                $this->file_scanner,
-                $function,
-                null,
-                !$fake_method,
-                !$fake_method
-                    ? CodeLocation::FUNCTION_PHPDOC_PARAM_TYPE
-                    : CodeLocation::FUNCTION_PHPDOC_METHOD,
-                $fake_method ? null : $docblock_param['type']
-            );
-
             if (!$fake_method) {
-                $docblock_type_location->setCommentLine($docblock_param['line_number']);
+                $docblock_type_location = new CodeLocation\DocblockTypeLocation(
+                    $this->file_scanner,
+                    $docblock_param['start'],
+                    $docblock_param['end'],
+                    $docblock_param['line_number']
+                );
+            } else {
+                $docblock_type_location = new CodeLocation(
+                    $this->file_scanner,
+                    $function,
+                    null,
+                    false,
+                    CodeLocation::FUNCTION_PHPDOC_METHOD,
+                    null
+                );
             }
 
             if ($storage_param === null) {
@@ -2417,15 +2421,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $storage_param_atomic_types = $storage_param->type->getTypes();
 
-            $all_types_match = true;
             $all_typehint_types_match = true;
 
             foreach ($new_param_type->getTypes() as $key => $type) {
                 if (isset($storage_param_atomic_types[$key])) {
-                    if ($storage_param_atomic_types[$key]->getId() !== $type->getId()) {
-                        $all_types_match = false;
-                    }
-
                     $type->from_docblock = false;
 
                     if ($storage_param_atomic_types[$key] instanceof Type\Atomic\TArray
@@ -2435,13 +2434,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $type->type_params[0]->from_docblock = false;
                     }
                 } else {
-                    $all_types_match = false;
                     $all_typehint_types_match = false;
                 }
-            }
-
-            if ($all_types_match) {
-                continue;
             }
 
             if ($all_typehint_types_match) {
