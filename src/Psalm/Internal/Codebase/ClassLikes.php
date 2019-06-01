@@ -785,6 +785,41 @@ class ClassLikes
         FileManipulationBuffer::addCodeMigrations($code_migrations);
     }
 
+    public function airliftClassLikeReference(
+        string $fq_class_name,
+        string $destination_fq_class_name,
+        string $source_file_path,
+        int $source_start,
+        int $source_end
+    ) : void {
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        $destination_class_storage = $codebase->classlike_storage_provider->get($destination_fq_class_name);
+
+        if (!$destination_class_storage->aliases) {
+            throw new \UnexpectedValueException('Aliases should not be null');
+        }
+
+        $file_manipulations = [];
+
+        $file_manipulations[] = new \Psalm\FileManipulation(
+            $source_start,
+            $source_end,
+            Type::getStringFromFQCLN(
+                $fq_class_name,
+                $destination_class_storage->aliases->namespace,
+                $destination_class_storage->aliases->uses_flipped,
+                $destination_class_storage->name
+            )
+        );
+
+        FileManipulationBuffer::add(
+            $source_file_path,
+            $file_manipulations
+        );
+    }
+
     /**
      * @param  string $class_name
      * @param  mixed  $visibility

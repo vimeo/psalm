@@ -165,7 +165,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $node->name ? implode('\\', $node->name->parts) : '',
                 $this->aliases->uses,
                 $this->aliases->functions,
-                $this->aliases->constants
+                $this->aliases->constants,
+                $this->aliases->uses_flipped,
+                $this->aliases->functions_flipped,
+                $this->aliases->constants_flipped
             );
         } elseif ($node instanceof PhpParser\Node\Stmt\Use_) {
             foreach ($node->uses as $use) {
@@ -176,14 +179,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                     case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
                         $this->aliases->functions[strtolower($use_alias)] = $use_path;
+                        $this->aliases->functions_flipped[strtolower($use_path)] = $use_alias;
                         break;
 
                     case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
                         $this->aliases->constants[$use_alias] = $use_path;
+                        $this->aliases->constants_flipped[$use_path] = $use_alias;
                         break;
 
                     case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
                         $this->aliases->uses[strtolower($use_alias)] = $use_path;
+                        $this->aliases->uses_flipped[strtolower($use_path)] = $use_alias;
                         break;
                 }
             }
@@ -197,14 +203,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                     case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
                         $this->aliases->functions[strtolower($use_alias)] = $use_path;
+                        $this->aliases->functions_flipped[strtolower($use_path)] = $use_alias;
                         break;
 
                     case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
                         $this->aliases->constants[$use_alias] = $use_path;
+                        $this->aliases->constants_flipped[$use_path] = $use_alias;
                         break;
 
                     case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
                         $this->aliases->uses[strtolower($use_alias)] = $use_path;
+                        $this->aliases->uses_flipped[strtolower($use_path)] = $use_alias;
                         break;
                 }
             }
@@ -809,6 +818,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $storage->location = $name_location;
         $storage->user_defined = !$this->codebase->register_stub_files;
         $storage->stubbed = $this->codebase->register_stub_files;
+        $storage->aliases = $this->aliases;
 
         $doc_comment = $node->getDocComment();
 
@@ -2739,8 +2749,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 } else {
                     $storage->public_class_constant_nodes[$const->name->name] = $const->value;
                 }
-
-                $storage->aliases = $this->aliases;
             }
 
             if ($deprecated) {

@@ -821,6 +821,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
+                $moved_call = false;
+
                 foreach ($codebase->call_transforms as $original_pattern => $transformation) {
                     if ($declaring_method_id
                         && strtolower($declaring_method_id) . '\((.*\))' === $original_pattern
@@ -851,8 +853,26 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
 
                             FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+
+                            $moved_call = true;
                         }
                     }
+                }
+
+                if (!$moved_call
+                    && $codebase->method_migrations
+                    && $context->calling_method_id
+                    && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+                ) {
+                    $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+
+                    $codebase->classlikes->airliftClassLikeReference(
+                        $fq_class_name,
+                        explode('::', $destination_method_id)[0],
+                        $statements_analyzer->getFilePath(),
+                        (int) $stmt->class->getAttribute('startFilePos'),
+                        (int) $stmt->class->getAttribute('endFilePos') + 1
+                    );
                 }
 
                 if ($config->after_method_checks) {

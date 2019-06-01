@@ -143,25 +143,15 @@ class ConstFetchAnalyzer
                 if ($codebase->method_migrations
                     && $context->calling_method_id
                     && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
-                    && strtolower(explode('::', $context->calling_method_id)[0]) === strtolower($fq_class_name)
-                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
-                    $file_manipulations = [];
+                    $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
 
-                    $file_manipulations[] = new \Psalm\FileManipulation(
-                        (int) $stmt->class->getAttribute('startFilePos'),
-                        (int) $stmt->class->getAttribute('endFilePos') + 1,
-                        Type::getStringFromFQCLN(
-                            $fq_class_name,
-                            null,
-                            [],
-                            null
-                        )
-                    );
-
-                    \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                    $codebase->classlikes->airliftClassLikeReference(
+                        $fq_class_name,
+                        explode('::', $destination_method_id)[0],
                         $statements_analyzer->getFilePath(),
-                        $file_manipulations
+                        (int) $stmt->class->getAttribute('startFilePos'),
+                        (int) $stmt->class->getAttribute('endFilePos') + 1
                     );
                 }
 
