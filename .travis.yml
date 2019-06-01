@@ -41,7 +41,7 @@ install:
   - if [[ "$DEPS" = 'low' ]]; then travis_retry composer $DEFAULT_COMPOSER_FLAGS --prefer-lowest --prefer-stable update; fi
 
 script:
-  - vendor/bin/phpunit
+  - vendor/bin/paratest tests
   - ./psalm
 
 # Base test matrix (php/env)
@@ -64,11 +64,8 @@ jobs:
         - composer $DEFAULT_COMPOSER_FLAGS update
         - composer require --dev php-coveralls/php-coveralls
         - mkdir -p build
-      before_script:
-        - vendor/bin/phpunit --dump-xdebug-filter build/xdebug-filter.php
       script:
-        - vendor/bin/phpunit --prepend build/xdebug-filter.php
-        - ./psalm --shepherd
+        - vendor/bin/paratest --coverage-clover build/logs/clover.xml tests
       after_success:
         - travis_retry php vendor/bin/php-coveralls -v
 
