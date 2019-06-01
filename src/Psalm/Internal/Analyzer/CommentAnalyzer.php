@@ -1012,6 +1012,7 @@ class CommentAnalyzer
             } elseif ($char === ' ') {
                 if ($brackets) {
                     $expects_callable_return = false;
+                    $type .= ' ';
                     continue;
                 }
 
