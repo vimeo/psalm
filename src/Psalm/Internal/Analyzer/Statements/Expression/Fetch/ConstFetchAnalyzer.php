@@ -144,6 +144,7 @@ class ConstFetchAnalyzer
                     && $context->calling_method_id
                     && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
                     && strtolower(explode('::', $context->calling_method_id)[0]) === strtolower($fq_class_name)
+                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
                     $file_manipulations = [];
 
@@ -152,8 +153,8 @@ class ConstFetchAnalyzer
                         (int) $stmt->class->getAttribute('endFilePos') + 1,
                         Type::getStringFromFQCLN(
                             $fq_class_name,
-                            $statements_analyzer->getNamespace(),
-                            $statements_analyzer->getAliasedClassesFlipped(),
+                            null,
+                            [],
                             null
                         )
                     );

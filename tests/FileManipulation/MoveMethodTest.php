@@ -87,6 +87,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
         return [
             'moveStaticMethodReferenceOnly' => [
                 '<?php
+                    namespace Ns;
+
                     class A {
                         const C = 5;
 
@@ -104,6 +106,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 '<?php
+                    namespace Ns;
+
                     class A {
                         const C = 5;
 
@@ -122,11 +126,13 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                     }',
                 [],
                 [
-                    'a::foo\((.*\))' => 'B::Fe($1)',
+                    'ns\a::foo\((.*\))' => 'Ns\B::Fe($1)',
                 ]
             ],
             'moveEmptyStaticMethodOnly' => [
                 '<?php
+                    namespace Ns;
+
                     class A {
                         /**
                          * @return void
@@ -137,6 +143,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                     class B {
                     }',
                 '<?php
+                    namespace Ns;
+
                     class A {
 
                     }
@@ -149,13 +157,15 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         public static function Fedcba() : void {}
                     }',
                 [
-                    'a::foo' => 'B::Fedcba',
+                    'ns\a::foo' => 'Ns\B::Fedcba',
                 ],
                 [
                 ]
             ],
             'moveEmptyStaticMethodShorterOnly' => [
                 '<?php
+                    namespace Ns;
+
                     class A {
                         /**
                          * @return void
@@ -166,6 +176,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                     class B {
                     }',
                 '<?php
+                    namespace Ns;
+
                     class A {
 
                     }
@@ -178,13 +190,15 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         public static function Foo() : void {}
                     }',
                 [
-                    'a::fedbca' => 'B::Foo',
+                    'ns\a::fedbca' => 'Ns\B::Foo',
                 ],
                 [
                 ]
             ],
             'moveStaticMethodOnly' => [
                 '<?php
+                    namespace Ns;
+
                     class A {
                         const C = 5;
 
@@ -199,6 +213,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                     class B {
                     }',
                 '<?php
+                    namespace Ns;
+
                     class A {
                         const C = 5;
 
@@ -211,16 +227,18 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                          * @return void
                          */
                         public static function Fedbca() : void {
-                            echo A::C;
+                            echo \Ns\A::C;
                         }
                     }',
                 [
-                    'a::foo' => 'B::Fedbca',
+                    'ns\a::foo' => 'Ns\B::Fedbca',
                 ],
                 []
             ],
             'moveStaticMethodShorterOnly' => [
                 '<?php
+                    namespace Ns;
+
                     class A {
                         const C = 5;
 
@@ -235,6 +253,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                     class B {
                     }',
                 '<?php
+                    namespace Ns;
+
                     class A {
                         const C = 5;
 
@@ -247,16 +267,18 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                          * @return void
                          */
                         public static function Foo() : void {
-                            echo A::C;
+                            echo \Ns\A::C;
                         }
                     }',
                 [
-                    'a::fedbca' => 'B::Foo',
+                    'ns\a::fedbca' => 'Ns\B::Foo',
                 ],
                 []
             ],
             'moveStaticMethodAndReferencesFromAbove' => [
                 '<?php
+                    namespace Ns;
+
                     class A {
                         const C = 5;
 
@@ -274,6 +296,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 '<?php
+                    namespace Ns;
+
                     class A {
                         const C = 5;
 
@@ -289,18 +313,20 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                          * @return void
                          */
                         public static function Fe() : void {
-                            echo A::C;
+                            echo \Ns\A::C;
                         }
                     }',
                 [
-                    'a::foo' => 'B::Fe',
+                    'ns\a::foo' => 'Ns\B::Fe',
                 ],
                 [
-                    'a::foo\((.*\))' => 'B::Fe($1)',
+                    'ns\a::foo\((.*\))' => 'Ns\B::Fe($1)',
                 ]
             ],
             'moveStaticMethodAndReferencesFromBelow' => [
                 '<?php
+                    namespace Ns;
+
                     class B {
                         public static function bar() : void {
                             A::Foo();
@@ -318,6 +344,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 '<?php
+                    namespace Ns;
+
                     class B {
                         public static function bar() : void {
                             B::Fe();
@@ -327,7 +355,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                          * @return void
                          */
                         public static function Fe() : void {
-                            echo A::C;
+                            echo \Ns\A::C;
                         }
                     }
 
@@ -336,12 +364,64 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
 
                     }',
                 [
-                    'a::foo' => 'B::Fe',
+                    'ns\a::foo' => 'Ns\B::Fe',
                 ],
                 [
-                    'a::foo\((.*\))' => 'B::Fe($1)',
+                    'ns\a::foo\((.*\))' => 'Ns\B::Fe($1)',
                 ]
-            ]
+            ],
+            'moveStaticMethodAndReferencesAcrossNamespaces' => [
+                '<?php
+                    namespace Ns1 {
+                        class A {
+                            const C = 5;
+
+                            /**
+                             * @return void
+                             */
+                            public static function Foo() : void {
+                                echo self::C;
+                            }
+                        }
+                    }
+
+                    namespace Ns2\Ns3 {
+                        class B {
+                            public static function bar() : void {
+                                \Ns1\A::Foo();
+                            }
+                        }
+                    }',
+                '<?php
+                    namespace Ns1 {
+                        class A {
+                            const C = 5;
+
+
+                        }
+                    }
+
+                    namespace Ns2\Ns3 {
+                        class B {
+                            public static function bar() : void {
+                                B::Fe();
+                            }
+
+                            /**
+                             * @return void
+                             */
+                            public static function Fe() : void {
+                                echo \Ns1\A::C;
+                            }
+                        }
+                    }',
+                [
+                    'ns1\a::foo' => 'Ns2\Ns3\B::Fe',
+                ],
+                [
+                    'ns1\a::foo\((.*\))' => 'Ns2\Ns3\B::Fe($1)',
+                ]
+            ],
         ];
     }
 }
