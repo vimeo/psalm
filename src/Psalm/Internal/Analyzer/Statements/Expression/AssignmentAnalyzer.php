@@ -35,8 +35,7 @@ class AssignmentAnalyzer
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
      * @param  Type\Union|null          $assign_value_type
      * @param  Context                  $context
-     * @param  string                   $doc_comment
-     * @param  int|null                 $came_from_line_number
+     * @param  ?PhpParser\Comment\Doc   $doc_comment
      *
      * @return false|Type\Union
      */
@@ -46,8 +45,7 @@ class AssignmentAnalyzer
         $assign_value,
         $assign_value_type,
         Context $context,
-        $doc_comment,
-        $came_from_line_number = null
+        ?PhpParser\Comment\Doc $doc_comment
     ) {
         $var_id = ExpressionAnalyzer::getVarId(
             $assign_var,
@@ -82,9 +80,9 @@ class AssignmentAnalyzer
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getAliases(),
                     $template_type_map,
-                    $came_from_line_number,
-                    null,
-                    $file_storage->type_aliases
+                    $file_storage->type_aliases,
+                    $codebase,
+                    $context->calling_method_id
                 );
             } catch (IncorrectDocblockException $e) {
                 if (IssueBuffer::accepts(
@@ -779,7 +777,7 @@ class AssignmentAnalyzer
             $stmt->expr,
             null,
             $context,
-            (string)$stmt->getDocComment()
+            $stmt->getDocComment()
         ) === false) {
             return false;
         }

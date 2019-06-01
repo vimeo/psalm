@@ -12,15 +12,20 @@ class DocComment
      * Taken from advanced api docmaker, which was taken from
      * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
      *
-     * @param  string  $docblock
+     * @param  string|\PhpParser\Comment\Doc  $docblock
      * @param  int     $line_number
      * @param  bool    $preserve_format
      *
      * @return array Array of the main comment and specials
      * @psalm-return array{description:string, specials:array<string, array<int, string>>}
      */
-    public static function parse($docblock, $line_number = null, $preserve_format = false)
+    public static function parse($docblock, ?int $line_number = null, bool $preserve_format = false)
     {
+        if (!is_string($docblock)) {
+            $line_number = $docblock->getLine();
+            $docblock = $docblock->getText();
+        }
+
         // Strip off comments.
         $docblock = trim($docblock);
         $docblock = preg_replace('@^/\*\*@', '', $docblock);
@@ -43,18 +48,14 @@ class DocComment
                 $lines[$last] = rtrim($old_last_line)
                     . ($preserve_format || trim($old_last_line) === '@return' ? "\n" . $line : ' ' . trim($line));
 
-                if ($line_number) {
-                    $old_line_number = $line_map[$old_last_line];
-                    unset($line_map[$old_last_line]);
-                    $line_map[$lines[$last]] = $old_line_number;
-                }
+                $old_line_number = $line_map[$old_last_line];
+                unset($line_map[$old_last_line]);
+                $line_map[$lines[$last]] = $old_line_number;
 
                 unset($lines[$k]);
             }
 
-            if ($line_number) {
-                $line_map[$line] = $line_number++;
-            }
+            $line_map[$line] = $line_number++;
         }
 
         $special = [];
@@ -71,7 +72,7 @@ class DocComment
                         $special[$type] = [];
                     }
 
-                    $line_number = $line_map && isset($line_map[$full_match]) ? $line_map[$full_match] : (int)$m;
+                    $line_number = isset($line_map[$full_match]) ? $line_map[$full_match] : (int)$m;
 
                     $special[$type][$line_number] = rtrim($data);
                 }
@@ -90,7 +91,7 @@ class DocComment
                         $special[$type] = [];
                     }
 
-                    $line_number = $line_map && isset($line_map[$_]) ? $line_map[$_] : (int)$m;
+                    $line_number = isset($line_map[$_]) ? $line_map[$_] : (int)$m;
 
                     $special[$type][$line_number] = $data;
                 }

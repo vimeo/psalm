@@ -38,7 +38,7 @@ class ReturnAnalyzer
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context
     ) {
-        $doc_comment_text = (string)$stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];
         $var_comment_type = null;
@@ -47,12 +47,16 @@ class ReturnAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($doc_comment_text) {
+        if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $doc_comment_text,
+                    $doc_comment,
                     $source,
-                    $source->getAliases()
+                    $source->getAliases(),
+                    null,
+                    null,
+                    $codebase,
+                    $context->calling_method_id
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(

@@ -43,16 +43,20 @@ class ForeachAnalyzer
     ) {
         $var_comments = [];
 
-        $doc_comment_text = (string)$stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment();
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($doc_comment_text) {
+        if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $doc_comment_text,
+                    $doc_comment,
                     $statements_analyzer->getSource(),
-                    $statements_analyzer->getSource()->getAliases()
+                    $statements_analyzer->getSource()->getAliases(),
+                    null,
+                    null,
+                    $codebase,
+                    $context->calling_method_id
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
@@ -210,7 +214,7 @@ class ForeachAnalyzer
             null,
             $value_type ?: Type::getMixed(),
             $foreach_context,
-            $doc_comment_text
+            $doc_comment
         );
 
         foreach ($var_comments as $var_comment) {

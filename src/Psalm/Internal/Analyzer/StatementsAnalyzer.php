@@ -206,7 +206,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             if ($docblock = $stmt->getDocComment()) {
                 try {
-                    $comments = DocComment::parse((string)$docblock);
+                    $comments = DocComment::parse($docblock);
                 } catch (DocblockParseException $e) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
@@ -632,12 +632,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     // of an issue
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
-                if ((string)$stmt->getDocComment()) {
+                if ($doc_comment = $stmt->getDocComment()) {
                     $var_comments = [];
 
                     try {
                         $var_comments = CommentAnalyzer::getTypeFromComment(
-                            (string)$stmt->getDocComment(),
+                            $doc_comment,
                             $this->getSource(),
                             $this->getSource()->getAliases(),
                             $this->getSource()->getTemplateTypeMap()
@@ -907,10 +907,13 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                 try {
                     $var_comments = CommentAnalyzer::getTypeFromComment(
-                        (string) $doc_comment,
+                        $doc_comment,
                         $this->getSource(),
                         $this->getAliases(),
-                        $this->getTemplateTypeMap()
+                        $this->getTemplateTypeMap(),
+                        null,
+                        $codebase,
+                        $context->calling_method_id
                     );
                 } catch (\Psalm\Exception\IncorrectDocblockException $e) {
                     if (IssueBuffer::accepts(

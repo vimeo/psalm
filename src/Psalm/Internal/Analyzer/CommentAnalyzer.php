@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use PhpParser;
 use Psalm\Aliases;
+use Psalm\Codebase;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
@@ -21,11 +23,7 @@ class CommentAnalyzer
     const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
 
     /**
-     * @param  string           $comment
-     * @param  Aliases          $aliases
      * @param  array<string, array<string, array{Type\Union}>>|null   $template_type_map
-     * @param  int|null         $var_line_number
-     * @param  int|null         $came_from_line_number what line number in $source that $comment came from
      * @param  array<string, array<int, string>> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
@@ -34,26 +32,27 @@ class CommentAnalyzer
      * @psalm-suppress MixedArrayAccess
      */
     public static function getTypeFromComment(
-        $comment,
+        PhpParser\Comment\Doc $comment,
         FileSource $source,
         Aliases $aliases,
         array $template_type_map = null,
-        $var_line_number = null,
-        $came_from_line_number = null,
-        array $type_aliases = null
+        ?array $type_aliases = null,
+        ?Codebase $codebase = null,
+        ?string $calling_method_id = null
     ) {
-
         $var_id = null;
 
         $var_type_tokens = null;
         $original_type = null;
 
         $var_comments = [];
-        $comments = DocComment::parse($comment, $var_line_number);
+        $comments = DocComment::parse($comment);
 
         if (!isset($comments['specials']['var']) && !isset($comments['specials']['psalm-var'])) {
             return [];
         }
+
+        $var_line_number = $comment->getLine();
 
         if ($comments) {
             $all_vars = (isset($comments['specials']['var']) ? $comments['specials']['var'] : [])
@@ -101,19 +100,15 @@ class CommentAnalyzer
                 try {
                     $defined_type = Type::parseTokens($var_type_tokens, null, $template_type_map ?: []);
                 } catch (TypeParseTreeException $e) {
-                    if (is_int($came_from_line_number)) {
-                        throw new DocblockParseException(
-                            implode('', $var_type_tokens) .
-                            ' is not a valid type' .
-                            ' (from ' .
-                            $source->getFilePath() .
-                            ':' .
-                            $came_from_line_number .
-                            ')'
-                        );
-                    }
-
-                    throw new DocblockParseException(implode('', $var_type_tokens) . ' is not a valid type');
+                    throw new DocblockParseException(
+                        implode('', $var_type_tokens) .
+                        ' is not a valid type' .
+                        ' (from ' .
+                        $source->getFilePath() .
+                        ':' .
+                        $comment->getLine() .
+                        ')'
+                    );
                 }
 
                 $defined_type->setFromDocblock();
@@ -147,7 +142,6 @@ class CommentAnalyzer
     }
 
     /**
-     * @param  string           $comment
      * @param  Aliases          $aliases
      * @param  array<string, array<int, string>> $type_aliases
      *
@@ -156,7 +150,7 @@ class CommentAnalyzer
      * @return array<string, array<int, string>>
      */
     public static function getTypeAliasesFromComment(
-        $comment,
+        PhpParser\Comment\Doc $comment,
         Aliases $aliases,
         array $type_aliases = null
     ) {
@@ -246,7 +240,6 @@ class CommentAnalyzer
     }
 
     /**
-     * @param  string  $comment
      * @param  int     $line_number
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
@@ -254,9 +247,9 @@ class CommentAnalyzer
      * @return FunctionDocblockComment
      * @psalm-suppress MixedArrayAccess
      */
-    public static function extractFunctionDocblockInfo($comment, $line_number)
+    public static function extractFunctionDocblockInfo(PhpParser\Comment\Doc $comment)
     {
-        $comments = DocComment::parse($comment, $line_number);
+        $comments = DocComment::parse($comment);
 
         $info = new FunctionDocblockComment();
 
@@ -583,17 +576,14 @@ class CommentAnalyzer
     }
 
     /**
-     * @param  string  $comment
-     * @param  int     $line_number
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
      * @return ClassLikeDocblockComment
      * @psalm-suppress MixedArrayAccess
      */
-    public static function extractClassLikeDocblockInfo(\PhpParser\Node $node, $comment, $line_number)
+    public static function extractClassLikeDocblockInfo(\PhpParser\Node $node, PhpParser\Comment\Doc $comment)
     {
-        $comments = DocComment::parse($comment, $line_number);
+        $comments = DocComment::parse($comment);
 
         $info = new ClassLikeDocblockComment();
 

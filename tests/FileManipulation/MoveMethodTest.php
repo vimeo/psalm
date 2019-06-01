@@ -179,7 +179,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                             A::Bar();
                             echo \Ns\B::D;
                             new A();
-                            new self();
+                            /** @var self */
+                            $a = new self();
                             new B();
                         }
 
@@ -213,7 +214,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                             A::Bar();
                             echo self::D;
                             new A();
-                            new A();
+                            /** @var A */
+                            $a = new A();
                             new self();
                         }
                     }',

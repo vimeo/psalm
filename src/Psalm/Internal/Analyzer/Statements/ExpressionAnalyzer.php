@@ -98,8 +98,7 @@ class ExpressionAnalyzer
                 $stmt->expr,
                 null,
                 $context,
-                (string)$stmt->getDocComment(),
-                $stmt->getLine()
+                $stmt->getDocComment()
             );
 
             if ($assignment_type === false) {
@@ -1360,19 +1359,23 @@ class ExpressionAnalyzer
         PhpParser\Node\Expr\Yield_ $stmt,
         Context $context
     ) {
-        $doc_comment_text = (string)$stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];
         $var_comment_type = null;
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($doc_comment_text) {
+        if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $doc_comment_text,
+                    $doc_comment,
                     $statements_analyzer,
-                    $statements_analyzer->getAliases()
+                    $statements_analyzer->getAliases(),
+                    null,
+                    null,
+                    $codebase,
+                    $context->calling_method_id
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(

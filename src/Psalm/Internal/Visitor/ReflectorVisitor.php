@@ -126,7 +126,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if ($comment instanceof PhpParser\Comment\Doc) {
                 try {
                     $type_alias_tokens = CommentAnalyzer::getTypeAliasesFromComment(
-                        (string) $comment,
+                        $comment,
                         $this->aliases,
                         $this->type_aliases
                     );
@@ -333,7 +333,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($node_comment = $node->getDocComment()) {
-                $comments = DocComment::parse((string) $node_comment, 0);
+                $comments = DocComment::parse($node_comment);
 
                 if (isset($comments['specials']['template-use'])
                     || isset($comments['specials']['use'])
@@ -377,11 +377,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 try {
                     $var_comments = CommentAnalyzer::getTypeFromComment(
-                        (string)$doc_comment,
+                        $doc_comment,
                         $this->file_scanner,
                         $this->aliases,
-                        null,
-                        null,
                         null,
                         $this->type_aliases
                     );
@@ -875,8 +873,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             try {
                 $docblock_info = CommentAnalyzer::extractClassLikeDocblockInfo(
                     $node,
-                    (string)$doc_comment,
-                    $doc_comment->getLine()
+                    $doc_comment
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
@@ -1702,10 +1699,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         try {
-            $docblock_info = CommentAnalyzer::extractFunctionDocblockInfo(
-                (string)$doc_comment,
-                $doc_comment->getLine()
-            );
+            $docblock_info = CommentAnalyzer::extractFunctionDocblockInfo($doc_comment);
         } catch (IncorrectDocblockException $e) {
             if (IssueBuffer::accepts(
                 new MissingDocblockType(
@@ -2498,14 +2492,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             try {
-                $property_type_line_number = $comment->getLine();
                 $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $comment->getText(),
+                    $comment,
                     $this->file_scanner,
                     $this->aliases,
                     $this->function_template_types + $this->class_template_types,
-                    $property_type_line_number,
-                    null,
                     $this->type_aliases
                 );
 
@@ -2709,7 +2700,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $config = $this->config;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
-            $comments = DocComment::parse($comment->getText(), 0);
+            $comments = DocComment::parse($comment);
 
             if (isset($comments['specials']['deprecated'])) {
                 $deprecated = true;
