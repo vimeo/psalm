@@ -30,7 +30,10 @@
         "psr-4": {
             "Psalm\\Plugin\\": "src/Psalm/Plugin",
             "Psalm\\": "src/Psalm"
-        }
+        },
+        "files": [
+            "src/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
