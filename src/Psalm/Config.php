@@ -966,10 +966,7 @@ class Config
      * Initialises all the plugins (done once the config is fully loaded)
      *
      * @return void
-     * @psalm-suppress MixedArrayAccess
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedOperand
-     * @psalm-suppress MixedArrayOffset
      * @psalm-suppress MixedTypeCoercion
      */
     public function initializePlugins(ProjectAnalyzer $project_analyzer)
@@ -982,13 +979,14 @@ class Config
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
             try {
-                if ($this->composer_class_loader) {
-                    $plugin_class_path = $this->composer_class_loader->findFile($plugin_class_name);
-
-                    if (!$plugin_class_path) {
-                        throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
-                    }
-
+                // Below will attempt to load plugins from the project directory first.
+                // Failing that, it will use registered autoload chain, which will load
+                // plugins from Psalm directory or phar file. If that fails as well, it
+                // will fall back to project autoloader. It may seem that the last step
+                // will always fail, but it's only true if project uses Composer autoloader
+                if ($this->composer_class_loader
+                    && ($plugin_class_path = $this->composer_class_loader->findFile($plugin_class_name))
+                ) {
                     /** @psalm-suppress UnresolvableInclude */
                     require_once($plugin_class_path);
                 } else {
