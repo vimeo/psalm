@@ -66,20 +66,18 @@ jobs:
     - stage: Phar build
       php: 7.3
       env: DEPS="high"
-      script:
-        - bin/build-phar.sh
-        - if [[ "$TRAVIS_PULL_REQUEST" = 'false' && "$GITHUB_TOKEN" != '']]; then bin/travis-deploy-phar.sh; fi
-      before_deploy:
-        - echo $GPG_ENCRYPTION | gpg --passphrase-fd 0 keys.asc.gpg
-        - gpg --batch --yes --import keys.asc
-        - echo $SIGNING_KEY | gpg --passphrase-fd 0 -u 8A03EA3B385DBAA1 --armor --detach-sig build/psalm.phar
-        - cd phar && git tag ${TRAVIS_TAG} && git push origin ${TRAVIS_TAG} && cd ..
+      script: bin/build-phar.sh
       deploy:
-        skip_cleanup: true
-        on:
-          tags: true
-        provider: releases
-        api_key: $GITHUB_TOKEN
-        file:
-          - build/psalm.phar
-          - build/psalm.phar.asc
+        - provider: releases
+          skip_cleanup: true
+          on:
+            tags: true
+            condition: ' "$GITHUB_TOKEN" != "" '
+          api_key: $GITHUB_TOKEN
+          file:
+            - build/psalm.phar
+            - build/psalm.phar.asc
+        - provider: script
+          skip_cleanup: true
+          condition: ' "$TRAVIS_PULL_REQUEST" = "false" && "$GITHUB_TOKEN" != "" '
+          script: bin/travis-deploy-phar.sh
