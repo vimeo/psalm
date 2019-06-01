@@ -13,15 +13,16 @@ trait HasIntersectionTrait
     public $extra_types;
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
+     * @param  array<string, string> $aliased_classes
      *
      * @return string
      */
-    private function getNamespacedIntersectionTypes($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    private function getNamespacedIntersectionTypes(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         if (!$this->extra_types) {
             return '';
         }

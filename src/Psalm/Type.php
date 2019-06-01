@@ -1007,6 +1007,38 @@ abstract class Type
     }
 
     /**
+     * @param  array<string, string> $aliased_classes
+     */
+    public static function getStringFromFQCLN(
+        string $value,
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class
+    ) : string {
+        if ($value === $this_class) {
+            return 'self';
+        }
+
+        if ($namespace && stripos($value, $namespace . '\\') === 0) {
+            return preg_replace(
+                '/^' . preg_quote($namespace . '\\') . '/i',
+                '',
+                $value
+            );
+        }
+
+        if (!$namespace && stripos($value, '\\') === false) {
+            return $value;
+        }
+
+        if (isset($aliased_classes[strtolower($value)])) {
+            return $aliased_classes[strtolower($value)];
+        }
+
+        return '\\' . $value;
+    }
+
+    /**
      * @param bool $from_calculation
      * @param int|null $value
      *

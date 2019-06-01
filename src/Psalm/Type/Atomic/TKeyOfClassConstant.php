@@ -75,8 +75,12 @@ class TKeyOfClassConstant extends Scalar
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         if ($this->fq_classlike_name === 'static') {
             return 'key-of<static::' . $this->const_name . '>';
         }
