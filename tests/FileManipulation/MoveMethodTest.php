@@ -172,12 +172,15 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         /**
                          * @return void
                          */
-                        public static function Foo() : void {
+                        public static function Foo(self $a1, ?self $a2) : void {
                             echo self::C;
                             echo A::C;
                             self::Bar();
                             A::Bar();
                             echo \Ns\B::D;
+                            new A();
+                            new self();
+                            new B();
                         }
 
                         public static function Bar() : void {}
@@ -203,12 +206,15 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         /**
                          * @return void
                          */
-                        public static function Fedbca() : void {
+                        public static function Fedbca(A $a1, ?A $a2) : void {
                             echo A::C;
                             echo A::C;
                             A::Bar();
                             A::Bar();
                             echo self::D;
+                            new A();
+                            new A();
+                            new self();
                         }
                     }',
                 [

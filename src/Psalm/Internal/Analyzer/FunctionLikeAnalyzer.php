@@ -361,6 +361,45 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         $check_stmts = true;
 
+        if ($codebase->method_migrations
+            && $context->calling_method_id
+            && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+        ) {
+            $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+
+            foreach ($this->function->params as $param) {
+                $param_name_node = null;
+
+                if ($param->type instanceof PhpParser\Node\Name) {
+                    $param_name_node = $param->type;
+                } elseif ($param->type instanceof PhpParser\Node\NullableType
+                    && $param->type->type instanceof PhpParser\Node\Name
+                ) {
+                    $param_name_node = $param->type->type;
+                }
+
+                if ($param_name_node) {
+                    $resolved_name = (string) $param_name_node->getAttribute('resolvedName');
+
+                    $parent_fqcln = $this->getParentFQCLN();
+
+                    if ($resolved_name === 'self' && $context->self) {
+                        $resolved_name = (string) $context->self;
+                    } elseif ($resolved_name === 'parent' && $parent_fqcln) {
+                        $resolved_name = $parent_fqcln;
+                    }
+
+                    $codebase->classlikes->airliftClassLikeReference(
+                        $resolved_name,
+                        explode('::', $destination_method_id)[0],
+                        $statements_analyzer->getFilePath(),
+                        (int) $param_name_node->getAttribute('startFilePos'),
+                        (int) $param_name_node->getAttribute('endFilePos') + 1
+                    );
+                }
+            }
+        }
+
         foreach ($params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;
             $signature_type_location = $function_param->signature_type_location;

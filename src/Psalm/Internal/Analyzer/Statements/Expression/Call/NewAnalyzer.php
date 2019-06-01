@@ -246,6 +246,22 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         }
 
         if ($fq_class_name) {
+            if ($stmt->class instanceof PhpParser\Node\Name
+                && $codebase->method_migrations
+                && $context->calling_method_id
+                && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+            ) {
+                $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+
+                $codebase->classlikes->airliftClassLikeReference(
+                    $fq_class_name,
+                    explode('::', $destination_method_id)[0],
+                    $statements_analyzer->getFilePath(),
+                    (int) $stmt->class->getAttribute('startFilePos'),
+                    (int) $stmt->class->getAttribute('endFilePos') + 1
+                );
+            }
+
             if ($context->check_classes) {
                 if ($context->isPhantomClass($fq_class_name)) {
                     return null;
