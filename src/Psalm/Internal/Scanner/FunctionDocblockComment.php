@@ -17,6 +17,21 @@ class FunctionDocblockComment
     public $return_type_description = null;
 
     /**
+     * @var int|null
+     */
+    public $return_type_start = null;
+
+    /**
+     * @var int|null
+     */
+    public $return_type_end = null;
+
+    /**
+     * @var int|null
+     */
+    public $return_type_line_number;
+
+    /**
      * @var array<int, array{name:string, type:string, line_number: int}>
      */
     public $params = [];
@@ -82,9 +97,6 @@ class FunctionDocblockComment
      * @var array<int, string>
      */
     public $throws = [];
-
-    /** @var int */
-    public $return_type_line_number;
 
     /**
      * @var array<int, array{string, ?string, ?string, bool}>

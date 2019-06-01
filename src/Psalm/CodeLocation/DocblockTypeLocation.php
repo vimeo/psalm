@@ -12,7 +12,8 @@ class DocblockTypeLocation extends \Psalm\CodeLocation
         int $line_number
     ) {
         $this->file_start = $file_start;
-        $this->file_end = $file_end;
+        // matches how CodeLocation works
+        $this->file_end = $file_end - 1;
         $this->file_path = $file_source->getFilePath();
         $this->file_name = $file_source->getFileName();
         $this->single_line = false;

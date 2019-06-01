@@ -170,9 +170,9 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         const C = 5;
 
                         /**
-                         * @return void
+                         * @return self
                          */
-                        public static function Foo(self $a1, ?self $a2) : void {
+                        public static function Foo(self $a1, ?self $a2) : self {
                             echo self::C;
                             echo A::C;
                             self::Bar();
@@ -182,6 +182,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                             /** @var self */
                             $a = new self();
                             new B();
+
+                            return $a;
                         }
 
                         public static function Bar() : void {}
@@ -205,9 +207,9 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         const D = 5;
 
                         /**
-                         * @return void
+                         * @return A
                          */
-                        public static function Fedbca(A $a1, ?A $a2) : void {
+                        public static function Fedbca(A $a1, ?A $a2) : A {
                             echo A::C;
                             echo A::C;
                             A::Bar();
@@ -217,6 +219,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                             /** @var A */
                             $a = new A();
                             new self();
+
+                            return $a;
                         }
                     }',
                 [

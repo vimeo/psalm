@@ -398,6 +398,61 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     );
                 }
             }
+
+            if ($this->function->returnType) {
+                $return_name_node = null;
+
+                if ($this->function->returnType instanceof PhpParser\Node\Name) {
+                    $return_name_node = $this->function->returnType;
+                } elseif ($this->function->returnType instanceof PhpParser\Node\NullableType
+                    && $this->function->returnType->type instanceof PhpParser\Node\Name
+                ) {
+                    $return_name_node = $this->function->returnType->type;
+                }
+
+                if ($return_name_node) {
+                    $resolved_name = (string) $return_name_node->getAttribute('resolvedName');
+
+                    $parent_fqcln = $this->getParentFQCLN();
+
+                    if ($resolved_name === 'self' && $context->self) {
+                        $resolved_name = (string) $context->self;
+                    } elseif ($resolved_name === 'parent' && $parent_fqcln) {
+                        $resolved_name = $parent_fqcln;
+                    }
+
+                    $codebase->classlikes->airliftClassLikeReference(
+                        $resolved_name,
+                        explode('::', $destination_method_id)[0],
+                        $statements_analyzer->getFilePath(),
+                        (int) $return_name_node->getAttribute('startFilePos'),
+                        (int) $return_name_node->getAttribute('endFilePos') + 1
+                    );
+                }
+            }
+
+            if ($storage->return_type
+                && $storage->return_type_location
+                && $storage->return_type_location !== $storage->signature_return_type_location
+            ) {
+                $bounds = $storage->return_type_location->getSelectionBounds();
+
+                $replace_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $storage->return_type,
+                    $context->self,
+                    $context->self,
+                    $this->getParentFQCLN()
+                );
+
+                $codebase->classlikes->airliftDocblockType(
+                    $replace_type,
+                    explode('::', $destination_method_id)[0],
+                    $statements_analyzer->getFilePath(),
+                    $bounds[0],
+                    $bounds[1]
+                );
+            }
         }
 
         foreach ($params as $offset => $function_param) {

@@ -80,7 +80,6 @@ class ReturnAnalyzer
                     && $var_comment->type_start
                     && $var_comment->type_end
                     && $var_comment->line_number
-                    && $comment_type->hasNamedObject()
                 ) {
                     $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
 

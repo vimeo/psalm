@@ -1937,100 +1937,108 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         if ($docblock_info->return_type) {
-            if (!$storage->return_type || $docblock_info->return_type !== $storage->return_type->getId()) {
-                $storage->has_template_return_type =
-                    $template_types !== null &&
-                    count(
-                        array_intersect(
-                            Type::tokenize($docblock_info->return_type),
-                            array_keys($template_types)
-                        )
-                    ) > 0;
+            $storage->has_template_return_type =
+                $template_types !== null &&
+                count(
+                    array_intersect(
+                        Type::tokenize($docblock_info->return_type),
+                        array_keys($template_types)
+                    )
+                ) > 0;
 
-                $docblock_return_type = $docblock_info->return_type;
+            $docblock_return_type = $docblock_info->return_type;
 
-                if (!$storage->return_type_location) {
-                    $storage->return_type_location = new CodeLocation(
-                        $this->file_scanner,
-                        $stmt,
-                        null,
-                        false,
-                        !$fake_method
-                            ? CodeLocation::FUNCTION_PHPDOC_RETURN_TYPE
-                            : CodeLocation::FUNCTION_PHPDOC_METHOD,
-                        $docblock_info->return_type
+            if ($docblock_info->return_type_line_number
+                && $docblock_info->return_type_start
+                && $docblock_info->return_type_end
+            ) {
+                $storage->return_type_location = new CodeLocation\DocblockTypeLocation(
+                    $this->file_scanner,
+                    $docblock_info->return_type_start,
+                    $docblock_info->return_type_end,
+                    $docblock_info->return_type_line_number
+                );
+            } else {
+                $storage->return_type_location = new CodeLocation(
+                    $this->file_scanner,
+                    $stmt,
+                    null,
+                    false,
+                    !$fake_method
+                        ? CodeLocation::FUNCTION_PHPDOC_RETURN_TYPE
+                        : CodeLocation::FUNCTION_PHPDOC_METHOD,
+                    $docblock_info->return_type
+                );
+            }
+
+            if ($docblock_return_type) {
+                try {
+                    $fixed_type_tokens = Type::fixUpLocalType(
+                        $docblock_return_type,
+                        $this->aliases,
+                        $this->function_template_types + $this->class_template_types,
+                        $this->type_aliases
                     );
-                }
 
-                if ($docblock_return_type) {
-                    try {
-                        $fixed_type_tokens = Type::fixUpLocalType(
-                            $docblock_return_type,
-                            $this->aliases,
-                            $this->function_template_types + $this->class_template_types,
-                            $this->type_aliases
-                        );
+                    $storage->return_type = Type::parseTokens(
+                        $fixed_type_tokens,
+                        null,
+                        $this->function_template_types + $this->class_template_types
+                    );
 
-                        $storage->return_type = Type::parseTokens(
-                            $fixed_type_tokens,
-                            null,
-                            $this->function_template_types + $this->class_template_types
-                        );
+                    $storage->return_type->setFromDocblock();
 
-                        $storage->return_type->setFromDocblock();
+                    if ($storage->signature_return_type) {
+                        $all_typehint_types_match = true;
+                        $signature_return_atomic_types = $storage->signature_return_type->getTypes();
 
-                        if ($storage->signature_return_type) {
-                            $all_typehint_types_match = true;
-                            $signature_return_atomic_types = $storage->signature_return_type->getTypes();
-
-                            foreach ($storage->return_type->getTypes() as $key => $type) {
-                                if (isset($signature_return_atomic_types[$key])) {
-                                    $type->from_docblock = false;
-                                } else {
-                                    $all_typehint_types_match = false;
-                                }
-                            }
-
-                            if ($all_typehint_types_match) {
-                                $storage->return_type->from_docblock = false;
-                            }
-
-                            if ($storage->signature_return_type->isNullable()
-                                && !$storage->return_type->isNullable()
-                            ) {
-                                $storage->return_type->addType(new Type\Atomic\TNull());
+                        foreach ($storage->return_type->getTypes() as $key => $type) {
+                            if (isset($signature_return_atomic_types[$key])) {
+                                $type->from_docblock = false;
+                            } else {
+                                $all_typehint_types_match = false;
                             }
                         }
 
-                        $storage->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
-                    } catch (TypeParseTreeException $e) {
-                        if (IssueBuffer::accepts(
-                            new InvalidDocblock(
-                                $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                                new CodeLocation($this->file_scanner, $stmt, null, true)
-                            )
-                        )) {
+                        if ($all_typehint_types_match) {
+                            $storage->return_type->from_docblock = false;
                         }
 
-                        $storage->has_docblock_issues = true;
+                        if ($storage->signature_return_type->isNullable()
+                            && !$storage->return_type->isNullable()
+                        ) {
+                            $storage->return_type->addType(new Type\Atomic\TNull());
+                        }
                     }
-                }
 
-                if ($storage->return_type && $docblock_info->ignore_nullable_return) {
-                    $storage->return_type->ignore_nullable_issues = true;
-                }
+                    $storage->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+                } catch (TypeParseTreeException $e) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        )
+                    )) {
+                    }
 
-                if ($storage->return_type && $docblock_info->ignore_falsable_return) {
-                    $storage->return_type->ignore_falsable_issues = true;
+                    $storage->has_docblock_issues = true;
                 }
+            }
 
-                if ($stmt->returnsByRef() && $storage->return_type) {
-                    $storage->return_type->by_ref = true;
-                }
+            if ($storage->return_type && $docblock_info->ignore_nullable_return) {
+                $storage->return_type->ignore_nullable_issues = true;
+            }
 
-                if ($docblock_info->return_type_line_number && !$fake_method) {
-                    $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
-                }
+            if ($storage->return_type && $docblock_info->ignore_falsable_return) {
+                $storage->return_type->ignore_falsable_issues = true;
+            }
+
+            if ($stmt->returnsByRef() && $storage->return_type) {
+                $storage->return_type->by_ref = true;
+            }
+
+            if ($docblock_info->return_type_line_number && !$fake_method) {
+                $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
             }
 
             $storage->return_type_description = $docblock_info->return_type_description;

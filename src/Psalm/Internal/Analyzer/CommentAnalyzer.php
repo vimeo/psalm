@@ -267,7 +267,12 @@ class CommentAnalyzer
                 ? $comments['specials']['psalm-return']
                 : $comments['specials']['return'];
 
-            self::extractReturnType((string) reset($return_specials), array_keys($return_specials)[0], $info);
+            self::extractReturnType(
+                $comment,
+                (string) reset($return_specials),
+                array_keys($return_specials)[0],
+                $info
+            );
         }
 
         if (isset($comments['specials']['param']) || isset($comments['specials']['psalm-param'])) {
@@ -551,8 +556,12 @@ class CommentAnalyzer
     /**
      * @return void
      */
-    private static function extractReturnType(string $return_block, int $line_number, FunctionDocblockComment $info)
-    {
+    private static function extractReturnType(
+        PhpParser\Comment\Doc $comment,
+        string $return_block,
+        int $line_number,
+        FunctionDocblockComment $info
+    ) {
         $return_lines = explode("\n", $return_block);
 
         if (!trim($return_lines[0])) {
@@ -572,12 +581,15 @@ class CommentAnalyzer
                 throw new IncorrectDocblockException('Misplaced variable');
             }
 
+            if (($start_offset = strpos($comment->getText(), $line_parts[0])) !== false) {
+                $info->return_type_start = $start_offset + $comment->getFilePos();
+                $info->return_type_end = $info->return_type_start + strlen($line_parts[0]);
+            }
+
             $info->return_type = array_shift($line_parts);
             $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
 
-            if ($line_number) {
-                $info->return_type_line_number = $line_number;
-            }
+            $info->return_type_line_number = $line_number;
         } else {
             throw new DocblockParseException('Badly-formatted @return type');
         }

@@ -126,7 +126,6 @@ class AssignmentAnalyzer
                         && $var_comment->type_start
                         && $var_comment->type_end
                         && $var_comment->line_number
-                        && $var_comment_type->hasNamedObject()
                     ) {
                         $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
 
