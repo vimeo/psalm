@@ -62,22 +62,27 @@ jobs:
       script:
         - vendor/bin/phpcs
 
-      # always build phar, but only deploy on tag builds
     - stage: Phar build
       php: 7.3
       env: DEPS="high"
       script: bin/build-phar.sh
       deploy:
+        # deploy tagged releases to github releases page
         - provider: releases
           skip_cleanup: true
           on:
             tags: true
-            condition: ' "$GITHUB_TOKEN" != "" '
+            repo: vimeo/psalm
           api_key: $GITHUB_TOKEN
           file:
             - build/psalm.phar
             - build/psalm.phar.asc
+
+        # deploy built phar to github.com/psalm/phar repo for all branches and tags, 
+        # but not for pull requests
         - provider: script
           skip_cleanup: true
-          condition: ' "$TRAVIS_PULL_REQUEST" = "false" && "$GITHUB_TOKEN" != "" '
+          on:
+            repo: vimeo/psalm
+            condition: ' "$TRAVIS_PULL_REQUEST" = "false" '
           script: bin/travis-deploy-phar.sh
