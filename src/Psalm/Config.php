@@ -982,8 +982,7 @@ class Config
                 // plugins from Psalm directory or phar file. If that fails as well, it
                 // will fall back to project autoloader. It may seem that the last step
                 // will always fail, but it's only true if project uses Composer autoloader
-                if (
-                    $this->composer_class_loader
+                if ($this->composer_class_loader
                     && ($plugin_class_path = $this->composer_class_loader->findFile($plugin_class_name))
                 ) {
                     /** @psalm-suppress UnresolvableInclude */
