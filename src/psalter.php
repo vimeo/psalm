@@ -39,6 +39,11 @@ array_map(
         if (substr($arg, 0, 2) === '--' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
+            if ($arg_name === 'alter') {
+                // valid option for psalm, ignored by psalter
+                return;
+            }
+
             if (!in_array($arg_name, $valid_long_options)
                 && !in_array($arg_name . ':', $valid_long_options)
                 && !in_array($arg_name . '::', $valid_long_options)
