@@ -170,6 +170,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         const C = 5;
 
                         /**
+                         * @param self $a1
+                         * @param ?self $a2
                          * @return self
                          */
                         public static function Foo(self $a1, ?self $a2) : self {
@@ -207,6 +209,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         const D = 5;
 
                         /**
+                         * @param A $a1
+                         * @param null|A $a2
                          * @return A
                          */
                         public static function Fedbca(A $a1, ?A $a2) : A {
