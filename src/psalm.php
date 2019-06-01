@@ -2,6 +2,7 @@
 require_once('command_functions.php');
 
 use Psalm\ErrorBaseline;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider;
 use Psalm\Config;
@@ -287,6 +288,39 @@ if (isset($options['root'])) {
 
 $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
 
+$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
+
+if ($path_to_config === false) {
+    /** @psalm-suppress InvalidCast */
+    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
+    exit(1);
+}
+
+$vendor_dir = getVendorDir($current_dir);
+
+$first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+
+$output_format = isset($options['output-format']) && is_string($options['output-format'])
+    ? $options['output-format']
+    : ProjectAnalyzer::TYPE_CONSOLE;
+
+// initialise custom config, if passed
+try {
+    if ($path_to_config) {
+        $config = Config::loadFromXMLFile($path_to_config, $current_dir);
+    } else {
+        $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
+    }
+} catch (Psalm\Exception\ConfigException $e) {
+    fwrite(STDERR, $e->getMessage() . PHP_EOL);
+    exit(1);
+}
+
+if ($config->resolve_from_config_file) {
+    $current_dir = $config->base_dir;
+}
+
+
 if (isset($options['r']) && is_string($options['r'])) {
     $root_path = realpath($options['r']);
 
@@ -301,9 +335,6 @@ if (isset($options['r']) && is_string($options['r'])) {
     $current_dir = $root_path . DIRECTORY_SEPARATOR;
 }
 
-$vendor_dir = getVendorDir($current_dir);
-
-$first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
 
 if (array_key_exists('v', $options)) {
     echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
@@ -433,13 +464,7 @@ if (isset($options['plugin'])) {
     }
 }
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
-    exit(1);
-}
 
 $show_info = isset($options['show-info'])
     ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
@@ -465,17 +490,7 @@ $find_references_to = isset($options['find-references-to']) && is_string($option
     ? $options['find-references-to']
     : null;
 
-// initialise custom config, if passed
-try {
-    if ($path_to_config) {
-        $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-    } else {
-        $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
-    }
-} catch (Psalm\Exception\ConfigException $e) {
-    fwrite(STDERR, $e->getMessage() . PHP_EOL);
-    exit(1);
-}
+
 
 if (isset($options['shepherd'])) {
     if (is_string($options['shepherd'])) {
