@@ -29,6 +29,16 @@ class VarDocblockComment
     public $line_number;
 
     /**
+     * @var int|null
+     */
+    public $type_start;
+
+    /**
+     * @var int|null
+     */
+    public $type_end;
+
+    /**
      * Whether or not the property is deprecated
      *
      * @var bool

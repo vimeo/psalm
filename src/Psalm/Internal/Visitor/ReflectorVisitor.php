@@ -2601,16 +2601,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $property_storage->type = null;
             } else {
-                if ($var_comment && $var_comment->line_number) {
-                    $doc_var_location = new CodeLocation(
+                if ($var_comment
+                    && $var_comment->type_start
+                    && $var_comment->type_end
+                    && $var_comment->line_number
+                ) {
+                    $doc_var_location = new CodeLocation\DocblockTypeLocation(
                         $this->file_scanner,
-                        $stmt,
-                        null,
-                        false,
-                        CodeLocation::VAR_TYPE,
-                        $var_comment->original_type
+                        $var_comment->type_start,
+                        $var_comment->type_end,
+                        $var_comment->line_number
                     );
-                    $doc_var_location->setCommentLine($var_comment->line_number);
                 }
 
                 if ($doc_var_group_type) {

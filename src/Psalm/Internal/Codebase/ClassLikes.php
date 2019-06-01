@@ -820,6 +820,41 @@ class ClassLikes
         );
     }
 
+    public function airliftDocblockType(
+        Type\Union $type,
+        string $destination_fq_class_name,
+        string $source_file_path,
+        int $source_start,
+        int $source_end
+    ) : void {
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        $destination_class_storage = $codebase->classlike_storage_provider->get($destination_fq_class_name);
+
+        if (!$destination_class_storage->aliases) {
+            throw new \UnexpectedValueException('Aliases should not be null');
+        }
+
+        $file_manipulations = [];
+
+        $file_manipulations[] = new \Psalm\FileManipulation(
+            $source_start,
+            $source_end,
+            $type->toNamespacedString(
+                $destination_class_storage->aliases->namespace,
+                $destination_class_storage->aliases->uses_flipped,
+                $destination_class_storage->name,
+                false
+            )
+        );
+
+        FileManipulationBuffer::add(
+            $source_file_path,
+            $file_manipulations
+        );
+    }
+
     /**
      * @param  string $class_name
      * @param  mixed  $visibility

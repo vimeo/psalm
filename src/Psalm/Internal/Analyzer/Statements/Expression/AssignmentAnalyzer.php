@@ -80,9 +80,7 @@ class AssignmentAnalyzer
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getAliases(),
                     $template_type_map,
-                    $file_storage->type_aliases,
-                    $codebase,
-                    $context->calling_method_id
+                    $file_storage->type_aliases
                 );
             } catch (IncorrectDocblockException $e) {
                 if (IssueBuffer::accepts(
@@ -121,6 +119,25 @@ class AssignmentAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                         $statements_analyzer->getSuppressedIssues()
                     );
+
+                    if ($codebase->method_migrations
+                        && $context->calling_method_id
+                        && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+                        && $var_comment->type_start
+                        && $var_comment->type_end
+                        && $var_comment->line_number
+                        && $var_comment_type->hasNamedObject()
+                    ) {
+                        $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+
+                        $codebase->classlikes->airliftDocblockType(
+                            $var_comment_type,
+                            explode('::', $destination_method_id)[0],
+                            $statements_analyzer->getFilePath(),
+                            $var_comment->type_start,
+                            $var_comment->type_end
+                        );
+                    }
 
                     if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
                         $comment_type = $var_comment_type;

@@ -52,11 +52,7 @@ class ReturnAnalyzer
                 $var_comments = CommentAnalyzer::getTypeFromComment(
                     $doc_comment,
                     $source,
-                    $source->getAliases(),
-                    null,
-                    null,
-                    $codebase,
-                    $context->calling_method_id
+                    $source->getAliases()
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
@@ -77,6 +73,25 @@ class ReturnAnalyzer
                     $context->self,
                     $statements_analyzer->getParentFQCLN()
                 );
+
+                if ($codebase->method_migrations
+                    && $context->calling_method_id
+                    && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+                    && $var_comment->type_start
+                    && $var_comment->type_end
+                    && $var_comment->line_number
+                    && $comment_type->hasNamedObject()
+                ) {
+                    $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+
+                    $codebase->classlikes->airliftDocblockType(
+                        $comment_type,
+                        explode('::', $destination_method_id)[0],
+                        $statements_analyzer->getFilePath(),
+                        $var_comment->type_start,
+                        $var_comment->type_end
+                    );
+                }
 
                 if (!$var_comment->var_id) {
                     $var_comment_type = $comment_type;

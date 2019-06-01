@@ -36,9 +36,7 @@ class CommentAnalyzer
         FileSource $source,
         Aliases $aliases,
         array $template_type_map = null,
-        ?array $type_aliases = null,
-        ?Codebase $codebase = null,
-        ?string $calling_method_id = null
+        ?array $type_aliases = null
     ) {
         $var_id = null;
 
@@ -66,11 +64,19 @@ class CommentAnalyzer
                     continue;
                 }
 
+                $type_start = null;
+                $type_end = null;
+
                 $line_parts = self::splitDocLine($var_line);
 
                 if ($line_parts && $line_parts[0]) {
                     if ($line_parts[0][0] === '$' && $line_parts[0] !== '$this') {
                         throw new IncorrectDocblockException('Misplaced variable');
+                    }
+
+                    if (($start_offset = strpos($comment->getText(), $line_parts[0])) !== false) {
+                        $type_start = $start_offset + $comment->getFilePos();
+                        $type_end = $type_start + strlen($line_parts[0]);
                     }
 
                     try {
@@ -118,6 +124,8 @@ class CommentAnalyzer
                 $var_comment->original_type = $original_type;
                 $var_comment->var_id = $var_id;
                 $var_comment->line_number = $var_line_number;
+                $var_comment->type_start = $type_start;
+                $var_comment->type_end = $type_end;
                 $var_comment->deprecated = isset($comments['specials']['deprecated']);
                 $var_comment->internal = isset($comments['specials']['internal']);
                 if (isset($comments['specials']['psalm-internal'])) {

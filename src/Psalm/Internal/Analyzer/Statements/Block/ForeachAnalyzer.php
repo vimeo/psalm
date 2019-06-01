@@ -52,11 +52,7 @@ class ForeachAnalyzer
                 $var_comments = CommentAnalyzer::getTypeFromComment(
                     $doc_comment,
                     $statements_analyzer->getSource(),
-                    $statements_analyzer->getSource()->getAliases(),
-                    null,
-                    null,
-                    $codebase,
-                    $context->calling_method_id
+                    $statements_analyzer->getSource()->getAliases()
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(

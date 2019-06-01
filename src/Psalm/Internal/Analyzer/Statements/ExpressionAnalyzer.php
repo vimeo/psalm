@@ -1371,11 +1371,7 @@ class ExpressionAnalyzer
                 $var_comments = CommentAnalyzer::getTypeFromComment(
                     $doc_comment,
                     $statements_analyzer,
-                    $statements_analyzer->getAliases(),
-                    null,
-                    null,
-                    $codebase,
-                    $context->calling_method_id
+                    $statements_analyzer->getAliases()
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(

@@ -910,10 +910,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         $doc_comment,
                         $this->getSource(),
                         $this->getAliases(),
-                        $this->getTemplateTypeMap(),
-                        null,
-                        $codebase,
-                        $context->calling_method_id
+                        $this->getTemplateTypeMap()
                     );
                 } catch (\Psalm\Exception\IncorrectDocblockException $e) {
                     if (IssueBuffer::accepts(
@@ -952,6 +949,25 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             new CodeLocation($this->getSource(), $var),
                             $this->getSuppressedIssues()
                         );
+
+                        if ($codebase->method_migrations
+                            && $context->calling_method_id
+                            && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+                            && $var_comment->type_start
+                            && $var_comment->type_end
+                            && $var_comment->line_number
+                            && $var_comment_type->hasNamedObject()
+                        ) {
+                            $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+
+                            $codebase->classlikes->airliftDocblockType(
+                                $var_comment_type,
+                                explode('::', $destination_method_id)[0],
+                                $this->getFilePath(),
+                                $var_comment->type_start,
+                                $var_comment->type_end
+                            );
+                        }
 
                         if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
                             $comment_type = $var_comment_type;
