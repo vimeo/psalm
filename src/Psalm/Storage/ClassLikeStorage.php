@@ -165,6 +165,11 @@ class ClassLikeStorage
     public $location;
 
     /**
+     * @var CodeLocation|null
+     */
+    public $stmt_location;
+
+    /**
      * @var bool
      */
     public $abstract = false;

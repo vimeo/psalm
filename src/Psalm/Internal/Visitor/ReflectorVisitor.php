@@ -714,7 +714,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      */
     private function registerClassLike(PhpParser\Node\Stmt\ClassLike $node)
     {
-        $class_location = new CodeLocation($this->file_scanner, $node, null, true);
+        $class_location = new CodeLocation($this->file_scanner, $node);
+        $name_location = null;
 
         $storage = null;
 
@@ -727,6 +728,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $fq_classlike_name = ClassAnalyzer::getAnonymousClassName($node, $this->file_path);
         } else {
+            $name_location = new CodeLocation($this->file_scanner, $node->name);
+
             $fq_classlike_name =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name;
 
@@ -736,9 +739,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $duplicate_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name);
 
                 if (!$this->codebase->register_stub_files) {
-                    if (!$duplicate_storage->location
-                        || $duplicate_storage->location->file_path !== $this->file_path
-                        || $class_location->getHash() !== $duplicate_storage->location->getHash()
+                    if (!$duplicate_storage->stmt_location
+                        || $duplicate_storage->stmt_location->file_path !== $this->file_path
+                        || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash()
                     ) {
                         if (IssueBuffer::accepts(
                             new DuplicateClass(
@@ -746,7 +749,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                     . ($duplicate_storage->location
                                         ? ' in ' . $duplicate_storage->location->file_path
                                         : ''),
-                                new CodeLocation($this->file_scanner, $node, null, true)
+                                $name_location
                             )
                         )) {
                         }
@@ -794,7 +797,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             IssueBuffer::add(
                 new \Psalm\Issue\ParseError(
                     'Class name ' . $class_name . ' clashes with a use statement alias',
-                    new CodeLocation($this->file_scanner, $node, null, true)
+                    $name_location ?: $class_location
                 )
             );
 
@@ -802,7 +805,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $this->file_storage->has_visitor_issues = true;
         }
 
-        $storage->location = $class_location;
+        $storage->stmt_location = $class_location;
+        $storage->location = $name_location;
         $storage->user_defined = !$this->codebase->register_stub_files;
         $storage->stubbed = $this->codebase->register_stub_files;
 
@@ -868,7 +872,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
-                        new CodeLocation($this->file_scanner, $node, null, true)
+                        $name_location ?: $class_location
                     )
                 )) {
                 }
@@ -899,7 +903,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                         new InvalidDocblock(
                                             $e->getMessage() . ' in docblock for '
                                                 . implode('.', $this->fq_classlike_names),
-                                            new CodeLocation($this->file_scanner, $node, null, true)
+                                            $name_location ?: $class_location
                                         )
                                     )) {
                                     }
@@ -915,7 +919,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 if (IssueBuffer::accepts(
                                     new InvalidDocblock(
                                         'Template missing as type',
-                                        new CodeLocation($this->file_scanner, $node, null, true)
+                                        $name_location ?: $class_location
                                     )
                                 )) {
                                 }
@@ -962,7 +966,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             if (IssueBuffer::accepts(
                                 new InvalidDocblock(
                                     $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
-                                    new CodeLocation($this->file_scanner, $node, null, true)
+                                    $name_location ?: $class_location
                                 )
                             )) {
                             }

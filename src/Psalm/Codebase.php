@@ -178,6 +178,16 @@ class Codebase
     public $diff_methods = false;
 
     /**
+     * @var array<string, string>
+     */
+    public $method_migrations = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $call_transforms = [];
+
+    /**
      * @var bool
      */
     public $allow_backwards_incompatible_changes = true;

@@ -1094,9 +1094,13 @@ class Analyzer
     {
         $new_return_type_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
 
-        $other_manipulations = FileManipulationBuffer::getForFile($file_path);
+        $other_manipulations = FileManipulationBuffer::getManipulationsForFile($file_path);
 
         $file_manipulations = array_merge($new_return_type_manipulations, $other_manipulations);
+
+        if (!$file_manipulations) {
+            return;
+        }
 
         usort(
             $file_manipulations,
@@ -1116,8 +1120,6 @@ class Analyzer
             }
         );
 
-        $docblock_update_count = count($file_manipulations);
-
         $existing_contents = $this->file_provider->getContents($file_path);
 
         foreach ($file_manipulations as $manipulation) {
@@ -1127,28 +1129,26 @@ class Analyzer
                     . substr($existing_contents, $manipulation->end);
         }
 
-        if ($docblock_update_count) {
-            if ($dry_run) {
-                echo $file_path . ':' . "\n";
+        if ($dry_run) {
+            echo $file_path . ':' . "\n";
 
-                $differ = new \SebastianBergmann\Diff\Differ(
-                    new \SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder([
-                        'fromFile' => 'Original',
-                        'toFile' => 'New',
-                    ])
-                );
+            $differ = new \SebastianBergmann\Diff\Differ(
+                new \SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder([
+                    'fromFile' => $file_path,
+                    'toFile' => $file_path,
+                ])
+            );
 
-                echo (string) $differ->diff($this->file_provider->getContents($file_path), $existing_contents);
+            echo (string) $differ->diff($this->file_provider->getContents($file_path), $existing_contents);
 
-                return;
-            }
-
-            if ($output_changes) {
-                echo 'Altering ' . $file_path . "\n";
-            }
-
-            $this->file_provider->setContents($file_path, $existing_contents);
+            return;
         }
+
+        if ($output_changes) {
+            echo 'Altering ' . $file_path . "\n";
+        }
+
+        $this->file_provider->setContents($file_path, $existing_contents);
     }
 
     /**

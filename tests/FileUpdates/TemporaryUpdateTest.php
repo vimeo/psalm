@@ -1055,7 +1055,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             class A {}',
                     ],
                 ],
-                'error_positions' => [[], [116], []],
+                'error_positions' => [[], [122], []],
             ],
             'addMissingArgs' => [
                 [

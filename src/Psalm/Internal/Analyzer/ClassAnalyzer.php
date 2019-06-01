@@ -1015,9 +1015,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $error_location = $property_storage->location;
 
                 if ($storage->declaring_property_ids[$property_name] !== $fq_class_name) {
-                    $error_location = $this->class->name
-                        ? new CodeLocation($this, $this->class->name)
-                        : $storage->location;
+                    $error_location = $storage->location ?: $storage->stmt_location;
                 }
 
                 if ($fq_class_name !== $constructor_appearing_fqcln

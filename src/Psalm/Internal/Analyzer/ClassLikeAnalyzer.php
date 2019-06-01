@@ -194,7 +194,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
      */
     public static function checkFullyQualifiedClassLikeName(
         StatementsSource $statements_source,
-        $fq_class_name,
+        string $fq_class_name,
         CodeLocation $code_location,
         array $suppressed_issues,
         bool $inferred = true,

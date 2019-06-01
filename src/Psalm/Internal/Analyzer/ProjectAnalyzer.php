@@ -5,6 +5,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\UnsupportedIssueToFixException;
+use Psalm\FileManipulation;
 use Psalm\Internal\LanguageServer\{LanguageServer, ProtocolStreamReader, ProtocolStreamWriter};
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -521,6 +522,64 @@ class ProjectAnalyzer
             $this->codebase->methods,
             $this->progress
         );
+    }
+
+    public function prepareMigration() : void
+    {
+        if (!$this->codebase->alter_code) {
+            throw new \UnexpectedValueException('Should not be checking references');
+        }
+
+        $this->codebase->classlikes->refactorMethods(
+            $this->codebase->methods,
+            $this->progress
+        );
+    }
+
+    public function migrateCode() : void
+    {
+        if (!$this->codebase->alter_code) {
+            throw new \UnexpectedValueException('Should not be checking references');
+        }
+
+        $migration_manipulations = \Psalm\Internal\FileManipulation\FileManipulationBuffer::getMigrationManipulations(
+            $this->codebase->file_provider
+        );
+
+        if (!$migration_manipulations) {
+            return;
+        }
+
+        foreach ($migration_manipulations as $file_path => $file_manipulations) {
+            usort(
+                $file_manipulations,
+                /**
+                 * @return int
+                 */
+                function (FileManipulation $a, FileManipulation $b) {
+                    if ($a->start === $b->start) {
+                        if ($b->end === $a->end) {
+                            return $b->insertion_text > $a->insertion_text ? 1 : -1;
+                        }
+
+                        return $b->end > $a->end ? 1 : -1;
+                    }
+
+                    return $b->start > $a->start ? 1 : -1;
+                }
+            );
+
+            $existing_contents = $this->codebase->file_provider->getContents($file_path);
+
+            foreach ($file_manipulations as $manipulation) {
+                $existing_contents
+                    = substr($existing_contents, 0, $manipulation->start)
+                        . $manipulation->insertion_text
+                        . substr($existing_contents, $manipulation->end);
+            }
+
+            $this->codebase->file_provider->setContents($file_path, $existing_contents);
+        }
     }
 
     /**

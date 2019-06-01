@@ -706,6 +706,86 @@ class ClassLikes
     }
 
     /**
+     * @return void
+     */
+    public function refactorMethods(Methods $methods, Progress $progress = null)
+    {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        if (!$codebase->method_migrations) {
+            return;
+        }
+
+        $progress->debug('Refacting methods ' . PHP_EOL);
+
+        $code_migrations = [];
+
+        foreach ($codebase->method_migrations as $original => $eventual) {
+            try {
+                $original_method_storage = $methods->getStorage($original);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            list($eventual_fq_class_name, $eventual_name) = explode('::', $eventual);
+
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($eventual_fq_class_name);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            if ($classlike_storage->stmt_location
+                && $this->config->isInProjectDirs($classlike_storage->stmt_location->file_path)
+                && $original_method_storage->stmt_location
+                && $original_method_storage->stmt_location->file_path
+                && $original_method_storage->location
+            ) {
+                $new_class_bounds = $classlike_storage->stmt_location->getSnippetBounds();
+                $old_method_bounds = $original_method_storage->stmt_location->getSnippetBounds();
+
+                $old_method_name_bounds = $original_method_storage->location->getSelectionBounds();
+
+                FileManipulationBuffer::add(
+                    $original_method_storage->stmt_location->file_path,
+                    [
+                        new \Psalm\FileManipulation(
+                            $old_method_name_bounds[0],
+                            $old_method_name_bounds[1],
+                            $eventual_name
+                        )
+                    ]
+                );
+
+                $selection = $classlike_storage->stmt_location->getSnippet();
+
+                $insert_pos = strrpos($selection, "\n", -1);
+
+                if (!$insert_pos) {
+                    $insert_pos = strlen($selection) - 1;
+                } else {
+                    $insert_pos++;
+                }
+
+                $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
+                    $original_method_storage->stmt_location->file_path,
+                    $old_method_bounds[0],
+                    $old_method_bounds[1],
+                    $classlike_storage->stmt_location->file_path,
+                    $new_class_bounds[0] + $insert_pos
+                );
+            }
+        }
+
+        FileManipulationBuffer::addCodeMigrations($code_migrations);
+    }
+
+    /**
      * @param  string $class_name
      * @param  mixed  $visibility
      *

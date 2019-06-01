@@ -17,7 +17,7 @@ class FileManipulation
      * @param int $end
      * @param string $insertion_text
      */
-    public function __construct($start, $end, $insertion_text)
+    public function __construct(int $start, int $end, string $insertion_text)
     {
         $this->start = $start;
         $this->end = $end;
