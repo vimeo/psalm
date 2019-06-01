@@ -1130,10 +1130,26 @@ class ConfigTest extends \Psalm\Tests\TestCase
     public function testTemplatedFiles()
     {
         foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {
+            $project_root = dirname(__DIR__, 2);
+            $file_path = realpath($project_root . '/assets/config_levels/' . $file_name);
+            symlink($file_path, $project_root . DIRECTORY_SEPARATOR . $file_name);
+
             Config::loadFromXMLFile(
-                realpath(dirname(__DIR__, 2) . '/assets/config_levels/' . $file_name),
-                dirname(__DIR__, 2)
+                $project_root . DIRECTORY_SEPARATOR . $file_name,
+                $project_root
             );
+        }
+    }
+
+    public function tearDown(): void
+    {
+        parent::tearDown();
+
+        if ($this->getName() == 'testTemplatedFiles') {
+            $project_root = dirname(__DIR__, 2);
+            foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {
+                @unlink($project_root . DIRECTORY_SEPARATOR . $file_name);
+            }
         }
     }
 
