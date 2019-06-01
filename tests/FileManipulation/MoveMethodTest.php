@@ -171,8 +171,13 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
 
                         /**
                          * @param self $a1
-                         * @param ?self $a2
-                         * @param self[] $a3
+                         * Some description
+                         * @param ?self
+                         *        $a2
+                         * @param array<
+                         *     int,
+                         *     self
+                         * > $a3
                          * @return self
                          */
                         public static function Foo(self $a1, ?self $a2, array $a3) : self {
@@ -211,8 +216,10 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
 
                         /**
                          * @param A $a1
-                         * @param null|A $a2
-                         * @param array<array-key, A> $a3
+                         * Some description
+                         * @param null|A
+                         *        $a2
+                         * @param array<int, A> $a3
                          * @return A
                          */
                         public static function Fedbca(A $a1, ?A $a2, array $a3) : A {

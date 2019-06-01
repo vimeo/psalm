@@ -286,10 +286,18 @@ class FunctionDocblockManipulator
         $docblock = $this->stmt->getDocComment();
 
         if ($docblock) {
-            $parsed_docblock = DocComment::parse($docblock);
+            $parsed_docblock = DocComment::parsePreservingLength($docblock);
         } else {
             $parsed_docblock = ['description' => '', 'specials' => []];
         }
+
+        foreach ($parsed_docblock['specials'] as $type => $blocks) {
+            foreach ($blocks as $i => $block) {
+                $parsed_docblock['specials'][$type][$i] = preg_replace('@^[ \t]*\*@m', '', $block);
+            }
+        }
+
+        $parsed_docblock['description'] = trim(preg_replace('@^[ \t]*\* ?@m', '', $parsed_docblock['description']));
 
         foreach ($this->new_phpdoc_param_types as $param_name => $phpdoc_type) {
             $found_in_params = false;

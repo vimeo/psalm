@@ -333,7 +333,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($node_comment = $node->getDocComment()) {
-                $comments = DocComment::parse($node_comment);
+                $comments = DocComment::parsePreservingLength($node_comment);
 
                 if (isset($comments['specials']['template-use'])
                     || isset($comments['specials']['use'])
@@ -2703,7 +2703,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $config = $this->config;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
-            $comments = DocComment::parse($comment);
+            $comments = DocComment::parsePreservingLength($comment);
 
             if (isset($comments['specials']['deprecated'])) {
                 $deprecated = true;

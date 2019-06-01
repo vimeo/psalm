@@ -206,7 +206,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             if ($docblock = $stmt->getDocComment()) {
                 try {
-                    $comments = DocComment::parse($docblock);
+                    $comments = DocComment::parsePreservingLength($docblock);
                 } catch (DocblockParseException $e) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
