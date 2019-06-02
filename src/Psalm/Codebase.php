@@ -180,7 +180,12 @@ class Codebase
     /**
      * @var array<string, string>
      */
-    public $method_migrations = [];
+    public $methods_to_move = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $methods_to_rename = [];
 
     /**
      * @var array<string, string>

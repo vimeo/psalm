@@ -831,20 +831,23 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             && $stmt->class instanceof PhpParser\Node\Name
                         ) {
                             $new_method_id = substr($transformation, 0, -4);
+                            list($old_declaring_fq_class_name) = explode('::', $declaring_method_id);
                             list($new_fq_class_name, $new_method_name) = explode('::', $new_method_id);
 
                             $file_manipulations = [];
 
-                            $file_manipulations[] = new \Psalm\FileManipulation(
-                                (int) $stmt->class->getAttribute('startFilePos'),
-                                (int) $stmt->class->getAttribute('endFilePos') + 1,
-                                Type::getStringFromFQCLN(
-                                    $new_fq_class_name,
-                                    $statements_analyzer->getNamespace(),
-                                    $statements_analyzer->getAliasedClassesFlipped(),
-                                    null
-                                )
-                            );
+                            if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
+                                $file_manipulations[] = new \Psalm\FileManipulation(
+                                    (int) $stmt->class->getAttribute('startFilePos'),
+                                    (int) $stmt->class->getAttribute('endFilePos') + 1,
+                                    Type::getStringFromFQCLN(
+                                        $new_fq_class_name,
+                                        $statements_analyzer->getNamespace(),
+                                        $statements_analyzer->getAliasedClassesFlipped(),
+                                        null
+                                    )
+                                );
+                            }
 
                             $file_manipulations[] = new \Psalm\FileManipulation(
                                 (int) $stmt->name->getAttribute('startFilePos'),
@@ -860,11 +863,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if (!$moved_call
-                    && $codebase->method_migrations
+                    && $codebase->methods_to_move
                     && $context->calling_method_id
-                    && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+                    && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
                 ) {
-                    $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+                    $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
 
                     $codebase->classlikes->airliftClassLikeReference(
                         $fq_class_name,

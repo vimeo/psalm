@@ -530,7 +530,7 @@ class ProjectAnalyzer
             throw new \UnexpectedValueException('Should not be checking references');
         }
 
-        $this->codebase->classlikes->refactorMethods(
+        $this->codebase->classlikes->moveMethods(
             $this->codebase->methods,
             $this->progress
         );

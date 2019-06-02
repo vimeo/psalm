@@ -708,7 +708,7 @@ class ClassLikes
     /**
      * @return void
      */
-    public function refactorMethods(Methods $methods, Progress $progress = null)
+    public function moveMethods(Methods $methods, Progress $progress = null)
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -717,7 +717,7 @@ class ClassLikes
         $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
-        if (!$codebase->method_migrations) {
+        if (!$codebase->methods_to_move) {
             return;
         }
 
@@ -725,7 +725,7 @@ class ClassLikes
 
         $code_migrations = [];
 
-        foreach ($codebase->method_migrations as $original => $eventual) {
+        foreach ($codebase->methods_to_move as $original => $eventual) {
             try {
                 $original_method_storage = $methods->getStorage($original);
             } catch (\InvalidArgumentException $e) {

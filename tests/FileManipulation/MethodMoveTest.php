@@ -24,7 +24,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
      *
      * @param string $input_code
      * @param string $output_code
-     * @param array<string, string> $method_migrations
+     * @param array<string, string> $methods_to_move
      * @param array<string, string> $call_transforms
      *
      * @return void
@@ -32,7 +32,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
     public function testValidCode(
         string $input_code,
         string $output_code,
-        array $method_migrations,
+        array $methods_to_move,
         array $call_transforms
     ) {
         $test_name = $this->getTestName();
@@ -61,7 +61,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $codebase->method_migrations = $method_migrations;
+        $codebase->methods_to_move = $methods_to_move;
         $codebase->call_transforms = $call_transforms;
 
         $this->project_analyzer->refactorCodeAfterCompletion();

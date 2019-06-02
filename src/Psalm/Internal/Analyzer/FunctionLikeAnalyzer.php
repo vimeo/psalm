@@ -361,11 +361,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         $check_stmts = true;
 
-        if ($codebase->method_migrations
+        if ($codebase->methods_to_move
             && $context->calling_method_id
-            && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+            && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
         ) {
-            $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+            $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
 
             foreach ($this->function->params as $param) {
                 $param_name_node = null;
@@ -477,6 +477,25 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $bounds[1]
                     );
                 }
+            }
+        }
+
+        foreach ($codebase->methods_to_rename as $original_method_id => $new_method_name) {
+            if ($this->function instanceof ClassMethod
+                && strtolower($this->getMethodId()) === $original_method_id
+            ) {
+                $file_manipulations = [
+                    new \Psalm\FileManipulation(
+                        (int) $this->function->name->getAttribute('startFilePos'),
+                        (int) $this->function->name->getAttribute('endFilePos') + 1,
+                        $new_method_name
+                    )
+                ];
+
+                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                    $this->getFilePath(),
+                    $file_manipulations
+                );
             }
         }
 

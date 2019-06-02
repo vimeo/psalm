@@ -247,11 +247,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
         if ($fq_class_name) {
             if ($stmt->class instanceof PhpParser\Node\Name
-                && $codebase->method_migrations
+                && $codebase->methods_to_move
                 && $context->calling_method_id
-                && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+                && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
             ) {
-                $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+                $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
 
                 $codebase->classlikes->airliftClassLikeReference(
                     $fq_class_name,

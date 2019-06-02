@@ -166,10 +166,6 @@ function getArguments() : array
             continue;
         }
 
-        if (substr($input_path, 0, 2) === '--' && strlen($input_path) > 2) {
-            continue;
-        }
-
         $filtered_input_paths[] = $input_path;
     }
 

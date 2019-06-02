@@ -140,11 +140,11 @@ class ConstFetchAnalyzer
                     }
                 }
 
-                if ($codebase->method_migrations
+                if ($codebase->methods_to_move
                     && $context->calling_method_id
-                    && isset($codebase->method_migrations[strtolower($context->calling_method_id)])
+                    && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
                 ) {
-                    $destination_method_id = $codebase->method_migrations[strtolower($context->calling_method_id)];
+                    $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
 
                     $codebase->classlikes->airliftClassLikeReference(
                         $fq_class_name,

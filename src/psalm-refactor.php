@@ -21,7 +21,7 @@ $args = array_slice($argv, 1);
 $valid_short_options = ['f:', 'm', 'h', 'r:'];
 $valid_long_options = [
     'help', 'debug', 'config:', 'root:',
-    'threads:',
+    'threads:', 'move:', 'into:', 'rename:', 'to:',
 ];
 
 // get options from command line
@@ -99,8 +99,22 @@ Options:
     -r, --root
         If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-    --threads=INT
+    --threads=auto
         If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+        By default
+
+    --move "[Identifier]" --into "[Class]"
+        Moves the specified item into the class. More than one item can be moved into a class
+        by passing a comma-separated list of values e.g.
+
+        --move "Ns\Foo::bar,Ns\Foo::baz" --into "Biz\Bang\DestinationClass"
+
+    --rename "[Identifier]" --to "[newName]"
+        Renames a specfied item (e.g. method) and updates all references to it that Psalm can
+        identify.
+
+    --move-and-rename "[Identifier]" --to "[NewIdentifier]"
+        Moves the specified item to the destination with a new name
 
 HELP;
 
@@ -137,7 +151,98 @@ if ($path_to_config === false) {
     die('Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
 }
 
+$args = getArguments();
+
+$operation = null;
+$last_arg = null;
+
+$to_move = [];
+$to_rename = [];
+
+foreach ($args as $arg) {
+    if ($arg === '--move') {
+        $operation = 'move';
+        continue;
+    }
+
+    if ($arg === '--into') {
+        if ($operation !== 'move' || !$last_arg) {
+            die('--into is not expected here' . PHP_EOL);
+        }
+
+        $operation = 'move_into';
+        continue;
+    }
+
+    if ($arg === '--rename') {
+        $operation = 'rename';
+        continue;
+    }
+
+    if ($arg === '--move-and-rename') {
+        $operation = 'move_and_rename';
+        continue;
+    }
+
+    if ($arg === '--to') {
+        if (($operation !== 'rename' && $operation !== 'move_and_rename') || !$last_arg) {
+            die('--to is not expected here' . PHP_EOL);
+        }
+
+        if ($operation === 'rename') {
+            $operation = 'rename_to';
+        } else {
+            $operation = 'move_and_rename_to';
+        }
+
+        continue;
+    }
+
+    if ($arg[0] === '-') {
+        $operation = null;
+        continue;
+    }
+
+    if ($operation === 'move_into' || $operation === 'rename_to' || $operation === 'move_and_rename_to') {
+        if (!$last_arg) {
+            die('Expecting a previous argument' . PHP_EOL);
+        }
+
+        if ($operation === 'move_into') {
+            $last_arg_parts = preg_split('/, ?/', $last_arg);
+
+            foreach ($last_arg_parts as $last_arg_part) {
+                list(, $identifier_name) = explode('::', $last_arg_part);
+                $to_move[strtolower($last_arg_part)] = $arg . '::' . $identifier_name;
+                $to_rename[strtolower($last_arg_part) . '\((.*\))'] = $arg . '::' . $identifier_name . '($1)';
+            }
+        } elseif ($operation === 'move_and_rename_to') {
+            $to_move[strtolower($last_arg)] = $arg;
+            $to_rename[strtolower($last_arg) . '\((.*\))'] = $arg . '($1)';
+        } else {
+            $to_rename[strtolower($last_arg) . '\((.*\))'] = $arg . '($1)';
+        }
+
+        $last_arg = null;
+        $operation = null;
+        continue;
+    }
+
+    if ($operation === 'move' || $operation === 'rename') {
+        $last_arg = $arg;
+
+        continue;
+    }
+
+    die('Unexpected argument "' . $arg . '"' . PHP_EOL);
+}
+
+if (!$to_move && !$to_rename) {
+    die('No --move or --rename arguments supplied' . PHP_EOL);
+}
+
 // initialise custom config, if passed
+// Initializing the config can be slow, so any UI logic should precede it, if possible
 if ($path_to_config) {
     $config = Config::loadFromXMLFile($path_to_config, $current_dir);
 } else {
@@ -146,7 +251,9 @@ if ($path_to_config) {
 
 $config->setComposerClassLoader($first_autoloader);
 
-$threads = isset($options['threads']) ? (int)$options['threads'] : 1;
+$threads = isset($options['threads'])
+    ? (int)$options['threads']
+    : max(1, ProjectAnalyzer::getCpuCount() - 2);
 
 $providers = new Psalm\Internal\Provider\Providers(
     new Psalm\Internal\Provider\FileProvider(),
@@ -172,16 +279,10 @@ $project_analyzer = new ProjectAnalyzer(
 
 $config->visitComposerAutoloadFiles($project_analyzer);
 
-$args = getArguments();
-
-if (count($args) !== 3 || $args[1] !== 'into') {
-    die('Expecting XXX into YYY' . PHP_EOL);
-}
-
 $codebase = $project_analyzer->getCodebase();
 
-$codebase->method_migrations = [strtolower($args[0]) => $args[2]];
-$codebase->call_transforms = [strtolower($args[0]) . '\((.*\))' => $args[2] . '($1)'];
+$codebase->methods_to_move = $to_move;
+$codebase->call_transforms = $to_rename;
 
 $project_analyzer->refactorCodeAfterCompletion();
 
