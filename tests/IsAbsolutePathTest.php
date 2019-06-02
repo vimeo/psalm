@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use function Psalm\isAbsolutePath;
+
 class IsAbsolutePathTest extends TestCase
 {
     /**
