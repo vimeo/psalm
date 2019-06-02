@@ -5,7 +5,7 @@ stages:
   - Code style analysis
   - test
   - Phar build
-  - Code coverage analysis
+  # - Code coverage analysis
 
 php:
   - 7.1
