@@ -56,20 +56,6 @@ matrix:
 # Additional stages
 jobs:
   include:
-    - stage: Code coverage analysis
-      php: 7.3
-      # don't disable xdebug here
-      env: XDEBUG="true"
-      install:
-        - composer $DEFAULT_COMPOSER_FLAGS update
-        - composer require --dev php-coveralls/php-coveralls
-        - composer require --dev brianium/paratest
-        - mkdir -p build
-      script:
-        - vendor/bin/paratest --coverage-clover build/logs/clover.xml tests
-      after_success:
-        - travis_retry php vendor/bin/php-coveralls -v
-
     - stage: Code style analysis
       php: 7.3
       env: DEPS="high"
