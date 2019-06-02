@@ -1,4 +1,8 @@
 <?php
+namespace Psalm;
+
+use InvalidArgumentException;
+
 /**
  * @param string $path
  *

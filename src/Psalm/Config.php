@@ -21,8 +21,6 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use SimpleXMLElement;
 
-use function isAbsolutePath;
-
 class Config
 {
     const DEFAULT_FILE_NAME = 'psalm.xml';
