@@ -725,6 +725,20 @@ abstract class Atomic
         return '';
     }
 
+    public function __clone()
+    {
+        if ($this instanceof TNamedObject
+            || $this instanceof TTemplateParam
+            || $this instanceof TIterable
+        ) {
+            if ($this->extra_types) {
+                foreach ($this->extra_types as &$type) {
+                    $type = clone $type;
+                }
+            }
+        }
+    }
+
     /**
      * @return string
      */
