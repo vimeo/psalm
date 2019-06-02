@@ -12,68 +12,25 @@ class DocComment
      * Taken from advanced api docmaker, which was taken from
      * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
      *
-     * @param  string|\PhpParser\Comment\Doc  $docblock
+     * @param  string  $docblock
+     * @param  int     $line_number
      * @param  bool    $preserve_format
      *
      * @return array Array of the main comment and specials
      * @psalm-return array{description:string, specials:array<string, array<int, string>>}
-     * @psalm-suppress PossiblyUnusedParam
      */
-    /**
-     * Parse a docblock comment into its parts.
-     *
-     * Taken from advanced api docmaker, which was taken from
-     * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
-     *
-     * @param  string|\PhpParser\Comment\Doc  $docblock
-     * @param  bool    $preserve_format
-     *
-     * @return array Array of the main comment and specials
-     * @psalm-return array{description:string, specials:array<string, array<int, string>>}
-     * @psalm-suppress PossiblyUnusedParam
-     */
-    public static function parse($docblock, ?int $line_number = null)
+    public static function parse($docblock, $line_number = null, $preserve_format = false)
     {
-        if (!is_string($docblock)) {
-            $docblock = $docblock->getText();
-        }
-
         // Strip off comments.
         $docblock = trim($docblock);
-
-        $docblock = preg_replace('@^/\*\*@', '', $docblock, -1, $count);
-
-        $start_offset = 3;
-
+        $docblock = preg_replace('@^/\*\*@', '', $docblock);
         $docblock = preg_replace('@\*/$@', '', $docblock);
+        $docblock = preg_replace('@^[ \t]*\*@m', '', $docblock);
 
         // Normalize multi-line @specials.
         $lines = explode("\n", $docblock);
 
-        $char_map = [];
-        $cursor = 0;
-        $line_offset = 0;
-
-        foreach ($lines as $k => $line) {
-            $trimmed_line = preg_replace('@^[ \t]*\*@', '', $line);
-            $start_offset += strlen($line) - strlen($trimmed_line);
-
-            $lines[$k] = $trimmed_line;
-
-            while ($cursor < $line_offset + strlen($trimmed_line)) {
-                $char_map[$cursor] = $cursor + $start_offset;
-                ++$cursor;
-            }
-
-            $char_map[$cursor] = $cursor + $start_offset;
-            ++$cursor;
-
-            $line_offset += strlen($trimmed_line) + 1;
-        }
-
-        $docblock = implode("\n", $lines);
-
-        $special = [];
+        $line_map = [];
 
         $last = false;
         foreach ($lines as $k => $line) {
@@ -83,35 +40,61 @@ class DocComment
                 $last = false;
             } elseif ($last !== false) {
                 $old_last_line = $lines[$last];
-                $lines[$last] = $old_last_line . "\n" . $line;
+                $lines[$last] = rtrim($old_last_line)
+                    . ($preserve_format || trim($old_last_line) === '@return' ? "\n" . $line : ' ' . trim($line));
+
+                if ($line_number) {
+                    $old_line_number = $line_map[$old_last_line];
+                    unset($line_map[$old_last_line]);
+                    $line_map[$lines[$last]] = $old_line_number;
+                }
 
                 unset($lines[$k]);
             }
+
+            if ($line_number) {
+                $line_map[$line] = $line_number++;
+            }
         }
 
-        $line_offset = 0;
+        $special = [];
 
-        foreach ($lines as $line) {
-            if (preg_match('/^\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
-                /** @var array<int, array{string, int}> $matches */
-                list($full_match_info, $type_info, $data_info) = $matches;
+        if ($preserve_format) {
+            foreach ($lines as $m => $line) {
+                if (preg_match('/^\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches)) {
+                    /** @var string[] $matches */
+                    list($full_match, $type, $data) = $matches;
 
-                list($full_match) = $full_match_info;
-                list($type) = $type_info;
-                list($data, $data_offset) = $data_info;
+                    $docblock = str_replace($full_match, '', $docblock);
 
-                $docblock = str_replace($full_match, '', $docblock);
+                    if (empty($special[$type])) {
+                        $special[$type] = [];
+                    }
 
-                if (empty($special[$type])) {
-                    $special[$type] = [];
+                    $line_number = $line_map && isset($line_map[$full_match]) ? $line_map[$full_match] : (int)$m;
+
+                    $special[$type][$line_number] = rtrim($data);
                 }
-
-                $data_offset += $line_offset;
-
-                $special[$type][$char_map[$data_offset]] = $data;
             }
+        } else {
+            $docblock = implode("\n", $lines);
 
-            $line_offset += strlen($line) + 1;
+            // Parse @specials.
+            if (preg_match_all('/^\s?@([\w\-:]+)[\t ]*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER)) {
+                $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
+                /** @var string[] $match */
+                foreach ($matches as $m => $match) {
+                    list($_, $type, $data) = $match;
+
+                    if (empty($special[$type])) {
+                        $special[$type] = [];
+                    }
+
+                    $line_number = $line_map && isset($line_map[$_]) ? $line_map[$_] : (int)$m;
+
+                    $special[$type][$line_number] = $data;
+                }
+            }
         }
 
         $docblock = str_replace("\t", '  ', $docblock);

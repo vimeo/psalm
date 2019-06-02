@@ -286,7 +286,7 @@ class FunctionDocblockManipulator
         $docblock = $this->stmt->getDocComment();
 
         if ($docblock) {
-            $parsed_docblock = DocComment::parse($docblock);
+            $parsed_docblock = DocComment::parse((string)$docblock, null, true);
         } else {
             $parsed_docblock = ['description' => '', 'specials' => []];
         }

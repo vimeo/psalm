@@ -1020,14 +1020,18 @@ abstract class Type
         }
 
         if ($namespace && stripos($value, $namespace . '\\') === 0) {
-            return preg_replace(
+            $candidate = preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
                 $value
             );
-        }
 
-        if (!$namespace && stripos($value, '\\') === false) {
+            $candidate_parts = explode('\\', $candidate);
+
+            if (!isset($aliased_classes[strtolower($candidate_parts[0])])) {
+                return $candidate;
+            }
+        } elseif (!$namespace && stripos($value, '\\') === false) {
             return $value;
         }
 

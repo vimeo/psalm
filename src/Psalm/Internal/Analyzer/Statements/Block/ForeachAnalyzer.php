@@ -564,6 +564,7 @@ class ForeachAnalyzer
                 throw new \UnexpectedValueException('Shouldn’t get a generic param here');
             }
 
+
             $has_valid_iterator = true;
 
             if ($iterator_atomic_type instanceof Type\Atomic\TIterable

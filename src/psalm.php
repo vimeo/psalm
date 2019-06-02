@@ -57,6 +57,7 @@ $valid_long_options = [
     'generate-json-map:',
     'alter',
     'language-server',
+    'refactor',
     'shepherd::',
     'no-progress',
 ];
@@ -76,6 +77,11 @@ if (isset($options['alter'])) {
 
 if (isset($options['language-server'])) {
     include 'psalm-language-server.php';
+    exit;
+}
+
+if (isset($options['refactor'])) {
+    include 'psalm-refactor.php';
     exit;
 }
 

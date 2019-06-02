@@ -64,14 +64,12 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
         $codebase->method_migrations = $method_migrations;
         $codebase->call_transforms = $call_transforms;
 
-        $this->project_analyzer->alterCodeAfterCompletion(
-            false,
-            false
-        );
+        $this->project_analyzer->refactorCodeAfterCompletion();
 
         $this->analyzeFile($file_path, $context);
 
         $this->project_analyzer->prepareMigration();
+
         $codebase->analyzer->updateFile($file_path, false);
 
         $this->project_analyzer->migrateCode();
@@ -89,44 +87,98 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                 '<?php
                     namespace Ns;
 
+                    use ArrayObject;
+
                     class A {
                         const C = 5;
 
                         /**
-                         * @return void
+                         * @return ArrayObject<int, int>
                          */
                         public static function Foo() {
-                            echo self::C;
+                            return new ArrayObject([self::C]);
                         }
                     }
 
                     class B {
                         public static function bar() : void {
                             A::Foo();
+
+                            foreach (A::Foo() as $f) {}
                         }
                     }',
                 '<?php
                     namespace Ns;
 
+                    use ArrayObject;
+
                     class A {
                         const C = 5;
 
                         /**
-                         * @return void
+                         * @return ArrayObject<int, int>
                          */
                         public static function Foo() {
-                            echo self::C;
+                            return new ArrayObject([self::C]);
                         }
                     }
 
                     class B {
                         public static function bar() : void {
                             B::Fe();
+
+                            foreach (B::Fe() as $f) {}
                         }
                     }',
                 [],
                 [
                     'ns\a::foo\((.*\))' => 'Ns\B::Fe($1)',
+                ]
+            ],
+            'moveStaticMethodReferenceOnlyIntoNamespaceWithExistingUse' => [
+                '<?php
+                    namespace {
+                        class A {
+                            public static function Foo() : void {}
+                        }
+                    }
+
+                    namespace Ns {
+                        use A;
+
+                        class C {
+                            public static function Bar() : void {
+                                A::Foo();
+                            }
+                        }
+                    }
+
+                    namespace Ns\A {
+                        class B {}
+                    }',
+                '<?php
+                    namespace {
+                        class A {
+                            public static function Foo() : void {}
+                        }
+                    }
+
+                    namespace Ns {
+                        use A;
+
+                        class C {
+                            public static function Bar() : void {
+                                \Ns\A\B::Fedcba();
+                            }
+                        }
+                    }
+
+                    namespace Ns\A {
+                        class B {}
+                    }',
+                [],
+                [
+                    'a::foo\((.*\))' => 'Ns\A\B::Fedcba($1)',
                 ]
             ],
             'moveEmptyStaticMethodOnly' => [

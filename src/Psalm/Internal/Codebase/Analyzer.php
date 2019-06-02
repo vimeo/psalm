@@ -440,11 +440,15 @@ class Analyzer
         }
 
         if ($alter_code) {
+            $project_analyzer->prepareMigration();
+
             $files_to_update = $this->files_to_update !== null ? $this->files_to_update : $this->files_to_analyze;
 
             foreach ($files_to_update as $file_path) {
                 $this->updateFile($file_path, $project_analyzer->dry_run, true);
             }
+
+            $project_analyzer->migrateCode();
         }
     }
 
@@ -1122,11 +1126,19 @@ class Analyzer
 
         $existing_contents = $this->file_provider->getContents($file_path);
 
+        $pre_applied_manipulations = [];
+
         foreach ($file_manipulations as $manipulation) {
+            if (isset($pre_applied_manipulations[$manipulation->getKey()])) {
+                continue;
+            }
+
             $existing_contents
                 = substr($existing_contents, 0, $manipulation->start)
                     . $manipulation->insertion_text
                     . substr($existing_contents, $manipulation->end);
+
+            $pre_applied_manipulations[$manipulation->getKey()] = true;
         }
 
         if ($dry_run) {

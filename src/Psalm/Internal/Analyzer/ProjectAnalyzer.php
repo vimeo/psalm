@@ -571,11 +571,19 @@ class ProjectAnalyzer
 
             $existing_contents = $this->codebase->file_provider->getContents($file_path);
 
+            $pre_applied_manipulations = [];
+
             foreach ($file_manipulations as $manipulation) {
+                if (isset($pre_applied_manipulations[$manipulation->getKey()])) {
+                    continue;
+                }
+
                 $existing_contents
                     = substr($existing_contents, 0, $manipulation->start)
                         . $manipulation->insertion_text
                         . substr($existing_contents, $manipulation->end);
+
+                $pre_applied_manipulations[$manipulation->getKey()] = true;
             }
 
             $this->codebase->file_provider->setContents($file_path, $existing_contents);
@@ -873,6 +881,20 @@ class ProjectAnalyzer
         $this->show_issues = false;
         $this->dry_run = $dry_run;
         $this->only_replace_php_types_with_non_docblock_types = $safe_types;
+    }
+
+    /**
+     * @param int $php_major_version
+     * @param int $php_minor_version
+     * @param bool $dry_run
+     * @param bool $safe_types
+     *
+     * @return void
+     */
+    public function refactorCodeAfterCompletion()
+    {
+        $this->codebase->alter_code = true;
+        $this->show_issues = false;
     }
 
     /**

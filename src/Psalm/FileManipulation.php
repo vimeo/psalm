@@ -23,4 +23,9 @@ class FileManipulation
         $this->end = $end;
         $this->insertion_text = $insertion_text;
     }
+
+    public function getKey() : string
+    {
+        return sha1($this->start . ':' . $this->insertion_text);
+    }
 }
