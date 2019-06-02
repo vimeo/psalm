@@ -22,4 +22,14 @@ class DebugProgress extends Progress
     {
         $this->write('Analyzing files...' . "\n");
     }
+
+    public function startAlteringFiles(): void
+    {
+        $this->write('Updating files...' . "\n");
+    }
+
+    public function alterFileDone(string $file_path) : void
+    {
+        $this->write('Altered ' . $file_path . "\n");
+    }
 }

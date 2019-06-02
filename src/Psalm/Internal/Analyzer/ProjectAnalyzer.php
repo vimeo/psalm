@@ -1065,7 +1065,7 @@ class ProjectAnalyzer
      * @return int
      * @psalm-suppress ForbiddenCode
      */
-    private function getCpuCount(): int
+    public static function getCpuCount(): int
     {
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             /*

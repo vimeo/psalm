@@ -440,12 +440,14 @@ class Analyzer
         }
 
         if ($alter_code) {
+            $this->progress->startAlteringFiles();
+
             $project_analyzer->prepareMigration();
 
             $files_to_update = $this->files_to_update !== null ? $this->files_to_update : $this->files_to_analyze;
 
             foreach ($files_to_update as $file_path) {
-                $this->updateFile($file_path, $project_analyzer->dry_run, true);
+                $this->updateFile($file_path, $project_analyzer->dry_run);
             }
 
             $project_analyzer->migrateCode();
@@ -1090,11 +1092,10 @@ class Analyzer
     /**
      * @param  string $file_path
      * @param  bool $dry_run
-     * @param  bool $output_changes to console
      *
      * @return void
      */
-    public function updateFile($file_path, $dry_run, $output_changes = false)
+    public function updateFile($file_path, $dry_run)
     {
         $new_return_type_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
 
@@ -1156,9 +1157,7 @@ class Analyzer
             return;
         }
 
-        if ($output_changes) {
-            echo 'Altering ' . $file_path . "\n";
-        }
+        $this->progress->alterFileDone($file_path);
 
         $this->file_provider->setContents($file_path, $existing_contents);
     }

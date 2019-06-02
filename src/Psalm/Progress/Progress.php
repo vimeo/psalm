@@ -20,6 +20,14 @@ abstract class Progress
     {
     }
 
+    public function startAlteringFiles(): void
+    {
+    }
+
+    public function alterFileDone(string $file_name): void
+    {
+    }
+
     public function start(int $number_of_tasks): void
     {
     }
