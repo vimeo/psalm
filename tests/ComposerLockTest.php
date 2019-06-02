@@ -12,17 +12,8 @@ class ComposerLockTest extends TestCase
      */
     public function pluginIsPackageOfTypePsalmPlugin()
     {
-        $lock = new ComposerLock($this->jsonFile((object)[]));
-        $this->assertTrue($lock->isPlugin([
-            'name' => 'vendor/package',
-            'type' => 'psalm-plugin',
-            'extra' => [
-                'psalm' => [
-                    'pluginClass' => 'Some\Class',
-                ],
-            ],
-        ]));
-
+        $lock = new ComposerLock([$this->jsonFile((object)[])]);
+        $this->assertTrue($lock->isPlugin($this->pluginEntry('vendor/package', 'Some\Class')));
         // counterexamples
 
         $this->assertFalse($lock->isPlugin([]), 'Non-package should not be considered a plugin');
@@ -44,20 +35,12 @@ class ComposerLockTest extends TestCase
      */
     public function seesNonDevPlugins()
     {
-        $lock = new ComposerLock($this->jsonFile((object)[
+        $lock = new ComposerLock([$this->jsonFile((object)[
             'packages' => [
-                (object)[
-                    'name' => 'vendor/package',
-                    'type' => 'psalm-plugin',
-                    'extra' => (object)[
-                        'psalm' => (object) [
-                            'pluginClass' => 'Vendor\Package\PluginClass',
-                        ],
-                    ],
-                ],
+                (object)$this->pluginEntry('vendor/package', 'Vendor\Package\PluginClass')
             ],
             'packages-dev' => [],
-        ]));
+        ])]);
 
         $plugins = $lock->getPlugins();
         $this->assertArrayHasKey('vendor/package', $plugins);
@@ -70,20 +53,12 @@ class ComposerLockTest extends TestCase
      */
     public function seesDevPlugins()
     {
-        $lock = new ComposerLock($this->jsonFile((object)[
+        $lock = new ComposerLock([$this->jsonFile((object)[
             'packages' => [],
             'packages-dev' => [
-                (object)[
-                    'name' => 'vendor/package',
-                    'type' => 'psalm-plugin',
-                    'extra' => (object)[
-                        'psalm' => (object)[
-                            'pluginClass' => 'Vendor\Package\PluginClass',
-                        ],
-                    ],
-                ],
+                (object) $this->pluginEntry('vendor/package', 'Vendor\Package\PluginClass')
             ],
-        ]));
+        ])]);
 
         $plugins = $lock->getPlugins();
         $this->assertArrayHasKey('vendor/package', $plugins);
@@ -101,10 +76,10 @@ class ComposerLockTest extends TestCase
             'type' => 'library',
         ];
 
-        $lock = new ComposerLock($this->jsonFile((object)[
+        $lock = new ComposerLock([$this->jsonFile((object)[
             'packages' => [$nonPlugin],
             'packages-dev' => [$nonPlugin],
-        ]));
+        ])]);
         $this->assertEmpty($lock->getPlugins());
     }
 
@@ -114,7 +89,7 @@ class ComposerLockTest extends TestCase
      */
     public function failsOnInvalidJson()
     {
-        $lock = new ComposerLock('data:application/json,[');
+        $lock = new ComposerLock(['data:application/json,[']);
 
         $this->expectException(\RuntimeException::class);
         $lock->getPlugins();
@@ -126,7 +101,7 @@ class ComposerLockTest extends TestCase
      */
     public function failsOnNonObjectJson()
     {
-        $lock = new ComposerLock('data:application/json,null');
+        $lock = new ComposerLock(['data:application/json,null']);
 
         $this->expectException(\RuntimeException::class);
         $lock->getPlugins();
@@ -141,7 +116,7 @@ class ComposerLockTest extends TestCase
         $noPackagesFile = $this->jsonFile((object)[
             'packages-dev' => [],
         ]);
-        $lock = new ComposerLock($noPackagesFile);
+        $lock = new ComposerLock([$noPackagesFile]);
         $this->expectException(\RuntimeException::class);
         $lock->getPlugins();
     }
@@ -155,9 +130,55 @@ class ComposerLockTest extends TestCase
         $noPackagesDevFile = $this->jsonFile((object)[
             'packages' => [],
         ]);
-        $lock = new ComposerLock($noPackagesDevFile);
+        $lock = new ComposerLock([$noPackagesDevFile]);
         $this->expectException(\RuntimeException::class);
         $lock->getPlugins();
+    }
+
+    /** @test */
+    public function mergesMultipleComposerLockFiles(): void
+    {
+        $lock = new ComposerLock([
+            $this->jsonFile([
+                'packages' => [
+                    (object) $this->pluginEntry('vendor/packageA', 'Vendor\PackageA\PluginClass')
+                ],
+                'packages-dev' => [
+                    (object) $this->pluginEntry('vendor/packageB', 'Vendor\PackageB\PluginClass')
+                ],
+            ]),
+            $this->jsonFile([
+                'packages' => [
+                    (object) $this->pluginEntry('vendor/packageC', 'Vendor\PackageC\PluginClass')
+                ],
+                'packages-dev' => [
+                    (object) $this->pluginEntry('vendor/packageD', 'Vendor\PackageD\PluginClass')
+                ],
+            ]),
+        ]);
+
+        $this->assertEquals(
+            [
+                'vendor/packageA' => 'Vendor\PackageA\PluginClass',
+                'vendor/packageB' => 'Vendor\PackageB\PluginClass',
+                'vendor/packageC' => 'Vendor\PackageC\PluginClass',
+                'vendor/packageD' => 'Vendor\PackageD\PluginClass',
+            ],
+            $lock->getPlugins()
+        );
+    }
+
+    private function pluginEntry(string $package_name, string $package_class): array
+    {
+        return [
+            'name' => $package_name,
+            'type' => 'psalm-plugin',
+            'extra' => [
+                'psalm' => [
+                    'pluginClass' => $package_class,
+                ],
+            ],
+        ];
     }
 
     /** @param mixed $data */

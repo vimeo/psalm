@@ -15,7 +15,10 @@ requireAutoloaders($current_dir, false, $vendor_dir);
 
 $app = new Application('psalm-plugin', (string) Versions::getVersion('vimeo/psalm'));
 
-$plugin_list_factory = new PluginListFactory;
+$psalm_root = dirname(__DIR__) . DIRECTORY_SEPARATOR;
+
+$plugin_list_factory = new PluginListFactory($current_dir, $psalm_root);
+
 $app->addCommands([
     new ShowCommand($plugin_list_factory),
     new EnableCommand($plugin_list_factory),
