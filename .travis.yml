@@ -63,7 +63,7 @@ jobs:
       install:
         - composer $DEFAULT_COMPOSER_FLAGS update
         - composer require --dev php-coveralls/php-coveralls
-        - composer require —dev brianium/paratest
+        - composer require --dev brianium/paratest
         - mkdir -p build
       script:
         - vendor/bin/paratest --coverage-clover build/logs/clover.xml tests
