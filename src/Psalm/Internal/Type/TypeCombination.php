@@ -257,7 +257,7 @@ class TypeCombination
         }
 
         if (isset($combination->named_object_types['Closure'])
-            && $combination->named_object_types['Closure'] instanceof Type\Atomic\Fn
+            && $combination->named_object_types['Closure'] instanceof Type\Atomic\TFn
             && $combination->closure_params
         ) {
             $combination->named_object_types['Closure']->params = $combination->closure_params;
@@ -607,7 +607,7 @@ class TypeCombination
             );
         }
 
-        if ($type instanceof Type\Atomic\Fn
+        if ($type instanceof Type\Atomic\TFn
             || $type instanceof Type\Atomic\TCallable
         ) {
             if ($type->params) {

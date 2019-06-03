@@ -813,7 +813,7 @@ class TypeAnalyzer
             return true;
         }
 
-        if ($container_type_part instanceof TCallable && $input_type_part instanceof Type\Atomic\Fn) {
+        if ($container_type_part instanceof TCallable && $input_type_part instanceof Type\Atomic\TFn) {
             $all_types_contain = true;
 
             if (self::compareCallable(
@@ -1194,7 +1194,7 @@ class TypeAnalyzer
             }
         }
 
-        if ($container_type_part instanceof Type\Atomic\Fn && $input_type_part instanceof TCallable) {
+        if ($container_type_part instanceof Type\Atomic\TFn && $input_type_part instanceof TCallable) {
             $type_coerced = true;
 
             return false;
@@ -1707,8 +1707,8 @@ class TypeAnalyzer
             }
         }
 
-        if ($container_type_part instanceof Type\Atomic\Fn) {
-            if (!$input_type_part instanceof Type\Atomic\Fn) {
+        if ($container_type_part instanceof Type\Atomic\TFn) {
+            if (!$input_type_part instanceof Type\Atomic\TFn) {
                 $type_coerced = true;
                 $type_coerced_from_mixed = true;
 
@@ -1838,8 +1838,8 @@ class TypeAnalyzer
     }
 
     /**
-     * @param  TCallable|Type\Atomic\Fn   $input_type_part
-     * @param  TCallable|Type\Atomic\Fn   $container_type_part
+     * @param  TCallable|Type\Atomic\TFn   $input_type_part
+     * @param  TCallable|Type\Atomic\TFn   $container_type_part
      * @param  bool   &$type_coerced
      * @param  bool   &$type_coerced_from_mixed
      * @param  bool   $has_scalar_match

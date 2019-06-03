@@ -103,7 +103,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $has_valid_function_call_type = false;
 
                 foreach ($stmt->name->inferredType->getTypes() as $var_type_part) {
-                    if ($var_type_part instanceof Type\Atomic\Fn || $var_type_part instanceof Type\Atomic\TCallable) {
+                    if ($var_type_part instanceof Type\Atomic\TFn || $var_type_part instanceof Type\Atomic\TCallable) {
                         $function_params = $var_type_part->params;
 
                         if (isset($stmt->inferredType) && $var_type_part->return_type) {

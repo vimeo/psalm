@@ -4,7 +4,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Represents a closure where we know the return type and params
  */
-class Fn extends TNamedObject
+class TFn extends TNamedObject
 {
     use CallableTrait;
 
