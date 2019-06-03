@@ -1515,6 +1515,14 @@ class AnnotationTest extends TestCase
                     function foo() {}',
                 'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
             ],
+            'invalidParamDocblockAsterisk' => [
+                '<?php
+                    /**
+                     * @param    *   $reference
+                     */
+                    function f($reference) {}',
+                'error_message' => 'MissingDocblockType'
+            ]
         ];
     }
 }
