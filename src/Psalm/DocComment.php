@@ -199,6 +199,10 @@ class DocComment
                 list($type) = $type_info;
                 list($data, $data_offset) = $data_info;
 
+                if (strpos($data, '*')) {
+                    $data = rtrim(preg_replace('/^[ \t]*\*\s*$/', '', $data));
+                }
+
                 $docblock = str_replace($full_match, '', $docblock);
 
                 if (empty($special[$type])) {
