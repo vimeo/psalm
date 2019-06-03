@@ -1708,6 +1708,11 @@ class FunctionCallTest extends TestCase
                         }
                     }'
             ],
+            'minSingleArg' => [
+                '<?php
+                    /** @psalm-suppress TooFewArguments */
+                    min(0);',
+            ],
         ];
     }
 

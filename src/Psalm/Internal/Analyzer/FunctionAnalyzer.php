@@ -304,6 +304,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                     return clone $array_type->type_params[1];
                                 }
                             } elseif ($first_arg->inferredType->hasScalarType() &&
+                                isset($call_args[1]) &&
                                 ($second_arg = $call_args[1]->value) &&
                                 isset($second_arg->inferredType) &&
                                 $second_arg->inferredType->hasScalarType()
