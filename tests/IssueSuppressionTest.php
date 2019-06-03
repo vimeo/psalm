@@ -79,6 +79,16 @@ class IssueSuppressionTest extends TestCase
                         );
                     }',
             ],
+            'suppressWithNewlineAfterComment' => [
+                '<?php
+                    function foo() : void {
+                        /**
+                         * @psalm-suppress TooManyArguments
+                         * here
+                         */
+                        strlen("a", "b");
+                    }'
+            ],
         ];
     }
 

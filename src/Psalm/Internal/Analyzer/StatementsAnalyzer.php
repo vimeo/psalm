@@ -229,7 +229,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                              * @return string
                              */
                             function ($line) {
-                                return explode(' ', trim($line))[0];
+                                return preg_split('/[\s]+/', $line)[0];
                             },
                             $comments['specials']['psalm-suppress']
                         )
