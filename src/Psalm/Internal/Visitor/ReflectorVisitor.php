@@ -344,7 +344,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     );
 
                     foreach ($all_inheritance as $template_line) {
-                        $this->useTemplatedType($storage, $node, $template_line);
+                        $this->useTemplatedType($storage, $node, trim(preg_replace('@^[ \t]*\*@m', '', $template_line)));
                     }
                 }
 

@@ -695,7 +695,7 @@ class CommentAnalyzer
             );
 
             foreach ($all_inheritance as $template_line) {
-                $info->template_extends[] = $template_line;
+                $info->template_extends[] = trim(preg_replace('@^[ \t]*\*@m', '', $template_line));
             }
         }
 
@@ -708,7 +708,7 @@ class CommentAnalyzer
             );
 
             foreach ($all_inheritance as $template_line) {
-                $info->template_implements[] = $template_line;
+                $info->template_implements[] = trim(preg_replace('@^[ \t]*\*@m', '', $template_line));
             }
         }
 
