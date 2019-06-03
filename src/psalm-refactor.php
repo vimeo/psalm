@@ -113,9 +113,6 @@ Options:
         Renames a specfied item (e.g. method) and updates all references to it that Psalm can
         identify.
 
-    --move-and-rename "[Identifier]" --to "[NewIdentifier]"
-        Moves the specified item to the destination with a new name
-
 HELP;
 
     exit;
@@ -178,21 +175,12 @@ foreach ($args as $arg) {
         continue;
     }
 
-    if ($arg === '--move-and-rename') {
-        $operation = 'move_and_rename';
-        continue;
-    }
-
     if ($arg === '--to') {
-        if (($operation !== 'rename' && $operation !== 'move_and_rename') || !$last_arg) {
+        if ($operation !== 'rename' || !$last_arg) {
             die('--to is not expected here' . PHP_EOL);
         }
 
-        if ($operation === 'rename') {
-            $operation = 'rename_to';
-        } else {
-            $operation = 'move_and_rename_to';
-        }
+        $operation = 'rename_to';
 
         continue;
     }
@@ -202,7 +190,7 @@ foreach ($args as $arg) {
         continue;
     }
 
-    if ($operation === 'move_into' || $operation === 'rename_to' || $operation === 'move_and_rename_to') {
+    if ($operation === 'move_into' || $operation === 'rename_to') {
         if (!$last_arg) {
             die('Expecting a previous argument' . PHP_EOL);
         }
