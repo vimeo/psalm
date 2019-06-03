@@ -24,16 +24,14 @@ class MethodRenameTest extends \Psalm\Tests\TestCase
      *
      * @param string $input_code
      * @param string $output_code
-     * @param array<string, string> $methods_to_rename
-     * @param array<string, string> $call_transforms
+     * @param array<string, string> $to_refactor
      *
      * @return void
      */
     public function testValidCode(
         string $input_code,
         string $output_code,
-        array $methods_to_rename,
-        array $call_transforms
+        array $to_refactor
     ) {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -61,10 +59,7 @@ class MethodRenameTest extends \Psalm\Tests\TestCase
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $codebase->call_transforms = $call_transforms;
-        $codebase->methods_to_rename = $methods_to_rename;
-
-        $this->project_analyzer->refactorCodeAfterCompletion();
+        $this->project_analyzer->refactorCodeAfterCompletion($to_refactor);
 
         $this->analyzeFile($file_path, $context);
 
@@ -78,7 +73,7 @@ class MethodRenameTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return array<string,array{string,string,array<string, string>,array<string, string>}>
+     * @return array<string,array{string,string,array<string, string>}>
      */
     public function providerValidCodeParse()
     {
@@ -141,11 +136,8 @@ class MethodRenameTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 [
-                    'ns\a::foo' => 'Fedcba',
+                    'Ns\A::foo' => 'Ns\A::Fedcba',
                 ],
-                [
-                    'ns\a::foo\((.*\))' => 'Ns\A::Fedcba($1)',
-                ]
             ],
         ];
     }

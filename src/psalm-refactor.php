@@ -156,8 +156,7 @@ $args = getArguments();
 $operation = null;
 $last_arg = null;
 
-$to_move = [];
-$to_rename = [];
+$to_refactor = [];
 
 foreach ($args as $arg) {
     if ($arg === '--move') {
@@ -213,14 +212,13 @@ foreach ($args as $arg) {
 
             foreach ($last_arg_parts as $last_arg_part) {
                 list(, $identifier_name) = explode('::', $last_arg_part);
-                $to_move[strtolower($last_arg_part)] = $arg . '::' . $identifier_name;
-                $to_rename[strtolower($last_arg_part) . '\((.*\))'] = $arg . '::' . $identifier_name . '($1)';
+                $to_refactor[$last_arg_part] = $arg . '::' . $identifier_name;
             }
         } elseif ($operation === 'move_and_rename_to') {
-            $to_move[strtolower($last_arg)] = $arg;
-            $to_rename[strtolower($last_arg) . '\((.*\))'] = $arg . '($1)';
+            $to_refactor[$last_arg] = $arg;
         } else {
-            $to_rename[strtolower($last_arg) . '\((.*\))'] = $arg . '($1)';
+            list(, $identifier_name) = explode('::', $last_arg);
+            $to_refactor[$last_arg] = $arg . '::' . $identifier_name;
         }
 
         $last_arg = null;
@@ -237,7 +235,7 @@ foreach ($args as $arg) {
     die('Unexpected argument "' . $arg . '"' . PHP_EOL);
 }
 
-if (!$to_move && !$to_rename) {
+if (!$to_refactor) {
     die('No --move or --rename arguments supplied' . PHP_EOL);
 }
 
@@ -279,12 +277,7 @@ $project_analyzer = new ProjectAnalyzer(
 
 $config->visitComposerAutoloadFiles($project_analyzer);
 
-$codebase = $project_analyzer->getCodebase();
-
-$codebase->methods_to_move = $to_move;
-$codebase->call_transforms = $to_rename;
-
-$project_analyzer->refactorCodeAfterCompletion();
+$project_analyzer->refactorCodeAfterCompletion($to_refactor);
 
 $start_time = microtime(true);
 

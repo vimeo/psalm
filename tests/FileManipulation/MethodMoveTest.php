@@ -32,8 +32,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
     public function testValidCode(
         string $input_code,
         string $output_code,
-        array $methods_to_move,
-        array $call_transforms
+        array $methods_to_move
     ) {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -61,10 +60,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $codebase->methods_to_move = $methods_to_move;
-        $codebase->call_transforms = $call_transforms;
-
-        $this->project_analyzer->refactorCodeAfterCompletion();
+        $this->project_analyzer->refactorCodeAfterCompletion($methods_to_move);
 
         $this->analyzeFile($file_path, $context);
 
@@ -78,12 +74,12 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return array<string,array{string,string,array<string, string>,array<string, string>}>
+     * @return array<string,array{string,string,array<string, string>}>
      */
     public function providerValidCodeParse()
     {
         return [
-            'moveStaticMethodReferenceOnly' => [
+            'moveSimpleStaticMethod' => [
                 '<?php
                     namespace Ns;
 
@@ -115,12 +111,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                     class A {
                         const C = 5;
 
-                        /**
-                         * @return ArrayObject<int, int>
-                         */
-                        public static function Foo() {
-                            return new ArrayObject([self::C]);
-                        }
+
                     }
 
                     class B {
@@ -129,13 +120,19 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
 
                             foreach (B::Fe() as $f) {}
                         }
+                        /**
+                         * @return ArrayObject<int, int>
+                         */
+                        public static function Fe() {
+                            return new ArrayObject([A::C]);
+                        }
+
                     }',
-                [],
                 [
-                    'ns\a::foo\((.*\))' => 'Ns\B::Fe($1)',
+                    'Ns\A::Foo' => 'Ns\B::Fe',
                 ]
             ],
-            'moveStaticMethodReferenceOnlyIntoNamespaceWithExistingUse' => [
+            'moveStaticMethodIntoNamespaceWithExistingUse' => [
                 '<?php
                     namespace {
                         class A {
@@ -154,12 +151,14 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                     }
 
                     namespace Ns\A {
-                        class B {}
+                        class B {
+
+                        }
                     }',
                 '<?php
                     namespace {
                         class A {
-                            public static function Foo() : void {}
+
                         }
                     }
 
@@ -174,11 +173,14 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                     }
 
                     namespace Ns\A {
-                        class B {}
+                        class B {
+
+
+                            public static function Fedcba() : void {}
+                        }
                     }',
-                [],
                 [
-                    'a::foo\((.*\))' => 'Ns\A\B::Fedcba($1)',
+                    'A::Foo' => 'Ns\A\B::Fedcba',
                 ]
             ],
             'moveEmptyStaticMethodOnly' => [
@@ -209,10 +211,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         public static function Fedcba() : void {}
                     }',
                 [
-                    'ns\a::foo' => 'Ns\B::Fedcba',
+                    'Ns\A::Foo' => 'Ns\B::Fedcba',
                 ],
-                [
-                ]
             ],
             'moveStaticMethodOnly' => [
                 '<?php
@@ -289,9 +289,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 [
-                    'ns\a::foo' => 'Ns\B::Fedbca',
-                ],
-                []
+                    'Ns\A::Foo' => 'Ns\B::Fedbca',
+                ]
             ],
             'moveStaticMethodAndReferencesFromAbove' => [
                 '<?php
@@ -335,10 +334,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 [
-                    'ns\a::foo' => 'Ns\B::Fe',
-                ],
-                [
-                    'ns\a::foo\((.*\))' => 'Ns\B::Fe($1)',
+                    'Ns\A::Foo' => 'Ns\B::Fe',
                 ]
             ],
             'moveStaticMethodAndReferencesFromBelow' => [
@@ -382,11 +378,8 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
 
                     }',
                 [
-                    'ns\a::foo' => 'Ns\B::Fe',
+                    'Ns\A::Foo' => 'Ns\B::Fe',
                 ],
-                [
-                    'ns\a::foo\((.*\))' => 'Ns\B::Fe($1)',
-                ]
             ],
             'moveStaticMethodAndReferencesAcrossNamespaces' => [
                 '<?php
@@ -434,10 +427,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 [
-                    'ns1\a::foo' => 'Ns2\Ns3\B::Fe',
-                ],
-                [
-                    'ns1\a::foo\((.*\))' => 'Ns2\Ns3\B::Fe($1)',
+                    'Ns1\A::Foo' => 'Ns2\Ns3\B::Fe',
                 ]
             ],
             'moveStaticMethodAndReferencesAcrossNamespacesWithExistingUse' => [
@@ -490,10 +480,7 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 [
-                    'ns1\a::foo' => 'Ns2\Ns3\B::Fedcba',
-                ],
-                [
-                    'ns1\a::foo\((.*\))' => 'Ns2\Ns3\B::Fedcba($1)',
+                    'Ns1\A::Foo' => 'Ns2\Ns3\B::Fedcba',
                 ]
             ],
         ];

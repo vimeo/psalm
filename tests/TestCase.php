@@ -101,6 +101,10 @@ class TestCase extends BaseTestCase
 
         $codebase->config->visitStubFiles($codebase);
 
+        if ($codebase->alter_code) {
+            $this->project_analyzer->interpretRefactors();
+        }
+
         $file_analyzer = new FileAnalyzer(
             $this->project_analyzer,
             $file_path,

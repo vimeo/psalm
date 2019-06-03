@@ -152,6 +152,11 @@ class ProjectAnalyzer
      */
     private $project_files;
 
+    /**
+     * @var array<string, string>
+     */
+    private $to_refactor = [];
+
     const TYPE_COMPACT = 'compact';
     const TYPE_CONSOLE = 'console';
     const TYPE_PYLINT = 'pylint';
@@ -524,6 +529,55 @@ class ProjectAnalyzer
         );
     }
 
+    public function interpretRefactors() : void
+    {
+        if (!$this->codebase->alter_code) {
+            throw new \UnexpectedValueException('Should not be checking references');
+        }
+
+        foreach ($this->to_refactor as $source => $destination) {
+            $source_parts = explode('::', $source);
+            $destination_parts = explode('::', $destination);
+
+            if (count($source_parts) === 1 || count($destination_parts) === 1) {
+                throw new \Psalm\Exception\RefactorException('Cannot yet refactor classes');
+            }
+
+            if ($this->codebase->methods->methodExists($source)) {
+                if ($this->codebase->methods->methodExists($destination)) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination ' . $destination . ' already exists'
+                    );
+                } elseif (!$this->codebase->classlikes->classExists($destination_parts[0])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination class ' . $destination_parts[0] . ' doesn’t exist'
+                    );
+                }
+
+                if (strtolower($source_parts[0]) !== strtolower($destination_parts[0])) {
+                    $source_storage = $this->codebase->methods->getStorage($source);
+
+                    if (!$source_storage->is_static) {
+                        throw new \Psalm\Exception\RefactorException(
+                            'Cannot move non-static method ' . $source
+                        );
+                    }
+
+                    $this->codebase->methods_to_move[strtolower($source)] = $destination;
+                } else {
+                    $this->codebase->methods_to_rename[strtolower($source)] = $destination_parts[1];
+                }
+
+                $this->codebase->call_transforms[strtolower($source) . '\((.*\))'] = $destination . '($1)';
+                continue;
+            }
+
+            throw new \Psalm\Exception\RefactorException(
+                'At present Psalm can only move static methods (attempted to move ' . $source . ')'
+            );
+        }
+    }
+
     public function prepareMigration() : void
     {
         if (!$this->codebase->alter_code) {
@@ -884,15 +938,13 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param int $php_major_version
-     * @param int $php_minor_version
-     * @param bool $dry_run
-     * @param bool $safe_types
+     * @param array<string, string> $to_refactor
      *
      * @return void
      */
-    public function refactorCodeAfterCompletion()
+    public function refactorCodeAfterCompletion(array $to_refactor)
     {
+        $this->to_refactor = $to_refactor;
         $this->codebase->alter_code = true;
         $this->show_issues = false;
     }

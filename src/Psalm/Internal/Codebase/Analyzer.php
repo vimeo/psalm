@@ -222,6 +222,10 @@ class Analyzer
         $filetype_analyzers = $this->config->getFiletypeAnalyzers();
         $codebase = $project_analyzer->getCodebase();
 
+        if ($alter_code) {
+            $project_analyzer->interpretRefactors();
+        }
+
         $analysis_worker =
             /**
              * @param int $_
