@@ -109,7 +109,7 @@ Options:
 
         --move "Ns\Foo::bar,Ns\Foo::baz" --into "Biz\Bang\DestinationClass"
 
-    --rename "[Identifier]" --to "[newName]"
+    --rename "[Identifier]" --to "[NewIdentifier]"
         Renames a specfied item (e.g. method) and updates all references to it that Psalm can
         identify.
 
@@ -214,11 +214,8 @@ foreach ($args as $arg) {
                 list(, $identifier_name) = explode('::', $last_arg_part);
                 $to_refactor[$last_arg_part] = $arg . '::' . $identifier_name;
             }
-        } elseif ($operation === 'move_and_rename_to') {
-            $to_refactor[$last_arg] = $arg;
         } else {
-            list(, $identifier_name) = explode('::', $last_arg);
-            $to_refactor[$last_arg] = $arg . '::' . $identifier_name;
+            $to_refactor[$last_arg] = $arg;
         }
 
         $last_arg = null;
