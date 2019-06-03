@@ -12,11 +12,15 @@ class LongProgress extends Progress
     protected $progress = 0;
 
     /** @var bool */
-    protected $print_failures = false;
+    protected $print_errors = false;
 
-    public function __construct(bool $print_failures = true)
+    /** @var bool */
+    protected $print_infos = false;
+
+    public function __construct(bool $print_errors = true, bool $print_infos = true)
     {
-        $this->print_failures = $print_failures;
+        $this->print_errors = $print_errors;
+        $this->print_infos = $print_infos;
     }
 
     public function startScanningFiles(): void
@@ -45,12 +49,14 @@ class LongProgress extends Progress
         $this->progress = 0;
     }
 
-    public function taskDone(bool $successful): void
+    public function taskDone(int $level): void
     {
-        if ($successful || !$this->print_failures) {
+        if ($level === 0 || ($level === 1 && !$this->print_infos) || !$this->print_errors) {
             $this->write(self::doesTerminalSupportUtf8() ? '░' : '_');
+        } elseif ($level === 1) {
+            $this->write('I');
         } else {
-            $this->write('F');
+            $this->write('E');
         }
 
         ++$this->progress;

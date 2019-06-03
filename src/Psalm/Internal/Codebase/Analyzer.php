@@ -245,9 +245,27 @@ class Analyzer
 
         $this->progress->start(count($this->files_to_analyze));
 
-        $task_done_closure = function (array $issues): void {
-            $this->progress->taskDone(count($issues) === 0);
-        };
+        $task_done_closure =
+            /**
+             * @param array<IssueData> $issues
+             */
+            function (array $issues): void {
+                $has_error = false;
+                $has_info = false;
+
+                foreach ($issues as $issue) {
+                    if ($issue['severity'] === 'error') {
+                        $has_error = true;
+                        break;
+                    }
+
+                    if ($issue['severity'] === 'info') {
+                        $has_info = true;
+                    }
+                }
+
+                $this->progress->taskDone($has_error ? 2 : ($has_info ? 1 : 0));
+            };
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
             $process_file_paths = [];
@@ -458,11 +476,17 @@ class Analyzer
         }
     }
 
+    /**
+     * @return array<IssueData>
+     */
     private function getFileIssues(string $file_path): array
     {
-        return array_filter(IssueBuffer::getIssuesData(), function (array $issue) use ($file_path): bool {
-            return $issue['file_path'] === $file_path;
-        });
+        return array_filter(
+            IssueBuffer::getIssuesData(),
+            function (array $issue) use ($file_path): bool {
+                return $issue['file_path'] === $file_path;
+            }
+        );
     }
 
     /**

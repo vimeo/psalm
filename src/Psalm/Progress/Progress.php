@@ -32,7 +32,7 @@ abstract class Progress
     {
     }
 
-    public function taskDone(bool $successful): void
+    public function taskDone(int $level): void
     {
     }
 

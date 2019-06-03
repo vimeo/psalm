@@ -5,7 +5,7 @@ class DefaultProgress extends LongProgress
 {
     const TOO_MANY_FILES = 1500;
 
-    public function taskDone(bool $successful): void
+    public function taskDone(int $level): void
     {
         if ($this->number_of_tasks > self::TOO_MANY_FILES) {
             ++$this->progress;
@@ -17,7 +17,7 @@ class DefaultProgress extends LongProgress
 
             $this->write($inner_progress . ' ' . $this->getOverview() . "\r");
         } else {
-            parent::taskDone($successful);
+            parent::taskDone($level);
         }
     }
 

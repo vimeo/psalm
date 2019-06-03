@@ -505,7 +505,7 @@ if (isset($_SERVER['TRAVIS'])
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 $progress = $debug
     ? new DebugProgress()
-    : (isset($options['no-progress']) ? new VoidProgress() : new DefaultProgress(!$config->error_baseline));
+    : (isset($options['no-progress']) ? new VoidProgress() : new DefaultProgress(!$config->error_baseline, $show_info));
 
 if (isset($options['no-cache'])) {
     $providers = new Provider\Providers(
