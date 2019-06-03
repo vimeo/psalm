@@ -79,7 +79,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             && ($closure_atomic_type = isset($first_arg_atomic_types['Closure'])
                 ? $first_arg_atomic_types['Closure']
                 : null)
-            && $closure_atomic_type instanceof Type\Atomic\Fn
+            && $closure_atomic_type instanceof Type\Atomic\TFn
         ) {
             $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 

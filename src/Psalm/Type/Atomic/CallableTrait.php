@@ -189,7 +189,7 @@ trait CallableTrait
             foreach ($this->params as $offset => $param) {
                 $input_param_type = null;
 
-                if (($input_type instanceof Atomic\Fn || $input_type instanceof Atomic\TCallable)
+                if (($input_type instanceof Atomic\TFn || $input_type instanceof Atomic\TCallable)
                     && isset($input_type->params[$offset])
                 ) {
                     $input_param_type = $input_type->params[$offset]->type;
@@ -211,7 +211,7 @@ trait CallableTrait
             }
         }
 
-        if (($input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\Fn)
+        if (($input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\TFn)
             && $this->return_type
             && $input_type->return_type
         ) {

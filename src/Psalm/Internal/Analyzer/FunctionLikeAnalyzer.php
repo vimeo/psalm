@@ -271,7 +271,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
             /** @var PhpParser\Node\Expr\Closure $this->function */
             $this->function->inferredType = new Type\Union([
-                new Type\Atomic\Fn(
+                new Type\Atomic\TFn(
                     'Closure',
                     $storage->params,
                     $closure_return_type
@@ -858,7 +858,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     )
                 ) {
                     if ($this->function->inferredType) {
-                        /** @var Type\Atomic\Fn */
+                        /** @var Type\Atomic\TFn */
                         $closure_atomic = $this->function->inferredType->getTypes()['Closure'];
                         $closure_atomic->return_type = $closure_return_type;
                     }

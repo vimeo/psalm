@@ -462,7 +462,7 @@ class CallAnalyzer
 
                     foreach ($replaced_type->getTypes() as $replaced_type_part) {
                         if ($replaced_type_part instanceof Type\Atomic\TCallable
-                            || $replaced_type_part instanceof Type\Atomic\Fn
+                            || $replaced_type_part instanceof Type\Atomic\TFn
                         ) {
                             foreach ($closure_storage->params as $closure_param_offset => $param_storage) {
                                 if (isset($replaced_type_part->params[$closure_param_offset]->type)
@@ -1859,7 +1859,7 @@ class CallAnalyzer
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$closure_type instanceof Type\Atomic\Fn) {
+        if (!$closure_type instanceof Type\Atomic\TFn) {
             if (!$closure_arg->value instanceof PhpParser\Node\Scalar\String_
                 && !$closure_arg->value instanceof PhpParser\Node\Expr\Array_
                 && !$closure_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
@@ -1913,7 +1913,7 @@ class CallAnalyzer
                             continue;
                         }
 
-                        $closure_types[] = new Type\Atomic\Fn(
+                        $closure_types[] = new Type\Atomic\TFn(
                             'Closure',
                             $method_storage->params,
                             $method_storage->return_type ?: Type::getMixed()
@@ -1958,21 +1958,21 @@ class CallAnalyzer
 
                         if ($passing_callmap_params_options) {
                             foreach ($passing_callmap_params_options as $passing_callmap_params_option) {
-                                $closure_types[] = new Type\Atomic\Fn(
+                                $closure_types[] = new Type\Atomic\TFn(
                                     'Closure',
                                     $passing_callmap_params_option,
                                     $function_storage->return_type ?: Type::getMixed()
                                 );
                             }
                         } else {
-                            $closure_types[] = new Type\Atomic\Fn(
+                            $closure_types[] = new Type\Atomic\TFn(
                                 'Closure',
                                 $callmap_params_options[0],
                                 $function_storage->return_type ?: Type::getMixed()
                             );
                         }
                     } else {
-                        $closure_types[] = new Type\Atomic\Fn(
+                        $closure_types[] = new Type\Atomic\TFn(
                             'Closure',
                             $function_storage->params,
                             $function_storage->return_type ?: Type::getMixed()
@@ -2014,7 +2014,7 @@ class CallAnalyzer
     private static function checkArrayFunctionClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
         $method_id,
-        Type\Atomic\Fn $closure_type,
+        Type\Atomic\TFn $closure_type,
         PhpParser\Node\Arg $closure_arg,
         $min_closure_param_count,
         $max_closure_param_count,

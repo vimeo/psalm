@@ -470,7 +470,7 @@ class Methods
             }
 
             if ($atomic_type instanceof Type\Atomic\TCallable
-                || $atomic_type instanceof Type\Atomic\Fn
+                || $atomic_type instanceof Type\Atomic\TFn
             ) {
                 if ($atomic_type->params) {
                     foreach ($atomic_type->params as $param) {
@@ -571,11 +571,11 @@ class Methods
             ) {
                 foreach ($args[0]->value->inferredType->getTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TCallable
-                        || $atomic_type instanceof Type\Atomic\Fn
+                        || $atomic_type instanceof Type\Atomic\TFn
                     ) {
                         $callable_type = clone $atomic_type;
 
-                        return new Type\Union([new Type\Atomic\Fn(
+                        return new Type\Union([new Type\Atomic\TFn(
                             'Closure',
                             $callable_type->params,
                             $callable_type->return_type
@@ -587,7 +587,7 @@ class Methods
                     ) {
                         $invokable_storage = $this->getStorage($atomic_type->value . '::__invoke');
 
-                        return new Type\Union([new Type\Atomic\Fn(
+                        return new Type\Union([new Type\Atomic\TFn(
                             'Closure',
                             $invokable_storage->params,
                             $invokable_storage->return_type

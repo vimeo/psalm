@@ -461,7 +461,7 @@ abstract class Atomic
             }
         }
 
-        if ($this instanceof Type\Atomic\Fn
+        if ($this instanceof Type\Atomic\TFn
             || $this instanceof Type\Atomic\TCallable
         ) {
             if ($this->params) {
@@ -684,7 +684,7 @@ abstract class Atomic
             }
         }
 
-        if ($this instanceof Type\Atomic\Fn
+        if ($this instanceof Type\Atomic\TFn
             || $this instanceof Type\Atomic\TCallable
         ) {
             if ($this->params) {
