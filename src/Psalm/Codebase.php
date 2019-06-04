@@ -190,7 +190,37 @@ class Codebase
     /**
      * @var array<string, string>
      */
+    public $properties_to_move = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $properties_to_rename = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $class_constants_to_move = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $class_constants_to_rename = [];
+
+    /**
+     * @var array<string, string>
+     */
     public $call_transforms = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $property_transforms = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $class_constant_transforms = [];
 
     /**
      * @var bool

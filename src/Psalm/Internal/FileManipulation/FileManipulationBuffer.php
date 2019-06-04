@@ -23,9 +23,13 @@ class FileManipulationBuffer
      */
     public static function add($file_path, array $file_manipulations)
     {
-        self::$file_manipulations[$file_path] = isset(self::$file_manipulations[$file_path])
-            ? array_merge(self::$file_manipulations[$file_path], $file_manipulations)
-            : $file_manipulations;
+        if (!isset(self::$file_manipulations[$file_path])) {
+            self::$file_manipulations[$file_path] = [];
+        }
+
+        foreach ($file_manipulations as $file_manipulation) {
+            self::$file_manipulations[$file_path][$file_manipulation->getKey()] = $file_manipulation;
+        }
     }
 
     /** @param CodeMigration[] $code_migrations */
@@ -149,16 +153,18 @@ class FileManipulationBuffer
                 $code_migration->destination_start
             );
 
-            $code_migration_manipulations[$code_migration->destination_file_path][]
-                = new FileManipulation(
-                    $code_migration->destination_start + $destination_start_offset,
-                    $code_migration->destination_start + $destination_start_offset,
-                    PHP_EOL . substr(
-                        $file_provider->getContents($code_migration->source_file_path),
-                        $code_migration->source_start + $start_offset,
-                        $code_migration->source_end - $code_migration->source_start + $middle_offset
-                    ) . PHP_EOL
-                );
+            $manipulation = new FileManipulation(
+                $code_migration->destination_start + $destination_start_offset,
+                $code_migration->destination_start + $destination_start_offset,
+                PHP_EOL . substr(
+                    $file_provider->getContents($code_migration->source_file_path),
+                    $code_migration->source_start + $start_offset,
+                    $code_migration->source_end - $code_migration->source_start + $middle_offset
+                ) . PHP_EOL
+            );
+
+            $code_migration_manipulations[$code_migration->destination_file_path][$manipulation->getKey()]
+                = $manipulation;
         }
 
         return $code_migration_manipulations;

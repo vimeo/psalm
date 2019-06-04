@@ -680,6 +680,25 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $member_stmts[] = $stmt;
                         break;
                     }
+
+                    $property_id = strtolower($this->fq_class_name) . '::$' . $prop->name;
+
+                    foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
+                        if ($property_id === $original_property_id) {
+                            $file_manipulations = [
+                                new \Psalm\FileManipulation(
+                                    (int) $prop->name->getAttribute('startFilePos'),
+                                    (int) $prop->name->getAttribute('endFilePos') + 1,
+                                    '$' . $new_property_name
+                                )
+                            ];
+
+                            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                $this->getFilePath(),
+                                $file_manipulations
+                            );
+                        }
+                    }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;

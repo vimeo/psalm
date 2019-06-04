@@ -543,12 +543,20 @@ class ProjectAnalyzer
                 throw new \Psalm\Exception\RefactorException('Cannot yet refactor classes');
             }
 
+            if (!$this->codebase->classlikes->classExists($source_parts[0])) {
+                throw new \Psalm\Exception\RefactorException(
+                    'Source class ' . $source_parts[0] . ' doesn’t exist'
+                );
+            }
+
             if ($this->codebase->methods->methodExists($source)) {
                 if ($this->codebase->methods->methodExists($destination)) {
                     throw new \Psalm\Exception\RefactorException(
-                        'Destination ' . $destination . ' already exists'
+                        'Destination method ' . $destination . ' already exists'
                     );
-                } elseif (!$this->codebase->classlikes->classExists($destination_parts[0])) {
+                }
+
+                if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
                     throw new \Psalm\Exception\RefactorException(
                         'Destination class ' . $destination_parts[0] . ' doesn’t exist'
                     );
@@ -572,8 +580,87 @@ class ProjectAnalyzer
                 continue;
             }
 
+            if ($source_parts[1][0] === '$') {
+                if ($destination_parts[1][0] !== '$') {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination property must be of the form Foo::$bar'
+                    );
+                }
+
+                if (!$this->codebase->properties->propertyExists($source, true)) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Property ' . $source . ' does not exist'
+                    );
+                }
+
+                if ($this->codebase->properties->propertyExists($destination, true)) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination property ' . $destination . ' already exists'
+                    );
+                }
+
+                if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination class ' . $destination_parts[0] . ' doesn’t exist'
+                    );
+                }
+
+                $source_id = strtolower($source_parts[0]) . '::' . $source_parts[1];
+
+                if (strtolower($source_parts[0]) !== strtolower($destination_parts[0])) {
+                    $source_storage = $this->codebase->properties->getStorage($source);
+
+                    if (!$source_storage->is_static) {
+                        throw new \Psalm\Exception\RefactorException(
+                            'Cannot move non-static property ' . $source
+                        );
+                    }
+
+                    $this->codebase->properties_to_move[$source_id] = $destination;
+                } else {
+                    $this->codebase->properties_to_rename[$source_id] = substr($destination_parts[1], 1);
+                }
+
+                $this->codebase->property_transforms[$source_id] = $destination;
+                continue;
+            }
+
+            $source_class_constants = $this->codebase->classlikes->getConstantsForClass(
+                $source_parts[0],
+                \ReflectionProperty::IS_PRIVATE
+            );
+
+            if (isset($source_class_constants[$source_parts[1]])) {
+                if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination class ' . $destination_parts[0] . ' doesn’t exist'
+                    );
+                }
+
+                $destination_class_constants = $this->codebase->classlikes->getConstantsForClass(
+                    $destination_parts[0],
+                    \ReflectionProperty::IS_PRIVATE
+                );
+
+                if (isset($destination_class_constants[$destination_parts[1]])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination constant ' . $destination . ' already exists'
+                    );
+                }
+
+                $source_id = strtolower($source_parts[0]) . '::' . $source_parts[1];
+
+                if (strtolower($source_parts[0]) !== strtolower($destination_parts[0])) {
+                    $this->codebase->class_constants_to_move[$source_id] = $destination;
+                } else {
+                    $this->codebase->class_constants_to_rename[$source_id] = $destination_parts[1];
+                }
+
+                $this->codebase->class_constant_transforms[$source_id] = $destination;
+            }
+
             throw new \Psalm\Exception\RefactorException(
-                'At present Psalm can only move static methods (attempted to move ' . $source . ')'
+                'Psalm cannot locate ' . $source
             );
         }
     }
@@ -586,6 +673,11 @@ class ProjectAnalyzer
 
         $this->codebase->classlikes->moveMethods(
             $this->codebase->methods,
+            $this->progress
+        );
+
+        $this->codebase->classlikes->moveProperties(
+            $this->codebase->properties,
             $this->progress
         );
     }
@@ -625,19 +717,11 @@ class ProjectAnalyzer
 
             $existing_contents = $this->codebase->file_provider->getContents($file_path);
 
-            $pre_applied_manipulations = [];
-
             foreach ($file_manipulations as $manipulation) {
-                if (isset($pre_applied_manipulations[$manipulation->getKey()])) {
-                    continue;
-                }
-
                 $existing_contents
                     = substr($existing_contents, 0, $manipulation->start)
                         . $manipulation->insertion_text
                         . substr($existing_contents, $manipulation->end);
-
-                $pre_applied_manipulations[$manipulation->getKey()] = true;
             }
 
             $this->codebase->file_provider->setContents($file_path, $existing_contents);

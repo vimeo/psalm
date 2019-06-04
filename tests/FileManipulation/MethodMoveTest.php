@@ -79,27 +79,24 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
     public function providerValidCodeParse()
     {
         return [
-            'moveSimpleStaticMethod' => [
+            'moveSimpleStaticMethodWithForeachIterator' => [
                 '<?php
                     namespace Ns;
 
                     use ArrayObject;
 
                     class A {
-                        const C = 5;
-
                         /**
                          * @return ArrayObject<int, int>
                          */
                         public static function Foo() {
-                            return new ArrayObject([self::C]);
+                            return new ArrayObject([1, 2, 3]);
                         }
                     }
 
                     class B {
                         public static function bar() : void {
                             A::Foo();
-
                             foreach (A::Foo() as $f) {}
                         }
                     }',
@@ -109,24 +106,99 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                     use ArrayObject;
 
                     class A {
-                        const C = 5;
-
 
                     }
 
                     class B {
                         public static function bar() : void {
                             B::Fe();
-
                             foreach (B::Fe() as $f) {}
                         }
+
                         /**
                          * @return ArrayObject<int, int>
                          */
                         public static function Fe() {
-                            return new ArrayObject([A::C]);
+                            return new ArrayObject([1, 2, 3]);
                         }
+                    }',
+                [
+                    'Ns\A::Foo' => 'Ns\B::Fe',
+                ]
+            ],
+            'moveSimpleStaticMethodWithConstant' => [
+                '<?php
+                    namespace Ns;
 
+                    class A {
+                        const C = 5;
+
+                        public static function Foo() : void {
+                            echo self::C;
+                        }
+                    }
+
+                    class B {
+
+                    }',
+                '<?php
+                    namespace Ns;
+
+                    class A {
+                        const C = 5;
+
+
+                    }
+
+                    class B {
+
+
+                        public static function Fe() : void {
+                            echo A::C;
+                        }
+                    }',
+                [
+                    'Ns\A::Foo' => 'Ns\B::Fe',
+                ]
+            ],
+            'moveSimpleStaticMethodWithProperty' => [
+                '<?php
+                    namespace Ns;
+
+                    class A {
+                        /** @var int */
+                        public static $baz;
+
+                        public static function Foo() : void {
+                            echo self::$baz;
+                            echo A::$baz . " ";
+                            self::$baz = 12;
+                            A::$baz = 14;
+                        }
+                    }
+
+                    class B {
+
+                    }',
+                '<?php
+                    namespace Ns;
+
+                    class A {
+                        /** @var int */
+                        public static $baz;
+
+
+                    }
+
+                    class B {
+
+
+                        public static function Fe() : void {
+                            echo A::$baz;
+                            echo A::$baz . " ";
+                            A::$baz = 12;
+                            A::$baz = 14;
+                        }
                     }',
                 [
                     'Ns\A::Foo' => 'Ns\B::Fe',
@@ -482,6 +554,67 @@ class MoveMethodTest extends \Psalm\Tests\TestCase
                 [
                     'Ns1\A::Foo' => 'Ns2\Ns3\B::Fedcba',
                 ]
+            ],
+            'renameInstanceMethod' => [
+                '<?php
+                    namespace Ns;
+
+                    use ArrayObject;
+
+                    class A {
+                        /**
+                         * @return ArrayObject<int, int>
+                         */
+                        public function Foo() {
+                            return new ArrayObject([self::C]);
+                        }
+
+                        public function bat() {
+                            $this->foo();
+                        }
+                    }
+
+                    class B extends A {
+                        public static function bar(A $a) : void {
+                            $a->Foo();
+
+                            $this->foo();
+                            parent::foo();
+
+                            foreach ($a->Foo() as $f) {}
+                        }
+                    }',
+                '<?php
+                    namespace Ns;
+
+                    use ArrayObject;
+
+                    class A {
+                        /**
+                         * @return ArrayObject<int, int>
+                         */
+                        public function Fedcba() {
+                            return new ArrayObject([self::C]);
+                        }
+
+                        public function bat() {
+                            $this->Fedcba();
+                        }
+                    }
+
+                    class B extends A {
+                        public static function bar(A $a) : void {
+                            $a->Fedcba();
+
+                            $this->Fedcba();
+                            parent::Fedcba();
+
+                            foreach ($a->Fedcba() as $f) {}
+                        }
+                    }',
+                [
+                    'Ns\A::foo' => 'Ns\A::Fedcba',
+                ],
             ],
         ];
     }
