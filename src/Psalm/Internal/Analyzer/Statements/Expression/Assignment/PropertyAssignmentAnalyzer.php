@@ -901,22 +901,6 @@ class PropertyAssignmentAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($stmt->class instanceof PhpParser\Node\Name
-            && $codebase->methods_to_move
-            && $context->calling_method_id
-            && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
-        ) {
-            $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
-
-            $codebase->classlikes->airliftClassLikeReference(
-                $fq_class_name,
-                explode('::', $destination_method_id)[0],
-                $statements_analyzer->getFilePath(),
-                (int) $stmt->class->getAttribute('startFilePos'),
-                (int) $stmt->class->getAttribute('endFilePos') + 1
-            );
-        }
-
         $prop_name = $stmt->name;
 
         if (!$prop_name instanceof PhpParser\Node\Identifier) {
@@ -964,35 +948,45 @@ class PropertyAssignmentAnalyzer
 
         $declaring_property_id = strtolower((string) $declaring_property_class) . '::$' . $prop_name;
 
-        foreach ($codebase->property_transforms as $original_pattern => $transformation) {
-            if ($declaring_property_id === $original_pattern
-                && $stmt->class instanceof PhpParser\Node\Name
-            ) {
-                list($old_declaring_fq_class_name) = explode('::$', $declaring_property_id);
-                list($new_fq_class_name, $new_property_name) = explode('::$', $transformation);
+        if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
+            $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
+                $codebase,
+                $statements_analyzer,
+                $stmt->class,
+                $fq_class_name,
+                $context->calling_method_id
+            );
 
-                $file_manipulations = [];
+            if (!$moved_class) {
+                foreach ($codebase->property_transforms as $original_pattern => $transformation) {
+                    if ($declaring_property_id === $original_pattern) {
+                        list($old_declaring_fq_class_name) = explode('::$', $declaring_property_id);
+                        list($new_fq_class_name, $new_property_name) = explode('::$', $transformation);
 
-                if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
-                    $file_manipulations[] = new \Psalm\FileManipulation(
-                        (int) $stmt->class->getAttribute('startFilePos'),
-                        (int) $stmt->class->getAttribute('endFilePos') + 1,
-                        Type::getStringFromFQCLN(
-                            $new_fq_class_name,
-                            $statements_analyzer->getNamespace(),
-                            $statements_analyzer->getAliasedClassesFlipped(),
-                            null
-                        )
-                    );
+                        $file_manipulations = [];
+
+                        if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
+                            $file_manipulations[] = new \Psalm\FileManipulation(
+                                (int) $stmt->class->getAttribute('startFilePos'),
+                                (int) $stmt->class->getAttribute('endFilePos') + 1,
+                                Type::getStringFromFQCLN(
+                                    $new_fq_class_name,
+                                    $statements_analyzer->getNamespace(),
+                                    $statements_analyzer->getAliasedClassesFlipped(),
+                                    null
+                                )
+                            );
+                        }
+
+                        $file_manipulations[] = new \Psalm\FileManipulation(
+                            (int) $stmt->name->getAttribute('startFilePos'),
+                            (int) $stmt->name->getAttribute('endFilePos') + 1,
+                            '$' . $new_property_name
+                        );
+
+                        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+                    }
                 }
-
-                $file_manipulations[] = new \Psalm\FileManipulation(
-                    (int) $stmt->name->getAttribute('startFilePos'),
-                    (int) $stmt->name->getAttribute('endFilePos') + 1,
-                    '$' . $new_property_name
-                );
-
-                FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
             }
         }
 

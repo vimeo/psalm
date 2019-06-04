@@ -1674,6 +1674,30 @@ class Union
         }
     }
 
+    public function containsClassLike(string $fq_class_like_name) : bool
+    {
+        foreach ($this->types as $atomic_type) {
+            if ($atomic_type->containsClassLike($fq_class_like_name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function replaceClassLike(string $old, string $new) : void
+    {
+        foreach ($this->types as $key => $atomic_type) {
+            $atomic_type->replaceClassLike($old, $new);
+
+            unset($this->types[$key]);
+
+            $this->types[$atomic_type->getKey()] = $atomic_type;
+        }
+
+        $this->id = null;
+    }
+
     /**
      * @return bool
      */

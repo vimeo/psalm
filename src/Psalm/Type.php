@@ -1039,6 +1039,22 @@ abstract class Type
             return $aliased_classes[strtolower($value)];
         }
 
+        if (strpos($value, '\\')) {
+            $parts = explode('\\', $value);
+
+            $suffix = array_pop($parts);
+
+            while ($parts) {
+                $left = implode('\\', $parts);
+
+                if (isset($aliased_classes[strtolower($left)])) {
+                    return $aliased_classes[strtolower($left)] . '\\' . $suffix;
+                }
+
+                $suffix = array_pop($parts) . '\\' . $suffix;
+            }
+        }
+
         return '\\' . $value;
     }
 

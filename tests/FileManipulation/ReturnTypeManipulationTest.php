@@ -888,9 +888,9 @@ class ReturnTypeManipulationTest extends FileManipulationTest
 
                         class D {
                             /**
-                             * @return \A\B\C[]
+                             * @return B\C[]
                              *
-                             * @psalm-return array{0:\A\B\C}
+                             * @psalm-return array{0:B\C}
                              */
                             public function getArrayOfC(): array {
                                 return [new \A\B\C];

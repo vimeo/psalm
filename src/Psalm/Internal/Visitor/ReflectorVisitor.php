@@ -93,6 +93,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var int */
     private $php_minor_version;
 
+    /** @var PhpParser\Node\Name|null */
+    private $namespace_name;
+
     /**
      * @var array<string, array<int, string>>
      */
@@ -161,6 +164,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             $this->file_aliases = $this->aliases;
+
+            $this->namespace_name = $node->name;
+
             $this->aliases = new Aliases(
                 $node->name ? implode('\\', $node->name->parts) : '',
                 $this->aliases->uses,
@@ -818,6 +824,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $storage->stmt_location = $class_location;
         $storage->location = $name_location;
+        if ($this->namespace_name) {
+            $storage->namespace_name_location = new CodeLocation($this->file_scanner, $this->namespace_name);
+        }
         $storage->user_defined = !$this->codebase->register_stub_files;
         $storage->stubbed = $this->codebase->register_stub_files;
         $storage->aliases = $this->aliases;

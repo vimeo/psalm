@@ -950,22 +950,23 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $this->getSuppressedIssues()
                         );
 
-                        if ($codebase->methods_to_move
-                            && $context->calling_method_id
-                            && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
-                            && $var_comment->type_start
+                        if ($var_comment->type_start
                             && $var_comment->type_end
                             && $var_comment->line_number
                         ) {
-                            $destination_method_id
-                                = $codebase->methods_to_move[strtolower($context->calling_method_id)];
-
-                            $codebase->classlikes->airliftDocblockType(
-                                $var_comment_type,
-                                explode('::', $destination_method_id)[0],
-                                $this->getFilePath(),
+                            $type_location = new CodeLocation\DocblockTypeLocation(
+                                $this,
                                 $var_comment->type_start,
-                                $var_comment->type_end
+                                $var_comment->type_end,
+                                $var_comment->line_number
+                            );
+
+                            $codebase->classlikes->handleDocblockTypeInMigration(
+                                $codebase,
+                                $this,
+                                $var_comment_type,
+                                $type_location,
+                                $context->calling_method_id
                             );
                         }
 

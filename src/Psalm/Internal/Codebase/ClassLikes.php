@@ -889,7 +889,7 @@ class ClassLikes
     /**
      * @return void
      */
-    public function moveConstants(Progress $progress = null)
+    public function moveClassConstants(Progress $progress = null)
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -957,6 +957,199 @@ class ClassLikes
         }
 
         FileManipulationBuffer::addCodeMigrations($code_migrations);
+    }
+
+    /**
+     * @return void
+     */
+    public function moveClasses()
+    {
+    }
+
+    public function handleClassLikeReferenceInMigration(
+        \Psalm\Codebase $codebase,
+        \Psalm\StatementsSource $source,
+        PhpParser\Node $class_name_node,
+        string $fq_class_name,
+        ?string $calling_method_id
+    ) : bool {
+
+        $calling_fq_class_name = $source->getFQCLN();
+
+        // if we're inside a moved class static method
+        if ($codebase->methods_to_move
+            && $calling_fq_class_name
+            && $calling_method_id
+            && isset($codebase->methods_to_move[strtolower($calling_method_id)])
+        ) {
+            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_method_id)])[0];
+
+            $intended_fq_class_name = strtolower($calling_fq_class_name) === strtolower($fq_class_name)
+                && isset($codebase->classes_to_move[strtolower($calling_fq_class_name)])
+                ? $destination_class
+                : $fq_class_name;
+
+            $this->airliftClassLikeReference(
+                $intended_fq_class_name,
+                $destination_class,
+                $source->getFilePath(),
+                (int) $class_name_node->getAttribute('startFilePos'),
+                (int) $class_name_node->getAttribute('endFilePos') + 1
+            );
+
+            return true;
+        }
+
+        // if we're inside a moved class (could be a method, could be a property/class const default)
+        if ($codebase->classes_to_move
+            && $calling_fq_class_name
+            && isset($codebase->classes_to_move[strtolower($calling_fq_class_name)])
+        ) {
+            $destination_class = $codebase->classes_to_move[strtolower($calling_fq_class_name)];
+
+            if ($class_name_node instanceof PhpParser\Node\Identifier) {
+                $destination_parts = explode('\\', $destination_class);
+
+                $destination_class_name = array_pop($destination_parts);
+                $file_manipulations = [];
+
+                $file_manipulations[] = new \Psalm\FileManipulation(
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1,
+                    $destination_class_name
+                );
+
+                FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+            } else {
+                $this->airliftClassLikeReference(
+                    strtolower($calling_fq_class_name) === strtolower($fq_class_name)
+                        ? $destination_class
+                        : $fq_class_name,
+                    $destination_class,
+                    $source->getFilePath(),
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1
+                );
+            }
+
+            return true;
+        }
+
+        // if we're outside a moved class, but we're changing all references to a class
+        foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
+            if (strtolower($fq_class_name) === $old_fq_class_name) {
+                $file_manipulations = [];
+
+                $file_manipulations[] = new \Psalm\FileManipulation(
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1,
+                    Type::getStringFromFQCLN(
+                        $new_fq_class_name,
+                        $source->getNamespace(),
+                        $source->getAliasedClassesFlipped(),
+                        $calling_fq_class_name
+                    )
+                );
+
+                FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function handleDocblockTypeInMigration(
+        \Psalm\Codebase $codebase,
+        \Psalm\StatementsSource $source,
+        Type\Union $type,
+        CodeLocation $type_location,
+        ?string $calling_method_id
+    ) : void {
+
+        $calling_fq_class_name = $source->getFQCLN();
+
+        $moved_type = false;
+
+        // if we're inside a moved class static method
+        if ($codebase->methods_to_move
+            && $calling_fq_class_name
+            && $calling_method_id
+            && isset($codebase->methods_to_move[strtolower($calling_method_id)])
+        ) {
+            $bounds = $type_location->getSelectionBounds();
+
+            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_method_id)])[0];
+
+            $this->airliftDocblockType(
+                $type,
+                $destination_class,
+                $source->getFilePath(),
+                $bounds[0],
+                $bounds[1]
+            );
+
+            $moved_type = true;
+        }
+
+        // if we're inside a moved class (could be a method, could be a property/class const default)
+        if (!$moved_type
+            && $codebase->classes_to_move
+            && $calling_fq_class_name
+            && isset($codebase->classes_to_move[strtolower($calling_fq_class_name)])
+        ) {
+            $bounds = $type_location->getSelectionBounds();
+
+            $destination_class = $codebase->classes_to_move[strtolower($calling_fq_class_name)];
+
+            if ($type->containsClassLike(strtolower($calling_fq_class_name))) {
+                $type = clone $type;
+
+                $type->replaceClassLike(strtolower($calling_fq_class_name), $destination_class);
+            }
+
+            $this->airliftDocblockType(
+                $type,
+                $destination_class,
+                $source->getFilePath(),
+                $bounds[0],
+                $bounds[1]
+            );
+
+            $moved_type = true;
+        }
+
+        // if we're outside a moved class, but we're changing all references to a class
+        if (!$moved_type) {
+            foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
+                if ($type->containsClassLike($old_fq_class_name)) {
+                    $type = clone $type;
+
+                    $type->replaceClassLike($old_fq_class_name, $new_fq_class_name);
+
+                    $bounds = $type_location->getSelectionBounds();
+
+                    $file_manipulations = [];
+
+                    $file_manipulations[] = new \Psalm\FileManipulation(
+                        $bounds[0],
+                        $bounds[1],
+                        $type->toNamespacedString(
+                            $source->getNamespace(),
+                            $source->getAliasedClassesFlipped(),
+                            null,
+                            false
+                        )
+                    );
+
+                    FileManipulationBuffer::add(
+                        $source->getFilePath(),
+                        $file_manipulations
+                    );
+                }
+            }
+        }
     }
 
     public function airliftClassLikeReference(

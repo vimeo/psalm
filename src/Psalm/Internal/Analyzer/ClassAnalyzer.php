@@ -131,6 +131,64 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $this->getCodebase();
 
+        if ($codebase->alter_code && $class->name && $codebase->classes_to_move) {
+            if (isset($codebase->classes_to_move[strtolower($this->fq_class_name)])) {
+                $destination_class = $codebase->classes_to_move[strtolower($this->fq_class_name)];
+
+                $source_class_parts = explode('\\', $this->fq_class_name);
+                $destination_class_parts = explode('\\', $destination_class);
+
+                array_pop($source_class_parts);
+                array_pop($destination_class_parts);
+
+                $source_ns = implode('\\', $source_class_parts);
+                $destination_ns = implode('\\', $destination_class_parts);
+
+                if (strtolower($source_ns) !== strtolower($destination_ns)) {
+                    if ($storage->namespace_name_location) {
+                        $bounds = $storage->namespace_name_location->getSelectionBounds();
+
+                        $file_manipulations = [
+                            new \Psalm\FileManipulation(
+                                $bounds[0],
+                                $bounds[1],
+                                $destination_ns
+                            )
+                        ];
+
+                        \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                            $this->getFilePath(),
+                            $file_manipulations
+                        );
+                    } elseif (!$source_ns) {
+                        $class_start_pos = (int) $class->getAttribute('startFilePos');
+
+                        $file_manipulations = [
+                            new \Psalm\FileManipulation(
+                                $class_start_pos,
+                                $class_start_pos,
+                                'namespace ' . $destination_ns . ';' . "\n\n",
+                                true
+                            )
+                        ];
+
+                        \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                            $this->getFilePath(),
+                            $file_manipulations
+                        );
+                    }
+                }
+            }
+
+            $codebase->classlikes->handleClassLikeReferenceInMigration(
+                $codebase,
+                $this,
+                $class->name,
+                $this->fq_class_name,
+                null
+            );
+        }
+
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         $parent_fq_class_name = $this->parent_fq_class_name;
@@ -150,6 +208,16 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 false
             ) === false) {
                 return false;
+            }
+
+            if ($codebase->alter_code && $codebase->classes_to_move) {
+                $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $codebase,
+                    $this,
+                    $class->extends,
+                    $parent_fq_class_name,
+                    null
+                );
             }
 
             try {
@@ -278,6 +346,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $fq_interface_name
                 );
             }
+
+            $codebase->classlikes->handleClassLikeReferenceInMigration(
+                $codebase,
+                $this,
+                $interface_name,
+                $fq_interface_name,
+                null
+            );
 
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name);
@@ -681,22 +757,47 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         break;
                     }
 
-                    $property_id = strtolower($this->fq_class_name) . '::$' . $prop->name;
+                    if ($codebase->alter_code) {
+                        $property_id = strtolower($this->fq_class_name) . '::$' . $prop->name;
 
-                    foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
-                        if ($property_id === $original_property_id) {
-                            $file_manipulations = [
-                                new \Psalm\FileManipulation(
-                                    (int) $prop->name->getAttribute('startFilePos'),
-                                    (int) $prop->name->getAttribute('endFilePos') + 1,
-                                    '$' . $new_property_name
-                                )
-                            ];
+                        $property_storage = $codebase->properties->getStorage($property_id);
 
-                            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
-                                $this->getFilePath(),
-                                $file_manipulations
+                        if ($property_storage->type
+                            && $property_storage->type_location
+                            && $property_storage->type_location !== $property_storage->signature_type_location
+                        ) {
+                            $replace_type = ExpressionAnalyzer::fleshOutType(
+                                $codebase,
+                                $property_storage->type,
+                                $this->getFQCLN(),
+                                $this->getFQCLN(),
+                                $this->getParentFQCLN()
                             );
+
+                            $codebase->classlikes->handleDocblockTypeInMigration(
+                                $codebase,
+                                $this,
+                                $replace_type,
+                                $property_storage->type_location,
+                                null
+                            );
+                        }
+
+                        foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
+                            if ($property_id === $original_property_id) {
+                                $file_manipulations = [
+                                    new \Psalm\FileManipulation(
+                                        (int) $prop->name->getAttribute('startFilePos'),
+                                        (int) $prop->name->getAttribute('endFilePos') + 1,
+                                        '$' . $new_property_name
+                                    )
+                                ];
+
+                                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                    $this->getFilePath(),
+                                    $file_manipulations
+                                );
+                            }
                         }
                     }
                 }

@@ -539,14 +539,75 @@ class ProjectAnalyzer
             $source_parts = explode('::', $source);
             $destination_parts = explode('::', $destination);
 
-            if (count($source_parts) === 1 || count($destination_parts) === 1) {
-                throw new \Psalm\Exception\RefactorException('Cannot yet refactor classes');
-            }
-
-            if (!$this->codebase->classlikes->classExists($source_parts[0])) {
+            if (!$this->codebase->classlikes->hasFullyQualifiedClassName($source_parts[0])) {
                 throw new \Psalm\Exception\RefactorException(
                     'Source class ' . $source_parts[0] . ' doesn’t exist'
                 );
+            }
+
+            if (count($source_parts) === 1 && count($destination_parts) === 1) {
+                if ($this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination class ' . $destination_parts[0] . ' already exists'
+                    );
+                }
+
+                $source_class_storage = $this->codebase->classlike_storage_provider->get($source_parts[0]);
+
+                foreach ($source_class_storage->methods as $method_name => $method_storage) {
+                    if ($method_storage->is_static) {
+                        $old_method_id = strtolower($source_parts[0] . '::' . $method_name);
+                        $new_method_id = $destination_parts[0] . '::' . $method_name;
+
+                        $this->codebase->call_transforms[$old_method_id . '\((.*\))'] = $new_method_id . '($1)';
+                    }
+                }
+
+                foreach ($source_class_storage->properties as $property_name => $property_storage) {
+                    if ($property_storage->is_static) {
+                        $old_property_id = strtolower($source_parts[0]) . '::' . $property_name;
+                        $new_property_id = $destination_parts[0] . '::' . $property_name;
+
+                        $this->codebase->property_transforms[$old_property_id] = $new_property_id;
+                    }
+                }
+
+                $all_class_consts = array_merge(
+                    $source_class_storage->public_class_constants,
+                    $source_class_storage->protected_class_constants,
+                    $source_class_storage->private_class_constants
+                );
+
+                foreach ($all_class_consts as $const_name => $_) {
+                    $old_const_id = strtolower($source_parts[0]) . '::' . $const_name;
+                    $new_const_id = $destination_parts[0] . '::' . $const_name;
+
+                    $this->codebase->class_constant_transforms[$old_const_id] = $new_const_id;
+                }
+
+                $destination_parts = explode('\\', $destination);
+
+                array_pop($destination_parts);
+                $destination_ns = implode('\\', $destination_parts);
+
+                $this->codebase->classes_to_move[strtolower($source)] = $destination;
+
+                $destination_class_storage = $this->codebase->classlike_storage_provider->create($destination);
+
+                $destination_class_storage->name = $destination;
+
+                if ($source_class_storage->aliases) {
+                    $destination_class_storage->aliases = clone $source_class_storage->aliases;
+                    $destination_class_storage->aliases->namespace = $destination_ns;
+                }
+
+                $destination_class_storage->location = $source_class_storage->location;
+                $destination_class_storage->stmt_location = $source_class_storage->stmt_location;
+                $destination_class_storage->populated = true;
+
+                $this->codebase->class_transforms[strtolower($source)] = $destination;
+
+                continue;
             }
 
             if ($this->codebase->methods->methodExists($source)) {
@@ -631,7 +692,7 @@ class ProjectAnalyzer
             );
 
             if (isset($source_class_constants[$source_parts[1]])) {
-                if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
+                if (!$this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
                     throw new \Psalm\Exception\RefactorException(
                         'Destination class ' . $destination_parts[0] . ' doesn’t exist'
                     );
@@ -682,9 +743,11 @@ class ProjectAnalyzer
             $this->progress
         );
 
-        $this->codebase->classlikes->moveConstants(
+        $this->codebase->classlikes->moveClassConstants(
             $this->progress
         );
+
+        $this->codebase->classlikes->moveClasses();
     }
 
     public function migrateCode() : void
@@ -723,10 +786,7 @@ class ProjectAnalyzer
             $existing_contents = $this->codebase->file_provider->getContents($file_path);
 
             foreach ($file_manipulations as $manipulation) {
-                $existing_contents
-                    = substr($existing_contents, 0, $manipulation->start)
-                        . $manipulation->insertion_text
-                        . substr($existing_contents, $manipulation->end);
+                $existing_contents = $manipulation->transform($existing_contents);
             }
 
             $this->codebase->file_provider->setContents($file_path, $existing_contents);

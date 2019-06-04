@@ -1156,10 +1156,7 @@ class Analyzer
         $existing_contents = $this->file_provider->getContents($file_path);
 
         foreach ($file_manipulations as $manipulation) {
-            $existing_contents
-                = substr($existing_contents, 0, $manipulation->start)
-                    . $manipulation->insertion_text
-                    . substr($existing_contents, $manipulation->end);
+            $existing_contents = $manipulation->transform($existing_contents);
         }
 
         if ($dry_run) {
