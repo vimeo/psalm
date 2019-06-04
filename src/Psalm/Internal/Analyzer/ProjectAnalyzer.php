@@ -657,6 +657,7 @@ class ProjectAnalyzer
                 }
 
                 $this->codebase->class_constant_transforms[$source_id] = $destination;
+                continue;
             }
 
             throw new \Psalm\Exception\RefactorException(
@@ -678,6 +679,10 @@ class ProjectAnalyzer
 
         $this->codebase->classlikes->moveProperties(
             $this->codebase->properties,
+            $this->progress
+        );
+
+        $this->codebase->classlikes->moveConstants(
             $this->progress
         );
     }

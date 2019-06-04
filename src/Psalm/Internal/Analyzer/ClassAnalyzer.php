@@ -702,6 +702,27 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;
+
+                foreach ($stmt->consts as $const) {
+                    $const_id = strtolower($this->fq_class_name) . '::' . $const->name;
+
+                    foreach ($codebase->class_constants_to_rename as $original_const_id => $new_const_name) {
+                        if ($const_id === $original_const_id) {
+                            $file_manipulations = [
+                                new \Psalm\FileManipulation(
+                                    (int) $const->name->getAttribute('startFilePos'),
+                                    (int) $const->name->getAttribute('endFilePos') + 1,
+                                    $new_const_name
+                                )
+                            ];
+
+                            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                $this->getFilePath(),
+                                $file_manipulations
+                            );
+                        }
+                    }
+                }
             }
         }
 

@@ -812,7 +812,7 @@ class ClassLikes
                 continue;
             }
 
-            list($source_fq_class_name) = explode('::', $source);
+            list($source_fq_class_name) = explode('::$', $source);
             list($destination_fq_class_name, $destination_name) = explode('::$', $destination);
 
             $source_classlike_storage = $this->classlike_storage_provider->get($source_fq_class_name);
@@ -877,6 +877,79 @@ class ClassLikes
                     $source_property_storage->stmt_location->file_path,
                     $old_property_bounds[0],
                     $old_property_bounds[1],
+                    $destination_classlike_storage->stmt_location->file_path,
+                    $new_class_bounds[0] + $insert_pos
+                );
+            }
+        }
+
+        FileManipulationBuffer::addCodeMigrations($code_migrations);
+    }
+
+    /**
+     * @return void
+     */
+    public function moveConstants(Progress $progress = null)
+    {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        if (!$codebase->class_constants_to_move) {
+            return;
+        }
+
+        $progress->debug('Refacting constants ' . PHP_EOL);
+
+        $code_migrations = [];
+
+        foreach ($codebase->class_constants_to_move as $source => $destination) {
+            list($source_fq_class_name, $source_const_name) = explode('::', $source);
+            list($destination_fq_class_name, $destination_name) = explode('::', $destination);
+
+            $source_classlike_storage = $this->classlike_storage_provider->get($source_fq_class_name);
+            $destination_classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
+
+            $source_const_stmt_location = $source_classlike_storage->class_constant_stmt_locations[$source_const_name];
+            $source_const_location = $source_classlike_storage->class_constant_locations[$source_const_name];
+
+            if ($destination_classlike_storage->stmt_location
+                && $this->config->isInProjectDirs($destination_classlike_storage->stmt_location->file_path)
+                && $source_const_stmt_location->file_path
+            ) {
+                $new_class_bounds = $destination_classlike_storage->stmt_location->getSnippetBounds();
+                $old_const_bounds = $source_const_stmt_location->getSnippetBounds();
+
+                $old_const_name_bounds = $source_const_location->getSelectionBounds();
+
+                FileManipulationBuffer::add(
+                    $source_const_stmt_location->file_path,
+                    [
+                        new \Psalm\FileManipulation(
+                            $old_const_name_bounds[0],
+                            $old_const_name_bounds[1],
+                            $destination_name
+                        )
+                    ]
+                );
+
+                $selection = $destination_classlike_storage->stmt_location->getSnippet();
+
+                $insert_pos = strrpos($selection, "\n", -1);
+
+                if (!$insert_pos) {
+                    $insert_pos = strlen($selection) - 1;
+                } else {
+                    $insert_pos++;
+                }
+
+                $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
+                    $source_const_stmt_location->file_path,
+                    $old_const_bounds[0],
+                    $old_const_bounds[1],
                     $destination_classlike_storage->stmt_location->file_path,
                     $new_class_bounds[0] + $insert_pos
                 );

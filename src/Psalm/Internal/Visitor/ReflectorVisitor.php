@@ -2739,6 +2739,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->file_scanner,
                     $const->name
                 );
+
+                $storage->class_constant_stmt_locations[$const->name->name] = new CodeLocation(
+                    $this->file_scanner,
+                    $const
+                );
             } else {
                 if ($stmt->isProtected()) {
                     $storage->protected_class_constant_nodes[$const->name->name] = $const->value;

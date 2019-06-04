@@ -30,11 +30,18 @@ class ClassLikeStorage
     public $private_class_constants = [];
 
     /**
-     * A lookup table for private class constants
+     * A lookup table for class constant name locations
      *
      * @var array<string, CodeLocation>
      */
     public $class_constant_locations = [];
+
+    /**
+     * A lookup table for class constant statement locations
+     *
+     * @var array<string, CodeLocation>
+     */
+    public $class_constant_stmt_locations = [];
 
     /**
      * A lookup table for nodes of unresolvable public class constants
