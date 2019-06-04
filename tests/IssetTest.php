@@ -515,6 +515,43 @@ class IssetTest extends TestCase
                 '<?php
                     $a = $_SESSION ?? [];',
             ],
+            'issetSeparateNegated' => [
+                '<?php
+                    function foo(?string $a, ?string $b): string {
+                        if (!isset($a) || !isset($b)) {
+                            return "";
+                        }
+                        return $a . $b;
+                    }',
+            ],
+            'issetMultipleNegated' => [
+                '<?php
+                    function foo(?string $a, ?string $b): string {
+                        if (!isset($a, $b)) {
+                            return "";
+                        }
+                        return $a . $b;
+                    }',
+            ],
+            'issetMultipleNegatedWithExtraClause' => [
+                '<?php
+                    function foo(?string $a, ?string $b): string {
+                        if (!(isset($a, $b) && rand(0, 1))) {
+                            return "";
+                        }
+                        return $a . $b;
+                    }',
+            ],
+            'issetMultipleNotNegated' => [
+                '<?php
+                    function foo(?string $a, ?string $b): string {
+                        if (isset($a, $b)) {
+                            return $a . $b;
+                        }
+
+                        return "";
+                    }',
+            ],
         ];
     }
 

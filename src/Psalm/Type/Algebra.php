@@ -171,6 +171,39 @@ class Algebra
                     $inside_negation
                 );
             }
+
+            if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
+                AssertionFinder::scrapeAssertions(
+                    $conditional->expr,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation
+                );
+
+                if (isset($conditional->expr->assertions) && $conditional->expr->assertions) {
+                    $assertions = $conditional->expr->assertions;
+
+                    $clauses = [];
+
+                    foreach ($assertions as $var => $anded_types) {
+                        foreach ($anded_types as $orred_types) {
+                            $clauses[] = new Clause(
+                                [$var => $orred_types],
+                                false,
+                                true,
+                                $orred_types[0][0] === '='
+                                    || $orred_types[0][0] === '~'
+                                    || (strlen($orred_types[0]) > 1
+                                        && ($orred_types[0][1] === '='
+                                            || $orred_types[0][1] === '~'))
+                            );
+                        }
+                    }
+
+                    return self::negateFormula($clauses);
+                }
+            }
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
