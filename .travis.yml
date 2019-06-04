@@ -49,9 +49,6 @@ matrix:
   fast_finish: true
   allow_failures:
     - php: nightly
-  exclude: # covered in Code coverage stage
-    - php: 7.3
-      env: DEPS="high"
 
 # Additional stages
 jobs:
@@ -63,7 +60,7 @@ jobs:
         - vendor/bin/phpcs
 
     - stage: Phar build
-      php: 7.3
+      php: 7.1
       env: DEPS="high"
       script: bin/build-phar.sh
       deploy:
@@ -78,7 +75,7 @@ jobs:
             - build/psalm.phar
             - build/psalm.phar.asc
 
-        # deploy built phar to github.com/psalm/phar repo for all branches and tags, 
+        # deploy built phar to github.com/psalm/phar repo for all branches and tags,
         # but not for pull requests
         - provider: script
           skip_cleanup: true
