@@ -552,6 +552,25 @@ class IssetTest extends TestCase
                         return "";
                     }',
             ],
+            'issetNotIssetTest' => [
+                '<?php
+                    class B {
+                        /** @var string */
+                        public $c = "hello";
+                    }
+
+                    function foo(array $a, B $b, string $s): void {
+                        if ($s !== "bar" && !isset($a[$b->c])) {
+                            return;
+                        }
+
+                        if ($s !== "bar" && isset($a[$b->c])) {
+                            // do something
+                        } else {
+                            // something else
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -593,26 +612,6 @@ class IssetTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArrayOffset',
-            ],
-            'issetNotIssetTest' => [
-                '<?php
-                    class B {
-                        /** @var string */
-                        public $c = "hello";
-                    }
-
-                    function foo(array $a, B $b, string $s): void {
-                        if (!isset($a[$b->c]) && $s !== "bar") {
-                            return;
-                        }
-
-                        if (isset($a[$b->c]) && $s !== "bar") {
-                            // do something
-                        } else {
-                            // something else
-                        }
-                    }',
-                'error_message' => 'TypeDoesNotContainType'
             ],
         ];
     }

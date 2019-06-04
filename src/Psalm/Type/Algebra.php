@@ -150,29 +150,9 @@ class Algebra
                 );
             }
 
-            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-                $and_expr = new PhpParser\Node\Expr\BinaryOp\BooleanOr(
-                    new PhpParser\Node\Expr\BooleanNot(
-                        $conditional->expr->left,
-                        $conditional->getAttributes()
-                    ),
-                    new PhpParser\Node\Expr\BooleanNot(
-                        $conditional->expr->right,
-                        $conditional->getAttributes()
-                    ),
-                    $conditional->expr->getAttributes()
-                );
-
-                return self::getFormula(
-                    $and_expr,
-                    $this_class_name,
-                    $source,
-                    $codebase,
-                    $inside_negation
-                );
-            }
-
-            if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_) {
+            if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_
+                && count($conditional->expr->vars) > 1
+            ) {
                 AssertionFinder::scrapeAssertions(
                     $conditional->expr,
                     $this_class_name,
@@ -181,7 +161,7 @@ class Algebra
                     $inside_negation
                 );
 
-                if (isset($conditional->expr->assertions) && $conditional->expr->assertions) {
+                if (isset($conditional->expr->assertions)) {
                     $assertions = $conditional->expr->assertions;
 
                     $clauses = [];
@@ -203,6 +183,28 @@ class Algebra
 
                     return self::negateFormula($clauses);
                 }
+            }
+
+            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+                $and_expr = new PhpParser\Node\Expr\BinaryOp\BooleanOr(
+                    new PhpParser\Node\Expr\BooleanNot(
+                        $conditional->expr->left,
+                        $conditional->getAttributes()
+                    ),
+                    new PhpParser\Node\Expr\BooleanNot(
+                        $conditional->expr->right,
+                        $conditional->getAttributes()
+                    ),
+                    $conditional->expr->getAttributes()
+                );
+
+                return self::getFormula(
+                    $and_expr,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation
+                );
             }
         }
 
