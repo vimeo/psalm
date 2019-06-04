@@ -210,6 +210,11 @@ class Codebase
     /**
      * @var array<string, string>
      */
+    public $classes_to_move = [];
+
+    /**
+     * @var array<string, string>
+     */
     public $call_transforms = [];
 
     /**
@@ -221,6 +226,11 @@ class Codebase
      * @var array<string, string>
      */
     public $class_constant_transforms = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $class_transforms = [];
 
     /**
      * @var bool

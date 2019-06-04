@@ -110,6 +110,26 @@ class ForeachAnalyzer
                 $statements_analyzer->getParentFQCLN()
             );
 
+            if ($var_comment->type_start
+                && $var_comment->type_end
+                && $var_comment->line_number
+            ) {
+                $type_location = new CodeLocation\DocblockTypeLocation(
+                    $statements_analyzer,
+                    $var_comment->type_start,
+                    $var_comment->type_end,
+                    $var_comment->line_number,
+                );
+
+                $codebase->classlikes->handleDocblockTypeInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $comment_type,
+                    $type_location,
+                    $context->calling_method_id
+                );
+            }
+
             if (isset($context->vars_in_scope[$var_comment->var_id])
                 || $statements_analyzer->isSuperGlobal($var_comment->var_id)
             ) {

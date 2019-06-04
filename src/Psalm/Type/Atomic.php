@@ -709,6 +709,148 @@ abstract class Atomic
         }
     }
 
+    public function containsClassLike(string $fq_classlike_name) : bool
+    {
+        if ($this instanceof TNamedObject) {
+            if (strtolower($this->value) === $fq_classlike_name) {
+                return true;
+            }
+        }
+
+        if ($this instanceof TNamedObject
+            || $this instanceof TIterable
+            || $this instanceof TTemplateParam
+        ) {
+            if ($this->extra_types) {
+                foreach ($this->extra_types as $extra_type) {
+                    if ($extra_type->containsClassLike($fq_classlike_name)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if ($this instanceof TScalarClassConstant) {
+            if (strtolower($this->fq_classlike_name) === $fq_classlike_name) {
+                return true;
+            }
+        }
+
+        if ($this instanceof TClassString && $this->as !== 'object') {
+            if (strtolower($this->as) === $fq_classlike_name) {
+                return true;
+            }
+        }
+
+        if ($this instanceof TTemplateParam) {
+            if ($this->as->containsClassLike($fq_classlike_name)) {
+                return true;
+            }
+        }
+
+        if ($this instanceof TLiteralClassString) {
+            if (strtolower($this->value) === $fq_classlike_name) {
+                return true;
+            }
+        }
+
+        if ($this instanceof Type\Atomic\TArray
+            || $this instanceof Type\Atomic\TGenericObject
+            || $this instanceof Type\Atomic\TIterable
+        ) {
+            foreach ($this->type_params as $type_param) {
+                if ($type_param->containsClassLike($fq_classlike_name)) {
+                    return true;
+                }
+            }
+        }
+
+        if ($this instanceof Type\Atomic\TFn
+            || $this instanceof Type\Atomic\TCallable
+        ) {
+            if ($this->params) {
+                foreach ($this->params as $param) {
+                    if ($param->type && $param->type->containsClassLike($fq_classlike_name)) {
+                        return true;
+                    }
+                }
+            }
+
+            if ($this->return_type && $this->return_type->containsClassLike($fq_classlike_name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function replaceClassLike(string $old, string $new) : void
+    {
+        if ($this instanceof TNamedObject) {
+            if (strtolower($this->value) === $old) {
+                $this->value = $new;
+            }
+        }
+
+        if ($this instanceof TNamedObject
+            || $this instanceof TIterable
+            || $this instanceof TTemplateParam
+        ) {
+            if ($this->extra_types) {
+                foreach ($this->extra_types as $extra_type) {
+                    $extra_type->replaceClassLike($old, $new);
+                }
+            }
+        }
+
+        if ($this instanceof TScalarClassConstant) {
+            if (strtolower($old) === $new) {
+                $this->fq_classlike_name = $new;
+            }
+        }
+
+        if ($this instanceof TClassString && $this->as !== 'object') {
+            if (strtolower($this->as) === $old) {
+                $this->as = $new;
+            }
+        }
+
+        if ($this instanceof TTemplateParam) {
+            $this->as->replaceClassLike($old, $new);
+        }
+
+        if ($this instanceof TLiteralClassString) {
+            if (strtolower($this->value) === $old) {
+                $this->value = $new;
+            }
+        }
+
+        if ($this instanceof Type\Atomic\TArray
+            || $this instanceof Type\Atomic\TGenericObject
+            || $this instanceof Type\Atomic\TIterable
+        ) {
+            foreach ($this->type_params as $type_param) {
+                $type_param->replaceClassLike($old, $new);
+            }
+        }
+
+        if ($this instanceof Type\Atomic\TFn
+            || $this instanceof Type\Atomic\TCallable
+        ) {
+            if ($this->params) {
+                foreach ($this->params as $param) {
+                    if ($param->type) {
+                        $param->type->replaceClassLike($old, $new);
+                    }
+                }
+            }
+
+            if ($this->return_type) {
+                $this->return_type->replaceClassLike($old, $new);
+            }
+        }
+    }
+
     /**
      * @param  Atomic $other
      *

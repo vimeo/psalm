@@ -6,7 +6,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 
-class MoveMethodTest extends \Psalm\Tests\TestCase
+class MethodMoveTest extends \Psalm\Tests\TestCase
 {
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;

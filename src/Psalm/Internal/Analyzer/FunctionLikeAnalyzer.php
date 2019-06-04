@@ -361,12 +361,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         $check_stmts = true;
 
-        if ($codebase->methods_to_move
-            && $context->calling_method_id
-            && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
-        ) {
-            $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
-
+        if ($codebase->alter_code) {
             foreach ($this->function->params as $param) {
                 $param_name_node = null;
 
@@ -379,7 +374,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
 
                 if ($param_name_node) {
-                    $resolved_name = (string) $param_name_node->getAttribute('resolvedName');
+                    $resolved_name = ClassLikeAnalyzer::getFQCLNFromNameObject($param_name_node, $this->getAliases());
 
                     $parent_fqcln = $this->getParentFQCLN();
 
@@ -389,12 +384,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $resolved_name = $parent_fqcln;
                     }
 
-                    $codebase->classlikes->airliftClassLikeReference(
+                    $codebase->classlikes->handleClassLikeReferenceInMigration(
+                        $codebase,
+                        $this,
+                        $param_name_node,
                         $resolved_name,
-                        explode('::', $destination_method_id)[0],
-                        $statements_analyzer->getFilePath(),
-                        (int) $param_name_node->getAttribute('startFilePos'),
-                        (int) $param_name_node->getAttribute('endFilePos') + 1
+                        $context->calling_method_id
                     );
                 }
             }
@@ -411,7 +406,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
 
                 if ($return_name_node) {
-                    $resolved_name = (string) $return_name_node->getAttribute('resolvedName');
+                    $resolved_name = ClassLikeAnalyzer::getFQCLNFromNameObject($return_name_node, $this->getAliases());
 
                     $parent_fqcln = $this->getParentFQCLN();
 
@@ -421,12 +416,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $resolved_name = $parent_fqcln;
                     }
 
-                    $codebase->classlikes->airliftClassLikeReference(
+                    $codebase->classlikes->handleClassLikeReferenceInMigration(
+                        $codebase,
+                        $this,
+                        $return_name_node,
                         $resolved_name,
-                        explode('::', $destination_method_id)[0],
-                        $statements_analyzer->getFilePath(),
-                        (int) $return_name_node->getAttribute('startFilePos'),
-                        (int) $return_name_node->getAttribute('endFilePos') + 1
+                        $context->calling_method_id
                     );
                 }
             }
@@ -435,8 +430,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 && $storage->return_type_location
                 && $storage->return_type_location !== $storage->signature_return_type_location
             ) {
-                $bounds = $storage->return_type_location->getSelectionBounds();
-
                 $replace_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
                     $storage->return_type,
@@ -445,12 +438,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $this->getParentFQCLN()
                 );
 
-                $codebase->classlikes->airliftDocblockType(
+                $codebase->classlikes->handleDocblockTypeInMigration(
+                    $codebase,
+                    $this,
                     $replace_type,
-                    explode('::', $destination_method_id)[0],
-                    $statements_analyzer->getFilePath(),
-                    $bounds[0],
-                    $bounds[1]
+                    $storage->return_type_location,
+                    $context->calling_method_id
                 );
             }
 
@@ -459,8 +452,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     && $function_param->type_location
                     && $function_param->type_location !== $function_param->signature_type_location
                 ) {
-                    $bounds = $function_param->type_location->getSelectionBounds();
-
                     $replace_type = ExpressionAnalyzer::fleshOutType(
                         $codebase,
                         $function_param->type,
@@ -469,12 +460,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $this->getParentFQCLN()
                     );
 
-                    $codebase->classlikes->airliftDocblockType(
+                    $codebase->classlikes->handleDocblockTypeInMigration(
+                        $codebase,
+                        $this,
                         $replace_type,
-                        explode('::', $destination_method_id)[0],
-                        $statements_analyzer->getFilePath(),
-                        $bounds[0],
-                        $bounds[1]
+                        $function_param->type_location,
+                        $context->calling_method_id
                     );
                 }
             }

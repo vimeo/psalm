@@ -579,6 +579,16 @@ class ExpressionAnalyzer
                             $fq_class_name
                         );
                     }
+
+                    if ($codebase->alter_code) {
+                        $codebase->classlikes->handleClassLikeReferenceInMigration(
+                            $codebase,
+                            $statements_analyzer,
+                            $stmt->class,
+                            $fq_class_name,
+                            $context->calling_method_id
+                        );
+                    }
                 }
             }
 
