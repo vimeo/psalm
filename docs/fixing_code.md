@@ -178,6 +178,33 @@ function foo() {
 }
 ```
 
+### MissingParamType
+
+Running `vendor/bin/psalter --issues=MissingReturnType` on
+
+```php
+class C {
+  public static function foo($s) : void {
+    echo $s;
+  }
+}
+C::foo("hello");
+```
+
+gives
+
+```php
+class C {
+  /**
+   * @param string $s
+   */
+  public static function foo($s) : void {
+    echo $s;
+  }
+}
+C::foo("hello");
+```
+
 ### MismatchingDocblockParamType
 
 Given
