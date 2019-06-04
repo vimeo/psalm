@@ -180,7 +180,7 @@ function foo() {
 
 ### MissingParamType
 
-Running `vendor/bin/psalter --issues=MissingReturnType` on
+Running `vendor/bin/psalter --issues=MissingParamType` on
 
 ```php
 class C {
