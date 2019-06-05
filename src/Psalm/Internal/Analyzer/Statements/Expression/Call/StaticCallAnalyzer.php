@@ -867,7 +867,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                         $new_method_name
                                     );
 
-                                    FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+                                    FileManipulationBuffer::add(
+                                        $statements_analyzer->getFilePath(),
+                                        $file_manipulations
+                                    );
 
                                     $moved_call = true;
                                 }

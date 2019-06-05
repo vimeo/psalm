@@ -11,7 +11,7 @@ use Psalm\Progress\DefaultProgress;
 error_reporting(-1);
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-ini_set('memory_limit', '4096M');
+ini_set('memory_limit', '8192M');
 
 gc_collect_cycles();
 gc_disable();

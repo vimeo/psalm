@@ -451,6 +451,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 if ($function_param->type
                     && $function_param->type_location
                     && $function_param->type_location !== $function_param->signature_type_location
+                    && $function_param->type_location->file_path === $this->getFilePath()
                 ) {
                     $replace_type = ExpressionAnalyzer::fleshOutType(
                         $codebase,
