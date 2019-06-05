@@ -191,7 +191,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                          * @param self $two
                          */
                         public static function foo(self $one, self $two) : void {
-                            B::foo($one, $two);
+                            self::foo($one, $two);
                         }
                     }
 
@@ -282,6 +282,8 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                             echo \A::class;
 
+                            ArrayObject::foo();
+
                             return new Exception("bad");
                         }
 
@@ -305,6 +307,8 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                             }
 
                             echo self::class;
+
+                            \ArrayObject::foo();
 
                             return new Exception("bad");
                         }
