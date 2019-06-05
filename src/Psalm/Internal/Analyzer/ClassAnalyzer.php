@@ -161,12 +161,16 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $file_manipulations
                         );
                     } elseif (!$source_ns) {
-                        $class_start_pos = (int) $class->getAttribute('startFilePos');
+                        $first_statement_pos = $this->getFileAnalyzer()->getFirstStatementOffset();
+
+                        if ($first_statement_pos === -1) {
+                            $first_statement_pos = (int) $class->getAttribute('startFilePos');
+                        }
 
                         $file_manipulations = [
                             new \Psalm\FileManipulation(
-                                $class_start_pos,
-                                $class_start_pos,
+                                $first_statement_pos,
+                                $first_statement_pos,
                                 'namespace ' . $destination_ns . ';' . "\n\n",
                                 true
                             )

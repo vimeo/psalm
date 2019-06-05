@@ -90,6 +90,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     public $codebase;
 
     /**
+     * @var int
+     */
+    private $first_statement_offset = -1;
+
+    /**
      * @param string  $file_path
      * @param string  $file_name
      */
@@ -151,6 +156,15 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             $stmts = $codebase->getStatementsForFile($this->file_path);
         } catch (PhpParser\Error $e) {
             return;
+        }
+
+        if ($codebase->alter_code) {
+            foreach ($stmts as $stmt) {
+                if (!$stmt instanceof PhpParser\Node\Stmt\Declare_) {
+                    $this->first_statement_offset = (int) $stmt->getAttribute('startFilePos');
+                    break;
+                }
+            }
         }
 
         $statements_analyzer = new StatementsAnalyzer($this);
@@ -580,5 +594,10 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     public function getCodebase() : Codebase
     {
         return $this->codebase;
+    }
+
+    public function getFirstStatementOffset() : int
+    {
+        return $this->first_statement_offset;
     }
 }

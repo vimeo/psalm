@@ -266,6 +266,8 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
             ],
             'moveClassIntoNamespace' => [
                 '<?php
+                    use Exception;
+
                     class A {
                         /** @var ?Exception */
                         public $x;
@@ -278,6 +280,8 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                                 $b->bar();
                             }
 
+                            echo \A::class;
+
                             return new Exception("bad");
                         }
 
@@ -286,19 +290,23 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                 '<?php
                     namespace Foo\Bar\Baz;
 
+                    use Exception;
+
                     class B {
-                        /** @var null|\Exception */
+                        /** @var null|Exception */
                         public $x;
 
                         /**
                          * @param \ArrayObject<int, self> $a
                          */
-                        public function foo(\ArrayObject $a) : \Exception {
+                        public function foo(\ArrayObject $a) : Exception {
                             foreach ($a as $b) {
                                 $b->bar();
                             }
 
-                            return new \Exception("bad");
+                            echo self::class;
+
+                            return new Exception("bad");
                         }
 
                         public function bar() : void {}

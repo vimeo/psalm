@@ -141,18 +141,13 @@ class ConstFetchAnalyzer
                     }
                 }
 
-                if ($codebase->methods_to_move
-                    && $context->calling_method_id
-                    && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
-                ) {
-                    $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
-
-                    $codebase->classlikes->airliftClassLikeReference(
+                if ($codebase->alter_code) {
+                    $codebase->classlikes->handleClassLikeReferenceInMigration(
+                        $codebase,
+                        $statements_analyzer,
+                        $stmt->class,
                         $fq_class_name,
-                        explode('::', $destination_method_id)[0],
-                        $statements_analyzer->getFilePath(),
-                        (int) $stmt->class->getAttribute('startFilePos'),
-                        (int) $stmt->class->getAttribute('endFilePos') + 1
+                        $context->calling_method_id
                     );
                 }
 
