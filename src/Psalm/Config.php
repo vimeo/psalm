@@ -882,7 +882,7 @@ class Config
     /**
      * @return void
      */
-    public function setComposerClassLoader(ClassLoader $loader = null)
+    public function setComposerClassLoader(?ClassLoader $loader = null)
     {
         $this->composer_class_loader = $loader;
     }
@@ -1640,6 +1640,47 @@ class Config
         }
 
         return $this->composer_class_loader->findFile($fq_classlike_name);
+    }
+
+    public function getPotentialComposerFilePathForClassLike(string $class) : ?string
+    {
+        if (!$this->composer_class_loader) {
+            return null;
+        }
+
+        /** @var array<string, array<int, string>> */
+        $psr4_prefixes = $this->composer_class_loader->getPrefixesPsr4();
+
+        // PSR-4 lookup
+        $logicalPathPsr4 = strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
+
+        $candidate_path = null;
+
+        $maxDepth = 0;
+
+        $subPath = $class;
+        while (false !== $lastPos = strrpos($subPath, '\\')) {
+            $subPath = substr($subPath, 0, $lastPos);
+            $search = $subPath . '\\';
+            if (isset($psr4_prefixes[$search])) {
+                $depth = substr_count($search, '\\');
+                $pathEnd = DIRECTORY_SEPARATOR . substr($logicalPathPsr4, $lastPos + 1);
+
+                foreach ($psr4_prefixes[$search] as $dir) {
+                    $dir = realpath($dir);
+
+                    if ($dir
+                        && $depth > $maxDepth
+                        && $this->isInProjectDirs($dir . DIRECTORY_SEPARATOR . 'testdummy.php')
+                    ) {
+                        $maxDepth = $depth;
+                        $candidate_path = realpath($dir) . $pathEnd;
+                    }
+                }
+            }
+        }
+
+        return $candidate_path;
     }
 
     /**
