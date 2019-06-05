@@ -128,7 +128,7 @@ class AssignmentAnalyzer
                             $statements_analyzer,
                             $var_comment->type_start,
                             $var_comment->type_end,
-                            $var_comment->line_number,
+                            $var_comment->line_number
                         );
 
                         $codebase->classlikes->handleDocblockTypeInMigration(
