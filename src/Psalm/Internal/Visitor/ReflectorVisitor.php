@@ -1860,6 +1860,31 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             foreach ($docblock_info->assertions as $assertion) {
                 $assertion_type = $assertion['type'];
+
+                if (strpos($assertion_type, '|') !== false) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            'Docblock assertions cannot contain | characters',
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        )
+                    )) {
+                    }
+
+                    continue;
+                }
+
+                if (strpos($assertion_type, '\'') !== false || strpos($assertion_type, '"') !== false) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            'Docblock assertions cannot contain quotes',
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        )
+                    )) {
+                    }
+
+                    continue;
+                }
+
                 $prefix = '';
                 if ($assertion_type[0] === '!') {
                     $prefix = '!';

@@ -1204,6 +1204,18 @@ class AssertTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'assertValueImpossible' => [
+                '<?php
+                    /**
+                     * @psalm-assert "foo"|"bar"|"foo-bar" $s
+                     */
+                    function assertFooBar(string $s) : void {
+                    }
+
+                    $a = "";
+                    assertFooBar($a);',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
