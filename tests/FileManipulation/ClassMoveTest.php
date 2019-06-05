@@ -280,6 +280,12 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                                 $b->bar();
                             }
 
+                            try {
+                                // something
+                            } catch (InvalidArgumentException $e) {
+
+                            }
+
                             echo \A::class;
 
                             ArrayObject::foo();
@@ -304,6 +310,12 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         public function foo(\ArrayObject $a) : Exception {
                             foreach ($a as $b) {
                                 $b->bar();
+                            }
+
+                            try {
+                                // something
+                            } catch (\InvalidArgumentException $e) {
+
                             }
 
                             echo self::class;
