@@ -60,8 +60,8 @@ jobs:
         - vendor/bin/phpcs
 
     - stage: Phar build
-      php: 7.1
-      env: DEPS="high"
+      php: 7.2
+      env: DEPS="low"
       script: bin/build-phar.sh
       deploy:
         # deploy tagged releases to github releases page
