@@ -746,8 +746,6 @@ class ProjectAnalyzer
         $this->codebase->classlikes->moveClassConstants(
             $this->progress
         );
-
-        $this->codebase->classlikes->moveClasses();
     }
 
     public function migrateCode() : void
@@ -760,36 +758,50 @@ class ProjectAnalyzer
             $this->codebase->file_provider
         );
 
-        if (!$migration_manipulations) {
-            return;
-        }
+        if ($migration_manipulations) {
+            foreach ($migration_manipulations as $file_path => $file_manipulations) {
+                usort(
+                    $file_manipulations,
+                    /**
+                     * @return int
+                     */
+                    function (FileManipulation $a, FileManipulation $b) {
+                        if ($a->start === $b->start) {
+                            if ($b->end === $a->end) {
+                                return $b->insertion_text > $a->insertion_text ? 1 : -1;
+                            }
 
-        foreach ($migration_manipulations as $file_path => $file_manipulations) {
-            usort(
-                $file_manipulations,
-                /**
-                 * @return int
-                 */
-                function (FileManipulation $a, FileManipulation $b) {
-                    if ($a->start === $b->start) {
-                        if ($b->end === $a->end) {
-                            return $b->insertion_text > $a->insertion_text ? 1 : -1;
+                            return $b->end > $a->end ? 1 : -1;
                         }
 
-                        return $b->end > $a->end ? 1 : -1;
+                        return $b->start > $a->start ? 1 : -1;
                     }
+                );
 
-                    return $b->start > $a->start ? 1 : -1;
+                $existing_contents = $this->codebase->file_provider->getContents($file_path);
+
+                foreach ($file_manipulations as $manipulation) {
+                    $existing_contents = $manipulation->transform($existing_contents);
                 }
-            );
 
-            $existing_contents = $this->codebase->file_provider->getContents($file_path);
-
-            foreach ($file_manipulations as $manipulation) {
-                $existing_contents = $manipulation->transform($existing_contents);
+                $this->codebase->file_provider->setContents($file_path, $existing_contents);
             }
+        }
 
-            $this->codebase->file_provider->setContents($file_path, $existing_contents);
+        if ($this->codebase->classes_to_move) {
+            foreach ($this->codebase->classes_to_move as $source => $destination) {
+                $source_class_storage = $this->codebase->classlike_storage_provider->get($source);
+
+                if (!$source_class_storage->location) {
+                    continue;
+                }
+
+                $potential_file_path = $this->config->getPotentialComposerFilePathForClassLike($destination);
+
+                if ($potential_file_path && !file_exists($potential_file_path)) {
+                    rename($source_class_storage->location->file_path, $potential_file_path);
+                }
+            }
         }
     }
 

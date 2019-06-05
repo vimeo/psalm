@@ -959,13 +959,6 @@ class ClassLikes
         FileManipulationBuffer::addCodeMigrations($code_migrations);
     }
 
-    /**
-     * @return void
-     */
-    public function moveClasses()
-    {
-    }
-
     public function handleClassLikeReferenceInMigration(
         \Psalm\Codebase $codebase,
         \Psalm\StatementsSource $source,
