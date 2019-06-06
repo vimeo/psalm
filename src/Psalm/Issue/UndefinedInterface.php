@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UndefinedInterface extends CodeIssue
+class UndefinedInterface extends ClassIssue
 {
 }

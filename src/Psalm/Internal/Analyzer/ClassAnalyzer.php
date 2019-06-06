@@ -251,7 +251,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new DeprecatedClass(
                             $parent_fq_class_name . ' is marked deprecated',
-                            $code_location
+                            $code_location,
+                            $parent_fq_class_name
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
@@ -270,7 +271,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         if (IssueBuffer::accepts(
                             new InternalClass(
                                 $parent_fq_class_name . ' is marked internal',
-                                $code_location
+                                $code_location,
+                                $parent_fq_class_name
                             ),
                             array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                         )) {
@@ -285,7 +287,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new InternalClass(
                             $parent_fq_class_name . ' is internal to ' . $parent_class_storage->psalm_internal,
-                            $code_location
+                            $code_location,
+                            $parent_fq_class_name
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
@@ -376,7 +379,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new UndefinedInterface(
                         $fq_interface_name . ' is not an interface',
-                        $code_location
+                        $code_location,
+                        $fq_interface_name
                     ),
                     array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                 )) {
@@ -461,7 +465,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new DeprecatedInterface(
                             $interface_name . ' is marked deprecated',
-                            $code_location
+                            $code_location,
+                            $interface_name
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {

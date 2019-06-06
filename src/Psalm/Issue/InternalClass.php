@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InternalClass extends CodeIssue
+class InternalClass extends ClassIssue
 {
 }
