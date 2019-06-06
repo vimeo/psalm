@@ -327,6 +327,8 @@ if ($threads > 1) {
     $ini_handler->disableExtension('grpc');
 }
 
+$ini_handler->disableExtension('uopz');
+
 $type_map_location = null;
 
 if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
