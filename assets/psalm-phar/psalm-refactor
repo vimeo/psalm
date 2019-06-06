@@ -1,0 +1,2 @@
+#!/usr/bin/env php
+<?php require_once 'phar://' . __DIR__ . DIRECTORY_SEPARATOR . 'psalm.phar/src/psalm-refactor.php';
