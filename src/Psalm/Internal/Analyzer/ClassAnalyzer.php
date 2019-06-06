@@ -763,7 +763,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 foreach ($stmt->props as $prop) {
                     if ($prop->default) {
                         $member_stmts[] = $stmt;
-                        break;
                     }
 
                     if ($codebase->alter_code) {

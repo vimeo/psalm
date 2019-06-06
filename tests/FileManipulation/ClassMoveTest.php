@@ -377,6 +377,11 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                          * @param  Bat $b
                          */
                         function doSomething(Bat $b) : void {}
+
+                        class A {
+                            /** @var ?Bat */
+                            public $x = null;
+                        }
                     }
                     namespace Bar {
                         class Bat {
@@ -393,6 +398,11 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                          * @param  Bahh $b
                          */
                         function doSomething(Bahh $b) : void {}
+
+                        class A {
+                            /** @var null|Bahh */
+                            public $x = null;
+                        }
                     }
                     namespace Bar\Baz {
                         class Bahh {
