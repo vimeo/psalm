@@ -5,7 +5,7 @@
         "src/psalm.php",
         "src/psalter.php",
         "src/psalm-language-server.php",
-        "src/psalm-plugin.php",
+        "src/psalm_plugin.php",
         "src/psalm-refactor.php"
     ],
     "files-bin": ["config.xsd"],
