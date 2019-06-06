@@ -65,6 +65,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     private $namespace_aliased_classes_flipped = [];
 
     /**
+     * @var array<string, array<string, string>>
+     */
+    private $namespace_aliased_classes_flipped_replaceable = [];
+
+    /**
      * @var array<string, InterfaceAnalyzer>
      */
     public $interface_analyzers_to_analyze = [];
@@ -232,6 +237,8 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
                 $this->namespace_aliased_classes[$namespace_name] = $namespace_analyzer->getAliases()->uses;
                 $this->namespace_aliased_classes_flipped[$namespace_name] =
                     $namespace_analyzer->getAliasedClassesFlipped();
+                $this->namespace_aliased_classes_flipped_replaceable[$namespace_name] =
+                    $namespace_analyzer->getAliasedClassesFlippedReplaceable();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
@@ -387,6 +394,20 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         return $this->aliased_classes_flipped;
+    }
+
+    /**
+     * @param  string|null $namespace_name
+     *
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlippedReplaceable($namespace_name = null)
+    {
+        if ($namespace_name && isset($this->namespace_aliased_classes_flipped_replaceable[$namespace_name])) {
+            return $this->namespace_aliased_classes_flipped_replaceable[$namespace_name];
+        }
+
+        return $this->aliased_classes_flipped_replaceable;
     }
 
     /**

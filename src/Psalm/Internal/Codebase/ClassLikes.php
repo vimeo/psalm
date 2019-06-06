@@ -1029,25 +1029,34 @@ class ClassLikes
         }
 
         // if we're outside a moved class, but we're changing all references to a class
-        foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
-            if (strtolower($fq_class_name) === $old_fq_class_name) {
-                $file_manipulations = [];
+        if (isset($codebase->class_transforms[strtolower($fq_class_name)])) {
+            $new_fq_class_name = $codebase->class_transforms[strtolower($fq_class_name)];
+            $file_manipulations = [];
 
-                $file_manipulations[] = new \Psalm\FileManipulation(
-                    (int) $class_name_node->getAttribute('startFilePos'),
-                    (int) $class_name_node->getAttribute('endFilePos') + 1,
-                    Type::getStringFromFQCLN(
-                        $new_fq_class_name,
-                        $source->getNamespace(),
-                        $source->getAliasedClassesFlipped(),
-                        $calling_fq_class_name
-                    )
-                );
+            $uses_flipped = $source->getAliasedClassesFlipped();
+            $uses_flipped_replaceable = $source->getAliasedClassesFlippedReplaceable();
 
-                FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
-
-                return true;
+            if (isset($uses_flipped_replaceable[strtolower($fq_class_name)])) {
+                unset($uses_flipped_replaceable[strtolower($fq_class_name)]);
+                $new_class_name_parts = explode('\\', $new_fq_class_name);
+                $class_name = end($new_class_name_parts);
+                $uses_flipped[strtolower($new_fq_class_name)] = $class_name;
             }
+
+            $file_manipulations[] = new \Psalm\FileManipulation(
+                (int) $class_name_node->getAttribute('startFilePos'),
+                (int) $class_name_node->getAttribute('endFilePos') + 1,
+                Type::getStringFromFQCLN(
+                    $new_fq_class_name,
+                    $source->getNamespace(),
+                    $uses_flipped,
+                    $calling_fq_class_name
+                )
+            );
+
+            FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+
+            return true;
         }
 
         return false;
@@ -1125,12 +1134,22 @@ class ClassLikes
 
                     $file_manipulations = [];
 
+                    $uses_flipped = $source->getAliasedClassesFlipped();
+                    $uses_flipped_replaceable = $source->getAliasedClassesFlippedReplaceable();
+
+                    if (isset($uses_flipped_replaceable[$old_fq_class_name])) {
+                        unset($uses_flipped_replaceable[$old_fq_class_name]);
+                        $new_class_name_parts = explode('\\', $new_fq_class_name);
+                        $class_name = end($new_class_name_parts);
+                        $uses_flipped[strtolower($new_fq_class_name)] = $class_name;
+                    }
+
                     $file_manipulations[] = new \Psalm\FileManipulation(
                         $bounds[0],
                         $bounds[1],
                         $type->toNamespacedString(
                             $source->getNamespace(),
-                            $source->getAliasedClassesFlipped(),
+                            $uses_flipped,
                             null,
                             false
                         )

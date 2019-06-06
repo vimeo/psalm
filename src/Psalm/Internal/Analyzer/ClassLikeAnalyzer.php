@@ -419,6 +419,18 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlippedReplaceable()
+    {
+        if ($this->source instanceof NamespaceAnalyzer || $this->source instanceof FileAnalyzer) {
+            return $this->source->getAliasedClassesFlippedReplaceable();
+        }
+
+        return [];
+    }
+
+    /**
      * @return string
      */
     public function getFQCLN()

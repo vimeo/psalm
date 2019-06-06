@@ -331,55 +331,62 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     'A' => 'Foo\Bar\Baz\B',
                 ]
             ],
-            'moveClassDeeperIntoNamespace' => [
+            'moveClassDeeperIntoNamespaceAdjustUse' => [
                 '<?php
-                    namespace Foo;
-
-                    use Exception;
-                    use ArrayObject;
-
-                    class A {
-                        /** @var ?Exception */
-                        public $x;
+                    namespace Foo {
+                        use Bar\Bat;
 
                         /**
-                         * @param ArrayObject<int, A> $a
+                         * @param  Bat $b
                          */
-                        public function foo(ArrayObject $a) : Exception {
-                            foreach ($a as $b) {
-                                $b->bar();
-                            }
-
-                            return new Exception("bad");
-                        }
-
-                        public function bar() : void {}
+                        function doSomething(Bat $b) : void {}
+                    }
+                    namespace Bar {
+                        class Bat {}
                     }',
                 '<?php
-                    namespace Foo\Bar\Baz;
-
-                    use Exception;
-                    use ArrayObject;
-
-                    class B {
-                        /** @var null|Exception */
-                        public $x;
+                    namespace Foo {
+                        use Bar\Baz\Bahh;
 
                         /**
-                         * @param ArrayObject<int, self> $a
+                         * @param  Bahh $b
                          */
-                        public function foo(ArrayObject $a) : Exception {
-                            foreach ($a as $b) {
-                                $b->bar();
-                            }
-
-                            return new Exception("bad");
-                        }
-
-                        public function bar() : void {}
+                        function doSomething(Bahh $b) : void {}
+                    }
+                    namespace Bar\Baz {
+                        class Bahh {}
                     }',
                 [
-                    'Foo\A' => 'Foo\Bar\Baz\B',
+                    'Bar\Bat' => 'Bar\Baz\Bahh',
+                ]
+            ],
+            'moveClassDeeperIntoNamespaceDontAdjustGroupUse' => [
+                '<?php
+                    namespace Foo {
+                        use Bar\{Bat};
+
+                        /**
+                         * @param  Bat $b
+                         */
+                        function doSomething(Bat $b) : void {}
+                    }
+                    namespace Bar {
+                        class Bat {}
+                    }',
+                '<?php
+                    namespace Foo {
+                        use Bar\{Bat};
+
+                        /**
+                         * @param  \Bar\Baz\Bahh $b
+                         */
+                        function doSomething(\Bar\Baz\Bahh $b) : void {}
+                    }
+                    namespace Bar\Baz {
+                        class Bahh {}
+                    }',
+                [
+                    'Bar\Bat' => 'Bar\Baz\Bahh',
                 ]
             ],
         ];
