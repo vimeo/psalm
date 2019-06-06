@@ -361,6 +361,7 @@ if (isset($options['i'])) {
                 && $arg !== '--no-ansi'
                 && $arg !== '-i'
                 && $arg !== '--init'
+                && strpos($arg, '--disable-extension=') !== 0
                 && strpos($arg, '--root=') !== 0
                 && strpos($arg, '--r=') !== 0;
         }
