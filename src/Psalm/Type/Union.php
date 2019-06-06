@@ -364,19 +364,21 @@ class Union
         $s = '';
 
         foreach ($this->types as $type) {
-            if ($type instanceof TLiteralFloat) {
+            $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
+
+            if ($type instanceof TLiteralFloat && $type_string === 'float') {
                 if ($printed_float) {
                     continue;
                 }
 
                 $printed_float = true;
-            } elseif ($type instanceof TLiteralString && !$type instanceof Type\Atomic\TLiteralClassString) {
+            } elseif ($type instanceof TLiteralString && $type_string === 'string') {
                 if ($printed_string) {
                     continue;
                 }
 
                 $printed_string = true;
-            } elseif ($type instanceof TLiteralInt) {
+            } elseif ($type instanceof TLiteralInt && $type_string === 'int') {
                 if ($printed_int) {
                     continue;
                 }
@@ -384,7 +386,7 @@ class Union
                 $printed_int = true;
             }
 
-            $s .= $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format) . '|';
+            $s .= $type_string . '|';
         }
 
         return substr($s, 0, -1) ?: '';
