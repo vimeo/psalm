@@ -765,6 +765,14 @@ abstract class Atomic
             }
         }
 
+        if ($this instanceof Type\Atomic\ObjectLike) {
+            foreach ($this->properties as $property_type) {
+                if ($property_type->containsClassLike($fq_classlike_name)) {
+                    return true;
+                }
+            }
+        }
+
         if ($this instanceof Type\Atomic\TFn
             || $this instanceof Type\Atomic\TCallable
         ) {
@@ -831,6 +839,12 @@ abstract class Atomic
         ) {
             foreach ($this->type_params as $type_param) {
                 $type_param->replaceClassLike($old, $new);
+            }
+        }
+
+        if ($this instanceof Type\Atomic\ObjectLike) {
+            foreach ($this->properties as $property_type) {
+                $property_type->replaceClassLike($old, $new);
             }
         }
 
