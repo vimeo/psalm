@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+set -e
+
 composer bin box install
 
 vendor/bin/box compile
