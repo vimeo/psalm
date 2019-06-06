@@ -950,7 +950,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $this->getSuppressedIssues()
                         );
 
-                        if ($var_comment->type_start
+                        if ($codebase->alter_code
+                            && $var_comment->type_start
                             && $var_comment->type_end
                             && $var_comment->line_number
                         ) {

@@ -141,9 +141,10 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     /**
                      * @param ?A $a
                      * @param string | null $b
+                     * @param callable(): A $c
                      * @return A | null
                      */
-                    function foo(?A $a, $b) : ?A {
+                    function foo(?A $a, $b, $c) : ?A {
                         return $a;
                     }',
                 '<?php
@@ -154,9 +155,10 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     /**
                      * @param null|B $a
                      * @param string | null $b
+                     * @param callable():B $c
                      * @return null|B
                      */
-                    function foo(?B $a, $b) : ?B {
+                    function foo(?B $a, $b, $c) : ?B {
                         return $a;
                     }',
                 [

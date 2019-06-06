@@ -1056,6 +1056,7 @@ class CommentAnalyzer
                 }
 
                 if ($expects_callable_return) {
+                    $type .= ' ';
                     $expects_callable_return = false;
                     continue;
                 }
