@@ -554,37 +554,6 @@ class ProjectAnalyzer
 
                 $source_class_storage = $this->codebase->classlike_storage_provider->get($source_parts[0]);
 
-                foreach ($source_class_storage->methods as $method_name => $method_storage) {
-                    if ($method_storage->is_static) {
-                        $old_method_id = strtolower($source_parts[0] . '::' . $method_name);
-                        $new_method_id = $destination_parts[0] . '::' . $method_name;
-
-                        $this->codebase->call_transforms[$old_method_id . '\((.*\))'] = $new_method_id . '($1)';
-                    }
-                }
-
-                foreach ($source_class_storage->properties as $property_name => $property_storage) {
-                    if ($property_storage->is_static) {
-                        $old_property_id = strtolower($source_parts[0]) . '::' . $property_name;
-                        $new_property_id = $destination_parts[0] . '::' . $property_name;
-
-                        $this->codebase->property_transforms[$old_property_id] = $new_property_id;
-                    }
-                }
-
-                $all_class_consts = array_merge(
-                    $source_class_storage->public_class_constants,
-                    $source_class_storage->protected_class_constants,
-                    $source_class_storage->private_class_constants
-                );
-
-                foreach ($all_class_consts as $const_name => $_) {
-                    $old_const_id = strtolower($source_parts[0]) . '::' . $const_name;
-                    $new_const_id = $destination_parts[0] . '::' . $const_name;
-
-                    $this->codebase->class_constant_transforms[$old_const_id] = $new_const_id;
-                }
-
                 $destination_parts = explode('\\', $destination);
 
                 array_pop($destination_parts);

@@ -141,8 +141,10 @@ class ConstFetchAnalyzer
                     }
                 }
 
+                $moved_class = false;
+
                 if ($codebase->alter_code) {
-                    $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
                         $codebase,
                         $statements_analyzer,
                         $stmt->class,
@@ -258,32 +260,34 @@ class ConstFetchAnalyzer
 
                 $declaring_const_id = strtolower($fq_class_name) . '::' . $stmt->name->name;
 
-                foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
-                    if ($declaring_const_id === $original_pattern) {
-                        list($new_fq_class_name, $new_const_name) = explode('::', $transformation);
+                if ($codebase->alter_code && !$moved_class) {
+                    foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
+                        if ($declaring_const_id === $original_pattern) {
+                            list($new_fq_class_name, $new_const_name) = explode('::', $transformation);
 
-                        $file_manipulations = [];
+                            $file_manipulations = [];
 
-                        if (strtolower($new_fq_class_name) !== strtolower($fq_class_name)) {
+                            if (strtolower($new_fq_class_name) !== strtolower($fq_class_name)) {
+                                $file_manipulations[] = new \Psalm\FileManipulation(
+                                    (int) $stmt->class->getAttribute('startFilePos'),
+                                    (int) $stmt->class->getAttribute('endFilePos') + 1,
+                                    Type::getStringFromFQCLN(
+                                        $new_fq_class_name,
+                                        $statements_analyzer->getNamespace(),
+                                        $statements_analyzer->getAliasedClassesFlipped(),
+                                        null
+                                    )
+                                );
+                            }
+
                             $file_manipulations[] = new \Psalm\FileManipulation(
-                                (int) $stmt->class->getAttribute('startFilePos'),
-                                (int) $stmt->class->getAttribute('endFilePos') + 1,
-                                Type::getStringFromFQCLN(
-                                    $new_fq_class_name,
-                                    $statements_analyzer->getNamespace(),
-                                    $statements_analyzer->getAliasedClassesFlipped(),
-                                    null
-                                )
+                                (int) $stmt->name->getAttribute('startFilePos'),
+                                (int) $stmt->name->getAttribute('endFilePos') + 1,
+                                $new_const_name
                             );
+
+                            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
                         }
-
-                        $file_manipulations[] = new \Psalm\FileManipulation(
-                            (int) $stmt->name->getAttribute('startFilePos'),
-                            (int) $stmt->name->getAttribute('endFilePos') + 1,
-                            $new_const_name
-                        );
-
-                        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
                     }
                 }
 

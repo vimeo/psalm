@@ -336,17 +336,23 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     namespace Foo {
                         use Bar\Bat;
 
+                        echo Bat::FOO;
+
                         /**
                          * @param  Bat $b
                          */
                         function doSomething(Bat $b) : void {}
                     }
                     namespace Bar {
-                        class Bat {}
+                        class Bat {
+                            const FOO = 5;
+                        }
                     }',
                 '<?php
                     namespace Foo {
                         use Bar\Baz\Bahh;
+
+                        echo Bahh::FOO;
 
                         /**
                          * @param  Bahh $b
@@ -354,7 +360,9 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         function doSomething(Bahh $b) : void {}
                     }
                     namespace Bar\Baz {
-                        class Bahh {}
+                        class Bahh {
+                            const FOO = 5;
+                        }
                     }',
                 [
                     'Bar\Bat' => 'Bar\Baz\Bahh',
