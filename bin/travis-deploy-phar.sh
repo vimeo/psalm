@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 git clone https://${GITHUB_TOKEN}@github.com/psalm/phar.git > /dev/null 2>&1
 cd phar
 rm -rf !(".git")
