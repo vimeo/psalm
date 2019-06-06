@@ -366,17 +366,19 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     'A' => 'Foo\Bar\Baz\B',
                 ]
             ],
-            'moveClassDeeperIntoNamespaceAdjustUse' => [
+            'moveClassDeeperIntoNamespaceAdjustUseWithoutAlias' => [
                 '<?php
                     namespace Foo {
                         use Bar\Bat;
 
                         echo Bat::FOO;
+                        echo Bat::FAR;
 
                         /**
                          * @param  Bat $b
+                         * @param  Bat::FOO|Bat::FAR $c
                          */
-                        function doSomething(Bat $b) : void {}
+                        function doSomething(Bat $b, int $c) : void {}
 
                         class A {
                             /** @var ?Bat */
@@ -386,6 +388,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     namespace Bar {
                         class Bat {
                             const FOO = 5;
+                            const FAR = 7;
                         }
                     }',
                 '<?php
@@ -393,11 +396,13 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         use Bar\Baz\Bahh;
 
                         echo Bahh::FOO;
+                        echo Bahh::FAR;
 
                         /**
                          * @param  Bahh $b
+                         * @param  Bahh::FOO|Bahh::FAR $c
                          */
-                        function doSomething(Bahh $b) : void {}
+                        function doSomething(Bahh $b, int $c) : void {}
 
                         class A {
                             /** @var null|Bahh */
@@ -407,6 +412,60 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     namespace Bar\Baz {
                         class Bahh {
                             const FOO = 5;
+                            const FAR = 7;
+                        }
+                    }',
+                [
+                    'Bar\Bat' => 'Bar\Baz\Bahh',
+                ]
+            ],
+            'moveClassDeeperIntoNamespaceAdjustUseWithAlias' => [
+                '<?php
+                    namespace Foo {
+                        use Bar\Bat as Kappa;
+
+                        echo Kappa::FOO;
+                        echo Kappa::FAR;
+
+                        /**
+                         * @param  Kappa $b
+                         * @param  Kappa::FOO|Kappa::FAR $c
+                         */
+                        function doSomething(Kappa $b, int $c) : void {}
+
+                        class A {
+                            /** @var ?Kappa */
+                            public $x = null;
+                        }
+                    }
+                    namespace Bar {
+                        class Bat {
+                            const FOO = 5;
+                            const FAR = 7;
+                        }
+                    }',
+                '<?php
+                    namespace Foo {
+                        use Bar\Baz\Bahh as Kappa;
+
+                        echo Kappa::FOO;
+                        echo Kappa::FAR;
+
+                        /**
+                         * @param  Kappa $b
+                         * @param  Kappa::FOO|Kappa::FAR $c
+                         */
+                        function doSomething(Kappa $b, int $c) : void {}
+
+                        class A {
+                            /** @var null|Kappa */
+                            public $x = null;
+                        }
+                    }
+                    namespace Bar\Baz {
+                        class Bahh {
+                            const FOO = 5;
+                            const FAR = 7;
                         }
                     }',
                 [

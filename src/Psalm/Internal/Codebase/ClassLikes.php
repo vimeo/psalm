@@ -1036,11 +1036,20 @@ class ClassLikes
             $uses_flipped = $source->getAliasedClassesFlipped();
             $uses_flipped_replaceable = $source->getAliasedClassesFlippedReplaceable();
 
-            if (isset($uses_flipped_replaceable[strtolower($fq_class_name)])) {
-                unset($uses_flipped_replaceable[strtolower($fq_class_name)]);
-                $new_class_name_parts = explode('\\', $new_fq_class_name);
-                $class_name = end($new_class_name_parts);
-                $uses_flipped[strtolower($new_fq_class_name)] = $class_name;
+            $old_fq_class_name = strtolower($fq_class_name);
+
+            if (isset($uses_flipped_replaceable[$old_fq_class_name])) {
+                $alias = $uses_flipped_replaceable[$old_fq_class_name];
+                unset($uses_flipped_replaceable[$old_fq_class_name]);
+                $old_class_name_parts = explode('\\', $old_fq_class_name);
+                $old_class_name = end($old_class_name_parts);
+                if (strtolower($old_class_name) === strtolower($alias)) {
+                    $new_class_name_parts = explode('\\', $new_fq_class_name);
+                    $new_class_name = end($new_class_name_parts);
+                    $uses_flipped[strtolower($new_fq_class_name)] = $new_class_name;
+                } else {
+                    $uses_flipped[strtolower($new_fq_class_name)] = $alias;
+                }
             }
 
             $file_manipulations[] = new \Psalm\FileManipulation(
@@ -1138,10 +1147,17 @@ class ClassLikes
                     $uses_flipped_replaceable = $source->getAliasedClassesFlippedReplaceable();
 
                     if (isset($uses_flipped_replaceable[$old_fq_class_name])) {
+                        $alias = $uses_flipped_replaceable[$old_fq_class_name];
                         unset($uses_flipped_replaceable[$old_fq_class_name]);
-                        $new_class_name_parts = explode('\\', $new_fq_class_name);
-                        $class_name = end($new_class_name_parts);
-                        $uses_flipped[strtolower($new_fq_class_name)] = $class_name;
+                        $old_class_name_parts = explode('\\', $old_fq_class_name);
+                        $old_class_name = end($old_class_name_parts);
+                        if (strtolower($old_class_name) === strtolower($alias)) {
+                            $new_class_name_parts = explode('\\', $new_fq_class_name);
+                            $new_class_name = end($new_class_name_parts);
+                            $uses_flipped[strtolower($new_fq_class_name)] = $new_class_name;
+                        } else {
+                            $uses_flipped[strtolower($new_fq_class_name)] = $alias;
+                        }
                     }
 
                     $file_manipulations[] = new \Psalm\FileManipulation(

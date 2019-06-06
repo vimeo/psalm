@@ -78,7 +78,7 @@ trait CanAlias
                             $file_manipulations[] = new \Psalm\FileManipulation(
                                 (int) $use->getAttribute('startFilePos'),
                                 (int) $use->getAttribute('endFilePos') + 1,
-                                $new_fq_class_name
+                                $new_fq_class_name . ($use->alias ? ' as ' . $use_alias : '')
                             );
 
                             FileManipulationBuffer::add($this->getFilePath(), $file_manipulations);

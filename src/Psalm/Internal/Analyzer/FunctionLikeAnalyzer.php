@@ -435,7 +435,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $storage->return_type,
                     $context->self,
                     $context->self,
-                    $this->getParentFQCLN()
+                    $this->getParentFQCLN(),
+                    false
                 );
 
                 $codebase->classlikes->handleDocblockTypeInMigration(
@@ -458,7 +459,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $function_param->type,
                         $context->self,
                         $context->self,
-                        $this->getParentFQCLN()
+                        $this->getParentFQCLN(),
+                        false
                     );
 
                     $codebase->classlikes->handleDocblockTypeInMigration(

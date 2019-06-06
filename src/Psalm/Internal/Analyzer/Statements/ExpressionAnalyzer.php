@@ -1001,7 +1001,8 @@ class ExpressionAnalyzer
         Type\Union $return_type,
         ?string $self_class,
         $static_class_type,
-        ?string $parent_class
+        ?string $parent_class,
+        bool $evaluate = true
     ) {
         $return_type = clone $return_type;
 
@@ -1013,7 +1014,8 @@ class ExpressionAnalyzer
                 $return_type_part,
                 $self_class,
                 $static_class_type,
-                $parent_class
+                $parent_class,
+                $evaluate
             );
 
             if (is_array($parts)) {
@@ -1048,7 +1050,8 @@ class ExpressionAnalyzer
         Type\Atomic &$return_type,
         ?string $self_class,
         $static_class_type,
-        ?string $parent_class
+        ?string $parent_class,
+        bool $evaluate = true
     ) {
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
@@ -1062,7 +1065,8 @@ class ExpressionAnalyzer
                         $extra_type,
                         $self_class,
                         $static_class_type,
-                        $parent_class
+                        $parent_class,
+                        $evaluate
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
@@ -1121,7 +1125,7 @@ class ExpressionAnalyzer
                 $return_type->fq_classlike_name = $self_class;
             }
 
-            if ($codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+            if ($evaluate && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
                 if (strtolower($return_type->const_name) === 'class') {
                     return new Type\Atomic\TLiteralClassString($return_type->fq_classlike_name);
                 }
@@ -1152,7 +1156,7 @@ class ExpressionAnalyzer
                 $return_type->fq_classlike_name = $self_class;
             }
 
-            if ($codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+            if ($evaluate && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
                 $class_constants = $codebase->classlikes->getConstantsForClass(
                     $return_type->fq_classlike_name,
                     \ReflectionProperty::IS_PRIVATE

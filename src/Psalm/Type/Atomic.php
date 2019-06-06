@@ -812,7 +812,7 @@ abstract class Atomic
         }
 
         if ($this instanceof TScalarClassConstant) {
-            if (strtolower($old) === $new) {
+            if (strtolower($this->fq_classlike_name) === $old) {
                 $this->fq_classlike_name = $new;
             }
         }
