@@ -370,7 +370,7 @@ class Union
                 }
 
                 $printed_float = true;
-            } elseif ($type instanceof TLiteralString) {
+            } elseif ($type instanceof TLiteralString && !$type instanceof Type\Atomic\TLiteralClassString) {
                 if ($printed_string) {
                     continue;
                 }
@@ -1690,12 +1690,9 @@ class Union
         foreach ($this->types as $key => $atomic_type) {
             $atomic_type->replaceClassLike($old, $new);
 
-            unset($this->types[$key]);
-
-            $this->types[$atomic_type->getKey()] = $atomic_type;
+            $this->removeType($key);
+            $this->addType($atomic_type);
         }
-
-        $this->id = null;
     }
 
     /**

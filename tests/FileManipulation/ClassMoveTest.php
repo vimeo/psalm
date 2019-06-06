@@ -94,9 +94,10 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                     /**
                      * @param A $a
+                     * @param A::class|C::class $b
                      * @return A
                      */
-                    function foo(A $a) : A {
+                    function foo(A $a, string $b) : A {
                         return $a;
                     }
 
@@ -118,9 +119,10 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                     /**
                      * @param B $a
+                     * @param B::class|C::class $b
                      * @return B
                      */
-                    function foo(B $a) : B {
+                    function foo(B $a, string $b) : B {
                         return $a;
                     }
 
