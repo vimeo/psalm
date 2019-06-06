@@ -132,6 +132,37 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     'Ns\A' => 'Ns\B',
                 ]
             ],
+            'renameEmptyClassWithSpacesInDocblock' => [
+                '<?php
+                    namespace Ns;
+
+                    class A {}
+
+                    /**
+                     * @param ?A $a
+                     * @param string | null $b
+                     * @return A | null
+                     */
+                    function foo(?A $a, $b) : ?A {
+                        return $a;
+                    }',
+                '<?php
+                    namespace Ns;
+
+                    class B {}
+
+                    /**
+                     * @param null|B $a
+                     * @param string | null $b
+                     * @return null|B
+                     */
+                    function foo(?B $a, $b) : ?B {
+                        return $a;
+                    }',
+                [
+                    'Ns\A' => 'Ns\B',
+                ]
+            ],
             'renameClassWithInstanceMethod' => [
                 '<?php
                     namespace Ns;

@@ -1038,18 +1038,19 @@ class CommentAnalyzer
 
                     if ($nexter_char === ' ') {
                         ++$i;
-                        $type .= $next_char;
+                        $type .= $next_char . ' ';
                         continue;
                     }
                 }
 
                 if ($last_char === '|' || $last_char === '&') {
+                    $type .= ' ';
                     continue;
                 }
 
                 if ($next_char === ':') {
                     ++$i;
-                    $type .= ':';
+                    $type .= ' :';
                     $expects_callable_return = true;
                     continue;
                 }
