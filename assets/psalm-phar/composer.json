@@ -3,7 +3,7 @@
 	"description": "Composer-based Psalm Phar",
 	"license": ["MIT"],
 	"require": {
-		"php": "^7.0"
+		"php": "^7.1"
 	},
 	"bin": ["psalm.phar", "psalm", "psalter", "psalm-language-server", "psalm-plugin"]
 }
