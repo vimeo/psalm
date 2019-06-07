@@ -81,6 +81,5 @@ jobs:
           skip_cleanup: true
           on:
             all_branches: true
-            repo: vimeo/psalm
             condition: ' "$TRAVIS_PULL_REQUEST" = "false" '
           script: bin/travis-deploy-phar.sh
