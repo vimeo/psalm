@@ -121,7 +121,10 @@ class TestCase extends BaseTestCase
     protected function getTestName($withDataSet = true)
     {
         $name = parent::getName($withDataSet);
-        /** @psalm-suppress DocblockTypeContradiction PHPUnit 7 introduced nullable name */
+        /**
+         * @psalm-suppress DocblockTypeContradiction PHPUnit 7 introduced nullable name
+         * @psalm-suppress TypeDoesNotContainNull PHPUnit 8.2 made it non-nullable again
+         */
         if (null === $name) {
             throw new RuntimeException('anonymous test - shouldn\'t happen');
         }
