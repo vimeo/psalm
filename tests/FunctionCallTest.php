@@ -1713,6 +1713,18 @@ class FunctionCallTest extends TestCase
                     /** @psalm-suppress TooFewArguments */
                     min(0);',
             ],
+            'PHP73-allowIsCountableToInformType' => [
+                '<?php
+                    function getObject() : iterable{
+                       return [];
+                    }
+
+                    $iterableObject = getObject();
+
+                    if (is_countable($iterableObject)) {
+                       if (count($iterableObject) === 0) {}
+                    }',
+            ],
         ];
     }
 

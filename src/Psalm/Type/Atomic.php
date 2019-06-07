@@ -249,7 +249,7 @@ abstract class Atomic
     public function isIterable(Codebase $codebase)
     {
         return $this instanceof TIterable
-            || $this->isTraversable($codebase)
+            || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
             || $this instanceof ObjectLike;
     }
@@ -257,7 +257,17 @@ abstract class Atomic
     /**
      * @return bool
      */
-    public function isTraversable(Codebase $codebase)
+    public function isCountable(Codebase $codebase)
+    {
+        return $this->hasCountableInterface($codebase)
+            || $this instanceof TArray
+            || $this instanceof ObjectLike;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasTraversableInterface(Codebase $codebase)
     {
         return $this instanceof TNamedObject
             && (strtolower($this->value) === 'traversable'
@@ -269,6 +279,40 @@ abstract class Atomic
                         $this->value,
                         'Traversable'
                     )))
+                || ($this->extra_types
+                    && array_filter(
+                        $this->extra_types,
+                        function (Atomic $a) use ($codebase) : bool {
+                            return $a->hasTraversableInterface($codebase);
+                        }
+                    )
+                )
+            );
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasCountableInterface(Codebase $codebase)
+    {
+        return $this instanceof TNamedObject
+            && (strtolower($this->value) === 'countable'
+                || ($codebase->classOrInterfaceExists($this->value)
+                    && ($codebase->classExtendsOrImplements(
+                        $this->value,
+                        'Countable'
+                    ) || $codebase->interfaceExtends(
+                        $this->value,
+                        'Countable'
+                    )))
+                || ($this->extra_types
+                    && array_filter(
+                        $this->extra_types,
+                        function (Atomic $a) use ($codebase) : bool {
+                            return $a->hasCountableInterface($codebase);
+                        }
+                    )
+                )
             );
     }
 

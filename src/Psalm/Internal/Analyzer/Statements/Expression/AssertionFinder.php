@@ -1666,6 +1666,10 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'iterable']];
             }
+        } elseif (self::hasCountableCheck($expr)) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = [[$prefix . 'countable']];
+            }
         } elseif ($class_exists_check_type = self::hasClassExistsCheck($expr)) {
             if ($first_var_name) {
                 if ($class_exists_check_type === 2) {
@@ -2292,6 +2296,20 @@ class AssertionFinder
     protected static function hasIterableCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_iterable') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
+     * @return  bool
+     */
+    protected static function hasCountableCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_countable') {
             return true;
         }
 

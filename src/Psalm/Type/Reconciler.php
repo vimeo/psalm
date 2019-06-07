@@ -728,7 +728,11 @@ class Reconciler
             return Type::getMixed();
         }
 
-        if ($new_var_type === 'iterable' && !$existing_var_type->hasMixed()) {
+        if ($new_var_type === 'iterable') {
+            if ($existing_var_type->hasMixed()) {
+                return new Type\Union([new Type\Atomic\TIterable]);
+            }
+
             $iterable_types = [];
             $did_remove_type = false;
 
@@ -736,7 +740,57 @@ class Reconciler
                 if ($type->isIterable($codebase)) {
                     $iterable_types[] = $type;
                 } elseif ($type instanceof TObject) {
-                    $iterable_types[] = new Type\Atomic\TCallableObject();
+                    $iterable_types[] = new Type\Atomic\TNamedObject('Traversable');
+                    $did_remove_type = true;
+                } else {
+                    $did_remove_type = true;
+                }
+            }
+
+            if ((!$iterable_types || !$did_remove_type) && !$is_equality) {
+                if ($key && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $key,
+                        $new_var_type,
+                        !$did_remove_type,
+                        $code_location,
+                        $suppressed_issues
+                    );
+                }
+            }
+
+            if ($iterable_types) {
+                return new Type\Union($iterable_types);
+            }
+
+            $failed_reconciliation = 2;
+
+            return Type::getMixed();
+        }
+
+        if ($new_var_type === 'countable') {
+            if ($existing_var_type->hasMixed()) {
+                return new Type\Union([
+                    new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]),
+                    new Type\Atomic\TNamedObject('Countable')
+                ]);
+            }
+
+            $iterable_types = [];
+            $did_remove_type = false;
+
+            foreach ($existing_var_atomic_types as $type) {
+                if ($type->isCountable($codebase)) {
+                    $iterable_types[] = $type;
+                } elseif ($type instanceof TObject) {
+                    $iterable_types[] = new TNamedObject('Countable');
+                    $did_remove_type = true;
+                } elseif ($type instanceof TNamedObject || $type instanceof Type\Atomic\TIterable) {
+                    $countable = new TNamedObject('Countable');
+                    $type->extra_types[$countable->getKey()] = $countable;
+                    $iterable_types[] = $type;
                     $did_remove_type = true;
                 } else {
                     $did_remove_type = true;
@@ -1850,7 +1904,7 @@ class Reconciler
             return $existing_var_type;
         }
 
-        if ($new_var_type === 'iterable') {
+        if ($new_var_type === 'iterable' || $new_var_type === 'countable') {
             $existing_var_type->removeType('array');
         }
 

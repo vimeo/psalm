@@ -990,7 +990,7 @@ class TypeAnalyzer
                 return false;
             }
 
-            if ($input_type_part->isTraversable($codebase)) {
+            if ($input_type_part->hasTraversableInterface($codebase)) {
                 return true;
             }
         }
