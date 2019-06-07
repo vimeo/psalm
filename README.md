@@ -22,7 +22,7 @@ Documentation is available on [Psalm’s website](https://psalm.dev/docs), gener
 Install via [Composer](https://getcomposer.org/):
 
 ```bash
-composer require --dev vimeo/psalm
+composer require --dev psalm/phar
 ```
 
 Add a config:
