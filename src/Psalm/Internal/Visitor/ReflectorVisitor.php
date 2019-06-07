@@ -1543,18 +1543,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 if (!$param->variadic
                     && $has_optional_param
-                    && is_string($param->var->name)
                 ) {
-                    if (IssueBuffer::accepts(
-                        new MisplacedRequiredParam(
-                            'Required param $' . $param->var->name . ' should come before any optional params in ' .
-                            $cased_function_id,
-                            new CodeLocation($this->file_scanner, $param, null, true)
-                        )
-                    )) {
+                    foreach ($storage->params as $param) {
+                        $param->is_optional = false;
                     }
-
-                    $storage->has_visitor_issues = true;
                 }
             } else {
                 $has_optional_param = true;

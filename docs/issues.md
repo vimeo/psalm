@@ -900,14 +900,6 @@ Emitted when an `@param` entry in a function’s docblock doesn’t match the pa
 function foo(string $b) : void {}
 ```
 
-### MisplacedRequiredParam
-
-Emitted when a required param is before a param that is not required. Included in Psalm because it is an E_WARNING in PHP
-
-```php
-function foo(int $i = 5, string $j) : void {}
-```
-
 ### MissingClosureParamType
 
 Emitted when a closure parameter has no type information associated with it
