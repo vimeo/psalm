@@ -588,16 +588,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 ];
             }
 
-            if (!$function_param->type_location || !$function_param->location) {
-                continue;
-            }
-
             /**
              * @psalm-suppress MixedArrayAccess
              *
              * @var PhpParser\Node\Param
              */
             $parser_param = $this->function->getParams()[$offset];
+
+            if (!$function_param->type_location || !$function_param->location) {
+                if ($parser_param->default) {
+                    ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
+                }
+
+                continue;
+            }
 
             if ($signature_type) {
                 if (!TypeAnalyzer::isContainedBy(

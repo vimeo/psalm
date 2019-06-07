@@ -120,6 +120,12 @@ class IssueSuppressionTest extends TestCase
                     new C();',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - Class or interface C',
             ],
+            'missingParamTypeShouldntPreventUndefinedClassError' => [
+                '<?php
+                    /** @psalm-suppress MissingParamType */
+                    function foo($s = Foo::BAR) : void {}',
+                'error_message' => 'UndefinedClass',
+            ],
         ];
     }
 }
