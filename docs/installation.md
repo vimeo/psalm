@@ -3,7 +3,7 @@
 Psalm Requires PHP >= 7.1 and [Composer](https://getcomposer.org/).
 
 ```bash
-composer require --dev vimeo/psalm
+composer require --dev psalm/phar
 ```
 
 Add a `psalm.xml` config:
