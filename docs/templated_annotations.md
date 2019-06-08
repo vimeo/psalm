@@ -1,10 +1,75 @@
 # Templating
 
+Docblocks allow you to tell Psalm some simple information about how your code works. `@return int` in a function return type tells Psalm "this function should return an `int`". `@return MyContainer` tells Psalm that a function should return an instance of a user-defined class `MyContainer`. In either case, Psalm can check that the function actually returns those types _and_ that anything calling that function uses its returned value properly.
+
+Templated types allow you to tell Psalm even more information about how your code works.
+
+Let's look at a simple class `MyContainer`:
+
+```php
+class MyContainer {
+  private $value;
+  
+  public function __construct($value) {
+    $this->value = $value;
+  }
+  
+  public function getValue() {
+    return $this->value;
+  }
+}
+```
+
+When Psalm handles the return type of `$my_container->getValue()` it doesn't know what it's getting out, because the value can be arbitrary.
+
+Templated annotations provide us with a workaround - we can define a generic/templated param `T` that is a placeholder for the value inside `MyContainer`:
+
+```php
+/**
+ * @template T
+ */
+class MyContainer {
+  /** @var T */
+  private $value;
+  
+  /** @param T $value */
+  public function __construct($value) {
+    $this->value = $value;
+  }
+  
+  /** @return T */
+  public function getValue() {
+    return $this->value;
+  }
+}
+```
+
+Now we can substitute values for that templated param when we reference `MyContainer` in docblocks e.g. `@return MyContainer<int>`.
+
+This tells Psalm to substitute `T` for `int` when evaluating that return type, effectively treating it as a class that looks like
+
+```php
+class One_off_instance_of_MyContainer {
+  /** @var int */
+  private $value;
+  
+  /** @param int $value */
+  public function __construct($value) {
+    $this->value = $value;
+  }
+  
+  /** @return int */
+  public function getValue() {
+    return $this->value;
+  }
+}
+```
+
+This pattern can be used in large number of different situations like mocking, collections, iterators and loading arbitrary objects. Psalm has a large number of annotations to make it easy to use templated types in your codebase.
+
 ## `@template`
 
-The `@template` tag allows classes and functions to implement type parameter-like functionality found in many other languages.
-
-While `@template` tag order matters (i.e. for key-value pair extending), names don't matter outside the scope of the class or function in which they're declared.
+The `@template` tag allows classes and functions to declare a generic type parameter.
 
 As a very simple example, this function returns whatever is passed in:
 
@@ -40,6 +105,10 @@ Psalm also uses `@template` annotations in its stubbed versions of PHP array fun
  */
 function array_combine(array $arr, array $arr2) {}
 ```
+
+### Notes
+- `@template` tag order matters for class docblocks, as they dictate the order in which those generic parameters are referenced in docblocks.
+- The names of your templated types (e.g. `TKey`, `TValue` don't matter outside the scope of the class or function in which they're declared.
 
 ## `@param class-string<T>`
 
