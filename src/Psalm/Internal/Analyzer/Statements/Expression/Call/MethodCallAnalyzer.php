@@ -1267,7 +1267,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && $method_name
             && !empty($class_storage->overridden_method_ids[$method_name])
             && isset($class_storage->methods[$method_name])
-            && !isset($class_storage->methods[$method_name]->return_type)
+            && (!isset($class_storage->methods[$method_name]->return_type)
+                || $class_storage->methods[$method_name]->inherited_return_type)
         ) {
             foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);

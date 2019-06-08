@@ -689,13 +689,26 @@ class ReturnTypeAnalyzer
             $parent_class
         );
 
-        if ($classlike_storage && $classlike_storage->template_types && $context->self) {
-            $generic_params = [];
-            $fleshed_out_return_type->replaceTemplateTypesWithStandins(
-                $classlike_storage->template_types,
-                $generic_params,
-                $codebase
+        if ($classlike_storage && $context->self && $function->name) {
+            $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
+                $codebase,
+                $classlike_storage,
+                $context->self,
+                strtolower($function->name->name),
+                new Type\Atomic\TNamedObject($context->self),
+                '$this'
             );
+
+            $class_template_params = $class_template_params ?: $classlike_storage->template_types;
+
+            if ($class_template_params) {
+                $generic_params = [];
+                $fleshed_out_return_type->replaceTemplateTypesWithStandins(
+                    $class_template_params,
+                    $generic_params,
+                    $codebase
+                );
+            }
         }
 
         if (!TypeAnalyzer::isContainedBy(
