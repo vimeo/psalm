@@ -44,9 +44,7 @@ class MyContainer {
 }
 ```
 
-Now we can substitute values for that templated param when we reference `MyContainer` in docblocks e.g. `@return MyContainer<int>`.
-
-This tells Psalm to substitute `T` for `int` when evaluating that return type, effectively treating it as a class that looks like
+Now we can substitute values for that templated param when we reference `MyContainer` in docblocks e.g. `@return MyContainer<int>`. This tells Psalm to substitute `T` for `int` when evaluating that return type, effectively treating it as a class that looks like
 
 ```php
 class One_off_instance_of_MyContainer {
