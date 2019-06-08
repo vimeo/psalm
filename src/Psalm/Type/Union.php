@@ -955,6 +955,8 @@ class Union
         $keys_to_unset = [];
 
         foreach ($this->types as $key => $atomic_type) {
+            $original_key = $key;
+
             if ($bracket_pos = strpos($key, '<')) {
                 $key = substr($key, 0, $bracket_pos);
             }
@@ -1016,7 +1018,7 @@ class Union
 
                             foreach ($replacement_type->getTypes() as $replacement_key => $_) {
                                 if ($replacement_key !== $key) {
-                                    $keys_to_unset[] = $key;
+                                    $keys_to_unset[] = $original_key;
                                 }
                             }
                         }
@@ -1082,7 +1084,7 @@ class Union
 
                     $class_string = new Type\Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
 
-                    $keys_to_unset[] = $key;
+                    $keys_to_unset[] = $original_key;
 
                     $this->types[$class_string->getKey()] = $class_string;
 
@@ -1160,10 +1162,37 @@ class Union
                                 $replacement_type
                                     = clone $array_template_type->properties[$offset_template_type->value];
 
-                                $keys_to_unset[] = $key;
+                                $keys_to_unset[] = $original_key;
 
                                 foreach ($replacement_type->getTypes() as $replacement_atomic_type) {
-                                    $this->types[$replacement_atomic_type->getKey()] = clone $replacement_atomic_type;
+                                    $this->types[$replacement_atomic_type->getKey()] = $replacement_atomic_type;
+                                }
+                            }
+                        }
+                    }
+                }
+            } elseif ($atomic_type instanceof Type\Atomic\TTemplateKeyOf) {
+                if ($replace) {
+                    if (isset($template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''])) {
+                        $template_type
+                            = $template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''][0];
+
+                        if ($template_type->isSingle()) {
+                            $template_type = array_values($template_type->types)[0];
+
+                            if ($template_type instanceof Type\Atomic\ObjectLike
+                                || $template_type instanceof Type\Atomic\TArray
+                            ) {
+                                if ($template_type instanceof Type\Atomic\ObjectLike) {
+                                    $key_type = $template_type->getGenericKeyType();
+                                } else {
+                                    $key_type = clone $template_type->type_params[0];
+                                }
+
+                                $keys_to_unset[] = $original_key;
+
+                                foreach ($key_type->getTypes() as $key_atomic_type) {
+                                    $this->types[$key_atomic_type->getKey()] = $key_atomic_type;
                                 }
                             }
                         }

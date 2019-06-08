@@ -444,7 +444,32 @@ class ArrayFetchAnalyzer
                             ? new Type\Union([ new TArrayKey ])
                             : $type->type_params[0];
 
-                        if ((!TypeAnalyzer::isContainedBy(
+                        $templated_offset_type = null;
+
+                        foreach ($offset_type->getTypes() as $offset_atomic_type) {
+                            if ($offset_atomic_type instanceof TTemplateParam) {
+                                $templated_offset_type = $offset_atomic_type;
+                            }
+                        }
+
+                        if ($original_type instanceof TTemplateParam && $templated_offset_type) {
+                            foreach ($templated_offset_type->as->getTypes() as $offset_as) {
+                                if ($offset_as instanceof Type\Atomic\TTemplateKeyOf
+                                    && $offset_as->param_name === $original_type->param_name
+                                    && $offset_as->defining_class === $original_type->defining_class
+                                ) {
+                                    $type->type_params[1] = new Type\Union([
+                                        new Type\Atomic\TTemplateIndexedAccess(
+                                            $offset_as->param_name,
+                                            $templated_offset_type->param_name,
+                                            $offset_as->defining_class
+                                        )
+                                    ]);
+
+                                    $has_valid_offset = true;
+                                }
+                            }
+                        } elseif ((!TypeAnalyzer::isContainedBy(
                             $codebase,
                             $offset_type,
                             $expected_offset_type,
@@ -481,27 +506,6 @@ class ArrayFetchAnalyzer
                                 $has_valid_offset = true;
                             }
                         } else {
-                            if ($original_type instanceof TTemplateParam) {
-                                foreach ($offset_type->getTypes() as $offset_atomic_type) {
-                                    if ($offset_atomic_type instanceof TTemplateParam) {
-                                        foreach ($offset_atomic_type->as->getTypes() as $offset_as) {
-                                            if ($offset_as instanceof Type\Atomic\TTemplateKeyOf
-                                                && $offset_as->param_name === $original_type->param_name
-                                                && $offset_as->defining_class === $original_type->defining_class
-                                            ) {
-                                                $type->type_params[1] = new Type\Union([
-                                                    new Type\Atomic\TTemplateIndexedAccess(
-                                                        $offset_as->param_name,
-                                                        $offset_atomic_type->param_name,
-                                                        $offset_as->defining_class
-                                                    )
-                                                ]);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
                             $has_valid_offset = true;
                         }
                     }

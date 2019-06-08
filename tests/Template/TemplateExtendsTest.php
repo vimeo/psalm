@@ -1903,7 +1903,7 @@ class TemplateExtendsTest extends TestCase
                           return [(string)$v => $v];
                         }
                     }',
-            ]
+            ],
         ];
     }
 
