@@ -4,6 +4,10 @@ set -e
 
 composer bin box install
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+php $DIR/improve_class_alias.php
+
 vendor/bin/box compile
 
 if [[ "$GPG_ENCRYPTION" != '' ]] ; then
