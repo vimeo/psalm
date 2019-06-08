@@ -593,11 +593,16 @@ class ProjectAnalyzer
                 }
 
                 if (strtolower($source_parts[0]) !== strtolower($destination_parts[0])) {
-                    $source_storage = $this->codebase->methods->getStorage($source);
+                    $source_method_storage = $this->codebase->methods->getStorage($source);
+                    $destination_class_storage
+                        = $this->codebase->classlike_storage_provider->get($destination_parts[0]);
 
-                    if (!$source_storage->is_static) {
+                    if (!$source_method_storage->is_static
+                        && !isset($destination_class_storage->parent_classes[strtolower($source_parts[0])])
+                    ) {
                         throw new \Psalm\Exception\RefactorException(
                             'Cannot move non-static method ' . $source
+                                . ' into unrelated class ' . $destination_parts[0]
                         );
                     }
 

@@ -364,6 +364,84 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     'Ns\A::Foo' => 'Ns\B::Fedbca',
                 ]
             ],
+            'moveInstanceMethodIntoSubclassOnly' => [
+                '<?php
+                    namespace Ns;
+
+                    class A {
+                        const C = 5;
+
+                        /**
+                         * @param self $a1
+                         * Some description
+                         * @param ?self
+                         *        $a2
+                         * @param array<
+                         *     int,
+                         *     self
+                         * > $a3
+                         * @return self
+                         */
+                        public function Foo(self $a1, ?self $a2, array $a3) : self {
+                            echo self::C;
+                            echo A::C;
+                            $this->Bar();
+                            A::Bar();
+                            echo \Ns\AChild::D;
+                            new A();
+                            /** @var self */
+                            $a = new self();
+                            new AChild();
+
+                            return $a;
+                        }
+
+                        public function Bar() : void {}
+                    }
+
+                    class AChild extends A {
+                        const D = 5;
+                    }',
+                '<?php
+                    namespace Ns;
+
+                    class A {
+                        const C = 5;
+
+
+
+                        public function Bar() : void {}
+                    }
+
+                    class AChild extends A {
+                        const D = 5;
+
+                        /**
+                         * @param A $a1
+                         * Some description
+                         * @param null|A
+                         *        $a2
+                         * @param array<int, A> $a3
+                         * @return A
+                         */
+                        public function Fedbca(A $a1, ?A $a2, array $a3) : A {
+                            echo A::C;
+                            echo A::C;
+                            $this->Bar();
+                            A::Bar();
+                            echo self::D;
+                            new A();
+                            /** @var A */
+                            $a = new A();
+                            new self();
+
+                            return $a;
+                        }
+                    }',
+                [
+                    'Ns\A::Foo' => 'Ns\AChild::Fedbca',
+                ]
+            ],
             'moveStaticMethodAndReferencesFromAbove' => [
                 '<?php
                     namespace Ns;
