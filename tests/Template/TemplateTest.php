@@ -3341,6 +3341,21 @@ class TemplateTest extends TestCase
                     $mario->ame = "Luigi";',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:47:29 - Argument 1 of CharacterRow::__set expects string(id)|string(name)|string(height), string(ame) provided',
             ],
+            'constrainTemplateTypeWhenClassStringUsed' => [
+                '<?php
+                    class GenericObjectFactory {
+                       /**
+                        * @psalm-template T
+                        * @psalm-param class-string<T> $type
+                        * @psalm-return T
+                        */
+                        public function getObject(string $type)
+                        {
+                            return 3;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement'
+            ],
         ];
     }
 }

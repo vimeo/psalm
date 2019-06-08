@@ -1966,6 +1966,125 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
+        foreach ($docblock_info->globals as $global) {
+            try {
+                $storage->global_types[$global['name']] = Type::parseTokens(
+                    Type::fixUpLocalType(
+                        $global['type'],
+                        $this->aliases,
+                        null,
+                        $this->type_aliases
+                    ),
+                    null
+                );
+            } catch (TypeParseTreeException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    )
+                )) {
+                }
+
+                $storage->has_docblock_issues = true;
+
+                continue;
+            }
+        }
+
+        if ($docblock_info->params) {
+            $this->improveParamsFromDocblock(
+                $storage,
+                $docblock_info->params,
+                $stmt,
+                $fake_method
+            );
+        }
+
+        if ($storage instanceof MethodStorage) {
+            $storage->has_docblock_param_types = (bool) array_filter(
+                $storage->params,
+                /** @return bool */
+                function (FunctionLikeParameter $p) {
+                    return $p->type !== null && $p->has_docblock_type;
+                }
+            );
+        }
+
+        foreach ($docblock_info->params_out as $docblock_param_out) {
+            $param_name = substr($docblock_param_out['name'], 1);
+
+            foreach ($storage->params as $i => $param_storage) {
+                if ($param_storage->name === $param_name) {
+                    $out_type = Type::parseTokens(
+                        Type::fixUpLocalType(
+                            $docblock_param_out['type'],
+                            $this->aliases,
+                            $this->function_template_types + $this->class_template_types,
+                            $this->type_aliases
+                        ),
+                        null,
+                        $this->function_template_types + $this->class_template_types
+                    );
+
+                    $out_type->queueClassLikesForScanning(
+                        $this->codebase,
+                        $this->file_storage,
+                        $storage->template_types ?: []
+                    );
+
+                    $storage->param_out_types[$i] = $out_type;
+                }
+            }
+        }
+
+        if ($docblock_info->template_typeofs) {
+            foreach ($docblock_info->template_typeofs as $template_typeof) {
+                foreach ($storage->params as $param) {
+                    if ($param->name === $template_typeof['param_name']) {
+                        $param_type_nullable = $param->type && $param->type->isNullable();
+
+                        $template_type = null;
+                        $template_class = null;
+
+                        if (isset($template_types[$template_typeof['template_type']])) {
+                            foreach ($template_types[$template_typeof['template_type']] as $class => $map) {
+                                $template_type = $map[0];
+                                $template_class = $class;
+                            }
+                        }
+
+                        $template_atomic_type = null;
+
+                        if ($template_type) {
+                            foreach ($template_type->getTypes() as $tat) {
+                                if ($tat instanceof Type\Atomic\TNamedObject) {
+                                    $template_atomic_type = $tat;
+                                }
+                            }
+                        }
+
+                        $param->type = new Type\Union([
+                            new Type\Atomic\TTemplateParamClass(
+                                $template_typeof['template_type'],
+                                $template_type && !$template_type->isMixed()
+                                    ? (string)$template_type
+                                    : 'object',
+                                $template_atomic_type,
+                                $template_class
+                            )
+                        ]);
+
+                        if ($param_type_nullable) {
+                            $param->type->addType(new Type\Atomic\TNull);
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
         if ($docblock_info->return_type) {
             $storage->has_template_return_type =
                 $template_types !== null &&
@@ -2073,126 +2192,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             $storage->return_type_description = $docblock_info->return_type_description;
-        }
-
-        foreach ($docblock_info->globals as $global) {
-            try {
-                $storage->global_types[$global['name']] = Type::parseTokens(
-                    Type::fixUpLocalType(
-                        $global['type'],
-                        $this->aliases,
-                        null,
-                        $this->type_aliases
-                    ),
-                    null
-                );
-            } catch (TypeParseTreeException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                        new CodeLocation($this->file_scanner, $stmt, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
-
-                continue;
-            }
-        }
-
-        if ($docblock_info->params) {
-            $this->improveParamsFromDocblock(
-                $storage,
-                $docblock_info->params,
-                $stmt,
-                $fake_method
-            );
-        }
-
-        if ($storage instanceof MethodStorage) {
-            $storage->has_docblock_param_types = (bool) array_filter(
-                $storage->params,
-                /** @return bool */
-                function (FunctionLikeParameter $p) {
-                    return $p->type !== null && $p->has_docblock_type;
-                }
-            );
-        }
-
-
-        foreach ($docblock_info->params_out as $docblock_param_out) {
-            $param_name = substr($docblock_param_out['name'], 1);
-
-            foreach ($storage->params as $i => $param_storage) {
-                if ($param_storage->name === $param_name) {
-                    $out_type = Type::parseTokens(
-                        Type::fixUpLocalType(
-                            $docblock_param_out['type'],
-                            $this->aliases,
-                            $this->function_template_types + $this->class_template_types,
-                            $this->type_aliases
-                        ),
-                        null,
-                        $this->function_template_types + $this->class_template_types
-                    );
-
-                    $out_type->queueClassLikesForScanning(
-                        $this->codebase,
-                        $this->file_storage,
-                        $storage->template_types ?: []
-                    );
-
-                    $storage->param_out_types[$i] = $out_type;
-                }
-            }
-        }
-
-        if ($docblock_info->template_typeofs) {
-            foreach ($docblock_info->template_typeofs as $template_typeof) {
-                foreach ($storage->params as $param) {
-                    if ($param->name === $template_typeof['param_name']) {
-                        $param_type_nullable = $param->type && $param->type->isNullable();
-
-                        $template_type = null;
-                        $template_class = null;
-
-                        if (isset($template_types[$template_typeof['template_type']])) {
-                            foreach ($template_types[$template_typeof['template_type']] as $class => $map) {
-                                $template_type = $map[0];
-                                $template_class = $class;
-                            }
-                        }
-
-                        $template_atomic_type = null;
-
-                        if ($template_type) {
-                            foreach ($template_type->getTypes() as $tat) {
-                                if ($tat instanceof Type\Atomic\TNamedObject) {
-                                    $template_atomic_type = $tat;
-                                }
-                            }
-                        }
-
-                        $param->type = new Type\Union([
-                            new Type\Atomic\TTemplateParamClass(
-                                $template_typeof['template_type'],
-                                $template_type && !$template_type->isMixed()
-                                    ? (string)$template_type
-                                    : 'object',
-                                $template_atomic_type,
-                                $template_class
-                            )
-                        ]);
-
-                        if ($param_type_nullable) {
-                            $param->type->addType(new Type\Atomic\TNull);
-                        }
-
-                        break;
-                    }
-                }
-            }
         }
 
         return $storage;
@@ -2417,6 +2416,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->file_storage,
                 $storage->template_types ?: []
             );
+
+            if ($storage->template_types) {
+                foreach ($storage->template_types as $t => $type_map) {
+                    foreach ($type_map as $obj => [$type]) {
+                        if ($type->isMixed() && $docblock_param['type'] === 'class-string<' . $t . '>') {
+                            $storage->template_types[$t][$obj] = [Type::getObject()];
+
+                            if (isset($this->function_template_types[$t])) {
+                                $this->function_template_types[$t][$obj] = $storage->template_types[$t][$obj];
+                            }
+                        }
+                    }
+                }
+            }
 
             if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
                 /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
