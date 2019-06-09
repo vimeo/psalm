@@ -779,6 +779,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 'TypeDoesNotContainType',
                 'LoopInvalidation',
             ]);
+
+            if ($context->collect_initializations) {
+                $statements_analyzer->addSuppressedIssues([
+                    'UndefinedInterfaceMethod',
+                    'UndefinedMethod',
+                    'PossiblyUndefinedMethod',
+                ]);
+            }
         }
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
