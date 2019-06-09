@@ -4,15 +4,7 @@
 
 An annotation of the form `Type1|Type2|Type3` is a _Union Type_. `Type1`, `Type2` and `Type3` are all acceptable possible types of that union type.
 
-`Type1`, `Type2` and `Type3` are each [Atomic types](#atomic_types).
-
-For example, after this statement
-```php
-$rabbit = rand(0, 10) === 4 ? 'rabbit' : ['rabbit'];
-```
-`$rabbit` will be either a `string` or an `array`. We can represent that idea with Union Types – so `$rabbit` is typed as `string|array`. Union types represent *all* the possible types a given variable can have.
-
-Some builtin functions (such as `strpos`) can return `false` in some situations. We use union types (e.g. `string|false`) to represent that return type.
+`Type1`, `Type2` and `Type3` are each [atomic types](#atomic-types).
 
 ## Atomic types
 
