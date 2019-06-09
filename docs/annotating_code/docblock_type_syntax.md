@@ -23,7 +23,7 @@ A type without unions is an atomic type. Psalm allows many different sorts of ba
 - [`int`](type_syntax/scalar_types.md)
 - [`float`](type_syntax/scalar_types.md)
 - [`string`](type_syntax/scalar_types.md)
-- [`class-string`/`class-string<Foo>`](type_syntax/scalar_types.md#class-string)
+- [`class-string` and `class-string<Foo>`](type_syntax/scalar_types.md#class-string)
 - [`trait-string`](type_syntax/scalar_types.md#trait-string)
 - [`callable-string`](type_syntax/scalar_types.md#callable-string)
 - [`numeric-string`](type_syntax/scalar_types.md#numeric-string)
@@ -35,24 +35,24 @@ A type without unions is an atomic type. Psalm allows many different sorts of ba
 ### [Object types](type_syntax/object_types.md)
 
 - [`object`](type_syntax/object_types.md)
-- [`Exception`/`Foo\MyClass`/`Foo\MyClass<Bar>`](type_syntax/object_types.md)
+- [`Exception`, `Foo\MyClass` and `Foo\MyClass<Bar>`](type_syntax/object_types.md)
 
 ### [Array types](type_syntax/array_types.md)
 
-- [`array`/`non-empty-array`](type_syntax/array_types.md)
+- [`array` & `non-empty-array`](type_syntax/array_types.md)
 - [`string[]`](type_syntax/array_types.md#phpdoc-syntax)
 - [`array<int, string>`](type_syntax/array_types.md#generic-arrays)
 - [`array{foo: int, bar: string}`](type_syntax/array_types.md#object-like-arrays)
 
 ### [Callable types](type_syntax/callable_types.md)
 
-- [`callable`/`Closure`/`callable(Foo, Bar):Baz`](type_syntax/callable_types.md)
+- [`callable`, `Closure` and `callable(Foo, Bar):Baz`](type_syntax/callable_types.md)
 
 ### [Value types](type_syntax/value_types.md)
 
 - [`null`](type_syntax/value_types.md#null)
-- [`true`/`false`](type_syntax/value_types.md#true-false)
-- [`6`/`7.0`/`"fourty-two"`/`'fourty two'`](type_syntax/value_types.md#some_string-4-314)
+- [`true`, `false`](type_syntax/value_types.md#true-false)
+- [`6`, `7.0`, `"fourty-two"` and `'fourty two'`](type_syntax/value_types.md#some_string-4-314)
 - [`Foo\Bar::MY_SCALAR_CONST`](type_syntax/value_types.md#regular-class-constants)
 
 ### Magical types
@@ -69,19 +69,19 @@ Represents the [`iterable` pseudo-type](https://php.net/manual/en/language.types
 
 Like arrays, iterables can have type parameters e.g. `iterable<string, Foo>`.
 
-#### Void
+#### void
 
 `void` can be used in a return type when a function does not return a value.
 
-#### Empty
+#### empty
 
 `empty` is a type that represents a lack of type - not just a lack of type information (that's where [mixed](#mixed) is useful) but where there can be no type. A good example is the type of the empty array `[]`. Psalm types this as `array<empty, empty>`.
 
-#### Mixed
+#### mixed
 
 `mixed` represents a lack of type information. Psalm warns about mixed when the `totallyTyped` flag is turned on.
 
-#### Resource
+#### resource
 
 `resource` represents a [PHP resource](https://www.php.net/manual/en/language.types.resource.php).
 
