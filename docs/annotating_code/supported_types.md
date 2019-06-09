@@ -27,24 +27,24 @@ Where `<type>` can be one of:
 
 | Type          | Template Type | Template constraint | Assertion | Notes |
 |---------------|---------------|---------------------|-----------|-------|
-| bool          | Y             | N                   | Y         |       |
-| int           | Y             | N                   | Y         |       |
-| string        | Y             | N                   | Y         |       |
-| float         | Y             | N                   | Y         |       |
-| array         | Y             | N                   | Y         |       |
+| bool          | Y             | Y                   | Y         |       |
+| int           | Y             | Y                   | Y         |       |
+| string        | Y             | Y                   | Y         |       |
+| float         | Y             | Y                   | Y         |       |
+| array         | Y             | Y                   | Y         |       |
 | iterable      | Y             | Y                   | Y         |       |
 | object        | Y             | Y                   | Y         |       |
 | callable      | Y             | Y                   | Y         |       |
 | resource      | Y             | Y                   | Y         |       |
-| null          | N             | N                   | Y         |       |
 | numeric       | Y             | Y                   | Y         | int, float, string (as string could represent a number) |
 | scalar        | Y             | Y                   | Y         | int, float, string, bool |
-| never-return  | N             | N                   | Y         | Means function never returns |
+| array-key     | Y             | Y                   | Y         | int or string |
+| (user class)  | Y             | Y                   | Y         |       |
+| never-return  | N             | N                   | N         | Means function never returns |
 | true          | N             | N                   | Y         |       |
 | false         | N             | N                   | Y         |       |
 | empty         | N             | N                   | Y         |       |
-| array-key     | Y             | Y                   | Y         | int or string |
-| (user class)  | Y             | Y                   | Y         |       |
+| null          | N             | N                   | Y         |       |
 
 
 
