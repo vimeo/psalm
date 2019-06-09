@@ -29,6 +29,8 @@ use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Psalm\Report;
+use Psalm\Report\ReportOptions;
 use Psalm\Type;
 use Psalm\Issue\CodeIssue;
 
@@ -67,32 +69,6 @@ class ProjectAnalyzer
 
     /** @var FileReferenceProvider */
     private $file_reference_provider;
-
-    /**
-     * Whether or not to use colors in error output
-     *
-     * @var bool
-     */
-    public $use_color;
-
-    /**
-     * Whether or not to show snippets in error output
-     *
-     * @var bool
-     */
-    public $show_snippet;
-
-    /**
-     * Whether or not to show informational messages
-     *
-     * @var bool
-     */
-    public $show_info;
-
-    /**
-     * @var string
-     */
-    public $output_format;
 
     /**
      * @var Progress
@@ -157,27 +133,15 @@ class ProjectAnalyzer
      */
     private $to_refactor = [];
 
-    const TYPE_COMPACT = 'compact';
-    const TYPE_CONSOLE = 'console';
-    const TYPE_PYLINT = 'pylint';
-    const TYPE_JSON = 'json';
-    const TYPE_JSON_SUMMARY = 'json-summary';
-    const TYPE_EMACS = 'emacs';
-    const TYPE_XML = 'xml';
-    const TYPE_CHECKSTYLE = 'checkstyle';
-    const TYPE_TEXT = 'text';
+    /**
+     * @var ?ReportOptions
+     */
+    public $stdout_report_options;
 
-    const SUPPORTED_OUTPUT_TYPES = [
-        self::TYPE_COMPACT,
-        self::TYPE_CONSOLE,
-        self::TYPE_PYLINT,
-        self::TYPE_JSON,
-        self::TYPE_JSON_SUMMARY,
-        self::TYPE_EMACS,
-        self::TYPE_XML,
-        self::TYPE_CHECKSTYLE,
-        self::TYPE_TEXT,
-    ];
+    /**
+     * @var array<ReportOptions>
+     */
+    public $generated_report_options;
 
     /**
      * @var array<int, class-string<CodeIssue>>
@@ -201,23 +165,18 @@ class ProjectAnalyzer
     ];
 
     /**
-     * @param bool          $use_color
-     * @param bool          $show_info
-     * @param string        $output_format
+     * @param array<ReportOptions> $generated_report_options
      * @param int           $threads
      * @param string        $reports
-     * @param bool          $show_snippet
      */
     public function __construct(
         Config $config,
         Providers $providers,
-        $use_color = true,
-        $show_info = true,
-        $output_format = self::TYPE_CONSOLE,
-        $threads = 1,
+        ?ReportOptions $stdout_report_options = null,
+        array $generated_report_options = [],
+        int $threads = 1,
         Progress $progress = null,
-        $reports = null,
-        $show_snippet = true
+        $reports = null
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -228,12 +187,9 @@ class ProjectAnalyzer
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
         $this->file_reference_provider = $providers->file_reference_provider;
 
-        $this->use_color = $use_color;
-        $this->show_info = $show_info;
         $this->progress = $progress;
         $this->threads = $threads;
         $this->config = $config;
-        $this->show_snippet = $show_snippet;
 
         $this->codebase = new Codebase(
             $config,
@@ -241,30 +197,14 @@ class ProjectAnalyzer
             $progress
         );
 
-        if (!in_array($output_format, self::SUPPORTED_OUTPUT_TYPES, true)) {
-            throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
+        if ($stdout_report_options
+            && !in_array($stdout_report_options->format, Report::SUPPORTED_OUTPUT_TYPES, true)
+        ) {
+            throw new \UnexpectedValueException('Unrecognised output format ' . $stdout_report_options->format);
         }
 
-        if ($reports) {
-            $mapping = [
-                'checkstyle.xml' => self::TYPE_CHECKSTYLE,
-                'summary.json' => self::TYPE_JSON_SUMMARY,
-                '.xml' => self::TYPE_XML,
-                '.json' => self::TYPE_JSON,
-                '.txt' => self::TYPE_TEXT,
-                '.emacs' => self::TYPE_EMACS,
-                '.pylint' => self::TYPE_PYLINT,
-            ];
-            foreach ($mapping as $extension => $type) {
-                if (substr($reports, -strlen($extension)) === $extension) {
-                    $this->reports[$type] = $reports;
-                    break;
-                }
-            }
-            if (empty($this->reports)) {
-                throw new \UnexpectedValueException('Unrecognised report format ' . $reports);
-            }
-        }
+        $this->stdout_report_options = $stdout_report_options;
+        $this->generated_report_options = $generated_report_options;
 
         $project_files = [];
 
@@ -286,8 +226,45 @@ class ProjectAnalyzer
 
         $this->project_files = $project_files;
 
-        $this->output_format = $output_format;
         self::$instance = $this;
+    }
+
+    /**
+     * @param  array<string>  $report_file_paths
+     * @param  bool   $show_info
+     * @return array<ReportOptions>
+     */
+    public static function getFileReportOptions(array $report_file_paths, bool $show_info = true)
+    {
+        $report_options = [];
+
+        $mapping = [
+            'checkstyle.xml' => Report::TYPE_CHECKSTYLE,
+            'summary.json' => Report::TYPE_JSON_SUMMARY,
+            '.xml' => Report::TYPE_XML,
+            '.json' => Report::TYPE_JSON,
+            '.txt' => Report::TYPE_TEXT,
+            '.emacs' => Report::TYPE_EMACS,
+            '.pylint' => Report::TYPE_PYLINT,
+        ];
+
+        foreach ($report_file_paths as $report_file_path) {
+            foreach ($mapping as $extension => $type) {
+                if (substr($report_file_path, -strlen($extension)) === $extension) {
+                    $o = new ReportOptions();
+
+                    $o->format = $type;
+                    $o->show_info = $show_info;
+                    $o->output_path = $report_file_path;
+                    $report_options[] = $o;
+                    continue 2;
+                }
+            }
+
+            throw new \UnexpectedValueException('Unknown report format ' . $report_file_path);
+        }
+
+        return $report_options;
     }
 
     /**
@@ -314,8 +291,6 @@ class ProjectAnalyzer
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $this->checkDirWithConfig($dir_name, $this->config);
         }
-
-        $this->output_format = self::TYPE_JSON;
 
         @cli_set_process_title('Psalm PHP Language Server');
 
@@ -786,6 +761,10 @@ class ProjectAnalyzer
      */
     public function findReferencesTo($symbol)
     {
+        if (!$this->stdout_report_options) {
+            throw new \UnexpectedValueException('Not expecting to emit output');
+        }
+
         $locations = $this->codebase->findReferencesToSymbol($symbol);
 
         foreach ($locations as $location) {
@@ -799,7 +778,7 @@ class ProjectAnalyzer
 
             echo $location->file_name . ':' . $location->getLineNumber() . "\n" .
                 (
-                    $this->use_color
+                    $this->stdout_report_options->use_color
                     ? substr($snippet, 0, $selection_start) .
                     "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
                     "\e[0m" . substr($snippet, $selection_length + $selection_start)
@@ -993,7 +972,10 @@ class ProjectAnalyzer
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
 
-        if ($this->output_format === ProjectAnalyzer::TYPE_CONSOLE && $this->codebase->collect_references) {
+        if ($this->stdout_report_options
+            && $this->stdout_report_options->format === Report::TYPE_CONSOLE
+            && $this->codebase->collect_references
+        ) {
             fwrite(
                 STDERR,
                 PHP_EOL . 'To whom it may concern: Psalm cannot detect unused classes, methods and properties'

@@ -1,10 +1,10 @@
 <?php
-namespace Psalm\Output;
+namespace Psalm\Report;
 
 use Psalm\Config;
-use Psalm\Output;
+use Psalm\Report;
 
-class Text extends Output
+class EmacsReport extends Report
 {
     /**
      * {{@inheritdoc}}
@@ -14,12 +14,11 @@ class Text extends Output
         $output = '';
         foreach ($this->issues_data as $issue_data) {
             $output .= sprintf(
-                '%s:%s:%s:%s - %s: %s',
+                '%s:%s:%s:%s - %s',
                 $issue_data['file_path'],
                 $issue_data['line_from'],
                 $issue_data['column_from'],
                 ($issue_data['severity'] === Config::REPORT_ERROR ? 'error' : 'warning'),
-                $issue_data['type'],
                 $issue_data['message']
             ) . "\n";
         }

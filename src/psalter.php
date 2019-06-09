@@ -189,7 +189,7 @@ if ($path_to_config === false) {
 if ($path_to_config) {
     $config = Config::loadFromXMLFile($path_to_config, $current_dir);
 } else {
-    $config = Config::getConfigForPath($current_dir, $current_dir, ProjectAnalyzer::TYPE_CONSOLE);
+    $config = Config::getConfigForPath($current_dir, $current_dir, \Psalm\Report::TYPE_CONSOLE);
 }
 
 $config->setComposerClassLoader($first_autoloader);
@@ -213,12 +213,14 @@ $progress = $debug
     ? new DebugProgress()
     : new DefaultProgress();
 
+$stdout_report_options = new \Psalm\Report\ReportOptions();
+$stdout_report_options->use_color = !array_key_exists('m', $options);
+
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
-    !array_key_exists('m', $options),
-    false,
-    ProjectAnalyzer::TYPE_CONSOLE,
+    $stdout_report_options,
+    [],
     $threads,
     $progress
 );

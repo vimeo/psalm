@@ -58,11 +58,7 @@ class ProjectCheckerTest extends TestCase
                 new Provider\ClassLikeStorageInstanceCacheProvider(),
                 new Provider\FakeFileReferenceCacheProvider()
             ),
-            true,
-            true,
-            ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            null
+            new \Psalm\Report\ReportOptions()
         );
     }
 
@@ -162,7 +158,9 @@ class ProjectCheckerTest extends TestCase
             )
         );
 
-        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->assertNotNull($this->project_analyzer->stdout_report_options);
+
+        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
@@ -205,7 +203,9 @@ class ProjectCheckerTest extends TestCase
             )
         );
 
-        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->assertNotNull($this->project_analyzer->stdout_report_options);
+
+        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));

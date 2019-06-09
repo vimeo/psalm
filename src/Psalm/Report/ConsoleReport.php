@@ -1,10 +1,10 @@
 <?php
-namespace Psalm\Output;
+namespace Psalm\Report;
 
 use Psalm\Config;
-use Psalm\Output;
+use Psalm\Report;
 
-class Console extends Output
+class ConsoleReport extends Report
 {
     /**
      * {{@inheritdoc}}

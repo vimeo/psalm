@@ -428,7 +428,7 @@ class Config
         $config_path = self::locateConfigFile($path);
 
         if (!$config_path) {
-            if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
+            if ($output_format === \Psalm\Report::TYPE_CONSOLE) {
                 exit(
                     'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
                     PHP_EOL

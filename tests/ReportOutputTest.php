@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Report;
 
 class ReportOutputTest extends TestCase
 {
@@ -22,15 +23,17 @@ class ReportOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
+        $json_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json']);
+
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),
-            false
+            new Report\ReportOptions(),
+            $json_report_options
         );
-        $this->project_analyzer->reports['json'] = __DIR__ . '/test-report.json';
     }
 
     /**
@@ -43,19 +46,7 @@ class ReportOutputTest extends TestCase
 
         // No exception
         foreach (['.xml', '.txt', '.json', '.emacs'] as $extension) {
-            new ProjectAnalyzer(
-                $config,
-                new \Psalm\Internal\Provider\Providers(
-                    $this->file_provider,
-                    new Provider\FakeParserCacheProvider()
-                ),
-                false,
-                true,
-                ProjectAnalyzer::TYPE_CONSOLE,
-                1,
-                null,
-                '/tmp/report' . $extension
-            );
+            ProjectAnalyzer::getFileReportOptions(['/tmp/report' . $extension]);
         }
     }
 
@@ -69,19 +60,7 @@ class ReportOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
-        new ProjectAnalyzer(
-            $config,
-            new \Psalm\Internal\Provider\Providers(
-                $this->file_provider,
-                new Provider\FakeParserCacheProvider()
-            ),
-            false,
-            true,
-            ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            null,
-            '/tmp/report.log'
-        );
+        ProjectAnalyzer::getFileReportOptions(['/tmp/report.log']);
     }
 
     /**
@@ -183,10 +162,14 @@ echo $a;';
             ],
         ];
 
+        $json_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json'])[0];
+
         $this->assertSame(
             $issue_data,
-            json_decode(IssueBuffer::getOutput(ProjectAnalyzer::TYPE_JSON, false), true)
+            json_decode(IssueBuffer::getOutput($json_report_options), true)
         );
+
+        $emacs_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.emacs'])[0];
 
         $this->assertSame(
             'somefile.php:3:10:error - Cannot find referenced variable $as_you
@@ -194,8 +177,10 @@ somefile.php:2:42:error - Could not verify return type \'string|null\' for psalm
 somefile.php:7:6:error - Const CHANGE_ME is not defined
 somefile.php:15:6:error - Possibly undefined global variable $a, first seen on line 10
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_EMACS, false)
+            IssueBuffer::getOutput($emacs_report_options)
         );
+
+        $pylint_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.pylint'])[0];
 
         $this->assertSame(
             'somefile.php:3: [E0001] UndefinedVariable: Cannot find referenced variable $as_you (column 10)
@@ -203,8 +188,11 @@ somefile.php:2: [E0001] MixedInferredReturnType: Could not verify return type \'
 somefile.php:7: [E0001] UndefinedConstant: Const CHANGE_ME is not defined (column 6)
 somefile.php:15: [E0001] PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10 (column 6)
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_PYLINT, false)
+            IssueBuffer::getOutput($pylint_report_options)
         );
+
+        $console_report_options = new Report\ReportOptions();
+        $console_report_options->use_color = false;
 
         $this->assertSame(
             'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
@@ -220,8 +208,12 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
 echo $a
 
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_CONSOLE, false)
+            IssueBuffer::getOutput($console_report_options)
         );
+
+        $console_report_options = new Report\ReportOptions();
+        $console_report_options->show_snippet = false;
+        $console_report_options->use_color = false;
 
         $this->assertSame(
             'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
@@ -237,8 +229,12 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
 
 
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_CONSOLE, false, false)
+            IssueBuffer::getOutput($console_report_options)
         );
+
+        $compact_report_options = new Report\ReportOptions();
+        $compact_report_options->format = Report::TYPE_COMPACT;
+        $compact_report_options->use_color = false;
 
         $this->assertSame(
             'FILE: somefile.php' . PHP_EOL .
@@ -251,8 +247,10 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
             '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . PHP_EOL .
             '| ERROR    | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . PHP_EOL .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . PHP_EOL,
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_COMPACT, false)
+            IssueBuffer::getOutput($compact_report_options)
         );
+
+        $checkstyle_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.checkstyle.xml'])[0];
 
         $this->assertSame(
             '<?xml version="1.0" encoding="UTF-8"?>
@@ -271,7 +269,7 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
 </file>
 </checkstyle>
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_CHECKSTYLE, false)
+            IssueBuffer::getOutput($checkstyle_report_options)
         );
 
         // FIXME: The XML parser only return strings, all int value are casted, so the assertSame failed
@@ -295,11 +293,11 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
         $this->assertSame(
             '[]
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_JSON, false)
+            IssueBuffer::getOutput(ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json'])[0])
         );
         $this->assertSame(
             '',
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_EMACS, false)
+            IssueBuffer::getOutput(ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.emacs'])[0])
         );
         $this->assertSame(
             '<?xml version="1.0" encoding="UTF-8"?>
@@ -307,7 +305,7 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
   <item/>
 </report>
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_XML, false)
+            IssueBuffer::getOutput(ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.xml'])[0])
         );
 
         $this->assertSame(
@@ -315,7 +313,7 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
 <checkstyle>
 </checkstyle>
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_CHECKSTYLE, false)
+            IssueBuffer::getOutput(ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.checkstyle.xml'])[0])
         );
 
         ob_start();

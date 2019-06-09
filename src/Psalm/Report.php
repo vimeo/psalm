@@ -1,8 +1,30 @@
 <?php
 namespace Psalm;
 
-abstract class Output
+abstract class Report
 {
+    const TYPE_COMPACT = 'compact';
+    const TYPE_CONSOLE = 'console';
+    const TYPE_PYLINT = 'pylint';
+    const TYPE_JSON = 'json';
+    const TYPE_JSON_SUMMARY = 'json-summary';
+    const TYPE_EMACS = 'emacs';
+    const TYPE_XML = 'xml';
+    const TYPE_CHECKSTYLE = 'checkstyle';
+    const TYPE_TEXT = 'text';
+
+    const SUPPORTED_OUTPUT_TYPES = [
+        self::TYPE_COMPACT,
+        self::TYPE_CONSOLE,
+        self::TYPE_PYLINT,
+        self::TYPE_JSON,
+        self::TYPE_JSON_SUMMARY,
+        self::TYPE_EMACS,
+        self::TYPE_XML,
+        self::TYPE_CHECKSTYLE,
+        self::TYPE_TEXT,
+    ];
+
     /**
      * @var array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
      * file_name: string, file_path: string, snippet: string, from: int, to: int,
@@ -35,16 +57,14 @@ abstract class Output
      */
     public function __construct(
         array $issues_data,
-        bool $use_color,
-        bool $show_snippet = true,
-        bool $show_info = true,
+        Report\ReportOptions $report_options,
         int $mixed_expression_count = 1,
         int $total_expression_count = 1
     ) {
         $this->issues_data = $issues_data;
-        $this->use_color = $use_color;
-        $this->show_snippet = $show_snippet;
-        $this->show_info = $show_info;
+        $this->use_color = $report_options->use_color;
+        $this->show_snippet = $report_options->show_snippet;
+        $this->show_info = $report_options->show_info;
         $this->mixed_expression_count = $mixed_expression_count;
         $this->total_expression_count = $total_expression_count;
     }

@@ -34,12 +34,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers,
-            false,
-            true,
-            ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            null
+            $providers
         );
         $this->project_analyzer->setPhpVersion('7.3');
         $this->project_analyzer->getCodebase()->store_node_types = true;

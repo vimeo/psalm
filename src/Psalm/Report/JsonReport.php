@@ -1,9 +1,9 @@
 <?php
-namespace Psalm\Output;
+namespace Psalm\Report;
 
-use Psalm\Output;
+use Psalm\Report;
 
-class Json extends Output
+class JsonReport extends Report
 {
     /**
      * {{@inheritdoc}}

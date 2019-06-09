@@ -57,11 +57,7 @@ class PluginTest extends \Psalm\Tests\TestCase
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),
-            true,
-            true,
-            ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            null
+            new \Psalm\Report\ReportOptions()
         );
     }
 
@@ -812,7 +808,9 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
-        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->assertNotNull($this->project_analyzer->stdout_report_options);
+
+        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));

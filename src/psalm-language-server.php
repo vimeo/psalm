@@ -190,10 +190,6 @@ $ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');
 
-$output_format = isset($options['output-format']) && is_string($options['output-format'])
-    ? $options['output-format']
-    : ProjectAnalyzer::TYPE_CONSOLE;
-
 $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 
 if ($path_to_config === false) {
@@ -216,7 +212,7 @@ try {
     if ($path_to_config) {
         $config = Config::loadFromXMLFile($path_to_config, $current_dir);
     } else {
-        $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
+        $config = Config::getConfigForPath($current_dir, $current_dir, \Psalm\Report::TYPE_CONSOLE);
     }
 } catch (Psalm\Exception\ConfigException $e) {
     fwrite(STDERR, $e->getMessage());

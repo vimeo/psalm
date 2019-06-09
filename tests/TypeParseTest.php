@@ -21,12 +21,7 @@ class TypeParseTest extends TestCase
 
         $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
-            $providers,
-            false,
-            true,
-            \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            null
+            $providers
         );
     }
 

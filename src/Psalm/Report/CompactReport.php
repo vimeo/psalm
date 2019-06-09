@@ -1,12 +1,12 @@
 <?php
-namespace Psalm\Output;
+namespace Psalm\Report;
 
 use Psalm\Config;
-use Psalm\Output;
+use Psalm\Report;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-class Compact extends Output
+class CompactReport extends Report
 {
     /**
      * {{@inheritdoc}}

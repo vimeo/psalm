@@ -1,10 +1,10 @@
 <?php
-namespace Psalm\Output;
+namespace Psalm\Report;
 
 use Psalm\Config;
-use Psalm\Output;
+use Psalm\Report;
 
-class Pylint extends Output
+class PylintReport extends Report
 {
     /**
      * {{@inheritdoc}}

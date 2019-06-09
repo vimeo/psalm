@@ -235,7 +235,7 @@ if (!$to_refactor) {
 if ($path_to_config) {
     $config = Config::loadFromXMLFile($path_to_config, $current_dir);
 } else {
-    $config = Config::getConfigForPath($current_dir, $current_dir, ProjectAnalyzer::TYPE_CONSOLE);
+    $config = Config::getConfigForPath($current_dir, $current_dir, \Psalm\Report::TYPE_CONSOLE);
 }
 
 $config->setComposerClassLoader($first_autoloader);
@@ -259,9 +259,8 @@ $progress = $debug
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
-    !array_key_exists('m', $options),
-    false,
-    ProjectAnalyzer::TYPE_CONSOLE,
+    new \Psalm\Report\ReportOptions(),
+    [],
     $threads,
     $progress
 );

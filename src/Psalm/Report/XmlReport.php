@@ -1,10 +1,10 @@
 <?php
-namespace Psalm\Output;
+namespace Psalm\Report;
 
 use LSS\Array2XML;
-use Psalm\Output;
+use Psalm\Report;
 
-class Xml extends Output
+class XmlReport extends Report
 {
     /**
      * {{@inheritdoc}}

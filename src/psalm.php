@@ -44,6 +44,7 @@ $valid_long_options = [
     'output-format:',
     'plugin:',
     'report:',
+    'report-show-info:',
     'root:',
     'set-baseline:',
     'show-info:',
@@ -213,6 +214,9 @@ Options:
     --report=PATH
         The path where to output report file. The output format is based on the file extension.
         (Currently supported format: ".json", ".xml", ".txt", ".emacs")
+
+    --report-show-info[=BOOLEAN]
+        Whether the report should include non-errors in its output (defaults to true)
 
     --clear-cache
         Clears all cache files that Psalm uses for this specific project
@@ -403,7 +407,7 @@ if (isset($options['i'])) {
 
 $output_format = isset($options['output-format']) && is_string($options['output-format'])
     ? $options['output-format']
-    : ProjectAnalyzer::TYPE_CONSOLE;
+    : \Psalm\Report::TYPE_CONSOLE;
 
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
@@ -534,16 +538,27 @@ if (isset($options['no-cache'])) {
     );
 }
 
+$stdout_report_options = new \Psalm\Report\ReportOptions();
+$stdout_report_options->use_color = !array_key_exists('m', $options);
+$stdout_report_options->show_info = $show_info;
+/**
+ * @psalm-suppress PropertyTypeCoercion
+ */
+$stdout_report_options->format = $output_format;
+$stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
+
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
-    !array_key_exists('m', $options),
-    $show_info,
-    $output_format,
+    $stdout_report_options,
+    ProjectAnalyzer::getFileReportOptions(
+        isset($options['report']) && is_string($options['report']) ? [$options['report']] : [],
+        isset($options['report-show-info'])
+            ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
+            : true
+    ),
     $threads,
-    $progress,
-    isset($options['report']) && is_string($options['report']) ? $options['report'] : null,
-    !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
+    $progress
 );
 
 if (isset($options['php-version'])) {
