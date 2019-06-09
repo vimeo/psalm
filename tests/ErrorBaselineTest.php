@@ -143,7 +143,7 @@ class ErrorBaselineTest extends TestCase
                 'selected_text' => 'foo',
             ],
             [
-                'file_name' => 'sample/sample-file.php',
+                'file_name' => 'sample\sample-file.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
                 'selected_text' => 'bar',
@@ -155,7 +155,7 @@ class ErrorBaselineTest extends TestCase
                 'selected_text' => 'bat',
             ],
             [
-                'file_name' => 'sample/sample-file.php',
+                'file_name' => 'sample\sample-file.php',
                 'type' => 'MixedOperand',
                 'severity' => 'error',
                 'selected_text' => 'bing',
@@ -167,7 +167,7 @@ class ErrorBaselineTest extends TestCase
                 'selected_text' => 'bong',
             ],
             [
-                'file_name' => 'sample/sample-file.php',
+                'file_name' => 'sample\sample-file.php',
                 'type' => 'CircularReference',
                 'severity' => 'suppress',
                 'selected_text' => 'birdy',
@@ -179,7 +179,7 @@ class ErrorBaselineTest extends TestCase
                 'selected_text' => 'boardy',
             ],
             [
-                'file_name' => 'sample/sample-file2.php',
+                'file_name' => 'sample\sample-file2.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
                 'selected_text' => 'bardy',
