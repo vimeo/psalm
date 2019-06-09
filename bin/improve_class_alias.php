@@ -22,6 +22,11 @@ $replace = '/* @var FullyQualified $originalName */
                             $originalName,
                             \'class\'
                         )
+                    ),
+                    new Node\Arg(
+                        new Node\Expr\ConstFetch(
+                            new Node\Name(\'false\')
+                        )
                     )
                 ]
             ),
