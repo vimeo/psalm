@@ -1,10 +1,5 @@
 # Docblock Type Syntax
 
-## Union Types
-
-An annotation of the form `Type1|Type2|Type3` is a _Union Type_. `Type1`, `Type2` and `Type3` are all acceptable possible types of that union type.
-
-`Type1`, `Type2` and `Type3` are each [atomic types](#atomic-types).
 
 ## Atomic types
 
@@ -62,6 +57,22 @@ A type without unions is an atomic type. Psalm allows many different sorts of ba
 - `resource` represents a [PHP resource](https://www.php.net/manual/en/language.types.resource.php).
 - `no-return` is the 'return type' for a function that can never actually return, such as `die()`, `exit()`, or a function that
 always throws an exception. It may also be written as `never-return` or `never-returns`, and  is also known as the *bottom type*.
+
+## Union Types
+
+An annotation of the form `Type1|Type2|Type3` is a _Union Type_. `Type1`, `Type2` and `Type3` are all acceptable possible types of that union type.
+
+`Type1`, `Type2` and `Type3` are each [atomic types](#atomic-types).
+
+Union types can be generated in a number of different ways, for example in ternary expressions:
+
+```php
+$rabbit = rand(0, 10) === 4 ? 'rabbit' : ['rabbit'];
+```
+
+`$rabbit` will be either a `string` or an `array`. We can represent that idea with Union Types – so `$rabbit` is typed as `string|array`. Union types represent *all* the possible types a given variable can have.
+
+PHP builtin functions also have union-type returns - `strpos` can return `false` in some situations, `int` in others. We represent that union type with `int|false`.
 
 ## Intersection types
 
