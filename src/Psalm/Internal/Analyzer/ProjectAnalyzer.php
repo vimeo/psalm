@@ -89,11 +89,6 @@ class ProjectAnalyzer
     public $threads;
 
     /**
-     * @var array<string,string>
-     */
-    public $reports = [];
-
-    /**
      * @var array<string, bool>
      */
     private $issues_to_fix = [];
@@ -175,8 +170,7 @@ class ProjectAnalyzer
         ?ReportOptions $stdout_report_options = null,
         array $generated_report_options = [],
         int $threads = 1,
-        Progress $progress = null,
-        $reports = null
+        Progress $progress = null
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
