@@ -1,9 +1,8 @@
 # Docblock Type Syntax
 
-
 ## Atomic types
 
-Atomic types are the basic building block of all type information used in Psalm. Psalm allows many different sorts of atomic types to be expressed in docblock syntax:
+Atomic types are the basic building block of all type information used in Psalm. Multiple atomic types can be combined, either with [union types](#union-types) or [intersection types](#intersection_types). Psalm allows many different sorts of atomic types to be expressed in docblock syntax:
 
 ### [Scalar types](type_syntax/scalar_types.md)
 
@@ -86,6 +85,3 @@ $hare = $this->createMock(Hare::class);
 `$hare` will be an instance of a class that extends `Hare`, and implements `\PHPUnit\Framework\MockObject\MockObject`. So
 `$hare` is typed as `Hare&\PHPUnit\Framework\MockObject\MockObject`. You can use this syntax whenever a value is
 required to implement multiple interfaces. Only *object types* may be used within an intersection.
-
-
-
