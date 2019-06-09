@@ -3,7 +3,7 @@
 
 ## Atomic types
 
-A type without unions is an atomic type. Psalm allows many different sorts of basic atomic types:
+Atomic types are the basic building block of all type information used in Psalm. Psalm allows many different sorts of atomic types to be expressed in docblock syntax:
 
 ### [Scalar types](type_syntax/scalar_types.md)
 
