@@ -1,6 +1,6 @@
 # Templating
 
-Docblocks allow you to tell Psalm some simple information about how your code works. For example `@return int` in a function return type tells Psalm that a function should return an `int`" and `@return MyContainer` tells Psalm that a function should return an instance of a user-defined class `MyContainer`. In either case, Psalm can check that the function actually returns those types _and_ that anything calling that function uses its returned value properly.
+Docblocks allow you to tell Psalm some simple information about how your code works. For example `@return int` in a function return type tells Psalm that a function should return an `int` and `@return MyContainer` tells Psalm that a function should return an instance of a user-defined class `MyContainer`. In either case, Psalm can check that the function actually returns those types _and_ that anything calling that function uses its returned value properly.
 
 Templated types allow you to tell Psalm even more information about how your code works.
 
