@@ -33,4 +33,3 @@ $contents = file_get_contents($vendor_path);
 $contents = str_replace($search, $replace, $contents);
 
 file_put_contents($vendor_path, $contents);
-
