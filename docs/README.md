@@ -66,6 +66,6 @@ There are two main inspirations for Psalm:
     - [Supported Annotations](annotating_code/supported_annotations.md)
     - [Template Annotations](annotating_code/templated_annotations.md)
 - Manipulating code:
-    - [Fixing code](manipulating_code/fixing_code.md)
-    - [Refactoring code](manipulating_code/refactoring_code.md)
+    - [Fixing code](manipulating_code/fixing.md)
+    - [Refactoring code](manipulating_code/refactoring.md)
  
