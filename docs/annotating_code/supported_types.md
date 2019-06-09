@@ -7,6 +7,17 @@ Psalm assertions:
   @psalm-assert <type> $value
 ```
 
+Defining the type of a template:
+```php
+/**
+ * @template T
+ */
+class SomeClass { ... }   
+
+/** @var SomeClass<type> $myClass
+$myClass = new SomeClass();
+```
+
 And also constraining templates: 
 ```php
   @template T of <type> 
@@ -14,26 +25,26 @@ And also constraining templates:
 
 Where `<type>` can be one of:
 
-| Type     | Template constraint | Assertion | Notes |
-|----------|---------------------|-----------|-------|
-| bool  | N | Y |  |
-| int   | N | Y |  |
-| string   | N | Y |  |
-| float   | N | Y |  |
-| array   | N | Y |  |
-| iterable   | Y | Y |  |
-| object   | Y | Y |  |
-| callable   | Y | Y |  |
-| resource   | Y | Y |  |
-| null   | N | Y |  |
-| numeric  | Y | Y | int, float, string (as string could represent a number) |
-| scalar  | Y | Y | int, float, string, bool |
-| never-return  | N | Y | Means function never returns |
-| true  | N | Y |  |
-| false  | N | Y |  |
-| empty  | N | Y |  |
-| array-key  | Y | Y | int or string |
-| (user class)  | Y | Y |  |
+| Type          | Template Type | Template constraint | Assertion | Notes |
+|---------------|---------------|---------------------|-----------|-------|
+| bool          | Y             | N                   | Y         |       |
+| int           | Y             | N                   | Y         |       |
+| string        | Y             | N                   | Y         |       |
+| float         | Y             | N                   | Y         |       |
+| array         | Y             | N                   | Y         |       |
+| iterable      | Y             | Y                   | Y         |       |
+| object        | Y             | Y                   | Y         |       |
+| callable      | Y             | Y                   | Y         |       |
+| resource      | Y             | Y                   | Y         |       |
+| null          | N             | N                   | Y         |       |
+| numeric       | Y             | Y                   | Y         | int, float, string (as string could represent a number) |
+| scalar        | Y             | Y                   | Y         | int, float, string, bool |
+| never-return  | N             | N                   | Y         | Means function never returns |
+| true          | N             | N                   | Y         |       |
+| false         | N             | N                   | Y         |       |
+| empty         | N             | N                   | Y         |       |
+| array-key     | Y             | Y                   | Y         | int or string |
+| (user class)  | Y             | Y                   | Y         |       |
 
 
 
