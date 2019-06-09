@@ -4,6 +4,8 @@
 
 An annotation of the form `Type1|Type2|Type3` is a _Union Type_. `Type1`, `Type2` and `Type3` are all acceptable possible types of that union type.
 
+`Type1`, `Type2` and `Type3` are each [Atomic types](#atomic-types).
+
 For example, after this statement
 ```php
 $rabbit = rand(0, 10) === 4 ? 'rabbit' : ['rabbit'];
@@ -14,40 +16,75 @@ Some builtin functions (such as `strpos`) can return `false` in some situations.
 
 ## Atomic types
 
-A type without unions is an atomic type. Psalm allows many different sorts of atomic types.
+A type without unions is an atomic type. Psalm allows many different sorts of basic atomic types:
 
-### Scalar types
+- [`int`](type_syntax/scalar-types.md)
+- [`float`](type_syntax/scalar-types.md)
+- [`string`](type_syntax/scalar-types.md)
+- [`class-string`](type_syntax/scalar-types.md#class-string)
+- [`trait-string`](type_syntax/scalar-types.md#trait-string)
+- [`callable-string`](type_syntax/scalar-types.md#callable-string)
+- [`numeric-string`](type_syntax/scalar-types.md#numeric-string)
+- [`bool`](type_syntax/scalar-types.md)
+- [`array-key`](type_syntax/scalar-types.md#array-key)
+- [`scalar`](type_syntax/scalar-types.md#scalar)
+- [`void`](#void)
+- [`empty`](#empty)
+- [`numeric`](type_syntax/scalar-types.md#numeric)
+- [`iterable`](#iterable)
+- [`never-return`/`never-returns`/`no-return`](#no-return)
+- [`object`](type_syntax/object-types.md)
+- [`callable`](type_syntax/callable-types.md)
+- [`array`/`non-empty-array`](type_syntax/array-types.md)
+- [`resource`](#resource)
+- [`mixed`](#mixed)
 
-`int`, `bool`, `float`, `string` are examples of scalar types. Scalar types represent scalar values in PHP. These types are also valid types in PHP 7.
+An atomic type can also be a reference to a class or interface:
 
-#### class-string
+- [`Exception`/`Foo\Bar\MyClass`](type_syntax/object-types.md)
 
-Psalm supports a special meta-type for `MyClass::class` constants, `class-string`, which can be used everywhere `string` can.
+Value types are also accepted
 
-For example, given a function with a `string` parameter `$class_name`, you can use the annotation `@param class-string $class_name` to tell Psalm make sure that the function is always called with a `::class` constant in that position:
+- [`null`](type_syntax/value_types.md#null)
+- [`true`/`false`](type_syntax/value_types.md#true-false)
+- [`6`/`7.0`/`"fourty-two"`/`'fourty two'`](type_syntax/value_types.md#some_string-4-314)
+- [`Foo\Bar::MY_SCALAR_CONST`](type_syntax/value_types.md@regular-class-constants)
 
-```php
-class A {}
+And some types that expand into union types
 
-/**
- * @param class-string $s
- */
-function takesClassName(string $s) : void {}
-```
+- `key-of<Foo\Bar::ARRAY_CONST>`
+- `value-of<Foo\Bar::ARRAY_CONST>`
 
-`takesClassName("A");` would trigger a `TypeCoercion` issue (or a `PossiblyInvalidArgument` issue if [`allowCoercionFromStringToClassConst`](../running_psalm/configuration.md#coding-style) was set to `false` in your config), whereas `takesClassName(A::class)` is fine.
+### iterable
 
-### Object types
+Represents the [`iterable` pseudo-type](https://php.net/manual/en/language.types.iterable.php).
 
-`stdClass`, `Foo`, `Bar\Baz` etc. are examples of object types. These types are also valid types in PHP
+Like arrays, iterables can have type parameters e.g. `iterable<string, Foo>`.
 
-#### Generic object types
+### Void
 
-Psalm supports using generic object types like `ArrayObject<int, string>`. Any generic object should be typehinted with appropriate [`@template` tags](templated_annotations.md).
+`void` can be used in a return type when a function does not return a value.
 
-### Intersection types
+### Empty
 
-An annotation of the form `Type1&Type2&Type3` is an _Intersection Type_. Any value must satisfy `Type1`, `Type2` and `Type3` simultaneously.
+`empty` is a type that represents a lack of type - not just a lack of type information (that's where [mixed](#mixed) is useful) but where there can be no type. A good example is the type of the empty array `[]`. Psalm types this as `array<empty, empty>`.
+
+### Mixed
+
+`mixed` represents a lack of type information. Psalm warns about mixed when the `totallyTyped` flag is turned on.
+
+### Resource
+
+`resource` represents a [PHP resource](https://www.php.net/manual/en/language.types.resource.php).
+
+### no-return
+
+`no-return` is the 'return type' for a function that can never actually return, such as `die()`, `exit()`, or a function that
+always throws an exception. It may also be written as `never-return` or `never-returns`, and  is also known as the *bottom type*.
+
+## Intersection types
+
+An annotation of the form `Type1&Type2&Type3` is an _Intersection Type_. Any value must satisfy `Type1`, `Type2` and `Type3` simultaneously. `Type1`, `Type2` and `Type3` are all [atomic types](#atomic-types).
 
 For example, after this statement in a PHPUnit test:
 ```php
@@ -58,145 +95,5 @@ $hare = $this->createMock(Hare::class);
 `$hare` is typed as `Hare&\PHPUnit\Framework\MockObject\MockObject`. You can use this syntax whenever a value is
 required to implement multiple interfaces. Only *object types* may be used within an intersection.
 
-### Array types
 
-In PHP, the `array` type is commonly used to represent three different data structures:
 
-[List](https://en.wikipedia.org/wiki/List_(abstract_data_type)):
-```php
-$a = [1, 2, 3, 4, 5];
-```
-
-[Associative array](https://en.wikipedia.org/wiki/Associative_array):  
-```php
-$a = [0 => 'hello', 5 => 'goodbye'];
-$b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
-```
-
-Makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language)):
-```php
-$a = ['name' => 'Psalm', 'type' => 'tool'];
-```
-
-PHP treats all these arrays the same, essentially (though there are some optimisations under the hood for the first case).
-
-#### PHPDoc syntax
-
-PHPDoc [allows you to specify](https://phpdoc.org/docs/latest/references/phpdoc/types.html#arrays) the  type of values the array holds with the annotation:
-```php
-/** @return ValueType[] */
-```
-
-#### Generic arrays
-
-Psalm uses a syntax [borrowed from Java](https://en.wikipedia.org/wiki/Generics_in_Java) that allows you denote the types of both keys *and* values:
-```php
-/** @return array<TKey, TValue> */
-```
-
-#### Object-like arrays
-
-Psalm supports a special format for arrays where the key offsets are known: object-like arrays.
-
-Given an array
-
-```php
-["hello", "world", "foo" => new stdClass, 28 => false];
-```
-
-Psalm will type it internally as:
-
-```
-array{0: string, 1: string, foo: stdClass, 28: false}
-```
-
-You can specify types in that format yourself, e.g.
-
-```php
-/** @return array{foo: string, bar: int} */
-```
-
-### Value types
-
-Psalm also allows you to specify values in types.
-
-#### null
-
-This is the `null` value, destroyer of worlds. Use it sparingly. Psalm supports you writing `?Foo` to mean `null|Foo`.
-
-#### no-return
-
-`no-return` is the 'return type' for a function that can never actually return, such as `die()`, `exit()`, or a function that
-always throws an exception. It may also be written as `never-return` or `never-returns`, and  is also known as the *bottom type*.
-
-#### true, false
-
-Use of `true` and `false` is also PHPDoc-compatible
-
-#### "some_string", 4, 3.14
-
-Psalm also allows you specify literal values in types, e.g. `@return "good"|"bad"`
-
-#### Regular class constants
-
-Psalm allows you to include class constants in types, e.g. `@return Foo::GOOD|Foo::BAD`. You can also specify explicit class strings e.g. `Foo::class|Bar::class`
-
-If you want to specify that a parameter should only take class strings that are, or extend, a given class, you can use the annotation `@param class-string<Foo> $foo_class`. If you only want the param to accept that exact class string, you can use the annotation `Foo::class`:
-
-```php
-<?php
-class A {}
-class AChild extends A {}
-class B {}
-class BChild extends B {}
-
-/**
- * @param class-string<A>|class-string<B> $s
- */
-function foo(string $s) : void {}
-
-/**
- * @param A::class|B::class $s
- */
-function bar(string $s) : void {}
-
-foo(A::class); // works
-foo(AChild::class); // works
-foo(B::class); // works
-foo(BChild::class); // works
-bar(A::class); // works
-bar(AChild::class); // fails
-bar(B::class); // works
-bar(BChild::class); // fails
-```
-
-### Callable types
-
-Psalm supports a special format for `callable`s of the form. It can also be used for annotating `Closure`.
-
-```
-callable(Type1, OptionalType2=, ...SpreadType3):ReturnType
-```
-
-Adding `=` after the type implies it is optional, and prefixing with `...` implies the use of the spread operator.
-
-Using this annotation you can specify that a given function return a `Closure` e.g.
-
-```php
-/**
- * @return Closure(bool):int
- */
-function delayedAdd(int $x, int $y) : Closure {
-  return function(bool $debug) use ($x, $y) {
-    if ($debug) echo "got here" . PHP_EOL;
-    return $x + $y;
-  };
-}
-
-$adder = delayedAdd(3, 4);
-echo $adder(true);
-```
-
-### Parameterised types
-
-Psalm supports the use of parameterised types with the use of [`@template` tags](templated_annotations.md).
