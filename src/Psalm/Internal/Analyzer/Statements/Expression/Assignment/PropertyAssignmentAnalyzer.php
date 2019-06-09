@@ -88,7 +88,19 @@ class PropertyAssignmentAnalyzer
                 $context
             );
 
-            $class_property_types[] = $class_property_type ? clone $class_property_type : Type::getMixed();
+            if ($class_property_type && $context->self) {
+                $class_storage = $codebase->classlike_storage_provider->get($context->self);
+
+                $class_property_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $class_property_type,
+                    $context->self,
+                    null,
+                    $class_storage->parent_class
+                );
+            }
+
+            $class_property_types[] = $class_property_type ?: Type::getMixed();
 
             $var_id = '$this->' . $prop_name;
         } else {
