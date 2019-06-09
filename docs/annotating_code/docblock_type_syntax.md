@@ -63,31 +63,12 @@ A type without unions is an atomic type. Psalm allows many different sorts of ba
 
 ### Other
 
-#### iterable
-
-Represents the [`iterable` pseudo-type](https://php.net/manual/en/language.types.iterable.php).
-
-Like arrays, iterables can have type parameters e.g. `iterable<string, Foo>`.
-
-#### void
-
-`void` can be used in a return type when a function does not return a value.
-
-#### empty
-
-`empty` is a type that represents a lack of type - not just a lack of type information (that's where [mixed](#mixed) is useful) but where there can be no type. A good example is the type of the empty array `[]`. Psalm types this as `array<empty, empty>`.
-
-#### mixed
-
-`mixed` represents a lack of type information. Psalm warns about mixed when the `totallyTyped` flag is turned on.
-
-#### resource
-
-`resource` represents a [PHP resource](https://www.php.net/manual/en/language.types.resource.php).
-
-#### no-return
-
-`no-return` is the 'return type' for a function that can never actually return, such as `die()`, `exit()`, or a function that
+- `iterable` - represents the [`iterable` pseudo-type](https://php.net/manual/en/language.types.iterable.php). Like arrays, iterables can have type parameters e.g. `iterable<string, Foo>`.
+- `void` - can be used in a return type when a function does not return a value.
+- `empty` - a type that represents a lack of type - not just a lack of type information (that's where [mixed](#mixed) is useful) but where there can be no type. A good example is the type of the empty array `[]`. Psalm types this as `array<empty, empty>`.
+- `mixed` represents a lack of type information. Psalm warns about mixed when the `totallyTyped` flag is turned on.
+- `resource` represents a [PHP resource](https://www.php.net/manual/en/language.types.resource.php).
+- `no-return` is the 'return type' for a function that can never actually return, such as `die()`, `exit()`, or a function that
 always throws an exception. It may also be written as `never-return` or `never-returns`, and  is also known as the *bottom type*.
 
 ## Intersection types
