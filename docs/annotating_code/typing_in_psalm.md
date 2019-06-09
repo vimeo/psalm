@@ -4,7 +4,9 @@ Psalm is able to interpret all PHPDoc type annotations, and use them to further 
 
 Types are used to describe acceptable values for properties, variables, function parameters and `return $x`.
 
-## [Docblock Type Syntax](docblock_type_syntax.md)
+## Docblock Type Syntax
+
+Psalm allows you to express a lot of complicated type information. [See this guide](docblock_type_syntax.md) for a detailed list of supported types.
 
 ## Property declaration types vs Assignment typehints
 
@@ -77,13 +79,6 @@ echo strpos($a, 'hello');
 
 This tells Psalm to assume that `$a` is a string (though it will still throw an error if `$a` is undefined).
 
-### Backwards compatibility
-
-Psalm fully supports PHPDoc's array typing syntax, such that any array typed with `TValue[]` will be typed in Psalm as `array<mixed, TValue>`. That also extends to generic type definitions with only one param e.g. `array<TValue>`, which is equivalent to `array<mixed, TValue>`.
-
-Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
-
-
 ## Specifying string/int options (aka enums)
 
 Psalm allows you to specify a specific set of allowed string/int values for a given function or method.
@@ -119,8 +114,6 @@ function foo(string $s) : string {
 }
 ```
 
-You can also wrap the options in parentheses - `('a' | 'b')` - if you like to space things out.
-
 If the values are in class constants, you can use those too:
 
 ```php
@@ -130,7 +123,7 @@ class A {
 }
 
 /**
- * @param (A::FOO | A::BAR) $s
+ * @param A::FOO | A::BAR $s
  */
 function foo(string $s) : string {
   switch ($s) {
