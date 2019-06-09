@@ -18,6 +18,8 @@ Some builtin functions (such as `strpos`) can return `false` in some situations.
 
 A type without unions is an atomic type. Psalm allows many different sorts of basic atomic types:
 
+### [Scalar types](type_syntax/scalar_types.md)
+
 - [`int`](type_syntax/scalar_types.md)
 - [`float`](type_syntax/scalar_types.md)
 - [`string`](type_syntax/scalar_types.md)
@@ -27,57 +29,60 @@ A type without unions is an atomic type. Psalm allows many different sorts of ba
 - [`numeric-string`](type_syntax/scalar_types.md#numeric-string)
 - [`bool`](type_syntax/scalar_types.md)
 - [`array-key`](type_syntax/scalar_types.md#array-key)
-- [`scalar`](type_syntax/scalar_types.md#scalar)
-- [`void`](#void)
-- [`empty`](#empty)
 - [`numeric`](type_syntax/scalar_types.md#numeric)
-- [`iterable`](#iterable)
-- [`never-return`/`never-returns`/`no-return`](#no-return)
+- [`scalar`](type_syntax/scalar_types.md#scalar)
+
+### [Object types](type_syntax/object_types.md)
+
 - [`object`](type_syntax/object_types.md)
-- [`callable`](type_syntax/callable_types.md)
-- [`array`/`non-empty-array`](type_syntax/array_types.md)
-- [`resource`](#resource)
-- [`mixed`](#mixed)
-
-An atomic type can also be a reference to a class or interface:
-
 - [`Exception`/`Foo\Bar\MyClass`](type_syntax/object_types.md)
 
-Value types are also accepted
+### [Array types](type_syntax/array_types.md)
+
+- `array`/`non-empty-array`
+
+### [Callable types](type_syntax/callable_types.md)
+
+- [`callable`/`Closure`](type_syntax/callable_types.md)
+
+### [Value types](type_syntax/value_types.md)
 
 - [`null`](type_syntax/value_types.md#null)
 - [`true`/`false`](type_syntax/value_types.md#true-false)
 - [`6`/`7.0`/`"fourty-two"`/`'fourty two'`](type_syntax/value_types.md#some_string-4-314)
 - [`Foo\Bar::MY_SCALAR_CONST`](type_syntax/value_types.md#regular-class-constants)
 
-And some types that expand into union types
+### Magical types
 
 - `key-of<Foo\Bar::ARRAY_CONST>`
 - `value-of<Foo\Bar::ARRAY_CONST>`
+- `T[K]`
 
-### iterable
+### Other
+
+#### iterable
 
 Represents the [`iterable` pseudo-type](https://php.net/manual/en/language.types.iterable.php).
 
 Like arrays, iterables can have type parameters e.g. `iterable<string, Foo>`.
 
-### Void
+#### Void
 
 `void` can be used in a return type when a function does not return a value.
 
-### Empty
+#### Empty
 
 `empty` is a type that represents a lack of type - not just a lack of type information (that's where [mixed](#mixed) is useful) but where there can be no type. A good example is the type of the empty array `[]`. Psalm types this as `array<empty, empty>`.
 
-### Mixed
+#### Mixed
 
 `mixed` represents a lack of type information. Psalm warns about mixed when the `totallyTyped` flag is turned on.
 
-### Resource
+#### Resource
 
 `resource` represents a [PHP resource](https://www.php.net/manual/en/language.types.resource.php).
 
-### no-return
+#### no-return
 
 `no-return` is the 'return type' for a function that can never actually return, such as `die()`, `exit()`, or a function that
 always throws an exception. It may also be written as `never-return` or `never-returns`, and  is also known as the *bottom type*.
