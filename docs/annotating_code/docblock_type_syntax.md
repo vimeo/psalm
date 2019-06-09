@@ -4,7 +4,7 @@
 
 An annotation of the form `Type1|Type2|Type3` is a _Union Type_. `Type1`, `Type2` and `Type3` are all acceptable possible types of that union type.
 
-`Type1`, `Type2` and `Type3` are each [Atomic types](#atomic-types).
+`Type1`, `Type2` and `Type3` are each [Atomic types](#atomic_types).
 
 For example, after this statement
 ```php
@@ -18,30 +18,30 @@ Some builtin functions (such as `strpos`) can return `false` in some situations.
 
 A type without unions is an atomic type. Psalm allows many different sorts of basic atomic types:
 
-- [`int`](type_syntax/scalar-types.md)
-- [`float`](type_syntax/scalar-types.md)
-- [`string`](type_syntax/scalar-types.md)
-- [`class-string`](type_syntax/scalar-types.md#class-string)
-- [`trait-string`](type_syntax/scalar-types.md#trait-string)
-- [`callable-string`](type_syntax/scalar-types.md#callable-string)
-- [`numeric-string`](type_syntax/scalar-types.md#numeric-string)
-- [`bool`](type_syntax/scalar-types.md)
-- [`array-key`](type_syntax/scalar-types.md#array-key)
-- [`scalar`](type_syntax/scalar-types.md#scalar)
+- [`int`](type_syntax/scalar_types.md)
+- [`float`](type_syntax/scalar_types.md)
+- [`string`](type_syntax/scalar_types.md)
+- [`class-string`](type_syntax/scalar_types.md#class-string)
+- [`trait-string`](type_syntax/scalar_types.md#trait-string)
+- [`callable-string`](type_syntax/scalar_types.md#callable-string)
+- [`numeric-string`](type_syntax/scalar_types.md#numeric-string)
+- [`bool`](type_syntax/scalar_types.md)
+- [`array-key`](type_syntax/scalar_types.md#array-key)
+- [`scalar`](type_syntax/scalar_types.md#scalar)
 - [`void`](#void)
 - [`empty`](#empty)
-- [`numeric`](type_syntax/scalar-types.md#numeric)
+- [`numeric`](type_syntax/scalar_types.md#numeric)
 - [`iterable`](#iterable)
 - [`never-return`/`never-returns`/`no-return`](#no-return)
-- [`object`](type_syntax/object-types.md)
-- [`callable`](type_syntax/callable-types.md)
-- [`array`/`non-empty-array`](type_syntax/array-types.md)
+- [`object`](type_syntax/object_types.md)
+- [`callable`](type_syntax/callable_types.md)
+- [`array`/`non-empty-array`](type_syntax/array_types.md)
 - [`resource`](#resource)
 - [`mixed`](#mixed)
 
 An atomic type can also be a reference to a class or interface:
 
-- [`Exception`/`Foo\Bar\MyClass`](type_syntax/object-types.md)
+- [`Exception`/`Foo\Bar\MyClass`](type_syntax/object_types.md)
 
 Value types are also accepted
 
@@ -84,7 +84,7 @@ always throws an exception. It may also be written as `never-return` or `never-r
 
 ## Intersection types
 
-An annotation of the form `Type1&Type2&Type3` is an _Intersection Type_. Any value must satisfy `Type1`, `Type2` and `Type3` simultaneously. `Type1`, `Type2` and `Type3` are all [atomic types](#atomic-types).
+An annotation of the form `Type1&Type2&Type3` is an _Intersection Type_. Any value must satisfy `Type1`, `Type2` and `Type3` simultaneously. `Type1`, `Type2` and `Type3` are all [atomic types](#atomic_types).
 
 For example, after this statement in a PHPUnit test:
 ```php
