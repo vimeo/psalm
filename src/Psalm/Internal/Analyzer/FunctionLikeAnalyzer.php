@@ -872,6 +872,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
         }
 
+        $unused_params = [];
+
         if ($context->collect_references
             && !$context->collect_initializations
             && $codebase->find_unused_variables
@@ -944,7 +946,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         }
                     }
 
-                    $storage->unused_params[$position] = $original_location;
+                    $unused_params[$position] = $original_location;
                 }
             }
 
@@ -955,7 +957,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 $method_id_lc = strtolower($this->getMethodId());
 
                 foreach ($storage->params as $i => $_) {
-                    if (!isset($storage->unused_params[$i])) {
+                    if (!isset($unused_params[$i])) {
                         $codebase->file_reference_provider->addMethodParamUse(
                             $method_id_lc,
                             $i,

@@ -1515,35 +1515,22 @@ class ClassLikes
                     }
                 }
 
-                foreach ($method_storage->unused_params as $offset => $code_location) {
-                    $has_parent_references = false;
-
-                    $method_name_lc = strtolower($method_name);
-
-                    if (isset($classlike_storage->overridden_method_ids[$method_name_lc])) {
-                        foreach ($classlike_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
-                            $parent_method_storage = $methods->getStorage($parent_method_id);
-
-                            if (!$parent_method_storage->abstract
-                                && isset($parent_method_storage->used_params[$offset])
-                            ) {
-                                $has_parent_references = true;
-                                break;
+                if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    && !$classlike_storage->is_interface
+                ) {
+                    foreach ($method_storage->params as $offset => $param_storage) {
+                        if (!$this->file_reference_provider->isMethodParamUsed(strtolower($method_id), $offset)
+                            && $param_storage->location
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new PossiblyUnusedParam(
+                                    'Param #' . ($offset + 1) . ' is never referenced in this method',
+                                    $param_storage->location
+                                ),
+                                $method_storage->suppressed_issues
+                            )) {
+                                // fall through
                             }
-                        }
-                    }
-
-                    if (!$has_parent_references
-                        && !$this->file_reference_provider->isMethodParamUsed(strtolower($method_id), $offset)
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new PossiblyUnusedParam(
-                                'Param #' . ($offset + 1) . ' is never referenced in this method',
-                                $code_location
-                            ),
-                            $method_storage->suppressed_issues
-                        )) {
-                            // fall through
                         }
                     }
                 }
