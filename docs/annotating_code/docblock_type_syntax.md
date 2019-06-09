@@ -48,7 +48,7 @@ Value types are also accepted
 - [`null`](type_syntax/value_types.md#null)
 - [`true`/`false`](type_syntax/value_types.md#true-false)
 - [`6`/`7.0`/`"fourty-two"`/`'fourty two'`](type_syntax/value_types.md#some_string-4-314)
-- [`Foo\Bar::MY_SCALAR_CONST`](type_syntax/value_types.md@regular-class-constants)
+- [`Foo\Bar::MY_SCALAR_CONST`](type_syntax/value_types.md#regular-class-constants)
 
 And some types that expand into union types
 
