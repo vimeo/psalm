@@ -36,7 +36,7 @@ Here are a couple of example plugins:
  - [PreventFloatAssignmentChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/PreventFloatAssignmentChecker.php) - prevents assignment to floats
  - [FunctionCasingChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/FunctionCasingChecker.php) - checks that your functions and methods are correctly-cased
 
-To ensure your plugin runs when Psalm does, add it to your [config](configuration.md):
+To ensure your plugin runs when Psalm does, add it to your [config](../configuration.md):
 ```xml
     <plugins>
         <plugin filename="src/plugins/SomePlugin.php" />
@@ -56,9 +56,9 @@ Understand how Psalm handles types by [reading this guide](plugins_type_system.m
 
 ## Handling custom plugin issues
 
-Plugins may sometimes need to emit their own issues (i.e. not emit one of the [existing issues](issues.md)). If this is the case, they can emit an issue that extends `Psalm\Issue\PluginIssue`.
+Plugins may sometimes need to emit their own issues (i.e. not emit one of the [existing issues](../issues.md)). If this is the case, they can emit an issue that extends `Psalm\Issue\PluginIssue`.
 
-To suppress a custom plugin issue in docblocks you can just use its issue name (e.g. `/** @psalm-suppress NoFloatAssignment */`, but to [suppress it in Psalm’s config](dealing_with_code_issues.md#config-suppression) you must use the pattern:
+To suppress a custom plugin issue in docblocks you can just use its issue name (e.g. `/** @psalm-suppress NoFloatAssignment */`, but to [suppress it in Psalm’s config](../dealing_with_code_issues.md#config-suppression) you must use the pattern:
 
 ```xml
 <PluginIssue name="NoFloatAssignment" errorLevel="suppress" />

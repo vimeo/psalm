@@ -199,8 +199,14 @@ foreach ($args as $arg) {
             $last_arg_parts = preg_split('/, ?/', $last_arg);
 
             foreach ($last_arg_parts as $last_arg_part) {
-                list(, $identifier_name) = explode('::', $last_arg_part);
-                $to_refactor[$last_arg_part] = $arg . '::' . $identifier_name;
+                if (strpos($last_arg_part, '::')) {
+                    list(, $identifier_name) = explode('::', $last_arg_part);
+                    $to_refactor[$last_arg_part] = $arg . '::' . $identifier_name;
+                } else {
+                    $namespace_parts = explode('\\', $last_arg_part);
+                    $class_name = end($namespace_parts);
+                    $to_refactor[$last_arg_part] = $arg . '\\' . $class_name;
+                }
             }
         } else {
             $to_refactor[$last_arg] = $arg;
