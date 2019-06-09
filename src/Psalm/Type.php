@@ -78,6 +78,7 @@ abstract class Type
         'array-key' => true,
         'key-of' => true,
         'value-of' => true,
+        'non-empty-countable' => true,
     ];
 
     /**
