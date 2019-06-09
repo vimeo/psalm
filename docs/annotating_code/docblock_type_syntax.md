@@ -23,7 +23,7 @@ A type without unions is an atomic type. Psalm allows many different sorts of ba
 - [`int`](type_syntax/scalar_types.md)
 - [`float`](type_syntax/scalar_types.md)
 - [`string`](type_syntax/scalar_types.md)
-- [`class-string`](type_syntax/scalar_types.md#class-string)
+- [`class-string`/`class-string<Foo>`](type_syntax/scalar_types.md#class-string)
 - [`trait-string`](type_syntax/scalar_types.md#trait-string)
 - [`callable-string`](type_syntax/scalar_types.md#callable-string)
 - [`numeric-string`](type_syntax/scalar_types.md#numeric-string)
@@ -35,15 +35,18 @@ A type without unions is an atomic type. Psalm allows many different sorts of ba
 ### [Object types](type_syntax/object_types.md)
 
 - [`object`](type_syntax/object_types.md)
-- [`Exception`/`Foo\Bar\MyClass`](type_syntax/object_types.md)
+- [`Exception`/`Foo\MyClass`/`Foo\MyClass<Bar>`](type_syntax/object_types.md)
 
 ### [Array types](type_syntax/array_types.md)
 
 - [`array`/`non-empty-array`](type_syntax/array_types.md)
+- [`string[]`](type_syntax/array_types.md#phpdoc-syntax)
+- [`array<int, string>`](type_syntax/array_types.md#generic-arrays)
+- [`array{foo: int, bar: string}`](type_syntax/array_types.md#object-like-arrays)
 
 ### [Callable types](type_syntax/callable_types.md)
 
-- [`callable`/`Closure`](type_syntax/callable_types.md)
+- [`callable`/`Closure`/`callable(Foo, Bar):Baz`](type_syntax/callable_types.md)
 
 ### [Value types](type_syntax/value_types.md)
 
