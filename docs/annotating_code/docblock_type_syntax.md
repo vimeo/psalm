@@ -39,7 +39,7 @@ A type without unions is an atomic type. Psalm allows many different sorts of ba
 
 ### [Array types](type_syntax/array_types.md)
 
-- `array`/`non-empty-array`
+- [`array`/`non-empty-array`](type_syntax/array_types.md)
 
 ### [Callable types](type_syntax/callable_types.md)
 
