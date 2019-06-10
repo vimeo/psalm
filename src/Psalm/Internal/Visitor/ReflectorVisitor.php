@@ -96,6 +96,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var PhpParser\Node\Name|null */
     private $namespace_name;
 
+    /** @var PhpParser\Node\Expr\FuncCall|null */
+    private $exists_cond_expr;
+
+    /** @var PhpParser\Node\Expr\FuncCall|null */
+    private $not_exists_cond_expr;
+
+    /**
+     * @var bool
+     */
+    private $skip_if_descendants = false;
+
     /**
      * @var array<string, array<int, string>>
      */
@@ -125,6 +136,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      */
     public function enterNode(PhpParser\Node $node)
     {
+        if ($this->skip_if_descendants
+            && !$node instanceof PhpParser\Node\Stmt\If_
+            && !$node instanceof PhpParser\Node\Stmt\Else_
+            && !$node instanceof PhpParser\Node\Stmt\ElseIf_
+        ) {
+            return;
+        }
+
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc) {
                 try {
@@ -416,39 +435,45 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->file_storage->constants[$fq_const_name] = $const_type;
                 $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
             }
-        } elseif ($this->codebase->register_autoload_files && $node instanceof PhpParser\Node\Stmt\If_) {
+        } elseif ($node instanceof PhpParser\Node\Stmt\If_) {
+            $this->skip_if_descendants = false;
+
             if ($node->cond instanceof PhpParser\Node\Expr\BooleanNot) {
                 if ($node->cond->expr instanceof PhpParser\Node\Expr\FuncCall
                     && $node->cond->expr->name instanceof PhpParser\Node\Name
+                    && ($node->cond->expr->name->parts === ['function_exists']
+                        || $node->cond->expr->name->parts === ['class_exists']
+                        || $node->cond->expr->name->parts === ['interface_exists']
+                    )
                 ) {
-                    if ($node->cond->expr->name->parts === ['function_exists']
-                        && isset($node->cond->expr->args[0])
-                        && $node->cond->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
-                        && function_exists($node->cond->expr->args[0]->value->value)
-                    ) {
-                        $reflection_function = new \ReflectionFunction($node->cond->expr->args[0]->value->value);
-
-                        if ($reflection_function->isInternal()) {
-                            return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
-                        }
-                    } elseif ($node->cond->expr->name->parts === ['class_exists']
-                        && isset($node->cond->expr->args[0])
-                        && $node->cond->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
-                        && class_exists($node->cond->expr->args[0]->value->value, false)
-                    ) {
-                        /** @psalm-suppress ArgumentTypeCoercion - special case where the class is internal  */
-                        $reflection_class = new \ReflectionClass($node->cond->expr->args[0]->value->value);
-
-                        if ($reflection_class->getFileName() !== $this->file_path) {
-                            $this->codebase->scanner->queueClassLikeForScanning(
-                                $node->cond->expr->args[0]->value->value,
-                                $this->file_path
-                            );
-
-                            return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
-                        }
-                    }
+                    $this->not_exists_cond_expr = $node->cond->expr;
                 }
+            } elseif ($node->cond instanceof PhpParser\Node\Expr\FuncCall
+                && $node->cond->name instanceof PhpParser\Node\Name
+                && ($node->cond->name->parts === ['function_exists']
+                    || $node->cond->name->parts === ['class_exists']
+                    || $node->cond->name->parts === ['interface_exists']
+                )
+            ) {
+                $this->exists_cond_expr = $node->cond;
+            }
+
+            if ($this->exists_cond_expr && !$this->enterConditional($this->exists_cond_expr)) {
+                $this->skip_if_descendants = true;
+            } elseif ($this->not_exists_cond_expr && $this->enterConditional($this->not_exists_cond_expr)) {
+                $this->skip_if_descendants = true;
+            }
+        } elseif ($node instanceof PhpParser\Node\Stmt\ElseIf_) {
+            $this->exists_cond_expr = null;
+            $this->not_exists_cond_expr = null;
+            $this->skip_if_descendants = false;
+        } elseif ($node instanceof PhpParser\Node\Stmt\Else_) {
+            $this->skip_if_descendants = false;
+
+            if ($this->exists_cond_expr && $this->enterConditional($this->exists_cond_expr)) {
+                $this->skip_if_descendants = true;
+            } elseif ($this->not_exists_cond_expr && !$this->enterConditional($this->not_exists_cond_expr)) {
+                $this->skip_if_descendants = true;
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Yield_ || $node instanceof PhpParser\Node\Expr\YieldFrom) {
             $function_like_storage = end($this->functionlike_storages);
@@ -466,6 +491,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      */
     public function leaveNode(PhpParser\Node $node)
     {
+        if ($this->skip_if_descendants
+            && !$node instanceof PhpParser\Node\Stmt\If_
+            && !$node instanceof PhpParser\Node\Stmt\Else_
+            && !$node instanceof PhpParser\Node\Stmt\ElseIf_
+        ) {
+            return;
+        }
+
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             $this->aliases = $this->file_aliases;
 
@@ -570,9 +603,90 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if ($functionlike_storage->has_docblock_issues) {
                 $this->file_storage->has_docblock_issues = true;
             }
+        } elseif ($node instanceof PhpParser\Node\Stmt\If_) {
+            $this->exists_cond_expr = null;
+            $this->not_exists_cond_expr = null;
+            $this->skip_if_descendants = false;
         }
 
         return null;
+    }
+
+    private function enterConditional(PhpParser\Node\Expr\FuncCall $function) : bool
+    {
+        if (!$function->name instanceof PhpParser\Node\Name) {
+            return true;
+        }
+
+        if ($function->name->parts === ['function_exists']
+            && isset($function->args[0])
+            && $function->args[0]->value instanceof PhpParser\Node\Scalar\String_
+            && function_exists($function->args[0]->value->value)
+        ) {
+            $reflection_function = new \ReflectionFunction($function->args[0]->value->value);
+
+            if ($reflection_function->isInternal()) {
+                return true;
+            }
+        } elseif ($function->name->parts === ['class_exists']
+            && isset($function->args[0])
+        ) {
+            $string_value = null;
+
+            if ($function->args[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                $string_value = $function->args[0]->value->value;
+            } elseif ($function->args[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $function->args[0]->value->class instanceof PhpParser\Node\Name
+                && $function->args[0]->value->name instanceof PhpParser\Node\Identifier
+                && strtolower($function->args[0]->value->name->name) === 'class'
+            ) {
+                $string_value = (string) $function->args[0]->value->class->getAttribute('resolvedName');
+            }
+
+            if ($string_value && class_exists($string_value)) {
+                /** @psalm-suppress ArgumentTypeCoercion - special case where the class is internal  */
+                $reflection_class = new \ReflectionClass($string_value);
+
+                if ($reflection_class->getFileName() !== $this->file_path) {
+                    $this->codebase->scanner->queueClassLikeForScanning(
+                        $string_value,
+                        $this->file_path
+                    );
+
+                    return true;
+                }
+            }
+        } elseif ($function->name->parts === ['interface_exists']
+            && isset($function->args[0])
+        ) {
+            $string_value = null;
+
+            if ($function->args[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                $string_value = $function->args[0]->value->value;
+            } elseif ($function->args[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $function->args[0]->value->class instanceof PhpParser\Node\Name
+                && $function->args[0]->value->name instanceof PhpParser\Node\Identifier
+                && strtolower($function->args[0]->value->name->name) === 'class'
+            ) {
+                $string_value = (string) $function->args[0]->value->class->getAttribute('resolvedName');
+            }
+
+            if ($string_value && interface_exists($string_value)) {
+                /** @psalm-suppress ArgumentTypeCoercion - special case where the class is internal  */
+                $reflection_class = new \ReflectionClass($string_value);
+
+                if ($reflection_class->getFileName() !== $this->file_path) {
+                    $this->codebase->scanner->queueClassLikeForScanning(
+                        $string_value,
+                        $this->file_path
+                    );
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
