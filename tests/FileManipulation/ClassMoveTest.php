@@ -419,6 +419,74 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     'Bar\Bat' => 'Bar\Baz\Bahh',
                 ]
             ],
+            'moveClassesIntoNamespace' => [
+                '<?php
+                    namespace Foo {
+                        class A {
+                            /** @var ?B */
+                            public $x = null;
+                            /** @var ?A */
+                            public $y = null;
+                            /** @var A|B|C|null */
+                            public $z = null;
+                        }
+                    }
+
+                    namespace Foo {
+                        class B {
+                            /** @var ?A */
+                            public $x = null;
+                            /** @var ?B */
+                            public $y = null;
+                            /** @var A|B|C|null */
+                            public $z = null;
+                        }
+                    }
+
+                    namespace Foo {
+                        class C {
+                            /** @var ?A */
+                            public $x = null;
+                            /** @var ?B */
+                            public $y = null;
+                        }
+                    }',
+                '<?php
+                    namespace Bar\Baz {
+                        class A {
+                            /** @var null|B */
+                            public $x = null;
+                            /** @var null|self */
+                            public $y = null;
+                            /** @var null|self|B|\Foo\C */
+                            public $z = null;
+                        }
+                    }
+
+                    namespace Bar\Baz {
+                        class B {
+                            /** @var null|A */
+                            public $x = null;
+                            /** @var null|self */
+                            public $y = null;
+                            /** @var null|A|self|\Foo\C */
+                            public $z = null;
+                        }
+                    }
+
+                    namespace Foo {
+                        class C {
+                            /** @var null|\Bar\Baz\A */
+                            public $x = null;
+                            /** @var null|\Bar\Baz\B */
+                            public $y = null;
+                        }
+                    }',
+                [
+                    'Foo\A' => 'Bar\Baz\A',
+                    'Foo\B' => 'Bar\Baz\B',
+                ]
+            ],
             'moveClassDeeperIntoNamespaceAdjustUseWithAlias' => [
                 '<?php
                     namespace Foo {
