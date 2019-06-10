@@ -1818,6 +1818,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             && $stmt->stmts
             && $storage->params
             && $class_storage
+            && $this->config->infer_property_types_from_constructor
         ) {
             $assigned_properties = [];
 

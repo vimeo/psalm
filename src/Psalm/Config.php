@@ -265,6 +265,11 @@ class Config
     public $ignored_exceptions_and_descendants_in_global_scope = [];
 
     /**
+     * @var bool
+     */
+    public $infer_property_types_from_constructor = true;
+
+    /**
      * @var array<string, bool>
      */
     public $forbidden_functions = [];
@@ -723,6 +728,11 @@ class Config
         if (isset($config_xml['parseSql'])) {
             $attribute_text = (string) $config_xml['parseSql'];
             $config->parse_sql = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
+            $attribute_text = (string) $config_xml['inferPropertyTypesFromConstructor'];
+            $config->infer_property_types_from_constructor = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {
