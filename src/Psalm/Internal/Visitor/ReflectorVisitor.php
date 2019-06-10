@@ -438,24 +438,26 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         } elseif ($node instanceof PhpParser\Node\Stmt\If_) {
             $this->skip_if_descendants = false;
 
-            if ($node->cond instanceof PhpParser\Node\Expr\BooleanNot) {
-                if ($node->cond->expr instanceof PhpParser\Node\Expr\FuncCall
-                    && $node->cond->expr->name instanceof PhpParser\Node\Name
-                    && ($node->cond->expr->name->parts === ['function_exists']
-                        || $node->cond->expr->name->parts === ['class_exists']
-                        || $node->cond->expr->name->parts === ['interface_exists']
+            if (!$this->fq_classlike_names && !$this->functionlike_storages) {
+                if ($node->cond instanceof PhpParser\Node\Expr\BooleanNot) {
+                    if ($node->cond->expr instanceof PhpParser\Node\Expr\FuncCall
+                        && $node->cond->expr->name instanceof PhpParser\Node\Name
+                        && ($node->cond->expr->name->parts === ['function_exists']
+                            || $node->cond->expr->name->parts === ['class_exists']
+                            || $node->cond->expr->name->parts === ['interface_exists']
+                        )
+                    ) {
+                        $this->not_exists_cond_expr = $node->cond->expr;
+                    }
+                } elseif ($node->cond instanceof PhpParser\Node\Expr\FuncCall
+                    && $node->cond->name instanceof PhpParser\Node\Name
+                    && ($node->cond->name->parts === ['function_exists']
+                        || $node->cond->name->parts === ['class_exists']
+                        || $node->cond->name->parts === ['interface_exists']
                     )
                 ) {
-                    $this->not_exists_cond_expr = $node->cond->expr;
+                    $this->exists_cond_expr = $node->cond;
                 }
-            } elseif ($node->cond instanceof PhpParser\Node\Expr\FuncCall
-                && $node->cond->name instanceof PhpParser\Node\Name
-                && ($node->cond->name->parts === ['function_exists']
-                    || $node->cond->name->parts === ['class_exists']
-                    || $node->cond->name->parts === ['interface_exists']
-                )
-            ) {
-                $this->exists_cond_expr = $node->cond;
             }
 
             if ($this->exists_cond_expr && !$this->enterConditional($this->exists_cond_expr)) {
