@@ -1813,6 +1813,46 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->returns_by_ref = true;
         }
 
+        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+            && $stmt->name->name === '__construct'
+            && $stmt->stmts
+            && $storage->params
+            && $class_storage
+        ) {
+            $assigned_properties = [];
+
+            foreach ($stmt->stmts as $function_stmt) {
+                if ($function_stmt instanceof PhpParser\Node\Stmt\Expression
+                    && $function_stmt->expr instanceof PhpParser\Node\Expr\Assign
+                    && $function_stmt->expr->var instanceof PhpParser\Node\Expr\PropertyFetch
+                    && $function_stmt->expr->var->var instanceof PhpParser\Node\Expr\Variable
+                    && $function_stmt->expr->var->var->name === 'this'
+                    && $function_stmt->expr->var->name instanceof PhpParser\Node\Identifier
+                    && ($property_name = $function_stmt->expr->var->name->name)
+                    && isset($class_storage->properties[$property_name])
+                    && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\Variable
+                    && is_string($function_stmt->expr->expr->name)
+                    && ($param_name = $function_stmt->expr->expr->name)
+                    && array_key_exists($param_name, $storage->param_types)
+                ) {
+                    if ($class_storage->properties[$property_name]->type
+                        || !isset($storage->param_types[$param_name])
+                    ) {
+                        continue;
+                    }
+
+                    $assigned_properties[$property_name] = $storage->param_types[$param_name];
+                } else {
+                    $assigned_properties = [];
+                    break;
+                }
+            }
+
+            foreach ($assigned_properties as $property_name => $property_type) {
+                $class_storage->properties[$property_name]->type = clone $property_type;
+            }
+        }
+
         $doc_comment = $stmt->getDocComment();
 
         if (!$doc_comment) {
