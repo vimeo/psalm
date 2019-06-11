@@ -1937,6 +1937,44 @@ class TemplateExtendsTest extends TestCase
                         }
                     }'
             ],
+            'interfaceParentExtends' => [
+                '<?php
+                    /** @template T */
+                    interface Foo {
+                        /** @return T */
+                        public function getValue();
+                    }
+
+                    /** @extends Foo<int> */
+                    interface FooChild extends Foo {}
+
+                    class F implements FooChild {
+                        public function getValue() {
+                            return 10;
+                        }
+                    }
+
+                    echo (new F())->getValue();'
+            ],
+            'classParentExtends' => [
+                '<?php
+                    /** @template T */
+                    abstract class Foo {
+                        /** @return T */
+                        abstract public function getValue();
+                    }
+
+                    /** @extends Foo<int> */
+                    abstract class FooChild extends Foo {}
+
+                    class F extends FooChild {
+                        public function getValue() {
+                            return 10;
+                        }
+                    }
+
+                    echo (new F())->getValue();'
+            ],
         ];
     }
 

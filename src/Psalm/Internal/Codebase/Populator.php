@@ -701,6 +701,11 @@ class Populator
                         }
                     }
                 }
+            } elseif ($implemented_interface_storage->template_type_extends) {
+                $storage->template_type_extends = array_merge(
+                    $storage->template_type_extends ?: [],
+                    $implemented_interface_storage->template_type_extends
+                );
             }
 
             $extra_interfaces = array_merge($extra_interfaces, $implemented_interface_storage->parent_interfaces);
