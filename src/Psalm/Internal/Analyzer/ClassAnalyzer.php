@@ -1585,7 +1585,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 : [];
 
             if ($actual_method_storage->overridden_downstream) {
-                $overridden_method_ids[] = 'overridden::downstream';
+                $overridden_method_ids['overridden::downstream'] = 'overridden::downstream';
             }
 
             if (!$return_type && isset($class_storage->interface_method_ids[strtolower($stmt->name->name)])) {

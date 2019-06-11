@@ -293,13 +293,13 @@ class Populator
                         && $method_storage->inheritdoc
                         && $declaring_method_storage->throws
                     ) {
-                        $method_storage->throws = $declaring_method_storage->throws;
                     }
 
                     if (count($storage->overridden_method_ids[$method_name]) === 1
                         && $method_storage->signature_return_type
                         && !$method_storage->signature_return_type->isVoid()
-                        && $method_storage->return_type === $method_storage->signature_return_type
+                        && ($method_storage->return_type === $method_storage->signature_return_type
+                            || $method_storage->inherited_return_type)
                     ) {
                         if (isset($declaring_class_storage->methods[$method_name])) {
                             $declaring_method_storage = $declaring_class_storage->methods[$method_name];
@@ -768,7 +768,7 @@ class Populator
                         }
                     }
                 }
-                $storage->overridden_method_ids[$method_name][] = $interface_method_ids[0];
+                $storage->overridden_method_ids[$method_name][$interface_method_ids[0]] = $interface_method_ids[0];
             } else {
                 $storage->interface_method_ids[$method_name] = $interface_method_ids;
             }
@@ -1006,10 +1006,10 @@ class Populator
                     if (isset($declaring_class_storage->methods[$method_name])
                         && $declaring_class_storage->methods[$method_name]->abstract
                     ) {
-                        $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
+                        $storage->overridden_method_ids[$method_name][$declaring_method_id] = $declaring_method_id;
                     }
                 } else {
-                    $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
+                    $storage->overridden_method_ids[$method_name][$declaring_method_id] = $declaring_method_id;
                 }
             }
 

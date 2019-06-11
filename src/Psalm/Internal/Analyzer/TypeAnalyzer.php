@@ -264,13 +264,11 @@ class TypeAnalyzer
      *
      * @param  Type\Union   $input_type
      * @param  Type\Union   $container_type
-     *
-     * @return bool
      */
     public static function isSimplyContainedBy(
         Type\Union $input_type,
         Type\Union $container_type
-    ) {
+    ) : bool {
         if ($input_type->getId() === $container_type->getId()) {
             return true;
         }
@@ -285,10 +283,26 @@ class TypeAnalyzer
         $container_type_not_null = clone $container_type;
         $container_type_not_null->removeType('null');
 
-        return !array_diff_key(
-            $input_type_not_null->getTypes(),
-            $container_type_not_null->getTypes()
-        );
+        foreach ($input_type->getTypes() as $input_key => $input_type_part) {
+            foreach ($container_type->getTypes() as $container_key => $container_type_part) {
+                if (get_class($container_type_part) === TNamedObject::class
+                    && $input_type_part instanceof TNamedObject
+                    && $input_type_part->value === $container_type_part->value
+                ) {
+                    continue 2;
+                }
+
+                if ($input_key === $container_key) {
+                    continue 2;
+                }
+            }
+
+            return false;
+        }
+
+
+
+        return true;
     }
 
     /**

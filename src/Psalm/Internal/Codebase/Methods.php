@@ -554,7 +554,7 @@ class Methods
             $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
             if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
-                $appearing_method_id = $class_storage->overridden_method_ids[$method_name][0];
+                $appearing_method_id = reset($class_storage->overridden_method_ids[$method_name]);
             } else {
                 return null;
             }
@@ -757,7 +757,7 @@ class Methods
         }
 
         if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
-            return $class_storage->overridden_method_ids[$method_name][0];
+            return reset($class_storage->overridden_method_ids[$method_name]);
         }
     }
 
