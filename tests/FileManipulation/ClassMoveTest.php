@@ -443,12 +443,17 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         }
                     }
 
-                    namespace Foo {
+                    namespace Bar {
+                        use Foo\A;
+                        use Foo\B;
+
                         class C {
                             /** @var ?A */
                             public $x = null;
                             /** @var ?B */
                             public $y = null;
+                            /** @var null|A|B */
+                            public $z = null;
                         }
                     }',
                 '<?php
@@ -474,12 +479,17 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         }
                     }
 
-                    namespace Foo {
+                    namespace Bar {
+                        use Bar\Baz\A;
+                        use Bar\Baz\B;
+
                         class C {
-                            /** @var null|\Bar\Baz\A */
+                            /** @var null|A */
                             public $x = null;
-                            /** @var null|\Bar\Baz\B */
+                            /** @var null|B */
                             public $y = null;
+                            /** @var null|A|B */
+                            public $z = null;
                         }
                     }',
                 [

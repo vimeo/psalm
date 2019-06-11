@@ -1037,7 +1037,7 @@ class ClassLikes
 
             if (isset($uses_flipped_replaceable[$old_fq_class_name])) {
                 $alias = $uses_flipped_replaceable[$old_fq_class_name];
-                unset($uses_flipped_replaceable[$old_fq_class_name]);
+                unset($uses_flipped[$old_fq_class_name]);
                 $old_class_name_parts = explode('\\', $old_fq_class_name);
                 $old_class_name = end($old_class_name_parts);
                 if (strtolower($old_class_name) === strtolower($alias)) {
@@ -1136,7 +1136,42 @@ class ClassLikes
         }
 
         // if we're outside a moved class, but we're changing all references to a class
-        if (!$moved_type) {
+        if (!$moved_type && $codebase->class_transforms) {
+            $uses_flipped = $source->getAliasedClassesFlipped();
+            $uses_flipped_replaceable = $source->getAliasedClassesFlippedReplaceable();
+
+            $migrated_source_fqcln = $calling_fq_class_name;
+
+            if ($calling_fq_class_name
+                && isset($codebase->class_transforms[strtolower($calling_fq_class_name)])
+            ) {
+                $migrated_source_fqcln = $codebase->class_transforms[strtolower($calling_fq_class_name)];
+            }
+
+            $source_namespace = $source->getNamespace();
+
+            if ($migrated_source_fqcln && $calling_fq_class_name !== $migrated_source_fqcln) {
+                $new_source_parts = explode('\\', $migrated_source_fqcln);
+                array_pop($new_source_parts);
+                $source_namespace = implode('\\', $new_source_parts);
+            }
+
+            foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
+                if (isset($uses_flipped_replaceable[$old_fq_class_name])) {
+                    $alias = $uses_flipped_replaceable[$old_fq_class_name];
+                    unset($uses_flipped[$old_fq_class_name]);
+                    $old_class_name_parts = explode('\\', $old_fq_class_name);
+                    $old_class_name = end($old_class_name_parts);
+                    if (strtolower($old_class_name) === strtolower($alias)) {
+                        $new_class_name_parts = explode('\\', $new_fq_class_name);
+                        $new_class_name = end($new_class_name_parts);
+                        $uses_flipped[strtolower($new_fq_class_name)] = $new_class_name;
+                    } else {
+                        $uses_flipped[strtolower($new_fq_class_name)] = $alias;
+                    }
+                }
+            }
+
             foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
                 if ($type->containsClassLike($old_fq_class_name)) {
                     $type = clone $type;
@@ -1146,39 +1181,6 @@ class ClassLikes
                     $bounds = $type_location->getSelectionBounds();
 
                     $file_manipulations = [];
-
-                    $uses_flipped = $source->getAliasedClassesFlipped();
-                    $uses_flipped_replaceable = $source->getAliasedClassesFlippedReplaceable();
-
-                    $migrated_source_fqcln = $calling_fq_class_name;
-
-                    if ($calling_fq_class_name
-                        && isset($codebase->class_transforms[strtolower($calling_fq_class_name)])
-                    ) {
-                        $migrated_source_fqcln = $codebase->class_transforms[strtolower($calling_fq_class_name)];
-                    }
-
-                    $source_namespace = $source->getNamespace();
-
-                    if ($migrated_source_fqcln && $calling_fq_class_name !== $migrated_source_fqcln) {
-                        $new_source_parts = explode('\\', $migrated_source_fqcln);
-                        array_pop($new_source_parts);
-                        $source_namespace = implode('\\', $new_source_parts);
-                    }
-
-                    if (isset($uses_flipped_replaceable[$old_fq_class_name])) {
-                        $alias = $uses_flipped_replaceable[$old_fq_class_name];
-                        unset($uses_flipped_replaceable[$old_fq_class_name]);
-                        $old_class_name_parts = explode('\\', $old_fq_class_name);
-                        $old_class_name = end($old_class_name_parts);
-                        if (strtolower($old_class_name) === strtolower($alias)) {
-                            $new_class_name_parts = explode('\\', $new_fq_class_name);
-                            $new_class_name = end($new_class_name_parts);
-                            $uses_flipped[strtolower($new_fq_class_name)] = $new_class_name;
-                        } else {
-                            $uses_flipped[strtolower($new_fq_class_name)] = $alias;
-                        }
-                    }
 
                     $file_manipulations[] = new \Psalm\FileManipulation(
                         $bounds[0],

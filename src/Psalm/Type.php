@@ -1020,6 +1020,10 @@ abstract class Type
             return 'self';
         }
 
+        if (isset($aliased_classes[strtolower($value)])) {
+            return $aliased_classes[strtolower($value)];
+        }
+
         if ($namespace && stripos($value, $namespace . '\\') === 0) {
             $candidate = preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
@@ -1034,10 +1038,6 @@ abstract class Type
             }
         } elseif (!$namespace && stripos($value, '\\') === false) {
             return $value;
-        }
-
-        if (isset($aliased_classes[strtolower($value)])) {
-            return $aliased_classes[strtolower($value)];
         }
 
         if (strpos($value, '\\')) {
