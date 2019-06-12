@@ -508,4 +508,42 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 32)));
         $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(15, 26)));
     }
+
+    /**
+     * @return void
+     */
+    public function testCompletionOnMethodReturnValueWhereParamIsClosure()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class Collection {
+                    public function map(callable $mapper) : self {
+                        return $this;
+                    }
+                }
+
+                function (Collection $a) {
+                    $a->map(function ($foo) {})->
+                }
+
+                function (Collection $a) {
+                    $a->map(function ($foo) {return $foo;})->
+                }
+                '
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->assertSame(['B\Collection', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 49)));
+        $this->assertSame(['B\Collection', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(14, 61)));
+    }
 }
