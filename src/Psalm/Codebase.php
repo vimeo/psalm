@@ -1170,10 +1170,6 @@ class Codebase
                     break;
                 }
             }
-
-            if ($offset - $end_pos > 3) {
-                break;
-            }
         }
 
         if (!$recent_type

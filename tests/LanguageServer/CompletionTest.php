@@ -621,8 +621,6 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->markTestSkipped();
-
         $this->assertSame(['B\Collection', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 61)));
     }
 }
