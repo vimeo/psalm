@@ -129,7 +129,7 @@ class ArrayAnalyzer
                 if ($var_id) {
                     $context->removeDescendents(
                         $var_id,
-                        $context->vars_in_scope[$var_id],
+                        $context->vars_in_scope[$var_id] ?? null,
                         null,
                         $statements_analyzer
                     );
