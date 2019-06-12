@@ -1150,10 +1150,15 @@ class Codebase
 
         $gap = null;
 
-        foreach ($type_map as $start_pos => list($end_pos, $possible_type)) {
+        foreach ($type_map as $start_pos => list($end_pos_excluding_whitespace, $possible_type)) {
             if ($offset < $start_pos) {
                 continue;
             }
+
+            $num_whitespace_bytes = preg_match('/\G\s+/', $file_contents, $matches, 0, $end_pos_excluding_whitespace)
+                ? strlen($matches[0])
+                : 0;
+            $end_pos = $end_pos_excluding_whitespace + $num_whitespace_bytes;
 
             if ($offset - $end_pos === 2 || $offset - $end_pos === 3) {
                 $candidate_gap = substr($file_contents, $end_pos, 2);
