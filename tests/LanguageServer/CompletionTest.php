@@ -354,7 +354,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
                     }
                 }
 
-                function (A $a) {
+                function foo(A $a) {
                     $a->foo()->
                 }
                 '
@@ -388,7 +388,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
                 class C {}
 
-                function (A $a, C $c) {
+                function bar(A $a, C $c) {
                     $a->foo($c->)
                 }
                 '
@@ -422,7 +422,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
                 class C {}
 
-                function (A $a, C $c) {
+                function bar(A $a, C $c) {
                     $a->foo($c)->
                 }
                 '
@@ -451,11 +451,35 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
                 class A {}
 
-                function (A $a) {
+                function bar(A $a) {
                     $a ->
-                }
+                }'
+        );
 
-                function (A $a) {
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(6, 25)));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompletionOnVariableWithWhitespaceAndReturn()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {}
+
+                function baz(A $a) {
                     $a
                         ->
                 }
@@ -466,8 +490,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(6, 25)));
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(11, 26)));
+        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(7, 26)));
     }
 
     /**
@@ -490,11 +513,40 @@ class CompletionTest extends \Psalm\Tests\TestCase
                     }
                 }
 
-                function (A $a) {
+                function bar(A $a) {
                     $a->foo() ->
                 }
+                '
+        );
 
-                function (A $a) {
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 32)));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompletionOnMethodReturnValueWithWhitespaceAndReturn()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public function foo() : self {
+                        return $this;
+                    }
+                }
+
+                function baz(A $a) {
                     $a->foo()
                         ->
                 }
@@ -505,7 +557,72 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 32)));
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(15, 26)));
+        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(11, 26)));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompletionOnMethodReturnValueWhereParamIsClosure()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class Collection {
+                    public function map(callable $mapper) : self {
+                        return $this;
+                    }
+                }
+
+                function bar(Collection $a) {
+                    $a->map(function ($foo) {})->
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->assertSame(['B\Collection', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 49)));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompletionOnMethodReturnValueWhereParamIsClosureWithStmt()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class Collection {
+                    public function map(callable $mapper) : self {
+                        return $this;
+                    }
+                }
+
+                function baz(Collection $a) {
+                    $a->map(function ($foo) {return $foo;})->
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->markTestSkipped();
+
+        $this->assertSame(['B\Collection', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 61)));
     }
 }
