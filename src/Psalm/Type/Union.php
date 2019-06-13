@@ -1603,7 +1603,11 @@ class Union
 
     public function hasLiteralValue() : bool
     {
-        return $this->literal_int_types || $this->literal_string_types || $this->literal_float_types;
+        return $this->literal_int_types
+            || $this->literal_string_types
+            || $this->literal_float_types
+            || isset($this->types['false'])
+            || isset($this->types['true']);
     }
 
     /**
