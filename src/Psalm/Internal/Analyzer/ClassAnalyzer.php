@@ -994,6 +994,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
 
         if ($method_already_analyzed && !$codebase->diff_methods) {
+            // this can happen when re-analysing a class that has been include()d inside another
             return;
         }
 
