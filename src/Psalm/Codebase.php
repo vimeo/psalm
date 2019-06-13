@@ -1206,7 +1206,7 @@ class Codebase
                             null,
                             null,
                             (string)$method_storage->visibility,
-                            null,
+                            $method_storage->cased_name,
                             $method_storage->cased_name . '()'
                         );
 
@@ -1228,7 +1228,7 @@ class Codebase
                             null,
                             null,
                             (string)$property_storage->visibility,
-                            null,
+                            $property_name,
                             ($gap === '::' ? '$' : '') . $property_name
                         );
 
@@ -1246,7 +1246,7 @@ class Codebase
                             null,
                             null,
                             null,
-                            null,
+                            $const_name,
                             $const_name
                         );
                     }
