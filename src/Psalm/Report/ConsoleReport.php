@@ -13,10 +13,6 @@ class ConsoleReport extends Report
     {
         $output = '';
         foreach ($this->issues_data as $issue_data) {
-            if (!$this->show_info && $issue_data['severity'] === Config::REPORT_INFO) {
-                continue;
-            }
-
             $output .= $this->format($issue_data) . "\n" . "\n";
         }
 
