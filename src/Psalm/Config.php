@@ -434,10 +434,9 @@ class Config
 
         if (!$config_path) {
             if ($output_format === \Psalm\Report::TYPE_CONSOLE) {
-                exit(
-                    'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
-                    PHP_EOL
-                );
+                echo 'Could not locate a config XML file in path '. $path
+                    . '. Have you run \'psalm --init\' ?' . PHP_EOL;
+                exit(1);
             }
             throw new ConfigException('Config not found for path ' . $path);
         }
