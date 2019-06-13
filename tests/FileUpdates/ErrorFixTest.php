@@ -349,6 +349,25 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                 ],
                 'error_counts' => [2, 1, 0],
             ],
+            'fixDefault' => [
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class C {
+                                /** @var string */
+                                public $foo = 5;
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class C {
+                                /** @var string */
+                                public $foo = "hello";
+                            }',
+                    ],
+                ],
+                'error_counts' => [1, 0],
+            ],
         ];
     }
 }
