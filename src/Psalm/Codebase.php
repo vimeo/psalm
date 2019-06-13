@@ -1202,7 +1202,7 @@ class Codebase
                     foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
                         $method_storage = $this->methods->getStorage($declaring_method_id);
 
-                        $instance_completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                        $completion_item = new \LanguageServerProtocol\CompletionItem(
                             (string)$method_storage,
                             \LanguageServerProtocol\CompletionItemKind::METHOD,
                             null,
@@ -1211,6 +1211,12 @@ class Codebase
                             null,
                             $method_storage->cased_name . '()'
                         );
+
+                        if ($method_storage->is_static) {
+                            $static_completion_items[] = $completion_item;
+                        } else {
+                            $instance_completion_items[] = $completion_item;
+                        }
                     }
 
                     foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
@@ -1218,7 +1224,7 @@ class Codebase
                             $declaring_class . '::$' . $property_name
                         );
 
-                        $instance_completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                        $completion_item = new \LanguageServerProtocol\CompletionItem(
                             $property_storage->getInfo() . ' $' . $property_name,
                             \LanguageServerProtocol\CompletionItemKind::PROPERTY,
                             null,
@@ -1227,6 +1233,12 @@ class Codebase
                             null,
                             ($gap === '::' ? '$' : '') . $property_name
                         );
+
+                        if ($property_storage->is_static) {
+                            $static_completion_items[] = $completion_item;
+                        } else {
+                            $instance_completion_items[] = $completion_item;
+                        }
                     }
 
                     foreach ($class_storage->class_constant_locations as $const_name => $_) {
