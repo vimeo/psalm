@@ -140,8 +140,8 @@ Options:
         If added, the language server will not respond to onChange events.
         You can also specify a line count over which Psalm will not run on-change events.
 
-    --enable-autocomplete
-        EXPERIMENTAL: Turns on autocompletion for methods and properties
+    --enable-autocomplete[=BOOL]
+        Enables or disables autocomplete on methods and properties. Default is true.
 HELP;
 
     exit;
@@ -247,9 +247,9 @@ if (isset($options['disable-on-change'])) {
     $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
 }
 
-if (isset($options['enable-autocomplete'])) {
-    $project_analyzer->provide_completion = true;
-}
+$project_analyzer->provide_completion = !isset($options['enable-autocomplete'])
+    || !is_string($options['enable-autocomplete'])
+    || strtolower($options['enable-autocomplete']) !== 'false';
 
 $config->visitComposerAutoloadFiles($project_analyzer);
 
