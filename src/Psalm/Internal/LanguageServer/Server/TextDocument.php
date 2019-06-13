@@ -98,6 +98,7 @@ class TextDocument
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
+        $this->codebase->file_provider->setOpenContents($file_path, $textDocument->text);
 
         $this->server->queueFileAnalysis($file_path, $textDocument->uri);
     }

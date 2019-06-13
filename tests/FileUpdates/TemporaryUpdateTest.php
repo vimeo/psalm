@@ -50,7 +50,8 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
     public function testErrorFix(
         array $file_stages,
         array $error_positions,
-        array $error_levels = []
+        array $error_levels = [],
+        bool $test_save = true
     ) {
         $this->project_analyzer->getCodebase()->diff_methods = true;
 
@@ -114,10 +115,38 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
             $this->assertSame($error_positions[$i + 1], $found_positions);
         }
+
+        if ($test_save) {
+            $last_file_stage = end($file_stages);
+
+            foreach ($last_file_stage as $file_path => $_) {
+                $codebase->removeTemporaryFileChanges($file_path);
+            }
+
+            foreach ($last_file_stage as $file_path => $contents) {
+                $this->file_provider->registerFile($file_path, $contents);
+            }
+
+            $codebase->reloadFiles($this->project_analyzer, array_keys($last_file_stage));
+
+            $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+            $data = \Psalm\IssueBuffer::clear();
+
+            $found_positions = array_map(
+                /** @param array{from: int} $a */
+                function (array $a) : int {
+                    return $a['from'];
+                },
+                $data
+            );
+
+            $this->assertSame($error_positions[count($file_stages)], $found_positions);
+        }
     }
 
     /**
-     * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, error_levels?:array<string, string>}>
+     * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, error_levels?:array<string, string>, test_save?:bool}>
      */
     public function providerTestErrorFix()
     {
@@ -444,6 +473,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ],
+                false,
             ],
             'noChangeJustWeirdDocblocks' => [
                 [
@@ -1155,6 +1185,64 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                     ],
                 ],
                 'error_positions' => [[152, 203], [337]],
+            ],
+            'fixNotNullProperty' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string|null
+                                 */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[230], []],
+            ],
+            'dontFixNotNullProperty' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[230], [230]],
             ],
         ];
     }

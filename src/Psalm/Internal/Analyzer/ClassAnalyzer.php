@@ -993,10 +993,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             true
         );
 
-        if ($method_already_analyzed) {
-            return;
-        }
-
         /** @var PhpParser\Node\Stmt\Class_ */
         $class = $this->class;
         $classlike_storage_provider = $codebase->classlike_storage_provider;
@@ -1036,9 +1032,22 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $uninitialized_variables[] = '$this->' . $property_name;
             $uninitialized_properties[$property_class_name . '::$' . $property_name] = $property;
+
+            if ($codebase->diff_methods && $method_already_analyzed && $property->location) {
+                list($start, $end) = $property->location->getSelectionBounds();
+
+                $existing_issues = $codebase->analyzer->getExistingIssuesForFile(
+                    $this->getFilePath(),
+                    $start,
+                    $end,
+                    'PropertyNotSetInConstructor'
+                );
+
+                IssueBuffer::addIssues($existing_issues);
+            }
         }
 
-        if (!$uninitialized_properties) {
+        if (!$uninitialized_properties || ($codebase->diff_methods && $method_already_analyzed)) {
             return;
         }
 

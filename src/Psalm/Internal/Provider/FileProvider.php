@@ -51,6 +51,19 @@ class FileProvider
     }
 
     /**
+     * @param  string  $file_path
+     * @param  string  $file_contents
+     *
+     * @return void
+     */
+    public function setOpenContents($file_path, $file_contents)
+    {
+        if (isset($this->open_files[strtolower($file_path)])) {
+            $this->open_files[strtolower($file_path)] = $file_contents;
+        }
+    }
+
+    /**
      * @param  string $file_path
      *
      * @return int

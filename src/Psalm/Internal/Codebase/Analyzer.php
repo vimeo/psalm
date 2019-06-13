@@ -1186,7 +1186,7 @@ class Analyzer
      *
      * @return array<int, IssueData>
      */
-    public function getExistingIssuesForFile($file_path, $start, $end)
+    public function getExistingIssuesForFile($file_path, $start, $end, ?string $issue_type = null)
     {
         if (!isset($this->existing_issues[$file_path])) {
             return [];
@@ -1196,7 +1196,9 @@ class Analyzer
 
         foreach ($this->existing_issues[$file_path] as $issue_data) {
             if ($issue_data['from'] >= $start && $issue_data['from'] <= $end) {
-                $applicable_issues[] = $issue_data;
+                if ($issue_type === null || $issue_type === $issue_data['type']) {
+                    $applicable_issues[] = $issue_data;
+                }
             }
         }
 
