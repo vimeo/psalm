@@ -504,6 +504,24 @@ class ProjectAnalyzer
             throw new \UnexpectedValueException('Should not be checking references');
         }
 
+        // interpret wildcards
+        foreach ($this->to_refactor as $source => $destination) {
+            if (($source_pos = strpos($source, '*'))
+                && ($destination_pos = strpos($destination, '*'))
+                && $source_pos === (strlen($source) - 1)
+                && $destination_pos === (strlen($destination) - 1)
+            ) {
+                foreach ($this->codebase->classlike_storage_provider->getAll() as $class_storage) {
+                    if (substr($class_storage->name, 0, $source_pos) === substr($source, 0, -1)) {
+                        $this->to_refactor[$class_storage->name]
+                            = substr($destination, 0, -1) . substr($class_storage->name, $source_pos);
+                    }
+                }
+
+                unset($this->to_refactor[$source]);
+            }
+        }
+
         foreach ($this->to_refactor as $source => $destination) {
             $source_parts = explode('::', $source);
             $destination_parts = explode('::', $destination);
