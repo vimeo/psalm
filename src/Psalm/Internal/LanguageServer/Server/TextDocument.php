@@ -248,6 +248,8 @@ class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        $this->server->doAnalysis();
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
