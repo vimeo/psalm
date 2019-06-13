@@ -1205,7 +1205,7 @@ class Codebase
                             \LanguageServerProtocol\CompletionItemKind::METHOD,
                             null,
                             null,
-                            null,
+                            (string)$method_storage->visibility,
                             null,
                             $method_storage->cased_name . '()'
                         );
@@ -1227,7 +1227,7 @@ class Codebase
                             \LanguageServerProtocol\CompletionItemKind::PROPERTY,
                             null,
                             null,
-                            null,
+                            (string)$property_storage->visibility,
                             null,
                             ($gap === '::' ? '$' : '') . $property_name
                         );
