@@ -993,6 +993,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             true
         );
 
+        if ($method_already_analyzed && !$codebase->diff_methods) {
+            return;
+        }
+
         /** @var PhpParser\Node\Stmt\Class_ */
         $class = $this->class;
         $classlike_storage_provider = $codebase->classlike_storage_provider;
@@ -1025,14 +1029,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            $codebase->file_reference_provider->addMethodReferenceToMissingClassMember(
-                strtolower($fq_class_name) . '::__construct',
-                strtolower($property_class_name) . '::$' . $property_name
-            );
-
-            $uninitialized_variables[] = '$this->' . $property_name;
-            $uninitialized_properties[$property_class_name . '::$' . $property_name] = $property;
-
             if ($codebase->diff_methods && $method_already_analyzed && $property->location) {
                 list($start, $end) = $property->location->getSelectionBounds();
 
@@ -1043,11 +1039,22 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     'PropertyNotSetInConstructor'
                 );
 
-                IssueBuffer::addIssues($existing_issues);
+                if ($existing_issues) {
+                    IssueBuffer::addIssues($existing_issues);
+                    continue;
+                }
             }
+
+            $codebase->file_reference_provider->addMethodReferenceToMissingClassMember(
+                strtolower($fq_class_name) . '::__construct',
+                strtolower($property_class_name) . '::$' . $property_name
+            );
+
+            $uninitialized_variables[] = '$this->' . $property_name;
+            $uninitialized_properties[$property_class_name . '::$' . $property_name] = $property;
         }
 
-        if (!$uninitialized_properties || ($codebase->diff_methods && $method_already_analyzed)) {
+        if (!$uninitialized_properties) {
             return;
         }
 
