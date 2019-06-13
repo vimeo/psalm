@@ -1192,8 +1192,6 @@ class Codebase
 
         $type = Type::parseString($type_string);
 
-        $completion_items = [];
-
         foreach ($type->getTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TNamedObject) {
                 try {
@@ -1257,19 +1255,15 @@ class Codebase
                     continue;
                 }
             }
+        }
 
-            if ($gap === '->') {
-                $completion_items = array_merge(
-                    $completion_items,
-                    $instance_completion_items
-                );
-            } else {
-                $completion_items = array_merge(
-                    $completion_items,
-                    $instance_completion_items,
-                    $static_completion_items
-                );
-            }
+        if ($gap === '->') {
+            $completion_items = $instance_completion_items;
+        } else {
+            $completion_items = array_merge(
+                $instance_completion_items,
+                $static_completion_items
+            );
         }
 
         return $completion_items;
