@@ -987,7 +987,8 @@ class ClassLikes
                 $destination_class,
                 $source->getFilePath(),
                 (int) $class_name_node->getAttribute('startFilePos'),
-                (int) $class_name_node->getAttribute('endFilePos') + 1
+                (int) $class_name_node->getAttribute('endFilePos') + 1,
+                $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_
             );
 
             return true;
@@ -1059,6 +1060,7 @@ class ClassLikes
                     $uses_flipped,
                     $migrated_source_fqcln
                 )
+                    . ($class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_ ? '::class' : '')
             );
 
             FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
@@ -1094,21 +1096,41 @@ class ClassLikes
                     $destination_class,
                     $source->getFilePath(),
                     (int) $class_name_node->getAttribute('startFilePos'),
-                    (int) $class_name_node->getAttribute('endFilePos') + 1
+                    (int) $class_name_node->getAttribute('endFilePos') + 1,
+                    $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_
                 );
             }
 
             return true;
         }
 
-        if ($force_change && $calling_fq_class_name) {
-            $this->airliftClassLikeReference(
-                $fq_class_name,
-                $calling_fq_class_name,
-                $source->getFilePath(),
-                (int) $class_name_node->getAttribute('startFilePos'),
-                (int) $class_name_node->getAttribute('endFilePos') + 1
-            );
+        if ($force_change) {
+            if ($calling_fq_class_name) {
+                $this->airliftClassLikeReference(
+                    $fq_class_name,
+                    $calling_fq_class_name,
+                    $source->getFilePath(),
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1
+                );
+            } else {
+                $source_namespace = $source->getNamespace();
+
+                $file_manipulations = [];
+
+                $file_manipulations[] = new \Psalm\FileManipulation(
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1,
+                    Type::getStringFromFQCLN(
+                        $fq_class_name,
+                        $source->getNamespace(),
+                        $source->getAliasedClassesFlipped(),
+                        null
+                    )
+                );
+
+                FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+            }
 
             return true;
         }
@@ -1247,7 +1269,8 @@ class ClassLikes
         string $destination_fq_class_name,
         string $source_file_path,
         int $source_start,
-        int $source_end
+        int $source_end,
+        bool $add_class_constant = false
     ) : void {
         $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -1268,7 +1291,7 @@ class ClassLikes
                 $destination_class_storage->aliases->namespace,
                 $destination_class_storage->aliases->uses_flipped,
                 $destination_class_storage->name
-            )
+            ) . ($add_class_constant ? '::class' : '')
         );
 
         FileManipulationBuffer::add(

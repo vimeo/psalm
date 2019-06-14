@@ -85,6 +85,8 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                     use ArrayObject;
 
+                    A::Foo();
+
                     class A {
                         /**
                          * @return ArrayObject<int, int>
@@ -104,6 +106,8 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     namespace Ns;
 
                     use ArrayObject;
+
+                    B::Fe();
 
                     class A {
 

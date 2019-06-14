@@ -322,6 +322,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                             }
 
                             echo \A::class;
+                            echo __CLASS__;
 
                             ArrayObject::foo();
 
@@ -353,6 +354,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                             }
 
+                            echo self::class;
                             echo self::class;
 
                             \ArrayObject::foo();
