@@ -142,7 +142,7 @@ class ExpressionAnalyzer
                     $stmt->inferredType = Type::getClassString();
                 } else {
                     if ($codebase->alter_code) {
-                        $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
+                        $codebase->classlikes->handleClassLikeReferenceInMigration(
                             $codebase,
                             $statements_analyzer,
                             $stmt,

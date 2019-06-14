@@ -1114,8 +1114,6 @@ class ClassLikes
                     (int) $class_name_node->getAttribute('endFilePos') + 1
                 );
             } else {
-                $source_namespace = $source->getNamespace();
-
                 $file_manipulations = [];
 
                 $file_manipulations[] = new \Psalm\FileManipulation(
