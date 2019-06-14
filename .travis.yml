@@ -42,7 +42,7 @@ install:
 
 script:
   - vendor/bin/phpunit
-  - ./psalm
+  - ./psalm --shepherd
 
 # Base test matrix (php/env)
 matrix:
