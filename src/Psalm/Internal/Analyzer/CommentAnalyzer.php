@@ -895,7 +895,7 @@ class CommentAnalyzer
     /**
      * @param ClassLikeDocblockComment $info
      * @param array<string, array<int, string>> $specials
-     * @param string $property_tag ('property', 'psalm-property', 'property-read', or 'property-write')
+     * @param 'property'|'psalm-property'|'property-read'|'property-write' $property_tag
      *
      * @throws DocblockParseException
      *
@@ -912,35 +912,38 @@ class CommentAnalyzer
         foreach ($magic_property_comments as $offset => $property) {
             $line_parts = self::splitDocLine($property);
 
-            if (count($line_parts) === 1 && $line_parts[0][0] === '$') {
-                array_unshift($line_parts, 'mixed');
+            if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
+                continue;
             }
 
             if (count($line_parts) > 1) {
-                if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
-                    && !preg_match('/\[[^\]]+\]/', $line_parts[0])
-                    && preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
-                    && !strpos($line_parts[0], '::')
+                if (preg_match('/^&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
                     && $line_parts[0][0] !== '{'
                 ) {
-                    if ($line_parts[1][0] === '&') {
-                        $line_parts[1] = substr($line_parts[1], 1);
-                    }
-
-                    if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
-                        throw new IncorrectDocblockException('Misplaced variable');
-                    }
+                    $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
                     $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
 
+                    $start = $offset + $comment->getFilePos();
+                    $end = $start + strlen($line_parts[0]);
+
+                    $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+
+                    if ($line_parts[0] === ''
+                        || ($line_parts[0][0] === '$'
+                            && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+                    ) {
+                        throw new IncorrectDocblockException('Misplaced variable');
+                    }
+
                     $info->properties[] = [
-                        'name' => $line_parts[1],
+                        'name' => trim($line_parts[1]),
                         'type' => $line_parts[0],
                         'line_number' => $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset),
                         'tag' => $property_tag,
+                        'start' => $start,
+                        'end' => $end,
                     ];
-                } else {
-                    throw new DocblockParseException('Badly-formatted @property');
                 }
             } else {
                 throw new DocblockParseException('Badly-formatted @property');
