@@ -10,7 +10,7 @@ Psalm has a refactoring tool you can access with either `vendor/bin/psalm-refact
 vendor/bin/psalm-refactor --move "Ns1\Foo" --into "Ns2"
 ```
 
-This ttells Psalm to move class `Ns1\Foo` into the namespace `Ns2`, so any reference to `Ns1\Foo` becomes `Ns2\Foo`).
+This tells Psalm to move class `Ns1\Foo` into the namespace `Ns2`, so any reference to `Ns1\Foo` becomes `Ns2\Foo`).
 
 ## Moving and renaming classes
 
