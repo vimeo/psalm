@@ -1609,6 +1609,33 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'nullableDocblockTypedPropertyNoConstructor' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private $foo;
+                    }',
+            ],
+            'nullableDocblockTypedPropertyEmptyConstructor' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private $foo;
+
+                        public function __construct() {}
+                    }',
+            ],
+            'nullableDocblockTypedPropertyUseBeforeInitialised' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private $foo;
+
+                        public function __construct() {
+                            echo $this->foo;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2459,6 +2486,63 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedInterfaceMethod'
+            ],
+            'nullableTypedPropertyNoConstructor' => [
+                '<?php
+                    class A {
+                        private ?bool $foo;
+                    }',
+                'error_message' => 'MissingConstructor'
+            ],
+            'nullableTypedPropertyEmptyConstructor' => [
+                '<?php
+                    class A {
+                        private ?bool $foo;
+
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor'
+            ],
+            'nullableTypedPropertyUseBeforeInitialised' => [
+                '<?php
+                    class A {
+                        private ?bool $foo;
+
+                        public function __construct() {
+                            echo $this->foo;
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty'
+            ],
+            'nullableTypedPropertyNoConstructorWithDocblock' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private ?bool $foo;
+                    }',
+                'error_message' => 'MissingConstructor'
+            ],
+            'nullableTypedPropertyEmptyConstructorWithDocblock' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private ?bool $foo;
+
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor'
+            ],
+            'nullableTypedPropertyUseBeforeInitialisedWithDocblock' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private ?bool $foo;
+
+                        public function __construct() {
+                            echo $this->foo;
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty'
             ],
         ];
     }

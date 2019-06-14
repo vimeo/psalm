@@ -657,7 +657,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                 if (!$property_type->isMixed() &&
                     !$property_storage->has_default &&
-                    !$property_type->isNullable()
+                    !($property_type->isNullable() && $property_type->from_docblock)
                 ) {
                     $property_type->initialized = false;
                 }
@@ -1026,7 +1026,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property->type->isMixed() || $property->type->isNullable()) {
+            if ($property->type->isMixed()
+                || ($property->type->isNullable() && $property->type->from_docblock)
+            ) {
                 continue;
             }
 
@@ -1077,8 +1079,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $constructor_storage = $constructor_class_storage->methods['__construct'];
 
                 $fake_constructor_params = array_map(
-                    /** @return PhpParser\Node\Param */
-                    function (FunctionLikeParameter $param) {
+                    function (FunctionLikeParameter $param) : PhpParser\Node\Param {
                         $fake_param = (new PhpParser\Builder\Param($param->name));
                         if ($param->signature_type) {
                             /** @psalm-suppress DeprecatedMethod */
@@ -1091,8 +1092,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
 
                 $fake_constructor_stmt_args = array_map(
-                    /** @return PhpParser\Node\Arg */
-                    function (FunctionLikeParameter $param) {
+                    function (FunctionLikeParameter $param) : PhpParser\Node\Arg {
                         return new PhpParser\Node\Arg(new PhpParser\Node\Expr\Variable($param->name));
                     },
                     $constructor_storage->params

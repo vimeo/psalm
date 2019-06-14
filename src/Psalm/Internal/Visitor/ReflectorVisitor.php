@@ -2729,11 +2729,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $signature_type = null;
         $signature_type_location = null;
 
-        /** @var null|PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType */
-        $parser_property_type = isset($stmt->type) ? $stmt->type : null;
-
-        if ($parser_property_type) {
+        if ($stmt->type) {
             $suffix = '';
+
+            $parser_property_type = $stmt->type;
 
             if ($parser_property_type instanceof PhpParser\Node\NullableType) {
                 $suffix = '|null';
