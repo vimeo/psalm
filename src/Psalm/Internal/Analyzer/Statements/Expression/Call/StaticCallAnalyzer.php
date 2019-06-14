@@ -51,8 +51,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $config = $codebase->config;
 
-        $moved_call = false;
-
         if ($stmt->class instanceof PhpParser\Node\Name) {
             $fq_class_name = null;
 
@@ -152,16 +150,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
             }
 
-            if ($codebase->alter_code && $fq_class_name) {
-                $moved_call = $codebase->classlikes->handleClassLikeReferenceInMigration(
-                    $codebase,
-                    $statements_analyzer,
-                    $stmt->class,
-                    $fq_class_name,
-                    $context->calling_method_id
-                );
-            }
-
             if ($codebase->store_node_types && $fq_class_name) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
@@ -193,6 +181,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         $has_mock = false;
+        $moved_call = false;
 
         foreach ($lhs_type->getTypes() as $lhs_type_part) {
             $intersection_types = [];
@@ -498,6 +487,16 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $context
                     ) === false) {
                         return false;
+                    }
+
+                    if ($codebase->alter_code && $fq_class_name && !$moved_call) {
+                        $codebase->classlikes->handleClassLikeReferenceInMigration(
+                            $codebase,
+                            $statements_analyzer,
+                            $stmt->class,
+                            $fq_class_name,
+                            $context->calling_method_id
+                        );
                     }
 
                     return;
@@ -837,46 +836,40 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if ($codebase->alter_code) {
-                    if (!$moved_call) {
-                        foreach ($codebase->call_transforms as $original_pattern => $transformation) {
-                            if ($declaring_method_id
-                                && strtolower($declaring_method_id) . '\((.*\))' === $original_pattern
+                    foreach ($codebase->call_transforms as $original_pattern => $transformation) {
+                        if ($declaring_method_id
+                            && strtolower($declaring_method_id) . '\((.*\))' === $original_pattern
+                        ) {
+                            if (strpos($transformation, '($1)') === strlen($transformation) - 4
+                                && $stmt->class instanceof PhpParser\Node\Name
                             ) {
-                                if (strpos($transformation, '($1)') === strlen($transformation) - 4
-                                    && $stmt->class instanceof PhpParser\Node\Name
-                                ) {
-                                    $new_method_id = substr($transformation, 0, -4);
-                                    list($old_declaring_fq_class_name) = explode('::', $declaring_method_id);
-                                    list($new_fq_class_name, $new_method_name) = explode('::', $new_method_id);
+                                $new_method_id = substr($transformation, 0, -4);
+                                list($old_declaring_fq_class_name) = explode('::', $declaring_method_id);
+                                list($new_fq_class_name, $new_method_name) = explode('::', $new_method_id);
 
-                                    $file_manipulations = [];
-
-                                    if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
-                                        $file_manipulations[] = new \Psalm\FileManipulation(
-                                            (int) $stmt->class->getAttribute('startFilePos'),
-                                            (int) $stmt->class->getAttribute('endFilePos') + 1,
-                                            Type::getStringFromFQCLN(
-                                                $new_fq_class_name,
-                                                $statements_analyzer->getNamespace(),
-                                                $statements_analyzer->getAliasedClassesFlipped(),
-                                                null
-                                            )
-                                        );
-                                    }
-
-                                    $file_manipulations[] = new \Psalm\FileManipulation(
-                                        (int) $stmt->name->getAttribute('startFilePos'),
-                                        (int) $stmt->name->getAttribute('endFilePos') + 1,
-                                        $new_method_name
-                                    );
-
-                                    FileManipulationBuffer::add(
-                                        $statements_analyzer->getFilePath(),
-                                        $file_manipulations
-                                    );
-
+                                if ($codebase->classlikes->handleClassLikeReferenceInMigration(
+                                    $codebase,
+                                    $statements_analyzer,
+                                    $stmt->class,
+                                    $new_fq_class_name,
+                                    $context->calling_method_id,
+                                    strtolower($old_declaring_fq_class_name) !== strtolower($new_fq_class_name)
+                                )) {
                                     $moved_call = true;
                                 }
+
+                                $file_manipulations = [];
+
+                                $file_manipulations[] = new \Psalm\FileManipulation(
+                                    (int) $stmt->name->getAttribute('startFilePos'),
+                                    (int) $stmt->name->getAttribute('endFilePos') + 1,
+                                    $new_method_name
+                                );
+
+                                FileManipulationBuffer::add(
+                                    $statements_analyzer->getFilePath(),
+                                    $file_manipulations
+                                );
                             }
                         }
                     }
@@ -933,6 +926,16 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 ) === false) {
                     return false;
                 }
+            }
+
+            if ($codebase->alter_code && $fq_class_name && !$moved_call) {
+                $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $stmt->class,
+                    $fq_class_name,
+                    $context->calling_method_id
+                );
             }
 
             if ($codebase->store_node_types && $method_id) {

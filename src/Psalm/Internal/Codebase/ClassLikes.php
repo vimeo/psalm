@@ -964,7 +964,8 @@ class ClassLikes
         \Psalm\StatementsSource $source,
         PhpParser\Node $class_name_node,
         string $fq_class_name,
-        ?string $calling_method_id
+        ?string $calling_method_id,
+        bool $force_change = false
     ) : bool {
         $calling_fq_class_name = $source->getFQCLN();
 
@@ -1096,6 +1097,18 @@ class ClassLikes
                     (int) $class_name_node->getAttribute('endFilePos') + 1
                 );
             }
+
+            return true;
+        }
+
+        if ($force_change && $calling_fq_class_name) {
+            $this->airliftClassLikeReference(
+                $fq_class_name,
+                $calling_fq_class_name,
+                $source->getFilePath(),
+                (int) $class_name_node->getAttribute('startFilePos'),
+                (int) $class_name_node->getAttribute('endFilePos') + 1
+            );
 
             return true;
         }

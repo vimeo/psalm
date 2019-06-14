@@ -111,8 +111,8 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                     class B {
                         public static function bar() : void {
-                            B::Fe();
-                            foreach (B::Fe() as $f) {}
+                            self::Fe();
+                            foreach (self::Fe() as $f) {}
                         }
 
                         /**
@@ -364,6 +364,87 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     'Ns\A::Foo' => 'Ns\B::Fedbca',
                 ]
             ],
+            'moveTwoStaticMethods' => [
+                '<?php
+                    namespace Ns;
+
+                    class A {
+                        const C = 5;
+
+                        /**
+                         * @param self $a1
+                         * Some description
+                         * @param ?self
+                         *        $a2
+                         * @param array<
+                         *     int,
+                         *     self
+                         * > $a3
+                         * @return self
+                         */
+                        public static function Foo(self $a1, ?self $a2, array $a3) : self {
+                            echo self::C;
+                            echo A::C;
+                            self::Bar();
+                            A::Bar();
+                            echo \Ns\B::D;
+                            new A();
+                            /** @var self */
+                            $a = new self();
+                            new B();
+
+                            return $a;
+                        }
+
+                        public static function Bar() : void {}
+                    }
+
+                    class B {
+                        const D = 5;
+                    }',
+                '<?php
+                    namespace Ns;
+
+                    class A {
+                        const C = 5;
+
+
+
+
+                    }
+
+                    class B {
+                        const D = 5;
+
+                        /**
+                         * @param A $a1
+                         * Some description
+                         * @param null|A
+                         *        $a2
+                         * @param array<int, A> $a3
+                         * @return A
+                         */
+                        public static function Fedbca(A $a1, ?A $a2, array $a3) : A {
+                            echo A::C;
+                            echo A::C;
+                            self::Blacksheep();
+                            self::Blacksheep();
+                            echo self::D;
+                            new A();
+                            /** @var A */
+                            $a = new A();
+                            new self();
+
+                            return $a;
+                        }
+
+                        public static function Blacksheep() : void {}
+                    }',
+                [
+                    'Ns\A::Foo' => 'Ns\B::Fedbca',
+                    'Ns\A::Bar' => 'Ns\B::Blacksheep',
+                ]
+            ],
             'moveInstanceMethodIntoSubclassOnly' => [
                 '<?php
                     namespace Ns;
@@ -473,7 +554,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                     class B {
                         public static function bar() : void {
-                            B::Fe();
+                            self::Fe();
                         }
 
                         /**
@@ -512,7 +593,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                     class B {
                         public static function bar() : void {
-                            B::Fe();
+                            self::Fe();
                         }
 
                         /**
@@ -525,6 +606,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                     class A {
                         const C = 5;
+
 
                     }',
                 [
@@ -565,7 +647,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     namespace Ns2\Ns3 {
                         class B {
                             public static function bar() : void {
-                                B::Fe();
+                                self::Fe();
                             }
 
                             /**
@@ -618,7 +700,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                         class B {
                             public static function bar() : void {
-                                B::Fedcba();
+                                self::Fedcba();
                             }
 
                             /**
