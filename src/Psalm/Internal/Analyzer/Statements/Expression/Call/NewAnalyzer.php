@@ -288,7 +288,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             $stmt->inferredType = new Type\Union([new TNamedObject($fq_class_name)]);
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
-                $context->check_classes &&
                 $codebase->classlikes->classExists($fq_class_name)
             ) {
                 $storage = $codebase->classlike_storage_provider->get($fq_class_name);
