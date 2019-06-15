@@ -216,7 +216,7 @@ class ConstFetchAnalyzer
                     $class_visibility
                 );
 
-                if (!isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
+                if (!isset($class_constants[$stmt->name->name])) {
                     $all_class_constants = [];
 
                     if ($fq_class_name !== $context->self) {
