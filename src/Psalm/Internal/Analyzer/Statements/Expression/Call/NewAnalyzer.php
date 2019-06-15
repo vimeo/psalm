@@ -268,7 +268,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 ) === false) {
-                    return false;
+                    return;
                 }
 
                 if ($codebase->interfaceExists($fq_class_name)) {
@@ -279,7 +279,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
                     }
 
                     return null;
@@ -303,7 +302,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        return;
                     }
                 }
 
