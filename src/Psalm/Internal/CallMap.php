@@ -13184,7 +13184,7 @@ return [
 'Spoofchecker::setAllowedLocales' => ['void', 'locale_list'=>'string'],
 'Spoofchecker::setChecks' => ['void', 'checks'=>'long'],
 'Spoofchecker::setRestrictionLevel' => ['void', 'restriction_level'=>'int'],
-'sprintf' => ['string', 'format'=>'string', '...vars='=>'string|int|float|bool'],
+'sprintf' => ['string', 'format'=>'string', '...vars='=>'scalar'],
 'SQLite3::__construct' => ['void', 'filename'=>'string', 'flags='=>'int', 'encryption_key='=>'?string'],
 'SQLite3::busyTimeout' => ['bool', 'msecs'=>'int'],
 'SQLite3::changes' => ['int'],
