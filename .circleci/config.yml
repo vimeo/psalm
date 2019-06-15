@@ -41,7 +41,7 @@ jobs:
           name: PHPUnit test
           command: php vendor/bin/phpunit --log-junit build/phpunit/phpunit.xml
       - store_test_results:
-          path: build/phpunit/phpunit.xml
+          path: build/
       - store_artifacts:
           path: build/phpunit
       - persist_to_workspace:
