@@ -100,7 +100,7 @@ class UnusedVariableTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string,error_levels?:string[]}
+     * @return array<string, array{string,error_levels?:string[]}>
      */
     public function providerValidCodeParse()
     {

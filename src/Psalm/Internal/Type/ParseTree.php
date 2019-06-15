@@ -531,6 +531,16 @@ class ParseTree
             }
         }
 
+        if ($current_leaf !== $parse_tree
+            && ($parse_tree instanceof ParseTree\GenericTree
+                || $parse_tree instanceof ParseTree\CallableTree
+                || $parse_tree instanceof ParseTree\ObjectLikeTree)
+        ) {
+            throw new TypeParseTreeException(
+                'Unterminated bracket'
+            );
+        }
+
         return $parse_tree;
     }
 

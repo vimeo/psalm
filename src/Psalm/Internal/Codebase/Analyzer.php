@@ -86,7 +86,7 @@ class Analyzer
     /**
      * Used to store counts of mixed vs non-mixed variables
      *
-     * @var array<string, array{0: int, 1: int}
+     * @var array<string, array{0: int, 1: int}>
      */
     private $mixed_counts = [];
 

@@ -43,7 +43,7 @@ class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,string,bool} */
+    /** @return iterable<int,array{string,string,bool}> */
     public function typeContainments()
     {
         yield ['int', 'int|string', true];
@@ -74,7 +74,7 @@ class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,string,bool} */
+    /** @return iterable<int,array{string,string,bool}> */
     public function typeIntersections()
     {
         yield ['int', 'int|string', true];
@@ -114,11 +114,11 @@ class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,array{string,string}} */
+    /** @return iterable<int,array{string,array{string,string}}> */
     public function iterableParams()
     {
         yield ['iterable<int,string>', ['int', 'string']];
-        yield ['iterable<int|string,bool|float', ['int|string', 'bool|float']];
+        yield ['iterable<int|string,bool|float>', ['int|string', 'bool|float']];
     }
 
     /**
