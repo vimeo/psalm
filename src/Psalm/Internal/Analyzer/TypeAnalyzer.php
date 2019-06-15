@@ -1188,7 +1188,7 @@ class TypeAnalyzer
             return false;
         }
 
-        if ($container_type_part instanceof TString
+        if (($container_type_part instanceof TString || $container_type_part instanceof TScalar)
             && $input_type_part instanceof TNamedObject
         ) {
             // check whether the object has a __toString method
