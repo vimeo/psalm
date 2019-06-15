@@ -1,0 +1,43 @@
+# Use the latest 2.1 version of CircleCI pipeline processing engine, see https://circleci.com/docs/2.0/configuration-reference/
+version: 2.1
+executors:
+  php-72:
+    docker:
+      - image: thecodingmachine/php:7.2-v2-cli
+jobs:
+  install:
+    executor: php-72
+    steps:
+      - checkout
+      - run: date "+%F" > /tmp/cachekey; cat composer.json >> /tmp/cachekey
+      - restore_cache:
+          keys:
+            - composer-v2-{{ checksum "/tmp/cachekey" }}
+            # fallback to using the latest cache if no exact match is found (See https://circleci.com/docs/2.0/caching/)
+            - composer-v2-
+      - run: composer update
+      - save_cache:
+          key: composer-v2-{{ checksum "/tmp/cachekey" }}
+          paths:
+            - vendor
+      - persist_to_workspace:
+          root: /home/docker/project/
+          paths:
+            - .
+  static-analysis:
+    executor: php-72
+    steps:
+      - attach_workspace:
+          at: /home/docker/project/
+      - run:
+          name: Static analysis
+          command: ./psalm
+
+# Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
+workflows:
+  Welcome:
+    jobs:
+      - install
+      - static-analysis:
+          requires:
+            - install
