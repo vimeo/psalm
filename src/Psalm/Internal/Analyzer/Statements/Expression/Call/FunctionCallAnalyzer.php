@@ -70,7 +70,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
         if ($stmt->name instanceof PhpParser\Node\Expr) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
-                return false;
+                return;
             }
 
             if (isset($stmt->name->inferredType)) {
@@ -161,7 +161,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $statements_analyzer
                         ) === false) {
-                            return false;
+                            return;
                         }
 
                         $invokable_return_type = $codebase->methods->getMethodReturnType(
@@ -191,7 +191,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            return;
                         }
                     } else {
                         if (IssueBuffer::accepts(
@@ -201,7 +201,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            return;
                         }
                     }
                 }
