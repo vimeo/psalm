@@ -133,7 +133,7 @@ class Pool
         $task_done_buffer = '';
 
         foreach ($task_data_iterator as $i => $task_data) {
-            $task_result = $task_closure($i, $task_data);
+            $task_result = self::runTaskClosure($task_closure, $i, $task_data);
             $task_done_message = new ForkTaskDoneMessage($task_result);
             $serialized_message = $task_done_buffer . base64_encode(serialize($task_done_message)) . PHP_EOL;
 
@@ -175,6 +175,16 @@ class Pool
 
         // Children exit after completing their work
         exit(self::EXIT_SUCCESS);
+    }
+
+    /**
+     * @param \Closure(int, mixed):mixed $task_closure
+     * @param mixed $task_data
+     * @return mixed
+     */
+    private static function runTaskClosure(\Closure $task_closure, int $i, $task_data)
+    {
+        return $task_closure($i, $task_data);
     }
 
     /**
