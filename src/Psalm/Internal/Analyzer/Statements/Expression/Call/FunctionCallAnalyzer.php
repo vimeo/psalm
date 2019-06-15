@@ -263,7 +263,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $is_maybe_root_function
                     ) === false
                     ) {
-                        return false;
+                        return;
                     }
                 }
             } else {
