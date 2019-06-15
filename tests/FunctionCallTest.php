@@ -1725,6 +1725,11 @@ class FunctionCallTest extends TestCase
                        if (count($iterableObject) === 0) {}
                     }',
             ],
+            'versionCompareAsCallable' => [
+                '<?php
+                    $a = ["1.0", "2.0"];
+                    uksort($a, "version_compare");'
+            ],
         ];
     }
 

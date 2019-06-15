@@ -297,11 +297,13 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     }
 
                     if ($in_call_map && !$is_stubbed) {
-                        $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                        $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                             $codebase,
                             $function_id,
                             $stmt->args
                         );
+
+                        $function_params = $function_callable->params;
                     }
                 }
 
@@ -344,11 +346,13 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         if ($function_exists) {
             if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
                 if (!$is_stubbed && $in_call_map) {
-                    $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                    $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                         $codebase,
                         $function_id,
                         $stmt->args
                     );
+
+                    $function_params = $function_callable->params;
                 }
             }
 

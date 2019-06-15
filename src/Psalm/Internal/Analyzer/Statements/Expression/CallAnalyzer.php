@@ -1936,42 +1936,36 @@ class CallAnalyzer
                     );
 
                     if (CallMap::inCallMap($function_id)) {
-                        $callmap_params_options = CallMap::getParamsFromCallMap($function_id);
+                        $callmap_callables = CallMap::getCallablesFromCallMap($function_id);
 
-                        if ($callmap_params_options === null) {
+                        if ($callmap_callables === null) {
                             throw new \UnexpectedValueException('This should not happen');
                         }
 
-                        $passing_callmap_params_options = [];
+                        $passing_callmap_callables = [];
 
-                        foreach ($callmap_params_options as $callmap_params_option) {
+                        foreach ($callmap_callables as $callmap_callable) {
                             $required_param_count = 0;
 
-                            foreach ($callmap_params_option as $i => $param) {
+                            assert($callmap_callable->params !== null);
+
+                            foreach ($callmap_callable->params as $i => $param) {
                                 if (!$param->is_optional && !$param->is_variadic) {
                                     $required_param_count = $i + 1;
                                 }
                             }
 
                             if ($required_param_count <= $max_closure_param_count) {
-                                $passing_callmap_params_options[] = $callmap_params_option;
+                                $passing_callmap_callables[] = $callmap_callable;
                             }
                         }
 
-                        if ($passing_callmap_params_options) {
-                            foreach ($passing_callmap_params_options as $passing_callmap_params_option) {
-                                $closure_types[] = new Type\Atomic\TFn(
-                                    'Closure',
-                                    $passing_callmap_params_option,
-                                    $function_storage->return_type ?: Type::getMixed()
-                                );
+                        if ($passing_callmap_callables) {
+                            foreach ($passing_callmap_callables as $passing_callmap_callable) {
+                                $closure_types[] = $passing_callmap_callable;
                             }
                         } else {
-                            $closure_types[] = new Type\Atomic\TFn(
-                                'Closure',
-                                $callmap_params_options[0],
-                                $function_storage->return_type ?: Type::getMixed()
-                            );
+                            $closure_types[] = $callmap_callables[0];
                         }
                     } else {
                         $closure_types[] = new Type\Atomic\TFn(
@@ -2006,9 +2000,10 @@ class CallAnalyzer
     }
 
     /**
+     * @param  Type\Atomic\TFn|Type\Atomic\TCallable $closure_type
      * @param  string   $method_id
      * @param  int      $min_closure_param_count
-     * @param  int      $max_closure_param_count [description]
+     * @param  int      $max_closure_param_count
      * @param  (TArray|null)[] $array_arg_types
      *
      * @return false|null
@@ -2016,7 +2011,7 @@ class CallAnalyzer
     private static function checkArrayFunctionClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
         $method_id,
-        Type\Atomic\TFn $closure_type,
+        Type\Atomic $closure_type,
         PhpParser\Node\Arg $closure_arg,
         $min_closure_param_count,
         $max_closure_param_count,

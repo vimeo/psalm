@@ -324,16 +324,18 @@ class Methods
             $class_storage = $this->classlike_storage_provider->get($declaring_fq_class_name);
 
             if (!$class_storage->stubbed) {
-                $function_param_options = CallMap::getParamsFromCallMap($declaring_method_id ?: $method_id);
+                $function_callables = CallMap::getCallablesFromCallMap($declaring_method_id ?: $method_id);
 
-                if ($function_param_options === null) {
+                if ($function_callables === null) {
                     throw new \UnexpectedValueException(
-                        'Not expecting $function_param_options to be null for ' . $declaring_method_id
+                        'Not expecting $function_callables to be null for ' . $declaring_method_id
                     );
                 }
 
-                if (!$source || $args === null || count($function_param_options) === 1) {
-                    return $function_param_options[0];
+                if (!$source || $args === null || count($function_callables) === 1) {
+                    assert($function_callables[0]->params !== null);
+
+                    return $function_callables[0]->params;
                 }
 
                 if ($context && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
@@ -346,11 +348,15 @@ class Methods
                     }
                 }
 
-                return FunctionLikeAnalyzer::getMatchingParamsFromCallMapOptions(
+                $matching_callable = CallMap::getMatchingCallableFromCallMapOptions(
                     $source->getCodebase(),
-                    $function_param_options,
+                    $function_callables,
                     $args
                 );
+
+                assert($matching_callable->params !== null);
+
+                return $matching_callable->params;
             }
         }
 
@@ -596,7 +602,13 @@ class Methods
                 }
             }
 
-            $return_type_candidate = CallMap::getReturnTypeFromCallMap($appearing_method_id);
+            $callmap_callables = CallMap::getCallablesFromCallMap($appearing_method_id);
+
+            if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
+                throw new \UnexpectedValueException('Shouldn’t get here');
+            }
+
+            $return_type_candidate = $callmap_callables[0]->return_type;
 
             if ($return_type_candidate->isFalsable()) {
                 $return_type_candidate->ignore_falsable_issues = true;

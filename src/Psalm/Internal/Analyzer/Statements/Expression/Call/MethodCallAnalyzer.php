@@ -1017,7 +1017,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         }
                     } else {
-                        $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
+                        $callmap_callables = CallMap::getCallablesFromCallMap($call_map_id);
+
+                        if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
+                            throw new \UnexpectedValueException('Shouldn’t get here');
+                        }
+
+                        $return_type_candidate = $callmap_callables[0]->return_type;
                     }
 
                     if ($return_type_candidate->isFalsable()) {

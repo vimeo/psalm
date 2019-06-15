@@ -1270,7 +1270,7 @@ class TypeAnalyzer
                 }
             }
 
-            $input_callable = self::getCallableFromAtomic($codebase, $input_type_part);
+            $input_callable = self::getCallableFromAtomic($codebase, $input_type_part, $container_type_part);
 
             if ($input_callable) {
                 $all_types_contain = true;
@@ -1421,8 +1421,11 @@ class TypeAnalyzer
     /**
      * @return ?TCallable
      */
-    public static function getCallableFromAtomic(Codebase $codebase, Type\Atomic $input_type_part)
-    {
+    public static function getCallableFromAtomic(
+        Codebase $codebase,
+        Type\Atomic $input_type_part,
+        ?TCallable $container_type_part = null
+    ) : ?TCallable {
         if ($input_type_part instanceof TLiteralString) {
             try {
                 $function_storage = $codebase->functions->getStorage(null, $input_type_part->value);
@@ -1434,16 +1437,24 @@ class TypeAnalyzer
                 );
             } catch (\Exception $e) {
                 if (CallMap::inCallMap($input_type_part->value)) {
-                    $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                    $args = [];
+
+                    if ($container_type_part && $container_type_part->params) {
+                        foreach ($container_type_part->params as $i => $param) {
+                            $arg = new \PhpParser\Node\Arg(
+                                new \PhpParser\Node\Expr\Variable('_' . $i)
+                            );
+
+                            $arg->value->inferredType = $param->type;
+
+                            $args[] = $arg;
+                        }
+                    }
+
+                    return \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                         $codebase,
                         $input_type_part->value,
-                        []
-                    );
-
-                    return new TCallable(
-                        'callable',
-                        $function_params,
-                        CallMap::getReturnTypeFromCallMap($input_type_part->value)
+                        $args
                     );
                 }
             }

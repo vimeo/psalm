@@ -698,11 +698,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         string $function_id,
         PhpParser\Node\Expr\FuncCall $node
     ) {
-        $function_params = CallMap::getParamsFromCallMap($function_id);
+        $callables = CallMap::getCallablesFromCallMap($function_id);
 
-        if ($function_params) {
-            foreach ($function_params as $function_param_group) {
-                foreach ($function_param_group as $function_param) {
+        if ($callables) {
+            foreach ($callables as $callable) {
+                assert($callable->params !== null);
+
+                foreach ($callable->params as $function_param) {
                     if ($function_param->type) {
                         $function_param->type->queueClassLikesForScanning(
                             $this->codebase,
@@ -710,12 +712,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         );
                     }
                 }
+
+                if ($callable->return_type && !$callable->return_type->hasMixed()) {
+                    $callable->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+                }
             }
         }
-
-        $return_type = CallMap::getReturnTypeFromCallMap($function_id);
-
-        $return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
 
         if ($function_id === 'define') {
             $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
