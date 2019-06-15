@@ -107,6 +107,16 @@ class A {
 echo A::FOO;
 ```
 
+### DeprecatedFunction
+
+Emitted when calling a deprecated function:
+
+```php
+/** @deprecated */
+function foo() : void {}
+foo();
+```
+
 ### DeprecatedInterface
 
 Emitted when referring to a deprecated interface

@@ -11,6 +11,7 @@ use Psalm\Internal\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\InvalidFunctionCall;
@@ -597,6 +598,19 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     },
                     $function_storage->if_false_assertions
                 );
+            }
+
+            if ($function_storage->deprecated && $function_id) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedFunction(
+                        'The function ' . $function_id . ' has been marked as deprecated',
+                        $code_location,
+                        $function_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // continue
+                }
             }
         }
 
