@@ -32,6 +32,75 @@ jobs:
       - run:
           name: Static analysis
           command: ./psalm
+  test:
+    executor: php-72
+    steps:
+      - attach_workspace:
+            at: /home/docker/project/
+      - run:
+          name: PHPUnit test
+          command: php vendor/bin/phpunit --log-junit build/phpunit/phpunit.xml
+      - store_test_results:
+          path: build/phpunit/phpunit.xml
+      - store_artifacts:
+          path: build/phpunit
+      - persist_to_workspace:
+          root: /home/docker/project/
+          paths:
+            - .
+  coverage:
+    executor: php-72
+    steps:
+      - attach_workspace:
+          at: /home/docker/project/
+      - run:
+          name: PHPUnit test with coverage
+          command: php -dextension=pcov.so vendor/bin/phpunit --log-junit build/phpunit/phpunit.xml --coverage-xml build/phpunit/coverage-xml --coverage-html build/phpunit/coverage-html
+      - store_artifacts:
+          path: build/phpunit
+      - persist_to_workspace:
+          root: /home/docker/project/
+          paths:
+            - .
+  mutation:
+    executor: php-72
+    steps:
+      - attach_workspace:
+            at: /home/docker/project/
+      - run:
+          name: Install infection
+          command: composer global require infection/infection
+      - run:
+          name: Mutation coverage testing
+          command: php -d memory_limit=4G ~/.composer/vendor/bin/infection --coverage=build/phpunit
+  phar-build:
+    executor: php-72
+    steps:
+      - attach_workspace:
+          at: /home/docker/project/
+      - run:
+          name: Build Phar file
+          command: bin/build-phar.sh
+      - run:
+          name: Smoke test Phar file
+          command: build/psalm.phar --version
+      - store_artifacts:
+          path: build/psalm.phar
+      - persist_to_workspace:
+          root: /home/docker/project/
+          paths:
+            - build/psalm.phar
+  test-with-real-projects:
+    executor: php-72
+    steps:
+      - checkout # used here just for the side effect of loading the github public ssh key so we can clone other stuff
+      - attach_workspace:
+          at: /home/docker/project/
+      - run:
+          name: Analyse PHPUnit
+          command: bin/test-with-real-projects.sh
+      - store_artifacts:
+          path: build/psalm.phar
 
 # Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
 workflows:
@@ -41,3 +110,18 @@ workflows:
       - static-analysis:
           requires:
             - install
+      - test:
+          requires:
+            - static-analysis
+      - coverage:
+          requires:
+            - test
+      - mutation:
+          requires:
+            - coverage
+      - phar-build:
+          requires:
+            - test
+      - test-with-real-projects:
+          requires:
+            - phar-build
