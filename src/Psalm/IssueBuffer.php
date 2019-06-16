@@ -46,7 +46,7 @@ class IssueBuffer
 
     /**
      * @param   CodeIssue $e
-     * @param   array     $suppressed_issues
+     * @param   string[]  $suppressed_issues
      *
      * @return  bool
      */
@@ -61,7 +61,7 @@ class IssueBuffer
 
     /**
      * @param   CodeIssue $e
-     * @param   array     $suppressed_issues
+     * @param   string[]  $suppressed_issues
      *
      * @return  bool
      */

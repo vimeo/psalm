@@ -512,7 +512,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
      * @param  string|null      $calling_context
      * @param  SourceAnalyzer   $source
      * @param  CodeLocation     $code_location
-     * @param  array            $suppressed_issues
+     * @param  string[]         $suppressed_issues
      * @param  bool             $emit_issues
      *
      * @return bool|null
