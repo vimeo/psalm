@@ -62,7 +62,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                          * @return string
                          */
                         function ($name, Union $type) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type;
+                            return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
                         },
                         array_keys($this->properties),
                         $this->properties
@@ -85,7 +85,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                          * @return string
                          */
                         function ($name, Union $type) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId();
+                            return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
                         },
                         array_keys($this->properties),
                         $this->properties
@@ -114,7 +114,7 @@ class ObjectLike extends \Psalm\Type\Atomic
         }
 
         /** @psalm-suppress MixedOperand */
-        return static::KEY . '{ ' .
+        return static::KEY . '{' .
                 implode(
                     ', ',
                     array_map(
@@ -144,7 +144,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                         $this->properties
                     )
                 ) .
-                ' }';
+                '}';
     }
 
     /**
