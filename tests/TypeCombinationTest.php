@@ -323,31 +323,31 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineObjectType1' => [
-                'array{a?:int, b?:string}',
+                'array{a?: int, b?: string}',
                 [
-                    'array{a:int}',
-                    'array{b:string}',
+                    'array{a: int}',
+                    'array{b: string}',
                 ],
             ],
             'combineObjectType2' => [
-                'array{a:int|string, b?:string}',
+                'array{a: int|string, b?: string}',
                 [
-                    'array{a:int}',
-                    'array{a:string,b:string}',
+                    'array{a: int}',
+                    'array{a: string,b: string}',
                 ],
             ],
             'combineObjectTypeWithIntKeyedArray' => [
                 'array<int|string, string|int>',
                 [
-                    'array{a:int}',
+                    'array{a: int}',
                     'array<int, string>',
                 ],
             ],
             'combineNestedObjectTypeWithObjectLikeIntKeyedArray' => [
-                'array{a:array<int|string, string|int>}',
+                'array{a: array<int|string, string|int>}',
                 [
-                    'array{a:array{a:int}}',
-                    'array{a:array<int, string>}',
+                    'array{a: array{a: int}}',
+                    'array{a: array<int, string>}',
                 ],
             ],
             'combineIntKeyedObjectTypeWithNestedIntKeyedArray' => [
@@ -360,22 +360,22 @@ class TypeCombinationTest extends TestCase
             'combineNestedObjectTypeWithNestedIntKeyedArray' => [
                 'array<int|string, array<int|string, string|int>>',
                 [
-                    'array{a:array{a:int}}',
+                    'array{a: array{a: int}}',
                     'array<int, array<int, string>>',
                 ],
             ],
             'combinePossiblyUndefinedKeys' => [
-                'array{a:bool, b?:mixed, d?:mixed}',
+                'array{a: bool, b?: mixed, d?: mixed}',
                 [
-                    'array{a:false, b:mixed}',
-                    'array{a:true, d:mixed}',
-                    'array{a:true, d:mixed}',
+                    'array{a: false, b: mixed}',
+                    'array{a: true, d: mixed}',
+                    'array{a: true, d: mixed}',
                 ],
             ],
             'combinePossiblyUndefinedKeysAndString' => [
-                'array{a:string, b?:int}|string',
+                'array{a: string, b?: int}|string',
                 [
-                    'array{a:string, b?:int}',
+                    'array{a: string, b?: int}',
                     'string',
                 ],
             ],
@@ -425,7 +425,7 @@ class TypeCombinationTest extends TestCase
                 'array<string, int>',
                 [
                     'array<"a"|"b"|"c", 1|2|3>',
-                    'array{a:1|2, b:2|3, c:1|3}',
+                    'array{a: 1|2, b: 2|3, c: 1|3}',
                 ],
             ],
         ];

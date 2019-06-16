@@ -175,12 +175,12 @@ class CallableTest extends TestCase
                     $e = array_map([$a_instance, "bar"], ["one", "two"]);
                     $f = array_map("baz", ["one", "two"]);',
                 'assertions' => [
-                    '$a' => 'array{0:string, 1:string}',
-                    '$b' => 'array{0:string, 1:string}',
-                    '$c' => 'array{0:string, 1:string}',
-                    '$d' => 'array{0:string, 1:string}',
-                    '$e' => 'array{0:string, 1:string}',
-                    '$f' => 'array{0:string, 1:string}',
+                    '$a' => 'array{0: string, 1: string}',
+                    '$b' => 'array{0: string, 1: string}',
+                    '$c' => 'array{0: string, 1: string}',
+                    '$d' => 'array{0: string, 1: string}',
+                    '$e' => 'array{0: string, 1: string}',
+                    '$f' => 'array{0: string, 1: string}',
                 ],
             ],
             'arrayMapClosureVar' => [
@@ -188,7 +188,7 @@ class CallableTest extends TestCase
                     $mirror = function(int $i) : int { return $i; };
                     $a = array_map($mirror, [1, 2, 3]);',
                 'assertions' => [
-                    '$a' => 'array{0:int, 1:int, 2:int}',
+                    '$a' => 'array{0: int, 1: int, 2: int}',
                 ],
             ],
             'arrayCallableMethod' => [

@@ -223,7 +223,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    '$d' => 'array{0:string, 1:string, 2:string, 3:int, 4:int, 5:int}',
+                    '$d' => 'array{0: string, 1: string, 2: string, 3: int, 4: int, 5: int}',
                 ],
             ],
             'arrayReverseDontPreserveKey' => [
@@ -579,7 +579,7 @@ class FunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{hi:int, bye:int}',
+                    '$a3' => 'array{hi: int, bye: int}',
                 ],
             ],
             'arrayRand' => [
@@ -591,10 +591,10 @@ class FunctionCallTest extends TestCase
                     $e = array_rand($more_vars);',
 
                 'assertions' => [
-                    '$vars' => 'array{x:string, y:string}',
+                    '$vars' => 'array{x: string, y: string}',
                     '$c' => 'string',
                     '$d' => 'string',
-                    '$more_vars' => 'array{0:string, 1:string}',
+                    '$more_vars' => 'array{0: string, 1: string}',
                     '$e' => 'int',
                 ],
             ],
@@ -608,7 +608,7 @@ class FunctionCallTest extends TestCase
                     $f = array_rand($vars, $b);',
 
                 'assertions' => [
-                    '$vars' => 'array{x:string, y:string}',
+                    '$vars' => 'array{x: string, y: string}',
                     '$c' => 'string',
                     '$e' => 'array<int, string>',
                     '$f' => 'array<int, string>|string',
@@ -1216,8 +1216,8 @@ class FunctionCallTest extends TestCase
                     array_splice($d, -1, 1);',
                 'assertions' => [
                     '$a' => 'non-empty-array<int, string|int>',
-                    '$b' => 'array{0:string, 1:string, 2:string}',
-                    '$c' => 'array{0:int, 1:int, 2:int}',
+                    '$b' => 'array{0: string, 1: string, 2: string}',
+                    '$c' => 'array{0: int, 1: int, 2: int}',
                 ],
             ],
             'arraySpliceOtherType' => [
@@ -1225,7 +1225,7 @@ class FunctionCallTest extends TestCase
                     $d = [["red"], ["green"], ["blue"]];
                     array_splice($d, -1, 1, "foo");',
                 'assertions' => [
-                    '$d' => 'array<int, array{0:string}|string>',
+                    '$d' => 'array<int, array{0: string}|string>',
                 ],
             ],
             'ksortPreserveShape' => [
@@ -1589,9 +1589,9 @@ class FunctionCallTest extends TestCase
                     $d = hrtime(false);',
                 'assertions' => [
                     '$a' => 'int',
-                    '$b' => 'array{0:int, 1:int}',
-                    '$c' => 'array{0:int, 1:int}|int',
-                    '$d' => 'array{0:int, 1:int}',
+                    '$b' => 'array{0: int, 1: int}',
+                    '$c' => 'array{0: int, 1: int}|int',
+                    '$d' => 'array{0: int, 1: int}',
                 ],
             ],
             'PHP73-hrtimeCanBeFloat' => [

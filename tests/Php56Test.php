@@ -102,7 +102,7 @@ class Php56Test extends TestCase
                     $a = [[1, 2]];
                     $b = array_merge([], ...$a);',
                 'assertions' => [
-                    '$b' => 'array{0:int, 1:int}',
+                    '$b' => 'array{0: int, 1: int}',
                 ],
             ],
             'preserveTypesWhenUnpacking' => [
