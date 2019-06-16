@@ -82,7 +82,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     protected static $no_effects_hashes = [];
 
     /**
-     * @var FunctionLikeStorage $storage
+     * @var FunctionLikeStorage
      */
     protected $storage;
 

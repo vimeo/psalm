@@ -1178,7 +1178,7 @@ class Config
     }
 
     /**
-     * @var string[] $suppressed_issues
+     * @param string[] $suppressed_issues
      */
     public function getReportingLevelForIssue(CodeIssue $e, array $suppressed_issues = []) : string
     {
