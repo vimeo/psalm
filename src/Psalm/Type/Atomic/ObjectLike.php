@@ -62,7 +62,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                          * @return string
                          */
                         function ($name, Union $type) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type;
+                            return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
                         },
                         array_keys($this->properties),
                         $this->properties
@@ -85,7 +85,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                          * @return string
                          */
                         function ($name, Union $type) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId();
+                            return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
                         },
                         array_keys($this->properties),
                         $this->properties
@@ -134,7 +134,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                             $this_class,
                             $use_phpdoc_format
                         ) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->toNamespacedString(
+                            return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->toNamespacedString(
                                 $namespace,
                                 $aliased_classes,
                                 $this_class,

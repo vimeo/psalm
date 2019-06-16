@@ -173,7 +173,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0:string}
+                     * @psalm-return array{0: string}
                      */
                     function foo() {
                         return ["hello"];
@@ -191,7 +191,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0:string}
+                     * @psalm-return array{0: string}
                      */
                     function foo(): array {
                         return ["hello"];
@@ -209,7 +209,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a:string, b?:string}
+                     * @psalm-return array{a: string, b?: string}
                      */
                     function foo(): array {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
@@ -234,7 +234,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return int[]
                      *
-                     * @psalm-return array{a?:int, b?:int}
+                     * @psalm-return array{a?: int, b?: int}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -244,6 +244,48 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                         return [
                             "a" => 1,
                             "b" => 2,
+                        ];
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                true,
+            ],
+            'addMissingObjectLikeReturnTypeWithNestedArrays' => [
+                '<?php
+                    function foo() {
+                        return [
+                            "a" => 1,
+                            "b" => 2,
+                            "c" => [
+                                "a" => 1,
+                                "b" => 2,
+                                "c" => [
+                                    "a" => 1,
+                                    "b" => 2,
+                                    "c" => 3,
+                                ],
+                            ],
+                        ];
+                    }',
+                '<?php
+                    /**
+                     * @return ((int[]|int)[]|int)[]
+                     *
+                     * @psalm-return array{a: int, b: int, c: array{a: int, b: int, c: array{a: int, b: int, c: int}}}
+                     */
+                    function foo(): array {
+                        return [
+                            "a" => 1,
+                            "b" => 2,
+                            "c" => [
+                                "a" => 1,
+                                "b" => 2,
+                                "c" => [
+                                    "a" => 1,
+                                    "b" => 2,
+                                    "c" => 3,
+                                ],
+                            ],
                         ];
                     }',
                 '7.0',
@@ -267,7 +309,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a:string, b?:string}
+                     * @psalm-return array{a: string, b?: string}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -890,7 +932,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                             /**
                              * @return B\C[]
                              *
-                             * @psalm-return array{0:B\C}
+                             * @psalm-return array{0: B\C}
                              */
                             public function getArrayOfC(): array {
                                 return [new \A\B\C];
@@ -1241,7 +1283,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0:string}
+                         * @psalm-return array{0: string}
                          */
                         public function foo(): ?array {
                             return ["hello"];
@@ -1267,7 +1309,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0:string}
+                         * @psalm-return array{0: string}
                          */
                         public function foo(): array {
                             return ["hello"];
