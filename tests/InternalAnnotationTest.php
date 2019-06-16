@@ -173,6 +173,26 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'magicPropertyGetInternalImplicit' => [
+                '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             */
+                            public function __get(string $s): string {
+                              return "hello";
+                            }
+                        }
+                    }
+                    namespace B {
+                        class Bat {
+                            public function batBat() : void {
+                                echo (new \A\Foo)->foo;
+                            }
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -297,6 +317,27 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'InternalProperty',
+            ],
+            'magicPropertyGetInternalExplicit' => [
+                '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             */
+                            public function __get(string $s): string {
+                              return "hello";
+                            }
+                        }
+                    }
+                    namespace B {
+                        class Bat {
+                            public function batBat() : void {
+                                echo (new \A\Foo)->__get("foo");
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
             ],
         ];
     }

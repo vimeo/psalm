@@ -150,6 +150,41 @@ class Algebra
                 );
             }
 
+            if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_
+                && count($conditional->expr->vars) > 1
+            ) {
+                AssertionFinder::scrapeAssertions(
+                    $conditional->expr,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation
+                );
+
+                if (isset($conditional->expr->assertions)) {
+                    $assertions = $conditional->expr->assertions;
+
+                    $clauses = [];
+
+                    foreach ($assertions as $var => $anded_types) {
+                        foreach ($anded_types as $orred_types) {
+                            $clauses[] = new Clause(
+                                [$var => $orred_types],
+                                false,
+                                true,
+                                $orred_types[0][0] === '='
+                                    || $orred_types[0][0] === '~'
+                                    || (strlen($orred_types[0]) > 1
+                                        && ($orred_types[0][1] === '='
+                                            || $orred_types[0][1] === '~'))
+                            );
+                        }
+                    }
+
+                    return self::negateFormula($clauses);
+                }
+            }
+
             if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
                 $and_expr = new PhpParser\Node\Expr\BinaryOp\BooleanOr(
                     new PhpParser\Node\Expr\BooleanNot(

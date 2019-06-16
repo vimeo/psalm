@@ -51,14 +51,22 @@ class TNamedObject extends Atomic
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
+        if ($this->value === 'static') {
+            return 'static';
+        }
+
         $intersection_types = $this->getNamespacedIntersectionTypes(
             $namespace,
             $aliased_classes,
@@ -66,36 +74,12 @@ class TNamedObject extends Atomic
             $use_phpdoc_format
         );
 
-        if ($this->value === 'static') {
-            return 'static';
-        }
-
-        if ($this->value === $this_class) {
-            return 'self' . $intersection_types;
-        }
-
-        if ($namespace && stripos($this->value, $namespace . '\\') === 0) {
-            return preg_replace(
-                '/^' . preg_quote($namespace . '\\') . '/i',
-                '',
-                $this->value
-            ) . $intersection_types;
-        }
-
-        if (!$namespace && stripos($this->value, '\\') === false) {
-            return $this->value . $intersection_types;
-        }
-
-        if (isset($aliased_classes[strtolower($this->value)])) {
-            return $aliased_classes[strtolower($this->value)] . $intersection_types;
-        }
-
-        return '\\' . $this->value . $intersection_types;
+        return Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class) . $intersection_types;
     }
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  int           $php_major_version
      * @param  int           $php_minor_version

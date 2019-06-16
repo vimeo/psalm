@@ -6,6 +6,9 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider;
 use Psalm\Config;
 use Psalm\IssueBuffer;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\VoidProgress;
 
 // show all errors
 error_reporting(-1);
@@ -41,6 +44,7 @@ $valid_long_options = [
     'output-format:',
     'plugin:',
     'report:',
+    'report-show-info:',
     'root:',
     'set-baseline:',
     'show-info:',
@@ -54,7 +58,9 @@ $valid_long_options = [
     'generate-json-map:',
     'alter',
     'language-server',
+    'refactor',
     'shepherd::',
+    'no-progress',
 ];
 
 gc_collect_cycles();
@@ -75,6 +81,11 @@ if (isset($options['language-server'])) {
     exit;
 }
 
+if (isset($options['refactor'])) {
+    include 'psalm-refactor.php';
+    exit;
+}
+
 array_map(
     /**
      * @param string $arg
@@ -89,16 +100,22 @@ array_map(
                 && !in_array($arg_name . ':', $valid_long_options)
                 && !in_array($arg_name . '::', $valid_long_options)
             ) {
-                echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL
+                );
                 exit(1);
             }
         } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
 
             if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
-                echo 'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL
+                );
                 exit(1);
             }
         }
@@ -133,7 +150,7 @@ if (isset($options['config'])) {
 }
 
 if (isset($options['c']) && is_array($options['c'])) {
-    echo 'Too many config files provided' . PHP_EOL;
+    fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
     exit(1);
 }
 
@@ -198,6 +215,9 @@ Options:
         The path where to output report file. The output format is based on the file extension.
         (Currently supported format: ".json", ".xml", ".txt", ".emacs")
 
+    --report-show-info[=BOOLEAN]
+        Whether the report should include non-errors in its output (defaults to true)
+
     --clear-cache
         Clears all cache files that Psalm uses for this specific project
 
@@ -235,6 +255,9 @@ Options:
     --generate-json-map=PATH
         Generate a map of node references and types in JSON format, saved to the given path.
 
+    --no-progress
+        Disable the progress indicator
+
     --alter
         Run Psalter
 
@@ -254,7 +277,7 @@ HELP;
 }
 
 if (getcwd() === false) {
-    echo 'Cannot get current working directory' . PHP_EOL;
+    fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
     exit(1);
 }
 
@@ -268,7 +291,10 @@ if (isset($options['r']) && is_string($options['r'])) {
     $root_path = realpath($options['r']);
 
     if (!$root_path) {
-        echo 'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL;
+        fwrite(
+            STDERR,
+            'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL
+        );
         exit(1);
     }
 
@@ -305,6 +331,8 @@ if ($threads > 1) {
     $ini_handler->disableExtension('grpc');
 }
 
+$ini_handler->disableExtension('uopz');
+
 $type_map_location = null;
 
 if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
@@ -339,6 +367,7 @@ if (isset($options['i'])) {
                 && $arg !== '--no-ansi'
                 && $arg !== '-i'
                 && $arg !== '--init'
+                && strpos($arg, '--disable-extension=') !== 0
                 && strpos($arg, '--root=') !== 0
                 && strpos($arg, '--r=') !== 0;
         }
@@ -378,7 +407,7 @@ if (isset($options['i'])) {
 
 $output_format = isset($options['output-format']) && is_string($options['output-format'])
     ? $options['output-format']
-    : ProjectAnalyzer::TYPE_CONSOLE;
+    : \Psalm\Report::TYPE_CONSOLE;
 
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
@@ -396,7 +425,7 @@ $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($o
 
 if ($path_to_config === false) {
     /** @psalm-suppress InvalidCast */
-    echo 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL;
+    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
     exit(1);
 }
 
@@ -432,7 +461,7 @@ try {
         $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
     }
 } catch (Psalm\Exception\ConfigException $e) {
-    echo $e->getMessage() . PHP_EOL;
+    fwrite(STDERR, $e->getMessage() . PHP_EOL);
     exit(1);
 }
 
@@ -470,7 +499,20 @@ if (isset($options['clear-global-cache'])) {
     exit;
 }
 
+// disable progressbar on CI
+if (isset($_SERVER['TRAVIS'])
+    || isset($_SERVER['CIRCLECI'])
+    || isset($_SERVER['APPVEYOR'])
+    || isset($_SERVER['JENKINS_URL'])
+    || isset($_SERVER['SCRUTINIZER'])
+) {
+    $options['no-progress'] = true;
+}
+
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
+$progress = $debug
+    ? new DebugProgress()
+    : (isset($options['no-progress']) ? new VoidProgress() : new DefaultProgress(!$config->error_baseline, $show_info));
 
 if (isset($options['no-cache'])) {
     $providers = new Provider\Providers(
@@ -496,16 +538,27 @@ if (isset($options['no-cache'])) {
     );
 }
 
+$stdout_report_options = new \Psalm\Report\ReportOptions();
+$stdout_report_options->use_color = !array_key_exists('m', $options);
+$stdout_report_options->show_info = $show_info;
+/**
+ * @psalm-suppress PropertyTypeCoercion
+ */
+$stdout_report_options->format = $output_format;
+$stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
+
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
-    !array_key_exists('m', $options),
-    $show_info,
-    $output_format,
+    $stdout_report_options,
+    ProjectAnalyzer::getFileReportOptions(
+        isset($options['report']) && is_string($options['report']) ? [$options['report']] : [],
+        isset($options['report-show-info'])
+            ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
+            : true
+    ),
     $threads,
-    $debug,
-    isset($options['report']) && is_string($options['report']) ? $options['report'] : null,
-    !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
+    $progress
 );
 
 if (isset($options['php-version'])) {
@@ -525,13 +578,11 @@ if ($type_map_location) {
 
 $start_time = microtime(true);
 
-$config->visitComposerAutoloadFiles($project_analyzer, $debug);
+$config->visitComposerAutoloadFiles($project_analyzer, $progress);
 
 $now_time = microtime(true);
 
-if ($debug) {
-    echo 'Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n";
-}
+$progress->debug('Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n");
 
 if (array_key_exists('debug-by-line', $options)) {
     $project_analyzer->debug_lines = true;
@@ -571,11 +622,9 @@ if ($find_references_to) {
 
 if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
     if ($is_diff) {
-        if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
-            echo 'Cannot set baseline in --diff mode' . PHP_EOL;
-        }
+        fwrite(STDERR, 'Cannot set baseline in --diff mode' . PHP_EOL);
     } else {
-        echo 'Writing error baseline to file...', PHP_EOL;
+        fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
         ErrorBaseline::create(
             new \Psalm\Internal\Provider\FileProvider,
@@ -583,7 +632,7 @@ if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
             IssueBuffer::getIssuesData()
         );
 
-        echo "Baseline saved to {$options['set-baseline']}.";
+        fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
 
         /** @var string $configFile */
         $configFile = Config::locateConfigFile($path_to_config ?? $current_dir);
@@ -599,7 +648,7 @@ if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
             $endPsalmOpenTag = strpos($configFileContents, '>', (int)strpos($configFileContents, '<psalm'));
 
             if (!$endPsalmOpenTag) {
-                echo " Don't forget to set errorBaseline=\"{$options['set-baseline']}\" in your config.";
+                fwrite(STDERR, " Don't forget to set errorBaseline=\"{$options['set-baseline']}\" in your config.");
             } elseif ($configFileContents[$endPsalmOpenTag - 1] === "\n") {
                 $amendedConfigFileContents = substr_replace(
                     $configFileContents,
@@ -619,7 +668,7 @@ if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
 
         file_put_contents($configFile, $amendedConfigFileContents);
 
-        echo PHP_EOL;
+        fwrite(STDERR, PHP_EOL);
     }
 }
 
@@ -627,9 +676,7 @@ $issue_baseline = [];
 
 if (isset($options['update-baseline'])) {
     if ($is_diff) {
-        if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
-            echo 'Cannot update baseline in --diff mode' . PHP_EOL;
-        }
+        fwrite(STDERR, 'Cannot update baseline in --diff mode' . PHP_EOL);
     } else {
         $baselineFile = Config::getInstance()->error_baseline;
 
@@ -658,7 +705,8 @@ if (isset($options['update-baseline'])) {
                 echo $total_fixed_issues . ' errors fixed' . "\n";
             }
         } catch (\Psalm\Exception\ConfigException $exception) {
-            die('Could not update baseline file: ' . $exception->getMessage());
+            fwrite(STDERR, 'Could not update baseline file: ' . $exception->getMessage() . PHP_EOL);
+            exit(1);
         }
     }
 }

@@ -4,6 +4,8 @@ require_once('command_functions.php');
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
 use Psalm\IssueBuffer;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\DefaultProgress;
 
 // show all errors
 error_reporting(-1);
@@ -37,20 +39,31 @@ array_map(
         if (substr($arg, 0, 2) === '--' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
+            if ($arg_name === 'alter') {
+                // valid option for psalm, ignored by psalter
+                return;
+            }
+
             if (!in_array($arg_name, $valid_long_options)
                 && !in_array($arg_name . ':', $valid_long_options)
                 && !in_array($arg_name . '::', $valid_long_options)
             ) {
-                echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL
+                );
                 exit(1);
             }
         } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
 
             if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
-                echo 'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL
+                );
                 exit(1);
             }
         }
@@ -176,7 +189,7 @@ if ($path_to_config === false) {
 if ($path_to_config) {
     $config = Config::loadFromXMLFile($path_to_config, $current_dir);
 } else {
-    $config = Config::getConfigForPath($current_dir, $current_dir, ProjectAnalyzer::TYPE_CONSOLE);
+    $config = Config::getConfigForPath($current_dir, $current_dir, \Psalm\Report::TYPE_CONSOLE);
 }
 
 $config->setComposerClassLoader($first_autoloader);
@@ -195,14 +208,21 @@ if (array_key_exists('list-supported-issues', $options)) {
     exit();
 }
 
+$debug = array_key_exists('debug', $options);
+$progress = $debug
+    ? new DebugProgress()
+    : new DefaultProgress();
+
+$stdout_report_options = new \Psalm\Report\ReportOptions();
+$stdout_report_options->use_color = !array_key_exists('m', $options);
+
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
-    !array_key_exists('m', $options),
-    false,
-    ProjectAnalyzer::TYPE_CONSOLE,
+    $stdout_report_options,
+    [],
     $threads,
-    array_key_exists('debug', $options)
+    $progress
 );
 
 if (array_key_exists('debug-by-line', $options)) {
@@ -355,19 +375,15 @@ if ($config->find_unused_code) {
     $find_unused_code = true;
 }
 
+foreach ($keyed_issues as $issue_name => $_) {
+    // MissingParamType requires the scanning of all files to inform possible params
+    if (strpos($issue_name, 'Unused') !== false || $issue_name === 'MissingParamType' || $issue_name === 'all') {
+        $find_unused_code = true;
+    }
+}
+
 if ($find_unused_code) {
     $project_analyzer->getCodebase()->reportUnusedCode();
-} else {
-    foreach ($keyed_issues as $issue_name => $_) {
-        if (strpos($issue_name, 'Unused') !== false) {
-            die(
-                'Error: Psalm can only fix issue '
-                    . $issue_name
-                    . ' if you enable unused code detection with --find-unused-code'
-                    . PHP_EOL
-            );
-        }
-    }
 }
 
 $project_analyzer->alterCodeAfterCompletion(

@@ -21,12 +21,7 @@ class TypeParseTest extends TestCase
 
         $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
-            $providers,
-            false,
-            true,
-            \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            false
+            $providers
         );
     }
 
@@ -105,11 +100,18 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testArray()
+    public function testArrayWithClosingBracket()
     {
         $this->assertSame('array<int, int>', (string) Type::parseString('array<int, int>'));
-        $this->assertSame('array<int, string>', (string) Type::parseString('array<int, string>'));
-        $this->assertSame('array<int, static>', (string) Type::parseString('array<int, static>'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testArrayWithoutClosingBracket()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('array<int, int');
     }
 
     /**
@@ -325,6 +327,15 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testObjectLikeWithoutClosingBracket()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('array{a:int, b:string');
+    }
+
+    /**
+     * @return void
+     */
     public function testObjectWithSimpleArgs()
     {
         $this->assertSame('object{a:int, b:string}', (string) Type::parseString('object{a:int, b:string}'));
@@ -399,6 +410,15 @@ class TypeParseTest extends TestCase
             'callable(int, string):void',
             (string)Type::parseString('callable(int, string) : void')
         );
+    }
+
+    /**
+     * @return void
+     */
+    public function testCallableWithoutClosingBracket()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('callable(int, string');
     }
 
     /**

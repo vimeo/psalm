@@ -4,8 +4,10 @@ namespace Psalm\Tests;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Progress\EchoProgress;
 
 class ProjectCheckerTest extends TestCase
 {
@@ -55,7 +57,8 @@ class ProjectCheckerTest extends TestCase
                 new Provider\FileStorageInstanceCacheProvider(),
                 new Provider\ClassLikeStorageInstanceCacheProvider(),
                 new Provider\FakeFileReferenceCacheProvider()
-            )
+            ),
+            new \Psalm\Report\ReportOptions()
         );
     }
 
@@ -76,11 +79,13 @@ class ProjectCheckerTest extends TestCase
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
         $this->project_analyzer->check('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -153,7 +158,9 @@ class ProjectCheckerTest extends TestCase
             )
         );
 
-        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->assertNotNull($this->project_analyzer->stdout_report_options);
+
+        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
@@ -196,7 +203,9 @@ class ProjectCheckerTest extends TestCase
             )
         );
 
-        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->assertNotNull($this->project_analyzer->stdout_report_options);
+
+        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
@@ -260,11 +269,13 @@ class Bat
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -293,11 +304,13 @@ class Bat
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
         $this->project_analyzer->checkPaths(['tests/fixtures/DummyProject/Bar.php']);
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -326,11 +339,13 @@ class Bat
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
         $this->project_analyzer->checkFile('tests/fixtures/DummyProject/Bar.php');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 

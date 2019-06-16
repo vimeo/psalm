@@ -11,6 +11,7 @@ use Psalm\Internal\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\InvalidFunctionCall;
@@ -69,7 +70,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
         if ($stmt->name instanceof PhpParser\Node\Expr) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
-                return false;
+                return;
             }
 
             if (isset($stmt->name->inferredType)) {
@@ -103,7 +104,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $has_valid_function_call_type = false;
 
                 foreach ($stmt->name->inferredType->getTypes() as $var_type_part) {
-                    if ($var_type_part instanceof Type\Atomic\Fn || $var_type_part instanceof Type\Atomic\TCallable) {
+                    if ($var_type_part instanceof Type\Atomic\TFn || $var_type_part instanceof Type\Atomic\TCallable) {
                         $function_params = $var_type_part->params;
 
                         if (isset($stmt->inferredType) && $var_type_part->return_type) {
@@ -160,7 +161,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $statements_analyzer
                         ) === false) {
-                            return false;
+                            return;
                         }
 
                         $invokable_return_type = $codebase->methods->getMethodReturnType(
@@ -190,7 +191,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            return;
                         }
                     } else {
                         if (IssueBuffer::accepts(
@@ -200,7 +201,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            return;
                         }
                     }
                 }
@@ -262,7 +263,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $is_maybe_root_function
                     ) === false
                     ) {
-                        return false;
+                        return;
                     }
                 }
             } else {
@@ -296,11 +297,13 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     }
 
                     if ($in_call_map && !$is_stubbed) {
-                        $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                        $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                             $codebase,
                             $function_id,
                             $stmt->args
                         );
+
+                        $function_params = $function_callable->params;
                     }
                 }
 
@@ -343,11 +346,13 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         if ($function_exists) {
             if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
                 if (!$is_stubbed && $in_call_map) {
-                    $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                    $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                         $codebase,
                         $function_id,
                         $stmt->args
                     );
+
+                    $function_params = $function_callable->params;
                 }
             }
 
@@ -597,6 +602,19 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     },
                     $function_storage->if_false_assertions
                 );
+            }
+
+            if ($function_storage->deprecated && $function_id) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedFunction(
+                        'The function ' . $function_id . ' has been marked as deprecated',
+                        $code_location,
+                        $function_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // continue
+                }
             }
         }
 

@@ -515,6 +515,62 @@ class IssetTest extends TestCase
                 '<?php
                     $a = $_SESSION ?? [];',
             ],
+            'issetSeparateNegated' => [
+                '<?php
+                    function foo(?string $a, ?string $b): string {
+                        if (!isset($a) || !isset($b)) {
+                            return "";
+                        }
+                        return $a . $b;
+                    }',
+            ],
+            'issetMultipleNegated' => [
+                '<?php
+                    function foo(?string $a, ?string $b): string {
+                        if (!isset($a, $b)) {
+                            return "";
+                        }
+                        return $a . $b;
+                    }',
+            ],
+            'issetMultipleNegatedWithExtraClause' => [
+                '<?php
+                    function foo(?string $a, ?string $b): string {
+                        if (!(isset($a, $b) && rand(0, 1))) {
+                            return "";
+                        }
+                        return $a . $b;
+                    }',
+            ],
+            'issetMultipleNotNegated' => [
+                '<?php
+                    function foo(?string $a, ?string $b): string {
+                        if (isset($a, $b)) {
+                            return $a . $b;
+                        }
+
+                        return "";
+                    }',
+            ],
+            'issetNotIssetTest' => [
+                '<?php
+                    class B {
+                        /** @var string */
+                        public $c = "hello";
+                    }
+
+                    function foo(array $a, B $b, string $s): void {
+                        if ($s !== "bar" && !isset($a[$b->c])) {
+                            return;
+                        }
+
+                        if ($s !== "bar" && isset($a[$b->c])) {
+                            // do something
+                        } else {
+                            // something else
+                        }
+                    }',
+            ],
         ];
     }
 

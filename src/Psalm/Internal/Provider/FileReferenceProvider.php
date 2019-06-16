@@ -724,10 +724,22 @@ class FileReferenceProvider
      */
     public function addMethodParamUses(array $references)
     {
-        self::$method_param_uses = array_merge_recursive(
-            $references,
-            self::$method_param_uses
-        );
+        foreach ($references as $method_id => $method_param_uses) {
+            if (isset(self::$method_param_uses[$method_id])) {
+                foreach ($method_param_uses as $offset => $reference_map) {
+                    if (isset(self::$method_param_uses[$method_id][$offset])) {
+                        self::$method_param_uses[$method_id][$offset] = array_merge(
+                            self::$method_param_uses[$method_id][$offset],
+                            $reference_map
+                        );
+                    } else {
+                        self::$method_param_uses[$method_id][$offset] = $reference_map;
+                    }
+                }
+            } else {
+                self::$method_param_uses[$method_id] = $method_param_uses;
+            }
+        }
     }
 
     /**

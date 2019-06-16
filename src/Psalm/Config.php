@@ -17,6 +17,8 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Plugin\Hook;
 use Psalm\PluginRegistrationSocket;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
 use SimpleXMLElement;
 
 class Config
@@ -263,6 +265,11 @@ class Config
     public $ignored_exceptions_and_descendants_in_global_scope = [];
 
     /**
+     * @var bool
+     */
+    public $infer_property_types_from_constructor = true;
+
+    /**
      * @var array<string, bool>
      */
     public $forbidden_functions = [];
@@ -426,11 +433,10 @@ class Config
         $config_path = self::locateConfigFile($path);
 
         if (!$config_path) {
-            if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
-                exit(
-                    'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
-                    PHP_EOL
-                );
+            if ($output_format === \Psalm\Report::TYPE_CONSOLE) {
+                echo 'Could not locate a config XML file in path '. $path
+                    . '. Have you run \'psalm --init\' ?' . PHP_EOL;
+                exit(1);
             }
             throw new ConfigException('Config not found for path ' . $path);
         }
@@ -723,6 +729,11 @@ class Config
             $config->parse_sql = $attribute_text === 'true' || $attribute_text === '1';
         }
 
+        if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
+            $attribute_text = (string) $config_xml['inferPropertyTypesFromConstructor'];
+            $config->infer_property_types_from_constructor = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
         if (isset($config_xml->projectFiles)) {
             $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $base_dir, true);
         }
@@ -880,7 +891,7 @@ class Config
     /**
      * @return void
      */
-    public function setComposerClassLoader(ClassLoader $loader = null)
+    public function setComposerClassLoader(?ClassLoader $loader = null)
     {
         $this->composer_class_loader = $loader;
     }
@@ -962,10 +973,7 @@ class Config
      * Initialises all the plugins (done once the config is fully loaded)
      *
      * @return void
-     * @psalm-suppress MixedArrayAccess
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedOperand
-     * @psalm-suppress MixedArrayOffset
      * @psalm-suppress MixedTypeCoercion
      */
     public function initializePlugins(ProjectAnalyzer $project_analyzer)
@@ -978,13 +986,14 @@ class Config
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
             try {
-                if ($this->composer_class_loader) {
-                    $plugin_class_path = $this->composer_class_loader->findFile($plugin_class_name);
-
-                    if (!$plugin_class_path) {
-                        throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
-                    }
-
+                // Below will attempt to load plugins from the project directory first.
+                // Failing that, it will use registered autoload chain, which will load
+                // plugins from Psalm directory or phar file. If that fails as well, it
+                // will fall back to project autoloader. It may seem that the last step
+                // will always fail, but it's only true if project uses Composer autoloader
+                if ($this->composer_class_loader
+                    && ($plugin_class_path = $this->composer_class_loader->findFile($plugin_class_name))
+                ) {
                     /** @psalm-suppress UnresolvableInclude */
                     require_once($plugin_class_path);
                 } else {
@@ -1169,7 +1178,7 @@ class Config
     }
 
     /**
-     * @var string[] $suppressed_issues
+     * @param string[] $suppressed_issues
      */
     public function getReportingLevelForIssue(CodeIssue $e, array $suppressed_issues = []) : string
     {
@@ -1434,12 +1443,14 @@ class Config
     }
 
     /**
-     * @param bool $debug
-     *
      * @return void
      */
-    public function visitStubFiles(Codebase $codebase, $debug = false)
+    public function visitStubFiles(Codebase $codebase, Progress $progress = null)
     {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
         $codebase->register_stub_files = true;
 
         // note: don't realpath $generic_stubs_path, or phar version will fail
@@ -1468,15 +1479,11 @@ class Config
             $codebase->scanner->addFileToShallowScan($file_path);
         }
 
-        if ($debug) {
-            echo 'Registering stub files' . "\n";
-        }
+        $progress->debug('Registering stub files' . "\n");
 
         $codebase->scanFiles();
 
-        if ($debug) {
-            echo 'Finished registering stub files' . "\n";
-        }
+        $progress->debug('Finished registering stub files' . "\n");
 
         $codebase->register_stub_files = false;
     }
@@ -1546,15 +1553,17 @@ class Config
     }
 
     /**
-     * @param bool $debug
-     *
      * @return void
      *
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
-    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, $debug = false)
+    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, Progress $progress = null)
     {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
 
@@ -1610,15 +1619,11 @@ class Config
                 $codebase->scanner->addFileToDeepScan($file_path);
             }
 
-            if ($debug) {
-                echo 'Registering autoloaded files' . "\n";
-            }
+            $progress->debug('Registering autoloaded files' . "\n");
 
             $codebase->scanner->scanFiles($codebase->classlikes);
 
-            if ($debug) {
-                echo 'Finished registering autoloaded files' . "\n";
-            }
+            $progress->debug('Finished registering autoloaded files' . "\n");
 
             $codebase->register_autoload_files = false;
         }
@@ -1644,6 +1649,47 @@ class Config
         }
 
         return $this->composer_class_loader->findFile($fq_classlike_name);
+    }
+
+    public function getPotentialComposerFilePathForClassLike(string $class) : ?string
+    {
+        if (!$this->composer_class_loader) {
+            return null;
+        }
+
+        /** @var array<string, array<int, string>> */
+        $psr4_prefixes = $this->composer_class_loader->getPrefixesPsr4();
+
+        // PSR-4 lookup
+        $logicalPathPsr4 = strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
+
+        $candidate_path = null;
+
+        $maxDepth = 0;
+
+        $subPath = $class;
+        while (false !== $lastPos = strrpos($subPath, '\\')) {
+            $subPath = substr($subPath, 0, $lastPos);
+            $search = $subPath . '\\';
+            if (isset($psr4_prefixes[$search])) {
+                $depth = substr_count($search, '\\');
+                $pathEnd = DIRECTORY_SEPARATOR . substr($logicalPathPsr4, $lastPos + 1);
+
+                foreach ($psr4_prefixes[$search] as $dir) {
+                    $dir = realpath($dir);
+
+                    if ($dir
+                        && $depth > $maxDepth
+                        && $this->isInProjectDirs($dir . DIRECTORY_SEPARATOR . 'testdummy.php')
+                    ) {
+                        $maxDepth = $depth;
+                        $candidate_path = realpath($dir) . $pathEnd;
+                    }
+                }
+            }
+        }
+
+        return $candidate_path;
     }
 
     /**

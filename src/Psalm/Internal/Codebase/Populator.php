@@ -9,6 +9,7 @@ use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Progress\Progress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -31,9 +32,9 @@ class Populator
     private $file_storage_provider;
 
     /**
-     * @var bool
+     * @var Progress
      */
-    private $debug_output;
+    private $progress;
 
     /**
      * @var ClassLikes
@@ -50,21 +51,18 @@ class Populator
      */
     private $file_reference_provider;
 
-    /**
-     * @param bool $debug_output
-     */
     public function __construct(
         Config $config,
         ClassLikeStorageProvider $classlike_storage_provider,
         FileStorageProvider $file_storage_provider,
         ClassLikes $classlikes,
         FileReferenceProvider $file_reference_provider,
-        $debug_output
+        Progress $progress
     ) {
         $this->classlike_storage_provider = $classlike_storage_provider;
         $this->file_storage_provider = $file_storage_provider;
         $this->classlikes = $classlikes;
-        $this->debug_output = $debug_output;
+        $this->progress = $progress;
         $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
     }
@@ -74,21 +72,15 @@ class Populator
      */
     public function populateCodebase(\Psalm\Codebase $codebase)
     {
-        if ($this->debug_output) {
-            echo 'ClassLikeStorage is populating' . "\n";
-        }
+        $this->progress->debug('ClassLikeStorage is populating' . "\n");
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
         }
 
-        if ($this->debug_output) {
-            echo 'ClassLikeStorage is populated' . "\n";
-        }
+        $this->progress->debug('ClassLikeStorage is populated' . "\n");
 
-        if ($this->debug_output) {
-            echo 'FileStorage is populating' . "\n";
-        }
+        $this->progress->debug('FileStorage is populating' . "\n");
 
         $all_file_storage = $this->file_storage_provider->getNew();
 
@@ -175,9 +167,7 @@ class Populator
             }
         }
 
-        if ($this->debug_output) {
-            echo 'FileStorage is populated' . "\n";
-        }
+        $this->progress->debug('FileStorage is populated' . "\n");
 
         $this->classlike_storage_provider->populated();
         $this->file_storage_provider->populated();
@@ -271,9 +261,7 @@ class Populator
 
         $this->populateOverriddenMethods($storage);
 
-        if ($this->debug_output) {
-            echo 'Have populated ' . $storage->name . "\n";
-        }
+        $this->progress->debug('Have populated ' . $storage->name . "\n");
 
         $storage->populated = true;
     }
@@ -305,13 +293,13 @@ class Populator
                         && $method_storage->inheritdoc
                         && $declaring_method_storage->throws
                     ) {
-                        $method_storage->throws = $declaring_method_storage->throws;
                     }
 
                     if (count($storage->overridden_method_ids[$method_name]) === 1
                         && $method_storage->signature_return_type
                         && !$method_storage->signature_return_type->isVoid()
-                        && $method_storage->return_type === $method_storage->signature_return_type
+                        && ($method_storage->return_type === $method_storage->signature_return_type
+                            || $method_storage->inherited_return_type)
                     ) {
                         if (isset($declaring_class_storage->methods[$method_name])) {
                             $declaring_method_storage = $declaring_class_storage->methods[$method_name];
@@ -322,11 +310,13 @@ class Populator
                             ) {
                                 if ($declaring_method_storage->signature_return_type) {
                                     $method_storage->return_type = $declaring_method_storage->return_type;
+                                    $method_storage->inherited_return_type = true;
                                 } elseif (TypeAnalyzer::isSimplyContainedBy(
                                     $declaring_method_storage->return_type,
                                     $method_storage->signature_return_type
                                 )) {
                                     $method_storage->return_type = $declaring_method_storage->return_type;
+                                    $method_storage->inherited_return_type = true;
                                 }
                             }
                         }
@@ -457,9 +447,7 @@ class Populator
             );
             $parent_storage = $storage_provider->get($parent_storage_class);
         } catch (\InvalidArgumentException $e) {
-            if ($this->debug_output) {
-                echo 'Populator could not find dependency (' . __LINE__ . ")\n";
-            }
+            $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[] = $parent_storage_class;
             $parent_storage = null;
@@ -571,9 +559,7 @@ class Populator
                 );
                 $parent_interface_storage = $storage_provider->get($parent_interface_lc);
             } catch (\InvalidArgumentException $e) {
-                if ($this->debug_output) {
-                    echo 'Populator could not find dependency (' . __LINE__ . ")\n";
-                }
+                $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
                 $storage->invalid_dependencies[] = $parent_interface_lc;
                 continue;
@@ -661,9 +647,7 @@ class Populator
                 );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
             } catch (\InvalidArgumentException $e) {
-                if ($this->debug_output) {
-                    echo 'Populator could not find dependency (' . __LINE__ . ")\n";
-                }
+                $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
                 $storage->invalid_dependencies[] = $implemented_interface_lc;
                 continue;
@@ -717,6 +701,11 @@ class Populator
                         }
                     }
                 }
+            } elseif ($implemented_interface_storage->template_type_extends) {
+                $storage->template_type_extends = array_merge(
+                    $storage->template_type_extends ?: [],
+                    $implemented_interface_storage->template_type_extends
+                );
             }
 
             $extra_interfaces = array_merge($extra_interfaces, $implemented_interface_storage->parent_interfaces);
@@ -774,11 +763,12 @@ class Populator
                                     !== $interface_method_storage->signature_return_type
                             ) {
                                 $method_storage->return_type = $interface_method_storage->return_type;
+                                $method_storage->inherited_return_type = true;
                             }
                         }
                     }
                 }
-                $storage->overridden_method_ids[$method_name][] = $interface_method_ids[0];
+                $storage->overridden_method_ids[$method_name][$interface_method_ids[0]] = $interface_method_ids[0];
             } else {
                 $storage->interface_method_ids[$method_name] = $interface_method_ids;
             }
@@ -1016,10 +1006,10 @@ class Populator
                     if (isset($declaring_class_storage->methods[$method_name])
                         && $declaring_class_storage->methods[$method_name]->abstract
                     ) {
-                        $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
+                        $storage->overridden_method_ids[$method_name][$declaring_method_id] = $declaring_method_id;
                     }
                 } else {
-                    $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
+                    $storage->overridden_method_ids[$method_name][$declaring_method_id] = $declaring_method_id;
                 }
             }
 

@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
@@ -135,6 +136,7 @@ class PropertyFetchAnalyzer
                 if ($property_id
                     && $source instanceof FunctionLikeAnalyzer
                     && $source->getMethodName() === '__construct'
+                    && !$context->inside_unset
                 ) {
                     if (IssueBuffer::accepts(
                         new UninitializedProperty(
@@ -498,6 +500,10 @@ class PropertyFetchAnalyzer
                     $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
                 }
 
+                if (!in_array('InternalMethod', $suppressed_issues, true)) {
+                    $statements_analyzer->addSuppressedIssues(['InternalMethod']);
+                }
+
                 \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
                     $statements_analyzer,
                     $fake_method_call,
@@ -507,6 +513,10 @@ class PropertyFetchAnalyzer
 
                 if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
                     $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
+                }
+
+                if (!in_array('InternalMethod', $suppressed_issues, true)) {
+                    $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
                 }
 
                 $stmt->inferredType = $fake_method_call->inferredType ?? Type::getMixed();
@@ -619,6 +629,27 @@ class PropertyFetchAnalyzer
                 $property_id,
                 true
             );
+
+            if ($codebase->properties_to_rename) {
+                $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
+
+                foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
+                    if ($declaring_property_id === $original_property_id) {
+                        $file_manipulations = [
+                            new \Psalm\FileManipulation(
+                                (int) $stmt->name->getAttribute('startFilePos'),
+                                (int) $stmt->name->getAttribute('endFilePos') + 1,
+                                $new_property_name
+                            )
+                        ];
+
+                        \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                            $statements_analyzer->getFilePath(),
+                            $file_manipulations
+                        );
+                    }
+                }
+            }
 
             $declaring_class_storage = $codebase->classlike_storage_provider->get(
                 $declaring_property_class
@@ -866,6 +897,22 @@ class PropertyFetchAnalyzer
                 }
             }
 
+            if ($fq_class_name
+                && $codebase->methods_to_move
+                && $context->calling_method_id
+                && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
+            ) {
+                $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
+
+                $codebase->classlikes->airliftClassLikeReference(
+                    $fq_class_name,
+                    explode('::', $destination_method_id)[0],
+                    $statements_analyzer->getFilePath(),
+                    (int) $stmt->class->getAttribute('startFilePos'),
+                    (int) $stmt->class->getAttribute('endFilePos') + 1
+                );
+            }
+
             $stmt->class->inferredType = $fq_class_name ? new Type\Union([new TNamedObject($fq_class_name)]) : null;
         }
 
@@ -980,6 +1027,50 @@ class PropertyFetchAnalyzer
             $fq_class_name . '::$' . $prop_name,
             true
         );
+
+        $declaring_property_id = strtolower((string) $declaring_property_class) . '::$' . $prop_name;
+
+        if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
+            $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
+                $codebase,
+                $statements_analyzer,
+                $stmt->class,
+                $fq_class_name,
+                $context->calling_method_id
+            );
+
+            if (!$moved_class) {
+                foreach ($codebase->property_transforms as $original_pattern => $transformation) {
+                    if ($declaring_property_id === $original_pattern) {
+                        list($old_declaring_fq_class_name) = explode('::$', $declaring_property_id);
+                        list($new_fq_class_name, $new_property_name) = explode('::$', $transformation);
+
+                        $file_manipulations = [];
+
+                        if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
+                            $file_manipulations[] = new \Psalm\FileManipulation(
+                                (int) $stmt->class->getAttribute('startFilePos'),
+                                (int) $stmt->class->getAttribute('endFilePos') + 1,
+                                Type::getStringFromFQCLN(
+                                    $new_fq_class_name,
+                                    $statements_analyzer->getNamespace(),
+                                    $statements_analyzer->getAliasedClassesFlipped(),
+                                    null
+                                )
+                            );
+                        }
+
+                        $file_manipulations[] = new \Psalm\FileManipulation(
+                            (int) $stmt->name->getAttribute('startFilePos'),
+                            (int) $stmt->name->getAttribute('endFilePos') + 1,
+                            '$' . $new_property_name
+                        );
+
+                        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+                    }
+                }
+            }
+        }
 
         $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
         $property = $class_storage->properties[$prop_name];

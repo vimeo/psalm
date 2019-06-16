@@ -170,6 +170,16 @@ class TryAnalyzer
                     $statements_analyzer->getAliases()
                 );
 
+                if ($codebase->alter_code && $fq_catch_class) {
+                    $codebase->classlikes->handleClassLikeReferenceInMigration(
+                        $codebase,
+                        $statements_analyzer,
+                        $catch_type,
+                        $fq_catch_class,
+                        $context->calling_method_id
+                    );
+                }
+
                 if ($original_context->check_classes) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,

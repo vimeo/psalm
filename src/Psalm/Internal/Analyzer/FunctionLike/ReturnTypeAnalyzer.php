@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\CodeLocation;
@@ -631,6 +632,8 @@ class ReturnTypeAnalyzer
 
         $parent_class = null;
 
+        $classlike_storage = null;
+
         if ($context->self) {
             $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
             $parent_class = $classlike_storage->parent_class;
@@ -685,6 +688,28 @@ class ReturnTypeAnalyzer
             $context->self,
             $parent_class
         );
+
+        if ($classlike_storage && $context->self && $function->name) {
+            $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
+                $codebase,
+                $classlike_storage,
+                $context->self,
+                strtolower($function->name->name),
+                new Type\Atomic\TNamedObject($context->self),
+                '$this'
+            );
+
+            $class_template_params = $class_template_params ?: $classlike_storage->template_types;
+
+            if ($class_template_params) {
+                $generic_params = [];
+                $fleshed_out_return_type->replaceTemplateTypesWithStandins(
+                    $class_template_params,
+                    $generic_params,
+                    $codebase
+                );
+            }
+        }
 
         if (!TypeAnalyzer::isContainedBy(
             $codebase,

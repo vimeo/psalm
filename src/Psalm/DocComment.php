@@ -148,6 +148,126 @@ class DocComment
     }
 
     /**
+     * Parse a docblock comment into its parts.
+     *
+     * Taken from advanced api docmaker, which was taken from
+     * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
+     *
+     * @param  \PhpParser\Comment\Doc  $docblock
+     * @param  bool    $preserve_format
+     *
+     * @return array Array of the main comment and specials
+     * @psalm-return array{description:string, specials:array<string, array<int, string>>}
+     */
+    public static function parsePreservingLength(\PhpParser\Comment\Doc $docblock)
+    {
+        $docblock = $docblock->getText();
+
+        // Strip off comments.
+        $docblock = trim($docblock);
+
+        $docblock = preg_replace('@^/\*\*@', '', $docblock);
+        $docblock = preg_replace('@\*/$@', '', $docblock);
+
+        // Normalize multi-line @specials.
+        $lines = explode("\n", $docblock);
+
+        $special = [];
+
+        $last = false;
+        foreach ($lines as $k => $line) {
+            if (preg_match('/^[ \t]*\*?\s?@\w/i', $line)) {
+                $last = $k;
+            } elseif (preg_match('/^\s*$/', $line)) {
+                $last = false;
+            } elseif ($last !== false) {
+                $old_last_line = $lines[$last];
+                $lines[$last] = $old_last_line . "\n" . $line;
+
+                unset($lines[$k]);
+            }
+        }
+
+        $line_offset = 0;
+
+        foreach ($lines as $line) {
+            if (preg_match('/^[ \t]*\*?\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
+                /** @var array<int, array{string, int}> $matches */
+                list($full_match_info, $type_info, $data_info) = $matches;
+
+                list($full_match) = $full_match_info;
+                list($type) = $type_info;
+                list($data, $data_offset) = $data_info;
+
+                if (strpos($data, '*')) {
+                    $data = rtrim(preg_replace('/[ \t]*\*\s*$/', '', $data));
+                }
+
+                $docblock = str_replace($full_match, '', $docblock);
+
+                if (empty($special[$type])) {
+                    $special[$type] = [];
+                }
+
+                $data_offset += $line_offset;
+
+                $special[$type][$data_offset + 3] = $data;
+            }
+
+            $line_offset += strlen($line) + 1;
+        }
+
+        $docblock = str_replace("\t", '  ', $docblock);
+
+        // Smush the whole docblock to the left edge.
+        $min_indent = 80;
+        $indent = 0;
+        foreach (array_filter(explode("\n", $docblock)) as $line) {
+            for ($ii = 0; $ii < strlen($line); ++$ii) {
+                if ($line[$ii] != ' ') {
+                    break;
+                }
+                ++$indent;
+            }
+
+            $min_indent = min($indent, $min_indent);
+        }
+
+        $docblock = preg_replace('/^' . str_repeat(' ', $min_indent) . '/m', '', $docblock);
+        $docblock = rtrim($docblock);
+
+        // Trim any empty lines off the front, but leave the indent level if there
+        // is one.
+        $docblock = preg_replace('/^\s*\n/', '', $docblock);
+
+        foreach ($special as $special_key => $_) {
+            if (substr($special_key, 0, 6) === 'psalm-') {
+                $special_key = substr($special_key, 6);
+
+                if (!in_array(
+                    $special_key,
+                    [
+                        'return', 'param', 'template', 'var', 'type',
+                        'template-covariant', 'property', 'method',
+                        'assert', 'assert-if-true', 'assert-if-false', 'suppress',
+                        'ignore-nullable-return', 'override-property-visibility',
+                        'override-method-visibility', 'seal-properties', 'seal-methods',
+                        'generator-return', 'ignore-falsable-return', 'variadic',
+                        'ignore-variable-method', 'ignore-variable-property', 'internal',
+                    ]
+                )) {
+                    throw new DocblockParseException('Unrecognised annotation @psalm-' . $special_key);
+                }
+            }
+        }
+
+        return [
+            'description' => $docblock,
+            'specials' => $special,
+        ];
+    }
+
+    /**
      * @param  array{description:string,specials:array<string,array<string>>} $parsed_doc_comment
      * @param  string                                                         $left_padding
      *

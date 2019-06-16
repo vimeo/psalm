@@ -31,6 +31,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
@@ -256,7 +257,7 @@ class TypeCombination
         }
 
         if (isset($combination->named_object_types['Closure'])
-            && $combination->named_object_types['Closure'] instanceof Type\Atomic\Fn
+            && $combination->named_object_types['Closure'] instanceof Type\Atomic\TFn
             && $combination->closure_params
         ) {
             $combination->named_object_types['Closure']->params = $combination->closure_params;
@@ -606,7 +607,7 @@ class TypeCombination
             );
         }
 
-        if ($type instanceof Type\Atomic\Fn
+        if ($type instanceof Type\Atomic\TFn
             || $type instanceof Type\Atomic\TCallable
         ) {
             if ($type->params) {
@@ -902,7 +903,9 @@ class TypeCombination
                                     }
                                 }
 
-                                if ($has_non_literal_class_string || !$type instanceof TClassString) {
+                                if ($has_non_literal_class_string ||
+                                    !$type instanceof TClassString
+                                ) {
                                     $combination->value_types[$type_key] = new TString();
                                 } else {
                                     if (isset($shared_classlikes[$type->as])) {
@@ -952,6 +955,13 @@ class TypeCombination
                                 } else {
                                     $combination->value_types[$type_key] = new TClassString();
                                 }
+                            } elseif ($combination->value_types['string'] instanceof TTraitString
+                                && $type instanceof TClassString
+                            ) {
+                                $combination->value_types['trait-string'] = $combination->value_types['string'];
+                                $combination->value_types['class-string'] = $type;
+
+                                unset($combination->value_types['string']);
                             } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
                                 $combination->value_types[$type_key] = new TString();
                             }

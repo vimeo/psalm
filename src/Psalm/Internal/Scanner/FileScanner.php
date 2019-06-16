@@ -5,6 +5,8 @@ use PhpParser;
 use PhpParser\NodeTraverser;
 use Psalm\Codebase;
 use Psalm\FileSource;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Storage\FileStorage;
 use Psalm\Internal\Visitor\ReflectorVisitor;
 
@@ -42,7 +44,6 @@ class FileScanner implements FileSource
 
     /**
      * @param bool $storage_from_cache
-     * @param bool $debug_output
      *
      * @return void
      */
@@ -50,8 +51,12 @@ class FileScanner implements FileSource
         Codebase $codebase,
         FileStorage $file_storage,
         $storage_from_cache = false,
-        $debug_output = false
+        Progress $progress = null
     ) {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
         if ((!$this->will_analyze || $file_storage->deep_scan)
             && $storage_from_cache
             && !$file_storage->has_trait
@@ -63,7 +68,7 @@ class FileScanner implements FileSource
 
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
-            $debug_output
+            $progress
         );
 
         foreach ($stmts as $stmt) {
@@ -77,12 +82,10 @@ class FileScanner implements FileSource
             }
         }
 
-        if ($debug_output) {
-            if ($this->will_analyze) {
-                echo 'Deep scanning ' . $file_storage->file_path . "\n";
-            } else {
-                echo 'Scanning ' . $file_storage->file_path . "\n";
-            }
+        if ($this->will_analyze) {
+            $progress->debug('Deep scanning ' . $file_storage->file_path . "\n");
+        } else {
+            $progress->debug('Scanning ' . $file_storage->file_path . "\n");
         }
 
         $traverser = new NodeTraverser();

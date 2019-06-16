@@ -22,15 +22,16 @@ class JsonOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
+        $stdout_report_options = new \Psalm\Report\ReportOptions();
+        $stdout_report_options->format = \Psalm\Report::TYPE_JSON;
+
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),
-            false,
-            true,
-            ProjectAnalyzer::TYPE_JSON
+            $stdout_report_options
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();

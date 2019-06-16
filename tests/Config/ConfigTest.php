@@ -1310,4 +1310,58 @@ class ConfigTest extends \Psalm\Tests\TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * @return void
+     */
+    public function testGetPossiblePsr4Path()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $classloader = new \Composer\Autoload\ClassLoader();
+        $classloader->addPsr4(
+            'Psalm\\',
+            [
+                dirname(__DIR__, 2)
+                    . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR
+                    . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR
+                    . 'src' . DIRECTORY_SEPARATOR . 'Psalm'
+            ]
+        );
+
+        $classloader->addPsr4(
+            'Psalm\\Tests\\',
+            [
+                dirname(__DIR__, 2)
+                    . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR
+                    . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR
+                    . 'tests'
+            ]
+        );
+
+        $config->setComposerClassLoader($classloader);
+
+        $this->assertSame(
+            dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Psalm' . DIRECTORY_SEPARATOR . 'Foo.php',
+            $config->getPotentialComposerFilePathForClassLike("Psalm\\Foo")
+        );
+
+        $this->assertSame(
+            dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Foo.php',
+            $config->getPotentialComposerFilePathForClassLike("Psalm\\Tests\\Foo")
+        );
+    }
 }

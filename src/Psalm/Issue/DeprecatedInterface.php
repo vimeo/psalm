@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class DeprecatedInterface extends CodeIssue
+class DeprecatedInterface extends ClassIssue
 {
 }

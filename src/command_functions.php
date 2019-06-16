@@ -64,7 +64,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
                     . 'to specify a particular project to run Psalm on.';
             }
 
-            echo $error_message . PHP_EOL;
+            fwrite(STDERR, $error_message . PHP_EOL);
             exit(1);
         }
     }
@@ -88,13 +88,15 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
 
     if ($first_autoloader === null && !$in_phar) {
         if (!$autoload_files) {
-            echo 'Failed to find a valid Composer autoloader' . "\n";
+            fwrite(STDERR, 'Failed to find a valid Composer autoloader' . "\n");
         } else {
-            echo 'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n";
+            fwrite(STDERR, 'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n");
         }
 
-        echo 'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n";
-
+        fwrite(
+            STDERR,
+            'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n"
+        );
         exit(1);
     }
 
@@ -130,6 +132,44 @@ function getVendorDir($current_dir)
     }
 
     return 'vendor';
+}
+
+/**
+ * @return string[]
+ */
+function getArguments() : array
+{
+    global $argv;
+
+    if (!$argv) {
+        return [];
+    }
+
+    $filtered_input_paths = [];
+
+    for ($i = 0; $i < count($argv); ++$i) {
+        /** @var string */
+        $input_path = $argv[$i];
+
+        if (realpath($input_path) !== false) {
+            continue;
+        }
+
+        if ($input_path[0] === '-' && strlen($input_path) === 2) {
+            if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                ++$i;
+            }
+            continue;
+        }
+
+        if ($input_path[0] === '-' && $input_path[2] === '=') {
+            continue;
+        }
+
+        $filtered_input_paths[] = $input_path;
+    }
+
+    return $filtered_input_paths;
 }
 
 /**
@@ -194,19 +234,19 @@ function getPathsToCheck($f_paths)
 
         foreach ($filtered_input_paths as $path_to_check) {
             if ($path_to_check[0] === '-') {
-                echo 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL;
+                fwrite(STDERR, 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
                 exit(1);
             }
 
             if (!file_exists($path_to_check)) {
-                echo 'Cannot locate ' . $path_to_check . PHP_EOL;
+                fwrite(STDERR, 'Cannot locate ' . $path_to_check . PHP_EOL);
                 exit(1);
             }
 
             $path_to_check = realpath($path_to_check);
 
             if (!$path_to_check) {
-                echo 'Error getting realpath for file' . PHP_EOL;
+                fwrite(STDERR, 'Error getting realpath for file' . PHP_EOL);
                 exit(1);
             }
 
@@ -219,33 +259,4 @@ function getPathsToCheck($f_paths)
     }
 
     return $paths_to_check;
-}
-
-/**
- * @param string $path
- *
- * @return bool
- */
-function isAbsolutePath($path)
-{
-    // Optional wrapper(s).
-    $regex = '%^(?<wrappers>(?:[[:print:]]{2,}://)*)';
-
-    // Optional root prefix.
-    $regex .= '(?<root>(?:[[:alpha:]]:/|/)?)';
-
-    // Actual path.
-    $regex .= '(?<path>(?:[[:print:]]*))$%';
-
-    $parts = [];
-
-    if (!preg_match($regex, $path, $parts)) {
-        throw new InvalidArgumentException(sprintf('Path is not valid, "%s" given.', $path));
-    }
-
-    if ('' !== $parts['root']) {
-        return true;
-    }
-
-    return false;
 }

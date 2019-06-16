@@ -1870,6 +1870,126 @@ class TemplateExtendsTest extends TestCase
                     '$b' => 'string',
                 ]
             ],
+            'templateExtendsWithNewlineAfter' => [
+                '<?php
+                    namespace Ns;
+
+                    /**
+                     * @template DATA as array<string, scalar|array|object|null>
+                     */
+                    abstract class Foo {}
+
+                    /**
+                     * @template-extends Foo<array{id:int}>
+                     *
+                     * @internal
+                     */
+                    class Bar extends Foo {}'
+            ],
+            'implementsArrayReturnTypeWithTemplate' => [
+                '<?php
+                    /** @template T as mixed */
+                    interface I {
+                        /**
+                         * @param  T $v
+                         * @return array<string,T>
+                         */
+                        public function indexById($v): array;
+                    }
+
+                    /** @template-implements I<int> */
+                    class C implements I {
+                        public function indexById($v): array {
+                          return [(string)$v => $v];
+                        }
+                    }',
+            ],
+            'keyOfArrayInheritance' => [
+                '<?php
+                    /**
+                     * @template DATA as array<string, int|string>
+                     */
+                    abstract class Foo {
+                        /**
+                         * @var DATA
+                         */
+                        protected $data;
+
+                        /**
+                         * @param DATA $data
+                         */
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+
+                        /**
+                         * @return key-of<DATA>
+                         */
+                        abstract public static function getIdProperty() : string;
+                    }
+
+                    /**
+                     * @template-extends Foo<array{id:int, name:string}>
+                     */
+                    class FooChild extends Foo {
+                        public static function getIdProperty() : string {
+                            return "id";
+                        }
+                    }'
+            ],
+            'interfaceParentExtends' => [
+                '<?php
+                    /** @template T */
+                    interface Foo {
+                        /** @return T */
+                        public function getValue();
+                    }
+
+                    /** @extends Foo<int> */
+                    interface FooChild extends Foo {}
+
+                    class F implements FooChild {
+                        public function getValue() {
+                            return 10;
+                        }
+                    }
+
+                    echo (new F())->getValue();'
+            ],
+            'classParentExtends' => [
+                '<?php
+                    /** @template T */
+                    abstract class Foo {
+                        /** @return T */
+                        abstract public function getValue();
+                    }
+
+                    /** @extends Foo<int> */
+                    abstract class FooChild extends Foo {}
+
+                    class F extends FooChild {
+                        public function getValue() {
+                            return 10;
+                        }
+                    }
+
+                    echo (new F())->getValue();'
+            ],
+            'lessSpecificNonGenericReturnType' => [
+                '<?php
+                    /**
+                     * @template-implements IteratorAggregate<int, int>
+                     */
+                    class Bar implements IteratorAggregate {
+                        public function getIterator() : Traversable {
+                            yield from range(0, 100);
+                        }
+                    }
+
+                    $bat = new Bar();
+
+                    foreach ($bat as $num) {}',
+            ],
         ];
     }
 

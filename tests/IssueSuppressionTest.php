@@ -79,6 +79,25 @@ class IssueSuppressionTest extends TestCase
                         );
                     }',
             ],
+            'suppressWithNewlineAfterComment' => [
+                '<?php
+                    function foo() : void {
+                        /**
+                         * @psalm-suppress TooManyArguments
+                         * here
+                         */
+                        strlen("a", "b");
+                    }'
+            ],
+            'suppressUndefinedFunction' => [
+                '<?php
+                    function verify_return_type(): DateTime {
+                        /** @psalm-suppress UndefinedFunction */
+                        unknown_function_call();
+
+                        return new DateTime();
+                    }',
+            ],
         ];
     }
 
@@ -109,6 +128,12 @@ class IssueSuppressionTest extends TestCase
                     new B();
                     new C();',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - Class or interface C',
+            ],
+            'missingParamTypeShouldntPreventUndefinedClassError' => [
+                '<?php
+                    /** @psalm-suppress MissingParamType */
+                    function foo($s = Foo::BAR) : void {}',
+                'error_message' => 'UndefinedClass',
             ],
         ];
     }

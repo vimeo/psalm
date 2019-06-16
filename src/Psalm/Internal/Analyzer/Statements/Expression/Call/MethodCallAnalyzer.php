@@ -1017,7 +1017,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         }
                     } else {
-                        $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
+                        $callmap_callables = CallMap::getCallablesFromCallMap($call_map_id);
+
+                        if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
+                            throw new \UnexpectedValueException('Shouldn’t get here');
+                        }
+
+                        $return_type_candidate = $callmap_callables[0]->return_type;
                     }
 
                     if ($return_type_candidate->isFalsable()) {
@@ -1175,6 +1181,27 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         }
 
+        if ($codebase->methods_to_rename) {
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            foreach ($codebase->methods_to_rename as $original_method_id => $new_method_name) {
+                if ($declaring_method_id && strtolower($declaring_method_id) === $original_method_id) {
+                    $file_manipulations = [
+                        new \Psalm\FileManipulation(
+                            (int) $stmt->name->getAttribute('startFilePos'),
+                            (int) $stmt->name->getAttribute('endFilePos') + 1,
+                            $new_method_name
+                        )
+                    ];
+
+                    \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                        $statements_analyzer->getFilePath(),
+                        $file_manipulations
+                    );
+                }
+            }
+        }
+
         if ($config->after_method_checks) {
             $file_manipulations = [];
 
@@ -1246,7 +1273,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && $method_name
             && !empty($class_storage->overridden_method_ids[$method_name])
             && isset($class_storage->methods[$method_name])
-            && !isset($class_storage->methods[$method_name]->return_type)
+            && (!isset($class_storage->methods[$method_name]->return_type)
+                || $class_storage->methods[$method_name]->inherited_return_type)
         ) {
             foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);

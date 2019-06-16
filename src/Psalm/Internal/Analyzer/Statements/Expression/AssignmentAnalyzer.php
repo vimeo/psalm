@@ -35,8 +35,7 @@ class AssignmentAnalyzer
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
      * @param  Type\Union|null          $assign_value_type
      * @param  Context                  $context
-     * @param  string                   $doc_comment
-     * @param  int|null                 $came_from_line_number
+     * @param  ?PhpParser\Comment\Doc   $doc_comment
      *
      * @return false|Type\Union
      */
@@ -46,8 +45,7 @@ class AssignmentAnalyzer
         $assign_value,
         $assign_value_type,
         Context $context,
-        $doc_comment,
-        $came_from_line_number = null
+        ?PhpParser\Comment\Doc $doc_comment
     ) {
         $var_id = ExpressionAnalyzer::getVarId(
             $assign_var,
@@ -82,8 +80,6 @@ class AssignmentAnalyzer
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getAliases(),
                     $template_type_map,
-                    $came_from_line_number,
-                    null,
                     $file_storage->type_aliases
                 );
             } catch (IncorrectDocblockException $e) {
@@ -123,6 +119,27 @@ class AssignmentAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                         $statements_analyzer->getSuppressedIssues()
                     );
+
+                    if ($codebase->alter_code
+                        && $var_comment->type_start
+                        && $var_comment->type_end
+                        && $var_comment->line_number
+                    ) {
+                        $type_location = new CodeLocation\DocblockTypeLocation(
+                            $statements_analyzer,
+                            $var_comment->type_start,
+                            $var_comment->type_end,
+                            $var_comment->line_number
+                        );
+
+                        $codebase->classlikes->handleDocblockTypeInMigration(
+                            $codebase,
+                            $statements_analyzer,
+                            $var_comment_type,
+                            $type_location,
+                            $context->calling_method_id
+                        );
+                    }
 
                     if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
                         $comment_type = $var_comment_type;
@@ -779,7 +796,7 @@ class AssignmentAnalyzer
             $stmt->expr,
             null,
             $context,
-            (string)$stmt->getDocComment()
+            $stmt->getDocComment()
         ) === false) {
             return false;
         }

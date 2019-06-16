@@ -90,10 +90,10 @@ class IncludeAnalyzer
 
                 $file_name = $config->shortenFileName($path_to_file);
 
-                if ($current_file_analyzer->project_analyzer->debug_output) {
-                    $nesting = $statements_analyzer->getRequireNesting() + 1;
-                    echo (str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL);
-                }
+                $nesting = $statements_analyzer->getRequireNesting() + 1;
+                $current_file_analyzer->project_analyzer->progress->debug(
+                    str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL
+                );
 
                 $include_file_analyzer = new \Psalm\Internal\Analyzer\FileAnalyzer(
                     $current_file_analyzer->project_analyzer,

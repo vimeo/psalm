@@ -21,6 +21,7 @@
         <DeprecatedProperty errorLevel="info" />
         <DeprecatedClass errorLevel="info" />
         <DeprecatedConstant errorLevel="info" />
+        <DeprecatedFunction errorLevel="info" />
         <DeprecatedInterface errorLevel="info" />
         <DeprecatedTrait errorLevel="info" />
 

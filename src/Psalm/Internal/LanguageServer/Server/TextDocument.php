@@ -98,6 +98,7 @@ class TextDocument
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
+        $this->codebase->file_provider->setOpenContents($file_path, $textDocument->text);
 
         $this->server->queueFileAnalysis($file_path, $textDocument->uri);
     }
@@ -248,6 +249,8 @@ class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        $this->server->doAnalysis();
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);

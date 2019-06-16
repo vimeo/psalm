@@ -69,43 +69,25 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         if ($this->fq_classlike_name === 'static') {
             return 'value-of<static::' . $this->const_name . '>';
         }
 
-        if ($this->fq_classlike_name === $this_class) {
-            return 'value-of<self::' . $this->const_name . '>';
-        }
-
-        if ($namespace && stripos($this->fq_classlike_name, $namespace . '\\') === 0) {
-            return 'value-of<' . preg_replace(
-                '/^' . preg_quote($namespace . '\\') . '/i',
-                '',
-                $this->fq_classlike_name
-            ) . '::' . $this->const_name . '>';
-        }
-
-        if (!$namespace && stripos($this->fq_classlike_name, '\\') === false) {
-            return 'value-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
-        }
-
-        if (isset($aliased_classes[strtolower($this->fq_classlike_name)])) {
-            return 'value-of<'
-                . $aliased_classes[strtolower($this->fq_classlike_name)]
-                . '::'
-                . $this->const_name
-                . '>';
-        }
-
-        return 'value-of<\\' . $this->fq_classlike_name . '::' . $this->const_name . '>';
+        return 'value-of<'
+            . \Psalm\Type::getStringFromFQCLN($this->fq_classlike_name, $namespace, $aliased_classes, $this_class)
+            . '>::' . $this->const_name . '>';
     }
 
     /**

@@ -38,7 +38,7 @@ class ReturnAnalyzer
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context
     ) {
-        $doc_comment_text = (string)$stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];
         $var_comment_type = null;
@@ -47,10 +47,10 @@ class ReturnAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($doc_comment_text) {
+        if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $doc_comment_text,
+                    $doc_comment,
                     $source,
                     $source->getAliases()
                 );
@@ -73,6 +73,27 @@ class ReturnAnalyzer
                     $context->self,
                     $statements_analyzer->getParentFQCLN()
                 );
+
+                if ($codebase->alter_code
+                    && $var_comment->type_start
+                    && $var_comment->type_end
+                    && $var_comment->line_number
+                ) {
+                    $type_location = new CodeLocation\DocblockTypeLocation(
+                        $statements_analyzer,
+                        $var_comment->type_start,
+                        $var_comment->type_end,
+                        $var_comment->line_number
+                    );
+
+                    $codebase->classlikes->handleDocblockTypeInMigration(
+                        $codebase,
+                        $statements_analyzer,
+                        $comment_type,
+                        $type_location,
+                        $context->calling_method_id
+                    );
+                }
 
                 if (!$var_comment->var_id) {
                     $var_comment_type = $comment_type;

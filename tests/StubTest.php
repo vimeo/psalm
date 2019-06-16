@@ -52,7 +52,7 @@ class StubTest extends TestCase
         );
         $project_analyzer->setPhpVersion('7.3');
 
-        $config->visitComposerAutoloadFiles($project_analyzer, false);
+        $config->visitComposerAutoloadFiles($project_analyzer, null);
 
         return $project_analyzer;
     }
@@ -663,6 +663,46 @@ class StubTest extends TestCase
             $file_path,
             '<?php
                 echo Foo\barBar("hello");'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testConditionallyExtendingInterface()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/conditional_interface.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class C implements I1, I2, I3, I4 {}
+
+                function foo(I5 $d) : void {
+                    $d->getMessage();
+                }
+
+                function bar(I6 $d) : void {
+                    $d->getMessage();
+                }'
         );
 
         $this->analyzeFile($file_path, new Context());

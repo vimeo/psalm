@@ -65,6 +65,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     private $namespace_aliased_classes_flipped = [];
 
     /**
+     * @var array<string, array<string, string>>
+     */
+    private $namespace_aliased_classes_flipped_replaceable = [];
+
+    /**
      * @var array<string, InterfaceAnalyzer>
      */
     public $interface_analyzers_to_analyze = [];
@@ -88,6 +93,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      * @var Codebase
      */
     public $codebase;
+
+    /**
+     * @var int
+     */
+    private $first_statement_offset = -1;
 
     /**
      * @param string  $file_path
@@ -151,6 +161,15 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             $stmts = $codebase->getStatementsForFile($this->file_path);
         } catch (PhpParser\Error $e) {
             return;
+        }
+
+        if ($codebase->alter_code) {
+            foreach ($stmts as $stmt) {
+                if (!$stmt instanceof PhpParser\Node\Stmt\Declare_) {
+                    $this->first_statement_offset = (int) $stmt->getAttribute('startFilePos');
+                    break;
+                }
+            }
         }
 
         $statements_analyzer = new StatementsAnalyzer($this);
@@ -218,6 +237,8 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
                 $this->namespace_aliased_classes[$namespace_name] = $namespace_analyzer->getAliases()->uses;
                 $this->namespace_aliased_classes_flipped[$namespace_name] =
                     $namespace_analyzer->getAliasedClassesFlipped();
+                $this->namespace_aliased_classes_flipped_replaceable[$namespace_name] =
+                    $namespace_analyzer->getAliasedClassesFlippedReplaceable();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
@@ -340,6 +361,19 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
+    public function getFunctionLikeAnalyzer(string $method_id) : ?FunctionLikeAnalyzer
+    {
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        if (!isset($this->class_analyzers_to_analyze[strtolower($fq_class_name)])) {
+            return null;
+        }
+
+        $class_analyzer_to_examine = $this->class_analyzers_to_analyze[strtolower($fq_class_name)];
+
+        return $class_analyzer_to_examine->getFunctionLikeAnalyzer($method_name);
+    }
+
     /**
      * @return null|string
      */
@@ -360,6 +394,20 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         return $this->aliased_classes_flipped;
+    }
+
+    /**
+     * @param  string|null $namespace_name
+     *
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlippedReplaceable($namespace_name = null)
+    {
+        if ($namespace_name && isset($this->namespace_aliased_classes_flipped_replaceable[$namespace_name])) {
+            return $this->namespace_aliased_classes_flipped_replaceable[$namespace_name];
+        }
+
+        return $this->aliased_classes_flipped_replaceable;
     }
 
     /**
@@ -567,5 +615,10 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     public function getCodebase() : Codebase
     {
         return $this->codebase;
+    }
+
+    public function getFirstStatementOffset() : int
+    {
+        return $this->first_statement_offset;
     }
 }

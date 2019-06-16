@@ -43,14 +43,14 @@ class ForeachAnalyzer
     ) {
         $var_comments = [];
 
-        $doc_comment_text = (string)$stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment();
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($doc_comment_text) {
+        if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $doc_comment_text,
+                    $doc_comment,
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getSource()->getAliases()
                 );
@@ -109,6 +109,26 @@ class ForeachAnalyzer
                 $context->self,
                 $statements_analyzer->getParentFQCLN()
             );
+
+            if ($var_comment->type_start
+                && $var_comment->type_end
+                && $var_comment->line_number
+            ) {
+                $type_location = new CodeLocation\DocblockTypeLocation(
+                    $statements_analyzer,
+                    $var_comment->type_start,
+                    $var_comment->type_end,
+                    $var_comment->line_number
+                );
+
+                $codebase->classlikes->handleDocblockTypeInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $comment_type,
+                    $type_location,
+                    $context->calling_method_id
+                );
+            }
 
             if (isset($context->vars_in_scope[$var_comment->var_id])
                 || $statements_analyzer->isSuperGlobal($var_comment->var_id)
@@ -210,7 +230,7 @@ class ForeachAnalyzer
             null,
             $value_type ?: Type::getMixed(),
             $foreach_context,
-            $doc_comment_text
+            $doc_comment
         );
 
         foreach ($var_comments as $var_comment) {
@@ -563,6 +583,7 @@ class ForeachAnalyzer
             if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam) {
                 throw new \UnexpectedValueException('Shouldn’t get a generic param here');
             }
+
 
             $has_valid_iterator = true;
 

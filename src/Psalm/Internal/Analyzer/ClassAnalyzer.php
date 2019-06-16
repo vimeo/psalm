@@ -131,6 +131,68 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $this->getCodebase();
 
+        if ($codebase->alter_code && $class->name && $codebase->classes_to_move) {
+            if (isset($codebase->classes_to_move[strtolower($this->fq_class_name)])) {
+                $destination_class = $codebase->classes_to_move[strtolower($this->fq_class_name)];
+
+                $source_class_parts = explode('\\', $this->fq_class_name);
+                $destination_class_parts = explode('\\', $destination_class);
+
+                array_pop($source_class_parts);
+                array_pop($destination_class_parts);
+
+                $source_ns = implode('\\', $source_class_parts);
+                $destination_ns = implode('\\', $destination_class_parts);
+
+                if (strtolower($source_ns) !== strtolower($destination_ns)) {
+                    if ($storage->namespace_name_location) {
+                        $bounds = $storage->namespace_name_location->getSelectionBounds();
+
+                        $file_manipulations = [
+                            new \Psalm\FileManipulation(
+                                $bounds[0],
+                                $bounds[1],
+                                $destination_ns
+                            )
+                        ];
+
+                        \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                            $this->getFilePath(),
+                            $file_manipulations
+                        );
+                    } elseif (!$source_ns) {
+                        $first_statement_pos = $this->getFileAnalyzer()->getFirstStatementOffset();
+
+                        if ($first_statement_pos === -1) {
+                            $first_statement_pos = (int) $class->getAttribute('startFilePos');
+                        }
+
+                        $file_manipulations = [
+                            new \Psalm\FileManipulation(
+                                $first_statement_pos,
+                                $first_statement_pos,
+                                'namespace ' . $destination_ns . ';' . "\n\n",
+                                true
+                            )
+                        ];
+
+                        \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                            $this->getFilePath(),
+                            $file_manipulations
+                        );
+                    }
+                }
+            }
+
+            $codebase->classlikes->handleClassLikeReferenceInMigration(
+                $codebase,
+                $this,
+                $class->name,
+                $this->fq_class_name,
+                null
+            );
+        }
+
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         $parent_fq_class_name = $this->parent_fq_class_name;
@@ -150,6 +212,16 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 false
             ) === false) {
                 return false;
+            }
+
+            if ($codebase->alter_code && $codebase->classes_to_move) {
+                $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $codebase,
+                    $this,
+                    $class->extends,
+                    $parent_fq_class_name,
+                    null
+                );
             }
 
             try {
@@ -179,7 +251,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new DeprecatedClass(
                             $parent_fq_class_name . ' is marked deprecated',
-                            $code_location
+                            $code_location,
+                            $parent_fq_class_name
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
@@ -198,7 +271,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         if (IssueBuffer::accepts(
                             new InternalClass(
                                 $parent_fq_class_name . ' is marked internal',
-                                $code_location
+                                $code_location,
+                                $parent_fq_class_name
                             ),
                             array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                         )) {
@@ -213,7 +287,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new InternalClass(
                             $parent_fq_class_name . ' is internal to ' . $parent_class_storage->psalm_internal,
-                            $code_location
+                            $code_location,
+                            $parent_fq_class_name
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
@@ -279,6 +354,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            $codebase->classlikes->handleClassLikeReferenceInMigration(
+                $codebase,
+                $this,
+                $interface_name,
+                $fq_interface_name,
+                null
+            );
+
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name);
             } catch (\InvalidArgumentException $e) {
@@ -296,7 +379,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new UndefinedInterface(
                         $fq_interface_name . ' is not an interface',
-                        $code_location
+                        $code_location,
+                        $fq_interface_name
                     ),
                     array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                 )) {
@@ -381,7 +465,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new DeprecatedInterface(
                             $interface_name . ' is marked deprecated',
-                            $code_location
+                            $code_location,
+                            $interface_name
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
@@ -572,7 +657,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                 if (!$property_type->isMixed() &&
                     !$property_storage->has_default &&
-                    !$property_type->isNullable()
+                    !($property_type->isNullable() && $property_type->from_docblock)
                 ) {
                     $property_type->initialized = false;
                 }
@@ -678,11 +763,75 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 foreach ($stmt->props as $prop) {
                     if ($prop->default) {
                         $member_stmts[] = $stmt;
-                        break;
+                    }
+
+                    if ($codebase->alter_code) {
+                        $property_id = strtolower($this->fq_class_name) . '::$' . $prop->name;
+
+                        $property_storage = $codebase->properties->getStorage($property_id);
+
+                        if ($property_storage->type
+                            && $property_storage->type_location
+                            && $property_storage->type_location !== $property_storage->signature_type_location
+                        ) {
+                            $replace_type = ExpressionAnalyzer::fleshOutType(
+                                $codebase,
+                                $property_storage->type,
+                                $this->getFQCLN(),
+                                $this->getFQCLN(),
+                                $this->getParentFQCLN()
+                            );
+
+                            $codebase->classlikes->handleDocblockTypeInMigration(
+                                $codebase,
+                                $this,
+                                $replace_type,
+                                $property_storage->type_location,
+                                null
+                            );
+                        }
+
+                        foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
+                            if ($property_id === $original_property_id) {
+                                $file_manipulations = [
+                                    new \Psalm\FileManipulation(
+                                        (int) $prop->name->getAttribute('startFilePos'),
+                                        (int) $prop->name->getAttribute('endFilePos') + 1,
+                                        '$' . $new_property_name
+                                    )
+                                ];
+
+                                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                    $this->getFilePath(),
+                                    $file_manipulations
+                                );
+                            }
+                        }
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;
+
+                foreach ($stmt->consts as $const) {
+                    $const_id = strtolower($this->fq_class_name) . '::' . $const->name;
+
+                    foreach ($codebase->class_constants_to_rename as $original_const_id => $new_const_name) {
+                        if ($const_id === $original_const_id) {
+                            $file_manipulations = [
+                                new \Psalm\FileManipulation(
+                                    (int) $const->name->getAttribute('startFilePos'),
+                                    (int) $const->name->getAttribute('endFilePos') + 1,
+                                    $new_const_name
+                                )
+                            ];
+
+                            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                $this->getFilePath(),
+                                $file_manipulations
+                            );
+                        }
+                    }
+                }
             }
         }
 
@@ -844,7 +993,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             true
         );
 
-        if ($method_already_analyzed) {
+        if ($method_already_analyzed && !$codebase->diff_methods) {
+            // this can happen when re-analysing a class that has been include()d inside another
             return;
         }
 
@@ -876,8 +1026,26 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property->type->isMixed() || $property->type->isNullable()) {
+            if ($property->type->isMixed()
+                || ($property->type->isNullable() && $property->type->from_docblock)
+            ) {
                 continue;
+            }
+
+            if ($codebase->diff_methods && $method_already_analyzed && $property->location) {
+                list($start, $end) = $property->location->getSelectionBounds();
+
+                $existing_issues = $codebase->analyzer->getExistingIssuesForFile(
+                    $this->getFilePath(),
+                    $start,
+                    $end,
+                    'PropertyNotSetInConstructor'
+                );
+
+                if ($existing_issues) {
+                    IssueBuffer::addIssues($existing_issues);
+                    continue;
+                }
             }
 
             $codebase->file_reference_provider->addMethodReferenceToMissingClassMember(
@@ -911,8 +1079,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $constructor_storage = $constructor_class_storage->methods['__construct'];
 
                 $fake_constructor_params = array_map(
-                    /** @return PhpParser\Node\Param */
-                    function (FunctionLikeParameter $param) {
+                    function (FunctionLikeParameter $param) : PhpParser\Node\Param {
                         $fake_param = (new PhpParser\Builder\Param($param->name));
                         if ($param->signature_type) {
                             /** @psalm-suppress DeprecatedMethod */
@@ -925,8 +1092,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
 
                 $fake_constructor_stmt_args = array_map(
-                    /** @return PhpParser\Node\Arg */
-                    function (FunctionLikeParameter $param) {
+                    function (FunctionLikeParameter $param) : PhpParser\Node\Arg {
                         return new PhpParser\Node\Arg(new PhpParser\Node\Expr\Variable($param->name));
                     },
                     $constructor_storage->params
@@ -1004,19 +1170,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 list(,$property_name) = explode('::$', $property_id);
 
                 if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
-                    throw new \UnexpectedValueException('$this->' . $property_name . ' should be in scope');
+                    $end_type = Type::getVoid();
+                    $end_type->initialized = false;
+                } else {
+                    $end_type = $method_context->vars_in_scope['$this->' . $property_name];
                 }
-
-                $end_type = $method_context->vars_in_scope['$this->' . $property_name];
 
                 $constructor_class_property_storage = $property_storage;
 
                 $error_location = $property_storage->location;
 
                 if ($storage->declaring_property_ids[$property_name] !== $fq_class_name) {
-                    $error_location = $this->class->name
-                        ? new CodeLocation($this, $this->class->name)
-                        : $storage->location;
+                    $error_location = $storage->location ?: $storage->stmt_location;
                 }
 
                 if ($fq_class_name !== $constructor_appearing_fqcln
@@ -1370,9 +1535,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             && !$class_context->collect_mutations
             && !$is_fake
         ) {
-            if ($project_analyzer->debug_output) {
-                echo 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n";
-            }
+            $project_analyzer->progress->debug(
+                'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n"
+            );
 
             $existing_issues = $codebase->analyzer->getExistingIssuesForFile(
                 $source->getFilePath(),
@@ -1393,7 +1558,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $method_context = clone $class_context;
         $method_context->collect_exceptions = $config->check_for_throws_docblock;
-        $method_context->infer_types = $codebase->infer_types_from_usage;
 
         $method_analyzer->analyze(
             $method_context,
@@ -1438,7 +1602,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 : [];
 
             if ($actual_method_storage->overridden_downstream) {
-                $overridden_method_ids[] = 'overridden::downstream';
+                $overridden_method_ids['overridden::downstream'] = 'overridden::downstream';
             }
 
             if (!$return_type && isset($class_storage->interface_method_ids[strtolower($stmt->name->name)])) {

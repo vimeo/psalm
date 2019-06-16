@@ -276,11 +276,6 @@ class Context
     /**
      * @var bool
      */
-    public $infer_types = false;
-
-    /**
-     * @var bool
-     */
     public $inside_negation = false;
 
     /**
@@ -405,41 +400,6 @@ class Context
         }
 
         return $redefined_vars;
-    }
-
-    /**
-     * @return void
-     */
-    public function inferType(
-        string $var_name,
-        FunctionLikeStorage $function_storage,
-        Type\Union $original_type,
-        Type\Union $inferred_type,
-        Codebase $codebase
-    ) {
-        if ($original_type->getId() !== $inferred_type->getId()
-            && !isset($this->assigned_var_ids['$' . $var_name])
-            && array_key_exists($var_name, $function_storage->param_types)
-            && !$function_storage->param_types[$var_name]
-        ) {
-            if (isset($this->possible_param_types[$var_name])) {
-                if (\Psalm\Internal\Analyzer\TypeAnalyzer::isContainedBy(
-                    $codebase,
-                    $inferred_type,
-                    $this->possible_param_types[$var_name]
-                )) {
-                    $this->possible_param_types[$var_name] = clone $inferred_type;
-                } else {
-                    $this->possible_param_types[$var_name] = Type::combineUnionTypes(
-                        $this->possible_param_types[$var_name],
-                        $inferred_type
-                    );
-                }
-            } else {
-                $this->possible_param_types[$var_name] = clone $inferred_type;
-                $this->vars_in_scope['$' . $var_name] = clone $inferred_type;
-            }
-        }
     }
 
     /**

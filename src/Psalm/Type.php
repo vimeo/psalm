@@ -59,6 +59,7 @@ abstract class Type
         'numeric-string' => true,
         'class-string' => true,
         'callable-string' => true,
+        'trait-string' => true,
         'mysql-escaped-string' => true,
         'html-escaped-string' => true,
         'boolean' => true,
@@ -77,6 +78,7 @@ abstract class Type
         'array-key' => true,
         'key-of' => true,
         'value-of' => true,
+        'non-empty-countable' => true,
     ];
 
     /**
@@ -465,7 +467,7 @@ abstract class Type
         if ($parse_tree instanceof ParseTree\CallableWithReturnTypeTree) {
             $callable_type = self::getTypeFromTree($parse_tree->children[0], null, $template_type_map);
 
-            if (!$callable_type instanceof TCallable && !$callable_type instanceof Type\Atomic\Fn) {
+            if (!$callable_type instanceof TCallable && !$callable_type instanceof Type\Atomic\TFn) {
                 throw new \InvalidArgumentException('Parsing callable tree node should return TCallable');
             }
 
@@ -523,7 +525,7 @@ abstract class Type
             );
 
             if (in_array(strtolower($parse_tree->value), ['closure', '\closure'], true)) {
-                return new Type\Atomic\Fn('Closure', $params);
+                return new Type\Atomic\TFn('Closure', $params);
             }
 
             return new TCallable($parse_tree->value, $params);
@@ -1003,6 +1005,58 @@ abstract class Type
         $namespace = $aliases->namespace;
 
         return ($namespace ? $namespace . '\\' : '') . $class;
+    }
+
+    /**
+     * @param  array<string, string> $aliased_classes
+     */
+    public static function getStringFromFQCLN(
+        string $value,
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class
+    ) : string {
+        if ($value === $this_class) {
+            return 'self';
+        }
+
+        if (isset($aliased_classes[strtolower($value)])) {
+            return $aliased_classes[strtolower($value)];
+        }
+
+        if ($namespace && stripos($value, $namespace . '\\') === 0) {
+            $candidate = preg_replace(
+                '/^' . preg_quote($namespace . '\\') . '/i',
+                '',
+                $value
+            );
+
+            $candidate_parts = explode('\\', $candidate);
+
+            if (!isset($aliased_classes[strtolower($candidate_parts[0])])) {
+                return $candidate;
+            }
+        } elseif (!$namespace && stripos($value, '\\') === false) {
+            return $value;
+        }
+
+        if (strpos($value, '\\')) {
+            $parts = explode('\\', $value);
+
+            $suffix = array_pop($parts);
+
+            while ($parts) {
+                $left = implode('\\', $parts);
+
+                if (isset($aliased_classes[strtolower($left)])) {
+                    return $aliased_classes[strtolower($left)] . '\\' . $suffix;
+                }
+
+                $suffix = array_pop($parts) . '\\' . $suffix;
+            }
+        }
+
+        return '\\' . $value;
     }
 
     /**

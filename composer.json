@@ -11,8 +11,8 @@
     ],
     "require": {
         "php": "^7.1",
-        "nikic/php-parser": "^4.0.2 || ^4.1",
-        "openlss/lib-array2xml": "^0.0.10||^0.5.1",
+        "nikic/php-parser": "^4.2",
+        "openlss/lib-array2xml": "^1.0",
         "ocramius/package-versions": "^1.2",
         "composer/xdebug-handler": "^1.1",
         "felixfbecker/language-server-protocol": "^1.2",
@@ -25,12 +25,15 @@
         "amphp/byte-stream": "^1.5",
         "sebastian/diff": "^3.0"
     },
-    "bin": ["psalm", "psalter", "psalm-language-server", "psalm-plugin"],
+    "bin": ["psalm", "psalter", "psalm-language-server", "psalm-plugin", "psalm-refactor"],
     "autoload": {
         "psr-4": {
             "Psalm\\Plugin\\": "src/Psalm/Plugin",
             "Psalm\\": "src/Psalm"
-        }
+        },
+        "files": [
+            "src/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

@@ -193,7 +193,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
 
             if ($project_analyzer->debug_lines) {
-                echo $this->getFilePath() . ':' . $stmt->getLine() . "\n";
+                fwrite(STDERR, $this->getFilePath() . ':' . $stmt->getLine() . "\n");
             }
 
             /*
@@ -206,7 +206,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             if ($docblock = $stmt->getDocComment()) {
                 try {
-                    $comments = DocComment::parse((string)$docblock);
+                    $comments = DocComment::parsePreservingLength($docblock);
                 } catch (DocblockParseException $e) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
@@ -229,7 +229,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                              * @return string
                              */
                             function ($line) {
-                                return explode(' ', trim($line))[0];
+                                return preg_split('/[\s]+/', $line)[0];
                             },
                             $comments['specials']['psalm-suppress']
                         )
@@ -511,7 +511,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $function_id = strtolower($stmt->name->name);
                     $function_context = new Context($context->self);
                     $config = Config::getInstance();
-                    $function_context->infer_types = $codebase->infer_types_from_usage;
                     $function_context->collect_references = $codebase->collect_references;
                     $function_context->collect_exceptions = $config->check_for_throws_docblock;
                     $this->function_analyzers[$function_id]->analyze($function_context, $context);
@@ -633,12 +632,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     // of an issue
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
-                if ((string)$stmt->getDocComment()) {
+                if ($doc_comment = $stmt->getDocComment()) {
                     $var_comments = [];
 
                     try {
                         $var_comments = CommentAnalyzer::getTypeFromComment(
-                            (string)$stmt->getDocComment(),
+                            $doc_comment,
                             $this->getSource(),
                             $this->getSource()->getAliases(),
                             $this->getSource()->getTemplateTypeMap()
@@ -908,7 +907,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                 try {
                     $var_comments = CommentAnalyzer::getTypeFromComment(
-                        (string) $doc_comment,
+                        $doc_comment,
                         $this->getSource(),
                         $this->getAliases(),
                         $this->getTemplateTypeMap()
@@ -950,6 +949,27 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             new CodeLocation($this->getSource(), $var),
                             $this->getSuppressedIssues()
                         );
+
+                        if ($codebase->alter_code
+                            && $var_comment->type_start
+                            && $var_comment->type_end
+                            && $var_comment->line_number
+                        ) {
+                            $type_location = new CodeLocation\DocblockTypeLocation(
+                                $this,
+                                $var_comment->type_start,
+                                $var_comment->type_end,
+                                $var_comment->line_number
+                            );
+
+                            $codebase->classlikes->handleDocblockTypeInMigration(
+                                $codebase,
+                                $this,
+                                $var_comment_type,
+                                $type_location,
+                                $context->calling_method_id
+                            );
+                        }
 
                         if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
                             $comment_type = $var_comment_type;

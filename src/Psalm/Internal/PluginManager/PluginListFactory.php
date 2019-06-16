@@ -3,19 +3,59 @@ namespace Psalm\Internal\PluginManager;
 
 class PluginListFactory
 {
+    /** @var string */
+    private $project_root;
+
+    /** @var string */
+    private $psalm_root;
+
+    public function __construct(string $project_root, string $psalm_root)
+    {
+        $this->project_root = $project_root;
+        $this->psalm_root = $psalm_root;
+    }
+
     public function __invoke(string $current_dir, string $config_file_path = null): PluginList
     {
-        $stub_composer_lock = (object)[
-            "packages" => [],
-            "packages-dev" => [],
-        ];
-
         $config_file = new ConfigFile($current_dir, $config_file_path);
-        $lock_file = is_readable('composer.lock') ?
-            'composer.lock' :
-            'data:application/json,' . urlencode(json_encode($stub_composer_lock));
+        $composer_lock = new ComposerLock($this->findLockFiles());
 
-        $composer_lock = new ComposerLock($lock_file);
         return new PluginList($config_file, $composer_lock);
+    }
+
+    /** @return non-empty-array<int,string> */
+    private function findLockFiles(): array
+    {
+        // use cases
+        // 1. plugins are installed into project vendors - composer.lock is PROJECT_ROOT/composer.lock
+        // 2. plugins are installed into separate composer environment (either global or bamarni-bin)
+        //  - composer.lock is PSALM_ROOT/../../../composer.lock
+        // 3. plugins are installed into psalm vendors - composer.lock is PSALM_ROOT/composer.lock
+        // 4. none of the above - use stub (empty virtual composer.lock)
+
+        if ($this->psalm_root === $this->project_root) {
+            // managing plugins for psalm itself
+            $composer_lock_filenames = [
+                rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/composer.lock',
+            ];
+        } else {
+            $composer_lock_filenames = [
+                rtrim($this->project_root, DIRECTORY_SEPARATOR) . '/composer.lock',
+                rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/../../../composer.lock',
+                rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/composer.lock',
+            ];
+        }
+
+        $composer_lock_filenames = array_filter($composer_lock_filenames, 'is_readable');
+
+        if (empty($composer_lock_filenames)) {
+            $stub_composer_lock = (object)[
+                "packages" => [],
+                "packages-dev" => [],
+            ];
+            $composer_lock_filenames[] = 'data:application/json,' . urlencode(json_encode($stub_composer_lock));
+        }
+
+        return $composer_lock_filenames;
     }
 }

@@ -673,8 +673,9 @@ class MethodSignatureTest extends TestCase
             ],
             'misplacedRequiredParam' => [
                 '<?php
-                    function foo($bar = null, $bat): void {}',
-                'error_message' => 'MisplacedRequiredParam',
+                    function foo(string $bar = null, int $bat): void {}
+                    foo();',
+                'error_message' => 'TooFewArguments',
             ],
             'clasginByRef' => [
                 '<?php

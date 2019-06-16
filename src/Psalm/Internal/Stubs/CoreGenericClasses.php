@@ -1167,7 +1167,7 @@ class ReflectionClass implements Reflector {
     public $name;
 
     /**
-    * @param T|class-string<T> $argument
+    * @param T|class-string<T>|trait-string $argument
     */
     public function __construct($argument) {}
 

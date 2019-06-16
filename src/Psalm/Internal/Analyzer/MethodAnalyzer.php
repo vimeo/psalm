@@ -142,7 +142,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * @param  string       $method_id
      * @param  CodeLocation $code_location
-     * @param  array        $suppressed_issues
+     * @param  string[]     $suppressed_issues
      * @param  string|null  $calling_method_id
      *
      * @return bool|null
@@ -177,7 +177,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * @param  string       $method_id
      * @param  CodeLocation $code_location
-     * @param  array        $suppressed_issues
+     * @param  string[]     $suppressed_issues
      *
      * @return false|null
      */
@@ -257,7 +257,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      * @param  Context          $context
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
-     * @param  array            $suppressed_issues
+     * @param  string[]         $suppressed_issues
      *
      * @return false|null
      */
@@ -498,7 +498,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      * @param  MethodStorage    $implementer_method_storage
      * @param  MethodStorage    $guide_method_storage
      * @param  CodeLocation     $code_location
-     * @param  array            $suppressed_issues
+     * @param  string[]         $suppressed_issues
      * @param  bool             $prevent_abstract_override
      * @param  bool             $prevent_method_signature_mismatch
      *
@@ -644,6 +644,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         $template_types[$key][$guide_classlike_storage->name] = [$type];
                     }
                 }
+
+                $implementer_method_storage_return_type->replaceTemplateTypesWithArgTypes(
+                    $template_types,
+                    $codebase
+                );
 
                 $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
                     $template_types,

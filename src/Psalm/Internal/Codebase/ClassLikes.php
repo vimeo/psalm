@@ -17,6 +17,8 @@ use Psalm\Issue\UnusedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
@@ -665,11 +667,13 @@ class ClassLikes
     /**
      * @return void
      */
-    public function checkClassReferences(Methods $methods, bool $debug_output = false)
+    public function checkClassReferences(Methods $methods, Progress $progress = null)
     {
-        if ($debug_output) {
-            echo 'Checking class references' . PHP_EOL;
+        if ($progress === null) {
+            $progress = new VoidProgress();
         }
+
+        $progress->debug('Checking class references' . PHP_EOL);
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
@@ -699,6 +703,634 @@ class ClassLikes
                 }
             }
         }
+    }
+
+    /**
+     * @return void
+     */
+    public function moveMethods(Methods $methods, Progress $progress = null)
+    {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        if (!$codebase->methods_to_move) {
+            return;
+        }
+
+        $progress->debug('Refactoring methods ' . PHP_EOL);
+
+        $code_migrations = [];
+
+        foreach ($codebase->methods_to_move as $source => $destination) {
+            try {
+                $source_method_storage = $methods->getStorage($source);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            list($destination_fq_class_name, $destination_name) = explode('::', $destination);
+
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            if ($classlike_storage->stmt_location
+                && $this->config->isInProjectDirs($classlike_storage->stmt_location->file_path)
+                && $source_method_storage->stmt_location
+                && $source_method_storage->stmt_location->file_path
+                && $source_method_storage->location
+            ) {
+                $new_class_bounds = $classlike_storage->stmt_location->getSnippetBounds();
+                $old_method_bounds = $source_method_storage->stmt_location->getSnippetBounds();
+
+                $old_method_name_bounds = $source_method_storage->location->getSelectionBounds();
+
+                FileManipulationBuffer::add(
+                    $source_method_storage->stmt_location->file_path,
+                    [
+                        new \Psalm\FileManipulation(
+                            $old_method_name_bounds[0],
+                            $old_method_name_bounds[1],
+                            $destination_name
+                        )
+                    ]
+                );
+
+                $selection = $classlike_storage->stmt_location->getSnippet();
+
+                $insert_pos = strrpos($selection, "\n", -1);
+
+                if (!$insert_pos) {
+                    $insert_pos = strlen($selection) - 1;
+                } else {
+                    $insert_pos++;
+                }
+
+                $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
+                    $source_method_storage->stmt_location->file_path,
+                    $old_method_bounds[0],
+                    $old_method_bounds[1],
+                    $classlike_storage->stmt_location->file_path,
+                    $new_class_bounds[0] + $insert_pos
+                );
+            }
+        }
+
+        FileManipulationBuffer::addCodeMigrations($code_migrations);
+    }
+
+    /**
+     * @return void
+     */
+    public function moveProperties(Properties $properties, Progress $progress = null)
+    {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        if (!$codebase->properties_to_move) {
+            return;
+        }
+
+        $progress->debug('Refacting properties ' . PHP_EOL);
+
+        $code_migrations = [];
+
+        foreach ($codebase->properties_to_move as $source => $destination) {
+            try {
+                $source_property_storage = $properties->getStorage($source);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            list($source_fq_class_name) = explode('::$', $source);
+            list($destination_fq_class_name, $destination_name) = explode('::$', $destination);
+
+            $source_classlike_storage = $this->classlike_storage_provider->get($source_fq_class_name);
+            $destination_classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
+
+            if ($destination_classlike_storage->stmt_location
+                && $this->config->isInProjectDirs($destination_classlike_storage->stmt_location->file_path)
+                && $source_property_storage->stmt_location
+                && $source_property_storage->stmt_location->file_path
+                && $source_property_storage->location
+            ) {
+                if ($source_property_storage->type
+                    && $source_property_storage->type_location
+                    && $source_property_storage->type_location !== $source_property_storage->signature_type_location
+                ) {
+                    $bounds = $source_property_storage->type_location->getSelectionBounds();
+
+                    $replace_type = \Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer::fleshOutType(
+                        $codebase,
+                        $source_property_storage->type,
+                        $source_classlike_storage->name,
+                        $source_classlike_storage->name,
+                        $source_classlike_storage->parent_class
+                    );
+
+                    $this->airliftClassDefinedDocblockType(
+                        $replace_type,
+                        $destination_fq_class_name,
+                        $source_property_storage->stmt_location->file_path,
+                        $bounds[0],
+                        $bounds[1]
+                    );
+                }
+
+                $new_class_bounds = $destination_classlike_storage->stmt_location->getSnippetBounds();
+                $old_property_bounds = $source_property_storage->stmt_location->getSnippetBounds();
+
+                $old_property_name_bounds = $source_property_storage->location->getSelectionBounds();
+
+                FileManipulationBuffer::add(
+                    $source_property_storage->stmt_location->file_path,
+                    [
+                        new \Psalm\FileManipulation(
+                            $old_property_name_bounds[0],
+                            $old_property_name_bounds[1],
+                            '$' . $destination_name
+                        )
+                    ]
+                );
+
+                $selection = $destination_classlike_storage->stmt_location->getSnippet();
+
+                $insert_pos = strrpos($selection, "\n", -1);
+
+                if (!$insert_pos) {
+                    $insert_pos = strlen($selection) - 1;
+                } else {
+                    $insert_pos++;
+                }
+
+                $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
+                    $source_property_storage->stmt_location->file_path,
+                    $old_property_bounds[0],
+                    $old_property_bounds[1],
+                    $destination_classlike_storage->stmt_location->file_path,
+                    $new_class_bounds[0] + $insert_pos
+                );
+            }
+        }
+
+        FileManipulationBuffer::addCodeMigrations($code_migrations);
+    }
+
+    /**
+     * @return void
+     */
+    public function moveClassConstants(Progress $progress = null)
+    {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        if (!$codebase->class_constants_to_move) {
+            return;
+        }
+
+        $progress->debug('Refacting constants ' . PHP_EOL);
+
+        $code_migrations = [];
+
+        foreach ($codebase->class_constants_to_move as $source => $destination) {
+            list($source_fq_class_name, $source_const_name) = explode('::', $source);
+            list($destination_fq_class_name, $destination_name) = explode('::', $destination);
+
+            $source_classlike_storage = $this->classlike_storage_provider->get($source_fq_class_name);
+            $destination_classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
+
+            $source_const_stmt_location = $source_classlike_storage->class_constant_stmt_locations[$source_const_name];
+            $source_const_location = $source_classlike_storage->class_constant_locations[$source_const_name];
+
+            if ($destination_classlike_storage->stmt_location
+                && $this->config->isInProjectDirs($destination_classlike_storage->stmt_location->file_path)
+                && $source_const_stmt_location->file_path
+            ) {
+                $new_class_bounds = $destination_classlike_storage->stmt_location->getSnippetBounds();
+                $old_const_bounds = $source_const_stmt_location->getSnippetBounds();
+
+                $old_const_name_bounds = $source_const_location->getSelectionBounds();
+
+                FileManipulationBuffer::add(
+                    $source_const_stmt_location->file_path,
+                    [
+                        new \Psalm\FileManipulation(
+                            $old_const_name_bounds[0],
+                            $old_const_name_bounds[1],
+                            $destination_name
+                        )
+                    ]
+                );
+
+                $selection = $destination_classlike_storage->stmt_location->getSnippet();
+
+                $insert_pos = strrpos($selection, "\n", -1);
+
+                if (!$insert_pos) {
+                    $insert_pos = strlen($selection) - 1;
+                } else {
+                    $insert_pos++;
+                }
+
+                $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
+                    $source_const_stmt_location->file_path,
+                    $old_const_bounds[0],
+                    $old_const_bounds[1],
+                    $destination_classlike_storage->stmt_location->file_path,
+                    $new_class_bounds[0] + $insert_pos
+                );
+            }
+        }
+
+        FileManipulationBuffer::addCodeMigrations($code_migrations);
+    }
+
+    public function handleClassLikeReferenceInMigration(
+        \Psalm\Codebase $codebase,
+        \Psalm\StatementsSource $source,
+        PhpParser\Node $class_name_node,
+        string $fq_class_name,
+        ?string $calling_method_id,
+        bool $force_change = false
+    ) : bool {
+        $calling_fq_class_name = $source->getFQCLN();
+
+        // if we're inside a moved class static method
+        if ($codebase->methods_to_move
+            && $calling_fq_class_name
+            && $calling_method_id
+            && isset($codebase->methods_to_move[strtolower($calling_method_id)])
+        ) {
+            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_method_id)])[0];
+
+            $intended_fq_class_name = strtolower($calling_fq_class_name) === strtolower($fq_class_name)
+                && isset($codebase->classes_to_move[strtolower($calling_fq_class_name)])
+                ? $destination_class
+                : $fq_class_name;
+
+            $this->airliftClassLikeReference(
+                $intended_fq_class_name,
+                $destination_class,
+                $source->getFilePath(),
+                (int) $class_name_node->getAttribute('startFilePos'),
+                (int) $class_name_node->getAttribute('endFilePos') + 1,
+                $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_
+            );
+
+            return true;
+        }
+
+        // if we're outside a moved class, but we're changing all references to a class
+        if (isset($codebase->class_transforms[strtolower($fq_class_name)])) {
+            $new_fq_class_name = $codebase->class_transforms[strtolower($fq_class_name)];
+            $file_manipulations = [];
+
+            if ($class_name_node instanceof PhpParser\Node\Identifier) {
+                $destination_parts = explode('\\', $new_fq_class_name);
+
+                $destination_class_name = array_pop($destination_parts);
+                $file_manipulations = [];
+
+                $file_manipulations[] = new \Psalm\FileManipulation(
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1,
+                    $destination_class_name
+                );
+
+                FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+
+                return true;
+            }
+
+            $uses_flipped = $source->getAliasedClassesFlipped();
+            $uses_flipped_replaceable = $source->getAliasedClassesFlippedReplaceable();
+
+            $old_fq_class_name = strtolower($fq_class_name);
+
+            $migrated_source_fqcln = $calling_fq_class_name;
+
+            if ($calling_fq_class_name
+                && isset($codebase->class_transforms[strtolower($calling_fq_class_name)])
+            ) {
+                $migrated_source_fqcln = $codebase->class_transforms[strtolower($calling_fq_class_name)];
+            }
+
+            $source_namespace = $source->getNamespace();
+
+            if ($migrated_source_fqcln && $calling_fq_class_name !== $migrated_source_fqcln) {
+                $new_source_parts = explode('\\', $migrated_source_fqcln);
+                array_pop($new_source_parts);
+                $source_namespace = implode('\\', $new_source_parts);
+            }
+
+            if (isset($uses_flipped_replaceable[$old_fq_class_name])) {
+                $alias = $uses_flipped_replaceable[$old_fq_class_name];
+                unset($uses_flipped[$old_fq_class_name]);
+                $old_class_name_parts = explode('\\', $old_fq_class_name);
+                $old_class_name = end($old_class_name_parts);
+                if (strtolower($old_class_name) === strtolower($alias)) {
+                    $new_class_name_parts = explode('\\', $new_fq_class_name);
+                    $new_class_name = end($new_class_name_parts);
+                    $uses_flipped[strtolower($new_fq_class_name)] = $new_class_name;
+                } else {
+                    $uses_flipped[strtolower($new_fq_class_name)] = $alias;
+                }
+            }
+
+            $file_manipulations[] = new \Psalm\FileManipulation(
+                (int) $class_name_node->getAttribute('startFilePos'),
+                (int) $class_name_node->getAttribute('endFilePos') + 1,
+                Type::getStringFromFQCLN(
+                    $new_fq_class_name,
+                    $source_namespace,
+                    $uses_flipped,
+                    $migrated_source_fqcln
+                )
+                    . ($class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_ ? '::class' : '')
+            );
+
+            FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+
+            return true;
+        }
+
+        // if we're inside a moved class (could be a method, could be a property/class const default)
+        if ($codebase->classes_to_move
+            && $calling_fq_class_name
+            && isset($codebase->classes_to_move[strtolower($calling_fq_class_name)])
+        ) {
+            $destination_class = $codebase->classes_to_move[strtolower($calling_fq_class_name)];
+
+            if ($class_name_node instanceof PhpParser\Node\Identifier) {
+                $destination_parts = explode('\\', $destination_class);
+
+                $destination_class_name = array_pop($destination_parts);
+                $file_manipulations = [];
+
+                $file_manipulations[] = new \Psalm\FileManipulation(
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1,
+                    $destination_class_name
+                );
+
+                FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+            } else {
+                $this->airliftClassLikeReference(
+                    strtolower($calling_fq_class_name) === strtolower($fq_class_name)
+                        ? $destination_class
+                        : $fq_class_name,
+                    $destination_class,
+                    $source->getFilePath(),
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1,
+                    $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_
+                );
+            }
+
+            return true;
+        }
+
+        if ($force_change) {
+            if ($calling_fq_class_name) {
+                $this->airliftClassLikeReference(
+                    $fq_class_name,
+                    $calling_fq_class_name,
+                    $source->getFilePath(),
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1
+                );
+            } else {
+                $file_manipulations = [];
+
+                $file_manipulations[] = new \Psalm\FileManipulation(
+                    (int) $class_name_node->getAttribute('startFilePos'),
+                    (int) $class_name_node->getAttribute('endFilePos') + 1,
+                    Type::getStringFromFQCLN(
+                        $fq_class_name,
+                        $source->getNamespace(),
+                        $source->getAliasedClassesFlipped(),
+                        null
+                    )
+                );
+
+                FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public function handleDocblockTypeInMigration(
+        \Psalm\Codebase $codebase,
+        \Psalm\StatementsSource $source,
+        Type\Union $type,
+        CodeLocation $type_location,
+        ?string $calling_method_id
+    ) : void {
+        $calling_fq_class_name = $source->getFQCLN();
+
+        $moved_type = false;
+
+        // if we're inside a moved class static method
+        if ($codebase->methods_to_move
+            && $calling_fq_class_name
+            && $calling_method_id
+            && isset($codebase->methods_to_move[strtolower($calling_method_id)])
+        ) {
+            $bounds = $type_location->getSelectionBounds();
+
+            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_method_id)])[0];
+
+            $this->airliftClassDefinedDocblockType(
+                $type,
+                $destination_class,
+                $source->getFilePath(),
+                $bounds[0],
+                $bounds[1]
+            );
+
+            $moved_type = true;
+        }
+
+        // if we're outside a moved class, but we're changing all references to a class
+        if (!$moved_type && $codebase->class_transforms) {
+            $uses_flipped = $source->getAliasedClassesFlipped();
+            $uses_flipped_replaceable = $source->getAliasedClassesFlippedReplaceable();
+
+            $migrated_source_fqcln = $calling_fq_class_name;
+
+            if ($calling_fq_class_name
+                && isset($codebase->class_transforms[strtolower($calling_fq_class_name)])
+            ) {
+                $migrated_source_fqcln = $codebase->class_transforms[strtolower($calling_fq_class_name)];
+            }
+
+            $source_namespace = $source->getNamespace();
+
+            if ($migrated_source_fqcln && $calling_fq_class_name !== $migrated_source_fqcln) {
+                $new_source_parts = explode('\\', $migrated_source_fqcln);
+                array_pop($new_source_parts);
+                $source_namespace = implode('\\', $new_source_parts);
+            }
+
+            foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
+                if (isset($uses_flipped_replaceable[$old_fq_class_name])) {
+                    $alias = $uses_flipped_replaceable[$old_fq_class_name];
+                    unset($uses_flipped[$old_fq_class_name]);
+                    $old_class_name_parts = explode('\\', $old_fq_class_name);
+                    $old_class_name = end($old_class_name_parts);
+                    if (strtolower($old_class_name) === strtolower($alias)) {
+                        $new_class_name_parts = explode('\\', $new_fq_class_name);
+                        $new_class_name = end($new_class_name_parts);
+                        $uses_flipped[strtolower($new_fq_class_name)] = $new_class_name;
+                    } else {
+                        $uses_flipped[strtolower($new_fq_class_name)] = $alias;
+                    }
+                }
+            }
+
+            foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
+                if ($type->containsClassLike($old_fq_class_name)) {
+                    $type = clone $type;
+
+                    $type->replaceClassLike($old_fq_class_name, $new_fq_class_name);
+
+                    $bounds = $type_location->getSelectionBounds();
+
+                    $file_manipulations = [];
+
+                    $file_manipulations[] = new \Psalm\FileManipulation(
+                        $bounds[0],
+                        $bounds[1],
+                        $type->toNamespacedString(
+                            $source_namespace,
+                            $uses_flipped,
+                            $migrated_source_fqcln,
+                            false
+                        )
+                    );
+
+                    FileManipulationBuffer::add(
+                        $source->getFilePath(),
+                        $file_manipulations
+                    );
+
+                    $moved_type = true;
+                }
+            }
+        }
+
+        // if we're inside a moved class (could be a method, could be a property/class const default)
+        if (!$moved_type
+            && $codebase->classes_to_move
+            && $calling_fq_class_name
+            && isset($codebase->classes_to_move[strtolower($calling_fq_class_name)])
+        ) {
+            $bounds = $type_location->getSelectionBounds();
+
+            $destination_class = $codebase->classes_to_move[strtolower($calling_fq_class_name)];
+
+            if ($type->containsClassLike(strtolower($calling_fq_class_name))) {
+                $type = clone $type;
+
+                $type->replaceClassLike(strtolower($calling_fq_class_name), $destination_class);
+            }
+
+            $this->airliftClassDefinedDocblockType(
+                $type,
+                $destination_class,
+                $source->getFilePath(),
+                $bounds[0],
+                $bounds[1]
+            );
+        }
+    }
+
+    public function airliftClassLikeReference(
+        string $fq_class_name,
+        string $destination_fq_class_name,
+        string $source_file_path,
+        int $source_start,
+        int $source_end,
+        bool $add_class_constant = false
+    ) : void {
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        $destination_class_storage = $codebase->classlike_storage_provider->get($destination_fq_class_name);
+
+        if (!$destination_class_storage->aliases) {
+            throw new \UnexpectedValueException('Aliases should not be null');
+        }
+
+        $file_manipulations = [];
+
+        $file_manipulations[] = new \Psalm\FileManipulation(
+            $source_start,
+            $source_end,
+            Type::getStringFromFQCLN(
+                $fq_class_name,
+                $destination_class_storage->aliases->namespace,
+                $destination_class_storage->aliases->uses_flipped,
+                $destination_class_storage->name
+            ) . ($add_class_constant ? '::class' : '')
+        );
+
+        FileManipulationBuffer::add(
+            $source_file_path,
+            $file_manipulations
+        );
+    }
+
+    public function airliftClassDefinedDocblockType(
+        Type\Union $type,
+        string $destination_fq_class_name,
+        string $source_file_path,
+        int $source_start,
+        int $source_end
+    ) : void {
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        $destination_class_storage = $codebase->classlike_storage_provider->get($destination_fq_class_name);
+
+        if (!$destination_class_storage->aliases) {
+            throw new \UnexpectedValueException('Aliases should not be null');
+        }
+
+        $file_manipulations = [];
+
+        $file_manipulations[] = new \Psalm\FileManipulation(
+            $source_start,
+            $source_end,
+            $type->toNamespacedString(
+                $destination_class_storage->aliases->namespace,
+                $destination_class_storage->aliases->uses_flipped,
+                $destination_class_storage->name,
+                false
+            )
+        );
+
+        FileManipulationBuffer::add(
+            $source_file_path,
+            $file_manipulations
+        );
     }
 
     /**
@@ -923,35 +1555,65 @@ class ClassLikes
                     }
                 }
             } else {
-                foreach ($method_storage->unused_params as $offset => $code_location) {
-                    $has_parent_references = false;
+                if ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
+                    && isset($codebase->analyzer->possible_method_param_types[strtolower($method_id)])
+                ) {
+                    if ($method_storage->location) {
+                        $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
+                            $method_id,
+                            $method_storage->location->file_path
+                        );
 
-                    $method_name_lc = strtolower($method_name);
+                        $possible_param_types
+                            = $codebase->analyzer->possible_method_param_types[strtolower($method_id)];
 
-                    if (isset($classlike_storage->overridden_method_ids[$method_name_lc])) {
-                        foreach ($classlike_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
-                            $parent_method_storage = $methods->getStorage($parent_method_id);
+                        if ($function_analyzer && $possible_param_types) {
+                            foreach ($possible_param_types as $offset => $possible_type) {
+                                if (!isset($method_storage->params[$offset])) {
+                                    continue;
+                                }
 
-                            if (!$parent_method_storage->abstract
-                                && isset($parent_method_storage->used_params[$offset])
-                            ) {
-                                $has_parent_references = true;
-                                break;
+                                $param_name = $method_storage->params[$offset]->name;
+
+                                if ($possible_type->hasMixed() || $possible_type->isNull()) {
+                                    continue;
+                                }
+
+                                if ($method_storage->params[$offset]->default_type) {
+                                    $possible_type = \Psalm\Type::combineUnionTypes(
+                                        $possible_type,
+                                        $method_storage->params[$offset]->default_type
+                                    );
+                                }
+
+                                $function_analyzer->addOrUpdateParamType(
+                                    $project_analyzer,
+                                    $param_name,
+                                    $possible_type,
+                                    true
+                                );
                             }
                         }
                     }
+                }
 
-                    if (!$has_parent_references
-                        && !$this->file_reference_provider->isMethodParamUsed(strtolower($method_id), $offset)
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new PossiblyUnusedParam(
-                                'Param #' . ($offset + 1) . ' is never referenced in this method',
-                                $code_location
-                            ),
-                            $method_storage->suppressed_issues
-                        )) {
-                            // fall through
+                if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    && !$classlike_storage->is_interface
+                ) {
+                    foreach ($method_storage->params as $offset => $param_storage) {
+                        if (!$this->file_reference_provider->isMethodParamUsed(strtolower($method_id), $offset)
+                            && $param_storage->location
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new PossiblyUnusedParam(
+                                    'Param #' . ($offset + 1) . ' is never referenced in this method',
+                                    $param_storage->location
+                                ),
+                                $method_storage->suppressed_issues
+                            )) {
+                                // fall through
+                            }
                         }
                     }
                 }

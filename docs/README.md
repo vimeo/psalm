@@ -14,7 +14,7 @@ It has a few features that go further than other similar tools:
   Psalm checks that all properties of a given object have values after the constructor is called.
 
 - **Support for complicated array shapes**<br />
-  Psalm has support for [object-like arrays](docblock_type_syntax.md#object-like-arrays), allowing you to specify types for all keys of an array if you so wish.
+  Psalm has support for [object-like arrays](annotating_code/docblock_type_syntax.md#object-like-arrays), allowing you to specify types for all keys of an array if you so wish.
 
 Psalm also has a few features to make it perform as well as possible on large codebases:
 
@@ -48,22 +48,24 @@ There are two main inspirations for Psalm:
 ## Index
 
 - Running Psalm:
-    - [Installation](installation.md)
-    - [Configuration](configuration.md)
+    - [Installation](running_psalm/installation.md)
+    - [Configuration](running_psalm/configuration.md)
     - Plugins
-        - [Using plugins](using_plugins.md)
-        - [Authoring plugins](authoring_plugins.md)
-        - [How Psalm represents types](plugins_type_system.md)
-    - [Command line usage](running_psalm.md)
-    - [IDE support](language_server.md)
+        - [Using plugins](running_psalm/plugins/using_plugins.md)
+        - [Authoring plugins](running_psalm/plugins/authoring_plugins.md)
+        - [How Psalm represents types](running_psalm/plugins/plugins_type_system.md)
+    - [Command line usage](running_psalm/command_line_usage.md)
+    - [IDE support](running_psalm/language_server.md)
     - Handling errors:
-        - [Dealing with code issues](dealing_with_code_issues.md)
-        - [Issue Types](issues.md)
-    - [Checking non-PHP files](checking_non_php_files.md)
+        - [Dealing with code issues](running_psalm/dealing_with_code_issues.md)
+        - [Issue Types](running_psalm/issues.md)
+    - [Checking non-PHP files](running_psalm/checking_non_php_files.md)
 - Annotating code:
-    - [Typing in Psalm](typing_in_psalm.md)
-    - [Docblock Type Syntax](docblock_type_syntax.md)
-    - [Supported Annotations](supported_annotations.md)
-    - [Template Annotations](templated_annotations.md)
- - [Fixing code](fixing_code.md)
+    - [Typing in Psalm](annotating_code/typing_in_psalm.md)
+    - [Docblock Type Syntax](annotating_code/docblock_type_syntax.md)
+    - [Supported Annotations](annotating_code/supported_annotations.md)
+    - [Template Annotations](annotating_code/templated_annotations.md)
+- Manipulating code:
+    - [Fixing code](manipulating_code/fixing.md)
+    - [Refactoring code](manipulating_code/refactoring.md)
  

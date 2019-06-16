@@ -5,6 +5,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
@@ -55,7 +56,8 @@ class PluginTest extends \Psalm\Tests\TestCase
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
-            )
+            ),
+            new \Psalm\Report\ReportOptions()
         );
     }
 
@@ -806,7 +808,9 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
-        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->assertNotNull($this->project_analyzer->stdout_report_options);
+
+        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));

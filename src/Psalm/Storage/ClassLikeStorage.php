@@ -30,11 +30,18 @@ class ClassLikeStorage
     public $private_class_constants = [];
 
     /**
-     * A lookup table for private class constants
+     * A lookup table for class constant name locations
      *
      * @var array<string, CodeLocation>
      */
     public $class_constant_locations = [];
+
+    /**
+     * A lookup table for class constant statement locations
+     *
+     * @var array<string, CodeLocation>
+     */
+    public $class_constant_stmt_locations = [];
 
     /**
      * A lookup table for nodes of unresolvable public class constants
@@ -165,6 +172,16 @@ class ClassLikeStorage
     public $location;
 
     /**
+     * @var CodeLocation|null
+     */
+    public $stmt_location;
+
+    /**
+     * @var CodeLocation|null
+     */
+    public $namespace_name_location;
+
+    /**
      * @var bool
      */
     public $abstract = false;
@@ -225,7 +242,7 @@ class ClassLikeStorage
     public $appearing_method_ids = [];
 
     /**
-     * @var array<string, array<string>>
+     * @var array<string, array<string, string>>
      */
     public $overridden_method_ids = [];
 

@@ -246,6 +246,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         }
 
         if ($fq_class_name) {
+            if ($codebase->alter_code) {
+                $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $stmt->class,
+                    $fq_class_name,
+                    $context->calling_method_id
+                );
+            }
+
             if ($context->check_classes) {
                 if ($context->isPhantomClass($fq_class_name)) {
                     return null;
@@ -258,7 +268,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 ) === false) {
-                    return false;
+                    return;
                 }
 
                 if ($codebase->interfaceExists($fq_class_name)) {
@@ -269,7 +279,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
                     }
 
                     return null;
@@ -279,7 +288,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             $stmt->inferredType = new Type\Union([new TNamedObject($fq_class_name)]);
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
-                $context->check_classes &&
                 $codebase->classlikes->classExists($fq_class_name)
             ) {
                 $storage = $codebase->classlike_storage_provider->get($fq_class_name);
@@ -293,7 +301,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        return;
                     }
                 }
 
@@ -301,7 +309,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if (IssueBuffer::accepts(
                         new DeprecatedClass(
                             $fq_class_name . ' is marked deprecated',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $fq_class_name
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -315,7 +324,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         if (IssueBuffer::accepts(
                             new InternalClass(
                                 $fq_class_name . ' is marked internal to ' . $storage->psalm_internal,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $fq_class_name
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
@@ -329,7 +339,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         if (IssueBuffer::accepts(
                             new InternalClass(
                                 $fq_class_name . ' is marked internal',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $fq_class_name
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {

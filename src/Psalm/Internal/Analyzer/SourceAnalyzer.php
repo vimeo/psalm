@@ -34,6 +34,14 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlippedReplaceable()
+    {
+        return $this->source->getAliasedClassesFlippedReplaceable();
+    }
+
+    /**
      * @return string|null
      */
     public function getFQCLN()

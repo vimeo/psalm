@@ -93,6 +93,10 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             ]);
         }
 
-        return CallMap::getReturnTypeFromCallMap($function_id);
+        $callmap_callables = CallMap::getCallablesFromCallMap($function_id);
+
+        assert($callmap_callables && $callmap_callables[0]->return_type);
+
+        return $callmap_callables[0]->return_type;
     }
 }

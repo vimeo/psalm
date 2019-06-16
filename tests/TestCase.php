@@ -58,12 +58,7 @@ class TestCase extends BaseTestCase
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers,
-            false,
-            true,
-            ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            false
+            $providers
         );
 
         $this->project_analyzer->setPhpVersion('7.3');
@@ -101,6 +96,10 @@ class TestCase extends BaseTestCase
 
         $codebase->config->visitStubFiles($codebase);
 
+        if ($codebase->alter_code) {
+            $this->project_analyzer->interpretRefactors();
+        }
+
         $file_analyzer = new FileAnalyzer(
             $this->project_analyzer,
             $file_path,
@@ -117,7 +116,10 @@ class TestCase extends BaseTestCase
     protected function getTestName($withDataSet = true)
     {
         $name = parent::getName($withDataSet);
-        /** @psalm-suppress DocblockTypeContradiction PHPUnit 7 introduced nullable name */
+        /**
+         * @psalm-suppress DocblockTypeContradiction PHPUnit 7 introduced nullable name
+         * @psalm-suppress TypeDoesNotContainNull PHPUnit 8.2 made it non-nullable again
+         */
         if (null === $name) {
             throw new RuntimeException('anonymous test - shouldn\'t happen');
         }

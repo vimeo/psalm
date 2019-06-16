@@ -45,6 +45,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TScalarClassConstant;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
 
@@ -166,6 +167,9 @@ abstract class Atomic
             case 'interface-string':
                 return new TClassString();
 
+            case 'trait-string':
+                return new TTraitString();
+
             case 'callable-string':
                 return new TCallableString();
 
@@ -245,7 +249,7 @@ abstract class Atomic
     public function isIterable(Codebase $codebase)
     {
         return $this instanceof TIterable
-            || $this->isTraversable($codebase)
+            || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
             || $this instanceof ObjectLike;
     }
@@ -253,7 +257,17 @@ abstract class Atomic
     /**
      * @return bool
      */
-    public function isTraversable(Codebase $codebase)
+    public function isCountable(Codebase $codebase)
+    {
+        return $this->hasCountableInterface($codebase)
+            || $this instanceof TArray
+            || $this instanceof ObjectLike;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasTraversableInterface(Codebase $codebase)
     {
         return $this instanceof TNamedObject
             && (strtolower($this->value) === 'traversable'
@@ -265,6 +279,40 @@ abstract class Atomic
                         $this->value,
                         'Traversable'
                     )))
+                || ($this->extra_types
+                    && array_filter(
+                        $this->extra_types,
+                        function (Atomic $a) use ($codebase) : bool {
+                            return $a->hasTraversableInterface($codebase);
+                        }
+                    )
+                )
+            );
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasCountableInterface(Codebase $codebase)
+    {
+        return $this instanceof TNamedObject
+            && (strtolower($this->value) === 'countable'
+                || ($codebase->classOrInterfaceExists($this->value)
+                    && ($codebase->classExtendsOrImplements(
+                        $this->value,
+                        'Countable'
+                    ) || $codebase->interfaceExtends(
+                        $this->value,
+                        'Countable'
+                    )))
+                || ($this->extra_types
+                    && array_filter(
+                        $this->extra_types,
+                        function (Atomic $a) use ($codebase) : bool {
+                            return $a->hasCountableInterface($codebase);
+                        }
+                    )
+                )
             );
     }
 
@@ -457,7 +505,7 @@ abstract class Atomic
             }
         }
 
-        if ($this instanceof Type\Atomic\Fn
+        if ($this instanceof Type\Atomic\TFn
             || $this instanceof Type\Atomic\TCallable
         ) {
             if ($this->params) {
@@ -680,7 +728,7 @@ abstract class Atomic
             }
         }
 
-        if ($this instanceof Type\Atomic\Fn
+        if ($this instanceof Type\Atomic\TFn
             || $this instanceof Type\Atomic\TCallable
         ) {
             if ($this->params) {
@@ -705,6 +753,162 @@ abstract class Atomic
         }
     }
 
+    public function containsClassLike(string $fq_classlike_name) : bool
+    {
+        if ($this instanceof TNamedObject) {
+            if (strtolower($this->value) === $fq_classlike_name) {
+                return true;
+            }
+        }
+
+        if ($this instanceof TNamedObject
+            || $this instanceof TIterable
+            || $this instanceof TTemplateParam
+        ) {
+            if ($this->extra_types) {
+                foreach ($this->extra_types as $extra_type) {
+                    if ($extra_type->containsClassLike($fq_classlike_name)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if ($this instanceof TScalarClassConstant) {
+            if (strtolower($this->fq_classlike_name) === $fq_classlike_name) {
+                return true;
+            }
+        }
+
+        if ($this instanceof TClassString && $this->as !== 'object') {
+            if (strtolower($this->as) === $fq_classlike_name) {
+                return true;
+            }
+        }
+
+        if ($this instanceof TTemplateParam) {
+            if ($this->as->containsClassLike($fq_classlike_name)) {
+                return true;
+            }
+        }
+
+        if ($this instanceof TLiteralClassString) {
+            if (strtolower($this->value) === $fq_classlike_name) {
+                return true;
+            }
+        }
+
+        if ($this instanceof Type\Atomic\TArray
+            || $this instanceof Type\Atomic\TGenericObject
+            || $this instanceof Type\Atomic\TIterable
+        ) {
+            foreach ($this->type_params as $type_param) {
+                if ($type_param->containsClassLike($fq_classlike_name)) {
+                    return true;
+                }
+            }
+        }
+
+        if ($this instanceof Type\Atomic\ObjectLike) {
+            foreach ($this->properties as $property_type) {
+                if ($property_type->containsClassLike($fq_classlike_name)) {
+                    return true;
+                }
+            }
+        }
+
+        if ($this instanceof Type\Atomic\TFn
+            || $this instanceof Type\Atomic\TCallable
+        ) {
+            if ($this->params) {
+                foreach ($this->params as $param) {
+                    if ($param->type && $param->type->containsClassLike($fq_classlike_name)) {
+                        return true;
+                    }
+                }
+            }
+
+            if ($this->return_type && $this->return_type->containsClassLike($fq_classlike_name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function replaceClassLike(string $old, string $new) : void
+    {
+        if ($this instanceof TNamedObject) {
+            if (strtolower($this->value) === $old) {
+                $this->value = $new;
+            }
+        }
+
+        if ($this instanceof TNamedObject
+            || $this instanceof TIterable
+            || $this instanceof TTemplateParam
+        ) {
+            if ($this->extra_types) {
+                foreach ($this->extra_types as $extra_type) {
+                    $extra_type->replaceClassLike($old, $new);
+                }
+            }
+        }
+
+        if ($this instanceof TScalarClassConstant) {
+            if (strtolower($this->fq_classlike_name) === $old) {
+                $this->fq_classlike_name = $new;
+            }
+        }
+
+        if ($this instanceof TClassString && $this->as !== 'object') {
+            if (strtolower($this->as) === $old) {
+                $this->as = $new;
+            }
+        }
+
+        if ($this instanceof TTemplateParam) {
+            $this->as->replaceClassLike($old, $new);
+        }
+
+        if ($this instanceof TLiteralClassString) {
+            if (strtolower($this->value) === $old) {
+                $this->value = $new;
+            }
+        }
+
+        if ($this instanceof Type\Atomic\TArray
+            || $this instanceof Type\Atomic\TGenericObject
+            || $this instanceof Type\Atomic\TIterable
+        ) {
+            foreach ($this->type_params as $type_param) {
+                $type_param->replaceClassLike($old, $new);
+            }
+        }
+
+        if ($this instanceof Type\Atomic\ObjectLike) {
+            foreach ($this->properties as $property_type) {
+                $property_type->replaceClassLike($old, $new);
+            }
+        }
+
+        if ($this instanceof Type\Atomic\TFn
+            || $this instanceof Type\Atomic\TCallable
+        ) {
+            if ($this->params) {
+                foreach ($this->params as $param) {
+                    if ($param->type) {
+                        $param->type->replaceClassLike($old, $new);
+                    }
+                }
+            }
+
+            if ($this->return_type) {
+                $this->return_type->replaceClassLike($old, $new);
+            }
+        }
+    }
+
     /**
      * @param  Atomic $other
      *
@@ -719,6 +923,20 @@ abstract class Atomic
     public function __toString()
     {
         return '';
+    }
+
+    public function __clone()
+    {
+        if ($this instanceof TNamedObject
+            || $this instanceof TTemplateParam
+            || $this instanceof TIterable
+        ) {
+            if ($this->extra_types) {
+                foreach ($this->extra_types as &$type) {
+                    $type = clone $type;
+                }
+            }
+        }
     }
 
     /**
@@ -738,21 +956,22 @@ abstract class Atomic
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
+     * @param  array<string, string> $aliased_classes
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         return $this->getKey();
     }
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  int           $php_major_version
      * @param  int           $php_minor_version

@@ -2637,6 +2637,73 @@ class TemplateTest extends TestCase
                         return bar($s);
                     }'
             ],
+            'keyOfArrayGet' => [
+                '<?php
+                    /**
+                     * @template DATA as array<string, int|bool>
+                     */
+                    abstract class Foo {
+                        /**
+                         * @var DATA
+                         */
+                        protected $data;
+
+                        /**
+                         * @param DATA $data
+                         */
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+
+                        /**
+                         * @template K as key-of<DATA>
+                         *
+                         * @param K $property
+                         *
+                         * @return DATA[K]
+                         */
+                        public function __get(string $property) {
+                            return $this->data[$property];
+                        }
+                    }',
+            ],
+            'keyOfArrayRandomKey' => [
+                '<?php
+                    /**
+                     * @template DATA as array<string, int|bool>
+                     */
+                    abstract class Foo {
+                        /**
+                         * @var DATA
+                         */
+                        protected $data;
+
+                        /**
+                         * @param DATA $data
+                         */
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+
+                        /**
+                         * @return key-of<DATA>
+                         */
+                        abstract public function getRandomKey() : string;
+                    }'
+            ],
+            'allowBoolTemplateCoercion' =>  [
+                '<?php
+                    /** @template T */
+                    class TestPromise {
+                        /** @psalm-param T $value */
+                        public function __construct($value) {}
+                    }
+
+                    /** @return TestPromise<bool> */
+                    function test(): TestPromise {
+                        return new TestPromise(true);
+                    }',
+            ],
         ];
     }
 
@@ -3286,6 +3353,21 @@ class TemplateTest extends TestCase
 
                     $mario->ame = "Luigi";',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:47:29 - Argument 1 of CharacterRow::__set expects string(id)|string(name)|string(height), string(ame) provided',
+            ],
+            'constrainTemplateTypeWhenClassStringUsed' => [
+                '<?php
+                    class GenericObjectFactory {
+                       /**
+                        * @psalm-template T
+                        * @psalm-param class-string<T> $type
+                        * @psalm-return T
+                        */
+                        public function getObject(string $type)
+                        {
+                            return 3;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement'
             ],
         ];
     }

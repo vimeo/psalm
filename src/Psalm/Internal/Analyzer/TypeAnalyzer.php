@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 
 /**
@@ -263,13 +264,11 @@ class TypeAnalyzer
      *
      * @param  Type\Union   $input_type
      * @param  Type\Union   $container_type
-     *
-     * @return bool
      */
     public static function isSimplyContainedBy(
         Type\Union $input_type,
         Type\Union $container_type
-    ) {
+    ) : bool {
         if ($input_type->getId() === $container_type->getId()) {
             return true;
         }
@@ -284,10 +283,26 @@ class TypeAnalyzer
         $container_type_not_null = clone $container_type;
         $container_type_not_null->removeType('null');
 
-        return !array_diff_key(
-            $input_type_not_null->getTypes(),
-            $container_type_not_null->getTypes()
-        );
+        foreach ($input_type->getTypes() as $input_key => $input_type_part) {
+            foreach ($container_type->getTypes() as $container_key => $container_type_part) {
+                if (get_class($container_type_part) === TNamedObject::class
+                    && $input_type_part instanceof TNamedObject
+                    && $input_type_part->value === $container_type_part->value
+                ) {
+                    continue 2;
+                }
+
+                if ($input_key === $container_key) {
+                    continue 2;
+                }
+            }
+
+            return false;
+        }
+
+
+
+        return true;
     }
 
     /**
@@ -812,7 +827,7 @@ class TypeAnalyzer
             return true;
         }
 
-        if ($container_type_part instanceof TCallable && $input_type_part instanceof Type\Atomic\Fn) {
+        if ($container_type_part instanceof TCallable && $input_type_part instanceof Type\Atomic\TFn) {
             $all_types_contain = true;
 
             if (self::compareCallable(
@@ -989,7 +1004,7 @@ class TypeAnalyzer
                 return false;
             }
 
-            if ($input_type_part->isTraversable($codebase)) {
+            if ($input_type_part->hasTraversableInterface($codebase)) {
                 return true;
             }
         }
@@ -1092,6 +1107,16 @@ class TypeAnalyzer
             );
         }
 
+        if ($container_type_part instanceof TString && $input_type_part instanceof TTraitString) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TTraitString && get_class($input_type_part) === TString::class) {
+            $type_coerced = true;
+
+            return false;
+        }
+
         if (($input_type_part instanceof TClassString
             || $input_type_part instanceof TLiteralClassString)
             && (get_class($container_type_part) === TString::class
@@ -1163,7 +1188,7 @@ class TypeAnalyzer
             return false;
         }
 
-        if ($container_type_part instanceof TString
+        if (($container_type_part instanceof TString || $container_type_part instanceof TScalar)
             && $input_type_part instanceof TNamedObject
         ) {
             // check whether the object has a __toString method
@@ -1183,7 +1208,7 @@ class TypeAnalyzer
             }
         }
 
-        if ($container_type_part instanceof Type\Atomic\Fn && $input_type_part instanceof TCallable) {
+        if ($container_type_part instanceof Type\Atomic\TFn && $input_type_part instanceof TCallable) {
             $type_coerced = true;
 
             return false;
@@ -1245,7 +1270,7 @@ class TypeAnalyzer
                 }
             }
 
-            $input_callable = self::getCallableFromAtomic($codebase, $input_type_part);
+            $input_callable = self::getCallableFromAtomic($codebase, $input_type_part, $container_type_part);
 
             if ($input_callable) {
                 $all_types_contain = true;
@@ -1396,8 +1421,11 @@ class TypeAnalyzer
     /**
      * @return ?TCallable
      */
-    public static function getCallableFromAtomic(Codebase $codebase, Type\Atomic $input_type_part)
-    {
+    public static function getCallableFromAtomic(
+        Codebase $codebase,
+        Type\Atomic $input_type_part,
+        ?TCallable $container_type_part = null
+    ) : ?TCallable {
         if ($input_type_part instanceof TLiteralString) {
             try {
                 $function_storage = $codebase->functions->getStorage(null, $input_type_part->value);
@@ -1409,16 +1437,24 @@ class TypeAnalyzer
                 );
             } catch (\Exception $e) {
                 if (CallMap::inCallMap($input_type_part->value)) {
-                    $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                    $args = [];
+
+                    if ($container_type_part && $container_type_part->params) {
+                        foreach ($container_type_part->params as $i => $param) {
+                            $arg = new \PhpParser\Node\Arg(
+                                new \PhpParser\Node\Expr\Variable('_' . $i)
+                            );
+
+                            $arg->value->inferredType = $param->type;
+
+                            $args[] = $arg;
+                        }
+                    }
+
+                    return \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                         $codebase,
                         $input_type_part->value,
-                        []
-                    );
-
-                    return new TCallable(
-                        'callable',
-                        $function_params,
-                        CallMap::getReturnTypeFromCallMap($input_type_part->value)
+                        $args
                     );
                 }
             }
@@ -1696,8 +1732,8 @@ class TypeAnalyzer
             }
         }
 
-        if ($container_type_part instanceof Type\Atomic\Fn) {
-            if (!$input_type_part instanceof Type\Atomic\Fn) {
+        if ($container_type_part instanceof Type\Atomic\TFn) {
+            if (!$input_type_part instanceof Type\Atomic\TFn) {
                 $type_coerced = true;
                 $type_coerced_from_mixed = true;
 
@@ -1827,8 +1863,8 @@ class TypeAnalyzer
     }
 
     /**
-     * @param  TCallable|Type\Atomic\Fn   $input_type_part
-     * @param  TCallable|Type\Atomic\Fn   $container_type_part
+     * @param  TCallable|Type\Atomic\TFn   $input_type_part
+     * @param  TCallable|Type\Atomic\TFn   $container_type_part
      * @param  bool   &$type_coerced
      * @param  bool   &$type_coerced_from_mixed
      * @param  bool   $has_scalar_match

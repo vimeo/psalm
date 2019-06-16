@@ -12,6 +12,8 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
@@ -80,9 +82,9 @@ class Codebase
     public $statements_provider;
 
     /**
-     * @var bool
+     * @var Progress
      */
-    private $debug_output = false;
+    private $progress;
 
     /**
      * @var array<string, Type\Union>
@@ -176,6 +178,61 @@ class Codebase
     public $diff_methods = false;
 
     /**
+     * @var array<string, string>
+     */
+    public $methods_to_move = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $methods_to_rename = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $properties_to_move = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $properties_to_rename = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $class_constants_to_move = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $class_constants_to_rename = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $classes_to_move = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $call_transforms = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $property_transforms = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $class_constant_transforms = [];
+
+    /**
+     * @var array<string, string>
+     */
+    public $class_transforms = [];
+
+    /**
      * @var bool
      */
     public $allow_backwards_incompatible_changes = true;
@@ -190,22 +247,22 @@ class Codebase
      */
     public $php_minor_version = PHP_MINOR_VERSION;
 
-    /**
-     * @param bool $debug_output
-     */
     public function __construct(
         Config $config,
         Providers $providers,
-        $debug_output = false
+        Progress $progress = null
     ) {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
         $this->config = $config;
         $this->file_storage_provider = $providers->file_storage_provider;
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
-        $this->debug_output = $debug_output;
+        $this->progress = $progress;
         $this->file_provider = $providers->file_provider;
         $this->file_reference_provider = $providers->file_reference_provider;
         $this->statements_provider = $providers->statements_provider;
-        $this->debug_output = $debug_output;
 
         self::$stubbed_constants = [];
 
@@ -218,7 +275,7 @@ class Codebase
             $providers->file_provider,
             $this->reflection,
             $providers->file_reference_provider,
-            $debug_output
+            $progress
         );
 
         $this->loadAnalyzer();
@@ -250,7 +307,7 @@ class Codebase
             $providers->file_storage_provider,
             $this->classlikes,
             $providers->file_reference_provider,
-            $debug_output
+            $progress
         );
 
         $this->loadAnalyzer();
@@ -265,7 +322,7 @@ class Codebase
             $this->config,
             $this->file_provider,
             $this->file_storage_provider,
-            $this->debug_output
+            $this->progress
         );
     }
 
@@ -413,7 +470,7 @@ class Codebase
     {
         return $this->statements_provider->getStatementsForFile(
             $file_path,
-            $this->debug_output
+            $this->progress
         );
     }
 
@@ -1093,10 +1150,15 @@ class Codebase
 
         $gap = null;
 
-        foreach ($type_map as $start_pos => list($end_pos, $possible_type)) {
+        foreach ($type_map as $start_pos => list($end_pos_excluding_whitespace, $possible_type)) {
             if ($offset < $start_pos) {
                 continue;
             }
+
+            $num_whitespace_bytes = preg_match('/\G\s+/', $file_contents, $matches, 0, $end_pos_excluding_whitespace)
+                ? strlen($matches[0])
+                : 0;
+            $end_pos = $end_pos_excluding_whitespace + $num_whitespace_bytes;
 
             if ($offset - $end_pos === 2 || $offset - $end_pos === 3) {
                 $candidate_gap = substr($file_contents, $end_pos, 2);
@@ -1107,10 +1169,6 @@ class Codebase
 
                     break;
                 }
-            }
-
-            if ($offset - $end_pos > 3) {
-                break;
             }
         }
 
@@ -1134,8 +1192,6 @@ class Codebase
 
         $type = Type::parseString($type_string);
 
-        $completion_items = [];
-
         foreach ($type->getTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TNamedObject) {
                 try {
@@ -1144,15 +1200,21 @@ class Codebase
                     foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
                         $method_storage = $this->methods->getStorage($declaring_method_id);
 
-                        $instance_completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                        $completion_item = new \LanguageServerProtocol\CompletionItem(
                             (string)$method_storage,
                             \LanguageServerProtocol\CompletionItemKind::METHOD,
                             null,
                             null,
-                            null,
-                            null,
+                            (string)$method_storage->visibility,
+                            $method_storage->cased_name,
                             $method_storage->cased_name . '()'
                         );
+
+                        if ($method_storage->is_static) {
+                            $static_completion_items[] = $completion_item;
+                        } else {
+                            $instance_completion_items[] = $completion_item;
+                        }
                     }
 
                     foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
@@ -1160,15 +1222,21 @@ class Codebase
                             $declaring_class . '::$' . $property_name
                         );
 
-                        $instance_completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                        $completion_item = new \LanguageServerProtocol\CompletionItem(
                             $property_storage->getInfo() . ' $' . $property_name,
                             \LanguageServerProtocol\CompletionItemKind::PROPERTY,
                             null,
                             null,
-                            null,
-                            null,
+                            (string)$property_storage->visibility,
+                            $property_name,
                             ($gap === '::' ? '$' : '') . $property_name
                         );
+
+                        if ($property_storage->is_static) {
+                            $static_completion_items[] = $completion_item;
+                        } else {
+                            $instance_completion_items[] = $completion_item;
+                        }
                     }
 
                     foreach ($class_storage->class_constant_locations as $const_name => $_) {
@@ -1178,7 +1246,7 @@ class Codebase
                             null,
                             null,
                             null,
-                            null,
+                            $const_name,
                             $const_name
                         );
                     }
@@ -1187,19 +1255,15 @@ class Codebase
                     continue;
                 }
             }
+        }
 
-            if ($gap === '->') {
-                $completion_items = array_merge(
-                    $completion_items,
-                    $instance_completion_items
-                );
-            } else {
-                $completion_items = array_merge(
-                    $completion_items,
-                    $instance_completion_items,
-                    $static_completion_items
-                );
-            }
+        if ($gap === '->') {
+            $completion_items = $instance_completion_items;
+        } else {
+            $completion_items = array_merge(
+                $instance_completion_items,
+                $static_completion_items
+            );
         }
 
         return $completion_items;

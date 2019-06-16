@@ -5,7 +5,7 @@ stages:
   - Code style analysis
   - test
   - Phar build
-  - Code coverage analysis
+  # - Code coverage analysis
 
 php:
   - 7.1
@@ -42,60 +42,44 @@ install:
 
 script:
   - vendor/bin/phpunit
-  - ./psalm
+  - ./psalm --shepherd
 
 # Base test matrix (php/env)
 matrix:
   fast_finish: true
   allow_failures:
     - php: nightly
-  exclude: # covered in Code coverage stage
-    - php: 7.3
-      env: DEPS="high"
 
 # Additional stages
 jobs:
   include:
-    - stage: Code coverage analysis
-      php: 7.3
-      # don't disable xdebug here
-      env: XDEBUG="true"
-      install:
-        - composer $DEFAULT_COMPOSER_FLAGS update
-        - composer require --dev php-coveralls/php-coveralls
-        - mkdir -p build
-      before_script:
-        - vendor/bin/phpunit --dump-xdebug-filter build/xdebug-filter.php
-      script:
-        - vendor/bin/phpunit --prepend build/xdebug-filter.php
-        - ./psalm --shepherd
-      after_success:
-        - travis_retry php vendor/bin/php-coveralls -v
-
     - stage: Code style analysis
       php: 7.3
       env: DEPS="high"
       script:
         - vendor/bin/phpcs
 
-      # always build phar, but only deploy on tag builds
     - stage: Phar build
       php: 7.3
       env: DEPS="high"
-      script:
-        - bin/build-phar.sh
-        - if [[ "$TRAVIS_PULL_REQUEST" = 'false' ]]; then bin/travis-deploy-phar.sh; fi
-      before_deploy:
-        - echo $GPG_ENCRYPTION | gpg --passphrase-fd 0 keys.asc.gpg
-        - gpg --batch --yes --import keys.asc
-        - echo $SIGNING_KEY | gpg --passphrase-fd 0 -u 8A03EA3B385DBAA1 --armor --detach-sig build/psalm.phar
-        - cd phar && git tag ${TRAVIS_TAG} && git push origin ${TRAVIS_TAG} && cd ..
+      script: bin/build-phar.sh
       deploy:
-        skip_cleanup: true
-        on:
-          tags: true
-        provider: releases
-        api_key: $GITHUB_TOKEN
-        file:
-          - build/psalm.phar
-          - build/psalm.phar.asc
+        # deploy tagged releases to github releases page
+        - provider: releases
+          skip_cleanup: true
+          on:
+            tags: true
+            repo: vimeo/psalm
+          api_key: $GITHUB_TOKEN
+          file:
+            - build/psalm.phar
+            - build/psalm.phar.asc
+
+        # deploy built phar to github.com/psalm/phar repo for all branches and tags,
+        # but not for pull requests
+        - provider: script
+          skip_cleanup: true
+          on:
+            all_branches: true
+            condition: ' "$TRAVIS_PULL_REQUEST" = "false" '
+          script: bin/travis-deploy-phar.sh

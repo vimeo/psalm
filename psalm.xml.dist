@@ -75,6 +75,7 @@
         <UnusedClass>
             <errorLevel type="suppress">
                 <directory name="examples"/>
+                <directory name="src/Psalm/Internal/Fork" />
                 <file name="src/Psalm/Plugin/Shepherd.php" />
                 <file name="src/Psalm/Plugin/Hook/MethodReturnTypeProviderInterface.php"/>
             </errorLevel>

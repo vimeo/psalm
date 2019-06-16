@@ -56,4 +56,12 @@ class TraitAnalyzer extends ClassLikeAnalyzer
     {
         return [];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlippedReplaceable()
+    {
+        return [];
+    }
 }

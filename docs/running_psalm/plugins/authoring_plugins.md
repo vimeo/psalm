@@ -1,0 +1,99 @@
+# Authoring Plugins
+
+Plugins may implement one of (or more than one of) `Psalm\Plugin\Hook\*` interface(s).
+
+```php
+<?php
+class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
+{
+}
+```
+
+`Psalm\Plugin\Hook\*` offers 19 interfaces that you can implement:
+
+- `AfterAnalysisInterface` - called after Psalm has completed its analysis. Use this hook if you want to do something with the analysis results.
+- `AfterClassLikeAnalysisInterface` - called after Psalm has completed its analysis of a given class.
+- `AfterClassLikeExistenceCheckInterface` - called after Psalm analyzes a reference to a class, interface or trait.
+- `AfterClassLikeVisitInterface` - called after Psalm crawls the parsed Abstract Syntax Tree for a class-like (class, interface, trait). Due to caching the AST is crawled the first time Psalm sees the file, and is only re-crawled if the file changes, the cache is cleared, or you're disabling cache with `--no-cache`/`--no-reflection-cache`. Use this if you want to collect or modify information about a class before Psalm begins its analysis.
+- `AfterCodebasePopulatedInterface` - called after Psalm has scanned necessary files and populated codebase data.
+- `AfterExpressionAnalysisInterface` - called after Psalm evaluates an expression.
+- `AfterFunctionCallAnalysisInterface` - called after Psalm evaluates an function call.
+- `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
+- `AfterStatementAnalysisInterface` - called after Psalm evaluates an statement.
+- `FunctionExistenceProviderInterface` - can be used to override Psalm's builtin function existence checks for one or more functions.
+- `FunctionParamsProviderInterface.php` - can be used to override Psalm's builtin function paramter lookup for one or more functions.
+- `FunctionReturnTypeProviderInterface` - can be used to override Psalm's builtin function return type lookup for one or more functions.
+- `MethodExistenceProviderInterface` - can be used to override Psalm's builtin method existence checks for one or more classes.
+- `MethodParamsProviderInterface` - can be used to override Psalm's builtin method paramter lookup for one or more classes.
+- `MethodReturnTypeProviderInterface` - can be used to override Psalm's builtin method return type lookup for one or more classes.
+- `MethodVisibilityProviderInterface` - can be used to override Psalm's builtin method visibility checks for one or more classes.
+- `PropertyExistenceProviderInterface` - can be used to override Psalm's builtin property existence checks for one or more classes.
+- `PropertyTypeProviderInterface` - can be used to override Psalm's builtin property type lookup for one or more classes.
+- `PropertyVisibilityProviderInterface` - can be used to override Psalm's builtin property visibility checks for one or more classes.
+
+Here are a couple of example plugins:
+ - [StringChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/StringChecker.php) - checks class references in strings
+ - [PreventFloatAssignmentChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/PreventFloatAssignmentChecker.php) - prevents assignment to floats
+ - [FunctionCasingChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/FunctionCasingChecker.php) - checks that your functions and methods are correctly-cased
+
+To ensure your plugin runs when Psalm does, add it to your [config](../configuration.md):
+```xml
+    <plugins>
+        <plugin filename="src/plugins/SomePlugin.php" />
+    </plugins>
+```
+
+You can also specify an absolute path to your plugin:
+```xml
+    <plugins>
+        <plugin filename="/path/to/SomePlugin.php" />
+    </plugins>
+```
+
+## Type system
+
+Understand how Psalm handles types by [reading this guide](plugins_type_system.md).
+
+## Handling custom plugin issues
+
+Plugins may sometimes need to emit their own issues (i.e. not emit one of the [existing issues](../issues.md)). If this is the case, they can emit an issue that extends `Psalm\Issue\PluginIssue`.
+
+To suppress a custom plugin issue in docblocks you can just use its issue name (e.g. `/** @psalm-suppress NoFloatAssignment */`, but to [suppress it in Psalm’s config](../dealing_with_code_issues.md#config-suppression) you must use the pattern:
+
+```xml
+<PluginIssue name="NoFloatAssignment" errorLevel="suppress" />
+```
+
+You can also use more complex rules in the `<issueHandler />` element, as you can with any other issue type e.g.
+
+```xml
+<PluginIssue name="NoFloatAssignment">
+    <errorLevel type="suppress">
+        <directory name="tests" />
+    </errorLevel>
+</PluginIssue>
+```
+
+## Authoring composer-based plugins
+
+### Requirements
+
+Composer-based plugin is a composer package which conforms to these requirements:
+
+1. Its `type` field is set to `psalm-plugin`
+2. It has `extra.psalm.pluginClass` subkey in its `composer.json` that reference an entry-point class that will be invoked to register the plugin into Psalm runtime.
+3. Entry-point class implements `Psalm\Plugin\PluginEntryPointInterface`
+
+### Using skeleton project
+
+Run `composer create-project weirdan/psalm-plugin-skeleton:dev-master your-plugin-name` to quickly bootstrap a new plugin project in `your-plugin-name` folder. Make sure you adjust namespaces in `composer.json`, `Plugin.php` and `tests` folder.
+
+### Upgrading file-based plugin to composer-based version
+
+Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/tree/master/examples/plugins/composer-based/echo-checker/).
+
+### Registering stub files
+
+Use `Psalm\Plugin\RegistrationInterface::addStubFile()`. See the [sample plugin](https://github.com/weirdan/psalm-doctrine-collections/).
+
+Stub files provide a way to override third-party type information when you cannot add Psalm's extended docblocks to the upstream source files directly.

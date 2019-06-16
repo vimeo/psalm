@@ -1680,6 +1680,56 @@ class FunctionCallTest extends TestCase
                     $xml = new SimpleXMLElement("<?xml version=\"1.0\"?><a><b></b><b></b></a>");
                     echo count($xml);'
             ],
+            'refineWithTraitExists' => [
+                '<?php
+                    function foo(string $s) : void {
+                        if (trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }'
+            ],
+            'refineWithClassExistsOrTraitExists' => [
+                '<?php
+                    function foo(string $s) : void {
+                        if (trait_exists($s) || class_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }
+
+                    function bar(string $s) : void {
+                        if (class_exists($s) || trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }
+
+                    function baz(string $s) : void {
+                        if (class_exists($s) || interface_exists($s) || trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }'
+            ],
+            'minSingleArg' => [
+                '<?php
+                    /** @psalm-suppress TooFewArguments */
+                    min(0);',
+            ],
+            'PHP73-allowIsCountableToInformType' => [
+                '<?php
+                    function getObject() : iterable{
+                       return [];
+                    }
+
+                    $iterableObject = getObject();
+
+                    if (is_countable($iterableObject)) {
+                       if (count($iterableObject) === 0) {}
+                    }',
+            ],
+            'versionCompareAsCallable' => [
+                '<?php
+                    $a = ["1.0", "2.0"];
+                    uksort($a, "version_compare");'
+            ],
         ];
     }
 

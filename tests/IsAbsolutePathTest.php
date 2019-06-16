@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use function Psalm\isAbsolutePath;
+
 class IsAbsolutePathTest extends TestCase
 {
     /**
@@ -13,8 +15,6 @@ class IsAbsolutePathTest extends TestCase
      */
     public function testIsAbsolutePath($path, $expected)
     {
-        require_once __DIR__.'/../src/command_functions.php';
-
         self::assertSame($expected, isAbsolutePath($path));
     }
 

@@ -387,6 +387,16 @@ class UnusedCodeTest extends TestCase
 
                 (new D)->bar();'
             ],
+            'usedClassAfterExtensionLoaded' => [
+                '<?php
+                    class A {
+                        public function __construct() {}
+                    }
+
+                    if (extension_loaded("fdsfdsfd")) {
+                        new A();
+                    }',
+            ],
         ];
     }
 

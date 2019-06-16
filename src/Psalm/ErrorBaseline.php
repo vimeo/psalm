@@ -160,6 +160,7 @@ class ErrorBaseline
                 }
 
                 $fileName = $issue['file_name'];
+                $fileName = str_replace('\\', '/', $fileName);
                 $issueType = $issue['type'];
 
                 if (!isset($carry[$fileName])) {

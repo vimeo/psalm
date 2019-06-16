@@ -16,7 +16,7 @@ class DocumentationTest extends TestCase
      */
     private static function getCodeBlocksFromDocs()
     {
-        $issue_file = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'issues.md';
+        $issue_file = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'running_psalm' . DIRECTORY_SEPARATOR . 'issues.md';
 
         if (!file_exists($issue_file)) {
             throw new \UnexpectedValueException('docs not found');
@@ -101,6 +101,8 @@ class DocumentationTest extends TestCase
         // these are deprecated
         $code_blocks['TypeCoercion'] = true;
         $code_blocks['MixedTypeCoercion'] = true;
+        $code_blocks['MixedTypeCoercion'] = true;
+        $code_blocks['MisplacedRequiredParam'] = true;
 
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);

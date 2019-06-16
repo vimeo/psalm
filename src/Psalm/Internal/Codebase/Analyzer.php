@@ -11,6 +11,7 @@ use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Progress\Progress;
 
 /**
  * @psalm-type  IssueData = array{
@@ -50,7 +51,8 @@ use Psalm\Internal\Provider\FileStorageProvider;
  *     >,
  *     class_locations: array<string, array<int, \Psalm\CodeLocation>>,
  *     class_method_locations: array<string, array<int, \Psalm\CodeLocation>>,
- *     class_property_locations: array<string, array<int, \Psalm\CodeLocation>>
+ *     class_property_locations: array<string, array<int, \Psalm\CodeLocation>>,
+ *     possible_method_param_types: array<string, array<int, \Psalm\Type\Union>>
  * }
  */
 
@@ -77,14 +79,14 @@ class Analyzer
     private $file_storage_provider;
 
     /**
-     * @var bool
+     * @var Progress
      */
-    private $debug_output;
+    private $progress;
 
     /**
      * Used to store counts of mixed vs non-mixed variables
      *
-     * @var array<string, array{0: int, 1: int}
+     * @var array<string, array{0: int, 1: int}>
      */
     private $mixed_counts = [];
 
@@ -135,18 +137,20 @@ class Analyzer
     private $type_map = [];
 
     /**
-     * @param bool $debug_output
+     * @var array<string, array<int, \Psalm\Type\Union>>
      */
+    public $possible_method_param_types = [];
+
     public function __construct(
         Config $config,
         FileProvider $file_provider,
         FileStorageProvider $file_storage_provider,
-        $debug_output
+        Progress $progress
     ) {
         $this->config = $config;
         $this->file_provider = $file_provider;
         $this->file_storage_provider = $file_storage_provider;
-        $this->debug_output = $debug_output;
+        $this->progress = $progress;
     }
 
     /**
@@ -199,9 +203,7 @@ class Analyzer
             $file_analyzer = new FileAnalyzer($project_analyzer, $file_path, $file_name);
         }
 
-        if ($this->debug_output) {
-            echo 'Getting ' . $file_path . "\n";
-        }
+        $this->progress->debug('Getting ' . $file_path . "\n");
 
         return $file_analyzer;
     }
@@ -220,21 +222,49 @@ class Analyzer
         $filetype_analyzers = $this->config->getFiletypeAnalyzers();
         $codebase = $project_analyzer->getCodebase();
 
+        if ($alter_code) {
+            $project_analyzer->interpretRefactors();
+        }
+
         $analysis_worker =
             /**
              * @param int $_
              * @param string $file_path
              *
-             * @return void
+             * @return array
              */
             function ($_, $file_path) use ($project_analyzer, $filetype_analyzers) {
                 $file_analyzer = $this->getFileAnalyzer($project_analyzer, $file_path, $filetype_analyzers);
 
-                if ($this->debug_output) {
-                    echo 'Analyzing ' . $file_analyzer->getFilePath() . "\n";
-                }
+                $this->progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
 
                 $file_analyzer->analyze(null);
+
+                return $this->getFileIssues($file_path);
+            };
+
+        $this->progress->start(count($this->files_to_analyze));
+
+        $task_done_closure =
+            /**
+             * @param array<IssueData> $issues
+             */
+            function (array $issues): void {
+                $has_error = false;
+                $has_info = false;
+
+                foreach ($issues as $issue) {
+                    if ($issue['severity'] === 'error') {
+                        $has_error = true;
+                        break;
+                    }
+
+                    if ($issue['severity'] === 'info') {
+                        $has_info = true;
+                    }
+                }
+
+                $this->progress->taskDone($has_error ? 2 : ($has_info ? 1 : 0));
             };
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
@@ -274,9 +304,7 @@ class Analyzer
                     $analyzer = $codebase->analyzer;
                     $file_reference_provider = $codebase->file_reference_provider;
 
-                    if ($this->debug_output) {
-                        echo 'Gathering data for forked process' . "\n";
-                    }
+                    $this->progress->debug('Gathering data for forked process' . "\n");
 
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
@@ -299,13 +327,13 @@ class Analyzer
                         'class_locations' => $file_reference_provider->getAllClassLocations(),
                         'class_method_locations' => $file_reference_provider->getAllClassMethodLocations(),
                         'class_property_locations' => $file_reference_provider->getAllClassPropertyLocations(),
+                        'possible_method_param_types' => $analyzer->getPossibleMethodParamTypes(),
                     ];
-                }
+                },
+                $task_done_closure
             );
 
-            if ($this->debug_output) {
-                echo 'Forking analysis' . "\n";
-            }
+            $this->progress->debug('Forking analysis' . "\n");
 
             // Wait for all tasks to complete and collect the results.
             /**
@@ -313,9 +341,7 @@ class Analyzer
              */
             $forked_pool_data = $pool->wait();
 
-            if ($this->debug_output) {
-                echo 'Collecting forked analysis results' . "\n";
-            }
+            $this->progress->debug('Collecting forked analysis results' . "\n");
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
@@ -366,6 +392,26 @@ class Analyzer
                     }
                 }
 
+                foreach ($pool_data['possible_method_param_types'] as $declaring_method_id => $possible_param_types) {
+                    if (!isset($this->possible_method_param_types[$declaring_method_id])) {
+                        $this->possible_method_param_types[$declaring_method_id] = $possible_param_types;
+                    } else {
+                        foreach ($possible_param_types as $offset => $possible_param_type) {
+                            if (!isset($this->possible_method_param_types[$declaring_method_id][$offset])) {
+                                $this->possible_method_param_types[$declaring_method_id][$offset]
+                                    = $possible_param_type;
+                            } else {
+                                $this->possible_method_param_types[$declaring_method_id][$offset]
+                                    = \Psalm\Type::combineUnionTypes(
+                                        $this->possible_method_param_types[$declaring_method_id][$offset],
+                                        $possible_param_type,
+                                        $codebase
+                                    );
+                            }
+                        }
+                    }
+                }
+
                 foreach ($pool_data['file_manipulations'] as $file_path => $manipulations) {
                     FileManipulationBuffer::add($file_path, $manipulations);
                 }
@@ -385,12 +431,17 @@ class Analyzer
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $analysis_worker($i, $file_path);
                 ++$i;
+
+                $issues = $this->getFileIssues($file_path);
+                $task_done_closure($issues);
             }
 
             foreach (IssueBuffer::getIssuesData() as $issue_data) {
                 $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
             }
         }
+
+        $this->progress->finish();
 
         $codebase = $project_analyzer->getCodebase();
 
@@ -411,12 +462,31 @@ class Analyzer
         }
 
         if ($alter_code) {
+            $this->progress->startAlteringFiles();
+
+            $project_analyzer->prepareMigration();
+
             $files_to_update = $this->files_to_update !== null ? $this->files_to_update : $this->files_to_analyze;
 
             foreach ($files_to_update as $file_path) {
-                $this->updateFile($file_path, $project_analyzer->dry_run, true);
+                $this->updateFile($file_path, $project_analyzer->dry_run);
             }
+
+            $project_analyzer->migrateCode();
         }
+    }
+
+    /**
+     * @return array<IssueData>
+     */
+    private function getFileIssues(string $file_path): array
+    {
+        return array_filter(
+            IssueBuffer::getIssuesData(),
+            function (array $issue) use ($file_path): bool {
+                return $issue['file_path'] === $file_path;
+            }
+        );
     }
 
     /**
@@ -815,7 +885,7 @@ class Analyzer
     }
 
     /**
-     * @var array<string, string<bool>> $names
+     * @param array<string, array<string, bool>> $names
      * @return void
      * @psalm-suppress MixedPropertyTypeCoercion
      */
@@ -1050,17 +1120,20 @@ class Analyzer
     /**
      * @param  string $file_path
      * @param  bool $dry_run
-     * @param  bool $output_changes to console
      *
      * @return void
      */
-    public function updateFile($file_path, $dry_run, $output_changes = false)
+    public function updateFile($file_path, $dry_run)
     {
         $new_return_type_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
 
-        $other_manipulations = FileManipulationBuffer::getForFile($file_path);
+        $other_manipulations = FileManipulationBuffer::getManipulationsForFile($file_path);
 
         $file_manipulations = array_merge($new_return_type_manipulations, $other_manipulations);
+
+        if (!$file_manipulations) {
+            return;
+        }
 
         usort(
             $file_manipulations,
@@ -1080,39 +1153,30 @@ class Analyzer
             }
         );
 
-        $docblock_update_count = count($file_manipulations);
-
         $existing_contents = $this->file_provider->getContents($file_path);
 
         foreach ($file_manipulations as $manipulation) {
-            $existing_contents
-                = substr($existing_contents, 0, $manipulation->start)
-                    . $manipulation->insertion_text
-                    . substr($existing_contents, $manipulation->end);
+            $existing_contents = $manipulation->transform($existing_contents);
         }
 
-        if ($docblock_update_count) {
-            if ($dry_run) {
-                echo $file_path . ':' . "\n";
+        if ($dry_run) {
+            echo $file_path . ':' . "\n";
 
-                $differ = new \SebastianBergmann\Diff\Differ(
-                    new \SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder([
-                        'fromFile' => 'Original',
-                        'toFile' => 'New',
-                    ])
-                );
+            $differ = new \SebastianBergmann\Diff\Differ(
+                new \SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder([
+                    'fromFile' => $file_path,
+                    'toFile' => $file_path,
+                ])
+            );
 
-                echo (string) $differ->diff($this->file_provider->getContents($file_path), $existing_contents);
+            echo (string) $differ->diff($this->file_provider->getContents($file_path), $existing_contents);
 
-                return;
-            }
-
-            if ($output_changes) {
-                echo 'Altering ' . $file_path . "\n";
-            }
-
-            $this->file_provider->setContents($file_path, $existing_contents);
+            return;
         }
+
+        $this->progress->alterFileDone($file_path);
+
+        $this->file_provider->setContents($file_path, $existing_contents);
     }
 
     /**
@@ -1122,7 +1186,7 @@ class Analyzer
      *
      * @return array<int, IssueData>
      */
-    public function getExistingIssuesForFile($file_path, $start, $end)
+    public function getExistingIssuesForFile($file_path, $start, $end, ?string $issue_type = null)
     {
         if (!isset($this->existing_issues[$file_path])) {
             return [];
@@ -1132,7 +1196,9 @@ class Analyzer
 
         foreach ($this->existing_issues[$file_path] as $issue_data) {
             if ($issue_data['from'] >= $start && $issue_data['from'] <= $end) {
-                $applicable_issues[] = $issue_data;
+                if ($issue_type === null || $issue_type === $issue_data['type']) {
+                    $applicable_issues[] = $issue_data;
+                }
             }
         }
 
@@ -1212,6 +1278,14 @@ class Analyzer
             $this->reference_map[$file_path] ?? [],
             $this->type_map[$file_path] ?? []
         ];
+    }
+
+    /**
+     * @return array<string, array<int, \Psalm\Type\Union>>
+     */
+    public function getPossibleMethodParamTypes()
+    {
+        return $this->possible_method_param_types;
     }
 
     /**

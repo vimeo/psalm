@@ -347,15 +347,16 @@ class Union
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
+     * @param  array<string, string> $aliased_classes
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         $printed_int = false;
         $printed_float = false;
         $printed_string = false;
@@ -363,19 +364,21 @@ class Union
         $s = '';
 
         foreach ($this->types as $type) {
-            if ($type instanceof TLiteralFloat) {
+            $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
+
+            if ($type instanceof TLiteralFloat && $type_string === 'float') {
                 if ($printed_float) {
                     continue;
                 }
 
                 $printed_float = true;
-            } elseif ($type instanceof TLiteralString) {
+            } elseif ($type instanceof TLiteralString && $type_string === 'string') {
                 if ($printed_string) {
                     continue;
                 }
 
                 $printed_string = true;
-            } elseif ($type instanceof TLiteralInt) {
+            } elseif ($type instanceof TLiteralInt && $type_string === 'int') {
                 if ($printed_int) {
                     continue;
                 }
@@ -383,7 +386,7 @@ class Union
                 $printed_int = true;
             }
 
-            $s .= $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format) . '|';
+            $s .= $type_string . '|';
         }
 
         return substr($s, 0, -1) ?: '';
@@ -391,7 +394,7 @@ class Union
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
@@ -516,6 +519,7 @@ class Union
             }
 
             unset($this->types['class-string']);
+            unset($this->types['trait-string']);
         } elseif ($type_string === 'int' && $this->literal_int_types) {
             foreach ($this->literal_int_types as $literal_key => $_) {
                 unset($this->types[$literal_key]);
@@ -646,6 +650,7 @@ class Union
     {
         return isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
             || isset($this->types['array-key'])
             || $this->literal_string_types
@@ -727,6 +732,7 @@ class Union
             || isset($this->types['float'])
             || isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['trait-string'])
             || isset($this->types['bool'])
             || isset($this->types['false'])
             || isset($this->types['true'])
@@ -949,6 +955,8 @@ class Union
         $keys_to_unset = [];
 
         foreach ($this->types as $key => $atomic_type) {
+            $original_key = $key;
+
             if ($bracket_pos = strpos($key, '<')) {
                 $key = substr($key, 0, $bracket_pos);
             }
@@ -1010,7 +1018,7 @@ class Union
 
                             foreach ($replacement_type->getTypes() as $replacement_key => $_) {
                                 if ($replacement_key !== $key) {
-                                    $keys_to_unset[] = $key;
+                                    $keys_to_unset[] = $original_key;
                                 }
                             }
                         }
@@ -1076,7 +1084,7 @@ class Union
 
                     $class_string = new Type\Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
 
-                    $keys_to_unset[] = $key;
+                    $keys_to_unset[] = $original_key;
 
                     $this->types[$class_string->getKey()] = $class_string;
 
@@ -1154,10 +1162,37 @@ class Union
                                 $replacement_type
                                     = clone $array_template_type->properties[$offset_template_type->value];
 
-                                $keys_to_unset[] = $key;
+                                $keys_to_unset[] = $original_key;
 
                                 foreach ($replacement_type->getTypes() as $replacement_atomic_type) {
-                                    $this->types[$replacement_atomic_type->getKey()] = clone $replacement_atomic_type;
+                                    $this->types[$replacement_atomic_type->getKey()] = $replacement_atomic_type;
+                                }
+                            }
+                        }
+                    }
+                }
+            } elseif ($atomic_type instanceof Type\Atomic\TTemplateKeyOf) {
+                if ($replace) {
+                    if (isset($template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''])) {
+                        $template_type
+                            = $template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''][0];
+
+                        if ($template_type->isSingle()) {
+                            $template_type = array_values($template_type->types)[0];
+
+                            if ($template_type instanceof Type\Atomic\ObjectLike
+                                || $template_type instanceof Type\Atomic\TArray
+                            ) {
+                                if ($template_type instanceof Type\Atomic\ObjectLike) {
+                                    $key_type = $template_type->getGenericKeyType();
+                                } else {
+                                    $key_type = clone $template_type->type_params[0];
+                                }
+
+                                $keys_to_unset[] = $original_key;
+
+                                foreach ($key_type->getTypes() as $key_atomic_type) {
+                                    $this->types[$key_atomic_type->getKey()] = $key_atomic_type;
                                 }
                             }
                         }
@@ -1529,6 +1564,7 @@ class Union
 
         return isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
             || $this->literal_string_types;
     }
@@ -1567,7 +1603,11 @@ class Union
 
     public function hasLiteralValue() : bool
     {
-        return $this->literal_int_types || $this->literal_string_types || $this->literal_float_types;
+        return $this->literal_int_types
+            || $this->literal_string_types
+            || $this->literal_float_types
+            || isset($this->types['false'])
+            || isset($this->types['true']);
     }
 
     /**
@@ -1666,6 +1706,27 @@ class Union
                 $file_storage,
                 $phantom_classes
             );
+        }
+    }
+
+    public function containsClassLike(string $fq_class_like_name) : bool
+    {
+        foreach ($this->types as $atomic_type) {
+            if ($atomic_type->containsClassLike($fq_class_like_name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function replaceClassLike(string $old, string $new) : void
+    {
+        foreach ($this->types as $key => $atomic_type) {
+            $atomic_type->replaceClassLike($old, $new);
+
+            $this->removeType($key);
+            $this->addType($atomic_type);
         }
     }
 
