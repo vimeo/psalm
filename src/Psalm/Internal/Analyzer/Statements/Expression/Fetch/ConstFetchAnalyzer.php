@@ -135,7 +135,7 @@ class ConstFetchAnalyzer
                                 false,
                                 true
                             ) === false) {
-                                return false;
+                                return;
                             }
                         }
                     }
@@ -183,7 +183,7 @@ class ConstFetchAnalyzer
                 }
 
                 if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-                    return null;
+                    return;
                 }
 
                 $const_id = $fq_class_name . '::' . $stmt->name;
@@ -248,7 +248,7 @@ class ConstFetchAnalyzer
                         }
                     }
 
-                    return false;
+                    return;
                 }
 
                 if ($context->calling_method_id) {
@@ -352,7 +352,7 @@ class ConstFetchAnalyzer
 
         if ($stmt->class instanceof PhpParser\Node\Expr) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
-                return false;
+                return;
             }
         }
 
