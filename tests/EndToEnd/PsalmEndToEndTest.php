@@ -74,6 +74,7 @@ class PsalmEndToEndTest extends TestCase
     public function testInit(): void
     {
         $this->assertStringStartsWith('Config file created', $this->runPsalm(['--init'])['STDOUT']);
+        $this->assertFileExists('psalm.xml');
     }
 
     public function testAlter(): void
