@@ -885,7 +885,7 @@ class Analyzer
     }
 
     /**
-     * @param array<string, string<bool>> $names
+     * @param array<string, array<string, bool>> $names
      * @return void
      * @psalm-suppress MixedPropertyTypeCoercion
      */
