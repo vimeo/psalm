@@ -236,6 +236,9 @@ class CommentAnalyzer
 
             $type_string = str_replace("\n", '', implode('', $var_line_parts));
 
+            $type_string = preg_replace('/>[^>^\}]*$/', '>', $type_string);
+            $type_string = preg_replace('/\}[^>^\}]*$/', '}', $type_string);
+
             try {
                 $type_tokens = Type::fixUpLocalType(
                     $type_string,
