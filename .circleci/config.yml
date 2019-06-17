@@ -27,6 +27,14 @@ jobs:
           root: /home/docker/project/
           paths:
             - .
+  "Code Style Analysis":
+    executor: php-72
+    steps:
+      - attach_workspace:
+          at: /home/docker/project/
+      - run:
+          name: Code Style Analysis with PHPCS
+          command: vendor/bin/phpcs
   test:
     executor: php-72
     steps:
@@ -105,15 +113,20 @@ workflows:
       - test:
           requires:
             - install-and-self-analyse
+      - "Code Style Analysis":
+          requires:
+            - install-and-self-analyse
       - coverage:
           requires:
             - test
+            - "Code Style Analysis"
       - mutation:
           requires:
             - coverage
       - phar-build:
           requires:
             - test
+            - "Code Style Analysis"
       - test-with-real-projects:
           requires:
             - phar-build
