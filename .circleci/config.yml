@@ -5,7 +5,7 @@ executors:
     docker:
       - image: thecodingmachine/php:7.2-v2-cli
 jobs:
-  install:
+  install-and-self-analyse:
     executor: php-72
     steps:
       - checkout
@@ -20,18 +20,13 @@ jobs:
           key: composer-v2-{{ checksum "/tmp/cachekey" }}
           paths:
             - vendor
+      - run:
+          name: Static analysis
+          command: php -dextension=pcntl.so ./psalm --threads=10
       - persist_to_workspace:
           root: /home/docker/project/
           paths:
             - .
-  static-analysis:
-    executor: php-72
-    steps:
-      - attach_workspace:
-          at: /home/docker/project/
-      - run:
-          name: Static analysis
-          command: ./psalm
   test:
     executor: php-72
     steps:
@@ -106,13 +101,10 @@ jobs:
 workflows:
   Welcome:
     jobs:
-      - install
-      - static-analysis:
-          requires:
-            - install
+      - install-and-self-analyse
       - test:
           requires:
-            - static-analysis
+            - install-and-self-analyse
       - coverage:
           requires:
             - test
