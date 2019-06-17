@@ -207,6 +207,22 @@ class ErrorBaseline
         $filesNode = $baselineDoc->createElement('files');
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);
 
+        $extensions = array_merge(get_loaded_extensions(), get_loaded_extensions(true));
+
+        usort($extensions, 'strnatcasecmp');
+
+        $filesNode->setAttribute('php-version', implode('; ', array_merge(
+            [
+                ('php:' . phpversion()),
+            ],
+            array_map(
+                function (string $extension) : string {
+                    return $extension . ':' . phpversion($extension);
+                },
+                $extensions
+            )
+        )));
+
         foreach ($groupedIssues as $file => $issueTypes) {
             $fileNode = $baselineDoc->createElement('file');
 
