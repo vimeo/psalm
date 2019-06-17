@@ -31,7 +31,7 @@ jobs:
           at: /home/docker/project/
       - run:
           name: Static analysis
-          command: ./psalm
+          command: php -dextension=pcntl.so ./psalm --threads=10
   test:
     executor: php-72
     steps:
