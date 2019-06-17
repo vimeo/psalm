@@ -60,10 +60,11 @@ class Pool
         );
 
         if (!extension_loaded('pcntl')) {
-            die(
+            echo(
                 'The pcntl extension must be loaded in order for Psalm to be able to use multiple processes.'
                 . PHP_EOL
             );
+            exit(1);
         }
 
         if (ini_get('pcre.jit') === '1'
