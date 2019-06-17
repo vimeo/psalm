@@ -569,6 +569,28 @@ class ClassStringTest extends TestCase
                         if (!is_subclass_of($s, A::class)) {}
                     }',
             ],
+            'allowClassExistsCheckOnClassString' => [
+                '<?php
+                    class C
+                    {
+                        public function __construct() {
+                            if (class_exists(\Doesnt\Really::class)) {
+                                \Doesnt\Really::something();
+                            }
+                        }
+                    }'
+            ],
+            'allowClassExistsCheckOnString' => [
+                '<?php
+                    class C
+                    {
+                        public function __construct() {
+                            if (class_exists("Doesnt\\Really")) {
+                                \Doesnt\Really::something();
+                            }
+                        }
+                    }'
+            ],
         ];
     }
 
