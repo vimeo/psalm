@@ -1014,6 +1014,30 @@ class AnnotationTest extends TestCase
                         $a->bar();
                     }'
             ],
+            'allowClosingComma' => [
+                '<?php
+                    /**
+                     * @param array{
+                     *    foo: string,
+                     *    bar: string,
+                     *    baz: array{
+                     *       a: int,
+                     *    },
+                     * } $foo
+                     */
+                    function foo(array $foo) : int {
+                      return count($foo);
+                    }
+
+                    /**
+                     * @var array{
+                     *    foo:string,
+                     *    bar:string,
+                     *    baz:string,
+                     * } $foo
+                     */
+                    $foo = ["foo" => "", "bar" => "", "baz" => ""];'
+            ],
         ];
     }
 

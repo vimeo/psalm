@@ -76,7 +76,9 @@ class CommentAnalyzer
                     $type_start = $offset + $comment->getFilePos();
                     $type_end = $type_start + strlen($line_parts[0]);
 
-                    $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                    $line_parts[0] = preg_replace('@^[ \t]*\*@m', '', $line_parts[0]);
+                    $line_parts[0] = preg_replace('/,\n\s+\}/', '}', $line_parts[0]);
+                    $line_parts[0] = str_replace("\n", '', $line_parts[0]);
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
@@ -308,7 +310,9 @@ class CommentAnalyzer
                         $start = $offset + $comment->getFilePos();
                         $end = $start + strlen($line_parts[0]);
 
-                        $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                        $line_parts[0] = preg_replace('@^[ \t]*\*@m', '', $line_parts[0]);
+                        $line_parts[0] = preg_replace('/,\n\s+\}/', '}', $line_parts[0]);
+                        $line_parts[0] = str_replace("\n", '', $line_parts[0]);
 
                         if ($line_parts[0] === ''
                             || ($line_parts[0][0] === '$'
