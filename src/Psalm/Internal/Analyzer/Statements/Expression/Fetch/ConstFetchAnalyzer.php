@@ -10,6 +10,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\ParentNotFound;
@@ -293,7 +294,18 @@ class ConstFetchAnalyzer
 
                 $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                if (isset($class_const_storage->deprecated_constants[$stmt->name->name])) {
+                if ($class_const_storage->deprecated) {
+                    if (IssueBuffer::accepts(
+                        new DeprecatedClass(
+                            'Class ' . $fq_class_name . ' is deprecated',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $fq_class_name
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif (isset($class_const_storage->deprecated_constants[$stmt->name->name])) {
                     if (IssueBuffer::accepts(
                         new DeprecatedConstant(
                             'Constant ' . $const_id . ' is deprecated',
