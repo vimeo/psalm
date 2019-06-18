@@ -198,7 +198,7 @@ Options:
         Only checks methods that have changed (and their dependents)
 
     --output-format=console
-        Changes the output format. Possible values: compact, console, emacs, json, pylint, xml, checkstyle
+        Changes the output format. Possible values: compact, console, emacs, json, pylint, xml, checkstyle, sonarqube
 
     --find-dead-code[=auto]
     --find-unused-code[=auto]

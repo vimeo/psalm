@@ -179,6 +179,91 @@ echo $a;';
     /**
      * @return void
      */
+    public function testSonarqubeReport()
+    {
+        $this->analyzeFileForReport();
+
+        $issue_data = [
+            'issues' => [
+                [
+                    'engineId' => 'Psalm',
+                    'ruleId' => 'UndefinedVariable',
+                    'primaryLocation' => [
+                        'message' => 'Cannot find referenced variable $as_you',
+                        'filePath' => 'somefile.php',
+                        'textRange' => [
+                            'startLine' => 3,
+                            'endLine' => 3,
+                            'startColumn' => 9,
+                            'endColumn' => 16,
+                        ],
+                    ],
+                    'type' => 'CODE_SMELL',
+                    'severity' => 'CRITICAL',
+                ],
+                [
+                    'engineId' => 'Psalm',
+                    'ruleId' => 'MixedInferredReturnType',
+                    'primaryLocation' => [
+                        'message' => 'Could not verify return type \'string|null\' for psalmCanVerify',
+                        'filePath' => 'somefile.php',
+                        'textRange' => [
+                            'startLine' => 2,
+                            'endLine' => 2,
+                            'startColumn' => 41,
+                            'endColumn' => 48,
+                        ],
+                    ],
+                    'type' => 'CODE_SMELL',
+                    'severity' => 'CRITICAL',
+                ],
+                [
+                    'engineId' => 'Psalm',
+                    'ruleId' => 'UndefinedConstant',
+                    'primaryLocation' => [
+                        'message' => 'Const CHANGE_ME is not defined',
+                        'filePath' => 'somefile.php',
+                        'textRange' => [
+                            'startLine' => 7,
+                            'endLine' => 7,
+                            'startColumn' => 5,
+                            'endColumn' => 14,
+                        ],
+                    ],
+                    'type' => 'CODE_SMELL',
+                    'severity' => 'CRITICAL',
+                ],
+                [
+                    'engineId' => 'Psalm',
+                    'ruleId' => 'PossiblyUndefinedGlobalVariable',
+                    'primaryLocation' => [
+                        'message' => 'Possibly undefined global variable $a, first seen on line 10',
+                        'filePath' => 'somefile.php',
+                        'textRange' => [
+                            'startLine' => 15,
+                            'endLine' => 15,
+                            'startColumn' => 5,
+                            'endColumn' => 7,
+                        ],
+                    ],
+                    'type' => 'CODE_SMELL',
+                    'severity' => 'MINOR',
+                ],
+            ],
+        ];
+
+        $sonarqube_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-sonarqube.json'])[0];
+        $sonarqube_report_options->format = 'sonarqube';
+
+        $this->assertSame(
+            $issue_data,
+            json_decode(IssueBuffer::getOutput($sonarqube_report_options), true)
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testEmacsReport()
     {
         $this->analyzeFileForReport();

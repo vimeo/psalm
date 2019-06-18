@@ -11,6 +11,7 @@ use Psalm\Report\EmacsReport;
 use Psalm\Report\JsonReport;
 use Psalm\Report\JsonSummaryReport;
 use Psalm\Report\PylintReport;
+use Psalm\Report\SonarqubeReport;
 use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
 
@@ -404,6 +405,10 @@ class IssueBuffer
                     $mixed_expression_count,
                     $total_expression_count
                 );
+                break;
+
+            case Report::TYPE_SONARQUBE:
+                $output = new SonarqubeReport(self::$issues_data, $report_options);
                 break;
 
             case Report::TYPE_PYLINT:
