@@ -8,6 +8,7 @@ abstract class Report
     const TYPE_PYLINT = 'pylint';
     const TYPE_JSON = 'json';
     const TYPE_JSON_SUMMARY = 'json-summary';
+    const TYPE_SONARQUBE = 'sonarqube';
     const TYPE_EMACS = 'emacs';
     const TYPE_XML = 'xml';
     const TYPE_CHECKSTYLE = 'checkstyle';
@@ -19,6 +20,7 @@ abstract class Report
         self::TYPE_PYLINT,
         self::TYPE_JSON,
         self::TYPE_JSON_SUMMARY,
+        self::TYPE_SONARQUBE,
         self::TYPE_EMACS,
         self::TYPE_XML,
         self::TYPE_CHECKSTYLE,
