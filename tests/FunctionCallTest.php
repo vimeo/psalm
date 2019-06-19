@@ -95,6 +95,16 @@ class FunctionCallTest extends TestCase
                         );
                     }',
             ],
+            'arrayFilterNamedFunction' => [
+                '<?php
+                    /**
+                     * @param array<int, DateTimeImmutable|null> $a
+                     * @return array<int, DateTimeImmutable>
+                     */
+                    function foo(array $a) : array {
+                        return array_filter($a, "is_object");
+                    }',
+            ],
             'typedArrayWithDefault' => [
                 '<?php
                     class A {}

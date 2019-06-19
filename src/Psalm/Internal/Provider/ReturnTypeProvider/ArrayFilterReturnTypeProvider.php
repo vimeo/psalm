@@ -5,6 +5,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Codebase\CallMap;
 use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\StatementsSource;
@@ -57,6 +58,54 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             $inner_type->removeType('false');
         } elseif (!isset($call_args[2])) {
             $function_call_arg = $call_args[1];
+
+            if ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
+                && CallMap::inCallMap($function_call_arg->value->value)
+            ) {
+                $callables = CallMap::getCallablesFromCallMap($function_call_arg->value->value);
+
+                if ($callables) {
+                    $callable = clone $callables[0];
+
+                    if ($callable->params !== null && $callable->return_type) {
+                        $function_call_arg->value = new PhpParser\Node\Expr\Closure([
+                            'params' => array_map(
+                                function (\Psalm\Storage\FunctionLikeParameter $param) {
+                                    return new PhpParser\Node\Param(
+                                        new PhpParser\Node\Expr\Variable($param->name)
+                                    );
+                                },
+                                $callable->params
+                            ),
+                            'stmts' => [
+                                new PhpParser\Node\Stmt\Return_(
+                                    new PhpParser\Node\Expr\FuncCall(
+                                        new PhpParser\Node\Name\FullyQualified(
+                                            $function_call_arg->value->value
+                                        ),
+                                        array_map(
+                                            function (\Psalm\Storage\FunctionLikeParameter $param) {
+                                                return new PhpParser\Node\Arg(
+                                                    new PhpParser\Node\Expr\Variable($param->name)
+                                                );
+                                            },
+                                            $callable->params
+                                        )
+                                    )
+                                )
+                            ],
+                        ]);
+
+                        $closure_atomic_type = new Type\Atomic\TFn(
+                            'Closure',
+                            $callable->params,
+                            $callable->return_type
+                        );
+
+                        $function_call_arg->value->inferredType = new Type\Union([$closure_atomic_type]);
+                    }
+                }
+            }
 
             if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure
                 && isset($function_call_arg->value->inferredType)
