@@ -71,7 +71,11 @@ Psalm also supports the equivalent of `assert($some_int === $other_int)` in the 
 /** @psalm-assert =int $some_int */
 ```
 
-There are two differences between the above assertion and `/** @psalm-assert int $some_int */` (without the `=` sign).
+There are two differences between the above assertion and 
+
+```php
+/** @psalm-assert int $some_int */
+```
 
 Firstly, the negation of `=int` is has no meaning:
 
