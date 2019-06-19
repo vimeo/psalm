@@ -1238,6 +1238,20 @@ class CallAnalyzer
         }
 
         if (!$has_packed_var && count($args) < count($function_params)) {
+            if ($function_storage) {
+                $expected_param_count = $function_storage->required_param_count;
+            } else {
+                for ($i = 0, $j = count($function_params); $i < $j; ++$i) {
+                    $param = $function_params[$i];
+
+                    if ($param->is_optional || $param->is_variadic) {
+                        break;
+                    }
+                }
+
+                $expected_param_count = $i;
+            }
+
             for ($i = count($args), $j = count($function_params); $i < $j; ++$i) {
                 $param = $function_params[$i];
 
@@ -1245,7 +1259,7 @@ class CallAnalyzer
                     if (IssueBuffer::accepts(
                         new TooFewArguments(
                             'Too few arguments for method ' . $cased_method_id
-                                . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
+                                . ' - expecting ' . $expected_param_count . ' but saw ' . count($args),
                             $code_location,
                             $method_id ?: ''
                         ),

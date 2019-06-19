@@ -2269,6 +2269,11 @@ class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidScalarArgument'
             ],
+            'tooFewArgsAccurateCount' => [
+                '<?php
+                    preg_match(\'/adsf/\');',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for method preg_match - expecting 2 but saw 1'
+            ]
         ];
     }
 }
