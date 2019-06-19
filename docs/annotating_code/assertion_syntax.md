@@ -77,7 +77,7 @@ There are two differences between the above assertion and
 /** @psalm-assert int $some_int */
 ```
 
-Firstly, the negation of `=int` is has no meaning:
+Firstly, the negation of `=int` has no meaning:
 
 ```php
 /** @psalm-assert-if-true =int $x */
