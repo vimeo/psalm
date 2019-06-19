@@ -12,7 +12,8 @@ Psalm assertions are of the form
 
 ### is_xxx assertions
 
-Most `is_xxx` PHP functions have companion assertions:
+Most `is_xxx` PHP functions have companion assertions e.g. `int` for `is_int`. Here's the full list:
+
 - `int`
 - `float`
 - `string`
