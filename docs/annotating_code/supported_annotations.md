@@ -191,8 +191,9 @@ And you can check on null values:
 function isNull($value): bool {
   return ($value === null);
 }
-
 ```
+
+A list of acceptable assertions [can be found here](assertion_syntax.md).
 
 ### `@psalm-ignore-nullable-return`
 
