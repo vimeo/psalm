@@ -1,6 +1,6 @@
 # Assertion syntax
 
-Psalm’s [assertion annotation](supported_annotations.md/#psalm-assert-psalm-assert-if-true-and-psalm-assert-if-false) supports a number of different assertions.
+Psalm’s [assertion annotation](supported_annotations.md#psalm-assert-psalm-assert-if-true-and-psalm-assert-if-false) supports a number of different assertions.
 
 Psalm assertions are of the form
 
