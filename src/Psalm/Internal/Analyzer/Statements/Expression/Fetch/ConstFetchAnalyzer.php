@@ -155,6 +155,23 @@ class ConstFetchAnalyzer
                 }
 
                 if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
+                    if ($codebase->classExists($fq_class_name)) {
+                        $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                        if ($class_const_storage->deprecated) {
+                            if (IssueBuffer::accepts(
+                                new DeprecatedClass(
+                                    'Class ' . $fq_class_name . ' is deprecated',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $fq_class_name
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+
                     $stmt->inferredType = Type::getLiteralClassString($fq_class_name);
 
                     if ($codebase->store_node_types) {

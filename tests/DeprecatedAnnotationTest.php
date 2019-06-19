@@ -113,6 +113,16 @@ class DeprecatedAnnotationTest extends TestCase
 
                     echo Foo::FOO;',
                 'error_message' => 'DeprecatedClass',
+            ],
+            'deprecatedClassStringConstant' => [
+                '<?php
+                    /**
+                     * @deprecated
+                     */
+                    class Foo {}
+
+                    echo Foo::class;',
+                'error_message' => 'DeprecatedClass',
             ]
         ];
     }
