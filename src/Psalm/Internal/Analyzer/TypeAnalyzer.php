@@ -452,6 +452,8 @@ class TypeAnalyzer
         foreach ($intersection_container_types as $intersection_container_type) {
             if ($intersection_container_type instanceof TIterable) {
                 $intersection_container_type_lower = 'iterable';
+            } elseif ($intersection_container_type instanceof TObjectWithProperties) {
+                $intersection_container_type_lower = 'object';
             } elseif ($intersection_container_type instanceof TTemplateParam) {
                 if ($intersection_container_type->as->isMixed()) {
                     continue;
@@ -485,6 +487,8 @@ class TypeAnalyzer
             foreach ($intersection_input_types as $intersection_input_type) {
                 if ($intersection_input_type instanceof TIterable) {
                     $intersection_input_type_lower = 'iterable';
+                } elseif ($intersection_input_type instanceof TObjectWithProperties) {
+                    $intersection_input_type_lower = 'object';
                 } elseif ($intersection_input_type instanceof TTemplateParam) {
                     if ($intersection_input_type->as->isMixed()) {
                         continue;

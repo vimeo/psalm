@@ -1333,12 +1333,22 @@ class Union
                     }
 
                     if ($atomic_type->extra_types) {
-                        foreach ($template_type->getTypes() as $atomic_template_type) {
+                        foreach ($template_type->getTypes() as $template_type_key => $atomic_template_type) {
                             if ($atomic_template_type instanceof TNamedObject
                                 || $atomic_template_type instanceof TTemplateParam
                                 || $atomic_template_type instanceof TIterable
+                                || $atomic_template_type instanceof Type\Atomic\TObjectWithProperties
                             ) {
                                 $atomic_template_type->extra_types = $atomic_type->extra_types;
+                            } elseif ($atomic_template_type instanceof Type\Atomic\TObject) {
+                                $first_atomic_type = array_shift($atomic_type->extra_types);
+
+                                if ($atomic_type->extra_types) {
+                                    $first_atomic_type->extra_types = $atomic_type->extra_types;
+                                }
+
+                                $template_type->removeType($template_type_key);
+                                $template_type->addType($first_atomic_type);
                             }
                         }
                     }

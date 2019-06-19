@@ -6,6 +6,8 @@ use Psalm\Type\Atomic;
 
 class TObjectWithProperties extends TObject
 {
+    use HasIntersectionTrait;
+
     /**
      * @var array<string|int, Union>
      */
@@ -23,6 +25,12 @@ class TObjectWithProperties extends TObject
 
     public function __toString()
     {
+        $extra_types = '';
+
+        if ($this->extra_types) {
+            $extra_types = '&' . implode('&', $this->extra_types);
+        }
+
         return 'object{' .
                 implode(
                     ', ',
@@ -40,11 +48,17 @@ class TObjectWithProperties extends TObject
                         $this->properties
                     )
                 ) .
-                '}';
+                '}' . $extra_types;
     }
 
     public function getId()
     {
+        $extra_types = '';
+
+        if ($this->extra_types) {
+            $extra_types = '&' . implode('&', $this->extra_types);
+        }
+
         return 'object{' .
                 implode(
                     ', ',
@@ -62,7 +76,7 @@ class TObjectWithProperties extends TObject
                         $this->properties
                     )
                 ) .
-                '}';
+                '}' . $extra_types;
     }
 
     /**

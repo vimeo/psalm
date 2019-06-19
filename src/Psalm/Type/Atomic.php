@@ -930,6 +930,7 @@ abstract class Atomic
         if ($this instanceof TNamedObject
             || $this instanceof TTemplateParam
             || $this instanceof TIterable
+            || $this instanceof Type\Atomic\TObjectWithProperties
         ) {
             if ($this->extra_types) {
                 foreach ($this->extra_types as &$type) {

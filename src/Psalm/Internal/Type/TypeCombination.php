@@ -99,7 +99,7 @@ class TypeCombination
     private $floats = [];
 
     /**
-     * @var array<string, TNamedObject|TTemplateParam|TIterable>|null
+     * @var array<string, TNamedObject|TTemplateParam|TIterable|TObject>|null
      */
     private $extra_types;
 
@@ -654,7 +654,11 @@ class TypeCombination
             }
         }
 
-        if ($type instanceof TNamedObject || $type instanceof TTemplateParam || $type instanceof TIterable) {
+        if ($type instanceof TNamedObject
+            || $type instanceof TTemplateParam
+            || $type instanceof TIterable
+            || $type instanceof Type\Atomic\TObjectWithProperties
+        ) {
             if ($type->extra_types) {
                 $combination->extra_types = array_merge(
                     $combination->extra_types ?: [],

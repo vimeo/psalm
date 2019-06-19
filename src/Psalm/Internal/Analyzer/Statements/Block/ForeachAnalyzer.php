@@ -580,7 +580,9 @@ class ForeachAnalyzer
         }
 
         foreach ($iterator_atomic_types as $iterator_atomic_type) {
-            if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam) {
+            if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam
+                || $iterator_atomic_type instanceof Type\Atomic\TObjectWithProperties
+            ) {
                 throw new \UnexpectedValueException('Shouldn’t get a generic param here');
             }
 

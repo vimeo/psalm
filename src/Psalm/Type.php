@@ -395,9 +395,10 @@ abstract class Type
             $keyed_intersection_types = [];
 
             foreach ($intersection_types as $intersection_type) {
-                if (!$intersection_type instanceof TNamedObject
+                if (!$intersection_type instanceof TIterable
+                    && !$intersection_type instanceof TNamedObject
                     && !$intersection_type instanceof TTemplateParam
-                    && !$intersection_type instanceof TIterable
+                    && !$intersection_type instanceof TObjectWithProperties
                 ) {
                     throw new TypeParseTreeException(
                         'Intersection types must all be objects, ' . get_class($intersection_type) . ' provided'
@@ -1435,10 +1436,12 @@ abstract class Type
                     foreach ($type_2->getTypes() as $type_2_atomic) {
                         if (($type_1_atomic instanceof TIterable
                                 || $type_1_atomic instanceof TNamedObject
-                                || $type_1_atomic instanceof TTemplateParam)
+                                || $type_1_atomic instanceof TTemplateParam
+                                || $type_1_atomic instanceof TObjectWithProperties)
                             && ($type_2_atomic instanceof TIterable
                                 || $type_2_atomic instanceof TNamedObject
-                                || $type_2_atomic instanceof TTemplateParam)
+                                || $type_2_atomic instanceof TTemplateParam
+                                || $type_2_atomic instanceof TObjectWithProperties)
                         ) {
                             if (!$type_1_atomic->extra_types) {
                                 $type_1_atomic->extra_types = [];
