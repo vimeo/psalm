@@ -612,7 +612,9 @@ class TypeCombination
         ) {
             if ($type->params) {
                 if ($combination->closure_params === null) {
-                    $combination->closure_params = $type->params;
+                    foreach ($type->params as $param) {
+                        $combination->closure_params[] = clone $param;
+                    }
                 } else {
                     $param_count = max(count($combination->closure_params), count($type->params));
 
