@@ -272,7 +272,20 @@ class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
-            'hardPhpTypeAssertionsOnDocblockType' => [
+            'hardPhpTypeAssertionsOnDocblockBoolType' => [
+                '<?php
+                    /** @param bool|null $bar */
+                    function foo($bar): void {
+                        if (!is_null($bar) && !is_bool($bar)) {
+                            throw new \Exception("bad");
+                        }
+
+                        if ($bar !== null) {}
+                    }',
+                'assertions' => [],
+                'error_levels' => ['DocblockTypeContradiction'],
+            ],
+            'hardPhpTypeAssertionsOnDocblockStringType' => [
                 '<?php
                     /** @param string|null $bar */
                     function foo($bar): void {

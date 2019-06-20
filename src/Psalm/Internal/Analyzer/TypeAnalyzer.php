@@ -865,6 +865,12 @@ class TypeAnalyzer
             return true;
         }
 
+        if ($input_type_part instanceof Type\Atomic\TCallableObject &&
+            $container_type_part instanceof TObject
+        ) {
+            return true;
+        }
+
         if ($container_type_part instanceof TNumeric &&
             ($input_type_part->isNumericType() || $input_type_part instanceof TString)
         ) {

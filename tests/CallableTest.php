@@ -874,8 +874,8 @@ class CallableTest extends TestCase
                      * @psalm-suppress MixedArgument
                      */
                     function foo($c) : void {
-                        if (is_array($c)) {
-                            echo $c[2];
+                        if (is_array($c) && is_string($c[1])) {
+                            echo $c[1];
                         }
                     }',
             ],

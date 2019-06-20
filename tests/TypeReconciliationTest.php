@@ -1363,6 +1363,20 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
             ],
+            'reconcileCallable' => [
+                '<?php
+                    function reflectCallable(callable $callable): ReflectionFunctionAbstract {
+                        if (\is_array($callable)) {
+                            return new \ReflectionMethod($callable[0], $callable[1]);
+                        } elseif ($callable instanceof \Closure || \is_string($callable)) {
+                            return new \ReflectionFunction($callable);
+                        } elseif (\is_object($callable)) {
+                            return new \ReflectionMethod($callable, "__invoke");
+                        } else {
+                            throw new \InvalidArgumentException("Bad");
+                        }
+                    }'
+            ],
         ];
     }
 

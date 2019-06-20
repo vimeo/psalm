@@ -911,6 +911,7 @@ class Reconciler
             foreach ($existing_var_atomic_types as $type) {
                 if ($type instanceof TBool) {
                     $bool_types[] = $type;
+                    $type->from_docblock = false;
                 } elseif ($type instanceof TScalar) {
                     $bool_types[] = new TBool;
                     $did_remove_type = true;
@@ -942,6 +943,54 @@ class Reconciler
             return Type::getMixed();
         }
 
+        if ($new_var_type === 'string' && !$existing_var_type->hasMixed()) {
+            $string_types = [];
+            $did_remove_type = false;
+
+            foreach ($existing_var_atomic_types as $type) {
+                if ($type instanceof TString) {
+                    $string_types[] = $type;
+
+                    if (get_class($type) === TString::class) {
+                        $type->from_docblock = false;
+                    }
+                } elseif ($type instanceof TCallable) {
+                    $string_types[] = new Type\Atomic\TCallableString;
+                    $did_remove_type = true;
+                } elseif ($type instanceof TNumeric) {
+                    $string_types[] = new TNumericString;
+                    $did_remove_type = true;
+                } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
+                    $string_types[] = new TString;
+                    $did_remove_type = true;
+                } else {
+                    $did_remove_type = true;
+                }
+            }
+
+            if ((!$did_remove_type || !$string_types) && !$is_equality) {
+                if ($key && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $key,
+                        $new_var_type,
+                        !$did_remove_type,
+                        $code_location,
+                        $suppressed_issues
+                    );
+                }
+            }
+
+            if ($string_types) {
+                return new Type\Union($string_types);
+            }
+
+            $failed_reconciliation = 2;
+
+            return Type::getMixed();
+        }
+
         $is_maybe_callable_array = false;
 
         if ($new_var_type === 'array' && isset($existing_var_atomic_types['callable'])) {
@@ -950,14 +999,14 @@ class Reconciler
             if (!isset($existing_var_atomic_types['array'])) {
                 $existing_var_type->addType(
                     new TCallableObjectLikeArray([
-                        Type::getMixed(),
+                        new Type\Union([new TObject, new TString]),
                         Type::getString()
                     ])
                 );
             } else {
                 $array_combination = \Psalm\Internal\Type\TypeCombination::combineTypes([
                     new TCallableObjectLikeArray([
-                        Type::getMixed(),
+                        new Type\Union([new TObject, new TString]),
                         Type::getString()
                     ]),
                     $existing_var_atomic_types['array']
