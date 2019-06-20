@@ -422,6 +422,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             if ($lhs_type_part instanceof TNamedObject) {
                 $lhs_type_part->extra_types = $extra_types;
+            } elseif ($lhs_type_part instanceof Type\Atomic\TObject && $extra_types) {
+                $lhs_type_part = array_shift($extra_types);
+                if ($extra_types) {
+                    $lhs_type_part->extra_types = $extra_types;
+                }
             }
 
             $has_mixed_method_call = true;

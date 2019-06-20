@@ -2732,9 +2732,49 @@ class TemplateTest extends TestCase
                     }
 
                     /**
-                     * @psalm-param class-string $className
+                     * @psalm-template UnknownType
+                     * @psalm-param class-string<UnknownType> $className
                      */
-                    function useMock(string $className) : void {
+                    function useMockTemplated(string $className) : void
+                    {
+                        mock($className)->checkExpectations();
+                    }
+
+                    mock(A::class)->foo();'
+            ],
+            'allowTemplatedIntersectionFirstTemplatedMock' => [
+                '<?php
+                    class MockObject
+                    {
+                        public function checkExpectations() : void
+                        {
+                        }
+                    }
+
+                    /**
+                     * @psalm-template RequestedType
+                     * @psalm-param class-string<RequestedType> $className
+                     * @psalm-return RequestedType&MockObject
+                     * @psalm-suppress MixedInferredReturnType
+                     * @psalm-suppress MixedReturnStatement
+                     */
+                    function mock(string $className)
+                    {
+                        eval(\'"there be dragons"\');
+
+                        return $instance;
+                    }
+
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    /**
+                     * @psalm-template UnknownType
+                     * @psalm-param class-string<UnknownType> $className
+                     */
+                    function useMockTemplated(string $className) : void
+                    {
                         mock($className)->checkExpectations();
                     }
 
@@ -2771,6 +2811,15 @@ class TemplateTest extends TestCase
                      * @psalm-param class-string $className
                      */
                     function useMock(string $className) : void {
+                        mock($className)->checkExpectations();
+                    }
+
+                    /**
+                     * @psalm-template UnknownType
+                     * @psalm-param class-string<UnknownType> $className
+                     */
+                    function useMockTemplated(string $className) : void
+                    {
                         mock($className)->checkExpectations();
                     }
 
