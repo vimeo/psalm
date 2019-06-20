@@ -29,7 +29,7 @@ Updating code is inherently risky, doing so automatically is even more so. I've 
 
 You can pass in your own manipulation plugins e.g.
 ```bash
-vendor/bin/psalter --plugin=vendor/vimeo/psalm/examples/ClassUnqualifier.php --dry-run
+vendor/bin/psalter --plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier.php --dry-run
 ```
 
 The above example plugin converts all unnecessarily qualified classnames in your code to shorter aliased versions.
