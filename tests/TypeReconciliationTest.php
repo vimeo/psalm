@@ -1355,7 +1355,7 @@ class TypeReconciliationTest extends TestCase
                         $a->foo();
                     }',
             ],
-            'instanceofStatic' => [
+            'selfInstanceofStatic' => [
                 '<?php
                     class A {
                         public function foo(self $value): void {
