@@ -1201,9 +1201,9 @@ class Codebase
                         $method_storage = $this->methods->getStorage($declaring_method_id);
 
                         $completion_item = new \LanguageServerProtocol\CompletionItem(
-                            (string)$method_storage,
+                            $method_storage->cased_name,
                             \LanguageServerProtocol\CompletionItemKind::METHOD,
-                            null,
+                            (string)$method_storage,
                             null,
                             (string)$method_storage->visibility,
                             $method_storage->cased_name,
@@ -1223,9 +1223,9 @@ class Codebase
                         );
 
                         $completion_item = new \LanguageServerProtocol\CompletionItem(
-                            $property_storage->getInfo() . ' $' . $property_name,
+                            '$' . $property_name,
                             \LanguageServerProtocol\CompletionItemKind::PROPERTY,
-                            null,
+                            $property_storage->getInfo(),
                             null,
                             (string)$property_storage->visibility,
                             $property_name,
