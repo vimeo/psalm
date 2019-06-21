@@ -371,13 +371,16 @@ class TypeCombination
                     $overwrite_empty_array,
                     $allow_mixed_union
                 );
-                $generic_type_params[1] = Type::combineUnionTypes(
-                    $generic_type_params[1],
-                    $objectlike_generic_type,
-                    $codebase,
-                    $overwrite_empty_array,
-                    $allow_mixed_union
-                );
+
+                if (!$generic_type_params[1]->isMixed()) {
+                    $generic_type_params[1] = Type::combineUnionTypes(
+                        $generic_type_params[1],
+                        $objectlike_generic_type,
+                        $codebase,
+                        $overwrite_empty_array,
+                        $allow_mixed_union
+                    );
+                }
             }
 
             if ($combination->array_always_filled

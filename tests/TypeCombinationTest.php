@@ -379,6 +379,13 @@ class TypeCombinationTest extends TestCase
                     'string',
                 ],
             ],
+            'combineMixedArrayWithObjectLike' => [
+                'array<array-key, mixed>',
+                [
+                    'array{a: int}',
+                    'array',
+                ],
+            ],
             'traversableAorB' => [
                 'Traversable<mixed, A|B>',
                 [

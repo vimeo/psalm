@@ -672,17 +672,6 @@ class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'PossiblyInvalidArrayOffset',
             ],
-            'possiblyInvalidMixedUnionArrayOffset' => [
-                '<?php
-                    function foo(?array $index): void {
-                        if (!$index) {
-                            $index = ["foo", []];
-                        }
-                        $index[1][] = "bar";
-                    }',
-                'error_message' => 'PossiblyInvalidArrayOffset',
-                'error_level' => ['MixedArrayAssignment'],
-            ],
             'arrayAccessOnIterable' => [
                 '<?php
                     function foo(iterable $i) {
