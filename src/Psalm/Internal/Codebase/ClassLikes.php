@@ -236,6 +236,32 @@ class ClassLikes
     }
 
     /**
+     * @return string[]
+     */
+    public function getMatchingClassLikeNames(string $stub) : array
+    {
+        $matching_classes = [];
+
+        if ($stub[0] === '*') {
+            $stub = substr($stub, 1);
+        }
+
+        $stub = strtolower($stub);
+
+        foreach ($this->existing_classlikes_lc as $fq_classlike_name_lc => $found) {
+            if (!$found) {
+                continue;
+            }
+
+            if (preg_match('@(^|\\\)' . $stub . '.*@', $fq_classlike_name_lc)) {
+                $matching_classes[] = $fq_classlike_name_lc;
+            }
+        }
+
+        return $matching_classes;
+    }
+
+    /**
      * @param string        $fq_class_name_lc
      *
      * @return bool

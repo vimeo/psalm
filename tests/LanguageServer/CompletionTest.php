@@ -68,7 +68,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31)));
+        $this->assertSame(['B\A', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31)));
     }
 
     /**
@@ -101,7 +101,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31)));
+        $this->assertSame(['B\A', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31)));
     }
 
     /**
@@ -153,7 +153,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31)));
+        $this->assertSame(['B\A', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31)));
     }
 
     /**
@@ -194,7 +194,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $this->assertSame(['B\C', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 39)));
+        $this->assertSame(['B\C', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 39)));
     }
 
     /**
@@ -235,7 +235,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $this->assertSame(['B\C', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 40)));
+        $this->assertSame(['B\C', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 40)));
     }
 
     /**
@@ -328,7 +328,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(25, 39));
 
-        $this->assertSame(['B\C<string>', '->'], $completion_data);
+        $this->assertSame(['B\C<string>', '->', []], $completion_data);
 
         $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
 
@@ -364,7 +364,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(9, 31)));
+        $this->assertSame(['B\A', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(9, 31)));
     }
 
     /**
@@ -398,7 +398,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\C', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(11, 32)));
+        $this->assertSame(['B\C', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(11, 32)));
     }
 
     /**
@@ -432,7 +432,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(11, 33)));
+        $this->assertSame(['B\A', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(11, 33)));
     }
 
     /**
@@ -460,7 +460,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(6, 25)));
+        $this->assertSame(['B\A', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(6, 25)));
     }
 
     /**
@@ -490,7 +490,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(7, 26)));
+        $this->assertSame(['B\A', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(7, 26)));
     }
 
     /**
@@ -523,7 +523,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 32)));
+        $this->assertSame(['B\A', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 32)));
     }
 
     /**
@@ -557,7 +557,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(11, 26)));
+        $this->assertSame(['B\A', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(11, 26)));
     }
 
     /**
@@ -589,7 +589,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\Collection', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 49)));
+        $this->assertSame(['B\Collection', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 49)));
     }
 
     /**
@@ -621,6 +621,100 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
 
         $this->analyzeFile('somefile.php', new Context());
-        $this->assertSame(['B\Collection', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 61)));
+        $this->assertSame(['B\Collection', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 61)));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompletionOnNewExceptionWithoutNamespace()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function foo() : void {
+                    throw new Ex
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $this->assertSame(['*Ex', 'symbol', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(2, 32)));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompletionOnNewExceptionWithNamespace()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+
+                function foo() : void {
+                    throw new Ex
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $this->assertSame(['*Ex', 'symbol', ['Bar' => 'Bar']], $codebase->getCompletionDataAtPosition('somefile.php', new Position(4, 32)));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompletionOnNewExceptionWithNamespaceAndUse()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+
+                use LogicException as LogEx;
+
+                class Alpha {}
+                class Antelope {}
+
+                function foo() : void {
+                    new A
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(9, 25));
+
+        $this->assertSame(
+            [
+                '*A',
+                'symbol',
+                ['Bar' => 'Bar', 'logicexception' => 'LogEx']
+            ],
+            $completion_data
+        );
+
+        $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2]);
+
+        $this->assertCount(5, $completion_items);
     }
 }

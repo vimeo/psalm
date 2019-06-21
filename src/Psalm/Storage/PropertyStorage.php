@@ -89,6 +89,6 @@ class PropertyStorage
                 $visibility_text = 'public';
         }
 
-        return $visibility_text . ' ' . ($this->type ?: 'mixed');
+        return $visibility_text . ' ' . ($this->type ? $this->type->getId() : 'mixed');
     }
 }

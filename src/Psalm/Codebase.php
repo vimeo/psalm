@@ -1124,7 +1124,7 @@ class Codebase
     }
 
     /**
-     * @return array{0: string, 1: string}|null
+     * @return array{0: string, 1: '->'|'::'|'symbol', 2: array<string, string>}|null
      */
     public function getCompletionDataAtPosition(string $file_path, Position $position)
     {
@@ -1138,9 +1138,9 @@ class Codebase
 
         $offset = $position->toOffset($file_contents);
 
-        list(, $type_map) = $this->analyzer->getMapsForFile($file_path);
+        list($reference_map, $type_map, $alias_map) = $this->analyzer->getMapsForFile($file_path);
 
-        if (!$type_map) {
+        if (!$reference_map && !$type_map) {
             return null;
         }
 
@@ -1167,19 +1167,41 @@ class Codebase
                     $gap = $candidate_gap;
                     $recent_type = $possible_type;
 
-                    break;
+                    if ($recent_type === 'mixed') {
+                        return null;
+                    }
+
+                    return [$recent_type, $gap, []];
                 }
             }
         }
 
-        if (!$recent_type
-            || $recent_type === 'mixed'
-            || !$gap
-        ) {
-            return null;
+        foreach ($reference_map as $start_pos => list($end_pos, $possible_reference)) {
+            if ($offset < $start_pos || $possible_reference[0] !== '*') {
+                continue;
+            }
+
+            if ($offset - $end_pos === 0) {
+                $recent_type = $possible_reference;
+
+                $found_aliases = [];
+
+                foreach ($alias_map as $aliases_start_pos => list($aliases_end_pos, $aliases)) {
+                    if ($offset < $aliases_start_pos) {
+                        continue;
+                    }
+
+                    if ($offset < $aliases_end_pos) {
+                        $found_aliases = $aliases;
+                        break;
+                    }
+                }
+
+                return [$recent_type, 'symbol', $found_aliases];
+            }
         }
 
-        return [$recent_type, $gap];
+        return null;
     }
 
     /**
@@ -1241,9 +1263,9 @@ class Codebase
 
                     foreach ($class_storage->class_constant_locations as $const_name => $_) {
                         $static_completion_items[] = new \LanguageServerProtocol\CompletionItem(
-                            'const ' . $const_name,
+                            $const_name,
                             \LanguageServerProtocol\CompletionItemKind::VARIABLE,
-                            null,
+                            'const ' . $const_name,
                             null,
                             null,
                             $const_name,
@@ -1263,6 +1285,44 @@ class Codebase
             $completion_items = array_merge(
                 $instance_completion_items,
                 $static_completion_items
+            );
+        }
+
+        return $completion_items;
+    }
+
+    /**
+     * @param array<string, string> $aliases
+     * @return array<int, \LanguageServerProtocol\CompletionItem>
+     */
+    public function getCompletionItemsForPartialSymbol(string $type_string, array $aliases) : array
+    {
+        $matching_classlike_names = $this->classlikes->getMatchingClassLikeNames($type_string);
+
+        $completion_items = [];
+
+        $alias_namespace = array_shift($aliases);
+
+        foreach ($matching_classlike_names as $fq_class_name_lc) {
+            try {
+                $storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (\Exception $e) {
+                continue;
+            }
+
+            $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                $storage->name,
+                \LanguageServerProtocol\CompletionItemKind::CLASS_,
+                null,
+                null,
+                null,
+                $storage->name,
+                Type::getStringFromFQCLN(
+                    $storage->name,
+                    $alias_namespace ? $alias_namespace : null,
+                    $aliases,
+                    null
+                )
             );
         }
 

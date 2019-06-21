@@ -87,7 +87,9 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $fq_class_name
+                    $codebase->classlikes->classExists($fq_class_name)
+                        ? $fq_class_name
+                        : '*' . implode('\\', $stmt->class->parts)
                 );
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {

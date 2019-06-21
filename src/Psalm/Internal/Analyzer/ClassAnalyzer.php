@@ -296,11 +296,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                if ($codebase->store_node_types && $fq_class_name) {
+                if ($codebase->store_node_types && $parent_fq_class_name) {
                     $codebase->analyzer->addNodeReference(
                         $this->getFilePath(),
                         $class->extends,
-                        $parent_fq_class_name
+                        $codebase->classlikes->classExists($parent_fq_class_name)
+                            ? $parent_fq_class_name
+                            : '*' . implode('\\', $class->extends->parts)
                     );
                 }
 
@@ -331,6 +333,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $this->source->getAliases()
             );
 
+            $codebase->analyzer->addNodeReference(
+                $this->getFilePath(),
+                $interface_name,
+                $codebase->classlikes->interfaceExists($fq_interface_name)
+                    ? $fq_interface_name
+                    : '*' . implode('\\', $interface_name->parts)
+            );
+
             $interface_location = new CodeLocation($this, $interface_name);
 
             if (self::checkFullyQualifiedClassLikeName(
@@ -340,7 +350,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $this->getSuppressedIssues(),
                 false
             ) === false) {
-                return false;
+                continue;
             }
 
             if ($codebase->store_node_types && $fq_class_name) {

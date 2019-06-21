@@ -37,7 +37,16 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /** @var array<string, array<string, int>> */
     private $cached_correct_methods = [];
 
-    /** @var array<string, array{0: array<int, array{0: int, 1: string}>, 1: array<int, array{0: int, 1: string}>}> */
+    /**
+     * @var array<
+     *      string,
+     *      array{
+     *          0: array<int, array{0: int, 1: string}>,
+     *          1: array<int, array{0: int, 1: string}>,
+     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *      }
+     *  >
+     */
     private $cached_file_maps = [];
 
     public function __construct()
@@ -235,7 +244,14 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     }
 
     /**
-     * @return array<string, array{0: array<int, array{0: int, 1: string}>, 1: array<int, array{0: int, 1: string}>}>
+     * @return array<
+     *      string,
+     *      array{
+     *          0: array<int, array{0: int, 1: string}>,
+     *          1: array<int, array{0: int, 1: string}>,
+     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *      }
+     *  >
      */
     public function getFileMapCache()
     {
@@ -244,9 +260,13 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @param array<
-     *    string,
-     *    array{0: array<int, array{0: int, 1: string}>, 1: array<int, array{0: int, 1: string}>}
-     * > $file_maps
+     *      string,
+     *      array{
+     *          0: array<int, array{0: int, 1: string}>,
+     *          1: array<int, array{0: int, 1: string}>,
+     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *      }
+     *  > $file_maps
      *
      * @return void
      */

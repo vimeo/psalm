@@ -507,7 +507,14 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return array<string, array{0: TaggedCodeType, 1: TaggedCodeType}>|false
+     * @return array<
+     *      string,
+     *      array{
+     *          0: TaggedCodeType,
+     *          1: TaggedCodeType,
+     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *      }
+     *  >|false
      */
     public function getFileMapCache()
     {
@@ -519,7 +526,16 @@ class FileReferenceCacheProvider
             && file_exists($file_maps_cache_location)
             && !$this->config_changed
         ) {
-            /** @var array<string, array{0: TaggedCodeType, 1: TaggedCodeType}> */
+            /**
+             * @var array<
+             *      string,
+             *      array{
+             *          0: TaggedCodeType,
+             *          1: TaggedCodeType,
+             *          2: array<int, array{0: int, 1: array<string, string>}>
+             *      }
+             *  >
+             */
             $file_maps_cache = unserialize(file_get_contents($file_maps_cache_location));
             return $file_maps_cache;
         }
@@ -528,7 +544,14 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @param array<string, array{0: TaggedCodeType, 1: TaggedCodeType}> $file_maps
+     * @param array<
+     *      string,
+     *      array{
+     *          0: TaggedCodeType,
+     *          1: TaggedCodeType,
+     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *      }
+     *  > $file_maps
      * @return void
      */
     public function setFileMapCache(array $file_maps)

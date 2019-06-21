@@ -81,6 +81,15 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
             }
         }
 
+        $codebase->analyzer->addNodeAliases(
+            $this->getFilePath(),
+            $this->namespace,
+            array_merge(
+                [$this->namespace_name => $this->namespace_name],
+                $this->getAliasedClassesFlipped()
+            )
+        );
+
         if ($leftover_stmts) {
             $statements_analyzer = new StatementsAnalyzer($this);
             $context = new Context();

@@ -260,16 +260,12 @@ class TextDocument
             return new Success([]);
         }
 
-        list($recent_type, $gap) = $completion_data;
-
-        error_log('gap: "' . $gap . '" and type: "' . $recent_type . '"');
-
-        $completion_items = [];
+        list($recent_type, $gap, $aliases) = $completion_data;
 
         if ($gap === '->' || $gap === '::') {
             $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap);
-
-            error_log('Found ' . count($completion_items) . ' items');
+        } else {
+            $completion_items = $this->codebase->getCompletionItemsForPartialSymbol($recent_type, $aliases);
         }
 
         return new Success(new CompletionList($completion_items, false));
