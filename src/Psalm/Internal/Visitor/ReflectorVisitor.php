@@ -2156,7 +2156,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage,
                 $docblock_info->params,
                 $stmt,
-                $fake_method
+                $fake_method,
+                $class_storage ? $class_storage->name : null
             );
         }
 
@@ -2286,7 +2287,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $docblock_return_type,
                         $this->aliases,
                         $this->function_template_types + $this->class_template_types,
-                        $this->type_aliases
+                        $this->type_aliases,
+                        $class_storage ? $class_storage->name : null
                     );
 
                     $storage->return_type = Type::parseTokens(
@@ -2463,7 +2465,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         FunctionLikeStorage $storage,
         array $docblock_params,
         PhpParser\Node\FunctionLike $function,
-        bool $fake_method
+        bool $fake_method,
+        ?string $fq_classlike_name
     ) {
         $base = $this->fq_classlike_names
             ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1] . '::'
@@ -2548,7 +2551,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $docblock_param['type'],
                         $this->aliases,
                         $this->function_template_types + $this->class_template_types,
-                        $this->type_aliases
+                        $this->type_aliases,
+                        $fq_classlike_name
                     ),
                     null,
                     $this->function_template_types + $this->class_template_types

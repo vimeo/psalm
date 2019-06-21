@@ -146,8 +146,10 @@ abstract class Type
      *
      * @return string
      */
-    private static function fixScalarTerms($type_string, array $php_version = null)
-    {
+    private static function fixScalarTerms(
+        string $type_string,
+        ?array $php_version = null
+    ) : string {
         $type_string_lc = strtolower($type_string);
 
         switch ($type_string_lc) {
@@ -878,18 +880,18 @@ abstract class Type
     }
 
     /**
-     * @param  string                       $string_type
-     * @param  Aliases                      $aliases
      * @param  array<string, mixed>|null    $template_type_map
      * @param  array<string, array<int, string>>|null   $type_aliases
      *
      * @return array<int, string>
      */
     public static function fixUpLocalType(
-        $string_type,
+        string $string_type,
         Aliases $aliases,
         array $template_type_map = null,
-        array $type_aliases = null
+        array $type_aliases = null,
+        ?string $self_fqcln = null,
+        ?string $parent_fqcln = null
     ) {
         $type_tokens = self::tokenize($string_type);
 
@@ -926,7 +928,19 @@ abstract class Type
                 $string_type_token = preg_replace('/(.+)\$.*/', '$1', $string_type_token);
             }
 
-            $type_tokens[$i] = $string_type_token = self::fixScalarTerms($string_type_token);
+            $type_tokens[$i]
+                = $string_type_token
+                = self::fixScalarTerms($string_type_token);
+
+            if ($string_type_token === 'self' && $self_fqcln) {
+                $type_tokens[$i] = $self_fqcln;
+                continue;
+            }
+
+            if ($string_type_token === 'parent' && $parent_fqcln) {
+                $type_tokens[$i] = $parent_fqcln;
+                continue;
+            }
 
             if (isset(self::PSALM_RESERVED_WORDS[$string_type_token])) {
                 continue;
@@ -974,14 +988,10 @@ abstract class Type
         return $type_tokens;
     }
 
-    /**
-     * @param  string                   $class
-     * @param  Aliases                  $aliases
-     *
-     * @return string
-     */
-    public static function getFQCLNFromString($class, Aliases $aliases)
-    {
+    public static function getFQCLNFromString(
+        string $class,
+        Aliases $aliases
+    ) : string {
         if ($class === '') {
             throw new \InvalidArgumentException('$class cannot be empty');
         }
