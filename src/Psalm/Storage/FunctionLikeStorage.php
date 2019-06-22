@@ -171,15 +171,15 @@ class FunctionLikeStorage
 
     public function __toString()
     {
-        $symbol_text = 'function ' . $this->cased_name . '(' . implode(
-            ', ',
+        $symbol_text = 'function ' . $this->cased_name . '(' . (!empty($this->params) ? PHP_EOL : '') . implode(
+            ',' . PHP_EOL,
             array_map(
                 function (FunctionLikeParameter $param) : string {
-                    return ($param->type ?: 'mixed') . ' $' . $param->name;
+                    return '    ' . ($param->type ?: 'mixed') . ' $' . $param->name;
                 },
                 $this->params
             )
-        ) . ') : ' . ($this->return_type ?: 'mixed');
+        ) . (!empty($this->params) ? PHP_EOL : '') . ') : ' . ($this->return_type ?: 'mixed');
 
         if (!$this instanceof MethodStorage) {
             return $symbol_text;

@@ -65,6 +65,14 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
                 function bar() : int {
                     return 5;
+                }
+
+                function baz(int $a) : int {
+                    return $a;
+                }
+
+                function qux(int $a, int $b) : int {
+                    return $a + $b;
                 }'
         );
 
@@ -78,6 +86,8 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('<?php protected int|null $a', $codebase->getSymbolInformation('somefile.php', 'B\A::$a'));
         $this->assertSame('<?php function B\bar() : int', $codebase->getSymbolInformation('somefile.php', 'B\bar()'));
         $this->assertSame('<?php BANANA', $codebase->getSymbolInformation('somefile.php', 'B\A::BANANA'));
+        $this->assertSame("<?php function B\baz(\n    int \$a\n) : int", $codebase->getSymbolInformation('somefile.php', 'B\baz()'));
+        $this->assertSame("<?php function B\qux(\n    int \$a,\n    int \$b\n) : int", $codebase->getSymbolInformation('somefile.php', 'B\qux()'));
     }
 
     /**
