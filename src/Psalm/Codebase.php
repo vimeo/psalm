@@ -941,7 +941,7 @@ class Codebase
 
                     $storage = $this->methods->getStorage($declaring_method_id);
 
-                    return '<?php ' . $storage;
+                    return '<?php ' . $storage->getSignature(true);
                 }
 
                 list(, $symbol_name) = explode('::', $symbol);
@@ -974,7 +974,7 @@ class Codebase
                 if (isset($file_storage->functions[$function_id])) {
                     $function_storage = $file_storage->functions[$function_id];
 
-                    return '<?php ' . $function_storage;
+                    return '<?php ' . $function_storage->getSignature(true);
                 }
 
                 return null;

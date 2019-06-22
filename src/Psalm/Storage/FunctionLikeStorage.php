@@ -171,15 +171,22 @@ class FunctionLikeStorage
 
     public function __toString()
     {
-        $symbol_text = 'function ' . $this->cased_name . '(' . (!empty($this->params) ? PHP_EOL : '') . implode(
-            ',' . PHP_EOL,
+        return $this->getSignature(false);
+    }
+
+    public function getSignature(bool $allow_newlines = false): string
+    {
+        $newlines = $allow_newlines && !empty($this->params);
+
+        $symbol_text = 'function ' . $this->cased_name . '(' . ($newlines ? PHP_EOL : '') . implode(
+            ',' . ($newlines ? PHP_EOL : ' '),
             array_map(
-                function (FunctionLikeParameter $param) : string {
-                    return '    ' . ($param->type ?: 'mixed') . ' $' . $param->name;
+                function (FunctionLikeParameter $param) use ($newlines) : string {
+                    return ($newlines ? '    ' : '') . ($param->type ?: 'mixed') . ' $' . $param->name;
                 },
                 $this->params
             )
-        ) . (!empty($this->params) ? PHP_EOL : '') . ') : ' . ($this->return_type ?: 'mixed');
+        ) . ($newlines ? PHP_EOL : '') . ') : ' . ($this->return_type ?: 'mixed');
 
         if (!$this instanceof MethodStorage) {
             return $symbol_text;
