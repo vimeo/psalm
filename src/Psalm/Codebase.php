@@ -16,6 +16,7 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 
 class Codebase
@@ -1229,8 +1230,28 @@ class Codebase
                             null,
                             (string)$method_storage->visibility,
                             $method_storage->cased_name,
-                            $method_storage->cased_name . '()'
+                            $method_storage->cased_name . '(' . implode(
+                                ', ',
+                                array_map(function (FunctionLikeParameter $parameter) {
+                                    /** @var int $i */
+                                    static $i = 0;
+                                    ++$i;
+                                    return '${'
+                                        . $i
+                                        . ':'
+                                        . (
+                                            $parameter->type !== null
+                                                ? str_replace(['$', '}'], ['\$', '\}'], (string)$parameter->type) . ' '
+                                                : ''
+                                        )
+                                        . '\$'
+                                        . $parameter->name
+                                        . ($parameter->is_optional ? '?' : '')
+                                        . '}';
+                                }, $method_storage->params)
+                            ) . ')'
                         );
+                        $completion_item->insertTextFormat = \LanguageServerProtocol\InsertTextFormat::SNIPPET;
 
                         if ($method_storage->is_static) {
                             $static_completion_items[] = $completion_item;

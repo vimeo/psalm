@@ -624,6 +624,44 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->assertSame(['B\Collection', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 61)));
     }
 
+    public function testParameterSnippetsOnMethodCompletion(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo {
+                    /**
+                     * @param array{0: int, 1: string}|null $c
+                     */
+                    public function bar(string $a, $b, ?array $c = null) {
+                        $this->
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(6, 31));
+
+        $this->assertSame(['Foo', '->', []], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+
+        $this->assertCount(1, $completion_items);
+
+        $this->assertEquals(
+            'bar(${1:string \$a}, ${2:\$b}, ${3:array{0: int, 1: string\}|null \$c?})',
+            $completion_items[0]->insertText
+        );
+    }
+
     /**
      * @return void
      */
