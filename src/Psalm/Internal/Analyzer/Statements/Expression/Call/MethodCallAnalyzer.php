@@ -308,17 +308,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $stmt->inferredType->by_ref = $returns_by_ref;
         }
 
-        if ($no_method_id) {
-            return self::checkMethodArgs(
-                null,
-                $stmt->args,
-                $found_generic_params,
-                $context,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer
-            );
-        }
-
         if ($codebase->store_node_types
             && (!$context->collect_initializations
                 && !$context->collect_mutations)
@@ -329,6 +318,17 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $stmt->name,
                 (string) $stmt->inferredType,
                 $stmt
+            );
+        }
+
+        if ($no_method_id) {
+            return self::checkMethodArgs(
+                null,
+                $stmt->args,
+                $found_generic_params,
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer
             );
         }
 
@@ -892,6 +892,14 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             return true;
         }
 
+        if ($codebase->store_node_types && $method_id) {
+            $codebase->analyzer->addNodeReference(
+                $statements_analyzer->getFilePath(),
+                $stmt->name,
+                $method_id . '()'
+            );
+        }
+
         if ($context->collect_initializations && $context->calling_method_id) {
             list($calling_method_class) = explode('::', $context->calling_method_id);
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
@@ -1083,14 +1091,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $self_fq_class_name,
                         $args
                     );
-
-                    if ($codebase->store_node_types && $method_id) {
-                        $codebase->analyzer->addNodeReference(
-                            $statements_analyzer->getFilePath(),
-                            $stmt->name,
-                            $method_id . '()'
-                        );
-                    }
 
                     if (isset($stmt->inferredType)) {
                         $return_type_candidate = $stmt->inferredType;
