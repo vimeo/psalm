@@ -68,6 +68,11 @@ abstract class Atomic
     public $from_docblock = false;
 
     /**
+     * @var ?int
+     */
+    public $offset;
+
+    /**
      * @param  string $value
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map

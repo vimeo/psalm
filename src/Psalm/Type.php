@@ -127,7 +127,10 @@ abstract class Type
 
             $only_token[0] = self::fixScalarTerms($only_token[0], $php_version);
 
-            return new Union([Atomic::create($only_token[0], $php_version, $template_type_map)]);
+            $atomic = Atomic::create($only_token[0], $php_version, $template_type_map);
+            $atomic->offset = 0;
+
+            return new Union([$atomic]);
         }
 
         $parse_tree = ParseTree::createFromTokens($type_tokens);
@@ -649,9 +652,13 @@ abstract class Type
             throw new TypeParseTreeException('Invalid type \'' . $parse_tree->value . '\'');
         }
 
-        $atomic_type = self::fixScalarTerms($parse_tree->value, $php_version);
+        $atomic_type_string = self::fixScalarTerms($parse_tree->value, $php_version);
 
-        return Atomic::create($atomic_type, $php_version, $template_type_map);
+        $atomic_type = Atomic::create($atomic_type_string, $php_version, $template_type_map);
+
+        $atomic_type->offset = $parse_tree->offset;
+
+        return $atomic_type;
     }
 
     private static function getGenericParamClass(

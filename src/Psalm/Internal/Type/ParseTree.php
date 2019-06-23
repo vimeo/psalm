@@ -501,6 +501,7 @@ class ParseTree
 
                             $new_leaf = new ParseTree\Value(
                                 $type_token[0] . '::' . $nexter_token[0],
+                                $type_token[1],
                                 $new_parent
                             );
 
@@ -515,6 +516,7 @@ class ParseTree
 
                             $new_leaf = new ParseTree\Value(
                                 $type_token[0],
+                                $type_token[1],
                                 $new_parent
                             );
                             break;

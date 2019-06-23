@@ -42,7 +42,15 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
                 }
             }
 
-            $new_candidate_type = implode('', $type_tokens);
+            $new_candidate_type = implode(
+                '',
+                array_map(
+                    function ($f) {
+                        return $f[0];
+                    },
+                    $type_tokens
+                )
+            );
 
             if ($new_candidate_type !== $candidate_type) {
                 $bounds = $code_location->getSelectionBounds();
