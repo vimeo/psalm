@@ -355,14 +355,10 @@ abstract class Atomic
                 && $this->offset_start !== null
                 && $this->offset_end !== null
             ) {
-                $codebase->analyzer->addDocblockType(
+                $codebase->analyzer->addOffsetReference(
                     $source->getFilePath(),
-                    new CodeLocation\DocblockTypeLocation(
-                        $source,
-                        $code_location->raw_file_start + $this->offset_start,
-                        $code_location->raw_file_start + $this->offset_end,
-                        $code_location->raw_line_number
-                    ),
+                    $code_location->raw_file_start + $this->offset_start,
+                    $code_location->raw_file_start + $this->offset_end,
                     $this->value
                 );
             }
@@ -395,14 +391,10 @@ abstract class Atomic
                         && $extra_type->offset_start !== null
                         && $extra_type->offset_end !== null
                     ) {
-                        $codebase->analyzer->addDocblockType(
+                        $codebase->analyzer->addOffsetReference(
                             $source->getFilePath(),
-                            new CodeLocation\DocblockTypeLocation(
-                                $source,
-                                $code_location->raw_file_start + $extra_type->offset_start,
-                                $code_location->raw_file_start + $extra_type->offset_end,
-                                $code_location->raw_line_number
-                            ),
+                            $code_location->raw_file_start + $extra_type->offset_start,
+                            $code_location->raw_file_start + $extra_type->offset_end,
                             $extra_type->value
                         );
                     }

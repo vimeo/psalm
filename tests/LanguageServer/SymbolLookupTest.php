@@ -293,6 +293,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($symbol_at_position);
 
-        $this->assertSame('type: Exception', $symbol_at_position[0]);
+        $this->assertSame('Exception', $symbol_at_position[0]);
     }
 }
