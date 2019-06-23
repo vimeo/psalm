@@ -1029,6 +1029,20 @@ class Analyzer
     }
 
     /**
+     * @return void
+     */
+    public function addDocblockType(
+        string $file_path,
+        \Psalm\CodeLocation\DocblockTypeLocation $code_location,
+        string $docblock_type
+    ) {
+        $this->type_map[$file_path][$code_location->raw_file_start] = [
+            $code_location->raw_file_end,
+            $docblock_type
+        ];
+    }
+
+    /**
      * @param array<string, string> $aliases
      * @return void
      */

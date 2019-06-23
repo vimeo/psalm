@@ -5,6 +5,15 @@ use PhpParser;
 
 class DocblockTypeLocation extends \Psalm\CodeLocation
 {
+    /** @var int */
+    public $raw_file_start;
+
+    /** @var int */
+    public $raw_file_end;
+
+    /** @var int */
+    public $raw_line_number;
+
     public function __construct(
         \Psalm\FileSource $file_source,
         int $file_start,
@@ -14,6 +23,11 @@ class DocblockTypeLocation extends \Psalm\CodeLocation
         $this->file_start = $file_start;
         // matches how CodeLocation works
         $this->file_end = $file_end - 1;
+
+        $this->raw_file_start = $file_start;
+        $this->raw_file_end = $file_end;
+        $this->raw_line_number = $line_number;
+
         $this->file_path = $file_source->getFilePath();
         $this->file_name = $file_source->getFileName();
         $this->single_line = false;

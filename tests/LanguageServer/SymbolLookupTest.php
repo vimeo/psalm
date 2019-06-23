@@ -244,9 +244,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 namespace B;
 
                 class A {
-                    /** @var int|null */
-                    protected $a;
-
                     public function foo(int $i) : string {
                         return "hello";
                     }
@@ -261,10 +258,41 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(12, 33));
+        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(9, 33));
 
         $this->assertNotNull($symbol_at_position);
 
         $this->assertSame('B\A::foo()', $symbol_at_position[0]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGetTypeInDocblock()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    /** @var \Exception|null */
+                    public $prop;
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(4, 35));
+
+        $this->assertNotNull($symbol_at_position);
+
+        $this->assertSame('type: Exception', $symbol_at_position[0]);
     }
 }

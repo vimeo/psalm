@@ -128,7 +128,8 @@ abstract class Type
             $only_token[0] = self::fixScalarTerms($only_token[0], $php_version);
 
             $atomic = Atomic::create($only_token[0], $php_version, $template_type_map);
-            $atomic->offset = 0;
+            $atomic->offset_start = 0;
+            $atomic->offset_end = strlen($only_token[0]);
 
             return new Union([$atomic]);
         }
@@ -656,7 +657,8 @@ abstract class Type
 
         $atomic_type = Atomic::create($atomic_type_string, $php_version, $template_type_map);
 
-        $atomic_type->offset = $parse_tree->offset;
+        $atomic_type->offset_start = $parse_tree->offset_start;
+        $atomic_type->offset_end = $parse_tree->offset_end;
 
         return $atomic_type;
     }
