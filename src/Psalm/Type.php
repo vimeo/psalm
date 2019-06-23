@@ -82,7 +82,7 @@ abstract class Type
     ];
 
     /**
-     * @var array<string, array<int, string>>
+     * @var array<string, array<int, array{0: string, 1: int}>>
      */
     private static $memoized_tokens = [];
 
@@ -106,7 +106,7 @@ abstract class Type
     /**
      * Parses a string type representation
      *
-     * @param  array<int, string> $type_tokens
+     * @param  array<int, array{0: string, 1: int}> $type_tokens
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
@@ -121,13 +121,13 @@ abstract class Type
             $only_token = $type_tokens[0];
 
             // Note: valid identifiers can include class names or $this
-            if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token)) {
-                throw new TypeParseTreeException("Invalid type '$only_token'");
+            if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
+                throw new TypeParseTreeException("Invalid type '$only_token[0]'");
             }
 
-            $only_token = self::fixScalarTerms($only_token, $php_version);
+            $only_token[0] = self::fixScalarTerms($only_token[0], $php_version);
 
-            return new Union([Atomic::create($only_token, $php_version, $template_type_map)]);
+            return new Union([Atomic::create($only_token[0], $php_version, $template_type_map)]);
         }
 
         $parse_tree = ParseTree::createFromTokens($type_tokens);
@@ -720,11 +720,11 @@ abstract class Type
      * @param  string $string_type
      * @param  bool   $ignore_space
      *
-     * @return array<int,string>
+     * @return array<int, array{0: string, 1: int}>
      */
     public static function tokenize($string_type, $ignore_space = true)
     {
-        $type_tokens = [''];
+        $type_tokens = [['', 0]];
         $was_char = false;
         $quote_char = null;
         $escaped = false;
@@ -745,14 +745,14 @@ abstract class Type
             }
 
             if ($was_char) {
-                $type_tokens[++$rtc] = '';
+                $type_tokens[++$rtc] = ['', $i];
             }
 
             if ($quote_char) {
                 if ($char === $quote_char && $i > 1 && !$escaped) {
                     $quote_char = null;
 
-                    $type_tokens[$rtc] .= $char;
+                    $type_tokens[$rtc][0] .= $char;
                     $was_char = true;
 
                     continue;
@@ -771,16 +771,16 @@ abstract class Type
 
                 $escaped = false;
 
-                $type_tokens[$rtc] .= $char;
+                $type_tokens[$rtc][0] .= $char;
 
                 continue;
             }
 
             if ($char === '"' || $char === '\'') {
-                if ($type_tokens[$rtc] === '') {
-                    $type_tokens[$rtc] = $char;
+                if ($type_tokens[$rtc][0] === '') {
+                    $type_tokens[$rtc] = [$char, $i];
                 } else {
-                    $type_tokens[++$rtc] = $char;
+                    $type_tokens[++$rtc] = [$char, $i];
                 }
 
                 $quote_char = $char;
@@ -804,10 +804,10 @@ abstract class Type
                 || $char === '&'
                 || $char === '='
             ) {
-                if ($type_tokens[$rtc] === '') {
-                    $type_tokens[$rtc] = $char;
+                if ($type_tokens[$rtc][0] === '') {
+                    $type_tokens[$rtc] = [$char, $i];
                 } else {
-                    $type_tokens[++$rtc] = $char;
+                    $type_tokens[++$rtc] = [$char, $i];
                 }
 
                 $was_char = true;
@@ -817,10 +817,10 @@ abstract class Type
 
             if ($char === ':') {
                 if ($i + 1 < $c && $chars[$i + 1] === ':') {
-                    if ($type_tokens[$rtc] === '') {
-                        $type_tokens[$rtc] = '::';
+                    if ($type_tokens[$rtc][0] === '') {
+                        $type_tokens[$rtc] = ['::', $i];
                     } else {
-                        $type_tokens[++$rtc] = '::';
+                        $type_tokens[++$rtc] = ['::', $i];
                     }
 
                     $was_char = true;
@@ -830,10 +830,10 @@ abstract class Type
                     continue;
                 }
 
-                if ($type_tokens[$rtc] === '') {
-                    $type_tokens[$rtc] = ':';
+                if ($type_tokens[$rtc][0] === '') {
+                    $type_tokens[$rtc] = [':', $i];
                 } else {
-                    $type_tokens[++$rtc] = ':';
+                    $type_tokens[++$rtc] = [':', $i];
                 }
 
                 $was_char = true;
@@ -847,7 +847,7 @@ abstract class Type
                     && $i > 0
                     && is_numeric($chars[$i - 1])
                 ) {
-                    $type_tokens[$rtc] .= $char;
+                    $type_tokens[$rtc][0] .= $char;
                     $was_char = false;
 
                     continue;
@@ -857,10 +857,10 @@ abstract class Type
                     throw new TypeParseTreeException('Unexpected token ' . $char);
                 }
 
-                if ($type_tokens[$rtc] === '') {
-                    $type_tokens[$rtc] = '...';
+                if ($type_tokens[$rtc][0] === '') {
+                    $type_tokens[$rtc] = ['...', $i];
                 } else {
-                    $type_tokens[++$rtc] = '...';
+                    $type_tokens[++$rtc] = ['...', $i];
                 }
 
                 $was_char = true;
@@ -870,7 +870,7 @@ abstract class Type
                 continue;
             }
 
-            $type_tokens[$rtc] .= $char;
+            $type_tokens[$rtc][0] .= $char;
             $was_char = false;
         }
 
@@ -881,9 +881,9 @@ abstract class Type
 
     /**
      * @param  array<string, mixed>|null    $template_type_map
-     * @param  array<string, array<int, string>>|null   $type_aliases
+     * @param  array<string, array<int, array{0: string, 1: int}>>|null   $type_aliases
      *
-     * @return array<int, string>
+     * @return array<int, array{0: string, 1: int}>
      */
     public static function fixUpLocalType(
         string $string_type,
@@ -899,7 +899,7 @@ abstract class Type
             $string_type_token = $type_tokens[$i];
 
             if (in_array(
-                $string_type_token,
+                $string_type_token[0],
                 [
                     '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...'
                 ],
@@ -908,68 +908,68 @@ abstract class Type
                 continue;
             }
 
-            if ($string_type_token[0] === '"'
-                || $string_type_token[0] === '\''
-                || $string_type_token === '0'
-                || preg_match('/[1-9]/', $string_type_token[0])
+            if ($string_type_token[0][0] === '"'
+                || $string_type_token[0][0] === '\''
+                || $string_type_token[0] === '0'
+                || preg_match('/[1-9]/', $string_type_token[0][0])
             ) {
                 continue;
             }
 
-            if (isset($type_tokens[$i + 1]) && $type_tokens[$i + 1] === ':') {
+            if (isset($type_tokens[$i + 1]) && $type_tokens[$i + 1][0] === ':') {
                 continue;
             }
 
-            if ($i > 0 && $type_tokens[$i - 1] === '::') {
+            if ($i > 0 && $type_tokens[$i - 1][0] === '::') {
                 continue;
             }
 
-            if (strpos($string_type_token, '$')) {
-                $string_type_token = preg_replace('/(.+)\$.*/', '$1', $string_type_token);
+            if (strpos($string_type_token[0], '$')) {
+                $string_type_token[0] = preg_replace('/(.+)\$.*/', '$1', $string_type_token[0]);
             }
 
-            $type_tokens[$i]
-                = $string_type_token
-                = self::fixScalarTerms($string_type_token);
+            $type_tokens[$i][0]
+                = $string_type_token[0]
+                = self::fixScalarTerms($string_type_token[0]);
 
-            if ($string_type_token === 'self' && $self_fqcln) {
-                $type_tokens[$i] = $self_fqcln;
+            if ($string_type_token[0] === 'self' && $self_fqcln) {
+                $type_tokens[$i][0] = $self_fqcln;
                 continue;
             }
 
-            if ($string_type_token === 'parent' && $parent_fqcln) {
-                $type_tokens[$i] = $parent_fqcln;
+            if ($string_type_token[0] === 'parent' && $parent_fqcln) {
+                $type_tokens[$i][0] = $parent_fqcln;
                 continue;
             }
 
-            if (isset(self::PSALM_RESERVED_WORDS[$string_type_token])) {
+            if (isset(self::PSALM_RESERVED_WORDS[$string_type_token[0]])) {
                 continue;
             }
 
-            if (isset($template_type_map[$string_type_token])) {
+            if (isset($template_type_map[$string_type_token[0]])) {
                 continue;
             }
 
             if (isset($type_tokens[$i + 1])) {
-                $next_char = $type_tokens[$i + 1];
+                $next_char = $type_tokens[$i + 1][0];
                 if ($next_char === ':') {
                     continue;
                 }
 
-                if ($next_char === '?' && isset($type_tokens[$i + 2]) && $type_tokens[$i + 2] === ':') {
+                if ($next_char === '?' && isset($type_tokens[$i + 2]) && $type_tokens[$i + 2][0] === ':') {
                     continue;
                 }
             }
 
-            if ($string_type_token[0] === '$') {
+            if ($string_type_token[0][0] === '$') {
                 continue;
             }
 
-            if (isset($type_aliases[$string_type_token])) {
-                $replacement_tokens = $type_aliases[$string_type_token];
+            if (isset($type_aliases[$string_type_token[0]])) {
+                $replacement_tokens = $type_aliases[$string_type_token[0]];
 
-                array_unshift($replacement_tokens, '(');
-                array_push($replacement_tokens, ')');
+                array_unshift($replacement_tokens, ['(', $i]);
+                array_push($replacement_tokens, [')', $i]);
 
                 $diff = count($replacement_tokens) - 1;
 
@@ -978,8 +978,8 @@ abstract class Type
                 $i += $diff;
                 $l += $diff;
             } else {
-                $type_tokens[$i] = self::getFQCLNFromString(
-                    $string_type_token,
+                $type_tokens[$i][0] = self::getFQCLNFromString(
+                    $string_type_token[0],
                     $aliases
                 );
             }

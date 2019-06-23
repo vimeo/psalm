@@ -35,10 +35,10 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
             $type_tokens = Type::tokenize($candidate_type, false);
 
             foreach ($type_tokens as &$type_token) {
-                if ($type_token === ('\\' . $fq_class_name)
+                if ($type_token[0] === ('\\' . $fq_class_name)
                     && isset($aliases[strtolower($fq_class_name)])
                 ) {
-                    $type_token = $aliases[strtolower($fq_class_name)];
+                    $type_token[0] = $aliases[strtolower($fq_class_name)];
                 }
             }
 

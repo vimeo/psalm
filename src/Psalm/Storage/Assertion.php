@@ -38,19 +38,34 @@ class Assertion
                 function (array $rules) use ($template_type_map) : array {
                     $first_rule = $rules[0];
 
-                    $rule_tokens = \Psalm\Type::tokenize($first_rule);
-
                     if ($template_type_map) {
+                        $rule_tokens = \Psalm\Type::tokenize($first_rule);
+
+                        $substitute = false;
+
                         foreach ($rule_tokens as &$rule_token) {
-                            if (isset($template_type_map[$rule_token])) {
-                                foreach ($template_type_map[$rule_token] as list($type)) {
-                                    $rule_token = $type->getId();
+                            if (isset($template_type_map[$rule_token[0]])) {
+                                foreach ($template_type_map[$rule_token[0]] as list($type)) {
+                                    $substitute = true;
+                                    $rule_token[0] = $type->getId();
                                 }
                             }
                         }
+
+                        if ($substitute) {
+                            return [implode(
+                                '',
+                                array_map(
+                                    function ($f) {
+                                        return $f[0];
+                                    },
+                                    $rule_tokens
+                                )
+                            )];
+                        }
                     }
 
-                    return [implode('', $rule_tokens)];
+                    return [$first_rule];
                 },
                 $this->rule
             )

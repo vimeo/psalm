@@ -120,11 +120,6 @@ class FunctionLikeStorage
     public $template_covariants;
 
     /**
-     * @var bool
-     */
-    public $has_template_return_type;
-
-    /**
      * @var array<int, Assertion>
      */
     public $assertions = [];

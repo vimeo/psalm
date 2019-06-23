@@ -108,7 +108,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     private $skip_if_descendants = false;
 
     /**
-     * @var array<string, array<int, string>>
+     * @var array<string, array<int, array{0: string, 1: int}>>
      */
     private $type_aliases = [];
 
@@ -2246,15 +2246,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         if ($docblock_info->return_type) {
-            $storage->has_template_return_type =
-                $template_types !== null &&
-                count(
-                    array_intersect(
-                        Type::tokenize($docblock_info->return_type),
-                        array_keys($template_types)
-                    )
-                ) > 0;
-
             $docblock_return_type = $docblock_info->return_type;
 
             if (!$fake_method

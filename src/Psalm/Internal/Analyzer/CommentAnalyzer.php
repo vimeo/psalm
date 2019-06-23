@@ -24,7 +24,7 @@ class CommentAnalyzer
 
     /**
      * @param  array<string, array<string, array{Type\Union}>>|null   $template_type_map
-     * @param  array<string, array<int, string>> $type_aliases
+     * @param  array<string, array<int, array{0: string, 1: int}>> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
@@ -115,7 +115,7 @@ class CommentAnalyzer
                     $defined_type = Type::parseTokens($var_type_tokens, null, $template_type_map ?: []);
                 } catch (TypeParseTreeException $e) {
                     throw new DocblockParseException(
-                        implode('', $var_type_tokens) .
+                        $line_parts[0] .
                         ' is not a valid type' .
                         ' (from ' .
                         $source->getFilePath() .
@@ -159,11 +159,11 @@ class CommentAnalyzer
 
     /**
      * @param  Aliases          $aliases
-     * @param  array<string, array<int, string>> $type_aliases
+     * @param  array<string, array<int, array{0: string, 1: int}>> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, array{0: string, 1: int}>>
      */
     public static function getTypeAliasesFromComment(
         PhpParser\Comment\Doc $comment,
@@ -186,11 +186,11 @@ class CommentAnalyzer
     /**
      * @param  array<string>    $type_alias_comment_lines
      * @param  Aliases          $aliases
-     * @param  array<string, array<int, string>> $type_aliases
+     * @param  array<string, array<int, array{0: string, 1: int}>> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, array{0: string, 1: int}>>
      */
     private static function getTypeAliasesFromCommentLines(
         array $type_alias_comment_lines,

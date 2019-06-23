@@ -80,7 +80,7 @@ class FileStorage
     public $has_docblock_issues = false;
 
     /**
-     * @var array<string, array<int, string>>
+     * @var array<string, array<int, array{0: string, 1: int}>>
      */
     public $type_aliases = [];
 
