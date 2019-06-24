@@ -2752,6 +2752,35 @@ class TemplateTest extends TestCase
 
                     mock(A::class)->foo();'
             ],
+            'allowTemplateTypeBeingUsedInsideFunction' => [
+                '<?php
+                    /**
+                     * @template T of DateTime
+                     * @param callable(T) $callable
+                     * @param T $value
+                     */
+                    function foo(callable $callable, DateTime $value) : void {
+                        $callable($value);
+                    }',
+            ],
+            'callFindAnother' => [
+                '<?php
+                    /**
+                     * @template T as Foo
+                     * @param T $foo
+                     * @return T
+                     */
+                    function loader($foo) {
+                        return $foo::getAnother();
+                    }
+
+                    class Foo {
+                        /** @return static */
+                        public static function getAnother() {
+                            return new static();
+                        }
+                    }',
+            ],
         ];
     }
 
