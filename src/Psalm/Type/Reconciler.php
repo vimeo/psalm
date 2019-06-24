@@ -1435,7 +1435,7 @@ class Reconciler
                     $codebase,
                     $new_type_part,
                     $existing_type_part,
-                    false,
+                    true,
                     false,
                     $scalar_type_match_found,
                     $type_coerced,

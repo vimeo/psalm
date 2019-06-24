@@ -707,6 +707,28 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     null
                 );
 
+                if ($found_generic_params
+                    && $stmt->class instanceof PhpParser\Node\Name
+                    && $stmt->class->parts === ['parent']
+                    && $context->self
+                ) {
+                    $self_class_storage = $codebase->classlike_storage_provider->get($context->self);
+
+                    $extended_types = $self_class_storage->template_type_extends[strtolower($fq_class_name)] ?? [];
+
+                    if ($extended_types) {
+                        foreach ($extended_types as $type_key => $extended_type) {
+                            if (!is_string($type_key)) {
+                                continue;
+                            }
+
+                            if (isset($found_generic_params[$type_key][$fq_class_name])) {
+                                $found_generic_params[$type_key][$fq_class_name][0] = clone $extended_type;
+                            }
+                        }
+                    }
+                }
+
                 if (self::checkMethodArgs(
                     $method_id,
                     $args,

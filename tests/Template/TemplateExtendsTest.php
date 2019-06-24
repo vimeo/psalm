@@ -1646,35 +1646,6 @@ class TemplateExtendsTest extends TestCase
 
                     ord((new Child())->example("str"));'
             ],
-            'allowWiderParentType' => [
-                '<?php
-                    /**
-                     * @template T
-                     */
-                    abstract class Stringer {
-                        /**
-                         * @param T $t
-                         */
-                        public static function getString($t, object $o = null) : string {
-                            return "hello";
-                        }
-                    }
-
-                    class A {}
-
-                    /**
-                     * @template-extends Stringer<A>
-                     */
-                    class AStringer extends Stringer {
-                        public static function getString($t, object $o = null) : string {
-                            if ($o) {
-                                return parent::getString($o);
-                            }
-
-                            return "a";
-                        }
-                    }'
-            ],
             'allowTraitExtendAndImplementWithExplicitParamType' => [
                 '<?php
                     /**
@@ -2771,6 +2742,36 @@ class TemplateExtendsTest extends TestCase
                      */
                     class CovariantFoo extends InvariantFoo {}',
                 'error_message' => 'InvalidTemplateParam'
+            ],
+            'preventWiderParentType' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    abstract class Stringer {
+                        /**
+                         * @param T $t
+                         */
+                        public static function getString($t, object $o = null) : string {
+                            return "hello";
+                        }
+                    }
+
+                    class A {}
+
+                    /**
+                     * @template-extends Stringer<A>
+                     */
+                    class AStringer extends Stringer {
+                        public static function getString($t, object $o = null) : string {
+                            if ($o) {
+                                return parent::getString($o);
+                            }
+
+                            return "a";
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion'
             ],
         ];
     }

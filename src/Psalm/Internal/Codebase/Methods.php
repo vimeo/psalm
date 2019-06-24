@@ -570,7 +570,10 @@ class Methods
 
         $appearing_fq_class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
 
-        if (!$appearing_fq_class_storage->user_defined && CallMap::inCallMap($appearing_method_id)) {
+        if (!$appearing_fq_class_storage->user_defined
+            && !$appearing_fq_class_storage->stubbed
+            && CallMap::inCallMap($appearing_method_id)
+        ) {
             if ($appearing_method_id === 'Closure::fromcallable'
                 && isset($args[0]->value->inferredType)
                 && $args[0]->value->inferredType->isSingle()
