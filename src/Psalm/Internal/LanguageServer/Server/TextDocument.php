@@ -37,6 +37,7 @@ use Amp\Success;
 use function error_log;
 use function count;
 use function substr_count;
+use function strlen;
 
 /**
  * Provides method handlers for all textDocument/* methods
@@ -272,5 +273,51 @@ class TextDocument
         }
 
         return new Success(new CompletionList($completion_items, false));
+    }
+
+    public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
+    {
+        $file_path = LanguageServer::uriToPath($textDocument->uri);
+
+        $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
+        if ($argument_location === null) {
+            error_log('No argument location');
+            return new Success(new \LanguageServerProtocol\SignatureHelp());
+        }
+
+        list($method_symbol, $argument_number) = $argument_location;
+
+        $declaring_method_id = $this->codebase->methods->getDeclaringMethodId($method_symbol);
+        if ($declaring_method_id === null) {
+            error_log('No declaring method id');
+            return new Success(new \LanguageServerProtocol\SignatureHelp());
+        }
+
+        $method_storage = $this->codebase->methods->getStorage($declaring_method_id);
+
+        $signature_label = '(';
+        $parameters = [];
+        foreach ($method_storage->params as $i => $param) {
+            $parameter_label = ($param->type ?: 'mixed') . ' $' . $param->name;
+            $parameters[] = new \LanguageServerProtocol\ParameterInformation([
+                strlen($signature_label),
+                strlen($signature_label) + strlen($parameter_label),
+            ]) ;
+            $signature_label .= $parameter_label;
+
+            if ($i < (count($method_storage->params) - 1)) {
+                $signature_label .= ', ';
+            }
+        }
+        $signature_label .= ')';
+
+        error_log('Argument ' . $argument_number . ' of ' . $method_storage->cased_name);
+
+        return new Success(new \LanguageServerProtocol\SignatureHelp([
+            new \LanguageServerProtocol\SignatureInformation(
+                $signature_label,
+                $parameters
+            ),
+        ], null, $argument_number));
     }
 }

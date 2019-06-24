@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -30,6 +31,10 @@ use function strpos;
 use function is_string;
 use function strlen;
 use function substr;
+use function token_get_all;
+use function array_reverse;
+use function array_shift;
+use function reset;
 
 /**
  * @internal
@@ -344,6 +349,13 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if ($stmt->name instanceof PhpParser\Node\Identifier && !$is_mock) {
                 $method_name_lc = strtolower($stmt->name->name);
                 $method_id = $fq_class_name . '::' . $method_name_lc;
+
+                ArgumentMapPopulator::recordArgumentPositions(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $method_id
+                );
 
                 $args = $stmt->args;
 
