@@ -735,7 +735,9 @@ class TypeAnalyzer
                     $to_string_cast,
                     $type_coerced_from_scalar
                 )) {
-                    return true;
+                    if ($allow_interface_equality || !$input_type_part instanceof TNamedObject) {
+                        return true;
+                    }
                 }
             }
 

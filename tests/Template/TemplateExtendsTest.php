@@ -776,6 +776,50 @@ class TemplateExtendsTest extends TestCase
                         }
                     }',
             ],
+            'extendWithExplicitOverriddenTemplatedSignature' => [
+                '<?php
+                    class Obj {}
+
+                    /**
+                     * @template T1
+                     */
+                    class BaseContainer {
+                        /** @var T1 */
+                        private $t1;
+
+                        /** @param T1 $t1 */
+                        public function __construct($t1) {
+                            $this->t1 = $t1;
+                        }
+
+                        /**
+                         * @return T1
+                         */
+                        public function getValue()
+                        {
+                            return $this->t1;
+                        }
+                    }
+
+                    /**
+                     * @template T2 as Obj
+                     * @template-extends BaseContainer<T2>
+                     */
+                    class Container extends BaseContainer {
+                        /** @param T2 $t2 */
+                        public function __construct($t2) {
+                            parent::__construct($t2);
+                        }
+
+                        /**
+                         * @return T2
+                         */
+                        public function getValue()
+                        {
+                            return parent::getValue();
+                        }
+                    }',
+            ],
             'iterateOverExtendedArrayObjectThisClassIterationWithExplicitGetIterator' => [
                 '<?php
                     class O {}
@@ -805,9 +849,7 @@ class TemplateExtendsTest extends TestCase
                         /**
                          * @return \ArrayIterator<int, T>
                          */
-                        public function getIterator()
-                        {
-                            /** @var ArrayIterator<int, O> */
+                        public function getIterator() {
                             return parent::getIterator();
                         }
                     }
@@ -1116,6 +1158,50 @@ class TemplateExtendsTest extends TestCase
                             }
                         }
                     }',
+            ],
+            'templateExtendsOnceWithSpecificStaticCall' => [
+                '<?php
+                    /** @template T */
+                    class Container {
+                        /** @var T */
+                        private $t;
+
+                        /** @param T $t */
+                        private function __construct($t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @param T $t
+                         * @return static<T>
+                         */
+                        public static function getContainer($t) {
+                            return new static($t);
+                        }
+
+                        /**
+                         * @return T
+                         */
+                        public function getValue()
+                        {
+                            return $this->t;
+                        }
+                    }
+
+                    /**
+                     * @template T1 as A
+                     * @template-extends Container<T1>
+                     */
+                    class AContainer extends Container {}
+
+                    class A {
+                        function foo() : void {}
+                    }
+
+                    $b = AContainer::getContainer(new A());',
+                [
+                    '$b' => 'AContainer<A>',
+                ],
             ],
             'templateExtendsDifferentNameWithStaticCall' => [
                 '<?php

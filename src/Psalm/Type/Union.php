@@ -1009,6 +1009,12 @@ class Union
                                             = clone $key_type;
                                     }
                                 }
+
+                                if ($replacement_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                                    foreach ($replacement_atomic_type->as->getTypes() as $nested_type_atomic) {
+                                        $this->types[$nested_type_atomic->getKey()] = clone $nested_type_atomic;
+                                    }
+                                }
                                 // @codingStandardsIgnoreEnd
 
                                 if (!$replacements_found) {

@@ -1012,7 +1012,6 @@ class TemplateTest extends TestCase
                         /**
                          * @template T as Foo
                          * @param class-string<T> $class
-                         * @template-typeof T $class
                          * @return T|null
                          */
                         public function loader(string $class) {
@@ -3446,6 +3445,17 @@ class TemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement'
             ],
+            'preventTemplateTypeAsBeingUsedInsideFunction' => [
+                '<?php
+                    /**
+                     * @template T of DateTime
+                     * @param callable(T) $callable
+                     */
+                    function foo(callable $callable) : void {
+                        $callable(new \DateTime());
+                    }',
+                'error_message' => 'InvalidArgument'
+            ],
             'preventWrongTemplateBeingPassed' => [
                 '<?php
                     /**
@@ -3460,6 +3470,19 @@ class TemplateTest extends TestCase
                         return $parameter($value);
                     }',
                 'error_message' => 'InvalidArgument'
+            ],
+            'preventTemplateTypeReturnMoreGeneral' => [
+                '<?php
+                    /**
+                     * @template T of DateTimeInterface
+                     * @param T $x
+                     * @return T
+                     */
+                    function foo($x)
+                    {
+                        return new \DateTime();
+                    }',
+                'error_message' => 'InvalidReturnStatement'
             ],
         ];
     }
