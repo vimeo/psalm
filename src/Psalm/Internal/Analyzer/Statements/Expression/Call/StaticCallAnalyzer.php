@@ -773,11 +773,24 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         }
 
+                        if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
+                            $static_type = $lhs_type_part;
+                        } elseif ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
+                            $static_type = new Type\Atomic\TTemplateParam(
+                                $lhs_type_part->param_name,
+                                $lhs_type_part->as_type
+                                    ? new Type\Union([$lhs_type_part->as_type])
+                                    : Type::getObject()
+                            );
+                        } else {
+                            $static_type = $fq_class_name;
+                        }
+
                         $return_type_candidate = ExpressionAnalyzer::fleshOutType(
                             $codebase,
                             $return_type_candidate,
                             $self_fq_class_name,
-                            $fq_class_name,
+                            $static_type,
                             $class_storage->parent_class
                         );
 

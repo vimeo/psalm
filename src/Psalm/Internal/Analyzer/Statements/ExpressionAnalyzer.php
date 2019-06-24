@@ -995,7 +995,7 @@ class ExpressionAnalyzer
     /**
      * @param  Type\Union   $return_type
      * @param  string|null  $self_class
-     * @param  string|Type\Atomic\TNamedObject|null $static_class_type
+     * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
      *
      * @return Type\Union
      */
@@ -1044,7 +1044,7 @@ class ExpressionAnalyzer
     /**
      * @param  Type\Atomic  &$return_type
      * @param  string|null  $self_class
-     * @param  string|Type\Atomic\TNamedObject|null $static_class_type
+     * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
      *
      * @return Type\Atomic|array<int, Type\Atomic>
      */
