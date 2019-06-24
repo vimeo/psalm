@@ -1229,8 +1229,9 @@ class Codebase
                             null,
                             (string)$method_storage->visibility,
                             $method_storage->cased_name,
-                            $method_storage->cased_name . '()'
+                            $method_storage->cased_name . (count($method_storage->params) !== 0 ? '($0)' : '()')
                         );
+                        $completion_item->insertTextFormat = \LanguageServerProtocol\InsertTextFormat::SNIPPET;
 
                         if ($method_storage->is_static) {
                             $static_completion_items[] = $completion_item;

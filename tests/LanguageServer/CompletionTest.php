@@ -624,6 +624,43 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->assertSame(['B\Collection', '->', []], $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 61)));
     }
 
+    public function testCursorPositionOnMethodCompletion(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public function bar(string $a) {
+                        $this->
+                    }
+
+                    public function baz() {}
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(5, 31));
+
+        $this->assertSame(['B\A', '->', []], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+
+        $this->assertCount(2, $completion_items);
+
+        $this->assertEquals('bar($0)', $completion_items[0]->insertText);
+        $this->assertEquals('baz()', $completion_items[1]->insertText);
+    }
+
     /**
      * @return void
      */
