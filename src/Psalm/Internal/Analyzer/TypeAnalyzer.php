@@ -519,46 +519,58 @@ class TypeAnalyzer
                     );
                 }
 
-                if ($intersection_container_type_lower === $intersection_input_type_lower) {
-                    continue 2;
-                }
-
-                if ($intersection_input_type_lower === 'generator'
-                    && in_array($intersection_container_type_lower, ['iterator', 'traversable', 'iterable'], true)
+                if (!$intersection_container_type instanceof TTemplateParam
+                    || $intersection_input_type instanceof TTemplateParam
                 ) {
-                    continue 2;
-                }
+                    if ($intersection_container_type instanceof TTemplateParam
+                        && $intersection_input_type instanceof TTemplateParam
+                    ) {
+                        if ($intersection_container_type->param_name !== $intersection_input_type->param_name) {
+                            return false;
+                        }
+                    }
 
-                if ($intersection_input_type_lower === 'traversable'
-                    && $intersection_container_type_lower === 'iterable'
-                ) {
-                    continue 2;
-                }
+                    if ($intersection_container_type_lower === $intersection_input_type_lower) {
+                        continue 2;
+                    }
 
-                $input_type_is_interface = $codebase->interfaceExists($intersection_input_type_lower);
-                $container_type_is_interface = $codebase->interfaceExists($intersection_container_type_lower);
+                    if ($intersection_input_type_lower === 'generator'
+                        && in_array($intersection_container_type_lower, ['iterator', 'traversable', 'iterable'], true)
+                    ) {
+                        continue 2;
+                    }
 
-                if ($allow_interface_equality && $input_type_is_interface && $container_type_is_interface) {
-                    continue 2;
-                }
+                    if ($intersection_input_type_lower === 'traversable'
+                        && $intersection_container_type_lower === 'iterable'
+                    ) {
+                        continue 2;
+                    }
 
-                if ($codebase->classExists($intersection_input_type_lower)
-                    && $codebase->classOrInterfaceExists($intersection_container_type_lower)
-                    && $codebase->classExtendsOrImplements(
-                        $intersection_input_type_lower,
-                        $intersection_container_type_lower
-                    )
-                ) {
-                    continue 2;
-                }
+                    $input_type_is_interface = $codebase->interfaceExists($intersection_input_type_lower);
+                    $container_type_is_interface = $codebase->interfaceExists($intersection_container_type_lower);
 
-                if ($input_type_is_interface
-                    && $codebase->interfaceExtends(
-                        $intersection_input_type_lower,
-                        $intersection_container_type_lower
-                    )
-                ) {
-                    continue 2;
+                    if ($allow_interface_equality && $input_type_is_interface && $container_type_is_interface) {
+                        continue 2;
+                    }
+
+                    if ($codebase->classExists($intersection_input_type_lower)
+                        && $codebase->classOrInterfaceExists($intersection_container_type_lower)
+                        && $codebase->classExtendsOrImplements(
+                            $intersection_input_type_lower,
+                            $intersection_container_type_lower
+                        )
+                    ) {
+                        continue 2;
+                    }
+
+                    if ($input_type_is_interface
+                        && $codebase->interfaceExtends(
+                            $intersection_input_type_lower,
+                            $intersection_container_type_lower
+                        )
+                    ) {
+                        continue 2;
+                    }
                 }
 
                 if (ExpressionAnalyzer::isMock($intersection_input_type_lower)) {
@@ -690,6 +702,10 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TTemplateParam) {
+            if ($container_type_part->param_name !== $input_type_part->param_name) {
+                return false;
+            }
+
             return self::isContainedBy(
                 $codebase,
                 $input_type_part->as,

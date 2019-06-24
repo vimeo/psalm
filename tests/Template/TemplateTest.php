@@ -1033,7 +1033,7 @@ class TemplateTest extends TestCase
                     class I {
                         /**
                          * @template T as Foo
-                         * @param class-string $class
+                         * @param class-string<T> $class
                          * @template-typeof T $class
                          * @return T|null
                          */
@@ -3489,6 +3489,21 @@ class TemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement'
+            ],
+            'preventWrongTemplateBeingPassed' => [
+                '<?php
+                    /**
+                     * @template T of DateTime
+                     * @template T2 of DateTime
+                     * @param callable(T): T $parameter
+                     * @param T2 $value
+                     * @return T
+                     */
+                    function foo(callable $parameter, $value)
+                    {
+                        return $parameter($value);
+                    }',
+                'error_message' => 'InvalidArgument'
             ],
         ];
     }
