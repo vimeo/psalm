@@ -620,6 +620,8 @@ class Populator
                 }
             }
 
+            $parent_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
+
             $parent_interfaces = array_merge($parent_interfaces, $parent_interface_storage->parent_interfaces);
 
             $this->inheritMethodsFromParent($storage, $parent_interface_storage);

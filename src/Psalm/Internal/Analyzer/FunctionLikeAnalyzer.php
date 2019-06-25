@@ -660,7 +660,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     && !TypeAnalyzer::isContainedBy(
                         $codebase,
                         $default_type,
-                        $param_type
+                        $param_type,
+                        false,
+                        false,
+                        $has_scalar_match,
+                        $type_coerced,
+                        $type_coerced_from_mixed,
+                        $to_string_cast,
+                        $type_coerced_from_scalar,
+                        true
                     )
                 ) {
                     if (IssueBuffer::accepts(

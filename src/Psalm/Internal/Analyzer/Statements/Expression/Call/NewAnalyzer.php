@@ -127,7 +127,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                 $lhs_type_part->param_name,
                                 $lhs_type_part->as_type
                                     ? new Type\Union([$lhs_type_part->as_type])
-                                    : Type::parseString($lhs_type_part->as)
+                                    : Type::parseString($lhs_type_part->as),
+                                $lhs_type_part->defining_class
                             );
 
                             if ($new_type) {
