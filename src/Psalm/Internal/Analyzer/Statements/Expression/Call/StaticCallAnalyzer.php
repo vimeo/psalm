@@ -732,6 +732,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     $found_generic_params[$type_key][$template_fq_class_name] = [
                                         $found_generic_params[$t->param_name][$t->defining_class ?: ''][0]
                                     ];
+                                } else {
+                                    $found_generic_params[$type_key][$template_fq_class_name] = [
+                                        clone $extended_type
+                                    ];
+                                    break;
                                 }
                             }
                         }
