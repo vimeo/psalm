@@ -1597,6 +1597,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if ($return_type && $class_storage->template_type_extends) {
                 $generic_params = [];
 
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
+
+                if ($declaring_method_id) {
+                    $declaring_class_name = explode('::', $declaring_method_id)[0];
+
+                    $class_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
+                }
+
                 $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
                     $codebase,
                     $class_storage,

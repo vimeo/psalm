@@ -886,7 +886,7 @@ class ClassTemplateExtendsTest extends TestCase
                         public function valid(): bool { return false; }
                     }',
             ],
-            'traitUse' => [
+            'traitUseNotExtended' => [
                 '<?php
                     /**
                      * @template T
@@ -2194,6 +2194,37 @@ class ClassTemplateExtendsTest extends TestCase
                             return parent::getIterator();
                         }
                     }'
+            ],
+            'templatedInterfaceGetIteratorIteration' => [
+                '<?php
+                    namespace NS;
+
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template-extends \IteratorAggregate<TKey, TValue>
+                     */
+                    interface ICollection extends \IteratorAggregate {
+                        /** @return \Traversable<TKey,TValue> */
+                        public function getIterator();
+                    }
+
+                    class Collection implements ICollection {
+                        /** @var array */
+                        private $data;
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+                        /** @psalm-suppress LessSpecificImplementedReturnType */
+                        public function getIterator(): \Traversable {
+                            return new \ArrayIterator($this->data);
+                        }
+                    }
+
+                    /** @var ICollection<string, int> */
+                    $c = new Collection(["a" => 1]);
+
+                    foreach ($c->getIterator() as $k => $v) { atan($v); strlen($k); }',
             ],
         ];
     }

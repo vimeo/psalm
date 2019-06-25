@@ -84,7 +84,7 @@ class ClassTemplateTest extends TestCase
                      * @template T as object
                      */
                     class Foo {
-                        /** @var T::class */
+                        /** @var class-string<T> */
                         public $T;
 
                         /**
@@ -322,11 +322,11 @@ class ClassTemplateTest extends TestCase
             ],
             'noRepeatedTypeException' => [
                 '<?php
-                    /** @template T */
+                    /** @template T as object */
                     class Foo
                     {
                         /**
-                         * @psalm-var class-string
+                         * @psalm-var class-string<T>
                          */
                         private $type;
 
@@ -334,14 +334,14 @@ class ClassTemplateTest extends TestCase
                         private $items;
 
                         /**
-                         * @param class-string $type
-                         * @template-typeof T $type
+                         * @param class-string<T> $type
                          */
                         public function __construct(string $type)
                         {
                             if (!in_array($type, [A::class, B::class], true)) {
                                 throw new \InvalidArgumentException;
                             }
+
                             $this->type = $type;
                             $this->items = [];
                         }
@@ -372,6 +372,7 @@ class ClassTemplateTest extends TestCase
                          */
                         private function ensureFoo(array $items): Foo
                         {
+                            /** @var class-string<T> */
                             $type = $items[0] instanceof A ? A::class : B::class;
                             return new Foo($type);
                         }
@@ -440,36 +441,6 @@ class ClassTemplateTest extends TestCase
                     $c = new Collection(["a" => 1]);
 
                     foreach ($c as $k => $v) { atan($v); strlen($k); }',
-            ],
-            'templatedInterfaceGetIteratorIteration' => [
-                '<?php
-                    namespace NS;
-
-                    /**
-                     * @template TKey
-                     * @template TValue
-                     */
-                    interface ICollection extends \IteratorAggregate {
-                        /** @return \Traversable<TKey,TValue> */
-                        public function getIterator();
-                    }
-
-                    class Collection implements ICollection {
-                        /** @var array */
-                        private $data;
-                        public function __construct(array $data) {
-                            $this->data = $data;
-                        }
-                        /** @psalm-suppress LessSpecificImplementedReturnType */
-                        public function getIterator(): \Traversable {
-                            return new \ArrayIterator($this->data);
-                        }
-                    }
-
-                    /** @var ICollection<string, int> */
-                    $c = new Collection(["a" => 1]);
-
-                    foreach ($c->getIterator() as $k => $v) { atan($v); strlen($k); }',
             ],
             'allowTemplatedIntersectionToExtend' => [
                 '<?php
@@ -1172,7 +1143,7 @@ class ClassTemplateTest extends TestCase
                          *
                          * @param class-string<Q> $obj
                          *
-                         * @return array<I, V>
+                         * @return array<I, V|Q>
                          */
                         public function appendProperty(string $obj): array
                         {

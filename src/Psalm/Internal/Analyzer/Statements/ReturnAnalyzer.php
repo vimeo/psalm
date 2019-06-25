@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
@@ -160,6 +161,31 @@ class ReturnAnalyzer
                     );
 
                     $local_return_type = $source->getLocalReturnType($storage->return_type);
+
+                    if ($storage instanceof \Psalm\Storage\MethodStorage) {
+                        list($fq_class_name, $method_name) = explode('::', $cased_method_id);
+
+                        if ($fq_class_name !== $context->self) {
+                            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                            $found_generic_params = MethodCallAnalyzer::getClassTemplateParams(
+                                $codebase,
+                                $class_storage,
+                                $fq_class_name,
+                                strtolower($method_name),
+                                null,
+                                null
+                            );
+
+                            if ($found_generic_params) {
+                                $local_return_type = clone $local_return_type;
+
+                                $local_return_type->replaceTemplateTypesWithArgTypes(
+                                    $found_generic_params
+                                );
+                            }
+                        }
+                    }
 
                     if ($local_return_type->isGenerator() && $storage->has_yield) {
                         return null;
