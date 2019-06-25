@@ -632,10 +632,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $guide_classlike_storage->parent_class
             );
 
-            $guide_class_name_lc = strtolower($guide_classlike_storage->name);
+            $guide_class_name = $guide_classlike_storage->name;
 
-            if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name_lc])) {
-                $map = $implementer_classlike_storage->template_type_extends[$guide_class_name_lc];
+            if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name])) {
+                $map = $implementer_classlike_storage->template_type_extends[$guide_class_name];
 
                 $template_types = [];
 
@@ -656,16 +656,16 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 );
             }
 
-            $guide_trait_name_lc = null;
+            $guide_trait_name = null;
 
             if ($guide_classlike_storage === $implementer_classlike_storage) {
-                $guide_trait_name_lc = strtolower($implementer_method_storage->defining_fqcln);
+                $guide_trait_name = $implementer_method_storage->defining_fqcln;
             }
 
-            if ($guide_trait_name_lc
-                && isset($implementer_classlike_storage->template_type_extends[$guide_trait_name_lc])
+            if ($guide_trait_name
+                && isset($implementer_classlike_storage->template_type_extends[$guide_trait_name])
             ) {
-                $map = $implementer_classlike_storage->template_type_extends[$guide_trait_name_lc];
+                $map = $implementer_classlike_storage->template_type_extends[$guide_trait_name];
 
                 $template_types = [];
 
@@ -891,10 +891,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $guide_classlike_storage->parent_class
                 );
 
-                $guide_class_name_lc = strtolower($guide_classlike_storage->name);
+                $guide_class_name = $guide_classlike_storage->name;
 
-                if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name_lc])) {
-                    $map = $implementer_classlike_storage->template_type_extends[$guide_class_name_lc];
+                if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name])) {
+                    $map = $implementer_classlike_storage->template_type_extends[$guide_class_name];
 
                     $template_types = [];
 

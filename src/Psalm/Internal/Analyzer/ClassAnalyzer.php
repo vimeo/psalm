@@ -1707,9 +1707,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             foreach ($parent_storage->template_types as $template_name => $type_map) {
                 foreach ($type_map as $template_type) {
-                    $parent_class_lc = strtolower($parent_storage->name);
-                    if (isset($storage->template_type_extends[$parent_class_lc][$template_name])) {
-                        $extended_type = $storage->template_type_extends[$parent_class_lc][$template_name];
+                    if (isset($storage->template_type_extends[$parent_storage->name][$template_name])) {
+                        $extended_type = $storage->template_type_extends[$parent_storage->name][$template_name];
 
                         if (isset($parent_storage->template_covariants[$i])
                             && !$parent_storage->template_covariants[$i]

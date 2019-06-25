@@ -666,11 +666,11 @@ class ForeachAnalyzer
 
                                     // The collection might be an iterator, in which case
                                     // we want to call the iterator function
-                                    if (!isset($generic_storage->template_type_extends['traversable'])
+                                    if (!isset($generic_storage->template_type_extends['Traversable'])
                                         || ($generic_storage
-                                                ->template_type_extends['traversable']['TKey']->isMixed()
+                                                ->template_type_extends['Traversable']['TKey']->isMixed()
                                             && $generic_storage
-                                                ->template_type_extends['traversable']['TValue']->isMixed())
+                                                ->template_type_extends['Traversable']['TValue']->isMixed())
                                     ) {
                                         self::handleIterable(
                                             $statements_analyzer,
@@ -689,7 +689,7 @@ class ForeachAnalyzer
 
                                 if ($array_atomic_type instanceof Type\Atomic\TIterable
                                     || ($array_atomic_type instanceof Type\Atomic\TNamedObject
-                                        && (strtolower($array_atomic_type->value) === 'traversable'
+                                        && ($array_atomic_type->value === 'Traversable'
                                             || ($codebase->classOrInterfaceExists($array_atomic_type->value)
                                                 && $codebase->classImplements(
                                                     $array_atomic_type->value,
@@ -827,7 +827,7 @@ class ForeachAnalyzer
                 $iterator_atomic_type->value
             );
 
-            if (!isset($generic_storage->template_type_extends['traversable'])) {
+            if (!isset($generic_storage->template_type_extends['Traversable'])) {
                 return;
             }
 
@@ -857,8 +857,8 @@ class ForeachAnalyzer
 
             $key_type = self::getExtendedType(
                 'TKey',
-                'traversable',
-                strtolower($generic_storage->name),
+                'Traversable',
+                $generic_storage->name,
                 $generic_storage->template_type_extends,
                 $generic_storage->template_types,
                 $passed_type_params
@@ -866,8 +866,8 @@ class ForeachAnalyzer
 
             $value_type = self::getExtendedType(
                 'TValue',
-                'traversable',
-                strtolower($generic_storage->name),
+                'Traversable',
+                $generic_storage->name,
                 $generic_storage->template_type_extends,
                 $generic_storage->template_types,
                 $passed_type_params
@@ -886,13 +886,13 @@ class ForeachAnalyzer
      */
     private static function getExtendedType(
         string $template_name,
-        string $template_class_lc,
-        string $calling_class_lc,
+        string $template_class,
+        string $calling_class,
         array $template_type_extends,
         array $class_template_types = null,
         array $calling_type_params = null
     ) {
-        if ($calling_class_lc === $template_class_lc) {
+        if ($calling_class === $template_class) {
             if (isset($class_template_types[$template_name]) && $calling_type_params) {
                 $offset = array_search($template_name, array_keys($class_template_types));
 
@@ -904,8 +904,8 @@ class ForeachAnalyzer
             return null;
         }
 
-        if (isset($template_type_extends[$template_class_lc][$template_name])) {
-            $extended_type = $template_type_extends[$template_class_lc][$template_name];
+        if (isset($template_type_extends[$template_class][$template_name])) {
+            $extended_type = $template_type_extends[$template_class][$template_name];
 
             $return_type = null;
 
@@ -926,8 +926,8 @@ class ForeachAnalyzer
                 if ($extended_atomic_type->defining_class) {
                     $candidate_type = self::getExtendedType(
                         $extended_atomic_type->param_name,
-                        strtolower($extended_atomic_type->defining_class),
-                        $calling_class_lc,
+                        $extended_atomic_type->defining_class,
+                        $calling_class,
                         $template_type_extends,
                         $class_template_types,
                         $calling_type_params

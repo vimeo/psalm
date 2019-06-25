@@ -1233,7 +1233,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($extended_type_parameters) {
-                $storage->template_type_extends[$generic_class_lc] = $extended_type_parameters;
+                $storage->template_type_extends[$atomic_type->value] = $extended_type_parameters;
             }
         }
     }
@@ -1317,7 +1317,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($implemented_type_parameters) {
-                $storage->template_type_extends[$generic_class_lc] = $implemented_type_parameters;
+                $storage->template_type_extends[$atomic_type->value] = $implemented_type_parameters;
             }
         }
     }
@@ -1401,7 +1401,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($used_type_parameters) {
-                $storage->template_type_extends[$generic_class_lc] = $used_type_parameters;
+                $storage->template_type_extends[$atomic_type->value] = $used_type_parameters;
             }
         }
     }

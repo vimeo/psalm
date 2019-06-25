@@ -1725,11 +1725,9 @@ class CallAnalyzer
                 && $class_storage !== $calling_class_storage
                 && $calling_class_storage->template_type_extends
             ) {
-                foreach ($calling_class_storage->template_type_extends as $class_name_lc => $type_map) {
+                foreach ($calling_class_storage->template_type_extends as $class_name => $type_map) {
                     foreach ($type_map as $template_name => $type) {
-                        if (is_string($template_name)
-                            && $class_name_lc === strtolower($class_storage->name)
-                        ) {
+                        if (is_string($template_name) && $class_name === $class_storage->name) {
                             $output_type = null;
 
                             foreach ($type->getTypes() as $atomic_type) {
@@ -1738,14 +1736,12 @@ class CallAnalyzer
                                     && isset(
                                         $calling_class_storage
                                             ->template_type_extends
-                                            [strtolower($atomic_type->defining_class)]
-                                            [$atomic_type->param_name]
+                                                [$atomic_type->defining_class]
+                                                [$atomic_type->param_name]
                                     )
                                 ) {
                                     $output_type_candidate = $calling_class_storage
-                                        ->template_type_extends
-                                        [strtolower($atomic_type->defining_class)]
-                                        [$atomic_type->param_name];
+                                        ->template_type_extends[$atomic_type->defining_class][$atomic_type->param_name];
                                 } else {
                                     $output_type_candidate = new Type\Union([$atomic_type]);
                                 }
@@ -1759,7 +1755,6 @@ class CallAnalyzer
                                     );
                                 }
                             }
-
 
                             $template_types[$template_name][$class_storage->name] = [$output_type ?: Type::getMixed()];
                         }

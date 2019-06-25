@@ -1335,9 +1335,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if ($class_storage !== $calling_class_storage
-                    && isset($e[strtolower($class_storage->name)][$type_name])
+                    && isset($e[$class_storage->name][$type_name])
                 ) {
-                    $input_type_extends = $e[strtolower($class_storage->name)][$type_name];
+                    $input_type_extends = $e[$class_storage->name][$type_name];
 
                     $output_type_extends = null;
 
@@ -1365,7 +1365,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 && isset(
                                     $calling_class_storage
                                         ->template_type_extends
-                                            [strtolower($type_extends_atomic->defining_class)]
+                                            [$type_extends_atomic->defining_class]
                                             [$type_extends_atomic->param_name]
                                 )
                             ) {
@@ -1373,7 +1373,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     $type_extends_atomic->param_name,
                                     array_keys($calling_class_storage
                                     ->template_type_extends
-                                        [strtolower($type_extends_atomic->defining_class)])
+                                        [$type_extends_atomic->defining_class])
                                 );
 
                                 if (isset($lhs_type_part->type_params[(int) $mapped_offset])) {
@@ -1416,9 +1416,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             foreach ($template_types as $type_name => $type_map) {
                 foreach ($type_map as list($type)) {
                     if ($class_storage !== $calling_class_storage
-                        && isset($e[strtolower($class_storage->name)][$type_name])
+                        && isset($e[$class_storage->name][$type_name])
                     ) {
-                        $input_type_extends = $e[strtolower($class_storage->name)][$type_name];
+                        $input_type_extends = $e[$class_storage->name][$type_name];
 
                         $output_type_extends = null;
 

@@ -1253,19 +1253,19 @@ class Union
                                     $codebase->classlike_storage_provider->get($atomic_input_type->value);
 
                                 if ($atomic_input_type instanceof TGenericObject
-                                    && isset($classlike_storage->template_type_extends[strtolower($key)])
+                                    && isset($classlike_storage->template_type_extends[$atomic_type->value])
                                 ) {
                                     $matching_atomic_type = $atomic_input_type;
                                     break;
                                 }
 
-                                if (isset($classlike_storage->template_type_extends[strtolower($key)])) {
-                                    $extends_list = $classlike_storage->template_type_extends[strtolower($key)];
+                                if (isset($classlike_storage->template_type_extends[$atomic_type->value])) {
+                                    $extends_list = $classlike_storage->template_type_extends[$atomic_type->value];
 
                                     $new_generic_params = [];
 
-                                    foreach ($extends_list as $key => $value) {
-                                        if (is_string($key)) {
+                                    foreach ($extends_list as $extends_key => $value) {
+                                        if (is_string($extends_key)) {
                                             $new_generic_params[] = $value;
                                         }
                                     }
@@ -1367,10 +1367,10 @@ class Union
                                 $classlike_storage = $codebase->classlike_storage_provider->get($template_class);
 
                                 if ($classlike_storage->template_type_extends) {
-                                    $defining_class_lc = strtolower($atomic_type->defining_class);
+                                    $defining_class = $atomic_type->defining_class;
 
-                                    if (isset($classlike_storage->template_type_extends[$defining_class_lc])) {
-                                        $param_map = $classlike_storage->template_type_extends[$defining_class_lc];
+                                    if (isset($classlike_storage->template_type_extends[$defining_class])) {
+                                        $param_map = $classlike_storage->template_type_extends[$defining_class];
 
                                         if (isset($param_map[$key])
                                             && isset($template_types[(string) $param_map[$key]][$template_class])

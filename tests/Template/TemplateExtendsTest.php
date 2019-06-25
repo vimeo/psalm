@@ -1954,10 +1954,10 @@ class TemplateExtendsTest extends TestCase
                         public function indexById($v): array;
                     }
 
-                    /** @template-implements I<int> */
+                    /** @template-implements I<string> */
                     class C implements I {
                         public function indexById($v): array {
-                          return [(string)$v => $v];
+                          return [$v => $v];
                         }
                     }',
             ],

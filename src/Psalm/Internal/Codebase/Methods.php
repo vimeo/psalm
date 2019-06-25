@@ -402,11 +402,12 @@ class Methods
                     $params[$i]->type = clone $overridden_storage->params[$i]->type;
 
                     if ($source) {
+                        $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
                         $params[$i]->type = self::localizeParamType(
                             $source->getCodebase(),
                             $params[$i]->type,
                             $appearing_fq_class_name,
-                            $overriding_fq_class_name
+                            $overridden_class_storage->name
                         );
                     }
 
@@ -445,11 +446,9 @@ class Methods
             if ($atomic_type instanceof Type\Atomic\TTemplateParam
                 || $atomic_type instanceof Type\Atomic\TTemplateParamClass
             ) {
-                if ($atomic_type->defining_class
-                    && strcasecmp($atomic_type->defining_class, $base_fq_class_name) === 0
-                ) {
-                    if (isset($extends[strtolower($base_fq_class_name)][$atomic_type->param_name])) {
-                        $extended_param = $extends[strtolower($base_fq_class_name)][$atomic_type->param_name];
+                if ($atomic_type->defining_class === $base_fq_class_name) {
+                    if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
+                        $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];
 
                         $type->removeType($key);
                         $type = Type::combineUnionTypes(

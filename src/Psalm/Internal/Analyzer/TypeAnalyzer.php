@@ -1602,11 +1602,11 @@ class TypeAnalyzer
                 ) {
                     $class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
 
-                    $container_class_lc = strtolower($container_type_part->value);
+                    $container_class = $container_type_part->value;
 
                     // attempt to transform it
-                    if (isset($class_storage->template_type_extends[$container_class_lc])) {
-                        $extends_list = $class_storage->template_type_extends[$container_class_lc];
+                    if (isset($class_storage->template_type_extends[$container_class])) {
+                        $extends_list = $class_storage->template_type_extends[$container_class];
 
                         $generic_params = [];
 
@@ -1644,8 +1644,8 @@ class TypeAnalyzer
                     $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
                     $template_extends = $input_class_storage->template_type_extends;
 
-                    if (isset($template_extends[strtolower($container_type_part->value)])) {
-                        $params = $template_extends[strtolower($container_type_part->value)];
+                    if (isset($template_extends[$container_type_part->value])) {
+                        $params = $template_extends[$container_type_part->value];
 
                         $new_input_params = [];
 

@@ -714,7 +714,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 ) {
                     $self_class_storage = $codebase->classlike_storage_provider->get($context->self);
 
-                    $extended_types = $self_class_storage->template_type_extends[strtolower($fq_class_name)] ?? [];
+                    $extended_types = $self_class_storage->template_type_extends[$fq_class_name] ?? [];
 
                     if ($extended_types) {
                         foreach ($extended_types as $type_key => $extended_type) {
