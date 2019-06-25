@@ -402,27 +402,6 @@ class FunctionTemplateTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MissingParamType'],
             ],
-            'returnClassString' => [
-                '<?php
-                    /**
-                     * @template T
-                     * @param T::class $s
-                     * @return T::class
-                     */
-                    function foo(string $s) : string {
-                        return $s;
-                    }
-
-                    /**
-                     * @param  A::class $s
-                     */
-                    function bar(string $s) : void {
-                    }
-
-                    class A {}
-
-                    bar(foo(A::class));',
-            ],
             'bindFirstTemplatedClosureParameter' => [
                 '<?php
                     /**
@@ -868,19 +847,6 @@ class FunctionTemplateTest extends TestCase
                         $some_t->bar();
                     }',
                 'error_message' => 'MixedMethodCall',
-            ],
-            'forbidLossOfInformationWhenCoercing' => [
-                '<?php
-                    /**
-                     * @template T as iterable<int>
-                     * @param T::class $class
-                     */
-                    function foo(string $class) : void {}
-
-                    function bar(Traversable $t) : void {
-                        foo(get_class($t));
-                    }',
-                'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'bindFirstTemplatedClosureParameter' => [
                 '<?php

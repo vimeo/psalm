@@ -466,6 +466,27 @@ class FunctionClassStringTemplateTest extends TestCase
 
                     mock(A::class)->foo();'
             ],
+            'returnClassString' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param T::class $s
+                     * @return T::class
+                     */
+                    function foo(string $s) : string {
+                        return $s;
+                    }
+
+                    /**
+                     * @param  A::class $s
+                     */
+                    function bar(string $s) : void {
+                    }
+
+                    class A {}
+
+                    bar(foo(A::class));',
+            ],
         ];
     }
 
@@ -517,6 +538,19 @@ class FunctionClassStringTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement'
+            ],
+            'forbidLossOfInformationWhenCoercing' => [
+                '<?php
+                    /**
+                     * @template T as iterable<int>
+                     * @param T::class $class
+                     */
+                    function foo(string $class) : void {}
+
+                    function bar(Traversable $t) : void {
+                        foo(get_class($t));
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
         ];
     }
