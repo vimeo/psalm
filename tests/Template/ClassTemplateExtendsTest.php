@@ -4,7 +4,7 @@ namespace Psalm\Tests\Template;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
 
-class TemplateExtendsTest extends TestCase
+class ClassTemplateExtendsTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
