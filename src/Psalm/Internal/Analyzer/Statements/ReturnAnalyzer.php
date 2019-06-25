@@ -165,25 +165,27 @@ class ReturnAnalyzer
                     if ($storage instanceof \Psalm\Storage\MethodStorage) {
                         list($fq_class_name, $method_name) = explode('::', $cased_method_id);
 
-                        if ($fq_class_name !== $context->self) {
-                            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+                        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                            $found_generic_params = MethodCallAnalyzer::getClassTemplateParams(
-                                $codebase,
-                                $class_storage,
-                                $fq_class_name,
-                                strtolower($method_name),
-                                null,
-                                null
-                            );
+                        $found_generic_params = MethodCallAnalyzer::getClassTemplateParams(
+                            $codebase,
+                            $class_storage,
+                            $fq_class_name,
+                            strtolower($method_name),
+                            null,
+                            null
+                        );
 
-                            if ($found_generic_params) {
-                                $local_return_type = clone $local_return_type;
-
-                                $local_return_type->replaceTemplateTypesWithArgTypes(
-                                    $found_generic_params
-                                );
+                        if ($found_generic_params) {
+                            foreach ($found_generic_params as $template_name => $_) {
+                                unset($found_generic_params[$template_name][$fq_class_name]);
                             }
+
+                            $local_return_type = clone $local_return_type;
+
+                            $local_return_type->replaceTemplateTypesWithArgTypes(
+                                $found_generic_params
+                            );
                         }
                     }
 

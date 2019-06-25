@@ -526,7 +526,9 @@ class FunctionTemplateTest extends TestCase
                         if ($return instanceof Generator) {
                             return [$gen->getReturn()];
                         }
-                        return [$gen];
+                        /** @var array<int, TReturn> */
+                        $wrapped_gen = [$gen];
+                        return $wrapped_gen;
                     }
 
                     $arr = call(
@@ -1042,6 +1044,18 @@ class FunctionTemplateTest extends TestCase
                     function foo($x)
                     {
                         return new \DateTime();
+                    }',
+                'error_message' => 'InvalidReturnStatement'
+            ],
+            'preventReturningString' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @psalm-param T $t
+                     * @return T
+                     */
+                    function mirror($t) {
+                        return "string";
                     }',
                 'error_message' => 'InvalidReturnStatement'
             ],

@@ -493,6 +493,13 @@ class Populator
                                 = $template_type[0];
                         }
                     }
+
+                    if ($parent_storage->template_type_extends) {
+                        $storage->template_type_extends = array_merge(
+                            $storage->template_type_extends,
+                            $parent_storage->template_type_extends
+                        );
+                    }
                 }
             } elseif ($parent_storage->template_type_extends) {
                 $storage->template_type_extends = array_merge(

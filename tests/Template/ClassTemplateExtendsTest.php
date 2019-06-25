@@ -663,6 +663,23 @@ class ClassTemplateExtendsTest extends TestCase
                         $foo->bar();
                     }',
             ],
+            'constructExtendedArrayIteratorWithTemplateExtends' => [
+                '<?php
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     * @template-extends ArrayIterator<TKey, TValue>
+                     */
+                    class Collection1 extends ArrayIterator{}
+
+                    class Collection2 extends Collection1{}
+
+                    class Collection3 extends Collection2{}
+
+                    $a = new Collection1(["a" => "b"]);
+                    $a = new Collection2(["a" => "b"]);
+                    $a = new Collection3(["a" => "b"]);',
+            ],
             'iterateOverExtendedArrayObjectWithoutParam' => [
                 '<?php
                     class O {}
@@ -2395,23 +2412,25 @@ class ClassTemplateExtendsTest extends TestCase
             'extendsTwiceSameNameLastDoesNotExtend' => [
                 '<?php
                     /**
-                     * @template T
+                     * @template T1
                      */
                     class Container
                     {
                         /**
-                         * @var T
+                         * @var T1
                          */
                         private $v;
+
                         /**
-                         * @param T $v
+                         * @param T1 $v
                          */
                         public function __construct($v)
                         {
                             $this->v = $v;
                         }
+
                         /**
-                         * @return T
+                         * @return T1
                          */
                         public function getValue()
                         {
@@ -2420,14 +2439,11 @@ class ClassTemplateExtendsTest extends TestCase
                     }
 
                     /**
-                     * @template T
-                     * @template-extends Container<T>
+                     * @template T2
+                     * @template-extends Container<T2>
                      */
                     class ChildContainer extends Container {}
 
-                    /**
-                     * @template T
-                     */
                     class GrandChildContainer extends ChildContainer {}
 
                     $fc = new GrandChildContainer(5);

@@ -612,10 +612,36 @@ class TypeAnalyzer
         &$to_string_cast = null,
         &$type_coerced_from_scalar = null
     ) {
+        if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TTemplateParam) {
+            if ($container_type_part->param_name !== $input_type_part->param_name
+                || (string)$container_type_part->defining_class !== (string)$input_type_part->defining_class
+            ) {
+                if ($container_type_part->defining_class
+                    && $input_type_part->defining_class
+                ) {
+                    $input_class_storage = $codebase->classlike_storage_provider->get(
+                        $input_type_part->defining_class
+                    );
+
+                    if (isset($input_class_storage->template_type_extends
+                            [$container_type_part->defining_class]
+                            [$container_type_part->param_name])
+                    ) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
         if ($container_type_part instanceof TMixed
             || ($container_type_part instanceof TTemplateParam
                 && $container_type_part->as->isMixed()
-                && !$container_type_part->extra_types)
+                && !$container_type_part->extra_types
+                && $input_type_part instanceof TMixed)
         ) {
             if (get_class($container_type_part) === TEmptyMixed::class
                 && get_class($input_type_part) === TMixed::class
@@ -675,7 +701,8 @@ class TypeAnalyzer
 
         if ($input_type_part->shallowEquals($container_type_part)
             || (($input_type_part instanceof TNamedObject
-                    || $input_type_part instanceof TTemplateParam
+                    || ($input_type_part instanceof TTemplateParam
+                        && $input_type_part->as->hasObjectType())
                     || $input_type_part instanceof TIterable)
                 && ($container_type_part instanceof TNamedObject
                     || ($container_type_part instanceof TTemplateParam
@@ -702,10 +729,6 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TTemplateParam) {
-            if ($container_type_part->param_name !== $input_type_part->param_name) {
-                return false;
-            }
-
             return self::isContainedBy(
                 $codebase,
                 $input_type_part->as,
@@ -735,7 +758,7 @@ class TypeAnalyzer
                     $to_string_cast,
                     $type_coerced_from_scalar
                 )) {
-                    if ($allow_interface_equality || !$input_type_part instanceof TNamedObject) {
+                    if ($allow_interface_equality || $input_type_part instanceof TArray) {
                         return true;
                     }
                 }
@@ -745,6 +768,25 @@ class TypeAnalyzer
         }
 
         if ($input_type_part instanceof TTemplateParam) {
+            if ($input_type_part->extra_types) {
+                foreach ($input_type_part->extra_types as $extra_type) {
+                    if (self::isAtomicContainedBy(
+                        $codebase,
+                        $extra_type,
+                        $container_type_part,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                        $has_scalar_match,
+                        $type_coerced,
+                        $type_coerced_from_mixed,
+                        $to_string_cast,
+                        $type_coerced_from_scalar
+                    )) {
+                        return true;
+                    }
+                }
+            }
+
             foreach ($input_type_part->as->getTypes() as $input_as_type_part) {
                 if ($input_as_type_part instanceof TNull && $container_type_part instanceof TNull) {
                     continue;
