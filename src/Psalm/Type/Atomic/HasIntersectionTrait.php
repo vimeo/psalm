@@ -78,7 +78,9 @@ trait HasIntersectionTrait
         $new_types = [];
 
         foreach ($this->extra_types as $extra_type) {
-            if ($extra_type instanceof TTemplateParam && isset($template_types[$extra_type->param_name])) {
+            if ($extra_type instanceof TTemplateParam
+                && isset($template_types[$extra_type->param_name][$extra_type->defining_class ?: ''])
+            ) {
                 $template_type = clone $template_types[$extra_type->param_name][$extra_type->defining_class ?: ''][0];
 
                 foreach ($template_type->getTypes() as $template_type_part) {
