@@ -38,25 +38,53 @@ class CommentAnalyzer
         array $template_type_map = null,
         ?array $type_aliases = null
     ) {
+        $parsed_docblock = DocComment::parsePreservingLength($comment);
+
+        return self::arrayToDocblocks(
+            $comment,
+            $parsed_docblock,
+            $source,
+            $aliases,
+            $template_type_map,
+            $type_aliases
+        );
+    }
+
+    /**
+     * @param  array<string, array<string, array{Type\Union}>>|null   $template_type_map
+     * @param  array<string, array<int, array{0: string, 1: int}>> $type_aliases
+     * @param array{description:string, specials:array<string, array<int, string>>} $parsed_docblock
+     *
+     * @return VarDocblockComment[]
+     *
+     * @throws DocblockParseException if there was a problem parsing the docblock
+     */
+    public static function arrayToDocblocks(
+        PhpParser\Comment\Doc $comment,
+        array $parsed_docblock,
+        FileSource $source,
+        Aliases $aliases,
+        array $template_type_map = null,
+        ?array $type_aliases = null
+    ) : array {
         $var_id = null;
 
         $var_type_tokens = null;
         $original_type = null;
 
         $var_comments = [];
-        $comments = DocComment::parsePreservingLength($comment);
 
         $comment_text = $comment->getText();
 
-        if (!isset($comments['specials']['var']) && !isset($comments['specials']['psalm-var'])) {
+        if (!isset($parsed_docblock['specials']['var']) && !isset($parsed_docblock['specials']['psalm-var'])) {
             return [];
         }
 
         $var_line_number = $comment->getLine();
 
-        if ($comments) {
-            $all_vars = (isset($comments['specials']['var']) ? $comments['specials']['var'] : [])
-                + (isset($comments['specials']['psalm-var']) ? $comments['specials']['psalm-var'] : []);
+        if ($parsed_docblock) {
+            $all_vars = (isset($parsed_docblock['specials']['var']) ? $parsed_docblock['specials']['var'] : [])
+                + (isset($parsed_docblock['specials']['psalm-var']) ? $parsed_docblock['specials']['psalm-var'] : []);
 
             foreach ($all_vars as $offset => $var_line) {
                 $var_line = trim($var_line);
@@ -134,16 +162,16 @@ class CommentAnalyzer
                 $var_comment->line_number = $var_line_number;
                 $var_comment->type_start = $type_start;
                 $var_comment->type_end = $type_end;
-                $var_comment->deprecated = isset($comments['specials']['deprecated']);
-                $var_comment->internal = isset($comments['specials']['internal']);
-                if (isset($comments['specials']['psalm-internal'])) {
-                    $psalm_internal = reset($comments['specials']['psalm-internal']);
+                $var_comment->deprecated = isset($parsed_docblock['specials']['deprecated']);
+                $var_comment->internal = isset($parsed_docblock['specials']['internal']);
+                if (isset($parsed_docblock['specials']['psalm-internal'])) {
+                    $psalm_internal = reset($parsed_docblock['specials']['psalm-internal']);
                     if ($psalm_internal) {
                         $var_comment->psalm_internal = $psalm_internal;
                     } else {
                         throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
                     }
-                    $var_comment->psalm_internal = reset($comments['specials']['psalm-internal']);
+                    $var_comment->psalm_internal = reset($parsed_docblock['specials']['psalm-internal']);
 
                     if (!$var_comment->internal) {
                             throw new DocblockParseException('@psalm-internal annotation used without @internal');
@@ -170,14 +198,14 @@ class CommentAnalyzer
         Aliases $aliases,
         array $type_aliases = null
     ) {
-        $comments = DocComment::parsePreservingLength($comment);
+        $parsed_docblock = DocComment::parsePreservingLength($comment);
 
-        if (!isset($comments['specials']['psalm-type'])) {
+        if (!isset($parsed_docblock['specials']['psalm-type'])) {
             return [];
         }
 
         return self::getTypeAliasesFromCommentLines(
-            $comments['specials']['psalm-type'],
+            $parsed_docblock['specials']['psalm-type'],
             $aliases,
             $type_aliases
         );
@@ -268,17 +296,17 @@ class CommentAnalyzer
      */
     public static function extractFunctionDocblockInfo(PhpParser\Comment\Doc $comment)
     {
-        $comments = DocComment::parsePreservingLength($comment);
+        $parsed_docblock = DocComment::parsePreservingLength($comment);
 
         $comment_text = $comment->getText();
 
         $info = new FunctionDocblockComment();
 
-        if (isset($comments['specials']['return']) || isset($comments['specials']['psalm-return'])) {
+        if (isset($parsed_docblock['specials']['return']) || isset($parsed_docblock['specials']['psalm-return'])) {
             /** @var array<int, string> */
-            $return_specials = isset($comments['specials']['psalm-return'])
-                ? $comments['specials']['psalm-return']
-                : $comments['specials']['return'];
+            $return_specials = isset($parsed_docblock['specials']['psalm-return'])
+                ? $parsed_docblock['specials']['psalm-return']
+                : $parsed_docblock['specials']['return'];
 
             self::extractReturnType(
                 $comment,
@@ -287,9 +315,9 @@ class CommentAnalyzer
             );
         }
 
-        if (isset($comments['specials']['param']) || isset($comments['specials']['psalm-param'])) {
-            $all_params = (isset($comments['specials']['param']) ? $comments['specials']['param'] : [])
-                + (isset($comments['specials']['psalm-param']) ? $comments['specials']['psalm-param'] : []);
+        if (isset($parsed_docblock['specials']['param']) || isset($parsed_docblock['specials']['psalm-param'])) {
+            $all_params = (isset($parsed_docblock['specials']['param']) ? $parsed_docblock['specials']['param'] : [])
+                + (isset($parsed_docblock['specials']['psalm-param']) ? $parsed_docblock['specials']['psalm-param'] : []);
 
             /** @var string $param */
             foreach ($all_params as $offset => $param) {
@@ -335,9 +363,9 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['param-out'])) {
+        if (isset($parsed_docblock['specials']['param-out'])) {
             /** @var string $param */
-            foreach ($comments['specials']['param-out'] as $offset => $param) {
+            foreach ($parsed_docblock['specials']['param-out'] as $offset => $param) {
                 $line_parts = self::splitDocLine($param);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
@@ -376,8 +404,8 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['global'])) {
-            foreach ($comments['specials']['global'] as $offset => $global) {
+        if (isset($parsed_docblock['specials']['global'])) {
+            foreach ($parsed_docblock['specials']['global'] as $offset => $global) {
                 $line_parts = self::splitDocLine($global);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
@@ -411,22 +439,22 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['deprecated'])) {
+        if (isset($parsed_docblock['specials']['deprecated'])) {
             $info->deprecated = true;
         }
 
-        if (isset($comments['specials']['internal'])) {
+        if (isset($parsed_docblock['specials']['internal'])) {
             $info->internal = true;
         }
 
-        if (isset($comments['specials']['psalm-internal'])) {
-            $psalm_internal = reset($comments['specials']['psalm-internal']);
+        if (isset($parsed_docblock['specials']['psalm-internal'])) {
+            $psalm_internal = reset($parsed_docblock['specials']['psalm-internal']);
             if ($psalm_internal) {
                 $info->psalm_internal = $psalm_internal;
             } else {
                 throw new DocblockParseException('@psalm-internal annotation used without specifying namespace');
             }
-            $info->psalm_internal = reset($comments['specials']['psalm-internal']);
+            $info->psalm_internal = reset($parsed_docblock['specials']['psalm-internal']);
 
             if (! $info->internal) {
                 throw new DocblockParseException('@psalm-internal annotation used without @internal');
@@ -435,14 +463,14 @@ class CommentAnalyzer
 
 
 
-        if (isset($comments['specials']['psalm-suppress'])) {
-            foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
+        if (isset($parsed_docblock['specials']['psalm-suppress'])) {
+            foreach ($parsed_docblock['specials']['psalm-suppress'] as $suppress_entry) {
                 $info->suppress[] = preg_split('/[\s]+/', $suppress_entry)[0];
             }
         }
 
-        if (isset($comments['specials']['throws'])) {
-            foreach ($comments['specials']['throws'] as $throws_entry) {
+        if (isset($parsed_docblock['specials']['throws'])) {
+            foreach ($parsed_docblock['specials']['throws'] as $throws_entry) {
                 $throws_class = preg_split('/[\s]+/', $throws_entry)[0];
 
                 if (!$throws_class) {
@@ -453,14 +481,14 @@ class CommentAnalyzer
             }
         }
 
-        if (strpos(strtolower($comments['description']), '@inheritdoc') !== false
-            || isset($comments['specials']['inheritdoc']) || isset($comments['specials']['inheritDoc'])) {
+        if (strpos(strtolower($parsed_docblock['description']), '@inheritdoc') !== false
+            || isset($parsed_docblock['specials']['inheritdoc']) || isset($parsed_docblock['specials']['inheritDoc'])) {
             $info->inheritdoc = true;
         }
 
-        if (isset($comments['specials']['template']) || isset($comments['specials']['psalm-template'])) {
-            $all_templates = (isset($comments['specials']['template']) ? $comments['specials']['template'] : [])
-                + (isset($comments['specials']['psalm-template']) ? $comments['specials']['psalm-template'] : []);
+        if (isset($parsed_docblock['specials']['template']) || isset($parsed_docblock['specials']['psalm-template'])) {
+            $all_templates = (isset($parsed_docblock['specials']['template']) ? $parsed_docblock['specials']['template'] : [])
+                + (isset($parsed_docblock['specials']['psalm-template']) ? $parsed_docblock['specials']['psalm-template'] : []);
 
             foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
@@ -483,15 +511,15 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['template-covariant'])
-            || isset($comments['specials']['psalm-template-covariant'])
+        if (isset($parsed_docblock['specials']['template-covariant'])
+            || isset($parsed_docblock['specials']['psalm-template-covariant'])
         ) {
             $all_templates =
-                (isset($comments['specials']['template-covariant'])
-                    ? $comments['specials']['template-covariant']
+                (isset($parsed_docblock['specials']['template-covariant'])
+                    ? $parsed_docblock['specials']['template-covariant']
                     : [])
-                + (isset($comments['specials']['psalm-template-covariant'])
-                    ? $comments['specials']['psalm-template-covariant']
+                + (isset($parsed_docblock['specials']['psalm-template-covariant'])
+                    ? $parsed_docblock['specials']['psalm-template-covariant']
                     : []);
 
             foreach ($all_templates as $template_line) {
@@ -515,8 +543,8 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['template-typeof'])) {
-            foreach ($comments['specials']['template-typeof'] as $template_typeof) {
+        if (isset($parsed_docblock['specials']['template-typeof'])) {
+            foreach ($parsed_docblock['specials']['template-typeof'] as $template_typeof) {
                 $typeof_parts = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_typeof));
 
                 if (count($typeof_parts) < 2 || $typeof_parts[1][0] !== '$') {
@@ -530,8 +558,8 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['psalm-assert'])) {
-            foreach ($comments['specials']['psalm-assert'] as $assertion) {
+        if (isset($parsed_docblock['specials']['psalm-assert'])) {
+            foreach ($parsed_docblock['specials']['psalm-assert'] as $assertion) {
                 $assertion_parts = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $assertion));
 
                 if (count($assertion_parts) < 2 || $assertion_parts[1][0] !== '$') {
@@ -545,8 +573,8 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['psalm-assert-if-true'])) {
-            foreach ($comments['specials']['psalm-assert-if-true'] as $assertion) {
+        if (isset($parsed_docblock['specials']['psalm-assert-if-true'])) {
+            foreach ($parsed_docblock['specials']['psalm-assert-if-true'] as $assertion) {
                 $assertion_parts = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $assertion));
 
                 if (count($assertion_parts) < 2 || $assertion_parts[1][0] !== '$') {
@@ -560,8 +588,8 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['psalm-assert-if-false'])) {
-            foreach ($comments['specials']['psalm-assert-if-false'] as $assertion) {
+        if (isset($parsed_docblock['specials']['psalm-assert-if-false'])) {
+            foreach ($parsed_docblock['specials']['psalm-assert-if-false'] as $assertion) {
                 $assertion_parts = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $assertion));
 
                 if (count($assertion_parts) < 2 || $assertion_parts[1][0] !== '$') {
@@ -575,9 +603,9 @@ class CommentAnalyzer
             }
         }
 
-        $info->variadic = isset($comments['specials']['psalm-variadic']);
-        $info->ignore_nullable_return = isset($comments['specials']['psalm-ignore-nullable-return']);
-        $info->ignore_falsable_return = isset($comments['specials']['psalm-ignore-falsable-return']);
+        $info->variadic = isset($parsed_docblock['specials']['psalm-variadic']);
+        $info->ignore_nullable_return = isset($parsed_docblock['specials']['psalm-ignore-nullable-return']);
+        $info->ignore_falsable_return = isset($parsed_docblock['specials']['psalm-ignore-falsable-return']);
 
         return $info;
     }
@@ -639,13 +667,13 @@ class CommentAnalyzer
      */
     public static function extractClassLikeDocblockInfo(\PhpParser\Node $node, PhpParser\Comment\Doc $comment)
     {
-        $comments = DocComment::parsePreservingLength($comment);
+        $parsed_docblock = DocComment::parsePreservingLength($comment);
 
         $info = new ClassLikeDocblockComment();
 
-        if (isset($comments['specials']['template']) || isset($comments['specials']['psalm-template'])) {
-            $all_templates = (isset($comments['specials']['template']) ? $comments['specials']['template'] : [])
-                + (isset($comments['specials']['psalm-template']) ? $comments['specials']['psalm-template'] : []);
+        if (isset($parsed_docblock['specials']['template']) || isset($parsed_docblock['specials']['psalm-template'])) {
+            $all_templates = (isset($parsed_docblock['specials']['template']) ? $parsed_docblock['specials']['template'] : [])
+                + (isset($parsed_docblock['specials']['psalm-template']) ? $parsed_docblock['specials']['psalm-template'] : []);
 
             foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
@@ -668,15 +696,15 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['template-covariant'])
-            || isset($comments['specials']['psalm-template-covariant'])
+        if (isset($parsed_docblock['specials']['template-covariant'])
+            || isset($parsed_docblock['specials']['psalm-template-covariant'])
         ) {
             $all_templates =
-                (isset($comments['specials']['template-covariant'])
-                    ? $comments['specials']['template-covariant']
+                (isset($parsed_docblock['specials']['template-covariant'])
+                    ? $parsed_docblock['specials']['template-covariant']
                     : [])
-                + (isset($comments['specials']['psalm-template-covariant'])
-                    ? $comments['specials']['psalm-template-covariant']
+                + (isset($parsed_docblock['specials']['psalm-template-covariant'])
+                    ? $parsed_docblock['specials']['psalm-template-covariant']
                     : []);
 
             foreach ($all_templates as $template_line) {
@@ -700,14 +728,14 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['template-extends'])
-            || isset($comments['specials']['inherits'])
-            || isset($comments['specials']['extends'])
+        if (isset($parsed_docblock['specials']['template-extends'])
+            || isset($parsed_docblock['specials']['inherits'])
+            || isset($parsed_docblock['specials']['extends'])
         ) {
             $all_inheritance = array_merge(
-                $comments['specials']['template-extends'] ?? [],
-                $comments['specials']['inherits'] ?? [],
-                $comments['specials']['extends'] ?? []
+                $parsed_docblock['specials']['template-extends'] ?? [],
+                $parsed_docblock['specials']['inherits'] ?? [],
+                $parsed_docblock['specials']['extends'] ?? []
             );
 
             foreach ($all_inheritance as $template_line) {
@@ -715,12 +743,12 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['template-implements'])
-            || isset($comments['specials']['implements'])
+        if (isset($parsed_docblock['specials']['template-implements'])
+            || isset($parsed_docblock['specials']['implements'])
         ) {
             $all_inheritance = array_merge(
-                $comments['specials']['template-implements'] ?? [],
-                $comments['specials']['implements'] ?? []
+                $parsed_docblock['specials']['template-implements'] ?? [],
+                $parsed_docblock['specials']['implements'] ?? []
             );
 
             foreach ($all_inheritance as $template_line) {
@@ -728,16 +756,16 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['deprecated'])) {
+        if (isset($parsed_docblock['specials']['deprecated'])) {
             $info->deprecated = true;
         }
 
-        if (isset($comments['specials']['internal'])) {
+        if (isset($parsed_docblock['specials']['internal'])) {
             $info->internal = true;
         }
 
-        if (isset($comments['specials']['psalm-internal'])) {
-            $psalm_internal = reset($comments['specials']['psalm-internal']);
+        if (isset($parsed_docblock['specials']['psalm-internal'])) {
+            $psalm_internal = reset($parsed_docblock['specials']['psalm-internal']);
             if ($psalm_internal) {
                 $info->psalm_internal = $psalm_internal;
             } else {
@@ -749,31 +777,31 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['psalm-seal-properties'])) {
+        if (isset($parsed_docblock['specials']['psalm-seal-properties'])) {
             $info->sealed_properties = true;
         }
 
-        if (isset($comments['specials']['psalm-seal-methods'])) {
+        if (isset($parsed_docblock['specials']['psalm-seal-methods'])) {
             $info->sealed_methods = true;
         }
 
-        if (isset($comments['specials']['psalm-override-property-visibility'])) {
+        if (isset($parsed_docblock['specials']['psalm-override-property-visibility'])) {
             $info->override_property_visibility = true;
         }
 
-        if (isset($comments['specials']['psalm-override-method-visibility'])) {
+        if (isset($parsed_docblock['specials']['psalm-override-method-visibility'])) {
             $info->override_method_visibility = true;
         }
 
-        if (isset($comments['specials']['psalm-suppress'])) {
-            foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
+        if (isset($parsed_docblock['specials']['psalm-suppress'])) {
+            foreach ($parsed_docblock['specials']['psalm-suppress'] as $suppress_entry) {
                 $info->suppressed_issues[] = preg_split('/[\s]+/', $suppress_entry)[0];
             }
         }
 
-        if (isset($comments['specials']['method']) || isset($comments['specials']['psalm-method'])) {
-            $all_methods = (isset($comments['specials']['method']) ? $comments['specials']['method'] : [])
-                + (isset($comments['specials']['psalm-method']) ? $comments['specials']['psalm-method'] : []);
+        if (isset($parsed_docblock['specials']['method']) || isset($parsed_docblock['specials']['psalm-method'])) {
+            $all_methods = (isset($parsed_docblock['specials']['method']) ? $parsed_docblock['specials']['method'] : [])
+                + (isset($parsed_docblock['specials']['psalm-method']) ? $parsed_docblock['specials']['psalm-method'] : []);
 
             foreach ($all_methods as $offset => $method_entry) {
                 $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
@@ -891,10 +919,10 @@ class CommentAnalyzer
             }
         }
 
-        self::addMagicPropertyToInfo($comment, $info, $comments['specials'], 'property');
-        self::addMagicPropertyToInfo($comment, $info, $comments['specials'], 'psalm-property');
-        self::addMagicPropertyToInfo($comment, $info, $comments['specials'], 'property-read');
-        self::addMagicPropertyToInfo($comment, $info, $comments['specials'], 'property-write');
+        self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'property');
+        self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'psalm-property');
+        self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'property-read');
+        self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'property-write');
 
         return $info;
     }

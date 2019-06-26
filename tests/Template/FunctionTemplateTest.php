@@ -697,6 +697,28 @@ class FunctionTemplateTest extends TestCase
                         }
                     }',
             ],
+            'templatedVarOnReturn' => [
+                '<?php
+                    namespace Ns;
+
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @template T
+                     * @param T $t
+                     * @return T
+                     */
+                    function getAOrB($t) {
+                        if ($t instanceof A) {
+                            /** @var T */
+                            return new A();
+                        }
+
+                        /** @var T */
+                        return new B();
+                    }',
+            ],
         ];
     }
 
@@ -1056,6 +1078,27 @@ class FunctionTemplateTest extends TestCase
                      */
                     function mirror($t) {
                         return "string";
+                    }',
+                'error_message' => 'InvalidReturnStatement'
+            ],
+            'unTemplatedVarOnReturn' => [
+                '<?php
+                    namespace Ns;
+
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @template T
+                     * @param T $t
+                     * @return T
+                     */
+                    function getAOrB($t) {
+                        if ($t instanceof A) {
+                            return new A();
+                        }
+
+                        return new B();
                     }',
                 'error_message' => 'InvalidReturnStatement'
             ],

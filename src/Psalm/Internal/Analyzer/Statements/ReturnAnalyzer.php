@@ -48,12 +48,14 @@ class ReturnAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($doc_comment) {
+        if ($doc_comment && ($parsed_docblock = $statements_analyzer->getParsedDocblock())) {
             try {
-                $var_comments = CommentAnalyzer::getTypeFromComment(
+                $var_comments = CommentAnalyzer::arrayToDocblocks(
                     $doc_comment,
-                    $source,
-                    $source->getAliases()
+                    $parsed_docblock,
+                    $statements_analyzer->getSource(),
+                    $statements_analyzer->getAliases(),
+                    $statements_analyzer->getTemplateTypeMap()
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
