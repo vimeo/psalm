@@ -2,6 +2,9 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
+use function substr;
+use function implode;
+use function count;
 
 class TGenericObject extends TNamedObject
 {

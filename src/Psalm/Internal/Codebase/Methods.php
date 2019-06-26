@@ -19,6 +19,13 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use function preg_replace;
+use function explode;
+use function strtolower;
+use function array_pop;
+use function count;
+use function assert;
+use function reset;
 
 /**
  * @internal

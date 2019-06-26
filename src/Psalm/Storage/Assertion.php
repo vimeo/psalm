@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Storage;
 
+use function array_map;
+use function implode;
+
 class Assertion
 {
     /**

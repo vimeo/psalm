@@ -3,6 +3,8 @@ namespace Psalm\Report;
 
 use LSS\Array2XML;
 use Psalm\Report;
+use function sprintf;
+use function htmlspecialchars;
 
 class CheckstyleReport extends Report
 {

@@ -25,6 +25,10 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use function strtolower;
+use function explode;
+use function is_string;
+use function in_array;
 
 /**
  * @internal

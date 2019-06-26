@@ -2,6 +2,8 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Storage\FileStorage;
+use function strtolower;
+use function array_merge;
 
 /**
  * @internal

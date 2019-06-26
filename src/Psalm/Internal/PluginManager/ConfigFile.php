@@ -4,6 +4,10 @@ namespace Psalm\Internal\PluginManager;
 use Psalm\Config;
 use DomDocument;
 use RuntimeException;
+use function file_get_contents;
+use function strpos;
+use function substr;
+use function file_put_contents;
 
 class ConfigFile
 {

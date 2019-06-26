@@ -4,6 +4,9 @@ namespace Psalm\Storage;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use const PHP_EOL;
+use function implode;
+use function array_map;
 
 class FunctionLikeStorage
 {

@@ -35,6 +35,18 @@ use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
+use function in_array;
+use function count;
+use function array_filter;
+use function is_int;
+use function array_values;
+use function array_keys;
+use function substr;
+use function strpos;
+use function array_merge;
+use function get_class;
+use function max;
+use function array_intersect_key;
 
 /**
  * @internal

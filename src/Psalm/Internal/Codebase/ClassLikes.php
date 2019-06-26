@@ -22,6 +22,20 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
+use function get_declared_classes;
+use function preg_replace;
+use function strtolower;
+use function get_declared_interfaces;
+use function substr;
+use function preg_match;
+use const PHP_EOL;
+use function explode;
+use function strrpos;
+use function strlen;
+use function array_pop;
+use function implode;
+use function end;
+use function array_merge;
 
 /**
  * @internal

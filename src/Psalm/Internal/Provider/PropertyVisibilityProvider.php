@@ -7,6 +7,9 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface;
+use function version_compare;
+use const PHP_VERSION;
+use function strtolower;
 
 class PropertyVisibilityProvider
 {

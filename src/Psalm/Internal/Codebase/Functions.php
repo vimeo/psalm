@@ -11,6 +11,12 @@ use Psalm\Internal\Provider\{
 };
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
+use function strtolower;
+use function substr;
+use function strpos;
+use function explode;
+use function array_shift;
+use function implode;
 
 /**
  * @internal

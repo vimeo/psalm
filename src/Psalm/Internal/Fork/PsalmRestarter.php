@@ -2,6 +2,13 @@
 
 namespace Psalm\Internal\Fork;
 
+use function array_filter;
+use function extension_loaded;
+use function implode;
+use function file_get_contents;
+use function preg_replace;
+use function file_put_contents;
+
 /**
  * @internal
  */

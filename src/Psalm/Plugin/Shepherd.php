@@ -3,6 +3,26 @@ namespace Psalm\Plugin;
 
 use Psalm\Codebase;
 use Psalm\SourceControl\SourceControlInfo;
+use function function_exists;
+use function fwrite;
+use const STDERR;
+use const PHP_EOL;
+use function array_filter;
+use function json_encode;
+use function parse_url;
+use const PHP_URL_SCHEME;
+use function curl_init;
+use function curl_setopt;
+use const CURLOPT_RETURNTRANSFER;
+use const CURLINFO_HEADER_OUT;
+use const CURLOPT_POST;
+use const CURLOPT_POSTFIELDS;
+use const CURLOPT_HTTPHEADER;
+use function strlen;
+use function curl_exec;
+use function curl_getinfo;
+use function var_export;
+use function curl_close;
 
 class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 {

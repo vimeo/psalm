@@ -6,6 +6,10 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
+use function strpos;
+use function getcwd;
+use const DIRECTORY_SEPARATOR;
+use function array_keys;
 
 class CachedStorageTest extends \Psalm\Tests\TestCase
 {

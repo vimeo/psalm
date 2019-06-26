@@ -3,6 +3,8 @@ namespace Psalm\Report;
 
 use Psalm\Config;
 use Psalm\Report;
+use function max;
+use function json_encode;
 
 /**
  * JSON report format suitable for import into SonarQube or SonarCloud as

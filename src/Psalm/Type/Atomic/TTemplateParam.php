@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Union;
+use function implode;
 
 class TTemplateParam extends \Psalm\Type\Atomic
 {

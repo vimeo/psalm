@@ -11,6 +11,14 @@ use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use function implode;
+use function strtolower;
+use function explode;
+use function strpos;
+use function array_keys;
+use function count;
+use function array_merge;
+use function array_diff;
 
 /**
  * @internal

@@ -2,6 +2,7 @@
 namespace Psalm\Tests\Loop;
 
 use Psalm\Tests\Traits;
+use const DIRECTORY_SEPARATOR;
 
 class ForTest extends \Psalm\Tests\TestCase
 {

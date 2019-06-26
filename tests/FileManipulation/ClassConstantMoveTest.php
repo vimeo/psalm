@@ -5,6 +5,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
+use function strpos;
 
 class ClassConstantMoveTest extends \Psalm\Tests\TestCase
 {

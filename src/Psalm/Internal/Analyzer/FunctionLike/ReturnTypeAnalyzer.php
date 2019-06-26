@@ -35,6 +35,10 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Internal\Type\TypeCombination;
+use function strtolower;
+use function substr;
+use function count;
+use function in_array;
 
 /**
  * @internal

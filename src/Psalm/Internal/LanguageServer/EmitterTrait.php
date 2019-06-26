@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal\LanguageServer;
 
+use const SORT_NUMERIC;
+
 /**
  * Event Emitter Trait
  *

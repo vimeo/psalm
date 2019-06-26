@@ -40,6 +40,20 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use function strtolower;
+use function strpos;
+use function explode;
+use function count;
+use function in_array;
+use function array_reverse;
+use function array_filter;
+use function is_string;
+use function assert;
+use function preg_match;
+use function preg_replace;
+use function is_int;
+use function substr;
+use function array_merge;
 
 /**
  * @internal

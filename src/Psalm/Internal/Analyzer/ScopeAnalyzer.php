@@ -2,6 +2,13 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use function count;
+use function in_array;
+use function end;
+use function strtolower;
+use function array_merge;
+use function array_intersect;
+use function array_unique;
 
 /**
  * @internal

@@ -10,6 +10,8 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use function strtolower;
+use function array_merge;
 
 /**
  * @internal

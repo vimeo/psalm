@@ -8,6 +8,15 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use function count;
+use const PHP_URL_SCHEME;
+use const PHP_URL_USER;
+use const PHP_URL_PASS;
+use const PHP_URL_HOST;
+use const PHP_URL_PATH;
+use const PHP_URL_QUERY;
+use const PHP_URL_FRAGMENT;
+use const PHP_URL_PORT;
 
 class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

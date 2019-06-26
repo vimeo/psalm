@@ -18,6 +18,13 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use function substr;
+use function count;
+use function strtolower;
+use function in_array;
+use function array_merge;
+use function strpos;
+use function is_int;
 
 /**
  * @internal

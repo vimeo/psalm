@@ -12,6 +12,9 @@ use Psalm\Internal\Provider\{
 };
 use Psalm\StatementsSource;
 use Psalm\Type;
+use function preg_replace;
+use function explode;
+use function strtolower;
 
 /**
  * @internal

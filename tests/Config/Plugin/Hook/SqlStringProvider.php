@@ -3,6 +3,7 @@ namespace Psalm\Test\Config\Plugin\Hook;
 
 use Psalm\Plugin\Hook\StringInterpreterInterface;
 use Psalm\Type\Atomic\TLiteralString;
+use function stripos;
 
 class SqlStringProvider implements StringInterpreterInterface
 {

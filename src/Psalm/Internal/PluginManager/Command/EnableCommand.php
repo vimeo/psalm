@@ -8,6 +8,10 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use InvalidArgumentException;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use function getcwd;
+use const DIRECTORY_SEPARATOR;
+use function is_string;
+use function assert;
 
 /**
  * @internal

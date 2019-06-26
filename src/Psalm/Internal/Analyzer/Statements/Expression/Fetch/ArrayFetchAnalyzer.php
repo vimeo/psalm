@@ -41,6 +41,16 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
+use function array_values;
+use function array_keys;
+use function count;
+use function array_pop;
+use function implode;
+use function strlen;
+use function strtolower;
+use function in_array;
+use function is_int;
+use function preg_match;
 
 /**
  * @internal

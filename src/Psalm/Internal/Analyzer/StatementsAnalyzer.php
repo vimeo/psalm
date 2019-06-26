@@ -36,6 +36,26 @@ use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use function strtolower;
+use function fwrite;
+use const STDERR;
+use function array_filter;
+use function array_map;
+use function preg_split;
+use function array_diff;
+use function is_string;
+use function get_class;
+use function in_array;
+use function strrpos;
+use function strlen;
+use function substr;
+use function array_key_exists;
+use function count;
+use function array_shift;
+use function explode;
+use function array_pop;
+use function implode;
+use function array_change_key_case;
 
 /**
  * @internal

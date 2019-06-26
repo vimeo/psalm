@@ -7,6 +7,8 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
+use function in_array;
+use function array_merge;
 
 /**
  * @internal

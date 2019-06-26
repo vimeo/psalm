@@ -7,6 +7,12 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Report;
+use function json_decode;
+use const PHP_EOL;
+use function ob_start;
+use function ob_end_clean;
+use function file_get_contents;
+use function unlink;
 
 class ReportOutputTest extends TestCase
 {

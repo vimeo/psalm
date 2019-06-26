@@ -7,6 +7,7 @@ use AdvancedJsonRpc;
 use Amp\Deferred;
 use Amp\Promise;
 use function Amp\call;
+use function error_log;
 
 /**
  * @internal

@@ -10,6 +10,7 @@ use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
+use function assert;
 
 class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

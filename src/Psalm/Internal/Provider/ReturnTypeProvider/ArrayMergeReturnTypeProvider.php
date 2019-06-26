@@ -8,6 +8,8 @@ use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\StatementsSource;
+use function array_merge;
+use function array_values;
 
 class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

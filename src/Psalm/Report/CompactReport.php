@@ -5,6 +5,13 @@ use Psalm\Config;
 use Psalm\Report;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\BufferedOutput;
+use function is_null;
+use const PHP_EOL;
+use function strtoupper;
+use function strlen;
+use function implode;
+use function str_split;
+use function count;
 
 class CompactReport extends Report
 {

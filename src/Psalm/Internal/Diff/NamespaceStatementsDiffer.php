@@ -3,6 +3,10 @@
 namespace Psalm\Internal\Diff;
 
 use PhpParser;
+use function get_class;
+use function substr;
+use function array_merge;
+use function end;
 
 /**
  * @internal

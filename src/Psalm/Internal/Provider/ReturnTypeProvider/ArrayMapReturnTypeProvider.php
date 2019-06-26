@@ -10,6 +10,12 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Type;
+use function count;
+use function array_map;
+use function strtolower;
+use function explode;
+use function strpos;
+use function in_array;
 
 class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

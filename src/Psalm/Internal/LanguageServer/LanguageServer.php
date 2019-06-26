@@ -20,6 +20,23 @@ use Amp\Promise;
 use Throwable;
 use function Amp\call;
 use function Amp\asyncCoroutine;
+use function array_keys;
+use function array_combine;
+use function array_values;
+use function array_filter;
+use function array_map;
+use function max;
+use function trim;
+use function str_replace;
+use function explode;
+use function array_shift;
+use function substr;
+use function rawurlencode;
+use function array_unshift;
+use function implode;
+use function parse_url;
+use function urldecode;
+use function strpos;
 
 /**
  * @internal

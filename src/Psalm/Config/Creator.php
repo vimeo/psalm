@@ -3,6 +3,23 @@ namespace Psalm\Config;
 
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Internal\Provider;
+use function is_dir;
+use const DIRECTORY_SEPARATOR;
+use function file_exists;
+use function json_decode;
+use function file_get_contents;
+use function is_array;
+use function dirname;
+use function str_replace;
+use function implode;
+use function array_merge;
+use function preg_replace;
+use function array_unique;
+use function sort;
+use function glob;
+use function explode;
+use function array_shift;
+use function count;
 
 class Creator
 {

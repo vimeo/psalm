@@ -21,6 +21,15 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use function count;
+use function in_array;
+use function strtolower;
+use function array_map;
+use function explode;
+use function strpos;
+use function is_string;
+use function strlen;
+use function substr;
 
 /**
  * @internal

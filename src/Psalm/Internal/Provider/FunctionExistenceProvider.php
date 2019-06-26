@@ -5,6 +5,9 @@ namespace Psalm\Internal\Provider;
 use PhpParser;
 use Psalm\StatementsSource;
 use \Psalm\Plugin\Hook\FunctionExistenceProviderInterface;
+use function version_compare;
+use const PHP_VERSION;
+use function strtolower;
 
 class FunctionExistenceProvider
 {

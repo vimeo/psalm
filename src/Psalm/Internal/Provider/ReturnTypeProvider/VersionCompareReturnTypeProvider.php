@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use function count;
 
 class VersionCompareReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

@@ -3,6 +3,23 @@
 namespace Psalm;
 
 use Psalm\Exception\DocblockParseException;
+use function trim;
+use function preg_replace;
+use function explode;
+use function preg_match;
+use function rtrim;
+use function str_replace;
+use function implode;
+use function preg_match_all;
+use const PREG_SET_ORDER;
+use function array_filter;
+use function strlen;
+use function min;
+use function str_repeat;
+use function substr;
+use function in_array;
+use const PREG_OFFSET_CAPTURE;
+use function strpos;
 
 class DocComment
 {

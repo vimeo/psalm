@@ -30,6 +30,15 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use function count;
+use function reset;
+use function implode;
+use function strtolower;
+use function array_merge;
+use function is_string;
+use function array_map;
+use function extension_loaded;
+use function strpos;
 
 /**
  * @internal

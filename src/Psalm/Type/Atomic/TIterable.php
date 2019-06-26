@@ -2,6 +2,9 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
+use function implode;
+use function substr;
+use function count;
 
 class TIterable extends Atomic
 {

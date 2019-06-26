@@ -5,6 +5,9 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
+use function strpos;
+use function preg_quote;
+use const DIRECTORY_SEPARATOR;
 
 class UnusedCodeTest extends TestCase
 {

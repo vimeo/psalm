@@ -4,6 +4,12 @@ namespace Psalm\Internal\Provider;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use function array_filter;
+use function array_keys;
+use function file_exists;
+use function array_merge_recursive;
+use function array_merge;
+use function array_unique;
 
 /**
  * @psalm-type  IssueData = array{

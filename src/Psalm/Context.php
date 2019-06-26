@@ -8,6 +8,16 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Reconciler;
 use Psalm\Type;
 use Psalm\Type\Union;
+use function in_array;
+use function count;
+use function array_filter;
+use function preg_quote;
+use function preg_match;
+use function strpos;
+use function array_keys;
+use function strtolower;
+use function preg_replace;
+use function json_encode;
 
 class Context
 {

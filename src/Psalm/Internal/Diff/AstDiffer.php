@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Diff;
 
 use PhpParser;
+use function array_reverse;
 
 /**
  * Borrows from https://github.com/nikic/PHP-Parser/blob/master/lib/PhpParser/Internal/Differ.php

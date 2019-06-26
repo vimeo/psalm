@@ -6,6 +6,12 @@ use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use function implode;
+use function array_merge;
+use function strtolower;
+use function trim;
+use function strpos;
+use function preg_replace;
 
 /**
  * @internal

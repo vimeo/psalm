@@ -7,6 +7,10 @@ use AdvancedJsonRpc\Message as MessageBody;
 use Amp\ByteStream\ResourceInputStream;
 use Exception;
 use function Amp\asyncCall;
+use function substr;
+use function explode;
+use function trim;
+use function strlen;
 
 /**
  * Source: https://github.com/felixfbecker/php-language-server/tree/master/src/ProtocolStreamReader.php

@@ -11,6 +11,7 @@ use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Tester\CommandTester;
+use function preg_quote;
 
 /** @group PluginManager */
 class PsalmPluginTest extends TestCase

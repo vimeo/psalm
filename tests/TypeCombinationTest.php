@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type;
+use function array_values;
 
 class TypeCombinationTest extends TestCase
 {

@@ -2,6 +2,8 @@
 namespace Psalm\Tests;
 
 use Psalm\Config;
+use function getcwd;
+use const DIRECTORY_SEPARATOR;
 
 class TestConfig extends Config
 {

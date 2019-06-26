@@ -2,6 +2,9 @@
 
 namespace Psalm\Internal\ExecutionEnvironment;
 
+use function exec;
+use function sprintf;
+
 /**
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  * @author Dariusz Rumiński <dariusz.ruminski@gmail.com>

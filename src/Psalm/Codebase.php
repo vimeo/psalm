@@ -17,6 +17,24 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use const PHP_MAJOR_VERSION;
+use const PHP_MINOR_VERSION;
+use function in_array;
+use function array_combine;
+use function strpos;
+use function strtolower;
+use function explode;
+use function array_merge;
+use function substr;
+use function error_log;
+use function ksort;
+use function krsort;
+use function preg_match;
+use function strlen;
+use function count;
+use function array_shift;
+use function substr_count;
+use function strrpos;
 
 class Codebase
 {

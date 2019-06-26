@@ -2,6 +2,12 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Exception\TypeParseTreeException;
+use function count;
+use function array_pop;
+use function in_array;
+use function strtolower;
+use function preg_match;
+use function strlen;
 
 /**
  * @internal

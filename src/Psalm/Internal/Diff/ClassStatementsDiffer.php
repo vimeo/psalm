@@ -3,6 +3,12 @@
 namespace Psalm\Internal\Diff;
 
 use PhpParser;
+use function get_class;
+use function substr;
+use function trim;
+use function strpos;
+use function count;
+use function strtolower;
 
 /**
  * @internal

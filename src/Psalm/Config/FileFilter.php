@@ -3,6 +3,25 @@ namespace Psalm\Config;
 
 use SimpleXMLElement;
 use Psalm\Exception\ConfigException;
+use function is_bool;
+use function strtolower;
+use const DIRECTORY_SEPARATOR;
+use function strpos;
+use function array_map;
+use function array_filter;
+use function glob;
+use function realpath;
+use function is_dir;
+use function readlink;
+use function stripos;
+use function str_replace;
+use function preg_match;
+use function set_error_handler;
+use const E_WARNING;
+use function restore_error_handler;
+use function preg_replace;
+use function in_array;
+use function explode;
 
 class FileFilter
 {

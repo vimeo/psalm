@@ -6,6 +6,9 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 use Psalm\Plugin\Hook\MethodExistenceProviderInterface;
+use function version_compare;
+use const PHP_VERSION;
+use function strtolower;
 
 class MethodExistenceProvider
 {

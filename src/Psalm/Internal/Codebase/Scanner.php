@@ -8,6 +8,20 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Progress\Progress;
+use function substr;
+use function strtolower;
+use function array_filter;
+use function count;
+use function ceil;
+use function min;
+use const PHP_EOL;
+use function explode;
+use const DIRECTORY_SEPARATOR;
+use function array_pop;
+use function file_exists;
+use function realpath;
+use function error_reporting;
+use function array_merge;
 
 /**
  * @psalm-type  IssueData = array{

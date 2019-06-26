@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use function strtolower;
+
 /**
  * @internal
  */

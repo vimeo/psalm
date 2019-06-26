@@ -35,6 +35,30 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
+use function count;
+use function preg_match;
+use function strlen;
+use function strtolower;
+use function array_map;
+use function array_unshift;
+use function array_keys;
+use function array_values;
+use function get_class;
+use function array_shift;
+use function strpos;
+use function preg_replace;
+use function in_array;
+use function substr;
+use function explode;
+use function str_split;
+use function is_numeric;
+use function array_push;
+use function array_splice;
+use function implode;
+use function stripos;
+use function preg_quote;
+use function array_pop;
+use function array_merge;
 
 abstract class Type
 {

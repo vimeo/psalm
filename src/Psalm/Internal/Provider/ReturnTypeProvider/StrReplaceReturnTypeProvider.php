@@ -7,6 +7,7 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
+use function in_array;
 
 class StrReplaceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

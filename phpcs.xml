@@ -1,6 +1,18 @@
 <?xml version="1.0"?>
 <ruleset name="PHP_CodeSniffer">
+    <config name="installed_paths" value="../../slevomat/coding-standard"/>
     <rule ref="PSR2" />
+    <!-- Forbid usage of a function or a class constant via fallback global name -->
+    <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
+        <properties>
+            <property name="allowFallbackGlobalConstants" type="boolean" value="false"/>
+            <property name="allowFallbackGlobalFunctions" type="boolean" value="false"/>
+            <property name="allowFullyQualifiedGlobalConstants" type="boolean" value="true"/>
+            <property name="allowFullyQualifiedGlobalFunctions" type="boolean" value="true"/>
+            <property name="allowFullyQualifiedGlobalClasses" type="boolean" value="true"/>
+        </properties>
+        <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
+    </rule>
 
     <file>bin/</file>
     <file>src/</file>

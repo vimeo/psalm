@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider;
+use function substr;
 
 class JsonOutputTest extends TestCase
 {

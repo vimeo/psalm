@@ -2,6 +2,7 @@
 namespace Psalm\Report;
 
 use Psalm\Report;
+use function json_encode;
 
 class JsonSummaryReport extends Report
 {

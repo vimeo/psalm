@@ -56,6 +56,17 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Internal\Type\TypeCombination;
+use function strpos;
+use function is_string;
+use function in_array;
+use function strtolower;
+use function get_class;
+use function count;
+use function implode;
+use function is_array;
+use function array_merge;
+use function array_values;
+use function array_map;
 
 /**
  * @internal

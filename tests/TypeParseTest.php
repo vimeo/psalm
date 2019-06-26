@@ -2,6 +2,9 @@
 namespace Psalm\Tests;
 
 use Psalm\Type;
+use function function_exists;
+use function stripos;
+use function print_r;
 
 class TypeParseTest extends TestCase
 {

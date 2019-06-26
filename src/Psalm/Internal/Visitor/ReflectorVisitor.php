@@ -37,6 +37,28 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use function implode;
+use function strtolower;
+use function in_array;
+use function end;
+use function is_string;
+use function count;
+use function array_merge;
+use function trim;
+use function preg_replace;
+use function array_pop;
+use function function_exists;
+use function class_exists;
+use function interface_exists;
+use function assert;
+use function strpos;
+use function explode;
+use function array_key_exists;
+use function substr;
+use function array_filter;
+use function preg_match;
+use function dirname;
+use const DIRECTORY_SEPARATOR;
 
 /**
  * @internal

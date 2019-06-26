@@ -1,6 +1,12 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
+use function rtrim;
+use const DIRECTORY_SEPARATOR;
+use function array_filter;
+use function urlencode;
+use function json_encode;
+
 class PluginListFactory
 {
     /** @var string */

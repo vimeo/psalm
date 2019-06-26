@@ -1,6 +1,11 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function stripos;
+use function preg_replace;
+use function preg_quote;
+use function strtolower;
+
 class TLiteralClassString extends TLiteralString
 {
     /**

@@ -2,6 +2,8 @@
 namespace Psalm\CodeLocation;
 
 use PhpParser;
+use function substr_count;
+use function substr;
 
 class ParseErrorLocation extends \Psalm\CodeLocation
 {

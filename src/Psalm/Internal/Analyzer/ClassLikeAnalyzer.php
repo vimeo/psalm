@@ -17,6 +17,14 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use function strtolower;
+use function preg_replace;
+use function in_array;
+use function preg_match;
+use function explode;
+use function array_pop;
+use function implode;
+use function gettype;
 
 /**
  * @internal

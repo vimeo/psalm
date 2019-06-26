@@ -37,6 +37,10 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use function count;
+use function in_array;
+use function strtolower;
+use function explode;
 
 /**
  * @internal

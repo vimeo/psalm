@@ -12,6 +12,11 @@ use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidArgument;
+use function count;
+use function strtolower;
+use function explode;
+use function strpos;
+use function in_array;
 
 class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

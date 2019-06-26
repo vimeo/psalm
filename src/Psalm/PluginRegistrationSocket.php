@@ -3,6 +3,8 @@ namespace Psalm;
 
 use Psalm\Plugin\Hook;
 use Psalm\Plugin\RegistrationInterface;
+use function class_exists;
+use function is_subclass_of;
 
 class PluginRegistrationSocket implements RegistrationInterface
 {

@@ -14,6 +14,11 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use function array_merge;
+use function array_keys;
+use function array_unique;
+use function array_intersect_key;
+use function in_array;
 
 /**
  * @internal
