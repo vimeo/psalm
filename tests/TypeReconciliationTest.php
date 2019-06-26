@@ -1377,6 +1377,72 @@ class TypeReconciliationTest extends TestCase
                         }
                     }'
             ],
+            'noLeakyClassType' => [
+                '<?php
+                    class A {
+                        public array $foo = [];
+                        public array $bar = [];
+
+                        public function setter() : void {
+                            if ($this->foo) {
+                                $this->foo = [];
+                            }
+                        }
+
+                        public function iffer() : bool {
+                            return $this->foo || $this->bar;
+                        }
+                    }'
+            ],
+            'noLeakyForeachType' => [
+                '<?php
+
+                    class A {
+                        /** @var mixed */
+                        public $_array_value;
+
+                        private function getArrayValue() : ?array {
+                            return rand(0, 1) ? [] : null;
+                        }
+
+                        public function setValue(string $var) : void {
+                            $this->_array_value = $this->getArrayValue();
+
+                            if ($this->_array_value !== null && !count($this->_array_value)) {
+                                return;
+                            }
+
+                            switch ($var) {
+                                case "a":
+                                    foreach ($this->_array_value ?: [] as $v) {}
+                                    break;
+
+                                case "b":
+                                    foreach ($this->_array_value ?: [] as $v) {}
+                                    break;
+                            }
+                        }
+                    }',
+                [],
+                ['MixedAssignment']
+            ],
+            'nonEmptyThing' => [
+                '<?php
+                    /** @param mixed $clips */
+                    function foo($clips, bool $found, int $id) : void {
+                        if ($found === false) {
+                            $clips = [];
+                        }
+
+                        $i = array_search($id, $clips);
+
+                        if ($i !== false) {
+                            unset($clips[$i]);
+                        }
+                    }',
+                [],
+                ['MixedArgument', 'MixedArrayAccess']
+            ],
         ];
     }
 

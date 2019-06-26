@@ -397,6 +397,33 @@ class UnusedCodeTest extends TestCase
                         new A();
                     }',
             ],
+            'usedParamInIf' => [
+                '<?php
+                    class O {}
+                    class C {
+                        private bool $a = false;
+                        public array $_types = [];
+
+                        private static function mirror(array $a) : array {
+                            return $a;
+                        }
+
+                        /**
+                         * @param class-string<O>|null $type
+                         * @return self
+                         */
+                        public function addType(?string $type, array $ids = array())
+                        {
+                            if ($this->a) {
+                                $ids = self::mirror($ids);
+                            }
+                            $this->_types[$type ?: ""] = new ArrayObject($ids);
+                            return $this;
+                        }
+                    }
+
+                    (new C)->addType(null);'
+            ],
         ];
     }
 
