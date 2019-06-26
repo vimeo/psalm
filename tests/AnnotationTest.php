@@ -1591,7 +1591,7 @@ class AnnotationTest extends TestCase
                      */
                     function f($reference) {}',
                 'error_message' => 'MissingDocblockType'
-            ]
+            ],
         ];
     }
 }

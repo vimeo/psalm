@@ -249,6 +249,7 @@ class Reconciler
                 && !$result_type->hasTemplate()
                 && !$result_type->hasType('iterable')
                 && (!$has_isset || substr($key, -1, 1) !== ']')
+                && !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
             ) {
                 $reconcile_key = implode(
                     '&',
@@ -1307,6 +1308,9 @@ class Reconciler
                 && $new_type->getId() === $existing_var_type->getId()
                 && !$is_equality
                 && !$is_maybe_callable_array
+                && (!($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
+                    || ($key !== '$this'
+                        && !($existing_var_type->hasLiteralClassString() && $new_type->hasLiteralClassString())))
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -1358,8 +1362,9 @@ class Reconciler
                             // fall through
                         }
                     }
-                } elseif ($key !== '$this'
-                    || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
+                } elseif (!($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
+                    || ($key !== '$this'
+                        && !($existing_var_type->hasLiteralClassString() && $new_type->hasLiteralClassString()))
                 ) {
                     if ($existing_var_type->from_docblock) {
                         if (IssueBuffer::accepts(

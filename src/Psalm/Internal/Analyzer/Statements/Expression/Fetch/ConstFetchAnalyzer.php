@@ -172,7 +172,13 @@ class ConstFetchAnalyzer
                         }
                     }
 
-                    $stmt->inferredType = Type::getLiteralClassString($fq_class_name);
+                    if ($first_part_lc === 'static') {
+                        $stmt->inferredType = new Type\Union([
+                            new Type\Atomic\TClassString($fq_class_name, new Type\Atomic\TNamedObject($fq_class_name))
+                        ]);
+                    } else {
+                        $stmt->inferredType = Type::getLiteralClassString($fq_class_name);
+                    }
 
                     if ($codebase->store_node_types) {
                         $codebase->analyzer->addNodeReference(

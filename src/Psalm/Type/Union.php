@@ -660,6 +660,14 @@ class Union
     /**
      * @return bool
      */
+    public function hasLiteralClassString()
+    {
+        return count($this->typed_class_strings) > 0;
+    }
+
+    /**
+     * @return bool
+     */
     public function hasInt()
     {
         return isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types;
