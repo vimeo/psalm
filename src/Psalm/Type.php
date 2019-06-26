@@ -1355,6 +1355,10 @@ abstract class Type
         bool $allow_mixed_union = true,
         int $literal_limit = 500
     ) {
+        if ($type_1 === $type_2) {
+            return $type_1;
+        }
+
         if ($type_1->isVanillaMixed() && $type_2->isVanillaMixed()) {
             $combined_type = Type::getMixed();
         } else {

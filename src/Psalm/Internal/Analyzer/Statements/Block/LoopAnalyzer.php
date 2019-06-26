@@ -94,6 +94,11 @@ class LoopAnalyzer
 
         if ($assignment_depth === 0 || $has_break_statement) {
             $inner_context = clone $loop_scope->loop_context;
+
+            foreach ($inner_context->vars_in_scope as $context_var_id => $context_type) {
+                $inner_context->vars_in_scope[$context_var_id] = clone $context_type;
+            }
+
             $inner_context->loop_scope = $loop_scope;
 
             $inner_context->parent_context = $loop_scope->loop_context;
@@ -163,6 +168,11 @@ class LoopAnalyzer
             $pre_loop_context = clone $loop_scope->loop_context;
 
             $inner_context = clone $loop_scope->loop_context;
+
+            foreach ($inner_context->vars_in_scope as $context_var_id => $context_type) {
+                $inner_context->vars_in_scope[$context_var_id] = clone $context_type;
+            }
+
             $inner_context->parent_context = $loop_scope->loop_context;
             $inner_context->loop_scope = $loop_scope;
 

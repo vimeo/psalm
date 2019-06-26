@@ -300,7 +300,7 @@ class TernaryAnalyzer
         } elseif (isset($stmt->cond->inferredType)) {
             $if_return_type_reconciled = Reconciler::reconcileTypes(
                 '!falsy',
-                $stmt->cond->inferredType,
+                clone $stmt->cond->inferredType,
                 '',
                 $statements_analyzer,
                 $context->inside_loop,

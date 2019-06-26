@@ -2678,8 +2678,10 @@ class CallAnalyzer
             return;
         }
 
-        if ($param_type->from_docblock && !$input_type->isMixed()) {
+        if ($param_type->from_docblock && !$input_type->hasMixed()) {
             $input_type_changed = false;
+
+            $input_type = clone $input_type;
 
             foreach ($param_type->getTypes() as $param_atomic_type) {
                 if ($param_atomic_type instanceof Type\Atomic\TGenericObject) {
@@ -2690,6 +2692,7 @@ class CallAnalyzer
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
                                 if ($type_param->isEmpty() && isset($param_atomic_type->type_params[$i])) {
                                     $input_type_changed = true;
+
                                     $input_atomic_type->type_params[$i] = clone $param_atomic_type->type_params[$i];
                                 }
                             }
@@ -2710,6 +2713,8 @@ class CallAnalyzer
         );
 
         if ($var_id) {
+            $input_type = clone $input_type;
+
             if ($input_type->isNullable() && !$param_type->isNullable()) {
                 $input_type->removeType('null');
             }
@@ -2720,7 +2725,7 @@ class CallAnalyzer
                 foreach ($input_type->getTypes() as $atomic_type) {
                     $atomic_type->from_docblock = false;
                 }
-            } elseif ($input_type->isMixed() && $signature_param_type) {
+            } elseif ($input_type->hasMixed() && $signature_param_type) {
                 $input_type = clone $signature_param_type;
 
                 if ($input_type->isNullable()) {

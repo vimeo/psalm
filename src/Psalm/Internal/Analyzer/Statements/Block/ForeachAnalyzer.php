@@ -177,6 +177,10 @@ class ForeachAnalyzer
 
         $foreach_context = clone $context;
 
+        foreach ($foreach_context->vars_in_scope as $context_var_id => $context_type) {
+            $foreach_context->vars_in_scope[$context_var_id] = clone $context_type;
+        }
+
         $foreach_context->inside_loop = true;
         $foreach_context->inside_case = false;
 

@@ -272,7 +272,7 @@ class BinaryOpAnalyzer
                 if ($var_id && isset($pre_op_context->vars_in_scope[$var_id])) {
                     $left_inferred_reconciled = Reconciler::reconcileTypes(
                         '!falsy',
-                        $pre_op_context->vars_in_scope[$var_id],
+                        clone $pre_op_context->vars_in_scope[$var_id],
                         '',
                         $statements_analyzer,
                         $context->inside_loop,

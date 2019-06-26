@@ -349,6 +349,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         ) {
             $keys_to_remove = [];
 
+            $class_type = clone $class_type;
+
             foreach ($class_type->getTypes() as $key => $type) {
                 if (!$type instanceof TNamedObject) {
                     $keys_to_remove[] = $key;

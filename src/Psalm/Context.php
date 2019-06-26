@@ -301,10 +301,6 @@ class Context
      */
     public function __clone()
     {
-        foreach ($this->vars_in_scope as &$type) {
-            $type = clone $type;
-        }
-
         foreach ($this->clauses as &$clause) {
             $clause = clone $clause;
         }
@@ -353,6 +349,8 @@ class Context
                     continue;
                 }
 
+                $existing_type = clone $existing_type;
+
                 // if the type changed within the block of statements, process the replacement
                 // also never allow ourselves to remove all types from a union
                 if ((!$new_type || !$old_type->equals($new_type))
@@ -366,6 +364,8 @@ class Context
 
                     $updated_vars[$var_id] = true;
                 }
+
+                $this->vars_in_scope[$var_id] = $existing_type;
             }
         }
     }
