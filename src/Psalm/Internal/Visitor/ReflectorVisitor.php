@@ -2157,7 +2157,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $docblock_info->params,
                 $stmt,
                 $fake_method,
-                $class_storage ? $class_storage->name : null
+                $class_storage && !$class_storage->is_trait ? $class_storage->name : null
             );
         }
 
@@ -2279,7 +2279,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $this->aliases,
                         $this->function_template_types + $this->class_template_types,
                         $this->type_aliases,
-                        $class_storage ? $class_storage->name : null
+                        $class_storage && !$class_storage->is_trait ? $class_storage->name : null
                     );
 
                     $storage->return_type = Type::parseTokens(

@@ -854,6 +854,19 @@ class TraitTest extends TestCase
                     $f1 = new Foo();
                     $f2 = (new Foo())->bar($f1);',
             ],
+            'traitSelfDocblockReturn' => [
+                '<?php
+                    trait T {
+                        /** @return self */
+                        public function getSelf() {
+                            return $this;
+                        }
+                    }
+
+                    class C {
+                        use T;
+                    }'
+            ],
         ];
     }
 
