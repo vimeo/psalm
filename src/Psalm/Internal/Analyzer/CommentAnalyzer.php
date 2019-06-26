@@ -316,8 +316,13 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock['specials']['param']) || isset($parsed_docblock['specials']['psalm-param'])) {
-            $all_params = (isset($parsed_docblock['specials']['param']) ? $parsed_docblock['specials']['param'] : [])
-                + (isset($parsed_docblock['specials']['psalm-param']) ? $parsed_docblock['specials']['psalm-param'] : []);
+            $all_params =
+                (isset($parsed_docblock['specials']['param'])
+                    ? $parsed_docblock['specials']['param']
+                    : [])
+                + (isset($parsed_docblock['specials']['psalm-param'])
+                    ? $parsed_docblock['specials']['psalm-param']
+                    : []);
 
             /** @var string $param */
             foreach ($all_params as $offset => $param) {
@@ -487,8 +492,13 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock['specials']['template']) || isset($parsed_docblock['specials']['psalm-template'])) {
-            $all_templates = (isset($parsed_docblock['specials']['template']) ? $parsed_docblock['specials']['template'] : [])
-                + (isset($parsed_docblock['specials']['psalm-template']) ? $parsed_docblock['specials']['psalm-template'] : []);
+            $all_templates
+                = (isset($parsed_docblock['specials']['template'])
+                    ? $parsed_docblock['specials']['template']
+                    : [])
+                + (isset($parsed_docblock['specials']['psalm-template'])
+                    ? $parsed_docblock['specials']['psalm-template']
+                    : []);
 
             foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
@@ -672,8 +682,13 @@ class CommentAnalyzer
         $info = new ClassLikeDocblockComment();
 
         if (isset($parsed_docblock['specials']['template']) || isset($parsed_docblock['specials']['psalm-template'])) {
-            $all_templates = (isset($parsed_docblock['specials']['template']) ? $parsed_docblock['specials']['template'] : [])
-                + (isset($parsed_docblock['specials']['psalm-template']) ? $parsed_docblock['specials']['psalm-template'] : []);
+            $all_templates
+                = (isset($parsed_docblock['specials']['template'])
+                    ? $parsed_docblock['specials']['template']
+                    : [])
+                + (isset($parsed_docblock['specials']['psalm-template'])
+                    ? $parsed_docblock['specials']['psalm-template']
+                    : []);
 
             foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
@@ -800,8 +815,13 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock['specials']['method']) || isset($parsed_docblock['specials']['psalm-method'])) {
-            $all_methods = (isset($parsed_docblock['specials']['method']) ? $parsed_docblock['specials']['method'] : [])
-                + (isset($parsed_docblock['specials']['psalm-method']) ? $parsed_docblock['specials']['psalm-method'] : []);
+            $all_methods
+                = (isset($parsed_docblock['specials']['method'])
+                    ? $parsed_docblock['specials']['method']
+                    : [])
+                + (isset($parsed_docblock['specials']['psalm-method'])
+                    ? $parsed_docblock['specials']['psalm-method']
+                    : []);
 
             foreach ($all_methods as $offset => $method_entry) {
                 $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
