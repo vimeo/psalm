@@ -22,9 +22,6 @@ class PsalmEndToEndTest extends TestCase
     private $psalter = __DIR__ . '/../../psalter';
 
     /** @var string */
-    private static $previousWorkingDir;
-
-    /** @var string */
     private static $tmpDir;
 
     public static function setUpBeforeClass(): void
@@ -37,19 +34,16 @@ class PsalmEndToEndTest extends TestCase
         if (! is_string($getcwd)) {
             throw new \Exception('Couldn\'t get working directory');
         }
-        self::$previousWorkingDir = $getcwd;
-        chdir(self::$tmpDir);
 
-        mkdir('src');
+        mkdir(self::$tmpDir . '/src');
 
-        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/composer.json', 'composer.json');
+        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/composer.json', self::$tmpDir . '/composer.json');
 
-        (new Process(['composer', 'install']))->mustRun();
+        (new Process(['composer', 'install'], self::$tmpDir))->mustRun();
     }
 
     public static function tearDownAfterClass(): void
     {
-        chdir(self::$previousWorkingDir);
         self::recursiveRemoveDirectory(self::$tmpDir);
         parent::tearDownAfterClass();
     }
@@ -112,7 +106,7 @@ class PsalmEndToEndTest extends TestCase
      */
     private function runPsalm(array $args, bool $shouldFail = false): array
     {
-        $process = new Process(array_merge([$this->psalm], $args));
+        $process = new Process(array_merge([$this->psalm], $args), self::$tmpDir);
 
         if (! $shouldFail) {
             $process->mustRun();
