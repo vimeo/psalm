@@ -8,6 +8,7 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\StatementsSource;
 use Psalm\Internal\Codebase\CallMap;
+use function assert;
 
 class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

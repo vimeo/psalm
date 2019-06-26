@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Progress;
 
+use function str_repeat;
+use function strlen;
+
 class DefaultProgress extends LongProgress
 {
     const TOO_MANY_FILES = 1500;

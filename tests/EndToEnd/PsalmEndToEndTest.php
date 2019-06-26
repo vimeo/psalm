@@ -6,6 +6,19 @@ namespace Psalm\Tests\EndToEnd;
 use PHPUnit\Framework\TestCase;
 
 use Symfony\Component\Process\Process;
+use function tempnam;
+use function sys_get_temp_dir;
+use function unlink;
+use function mkdir;
+use function getcwd;
+use function is_string;
+use function copy;
+use function array_merge;
+use function opendir;
+use function readdir;
+use function is_dir;
+use function closedir;
+use function rmdir;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new

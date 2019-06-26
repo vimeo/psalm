@@ -3,6 +3,10 @@ namespace Psalm\Internal\FileManipulation;
 
 use Psalm\FileManipulation;
 use Psalm\Internal\Provider\FileProvider;
+use function array_merge;
+use function strlen;
+use const PHP_EOL;
+use function substr;
 
 /**
  * @internal

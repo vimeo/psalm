@@ -12,6 +12,18 @@ use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Progress\Progress;
+use function pathinfo;
+use function count;
+use function array_merge;
+use function array_filter;
+use function preg_replace;
+use function substr;
+use function strpos;
+use function explode;
+use function array_merge_recursive;
+use function array_intersect_key;
+use function number_format;
+use function usort;
 
 /**
  * @psalm-type  IssueData = array{

@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal\ExecutionEnvironment;
 
+use function explode;
+
 /**
  * Environment variables collector for CI environment.
  *

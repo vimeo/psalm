@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use function count;
 
 class SimpleXmlElementAsXml implements \Psalm\Plugin\Hook\MethodReturnTypeProviderInterface
 {

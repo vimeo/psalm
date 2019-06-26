@@ -38,6 +38,21 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
+use function strpos;
+use function array_shift;
+use function ksort;
+use function substr;
+use function implode;
+use function array_map;
+use function is_string;
+use function array_filter;
+use function get_class;
+use function count;
+use function strtolower;
+use function array_pop;
+use function str_split;
+use function explode;
+use function str_replace;
 
 class Reconciler
 {

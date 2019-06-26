@@ -23,6 +23,9 @@ use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use function is_string;
+use function strpos;
+use function strtolower;
 
 /**
  * @internal

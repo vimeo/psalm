@@ -4,6 +4,8 @@ namespace Psalm\Type\Atomic;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Codebase;
+use function implode;
+use function array_map;
 
 trait HasIntersectionTrait
 {

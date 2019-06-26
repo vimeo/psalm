@@ -7,6 +7,19 @@ use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Clause;
 use Psalm\FileSource;
+use function array_map;
+use function count;
+use function substr;
+use function array_merge;
+use function strlen;
+use function array_unique;
+use function array_values;
+use function array_keys;
+use function array_pop;
+use function in_array;
+use function array_filter;
+use function array_shift;
+use function strpos;
 
 class Algebra
 {

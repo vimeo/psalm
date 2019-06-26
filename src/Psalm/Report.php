@@ -1,6 +1,8 @@
 <?php
 namespace Psalm;
 
+use function array_filter;
+
 abstract class Report
 {
     const TYPE_COMPACT = 'compact';

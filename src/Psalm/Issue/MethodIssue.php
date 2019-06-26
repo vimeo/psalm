@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Issue;
 
+use function strtolower;
+
 abstract class MethodIssue extends CodeIssue
 {
     /**

@@ -3,6 +3,7 @@ namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
+use const DIRECTORY_SEPARATOR;
 
 class ClassTemplateExtendsTest extends TestCase
 {

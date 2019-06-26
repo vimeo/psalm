@@ -11,6 +11,26 @@ use Psalm\Exception\FileIncludeException;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
+use function str_replace;
+use const DIRECTORY_SEPARATOR;
+use function dirname;
+use function preg_match;
+use function in_array;
+use function realpath;
+use function get_included_files;
+use function str_repeat;
+use const PHP_EOL;
+use function is_string;
+use function implode;
+use function defined;
+use function constant;
+use const PATH_SEPARATOR;
+use function preg_split;
+use function get_include_path;
+use function explode;
+use function substr;
+use function file_exists;
+use function preg_replace;
 
 /**
  * @internal

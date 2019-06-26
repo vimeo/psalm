@@ -21,6 +21,12 @@ use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use function in_array;
+use function strtolower;
+use function implode;
+use function explode;
+use function array_values;
+use function is_string;
 
 /**
  * @internal

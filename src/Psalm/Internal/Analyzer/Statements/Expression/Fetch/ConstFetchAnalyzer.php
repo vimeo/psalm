@@ -17,6 +17,9 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use function implode;
+use function strtolower;
+use function explode;
 
 /**
  * @internal

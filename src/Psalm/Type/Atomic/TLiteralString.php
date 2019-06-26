@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function preg_replace;
+use function strlen;
+use function substr;
+
 class TLiteralString extends TString
 {
     /** @var string */

@@ -2,6 +2,7 @@
 namespace Psalm\Config;
 
 use SimpleXMLElement;
+use function in_array;
 
 class ErrorLevelFileFilter extends FileFilter
 {

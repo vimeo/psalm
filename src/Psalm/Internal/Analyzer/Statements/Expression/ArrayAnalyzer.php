@@ -12,6 +12,10 @@ use Psalm\Type;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
+use function preg_match;
+use function array_merge;
+use function array_values;
+use function count;
 
 /**
  * @internal

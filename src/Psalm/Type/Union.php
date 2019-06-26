@@ -18,6 +18,16 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Internal\Type\TypeCombination;
+use function substr;
+use function array_values;
+use function strpos;
+use function count;
+use function array_filter;
+use function get_class;
+use function reset;
+use function is_string;
+use function array_shift;
+use function array_merge;
 
 class Union
 {

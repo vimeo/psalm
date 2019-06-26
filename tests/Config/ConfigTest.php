@@ -6,6 +6,19 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
+use function defined;
+use function define;
+use function getcwd;
+use function realpath;
+use function dirname;
+use function unlink;
+use function error_get_last;
+use function is_array;
+use function symlink;
+use function preg_match;
+use function implode;
+use function array_map;
+use const DIRECTORY_SEPARATOR;
 
 class ConfigTest extends \Psalm\Tests\TestCase
 {

@@ -4,6 +4,9 @@ namespace Psalm\Internal\Traverser;
 
 use PhpParser\Node;
 use PhpParser\NodeTraverserInterface;
+use function gettype;
+use function array_pop;
+use function array_splice;
 
 /**
  * @internal

@@ -2,6 +2,8 @@
 namespace Psalm;
 
 use InvalidArgumentException;
+use function preg_match;
+use function sprintf;
 
 /**
  * @param string $path

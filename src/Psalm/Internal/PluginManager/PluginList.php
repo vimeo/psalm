@@ -1,6 +1,12 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
+use function array_diff_key;
+use function array_flip;
+use function strpos;
+use function array_search;
+use function array_key_exists;
+
 class PluginList
 {
     /** @var ConfigFile */

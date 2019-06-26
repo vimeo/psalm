@@ -18,6 +18,22 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use function array_merge;
+use function array_map;
+use function array_diff_key;
+use function array_filter;
+use const ARRAY_FILTER_USE_KEY;
+use function array_values;
+use function array_keys;
+use function preg_match;
+use function preg_quote;
+use function array_unique;
+use function count;
+use function in_array;
+use function array_intersect;
+use function strpos;
+use function substr;
+use function array_intersect_key;
 
 /**
  * @internal

@@ -9,6 +9,7 @@ use Psalm\Internal\Clause;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use function is_array;
 
 class TypeReconciliationTest extends TestCase
 {

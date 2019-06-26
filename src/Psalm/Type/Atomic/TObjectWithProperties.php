@@ -3,6 +3,10 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Union;
 use Psalm\Type\Atomic;
+use function implode;
+use function array_map;
+use function array_keys;
+use function count;
 
 class TObjectWithProperties extends TObject
 {

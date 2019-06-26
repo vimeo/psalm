@@ -4,6 +4,7 @@ namespace Psalm\Internal\Visitor;
 
 use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
+use function array_map;
 
 /**
  * Visitor cloning all nodes and linking to the original nodes using an attribute.

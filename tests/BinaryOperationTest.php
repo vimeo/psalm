@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
+use function class_exists;
+use const DIRECTORY_SEPARATOR;
+
 class BinaryOperationTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;

@@ -34,6 +34,9 @@ use LanguageServerProtocol\{
 use Psalm\Codebase;
 use Amp\Promise;
 use Amp\Success;
+use function error_log;
+use function count;
+use function substr_count;
 
 /**
  * Provides method handlers for all textDocument/* methods

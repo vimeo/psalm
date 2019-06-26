@@ -8,6 +8,11 @@ use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Storage\FunctionLikeParameter;
+use function count;
+use function assert;
+use function strtolower;
+use function array_shift;
+use function substr;
 
 /**
  * @internal

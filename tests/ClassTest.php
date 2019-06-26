@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use function class_exists;
+
 class ClassTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;

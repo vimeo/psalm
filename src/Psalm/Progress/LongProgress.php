@@ -1,6 +1,12 @@
 <?php
 namespace Psalm\Progress;
 
+use const PHP_EOL;
+use function strlen;
+use function round;
+use function sprintf;
+use function str_repeat;
+
 class LongProgress extends Progress
 {
     public const NUMBER_OF_COLUMNS = 60;

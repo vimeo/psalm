@@ -22,6 +22,8 @@ use Psalm\Issue\NoValue;
 use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use function explode;
+use function strtolower;
 
 /**
  * @internal

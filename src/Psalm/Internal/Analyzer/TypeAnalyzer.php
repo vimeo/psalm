@@ -40,6 +40,19 @@ use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
+use function get_class;
+use function array_merge;
+use function strtolower;
+use function in_array;
+use function array_values;
+use function count;
+use function is_string;
+use function array_fill;
+use function array_search;
+use function array_keys;
+use function array_reduce;
+use function end;
+use function array_unique;
 
 /**
  * @internal

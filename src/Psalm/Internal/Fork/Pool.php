@@ -1,6 +1,48 @@
 <?php
 namespace Psalm\Internal\Fork;
 
+use function count;
+use function extension_loaded;
+use const PHP_EOL;
+use function ini_get;
+use function version_compare;
+use const PHP_VERSION;
+use function stream_socket_pair;
+use const STREAM_PF_UNIX;
+use const STREAM_SOCK_STREAM;
+use const STREAM_IPPROTO_IP;
+use function error_log;
+use function pcntl_fork;
+use function posix_strerror;
+use function posix_get_last_error;
+use function array_values;
+use function base64_encode;
+use function serialize;
+use function strlen;
+use function fwrite;
+use function substr;
+use function usleep;
+use function fclose;
+use function stream_set_blocking;
+use function intval;
+use function array_fill_keys;
+use function array_keys;
+use function stream_select;
+use function fread;
+use function strpos;
+use function explode;
+use function array_pop;
+use function unserialize;
+use function base64_decode;
+use function gettype;
+use function feof;
+use function posix_kill;
+use const SIGALRM;
+use function pcntl_waitpid;
+use function pcntl_wifsignaled;
+use function pcntl_wexitstatus;
+use function pcntl_wtermsig;
+
 /**
  * Adapted with relatively few changes from
  * https://github.com/etsy/phan/blob/1ccbe7a43a6151ca7c0759d6c53e2c3686994e53/src/Phan/ForkPool.php

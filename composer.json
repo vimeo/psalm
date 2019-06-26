@@ -51,7 +51,8 @@
         "bamarni/composer-bin-plugin": "^1.2",
         "psalm/plugin-phpunit": "^0.6",
         "phpmyadmin/sql-parser": "^5.0",
-        "symfony/process": "^4.3"
+        "symfony/process": "^4.3",
+        "slevomat/coding-standard": "^5.0"
     },
     "suggest": {
         "ext-igbinary": "^2.0.5"

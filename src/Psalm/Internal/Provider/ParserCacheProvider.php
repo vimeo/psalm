@@ -3,6 +3,28 @@ namespace Psalm\Internal\Provider;
 
 use PhpParser;
 use Psalm\Config;
+use const DIRECTORY_SEPARATOR;
+use function is_readable;
+use function filemtime;
+use function igbinary_unserialize;
+use function file_get_contents;
+use function unserialize;
+use function error_log;
+use function json_decode;
+use function is_array;
+use function gettype;
+use function touch;
+use function is_dir;
+use function mkdir;
+use function file_put_contents;
+use function igbinary_serialize;
+use function serialize;
+use function json_encode;
+use function file_exists;
+use function scandir;
+use function is_writable;
+use function unlink;
+use function md5;
 
 /**
  * @internal

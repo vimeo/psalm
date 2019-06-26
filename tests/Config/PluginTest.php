@@ -10,6 +10,14 @@ use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
+use function defined;
+use function define;
+use function dirname;
+use const DIRECTORY_SEPARATOR;
+use function getcwd;
+use function get_class;
+use function microtime;
+use function sprintf;
 
 class PluginTest extends \Psalm\Tests\TestCase
 {

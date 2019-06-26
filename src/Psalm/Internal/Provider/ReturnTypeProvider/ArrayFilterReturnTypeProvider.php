@@ -12,6 +12,10 @@ use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use function array_map;
+use function count;
+use function is_string;
+use function assert;
 
 class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

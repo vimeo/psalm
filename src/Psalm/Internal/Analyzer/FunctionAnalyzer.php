@@ -5,6 +5,9 @@ use PhpParser;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Context;
 use Psalm\Type;
+use function strtolower;
+use function array_values;
+use function count;
 
 /**
  * @internal

@@ -14,6 +14,7 @@ use Psalm\Issue\UndefinedGlobalVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use function is_string;
 
 /**
  * @internal

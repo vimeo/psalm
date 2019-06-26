@@ -14,6 +14,27 @@ use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Type;
+use function trim;
+use function substr_count;
+use function strlen;
+use function preg_replace;
+use function str_replace;
+use function preg_match;
+use function count;
+use function reset;
+use function preg_split;
+use const PREG_SPLIT_DELIM_CAPTURE;
+use const PREG_SPLIT_NO_EMPTY;
+use function array_shift;
+use function implode;
+use function substr;
+use function strpos;
+use function strtolower;
+use function in_array;
+use function explode;
+use function array_merge;
+use const PREG_OFFSET_CAPTURE;
+use function rtrim;
 
 /**
  * @internal

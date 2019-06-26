@@ -2,6 +2,14 @@
 namespace Psalm\Internal\Visitor;
 
 use PhpParser;
+use function strlen;
+use function count;
+use function substr_count;
+use function substr;
+use function preg_replace;
+use function reset;
+use function strrpos;
+use function strpos;
 
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses

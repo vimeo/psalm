@@ -3,6 +3,7 @@ namespace Psalm\Report;
 
 use Psalm\Config;
 use Psalm\Report;
+use function substr;
 
 class ConsoleReport extends Report
 {

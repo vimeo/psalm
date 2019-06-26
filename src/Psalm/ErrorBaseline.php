@@ -2,6 +2,20 @@
 namespace Psalm;
 
 use Psalm\Internal\Provider\FileProvider;
+use function array_reduce;
+use const LIBXML_NOBLANKS;
+use function str_replace;
+use function min;
+use function array_intersect;
+use function array_filter;
+use function strpos;
+use function ksort;
+use function array_merge;
+use function get_loaded_extensions;
+use function usort;
+use function implode;
+use function phpversion;
+use function array_map;
 
 class ErrorBaseline
 {

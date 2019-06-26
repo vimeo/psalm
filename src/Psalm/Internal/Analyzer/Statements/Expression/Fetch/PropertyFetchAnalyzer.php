@@ -32,6 +32,13 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use function strtolower;
+use function array_values;
+use function in_array;
+use function array_reverse;
+use function array_keys;
+use function count;
+use function explode;
 
 /**
  * @internal

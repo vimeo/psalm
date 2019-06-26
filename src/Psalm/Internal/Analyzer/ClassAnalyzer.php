@@ -35,6 +35,20 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use function preg_replace;
+use function preg_match;
+use function explode;
+use function array_pop;
+use function array_merge;
+use function strtolower;
+use function implode;
+use function substr;
+use function array_map;
+use function array_shift;
+use function str_replace;
+use function count;
+use function array_search;
+use function array_keys;
 
 /**
  * @internal

@@ -17,6 +17,13 @@ use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use function count;
+use function in_array;
+use function array_merge;
+use function is_string;
+use function substr;
+use function array_intersect_key;
+use function array_diff_key;
 
 /**
  * @internal

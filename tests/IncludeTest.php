@@ -2,6 +2,10 @@
 namespace Psalm\Tests;
 
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use function strpos;
+use function preg_quote;
+use function getcwd;
+use const DIRECTORY_SEPARATOR;
 
 class IncludeTest extends TestCase
 {

@@ -5,6 +5,19 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
+use function dirname;
+use const DIRECTORY_SEPARATOR;
+use function file_exists;
+use function file_get_contents;
+use function explode;
+use function count;
+use function substr;
+use function trim;
+use function sort;
+use function array_keys;
+use function implode;
+use function strpos;
+use function preg_quote;
 
 class DocumentationTest extends TestCase
 {

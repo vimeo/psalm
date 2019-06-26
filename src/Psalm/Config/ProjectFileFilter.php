@@ -2,6 +2,8 @@
 namespace Psalm\Config;
 
 use SimpleXMLElement;
+use function strpos;
+use function stripos;
 
 class ProjectFileFilter extends FileFilter
 {

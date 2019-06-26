@@ -48,6 +48,17 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
+use function strpos;
+use function substr;
+use function is_numeric;
+use function array_keys;
+use function strtolower;
+use function array_filter;
+use function array_search;
+use function count;
+use function array_values;
+use function reset;
+use function get_class;
 
 abstract class Atomic
 {

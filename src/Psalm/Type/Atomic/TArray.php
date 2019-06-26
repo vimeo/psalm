@@ -2,6 +2,8 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
+use function get_class;
+use function count;
 
 /**
  * Represents an array with generic type parameters.

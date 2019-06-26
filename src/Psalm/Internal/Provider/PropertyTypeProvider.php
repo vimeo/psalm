@@ -7,6 +7,9 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\StatementsSource;
 use Psalm\Plugin\Hook\PropertyTypeProviderInterface;
+use function version_compare;
+use const PHP_VERSION;
+use function strtolower;
 
 class PropertyTypeProvider
 {

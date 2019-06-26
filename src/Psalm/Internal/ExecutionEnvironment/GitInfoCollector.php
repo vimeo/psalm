@@ -5,6 +5,13 @@ namespace Psalm\Internal\ExecutionEnvironment;
 use Psalm\SourceControl\Git\CommitInfo;
 use Psalm\SourceControl\Git\GitInfo;
 use Psalm\SourceControl\Git\RemoteInfo;
+use function strpos;
+use function explode;
+use function count;
+use function array_keys;
+use function range;
+use function trim;
+use function array_unique;
 
 /**
  * Git repository info collector.

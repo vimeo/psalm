@@ -23,6 +23,15 @@ use Psalm\Issue\RawObjectIteration;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
+use function is_string;
+use function in_array;
+use function array_merge;
+use function array_intersect_key;
+use function array_values;
+use function strtolower;
+use function array_map;
+use function array_search;
+use function array_keys;
 
 /**
  * @internal

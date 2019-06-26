@@ -2,6 +2,8 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
+use function class_exists;
+use const DIRECTORY_SEPARATOR;
 
 class MethodSignatureTest extends TestCase
 {

@@ -5,6 +5,16 @@ use PhpParser;
 use Psalm\Progress\Progress;
 use Psalm\Progress\DefaultProgress;
 use Psalm\Progress\VoidProgress;
+use function filemtime;
+use function md5;
+use function abs;
+use function strlen;
+use function count;
+use function array_map;
+use function array_flip;
+use function substr;
+use function array_intersect_key;
+use function array_merge;
 
 /**
  * @internal
