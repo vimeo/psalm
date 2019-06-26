@@ -50,8 +50,8 @@ class PsalmEndToEndTest extends TestCase
 
     public function setUp(): void
     {
-        @unlink('psalm.xml');
-        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php', 'src/FileWithErrors.php');
+        @unlink(self::$tmpDir . '/psalm.xml');
+        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php', self::$tmpDir . '/src/FileWithErrors.php');
         parent::setUp();
     }
 
@@ -68,7 +68,7 @@ class PsalmEndToEndTest extends TestCase
     public function testInit(): void
     {
         $this->assertStringStartsWith('Config file created', $this->runPsalm(['--init'])['STDOUT']);
-        $this->assertFileExists('psalm.xml');
+        $this->assertFileExists(self::$tmpDir . '/psalm.xml');
     }
 
     public function testAlter(): void
@@ -86,7 +86,7 @@ class PsalmEndToEndTest extends TestCase
     public function testPsalter(): void
     {
         $this->runPsalm(['--init']);
-        (new Process([$this->psalter, '--alter', '--issues=InvalidReturnType']))->mustRun();
+        (new Process([$this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
         $this->assertSame(0, $this->runPsalm([])['CODE']);
     }
 
