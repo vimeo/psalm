@@ -1207,7 +1207,7 @@ class Union
             } else {
                 $matching_atomic_type = null;
 
-                if ($input_type && $codebase) {
+                if ($input_type && $codebase && !$input_type->hasMixed()) {
                     foreach ($input_type->types as $input_key => $atomic_input_type) {
                         if ($bracket_pos = strpos($input_key, '<')) {
                             $input_key = substr($input_key, 0, $bracket_pos);

@@ -1441,7 +1441,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
                 [],
-                ['MixedArgument', 'MixedArrayAccess']
+                ['MixedArgument', 'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset']
             ],
         ];
     }
