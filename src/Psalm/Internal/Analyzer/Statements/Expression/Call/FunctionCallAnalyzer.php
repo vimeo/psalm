@@ -642,7 +642,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         && $first_arg->value->name->name === 'class'
                     ) {
                         $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
+
+                        if (!$codebase->classlikes->classExists($resolved_name)) {
+                            $context->phantom_classes[strtolower($resolved_name)] = true;
+                        }
                     }
                 }
             } elseif ($function->parts === ['file_exists'] && $first_arg) {
