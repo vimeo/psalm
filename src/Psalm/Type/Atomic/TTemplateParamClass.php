@@ -59,7 +59,7 @@ class TTemplateParamClass extends TClassString
      */
     public function getId()
     {
-        return $this->getKey();
+        return 'class-string<' . $this->param_name . ' as ' . $this->as . '>';
     }
 
     /**

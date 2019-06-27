@@ -487,6 +487,24 @@ class FunctionClassStringTemplateTest extends TestCase
 
                     bar(foo(A::class));',
             ],
+            'templateAsUnionClassStringPassingValidClass' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @template T1 as A
+                     * @template T2 as B
+                     * @param class-string<T1>|class-string<T2> $type
+                     * @return T1|T2
+                     */
+                    function f(string $type) {
+                        return new $type();
+                    }
+
+                    f(A::class);
+                    f(B::class);',
+                ],
         ];
     }
 
@@ -551,6 +569,25 @@ class FunctionClassStringTemplateTest extends TestCase
                         foo(get_class($t));
                     }',
                 'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'templateAsUnionClassStringPassingInvalidClass' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+
+                    /**
+                     * @template T1 as A
+                     * @template T2 as B
+                     * @param class-string<T1>|class-string<T2> $type
+                     * @return T1|T2
+                     */
+                    function f(string $type) {
+                        return new $type();
+                    }
+
+                    f(C::class);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

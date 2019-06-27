@@ -877,7 +877,11 @@ class TypeCombination
                         return null;
                     }
 
-                    if ($type instanceof TLiteralString) {
+                    if ($type instanceof Type\Atomic\TTemplateParamClass) {
+                        $combination->value_types[$type_key] = $type;
+                    } elseif ($type instanceof Type\Atomic\TClassString && $type->as !== 'object') {
+                        $combination->value_types[$type_key] = $type;
+                    } elseif ($type instanceof TLiteralString) {
                         if ($combination->strings !== null && count($combination->strings) < $literal_limit) {
                             $combination->strings[$type_key] = $type;
                         } else {

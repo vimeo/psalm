@@ -292,6 +292,14 @@ class TypeParseTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testParamaterizedClassStringUnion()
+    {
+        $this->assertSame('class-string<A>|class-string<B>', (string) Type::parseString('class-string<A>|class-string<B>'));
+    }
+
+    /**
      *
      * @return void
      */
