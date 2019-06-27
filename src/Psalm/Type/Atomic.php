@@ -205,7 +205,7 @@ abstract class Atomic
         }
 
         if (strpos($value, '-') && substr($value, 0, 4) !== 'OCI-') {
-            throw new \Psalm\Exception\TypeParseTreeException('no hyphens allowed');
+            throw new \Psalm\Exception\TypeParseTreeException('Unrecognized type ' . $value);
         }
 
         if (is_numeric($value[0])) {
