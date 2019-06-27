@@ -106,7 +106,7 @@ class MethodParamsProvider
                 $code_location
             );
 
-            if ($result) {
+            if ($result !== null) {
                 return $result;
             }
         }
