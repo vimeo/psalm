@@ -65,6 +65,12 @@ There are two main inspirations for Psalm:
     - [Docblock Type Syntax](annotating_code/docblock_type_syntax.md)
     - [Supported Annotations](annotating_code/supported_annotations.md)
     - [Template Annotations](annotating_code/templated_annotations.md)
+    - Type syntax:
+        - [Array types](annotating_code/type_syntax/array_types.md)
+        - [Callable types](annotating_code/type_syntax/callable_types.md)
+        - [Object types](annotating_code/type_syntax/object_types.md)
+        - [Scalar types](annotating_code/type_syntax/scalar_types.md)
+        - [Value types](annotating_code/type_syntax/value_types.md)
 - Manipulating code:
     - [Fixing code](manipulating_code/fixing.md)
     - [Refactoring code](manipulating_code/refactoring.md)
