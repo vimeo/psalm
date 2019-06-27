@@ -58,24 +58,9 @@ jobs:
           at: /home/docker/project/
       - run:
           name: PHPUnit test with coverage
-          command: php -dextension=pcov.so vendor/bin/phpunit --log-junit build/phpunit/phpunit.xml --coverage-xml build/phpunit/coverage-xml --coverage-html build/phpunit/coverage-html
+          command: php -dextension=pcov.so vendor/bin/phpunit --coverage-html build/phpunit/coverage-html
       - store_artifacts:
-          path: build/phpunit
-      - persist_to_workspace:
-          root: /home/docker/project/
-          paths:
-            - .
-  mutation:
-    executor: php-72
-    steps:
-      - attach_workspace:
-            at: /home/docker/project/
-      - run:
-          name: Install infection
-          command: composer global require infection/infection
-      - run:
-          name: Mutation coverage testing
-          command: php -d memory_limit=4G ~/.composer/vendor/bin/infection --coverage=build/phpunit --only-covered --threads=2 || echo 'Temporarily ignoring unexplained infection failure'
+          path: build/phpunit/coverage-html
   phar-build:
     executor: php-72
     steps:
@@ -120,9 +105,6 @@ workflows:
           requires:
             - test
             - "Code Style Analysis"
-      - mutation:
-          requires:
-            - coverage
       - phar-build:
           requires:
             - test
