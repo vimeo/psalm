@@ -22,6 +22,17 @@ class DeprecatedAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'deprecatedClassUsedInsideClass' => [
+                '<?php
+                    /**
+                     * @deprecated
+                     */
+                    class Foo {
+                        public static function barBar(): void {
+                            new Foo();
+                        }
+                    }',
+            ],
         ];
     }
 

@@ -161,7 +161,7 @@ class ConstFetchAnalyzer
                     if ($codebase->classExists($fq_class_name)) {
                         $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                        if ($class_const_storage->deprecated) {
+                        if ($class_const_storage->deprecated && $fq_class_name !== $context->self) {
                             if (IssueBuffer::accepts(
                                 new DeprecatedClass(
                                     'Class ' . $fq_class_name . ' is deprecated',
@@ -320,7 +320,7 @@ class ConstFetchAnalyzer
 
                 $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                if ($class_const_storage->deprecated) {
+                if ($class_const_storage->deprecated && $fq_class_name !== $context->self) {
                     if (IssueBuffer::accepts(
                         new DeprecatedClass(
                             'Class ' . $fq_class_name . ' is deprecated',

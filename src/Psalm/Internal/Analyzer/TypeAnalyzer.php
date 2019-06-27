@@ -397,19 +397,25 @@ class TypeAnalyzer
 
         foreach ($type1->getTypes() as $type1_part) {
             foreach ($type2->getTypes() as $type2_part) {
+                $second_type_coerced = false;
+
                 $either_contains = self::isAtomicContainedBy(
                     $codebase,
                     $type1_part,
                     $type2_part,
                     true,
-                    false
+                    false,
+                    $first_has_scalar_match,
+                    $first_type_coerced
                 ) || self::isAtomicContainedBy(
                     $codebase,
                     $type2_part,
                     $type1_part,
                     true,
-                    false
-                );
+                    false,
+                    $second_has_scalar_match,
+                    $second_type_coerced
+                ) || ($first_type_coerced && $second_type_coerced);
 
                 if ($either_contains) {
                     return true;
