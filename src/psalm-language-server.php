@@ -152,6 +152,13 @@ if (getcwd() === false) {
     exit(1);
 }
 
+if (ini_get('pcre.jit') === '1'
+    && PHP_OS === 'Darwin'
+    && version_compare(PHP_VERSION, '7.3.0') >= 0
+) {
+    die(\Psalm\Internal\Fork\Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL);
+}
+
 if (isset($options['root'])) {
     $options['r'] = $options['root'];
 }

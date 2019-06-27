@@ -69,6 +69,12 @@ class Pool
     /** @var ?\Closure(): void */
     private $task_done_closure;
 
+    public const MAC_PCRE_MESSAGE = 'Mac users: pcre.jit is set to 1 in your PHP config.' . PHP_EOL
+        . 'The pcre jit is known to cause segfaults in PHP 7.3 on Macs, and Psalm' . PHP_EOL
+        . 'will not execute in threaded mode to avoid indecipherable errors.' . PHP_EOL
+        . 'Consider adding pcre.jit=0 to your PHP config.' . PHP_EOL
+        . 'Relevant info: https://bugs.php.net/bug.php?id=77260';
+
     /**
      * @param array<int, array<int, mixed>> $process_task_data_iterator
      * An array of task data items to be divided up among the
@@ -114,11 +120,7 @@ class Pool
             && version_compare(PHP_VERSION, '7.3.0') >= 0
         ) {
             die(
-                'Mac users: pcre.jit is set to 1 in your PHP config.' . PHP_EOL
-                . 'The pcre jit is known to cause segfaults in PHP 7.3 on Macs, and Psalm' . PHP_EOL
-                . 'will not execute in threaded mode to avoid indecipherable errors.' . PHP_EOL
-                . 'Consider adding pcre.jit=0 to your PHP config.' . PHP_EOL
-                . 'Relevant info: https://bugs.php.net/bug.php?id=77260' . PHP_EOL
+                self::MAC_PCRE_MESSAGE . PHP_EOL
             );
         }
 
