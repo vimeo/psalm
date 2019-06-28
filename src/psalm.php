@@ -517,6 +517,7 @@ if (isset($_SERVER['TRAVIS'])
     || isset($_SERVER['APPVEYOR'])
     || isset($_SERVER['JENKINS_URL'])
     || isset($_SERVER['SCRUTINIZER'])
+    || isset($_SERVER['GITLAB_CI'])
 ) {
     $options['no-progress'] = true;
 }
