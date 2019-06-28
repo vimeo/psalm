@@ -21,10 +21,10 @@ class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
 - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
 - `AfterStatementAnalysisInterface` - called after Psalm evaluates an statement.
 - `FunctionExistenceProviderInterface` - can be used to override Psalm's builtin function existence checks for one or more functions.
-- `FunctionParamsProviderInterface.php` - can be used to override Psalm's builtin function paramter lookup for one or more functions.
+- `FunctionParamsProviderInterface.php` - can be used to override Psalm's builtin function parameter lookup for one or more functions.
 - `FunctionReturnTypeProviderInterface` - can be used to override Psalm's builtin function return type lookup for one or more functions.
 - `MethodExistenceProviderInterface` - can be used to override Psalm's builtin method existence checks for one or more classes.
-- `MethodParamsProviderInterface` - can be used to override Psalm's builtin method paramter lookup for one or more classes.
+- `MethodParamsProviderInterface` - can be used to override Psalm's builtin method parameter lookup for one or more classes.
 - `MethodReturnTypeProviderInterface` - can be used to override Psalm's builtin method return type lookup for one or more classes.
 - `MethodVisibilityProviderInterface` - can be used to override Psalm's builtin method visibility checks for one or more classes.
 - `PropertyExistenceProviderInterface` - can be used to override Psalm's builtin property existence checks for one or more classes.
