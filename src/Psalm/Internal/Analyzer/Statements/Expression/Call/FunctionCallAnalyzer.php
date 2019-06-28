@@ -645,8 +645,6 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                         if (!$codebase->classlikes->classExists($resolved_name)) {
                             $context->phantom_classes[strtolower($resolved_name)] = true;
-                        } elseif ($context->inside_negation) {
-                            return false;
                         }
                     }
                 }
@@ -663,8 +661,6 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                         if (!$codebase->classlikes->interfaceExists($resolved_name)) {
                             $context->phantom_classes[strtolower($resolved_name)] = true;
-                        } elseif ($context->inside_negation) {
-                            return false;
                         }
                     }
                 }
