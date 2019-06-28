@@ -63,7 +63,7 @@ All scalar types have literal versions e.g. `int` vs `int(5)`.
 
 #### Floats
 
-`TFloat` - denotes the `float` type, where the exact value is unkown.
+`TFloat` - denotes the `float` type, where the exact value is unknown.
 
 `TLiteralFloat` is used to represent a floating point value where the exact numeric value is known.
 
