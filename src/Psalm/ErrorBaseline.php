@@ -63,7 +63,7 @@ class ErrorBaseline
     public static function read(FileProvider $fileProvider, string $baselineFile): array
     {
         if (!$fileProvider->fileExists($baselineFile)) {
-            throw new Exception\ConfigException("{$baselineFile} does not exist or is not readable\n");
+            throw new Exception\ConfigException("{$baselineFile} does not exist or is not readable");
         }
 
         $xmlSource = $fileProvider->getContents($baselineFile);

@@ -730,7 +730,8 @@ if (!empty(Config::getInstance()->error_baseline) && !isset($options['ignore-bas
             (string)Config::getInstance()->error_baseline
         );
     } catch (\Psalm\Exception\ConfigException $exception) {
-        die('Error while reading baseline: ' . $exception->getMessage());
+        fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
+        exit(1);
     }
 }
 
