@@ -759,13 +759,20 @@ class PropertyFetchAnalyzer
 
                         $type_tokens = Type::tokenize((string)$class_property_type);
 
-                        foreach ($type_tokens as &$type_token) {
-                            if (isset($class_template_params[$type_token[0]])) {
-                                $type_token[0] = $class_template_params[$type_token[0]];
+                        $new_type_tokens = [];
+
+                        foreach ($type_tokens as $type_token_map) {
+                            if (isset($class_template_params[$type_token_map[0]])) {
+                                $tokened = Type::tokenize($class_template_params[$type_token_map[0]]);
+                                foreach ($tokened as $new_t) {
+                                    $new_type_tokens[] = [$new_t[0], $type_token_map[1]];
+                                }
+                            } else {
+                                $new_type_tokens[] = $type_token_map;
                             }
                         }
 
-                        $class_property_type = Type::parseTokens($type_tokens);
+                        $class_property_type = Type::parseTokens($new_type_tokens);
                     }
                 }
             }
