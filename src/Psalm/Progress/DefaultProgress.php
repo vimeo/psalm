@@ -20,12 +20,14 @@ class DefaultProgress extends LongProgress
         if ($this->number_of_tasks > self::TOO_MANY_FILES) {
             ++$this->progress;
 
-            // Source for rate limiting: https://github.com/phan/phan/blob/9a788581ee1a4e1c35bebf89c435fd8a238c1d17/src/Phan/CLI.php
+            // Source for rate limiting:
+            // https://github.com/phan/phan/blob/9a788581ee1a4e1c35bebf89c435fd8a238c1d17/src/Phan/CLI.php
             $time = \microtime(true);
 
             // If not enough time has elapsed, then don't update the progress bar.
             // Making the update frequency based on time (instead of the number of files)
-            // prevents the terminal from rapidly flickering while processing small/empty files, and reduces the time spent writing to stderr.
+            // prevents the terminal from rapidly flickering while processing small/empty files,
+            // and reduces the time spent writing to stderr.
             if ($time - $this->previous_update_time < self::PROGRESS_BAR_SAMPLE_INTERVAL) {
                 // Make sure to output the section for 100% completion regardless of limits, to avoid confusion.
                 if ($this->progress !== $this->number_of_tasks) {
