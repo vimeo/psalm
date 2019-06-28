@@ -150,8 +150,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         // hoist functions to the top
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_analyzer = new FunctionAnalyzer($stmt, $this->source);
-                $this->function_analyzers[strtolower($stmt->name->name)] = $function_analyzer;
+                try {
+                    $function_analyzer = new FunctionAnalyzer($stmt, $this->source);
+                    $this->function_analyzers[strtolower($stmt->name->name)] = $function_analyzer;
+                } catch (\UnexpectedValueException $e) {
+                    // do nothing
+                }
             }
         }
 
@@ -542,25 +546,28 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $config = Config::getInstance();
                     $function_context->collect_references = $codebase->collect_references;
                     $function_context->collect_exceptions = $config->check_for_throws_docblock;
-                    $this->function_analyzers[$function_id]->analyze($function_context, $context);
 
-                    if ($config->reportIssueInFile('InvalidReturnType', $this->getFilePath())) {
-                        $method_id = $this->function_analyzers[$function_id]->getMethodId();
+                    if (isset($this->function_analyzers[$function_id])) {
+                        $this->function_analyzers[$function_id]->analyze($function_context, $context);
 
-                        $function_storage = $codebase->functions->getStorage(
-                            $this,
-                            $method_id
-                        );
+                        if ($config->reportIssueInFile('InvalidReturnType', $this->getFilePath())) {
+                            $method_id = $this->function_analyzers[$function_id]->getMethodId();
 
-                        $return_type = $function_storage->return_type;
-                        $return_type_location = $function_storage->return_type_location;
+                            $function_storage = $codebase->functions->getStorage(
+                                $this,
+                                $method_id
+                            );
 
-                        $this->function_analyzers[$function_id]->verifyReturnType(
-                            $this,
-                            $return_type,
-                            $this->getFQCLN(),
-                            $return_type_location
-                        );
+                            $return_type = $function_storage->return_type;
+                            $return_type_location = $function_storage->return_type_location;
+
+                            $this->function_analyzers[$function_id]->verifyReturnType(
+                                $this,
+                                $return_type,
+                                $this->getFQCLN(),
+                                $return_type_location
+                            );
+                        }
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression) {

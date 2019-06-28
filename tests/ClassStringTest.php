@@ -611,6 +611,15 @@ class ClassStringTest extends TestCase
                         new \RuntimeException();
                     }'
             ],
+
+            'noCrashWhenClassExistsNegated' => [
+                '<?php
+                    class A {}
+
+                    if (!class_exists(A::class)) {
+                        new \RuntimeException();
+                    }'
+            ],
         ];
     }
 
