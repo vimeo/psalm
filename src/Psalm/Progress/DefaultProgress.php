@@ -12,6 +12,7 @@ class DefaultProgress extends LongProgress
     // This reduces flickering and reduces the amount of time spent writing to STDERR and updating the terminal.
     const PROGRESS_BAR_SAMPLE_INTERVAL = 0.1;
 
+    /** @var float the last time when the progress bar UI was updated */
     private $previous_update_time = 0.0;
 
     public function taskDone(int $level): void
