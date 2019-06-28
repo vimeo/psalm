@@ -645,6 +645,26 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                         if (!$codebase->classlikes->classExists($resolved_name)) {
                             $context->phantom_classes[strtolower($resolved_name)] = true;
+                        } elseif ($context->inside_negation) {
+                            return false;
+                        }
+                    }
+                }
+            } elseif ($function->parts === ['interface_exists']) {
+                if ($first_arg) {
+                    if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                        && $first_arg->value->class instanceof PhpParser\Node\Name
+                        && $first_arg->value->name instanceof PhpParser\Node\Identifier
+                        && $first_arg->value->name->name === 'class'
+                    ) {
+                        $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
+
+                        if (!$codebase->classlikes->interfaceExists($resolved_name)) {
+                            $context->phantom_classes[strtolower($resolved_name)] = true;
+                        } elseif ($context->inside_negation) {
+                            return false;
                         }
                     }
                 }

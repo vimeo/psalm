@@ -158,14 +158,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      */
     public function enterNode(PhpParser\Node $node)
     {
-        if ($this->skip_if_descendants
-            && !$node instanceof PhpParser\Node\Stmt\If_
-            && !$node instanceof PhpParser\Node\Stmt\Else_
-            && !$node instanceof PhpParser\Node\Stmt\ElseIf_
-        ) {
-            return;
-        }
-
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc) {
                 try {
@@ -265,6 +257,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
+            if ($this->skip_if_descendants) {
+                return;
+            }
+
             if ($this->registerClassLike($node) === false) {
                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
             }
@@ -300,6 +296,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
+            if ($node instanceof PhpParser\Node\Stmt\Function_
+                || $node instanceof PhpParser\Node\Stmt\ClassMethod
+            ) {
+                if ($this->skip_if_descendants) {
+                    return;
+                }
+            }
+
             $this->registerFunctionLike($node);
 
             if ($node instanceof PhpParser\Node\Expr\Closure) {
@@ -515,14 +519,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      */
     public function leaveNode(PhpParser\Node $node)
     {
-        if ($this->skip_if_descendants
-            && !$node instanceof PhpParser\Node\Stmt\If_
-            && !$node instanceof PhpParser\Node\Stmt\Else_
-            && !$node instanceof PhpParser\Node\Stmt\ElseIf_
-        ) {
-            return;
-        }
-
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             $this->aliases = $this->file_aliases;
 
@@ -542,6 +538,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
+            if ($this->skip_if_descendants) {
+                return;
+            }
+
             if (!$this->fq_classlike_names) {
                 throw new \LogicException('$this->fq_classlike_names should not be empty');
             }
@@ -614,6 +614,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         ) {
             $this->function_template_types = [];
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
+            if ($this->skip_if_descendants) {
+                return;
+            }
+
             if (!$this->functionlike_storages) {
                 throw new \UnexpectedValueException('There should be function storages');
             }

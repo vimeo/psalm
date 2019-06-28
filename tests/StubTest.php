@@ -706,6 +706,14 @@ class StubTest extends TestCase
 
                 function bar(I6 $d) : void {
                     $d->getMessage();
+                }
+
+                function bat(I7 $d) : void {
+                    $d->getMessage();
+                }
+
+                function baz(I8 $d) : void {
+                    $d->getMessage();
                 }'
         );
 
