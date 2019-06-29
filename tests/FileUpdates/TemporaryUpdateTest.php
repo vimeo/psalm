@@ -1251,6 +1251,71 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[230], [230]],
             ],
+            'addPartialMethodWithSyntaxError' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                public function baz() : void {
+                                    if (rand(0, 1)) {}
+                                }
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function bar(
+                                    string $function_id
+                                ) {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                public function baz() : void {
+                                    if (rand(0, 1)) {
+                                }
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function bar(
+                                    string $function_id
+                                ) {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                public function baz() : void {
+                                    if (rand(0, 1)) {}
+                                }
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function bar(
+                                    string $function_id
+                                ) {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [381], []],
+            ],
         ];
     }
 }
