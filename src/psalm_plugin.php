@@ -13,7 +13,7 @@ $vendor_dir = getVendorDir($current_dir);
 requireAutoloaders($current_dir, false, $vendor_dir);
 
 
-$app = new Application('psalm-plugin', (string) Versions::getVersion('vimeo/psalm'));
+$app = new Application('psalm-plugin', Versions::getVersion('vimeo/psalm'));
 
 $psalm_root = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 

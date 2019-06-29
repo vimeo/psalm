@@ -779,7 +779,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if (($function_id === 'array_map' && isset($node->args[0]))
             || ($function_id === 'array_filter' && isset($node->args[1]))
         ) {
-            $node_arg_value = $function_id = 'array_map' ? $node->args[0]->value : $node->args[1]->value;
+            $node_arg_value = $function_id === 'array_map' ? $node->args[0]->value : $node->args[1]->value;
 
             if ($node_arg_value instanceof PhpParser\Node\Scalar\String_
                 || $node_arg_value instanceof PhpParser\Node\Expr\Array_
@@ -1647,7 +1647,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if ($param->var instanceof PhpParser\Node\Expr\Error) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        'Param' . ((int) $i + 1) . ' of ' . $cased_function_id . ' has invalid syntax',
+                        'Param' . ($i + 1) . ' of ' . $cased_function_id . ' has invalid syntax',
                         new CodeLocation($this->file_scanner, $param, null, true)
                     )
                 )) {
