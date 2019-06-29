@@ -331,8 +331,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     {
         $tokens = token_get_all($fake_class);
 
-        $repared = '';
-
         $brace_count = 0;
 
         foreach ($tokens as $token) {
