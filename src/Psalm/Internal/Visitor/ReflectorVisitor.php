@@ -1870,7 +1870,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         continue;
                     }
 
-                    $assigned_properties[$property_name] = $storage->param_types[$param_name];
+                    $param_index = \array_search($param_name, \array_keys($storage->param_types));
+
+                    if (!isset($storage->params[$param_index]->type)) {
+                        continue;
+                    }
+
+                    $param_type = $storage->params[$param_index]->type;
+
+                    $assigned_properties[$property_name] =
+                        $storage->params[$param_index]->is_variadic
+                            ? new Type\Union([
+                                new Type\Atomic\TArray([
+                                    Type::getInt(),
+                                    $param_type
+                                ])
+                            ])
+                            : $param_type;
                 } else {
                     $assigned_properties = [];
                     break;

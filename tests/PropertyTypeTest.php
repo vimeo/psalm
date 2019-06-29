@@ -1651,6 +1651,17 @@ class PropertyTypeTest extends TestCase
                       }
                     }'
             ],
+            'inferSpreadParamType' => [
+                '<?php
+                    class Tag {}
+                    class EntityTags {
+                        private $tags;
+
+                        public function __construct(Tag ...$tags) {
+                            $this->tags = $tags;
+                        }
+                    }'
+            ],
         ];
     }
 
