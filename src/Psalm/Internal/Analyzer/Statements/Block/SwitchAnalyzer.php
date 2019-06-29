@@ -242,18 +242,24 @@ class SwitchAnalyzer
             || (count($case_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $case_actions, true));
 
         $case_context = clone $original_context;
+
         if ($codebase->alter_code) {
             $case_context->branch_point = $case_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
         }
 
         $case_context->parent_context = $context;
         $case_scope = $case_context->case_scope = new CaseScope();
+
         $case_scope->parent_context = $case_context;
 
         $case_equality_expr = null;
 
         if ($case->cond) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
+                $case_scope->parent_context = null;
+                $case_context->case_scope = null;
+                $case_context->parent_context = null;
+
                 return false;
             }
 
@@ -360,6 +366,10 @@ class SwitchAnalyzer
 
                 $switch_scope->leftover_statements = [$case_if_stmt];
             }
+
+            $case_scope->parent_context = null;
+            $case_context->case_scope = null;
+            $case_context->parent_context = null;
 
             return;
         }
@@ -520,6 +530,10 @@ class SwitchAnalyzer
                 $switch_scope,
                 $case_scope
             ) === false) {
+                $case_scope->parent_context = null;
+                $case_context->case_scope = null;
+                $case_context->parent_context = null;
+
                 return false;
             }
         }
@@ -535,10 +549,10 @@ class SwitchAnalyzer
                 foreach ($case_scope->break_vars as $var_id => $type) {
                     if (isset($context->vars_in_scope[$var_id])) {
                         if (!isset($switch_scope->possibly_redefined_vars[$var_id])) {
-                            $switch_scope->possibly_redefined_vars[$var_id] = $type;
+                            $switch_scope->possibly_redefined_vars[$var_id] = clone $type;
                         } else {
                             $switch_scope->possibly_redefined_vars[$var_id] = Type::combineUnionTypes(
-                                $type,
+                                clone $type,
                                 $switch_scope->possibly_redefined_vars[$var_id]
                             );
                         }
@@ -553,7 +567,7 @@ class SwitchAnalyzer
                             unset($switch_scope->new_vars_in_scope[$var_id]);
                         } else {
                             $switch_scope->new_vars_in_scope[$var_id] = Type::combineUnionTypes(
-                                $case_scope->break_vars[$var_id],
+                                clone $case_scope->break_vars[$var_id],
                                 $type
                             );
                         }
@@ -567,7 +581,7 @@ class SwitchAnalyzer
                 foreach ($switch_scope->redefined_vars as $var_id => $type) {
                     if (isset($case_scope->break_vars[$var_id])) {
                         $switch_scope->redefined_vars[$var_id] = Type::combineUnionTypes(
-                            $case_scope->break_vars[$var_id],
+                            clone $case_scope->break_vars[$var_id],
                             $type
                         );
                     } else {
@@ -577,7 +591,9 @@ class SwitchAnalyzer
             }
         }
 
+        $case_scope->parent_context = null;
         $case_context->case_scope = null;
+        $case_context->parent_context = null;
     }
 
     /**
@@ -644,10 +660,10 @@ class SwitchAnalyzer
             } else {
                 foreach ($case_redefined_vars as $var_id => $type) {
                     if (!isset($switch_scope->possibly_redefined_vars[$var_id])) {
-                        $switch_scope->possibly_redefined_vars[$var_id] = $type;
+                        $switch_scope->possibly_redefined_vars[$var_id] = clone $type;
                     } else {
                         $switch_scope->possibly_redefined_vars[$var_id] = Type::combineUnionTypes(
-                            $type,
+                            clone $type,
                             $switch_scope->possibly_redefined_vars[$var_id]
                         );
                     }
@@ -663,7 +679,7 @@ class SwitchAnalyzer
                     } else {
                         $switch_scope->redefined_vars[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $case_redefined_vars[$var_id]
+                            clone $case_redefined_vars[$var_id]
                         );
                     }
                 }
@@ -683,7 +699,7 @@ class SwitchAnalyzer
                         unset($switch_scope->new_vars_in_scope[$new_var]);
                     } else {
                         $switch_scope->new_vars_in_scope[$new_var] =
-                            Type::combineUnionTypes($case_context->vars_in_scope[$new_var], $type);
+                            Type::combineUnionTypes(clone $case_context->vars_in_scope[$new_var], $type);
                     }
                 }
 
