@@ -329,7 +329,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
     private function balanceBrackets(string $fake_class) : string
     {
-        $tokens = token_get_all($fake_class);
+        $tokens = \token_get_all($fake_class);
 
         $brace_count = 0;
 
@@ -342,7 +342,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
         }
 
         if ($brace_count > 0) {
-            $fake_class .= str_repeat('}', $brace_count);
+            $fake_class .= \str_repeat('}', $brace_count);
         }
 
         return $fake_class;
