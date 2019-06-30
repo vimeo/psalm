@@ -306,6 +306,12 @@ class Context
         $this->self = $self;
     }
 
+    public function __destruct()
+    {
+        $this->case_scope = null;
+        $this->parent_context = null;
+    }
+
     /**
      * @return void
      */

@@ -175,6 +175,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                             $method_analyzer->analyze($context, null, true);
                         }
                     }
+
+                    $trait_file_analyzer->clearSourceBeforeDestruction();
                 }
             }
         }

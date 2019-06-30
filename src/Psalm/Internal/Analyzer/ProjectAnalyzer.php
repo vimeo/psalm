@@ -1268,6 +1268,7 @@ class ProjectAnalyzer
 
         $file_analyzer->class_analyzers_to_analyze = [];
         $file_analyzer->interface_analyzers_to_analyze = [];
+        $file_analyzer->clearSourceBeforeDestruction();
     }
 
     public function getFunctionLikeAnalyzer(string $method_id, string $file_path) : ?FunctionLikeAnalyzer

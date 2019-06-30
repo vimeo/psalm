@@ -374,7 +374,7 @@ class StatementsProvider
                 'comments', 'startLine', 'startFilePos', 'endFilePos',
             ];
 
-            self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, self::$lexer);
+            self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::ONLY_PHP7, self::$lexer);
         }
 
         $used_cached_statements = false;
@@ -436,6 +436,11 @@ class StatementsProvider
                 }
             }
         }
+
+        /** @psalm-suppress NoInterfaceProperties */
+        unset(self::$parser->errorHander);
+
+        $error_handler->clearErrors();
 
         $resolving_traverser = new PhpParser\NodeTraverser;
         $name_resolver = new \Psalm\Internal\Visitor\SimpleNameResolver(
