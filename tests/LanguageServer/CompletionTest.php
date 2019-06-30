@@ -688,7 +688,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnNewExceptionWithNamespace()
+    public function testCompletionOnNewExceptionWithNamespaceNoUse()
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -724,7 +724,15 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->assertCount(1, $completion_items);
 
         $this->assertSame('Exception', $completion_items[0]->label);
-        $this->assertSame('\Exception', $completion_items[0]->insertText);
+        $this->assertSame('Exception', $completion_items[0]->insertText);
+
+        $this->assertNotNull($completion_items[0]->additionalTextEdits);
+        $this->assertCount(1, $completion_items[0]->additionalTextEdits);
+        $this->assertSame('use Exception;' . \PHP_EOL . \PHP_EOL, $completion_items[0]->additionalTextEdits[0]->newText);
+        $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->start->line);
+        $this->assertSame(16, $completion_items[0]->additionalTextEdits[0]->range->start->character);
+        $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->end->line);
+        $this->assertSame(16, $completion_items[0]->additionalTextEdits[0]->range->end->character);
     }
 
     /**
@@ -769,6 +777,14 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
 
         $this->assertCount(5, $completion_items);
+
+        $this->assertNotNull($completion_items[0]->additionalTextEdits);
+        $this->assertCount(1, $completion_items[0]->additionalTextEdits);
+        $this->assertSame(\PHP_EOL . 'use ArrayObject;', $completion_items[0]->additionalTextEdits[0]->newText);
+        $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->start->line);
+        $this->assertSame(44, $completion_items[0]->additionalTextEdits[0]->range->start->character);
+        $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->end->line);
+        $this->assertSame(44, $completion_items[0]->additionalTextEdits[0]->range->end->character);
     }
 
     /**

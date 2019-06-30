@@ -240,7 +240,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->aliases->uses_start = (int) $node->getAttribute('startFilePos');
             }
 
-            $this->aliases->uses_end = (int) $node->getAttribute('endFilePos');
+            $this->aliases->uses_end = (int) $node->getAttribute('endFilePos') + 1;
         } elseif ($node instanceof PhpParser\Node\Stmt\GroupUse) {
             $use_prefix = implode('\\', $node->prefix->parts);
 
@@ -270,7 +270,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->aliases->uses_start = (int) $node->getAttribute('startFilePos');
             }
 
-            $this->aliases->uses_end = (int) $node->getAttribute('endFilePos');
+            $this->aliases->uses_end = (int) $node->getAttribute('endFilePos') + 1;
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
                 return;

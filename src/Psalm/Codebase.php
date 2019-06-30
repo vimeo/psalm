@@ -1353,6 +1353,47 @@ class Codebase
                 continue;
             }
 
+            $extra_edits = [];
+
+            $insertion_text = Type::getStringFromFQCLN(
+                $storage->name,
+                $aliases && $aliases->namespace ? $aliases->namespace : null,
+                $aliases ? $aliases->uses_flipped : [],
+                null
+            );
+
+            if ($aliases
+                && $aliases->namespace
+                && $insertion_text === '\\' . $storage->name
+                && $aliases->namespace_first_stmt_start
+            ) {
+                $file_contents = $this->getFileContents($file_path);
+
+                $class_name = \preg_replace('/^.*\\\/', '', $storage->name);
+
+                if ($aliases->uses_end) {
+                    $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);
+                    $extra_edits[] = new \LanguageServerProtocol\TextEdit(
+                        new Range(
+                            $position,
+                            $position
+                        ),
+                        \PHP_EOL . 'use ' . $storage->name . ';'
+                    );
+                } else {
+                    $position = self::getPositionFromOffset($aliases->namespace_first_stmt_start, $file_contents);
+                    $extra_edits[] = new \LanguageServerProtocol\TextEdit(
+                        new Range(
+                            $position,
+                            $position
+                        ),
+                        'use ' . $storage->name . ';' . \PHP_EOL . \PHP_EOL
+                    );
+                }
+
+                $insertion_text = $class_name;
+            }
+
             $completion_items[] = new \LanguageServerProtocol\CompletionItem(
                 $storage->name,
                 \LanguageServerProtocol\CompletionItemKind::CLASS_,
@@ -1360,12 +1401,9 @@ class Codebase
                 null,
                 null,
                 $storage->name,
-                Type::getStringFromFQCLN(
-                    $storage->name,
-                    $aliases && $aliases->namespace ? $aliases->namespace : null,
-                    $aliases ? $aliases->uses_flipped : [],
-                    null
-                )
+                $insertion_text,
+                null,
+                $extra_edits
             );
         }
 
@@ -1375,9 +1413,12 @@ class Codebase
     private static function getPositionFromOffset(int $offset, string $file_contents) : Position
     {
         $file_contents = substr($file_contents, 0, $offset);
+
+        $before_newline_count = strrpos($file_contents, "\n", $offset - strlen($file_contents));
+
         return new Position(
             substr_count($file_contents, "\n"),
-            $offset - (int)strrpos($file_contents, "\n", strlen($file_contents))
+            $offset - (int)$before_newline_count - 1
         );
     }
 

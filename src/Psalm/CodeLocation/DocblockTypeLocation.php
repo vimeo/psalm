@@ -6,12 +6,6 @@ use PhpParser;
 class DocblockTypeLocation extends \Psalm\CodeLocation
 {
     /** @var int */
-    public $raw_file_start;
-
-    /** @var int */
-    public $raw_file_end;
-
-    /** @var int */
     public $raw_line_number;
 
     public function __construct(
