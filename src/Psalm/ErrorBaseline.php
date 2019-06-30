@@ -225,7 +225,7 @@ class ErrorBaseline
 
         usort($extensions, 'strnatcasecmp');
 
-        $filesNode->setAttribute('php-version', implode('; ', array_merge(
+        $filesNode->setAttribute('php-version', implode(';' . "\n\t", array_merge(
             [
                 ('php:' . phpversion()),
             ],
@@ -261,6 +261,26 @@ class ErrorBaseline
         $baselineDoc->appendChild($filesNode);
         $baselineDoc->formatOutput = true;
 
-        $fileProvider->setContents($baselineFile, $baselineDoc->saveXML());
+        $xml = preg_replace_callback(
+            '/<files (psalm-version="[^"]+") (?:php-version="(.+)">\n)/',
+            function (array $matches) : string {
+                return
+                    '<files' .
+                    "\n  " .
+                    $matches[1] .
+                    "\n" .
+                    '  php-version="' .
+                    "\n    " .
+                    implode("\n    ", explode('&#10;&#9;', $matches[2])) .
+                    "\n" .
+                    '  "' .
+                    "\n" .
+                    '>' .
+                    "\n";
+            },
+            $baselineDoc->saveXML()
+        );
+
+        $fileProvider->setContents($baselineFile, $xml);
     }
 }
