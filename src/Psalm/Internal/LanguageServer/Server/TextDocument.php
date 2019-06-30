@@ -318,6 +318,6 @@ class TextDocument
                 $signature_label,
                 $parameters
             ),
-        ], null, $argument_number));
+        ], 0, $argument_number));
     }
 }
