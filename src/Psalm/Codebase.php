@@ -353,7 +353,7 @@ class Codebase
     {
         $this->loadAnalyzer();
 
-        $this->file_reference_provider->loadReferenceCache();
+        $this->file_reference_provider->loadReferenceCache(false);
 
         if (!$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
@@ -397,6 +397,7 @@ class Codebase
 
         $this->scanner->addFilesToDeepScan($referenced_files);
         $this->addFilesToAnalyze(array_combine($candidate_files, $candidate_files));
+
         $this->scanner->scanFiles($this->classlikes);
 
         $this->file_reference_provider->updateReferenceCache($this, $referenced_files);
@@ -1142,7 +1143,7 @@ class Codebase
     }
 
     /**
-     * @return array{0: string, 1: '->'|'::'|'symbol', 2: array<string, string>}|null
+     * @return array{0: string, 1: '->'|'::'|'symbol', 2: int}|null
      */
     public function getCompletionDataAtPosition(string $file_path, Position $position)
     {
@@ -1156,7 +1157,7 @@ class Codebase
 
         $offset = $position->toOffset($file_contents);
 
-        list($reference_map, $type_map, $alias_map) = $this->analyzer->getMapsForFile($file_path);
+        list($reference_map, $type_map) = $this->analyzer->getMapsForFile($file_path);
 
         if (!$reference_map && !$type_map) {
             return null;
@@ -1189,7 +1190,7 @@ class Codebase
                         return null;
                     }
 
-                    return [$recent_type, $gap, []];
+                    return [$recent_type, $gap, $offset];
                 }
             }
         }
@@ -1202,20 +1203,7 @@ class Codebase
             if ($offset - $end_pos === 0) {
                 $recent_type = $possible_reference;
 
-                $found_aliases = [];
-
-                foreach ($alias_map as $aliases_start_pos => list($aliases_end_pos, $aliases)) {
-                    if ($offset < $aliases_start_pos) {
-                        continue;
-                    }
-
-                    if ($offset < $aliases_end_pos) {
-                        $found_aliases = $aliases;
-                        break;
-                    }
-                }
-
-                return [$recent_type, 'symbol', $found_aliases];
+                return [$recent_type, 'symbol', $offset];
             }
         }
 
@@ -1311,16 +1299,52 @@ class Codebase
     }
 
     /**
-     * @param array<string, string> $aliases
      * @return array<int, \LanguageServerProtocol\CompletionItem>
      */
-    public function getCompletionItemsForPartialSymbol(string $type_string, array $aliases) : array
-    {
+    public function getCompletionItemsForPartialSymbol(
+        string $type_string,
+        int $offset,
+        string $file_path
+    ) : array {
         $matching_classlike_names = $this->classlikes->getMatchingClassLikeNames($type_string);
 
         $completion_items = [];
 
-        $alias_namespace = array_shift($aliases);
+        $file_storage = $this->file_storage_provider->get($file_path);
+
+        $aliases = null;
+
+        foreach ($file_storage->classlikes_in_file as $fq_class_name) {
+            try {
+                $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+            } catch (\Exception $e) {
+                continue;
+            }
+
+            if (!$class_storage->stmt_location) {
+                continue;
+            }
+
+            if ($offset > $class_storage->stmt_location->raw_file_start
+                && $offset < $class_storage->stmt_location->raw_file_end
+            ) {
+                $aliases = $class_storage->aliases;
+                break;
+            }
+        }
+
+        if (!$aliases) {
+            foreach ($file_storage->namespace_aliases as $namespace_start => $namespace_aliases) {
+                if ($namespace_start < $offset) {
+                    $aliases = $namespace_aliases;
+                    break;
+                }
+            }
+
+            if (!$aliases) {
+                $aliases = $file_storage->aliases;
+            }
+        }
 
         foreach ($matching_classlike_names as $fq_class_name_lc) {
             try {
@@ -1338,8 +1362,8 @@ class Codebase
                 $storage->name,
                 Type::getStringFromFQCLN(
                     $storage->name,
-                    $alias_namespace ? $alias_namespace : null,
-                    $aliases,
+                    $aliases && $aliases->namespace ? $aliases->namespace : null,
+                    $aliases ? $aliases->uses_flipped : [],
                     null
                 )
             );

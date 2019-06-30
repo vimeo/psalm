@@ -33,6 +33,12 @@ class CodeLocation
     private $end_line_number = -1;
 
     /** @var int */
+    public $raw_file_start;
+
+    /** @var int */
+    public $raw_file_end;
+
+    /** @var int */
     protected $file_start;
 
     /** @var int */
@@ -105,6 +111,8 @@ class CodeLocation
     ) {
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
         $this->file_end = (int)$stmt->getAttribute('endFilePos');
+        $this->raw_file_start = $this->file_start;
+        $this->raw_file_end = $this->file_end;
         $this->file_path = $file_source->getFilePath();
         $this->file_name = $file_source->getFileName();
         $this->single_line = $single_line;

@@ -42,8 +42,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      *      string,
      *      array{
      *          0: array<int, array{0: int, 1: string}>,
-     *          1: array<int, array{0: int, 1: string}>,
-     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *          1: array<int, array{0: int, 1: string}>
      *      }
      *  >
      */
@@ -248,8 +247,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      *      string,
      *      array{
      *          0: array<int, array{0: int, 1: string}>,
-     *          1: array<int, array{0: int, 1: string}>,
-     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *          1: array<int, array{0: int, 1: string}>
      *      }
      *  >
      */
@@ -263,8 +261,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      *      string,
      *      array{
      *          0: array<int, array{0: int, 1: string}>,
-     *          1: array<int, array{0: int, 1: string}>,
-     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *          1: array<int, array{0: int, 1: string}>
      *      }
      *  > $file_maps
      *

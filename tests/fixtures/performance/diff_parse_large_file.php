@@ -45,6 +45,3 @@ $diff_2 = microtime(true) - $time;
 
 echo 'Full parsing: ' . number_format($diff_2, 4) . "\n";
 
-echo strlen($a);
-
-Psalm\Internal\Diff\FileDiffer::getDiff($a, '');

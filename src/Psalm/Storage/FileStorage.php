@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Storage;
 
+use Psalm\Aliases;
+
 class FileStorage
 {
     use CustomMetadataTrait;
@@ -88,6 +90,12 @@ class FileStorage
      * @var array<string, string>
      */
     public $classlike_aliases = [];
+
+    /** @var ?Aliases */
+    public $aliases;
+
+    /** @var Aliases[] */
+    public $namespace_aliases = [];
 
     /**
      * @param string $file_path

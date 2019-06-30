@@ -36,6 +36,15 @@ class Aliases
     /** @var string|null */
     public $namespace;
 
+    /** @var ?int */
+    public $namespace_first_stmt_start;
+
+    /** @var ?int */
+    public $uses_start;
+
+    /** @var ?int */
+    public $uses_end;
+
     /**
      * @param string|null           $namespace
      * @param array<string, string> $uses

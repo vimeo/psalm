@@ -304,6 +304,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $all_file_paths_to_analyze = array_keys($all_files_to_analyze);
         $codebase->analyzer->addFiles(array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze));
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
         $this->emitIssues($all_files_to_analyze);
 
         $this->onchange_paths_to_analyze = [];

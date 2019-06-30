@@ -92,6 +92,7 @@ class FileScanner implements FileSource
         $traverser->addVisitor(
             new ReflectorVisitor($codebase, $file_storage, $this)
         );
+
         $traverser->traverse($stmts);
 
         $file_storage->deep_scan = $this->will_analyze;

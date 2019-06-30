@@ -68,9 +68,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var Aliases */
     private $aliases;
 
-    /** @var Aliases */
-    private $file_aliases;
-
     /**
      * @var string[]
      */
@@ -144,8 +141,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $this->file_path = $file_scanner->file_path;
         $this->scan_deep = $file_scanner->will_analyze;
         $this->config = $codebase->config;
-        $this->aliases = $this->file_aliases = new Aliases();
         $this->file_storage = $file_storage;
+        $this->aliases = $this->file_storage->aliases = new Aliases();
         $this->after_classlike_check_plugins = $this->config->after_visit_classlikes;
         $this->php_major_version = $codebase->php_major_version;
         $this->php_minor_version = $codebase->php_minor_version;
@@ -196,7 +193,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
-            $this->file_aliases = $this->aliases;
+            $this->file_storage->aliases = $this->aliases;
 
             $this->namespace_name = $node->name;
 
@@ -209,6 +206,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->aliases->functions_flipped,
                 $this->aliases->constants_flipped
             );
+
+            $this->file_storage->namespace_aliases[(int) $node->getAttribute('startFilePos')] = $this->aliases;
+
+            if ($node->stmts) {
+                $this->aliases->namespace_first_stmt_start = (int) $node->stmts[0]->getAttribute('startFilePos');
+            }
         } elseif ($node instanceof PhpParser\Node\Stmt\Use_) {
             foreach ($node->uses as $use) {
                 $use_path = implode('\\', $use->name->parts);
@@ -232,6 +235,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         break;
                 }
             }
+
+            if (!$this->aliases->uses_start) {
+                $this->aliases->uses_start = (int) $node->getAttribute('startFilePos');
+            }
+
+            $this->aliases->uses_end = (int) $node->getAttribute('endFilePos');
         } elseif ($node instanceof PhpParser\Node\Stmt\GroupUse) {
             $use_prefix = implode('\\', $node->prefix->parts);
 
@@ -256,6 +265,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         break;
                 }
             }
+
+            if (!$this->aliases->uses_start) {
+                $this->aliases->uses_start = (int) $node->getAttribute('startFilePos');
+            }
+
+            $this->aliases->uses_end = (int) $node->getAttribute('endFilePos');
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
                 return;
@@ -520,7 +535,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     public function leaveNode(PhpParser\Node $node)
     {
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
-            $this->aliases = $this->file_aliases;
+            if (!$this->file_storage->aliases) {
+                throw new \UnexpectedValueException('File storage liases should not be null');
+            }
+
+            $this->aliases = $this->file_storage->aliases;
 
             if ($this->codebase->register_stub_files
                 && $node->name

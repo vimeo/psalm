@@ -573,6 +573,16 @@ class ExpressionAnalyzer
                         $statements_analyzer->getAliases()
                     );
 
+                    if ($codebase->store_node_types && $fq_class_name) {
+                        $codebase->analyzer->addNodeReference(
+                            $statements_analyzer->getFilePath(),
+                            $stmt->class,
+                            $codebase->classlikes->classOrInterfaceExists($fq_class_name)
+                                ? $fq_class_name
+                                : '*' . implode('\\', $stmt->class->parts)
+                        );
+                    }
+
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,
                         $fq_class_name,
@@ -581,17 +591,6 @@ class ExpressionAnalyzer
                         false
                     ) === false) {
                         return false;
-                    }
-
-                    if ($codebase->store_node_types
-                        && $fq_class_name
-                        && $codebase->classOrInterfaceExists($fq_class_name)
-                    ) {
-                        $codebase->analyzer->addNodeReference(
-                            $statements_analyzer->getFilePath(),
-                            $stmt->class,
-                            $fq_class_name
-                        );
                     }
 
                     if ($codebase->alter_code) {

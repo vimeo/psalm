@@ -263,12 +263,12 @@ class TextDocument
             return new Success([]);
         }
 
-        list($recent_type, $gap, $aliases) = $completion_data;
+        list($recent_type, $gap, $offset) = $completion_data;
 
         if ($gap === '->' || $gap === '::') {
             $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap);
         } else {
-            $completion_items = $this->codebase->getCompletionItemsForPartialSymbol($recent_type, $aliases);
+            $completion_items = $this->codebase->getCompletionItemsForPartialSymbol($recent_type, $offset, $file_path);
         }
 
         return new Success(new CompletionList($completion_items, false));

@@ -134,8 +134,7 @@ class FileReferenceProvider
      *      string,
      *      array{
      *          0: TaggedCodeType,
-     *          1: TaggedCodeType,
-     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *          1: TaggedCodeType
      *      }
      *  >
      */
@@ -940,8 +939,7 @@ class FileReferenceProvider
      *      string,
      *      array{
      *          0: TaggedCodeType,
-     *          1: TaggedCodeType,
-     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *          1: TaggedCodeType
      *      }
      *  > $file_maps
      */
@@ -980,8 +978,7 @@ class FileReferenceProvider
      *      string,
      *      array{
      *          0: TaggedCodeType,
-     *          1: TaggedCodeType,
-     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *          1: TaggedCodeType
      *      }
      *  >
      */

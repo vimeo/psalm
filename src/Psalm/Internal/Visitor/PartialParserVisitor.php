@@ -234,6 +234,8 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             }
                         }
 
+                        $error_handler->clearErrors();
+
                         $traverseChildren = false;
 
                         return reset($replacement_stmts);

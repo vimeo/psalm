@@ -519,8 +519,7 @@ class FileReferenceCacheProvider
      *      string,
      *      array{
      *          0: TaggedCodeType,
-     *          1: TaggedCodeType,
-     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *          1: TaggedCodeType
      *      }
      *  >|false
      */
@@ -539,8 +538,7 @@ class FileReferenceCacheProvider
              *      string,
              *      array{
              *          0: TaggedCodeType,
-             *          1: TaggedCodeType,
-             *          2: array<int, array{0: int, 1: array<string, string>}>
+             *          1: TaggedCodeType
              *      }
              *  >
              */
@@ -556,8 +554,7 @@ class FileReferenceCacheProvider
      *      string,
      *      array{
      *          0: TaggedCodeType,
-     *          1: TaggedCodeType,
-     *          2: array<int, array{0: int, 1: array<string, string>}>
+     *          1: TaggedCodeType
      *      }
      *  > $file_maps
      * @return void
