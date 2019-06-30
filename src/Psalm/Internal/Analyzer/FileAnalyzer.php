@@ -624,8 +624,9 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this->first_statement_offset;
     }
 
-    public function clearSourceBeforeDestruction()
+    public function clearSourceBeforeDestruction() : void
     {
+        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $this->source = null;
     }
 }

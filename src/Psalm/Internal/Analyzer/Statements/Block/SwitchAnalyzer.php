@@ -256,6 +256,7 @@ class SwitchAnalyzer
 
         if ($case->cond) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
+                /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
                 $case_scope->parent_context = null;
                 $case_context->case_scope = null;
                 $case_context->parent_context = null;
@@ -367,6 +368,7 @@ class SwitchAnalyzer
                 $switch_scope->leftover_statements = [$case_if_stmt];
             }
 
+            /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $case_scope->parent_context = null;
             $case_context->case_scope = null;
             $case_context->parent_context = null;
@@ -530,6 +532,7 @@ class SwitchAnalyzer
                 $switch_scope,
                 $case_scope
             ) === false) {
+                /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
                 $case_scope->parent_context = null;
                 $case_context->case_scope = null;
                 $case_context->parent_context = null;
@@ -591,6 +594,7 @@ class SwitchAnalyzer
             }
         }
 
+        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $case_scope->parent_context = null;
         $case_context->case_scope = null;
         $case_context->parent_context = null;

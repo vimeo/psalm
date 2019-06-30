@@ -17,7 +17,8 @@ abstract class SourceAnalyzer implements StatementsSource
      */
     protected $source;
 
-    public function __destruct() {
+    public function __destruct()
+    {
         /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $this->source = null;
     }
