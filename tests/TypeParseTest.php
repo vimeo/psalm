@@ -216,6 +216,11 @@ class TypeParseTest extends TestCase
         $this->assertSame('iterable<mixed, A>&iterable<mixed, B>', (string) Type::parseString('iterable<A>&iterable<B>'));
     }
 
+    public function testIterableContainingObjectLike()
+    {
+        $this->assertSame('iterable<string, array{0: int}>', Type::parseString('iterable<string, array{int}>')->getId());
+    }
+
     /**
      * @return void
      */

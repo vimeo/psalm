@@ -46,7 +46,7 @@ class TIterable extends Atomic
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
-            $s .= $type_param->getKey() . ', ';
+            $s .= $type_param->getId() . ', ';
         }
 
         $extra_types = '';
