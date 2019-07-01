@@ -943,8 +943,8 @@ class Codebase
      */
     public function getSymbolInformation(string $file_path, string $symbol)
     {
-        if (substr($symbol, 0, 6) === 'type: ') {
-            return substr($symbol, 6);
+        if (\is_numeric($symbol[0])) {
+            return \preg_replace('/[^:]*:/', '', $symbol);
         }
 
         try {
@@ -1013,6 +1013,15 @@ class Codebase
      */
     public function getSymbolLocation(string $file_path, string $symbol)
     {
+        if (\is_numeric($symbol[0])) {
+            $symbol = \preg_replace('/:.*/', '', $symbol);
+            $symbol_parts = explode('-', $symbol);
+
+            $file_contents = $this->getFileContents($file_path);
+
+            return new CodeLocation\Raw($file_contents, $file_path, (int) $symbol_parts[0], (int) $symbol_parts[1]);
+        }
+
         try {
             if (strpos($symbol, '::')) {
                 if (strpos($symbol, '()')) {
@@ -1115,23 +1124,7 @@ class Codebase
         }
 
         if ($reference === null || $start_pos === null || $end_pos === null) {
-            ksort($type_map);
-
-            foreach ($type_map as $start_pos => list($end_pos, $possible_type)) {
-                if ($offset < $start_pos) {
-                    break;
-                }
-
-                if ($offset > $end_pos) {
-                    continue;
-                }
-
-                $reference = 'type: ' . $possible_type;
-            }
-
-            if ($reference === null || $start_pos === null || $end_pos === null) {
-                return null;
-            }
+            return null;
         }
 
         $range = new Range(

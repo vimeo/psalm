@@ -256,6 +256,17 @@ class VariableFetchAnalyzer
                     }
                 }
 
+                if ($codebase->store_node_types
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
+                    $codebase->analyzer->addNodeReference(
+                        $statements_analyzer->getFilePath(),
+                        $stmt,
+                        $first_appearance->raw_file_start . '-' . $first_appearance->raw_file_end . ':mixed'
+                    );
+                }
+
                 $statements_analyzer->registerVariableUses([$first_appearance->getHash() => $first_appearance]);
             }
         } else {
@@ -264,13 +275,29 @@ class VariableFetchAnalyzer
             if ($codebase->store_node_types
                 && !$context->collect_initializations
                 && !$context->collect_mutations
-                && isset($stmt->inferredType)
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt,
                     (string) $stmt->inferredType
                 );
+            }
+
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
+
+                if ($first_appearance) {
+                    $codebase->analyzer->addNodeReference(
+                        $statements_analyzer->getFilePath(),
+                        $stmt,
+                        $first_appearance->raw_file_start
+                            . '-' . $first_appearance->raw_file_end
+                            . ':' . $stmt->inferredType->getId()
+                    );
+                }
             }
         }
 

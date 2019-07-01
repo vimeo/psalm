@@ -104,9 +104,12 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                     /** @var int|null */
                     protected $a;
 
-                    const BANANA = "🍌";
+                    const BANANA = "nana";
 
-                    public function foo() : void {}
+                    public function foo() : void {
+                        $a = 1;
+                        echo $a;
+                    }
                 }
 
                 function bar() : int {
@@ -141,8 +144,14 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $function_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\bar()');
 
         $this->assertNotNull($function_symbol_location);
-        $this->assertSame(13, $function_symbol_location->getLineNumber());
+        $this->assertSame(16, $function_symbol_location->getLineNumber());
         $this->assertSame(26, $function_symbol_location->getColumn());
+
+        $function_symbol_location = $codebase->getSymbolLocation('somefile.php', '257-259');
+
+        $this->assertNotNull($function_symbol_location);
+        $this->assertSame(11, $function_symbol_location->getLineNumber());
+        $this->assertSame(25, $function_symbol_location->getColumn());
     }
 
     /**
@@ -214,19 +223,19 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($symbol_at_position);
 
-        $this->assertSame('type: int|null', $symbol_at_position[0]);
+        $this->assertSame('245-246:int|null', $symbol_at_position[0]);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(12, 30));
 
         $this->assertNotNull($symbol_at_position);
 
-        $this->assertSame('type: int', $symbol_at_position[0]);
+        $this->assertSame('213-214:int(1)', $symbol_at_position[0]);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(17, 30));
 
         $this->assertNotNull($symbol_at_position);
 
-        $this->assertSame('type: int', $symbol_at_position[0]);
+        $this->assertSame('425-426:int(2)', $symbol_at_position[0]);
     }
 
     /**
@@ -362,7 +371,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
                     public static function staticFoo(string $a) {}
 
-                    public function __construct() {}    
+                    public function __construct() {}
                 }
 
                 function foo(string $a) {
