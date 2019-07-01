@@ -183,7 +183,10 @@ class ConstFetchAnalyzer
                         $stmt->inferredType = Type::getLiteralClassString($fq_class_name);
                     }
 
-                    if ($codebase->store_node_types) {
+                    if ($codebase->store_node_types
+                        && !$context->collect_initializations
+                        && !$context->collect_mutations
+                    ) {
                         $codebase->analyzer->addNodeReference(
                             $statements_analyzer->getFilePath(),
                             $stmt->class,
@@ -201,7 +204,10 @@ class ConstFetchAnalyzer
                     return null;
                 }
 
-                if ($codebase->store_node_types) {
+                if ($codebase->store_node_types
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
                         $stmt->class,
@@ -215,7 +221,10 @@ class ConstFetchAnalyzer
 
                 $const_id = $fq_class_name . '::' . $stmt->name;
 
-                if ($codebase->store_node_types) {
+                if ($codebase->store_node_types
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
                         $stmt->name,

@@ -79,8 +79,8 @@ class VariableFetchAnalyzer
             $stmt->inferredType = clone $context->vars_in_scope['$this'];
 
             if ($codebase->store_node_types
-                    && (!$context->collect_initializations
-                        && !$context->collect_mutations)
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
                 && isset($stmt->inferredType)
             ) {
                 $codebase->analyzer->addNodeType(
@@ -262,8 +262,8 @@ class VariableFetchAnalyzer
             $stmt->inferredType = clone $context->vars_in_scope[$var_name];
 
             if ($codebase->store_node_types
-                    && (!$context->collect_initializations
-                        && !$context->collect_mutations)
+                && !$context->collect_initializations
+                && !$context->collect_mutations
                 && isset($stmt->inferredType)
             ) {
                 $codebase->analyzer->addNodeType(

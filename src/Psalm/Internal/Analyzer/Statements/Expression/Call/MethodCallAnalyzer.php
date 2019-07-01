@@ -320,8 +320,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         if ($codebase->store_node_types
-            && (!$context->collect_initializations
-                && !$context->collect_mutations)
+            && !$context->collect_initializations
+            && !$context->collect_mutations
             && isset($stmt->inferredType)
         ) {
             $codebase->analyzer->addNodeType(
@@ -905,7 +905,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             return true;
         }
 
-        if ($codebase->store_node_types && $method_id) {
+        if ($codebase->store_node_types
+            && $method_id
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,

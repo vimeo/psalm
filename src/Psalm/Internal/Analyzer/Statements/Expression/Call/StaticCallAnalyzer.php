@@ -159,7 +159,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
             }
 
-            if ($codebase->store_node_types && $fq_class_name) {
+            if ($codebase->store_node_types
+                && $fq_class_name
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
@@ -996,7 +1000,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 );
             }
 
-            if ($codebase->store_node_types && $method_id) {
+            if ($codebase->store_node_types
+                && $method_id
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
                 /** @psalm-suppress PossiblyInvalidArgument never a string, PHP Parser bug */
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
@@ -1006,8 +1014,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
 
             if ($codebase->store_node_types
-                && (!$context->collect_initializations
-                    && !$context->collect_mutations)
+                && !$context->collect_initializations
+                && !$context->collect_mutations
                 && isset($stmt->inferredType)
             ) {
                 /** @psalm-suppress PossiblyInvalidArgument never a string, PHP Parser bug */

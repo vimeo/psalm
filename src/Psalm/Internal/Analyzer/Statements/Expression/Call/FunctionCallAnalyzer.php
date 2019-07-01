@@ -316,7 +316,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     }
                 }
 
-                if ($codebase->store_node_types) {
+                if ($codebase->store_node_types
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
                         $stmt->name,
@@ -572,8 +575,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         }
 
         if ($codebase->store_node_types
-            && (!$context->collect_initializations
-                && !$context->collect_mutations)
+            && !$context->collect_initializations
+            && !$context->collect_mutations
             && isset($stmt->inferredType)
         ) {
             $codebase->analyzer->addNodeType(

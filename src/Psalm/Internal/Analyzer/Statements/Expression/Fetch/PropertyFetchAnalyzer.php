@@ -109,8 +109,8 @@ class PropertyFetchAnalyzer
             }
 
             if ($codebase->store_node_types
-                && (!$context->collect_initializations
-                    && !$context->collect_mutations)
+                && !$context->collect_initializations
+                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
@@ -183,7 +183,10 @@ class PropertyFetchAnalyzer
                                 : null
                         );
 
-                        if ($codebase->store_node_types) {
+                        if ($codebase->store_node_types
+                            && !$context->collect_initializations
+                            && !$context->collect_mutations
+                        ) {
                             $codebase->analyzer->addNodeReference(
                                 $statements_analyzer->getFilePath(),
                                 $stmt->name,
@@ -267,8 +270,8 @@ class PropertyFetchAnalyzer
                 $stmt->inferredType = Type::getMixed();
 
                 if ($codebase->store_node_types
-                    && (!$context->collect_initializations
-                        && !$context->collect_mutations)
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
                 ) {
                     $codebase->analyzer->addNodeType(
                         $statements_analyzer->getFilePath(),
@@ -554,7 +557,10 @@ class PropertyFetchAnalyzer
                 continue;
             }
 
-            if ($codebase->store_node_types) {
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
@@ -785,8 +791,8 @@ class PropertyFetchAnalyzer
         }
 
         if ($codebase->store_node_types
-            && (!$context->collect_initializations
-                && !$context->collect_mutations)
+            && !$context->collect_initializations
+            && !$context->collect_mutations
             && isset($stmt->inferredType)
         ) {
             $codebase->analyzer->addNodeType(
@@ -967,7 +973,10 @@ class PropertyFetchAnalyzer
 
         $property_id = $fq_class_name . '::$' . $prop_name;
 
-        if ($codebase->store_node_types) {
+        if ($codebase->store_node_types
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
@@ -991,8 +1000,8 @@ class PropertyFetchAnalyzer
             }
 
             if ($codebase->store_node_types
-                && (!$context->collect_initializations
-                    && !$context->collect_mutations)
+                && !$context->collect_initializations
+                && !$context->collect_mutations
                 && isset($stmt->inferredType)
             ) {
                 $codebase->analyzer->addNodeType(
@@ -1105,8 +1114,8 @@ class PropertyFetchAnalyzer
             $stmt->inferredType = clone $context->vars_in_scope[$var_id];
 
             if ($codebase->store_node_types
-                && (!$context->collect_initializations
-                    && !$context->collect_mutations)
+                && !$context->collect_initializations
+                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),

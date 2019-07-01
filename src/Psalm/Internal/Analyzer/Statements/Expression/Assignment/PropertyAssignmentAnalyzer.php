@@ -485,8 +485,8 @@ class PropertyAssignmentAnalyzer
                 }
 
                 if ($codebase->store_node_types
-                    && (!$context->collect_initializations
-                        && !$context->collect_mutations)
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
                 ) {
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
@@ -706,8 +706,8 @@ class PropertyAssignmentAnalyzer
         $has_valid_assignment_value_type = false;
 
         if ($codebase->store_node_types
-            && (!$context->collect_initializations
-                && !$context->collect_mutations)
+            && !$context->collect_initializations
+            && !$context->collect_mutations
             && count($class_property_types) === 1
         ) {
             $codebase->analyzer->addNodeType(

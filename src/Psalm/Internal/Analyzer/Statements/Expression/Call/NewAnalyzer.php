@@ -89,7 +89,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 }
             }
 
-            if ($codebase->store_node_types && $fq_class_name) {
+            if ($codebase->store_node_types
+                && $fq_class_name
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
