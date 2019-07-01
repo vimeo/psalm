@@ -295,4 +295,87 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->assertSame('Exception', $symbol_at_position[0]);
     }
+
+    /**
+     * @return array<int, array{0: Position, 1: ?string, 2: ?int}>
+     */
+    public function providerGetSignatureHelp(): array
+    {
+        return [
+            [new Position(5, 34), null, null],
+            [new Position(5, 35), 'B\A::foo', 0],
+            [new Position(5, 36), null, null],
+            [new Position(6, 34), null, null],
+            [new Position(6, 35), 'B\A::foo', 0],
+            [new Position(6, 40), 'B\A::foo', 0],
+            [new Position(6, 41), 'B\A::foo', 1],
+            [new Position(6, 47), 'B\A::foo', 1],
+            [new Position(6, 48), null, null],
+            [new Position(7, 40), 'B\A::foo', 0],
+            [new Position(7, 41), 'B\A::foo', 1],
+            [new Position(7, 42), 'B\A::foo', 1],
+            [new Position(8, 40), 'B\A::foo', 0],
+            [new Position(8, 46), 'B\A::bar', 0],
+            [new Position(8, 47), 'B\A::foo', 0],
+            [new Position(10, 40), 'B\A::staticfoo', 0],
+            [new Position(12, 28), 'B\foo', 0],
+            [new Position(14, 30), 'B\A::__construct', 0],
+        ];
+    }
+
+    /**
+     * @dataProvider providerGetSignatureHelp
+     */
+    public function testGetSignatureHelp(
+        Position $position,
+        ?string $expected_symbol,
+        ?int $expected_argument_number
+    ): void {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public function foo(string $a, array $b) {
+                        $this->foo();
+                        $this->foo("Foo", "Bar");
+                        $this->foo("Foo", );
+                        $this->foo($this->bar());
+
+                        self::staticFoo();
+
+                        foo();
+
+                        new A();
+
+                        // Blocked by https://github.com/nikic/PHP-Parser/issues/616
+                        //$this->foo(, "Bar");
+                        //$this->foo(,,);
+                    }
+
+                    public function bar(string $a) {}
+
+                    public static function staticFoo(string $a) {}
+
+                    public function __construct() {}    
+                }
+
+                function foo(string $a) {
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $reference_location = $codebase->getFunctionArgumentAtPosition('somefile.php', $position);
+        list($symbol, $argument_number) = $reference_location;
+        $this->assertSame($expected_symbol, $symbol);
+        $this->assertSame($expected_argument_number, $argument_number);
+    }
 }

@@ -1143,6 +1143,60 @@ class Codebase
     }
 
     /**
+     * @return array{0: string, 1: int, 2: Range}|null
+     */
+    public function getFunctionArgumentAtPosition(string $file_path, Position $position)
+    {
+        $is_open = $this->file_provider->isOpen($file_path);
+
+        if (!$is_open) {
+            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+        }
+
+        $file_contents = $this->getFileContents($file_path);
+
+        $offset = $position->toOffset($file_contents);
+
+        list(,, $argument_map) = $this->analyzer->getMapsForFile($file_path);
+
+        $reference = null;
+        $argument_number = null;
+
+        if (!$argument_map) {
+            return null;
+        }
+
+        $start_pos = null;
+        $end_pos = null;
+
+        ksort($argument_map);
+
+        foreach ($argument_map as $start_pos => list($end_pos, $possible_reference, $possible_argument_number)) {
+            if ($offset < $start_pos) {
+                break;
+            }
+
+            if ($offset > $end_pos) {
+                continue;
+            }
+
+            $reference = $possible_reference;
+            $argument_number = $possible_argument_number;
+        }
+
+        if ($reference === null || $start_pos === null || $end_pos === null || $argument_number === null) {
+            return null;
+        }
+
+        $range = new Range(
+            self::getPositionFromOffset($start_pos, $file_contents),
+            self::getPositionFromOffset($end_pos, $file_contents)
+        );
+
+        return [$reference, $argument_number, $range];
+    }
+
+    /**
      * @return array{0: string, 1: '->'|'::'|'symbol', 2: int}|null
      */
     public function getCompletionDataAtPosition(string $file_path, Position $position)

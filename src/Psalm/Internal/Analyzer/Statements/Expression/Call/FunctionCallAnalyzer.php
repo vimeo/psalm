@@ -236,6 +236,17 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 strtolower($function_id)
             );
 
+            if (!$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                ArgumentMapPopulator::recordArgumentPositions(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $function_id
+                );
+            }
+
             if (!$namespaced_function_exists
                 && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified
             ) {

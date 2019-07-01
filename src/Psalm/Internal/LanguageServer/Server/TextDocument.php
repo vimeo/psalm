@@ -37,6 +37,8 @@ use Amp\Success;
 use function error_log;
 use function count;
 use function substr_count;
+use function strlen;
+use function strpos;
 
 /**
  * Provides method handlers for all textDocument/* methods
@@ -272,5 +274,55 @@ class TextDocument
         }
 
         return new Success(new CompletionList($completion_items, false));
+    }
+
+    public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
+    {
+        $file_path = LanguageServer::uriToPath($textDocument->uri);
+
+        $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
+        if ($argument_location === null) {
+            return new Success(new \LanguageServerProtocol\SignatureHelp());
+        }
+
+        list($function_symbol, $argument_number) = $argument_location;
+        if (strpos($function_symbol, '::') !== false) {
+            $declaring_method_id = $this->codebase->methods->getDeclaringMethodId($function_symbol);
+            if ($declaring_method_id === null) {
+                return new Success(new \LanguageServerProtocol\SignatureHelp());
+            }
+            $method_storage = $this->codebase->methods->getStorage($declaring_method_id);
+            $params = $method_storage->params;
+        } else {
+            try {
+                $function_storage = $this->codebase->functions->getStorage(null, $function_symbol);
+            } catch (\Exception $exception) {
+                return new Success(new \LanguageServerProtocol\SignatureHelp());
+            }
+            $params = $function_storage->params;
+        }
+
+        $signature_label = '(';
+        $parameters = [];
+        foreach ($params as $i => $param) {
+            $parameter_label = ($param->type ?: 'mixed') . ' $' . $param->name;
+            $parameters[] = new \LanguageServerProtocol\ParameterInformation([
+                strlen($signature_label),
+                strlen($signature_label) + strlen($parameter_label),
+            ]) ;
+            $signature_label .= $parameter_label;
+
+            if ($i < (count($params) - 1)) {
+                $signature_label .= ', ';
+            }
+        }
+        $signature_label .= ')';
+
+        return new Success(new \LanguageServerProtocol\SignatureHelp([
+            new \LanguageServerProtocol\SignatureInformation(
+                $signature_label,
+                $parameters
+            ),
+        ], 0, $argument_number));
     }
 }

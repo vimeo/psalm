@@ -17,6 +17,7 @@ use Psalm\Internal\LanguageServer\Server\TextDocument;
 use LanguageServerProtocol\{Range, Position, Diagnostic, DiagnosticSeverity};
 use AdvancedJsonRpc;
 use Amp\Promise;
+use Symfony\Component\VarExporter\VarExporter;
 use Throwable;
 use function Amp\call;
 use function Amp\asyncCoroutine;
@@ -120,6 +121,11 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     // Ignore responses, this is the handler for requests and notifications
                     if (AdvancedJsonRpc\Response::isResponse($msg->body)) {
                         return;
+                    }
+
+                    /** @psalm-suppress UndefinedPropertyFetch */
+                    if ($msg->body->method === 'textDocument/signatureHelp') {
+                        $this->doAnalysis();
                     }
 
                     $result = null;
@@ -241,10 +247,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':'];
                 }
 
-                /*
-                $serverCapabilities->signatureHelpProvider = new SignatureHelpOptions();
-                $serverCapabilities->signatureHelpProvider->triggerCharacters = ['(', ','];
-                */
+                $serverCapabilities->signatureHelpProvider = new SignatureHelpOptions(['(', ',']);
 
                 // Support global references
                 $serverCapabilities->xworkspaceReferencesProvider = false;
