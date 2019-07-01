@@ -1,7 +1,7 @@
 <?php
 namespace Psalm;
 
-use LanguageServerProtocol\{Position, Range};
+use LanguageServerProtocol\{Position, Range, Command};
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -1289,7 +1289,10 @@ class Codebase
                             null,
                             (string)$method_storage->visibility,
                             $method_storage->cased_name,
-                            $method_storage->cased_name . (count($method_storage->params) !== 0 ? '($0)' : '()')
+                            $method_storage->cased_name . (count($method_storage->params) !== 0 ? '($0)' : '()'),
+                            null,
+                            null,
+                            new Command('Trigger parameter hints', 'editor.action.triggerParameterHints')
                         );
                         $completion_item->insertTextFormat = \LanguageServerProtocol\InsertTextFormat::SNIPPET;
 
