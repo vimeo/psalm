@@ -350,12 +350,16 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $method_name_lc = strtolower($stmt->name->name);
                 $method_id = $fq_class_name . '::' . $method_name_lc;
 
-                ArgumentMapPopulator::recordArgumentPositions(
-                    $statements_analyzer,
-                    $stmt,
-                    $codebase,
-                    $method_id
-                );
+                if (!$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
+                    ArgumentMapPopulator::recordArgumentPositions(
+                        $statements_analyzer,
+                        $stmt,
+                        $codebase,
+                        $method_id
+                    );
+                }
 
                 $args = $stmt->args;
 

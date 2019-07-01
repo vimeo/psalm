@@ -976,12 +976,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         }
 
-        ArgumentMapPopulator::recordArgumentPositions(
-            $statements_analyzer,
-            $stmt,
-            $codebase,
-            $method_id
-        );
+        if (!$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            ArgumentMapPopulator::recordArgumentPositions(
+                $statements_analyzer,
+                $stmt,
+                $codebase,
+                $method_id
+            );
+        }
 
         if (self::checkMethodArgs(
             $method_id,
