@@ -294,7 +294,11 @@ class TextDocument
             $method_storage = $this->codebase->methods->getStorage($declaring_method_id);
             $params = $method_storage->params;
         } else {
-            $function_storage = $this->codebase->functions->getStorage(null, $function_symbol);
+            try {
+                $function_storage = $this->codebase->functions->getStorage(null, $function_symbol);
+            } catch (\Exception $exception) {
+                return new Success(new \LanguageServerProtocol\SignatureHelp());
+            }
             $params = $function_storage->params;
         }
 
