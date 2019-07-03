@@ -400,16 +400,16 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         $compact_report_options->use_color = false;
 
         $this->assertSame(
-            'FILE: somefile.php' . PHP_EOL .
-            PHP_EOL .
-            '+----------+------+---------------------------------+---------------------------------------------------------------+' . PHP_EOL .
-            '| SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                   |' . PHP_EOL .
-            '+----------+------+---------------------------------+---------------------------------------------------------------+' . PHP_EOL .
-            '| ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you                       |' . PHP_EOL .
-            '| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'string|null\' for psalmCanVerify |' . PHP_EOL .
-            '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . PHP_EOL .
-            '| INFO     | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . PHP_EOL .
-            '+----------+------+---------------------------------+---------------------------------------------------------------+' . PHP_EOL,
+            'FILE: somefile.php' . "\n" .
+            "\n" .
+            '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n" .
+            '| SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                   |' . "\n" .
+            '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n" .
+            '| ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you                       |' . "\n" .
+            '| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'string|null\' for psalmCanVerify |' . "\n" .
+            '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . "\n" .
+            '| INFO     | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . "\n" .
+            '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n",
             IssueBuffer::getOutput($compact_report_options)
         );
     }

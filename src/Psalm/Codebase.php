@@ -1428,7 +1428,7 @@ class Codebase
                             $position,
                             $position
                         ),
-                        \PHP_EOL . 'use ' . $storage->name . ';'
+                        "\n" . 'use ' . $storage->name . ';'
                     );
                 } else {
                     $position = self::getPositionFromOffset($aliases->namespace_first_stmt_start, $file_contents);
@@ -1437,7 +1437,7 @@ class Codebase
                             $position,
                             $position
                         ),
-                        'use ' . $storage->name . ';' . \PHP_EOL . \PHP_EOL
+                        'use ' . $storage->name . ';' . "\n" . "\n"
                     );
                 }
 

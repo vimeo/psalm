@@ -176,15 +176,15 @@ class FunctionLikeStorage
     {
         $newlines = $allow_newlines && !empty($this->params);
 
-        $symbol_text = 'function ' . $this->cased_name . '(' . ($newlines ? PHP_EOL : '') . implode(
-            ',' . ($newlines ? PHP_EOL : ' '),
+        $symbol_text = 'function ' . $this->cased_name . '(' . ($newlines ? "\n" : '') . implode(
+            ',' . ($newlines ? "\n" : ' '),
             array_map(
                 function (FunctionLikeParameter $param) use ($newlines) : string {
                     return ($newlines ? '    ' : '') . ($param->type ?: 'mixed') . ' $' . $param->name;
                 },
                 $this->params
             )
-        ) . ($newlines ? PHP_EOL : '') . ') : ' . ($this->return_type ?: 'mixed');
+        ) . ($newlines ? "\n" : '') . ') : ' . ($this->return_type ?: 'mixed');
 
         if (!$this instanceof MethodStorage) {
             return $symbol_text;

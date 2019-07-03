@@ -41,7 +41,7 @@ class CompactReport extends Report
                     $output[] = $buffer->fetch();
                 }
 
-                $output[] = 'FILE: ' . $issue_data['file_name'] . PHP_EOL;
+                $output[] = 'FILE: ' . $issue_data['file_name'] . "\n";
 
                 $buffer = new BufferedOutput();
                 $table = new Table($buffer);
@@ -59,7 +59,7 @@ class CompactReport extends Report
             // so we have clean tables.
             $message = $issue_data['message'];
             if (strlen($message) > 70) {
-                $message = implode(PHP_EOL, str_split($message, 70));
+                $message = implode("\n", str_split($message, 70));
             }
 
             $table->addRow([
@@ -78,6 +78,6 @@ class CompactReport extends Report
             }
         }
 
-        return implode(PHP_EOL, $output);
+        return implode("\n", $output);
     }
 }

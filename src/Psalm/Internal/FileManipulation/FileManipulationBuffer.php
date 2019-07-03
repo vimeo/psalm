@@ -90,8 +90,8 @@ class FileManipulationBuffer
 
             $file_contents = $codebase->getFileContents($code_location->file_path);
 
-            if (($file_contents[$bounds[0] - 1] ?? null) === PHP_EOL
-                && ($file_contents[$bounds[0] - 2] ?? null) === PHP_EOL
+            if (($file_contents[$bounds[0] - 1] ?? null) === "\n"
+                && ($file_contents[$bounds[0] - 2] ?? null) === "\n"
             ) {
                 $bounds[0] -= 2;
             }
@@ -164,11 +164,11 @@ class FileManipulationBuffer
             $manipulation = new FileManipulation(
                 $code_migration->destination_start + $destination_start_offset,
                 $code_migration->destination_start + $destination_start_offset,
-                PHP_EOL . substr(
+                "\n" . substr(
                     $file_provider->getContents($code_migration->source_file_path),
                     $delete_file_manipulation->start,
                     $delete_file_manipulation->end - $delete_file_manipulation->start
-                ) . PHP_EOL
+                ) . "\n"
             );
 
             $code_migration_manipulations[$code_migration->destination_file_path][$manipulation->getKey()]

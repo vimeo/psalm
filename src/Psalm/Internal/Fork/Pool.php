@@ -181,7 +181,7 @@ class Pool
         foreach ($task_data_iterator as $i => $task_data) {
             $task_result = $task_closure($i, $task_data);
             $task_done_message = new ForkTaskDoneMessage($task_result);
-            $serialized_message = $task_done_buffer . base64_encode(serialize($task_done_message)) . PHP_EOL;
+            $serialized_message = $task_done_buffer . base64_encode(serialize($task_done_message)) . "\n";
 
             if (strlen($serialized_message) > 200) {
                 $bytes_written = @fwrite($write_stream, $serialized_message);
@@ -202,7 +202,7 @@ class Pool
 
         // Serialize this child's produced results and send them to the parent.
         $process_done_message = new ForkProcessDoneMessage($results ?: []);
-        $serialized_message = $task_done_buffer . base64_encode(serialize($process_done_message)) . PHP_EOL;
+        $serialized_message = $task_done_buffer . base64_encode(serialize($process_done_message)) . "\n";
 
         $bytes_to_write = strlen($serialized_message);
         $bytes_written = 0;
@@ -314,8 +314,8 @@ class Pool
                     $content[intval($file)] .= $buffer;
                 }
 
-                if (strpos($buffer, PHP_EOL) !== false) {
-                    $serialized_messages = explode(PHP_EOL, $content[intval($file)]);
+                if (strpos($buffer, "\n") !== false) {
+                    $serialized_messages = explode("\n", $content[intval($file)]);
                     $content[intval($file)] = array_pop($serialized_messages);
 
                     foreach ($serialized_messages as $serialized_message) {

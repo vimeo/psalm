@@ -728,7 +728,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($completion_items[0]->additionalTextEdits);
         $this->assertCount(1, $completion_items[0]->additionalTextEdits);
-        $this->assertSame('use Exception;' . \PHP_EOL . \PHP_EOL, $completion_items[0]->additionalTextEdits[0]->newText);
+        $this->assertSame('use Exception;' . "\n" . "\n", $completion_items[0]->additionalTextEdits[0]->newText);
         $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->start->line);
         $this->assertSame(16, $completion_items[0]->additionalTextEdits[0]->range->start->character);
         $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->end->line);
@@ -780,7 +780,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($completion_items[0]->additionalTextEdits);
         $this->assertCount(1, $completion_items[0]->additionalTextEdits);
-        $this->assertSame(\PHP_EOL . 'use ArrayObject;', $completion_items[0]->additionalTextEdits[0]->newText);
+        $this->assertSame("\n" . 'use ArrayObject;', $completion_items[0]->additionalTextEdits[0]->newText);
         $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->start->line);
         $this->assertSame(44, $completion_items[0]->additionalTextEdits[0]->range->start->character);
         $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->end->line);
