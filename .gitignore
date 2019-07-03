@@ -4,6 +4,7 @@
 .DS_Store
 /.php_cs.cache
 /.php_cs
+/.phpunit.result.cache
 /.*.swp
 /.*.swo
 /composer.lock
