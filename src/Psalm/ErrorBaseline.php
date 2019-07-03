@@ -266,6 +266,9 @@ class ErrorBaseline
 
         $xml = preg_replace_callback(
             '/<files (psalm-version="[^"]+") (?:php-version="(.+)">\n)/',
+            /**
+            * @param array{0:string, 1:string, 2:string} $matches
+            */
             function (array $matches) : string {
                 return
                     '<files' .
