@@ -16,6 +16,8 @@ use function usort;
 use function implode;
 use function phpversion;
 use function array_map;
+use function preg_replace_callback;
+use function explode;
 
 class ErrorBaseline
 {
