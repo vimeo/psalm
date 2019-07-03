@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use Psalm\Internal\Provider\FileProvider;
+use RuntimeException;
 use function array_reduce;
 use const LIBXML_NOBLANKS;
 use function str_replace;
@@ -282,6 +283,10 @@ class ErrorBaseline
             },
             $baselineDoc->saveXML()
         );
+
+        if (is_null($xml)) {
+            throw new RuntimeException('Failed to reformat opening attributes!');
+        }
 
         $fileProvider->setContents($baselineFile, $xml);
     }
