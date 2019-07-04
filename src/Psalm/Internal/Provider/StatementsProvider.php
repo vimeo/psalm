@@ -370,10 +370,6 @@ class StatementsProvider
         }
 
         if (!self::$parser) {
-            $attributes = [
-                'comments', 'startLine', 'startFilePos', 'endFilePos',
-            ];
-
             self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::ONLY_PHP7, self::$lexer);
         }
 

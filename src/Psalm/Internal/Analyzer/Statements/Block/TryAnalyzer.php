@@ -77,7 +77,6 @@ class TryAnalyzer
         $old_referenced_var_ids = $try_context->referenced_var_ids;
         $old_unreferenced_vars = $try_context->unreferenced_vars;
         $newly_unreferenced_vars = [];
-        $reassigned_vars = [];
 
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
@@ -125,14 +124,6 @@ class TryAnalyzer
                         $old_unreferenced_vars
                     )
                 );
-
-                foreach ($context->unreferenced_vars as $var_id => $locations) {
-                    if (isset($old_unreferenced_vars[$var_id])
-                        && $old_unreferenced_vars[$var_id] !== $locations
-                    ) {
-                        $reassigned_vars[$var_id] = $locations;
-                    }
-                }
             }
         }
 

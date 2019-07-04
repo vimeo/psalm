@@ -1214,8 +1214,6 @@ class Codebase
 
         krsort($type_map);
 
-        $gap = null;
-
         foreach ($type_map as $start_pos => list($end_pos_excluding_whitespace, $possible_type)) {
             if ($offset < $start_pos) {
                 continue;
