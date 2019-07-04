@@ -2080,58 +2080,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->assertions = [];
 
             foreach ($docblock_info->assertions as $assertion) {
-                $assertion_type = $assertion['type'];
+                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt, $template_types);
 
-                if (strpos($assertion_type, '|') !== false) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            'Docblock assertions cannot contain | characters',
-                            new CodeLocation($this->file_scanner, $stmt, null, true)
-                        )
-                    )) {
-                    }
-
+                if (!$assertion_type_parts) {
                     continue;
-                }
-
-                if (strpos($assertion_type, '\'') !== false || strpos($assertion_type, '"') !== false) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            'Docblock assertions cannot contain quotes',
-                            new CodeLocation($this->file_scanner, $stmt, null, true)
-                        )
-                    )) {
-                    }
-
-                    continue;
-                }
-
-                $prefix = '';
-                if ($assertion_type[0] === '!') {
-                    $prefix = '!';
-                    $assertion_type = substr($assertion_type, 1);
-                }
-                if ($assertion_type[0] === '~') {
-                    $prefix .= '~';
-                    $assertion_type = substr($assertion_type, 1);
-                }
-                if ($assertion_type[0] === '=') {
-                    $prefix .= '=';
-                    $assertion_type = substr($assertion_type, 1);
-                }
-
-                if ($assertion_type !== 'falsy'
-                    && !isset($template_types[$assertion_type])
-                    && !isset(Type::PSALM_RESERVED_WORDS[$assertion_type])
-                ) {
-                    $assertion_type = Type::getFQCLNFromString($assertion_type, $this->aliases);
                 }
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
                         $storage->assertions[] = new \Psalm\Storage\Assertion(
                             $i,
-                            [[$prefix . $assertion_type]]
+                            [$assertion_type_parts]
                         );
                         continue 2;
                     }
@@ -2139,20 +2098,26 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->assertions[] = new \Psalm\Storage\Assertion(
                     '$' . $assertion['param_name'],
-                    [[$prefix . $assertion_type]]
+                    [$assertion_type_parts]
                 );
             }
         }
 
         if ($docblock_info->if_true_assertions) {
-            $storage->assertions = [];
+            $storage->if_true_assertions = [];
 
             foreach ($docblock_info->if_true_assertions as $assertion) {
+                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt, $template_types);
+
+                if (!$assertion_type_parts) {
+                    continue;
+                }
+
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
                         $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
                             $i,
-                            [[$assertion['type']]]
+                            [$assertion_type_parts]
                         );
                         continue 2;
                     }
@@ -2160,20 +2125,26 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
                     '$' . $assertion['param_name'],
-                    [[$assertion['type']]]
+                    [$assertion_type_parts]
                 );
             }
         }
 
         if ($docblock_info->if_false_assertions) {
-            $storage->assertions = [];
+            $storage->if_false_assertions = [];
 
             foreach ($docblock_info->if_false_assertions as $assertion) {
+                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt, $template_types);
+
+                if (!$assertion_type_parts) {
+                    continue;
+                }
+
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
                         $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
                             $i,
-                            [[$assertion['type']]]
+                            [$assertion_type_parts]
                         );
                         continue 2;
                     }
@@ -2181,7 +2152,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
                     '$' . $assertion['param_name'],
-                    [[$assertion['type']]]
+                    [$assertion_type_parts]
                 );
             }
         }
@@ -2408,6 +2379,74 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         return $storage;
+    }
+
+    /**
+     * @return ?array<int, string>
+     */
+    private function getAssertionParts(
+        string $assertion_type,
+        PhpParser\Node\FunctionLike $stmt,
+        ?array $template_types
+    ) : ?array {
+        $is_union = false;
+
+        if (strpos($assertion_type, '|') !== false) {
+            $is_union = true;
+        }
+
+        if (strpos($assertion_type, '\'') !== false || strpos($assertion_type, '"') !== false) {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    'Docblock assertions cannot contain quotes',
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                )
+            )) {
+            }
+
+            return null;
+        }
+
+        $prefix = '';
+        if ($assertion_type[0] === '!') {
+            $prefix = '!';
+            $assertion_type = substr($assertion_type, 1);
+        }
+        if ($assertion_type[0] === '~') {
+            $prefix .= '~';
+            $assertion_type = substr($assertion_type, 1);
+        }
+        if ($assertion_type[0] === '=') {
+            $prefix .= '=';
+            $assertion_type = substr($assertion_type, 1);
+        }
+
+        if ($prefix && $is_union) {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    'Docblock assertions cannot contain | characters together with ' . $prefix,
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                )
+            )) {
+            }
+
+            return null;
+        }
+
+        $assertion_type_parts = explode('|', $assertion_type);
+
+        foreach ($assertion_type_parts as $i => $assertion_type_part) {
+            if ($assertion_type_part !== 'falsy'
+                && !isset($template_types[$assertion_type_part])
+                && !isset(Type::PSALM_RESERVED_WORDS[$assertion_type_part])
+            ) {
+                $assertion_type_parts[$i] = $prefix . Type::getFQCLNFromString($assertion_type_part, $this->aliases);
+            } else {
+                $assertion_type_parts[$i] = $prefix . $assertion_type_part;
+            }
+        }
+
+        return $assertion_type_parts;
     }
 
     /**

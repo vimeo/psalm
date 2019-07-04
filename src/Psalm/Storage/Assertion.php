@@ -21,7 +21,7 @@ class Assertion
      * @param string|int $var_id
      * @param array<int, array<int, string>> $rule
      */
-    public function __construct($var_id, $rule)
+    public function __construct($var_id, array $rule)
     {
         $this->rule = $rule;
         $this->var_id = $var_id;

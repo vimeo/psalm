@@ -24,8 +24,7 @@ class ComposerLock
 
     /**
      * @param mixed $package
-     * @psalm-assert-if-true array{type:'psalm-plugin',name:string,extra:array{psalm:array{pluginClass:string}}}
-     *                        $package
+     * @psalm-assert-if-true array $package
      */
     public function isPlugin($package): bool
     {
@@ -79,6 +78,7 @@ class ComposerLock
         /** @psalm-suppress MixedAssignment */
         foreach ($packages as $package) {
             if ($this->isPlugin($package)) {
+                /** @var array{type:'psalm-plugin',name:string,extra:array{psalm:array{pluginClass:string}}} */
                 $ret[] = $package;
             }
         }
