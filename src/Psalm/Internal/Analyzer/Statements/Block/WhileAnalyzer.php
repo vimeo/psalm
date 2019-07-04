@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
@@ -146,6 +147,30 @@ class WhileAnalyzer
         );
 
         if ($context->collect_references) {
+            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
+            }
+            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            }
+            if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
+            }
+
+            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $while_context);
+
+            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
+            }
+            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            }
+            if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
+            }
+
             $context->unreferenced_vars = $while_context->unreferenced_vars;
         }
 

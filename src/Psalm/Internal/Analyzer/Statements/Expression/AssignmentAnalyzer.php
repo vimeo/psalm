@@ -163,6 +163,10 @@ class AssignmentAnalyzer
             }
         }
 
+        if ($array_var_id) {
+            unset($context->referenced_var_ids[$array_var_id]);
+        }
+
         if ($assign_value) {
             if ($var_id && $assign_value instanceof PhpParser\Node\Expr\Closure) {
                 foreach ($assign_value->uses as $closure_use) {

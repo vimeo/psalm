@@ -987,6 +987,21 @@ class UnusedVariableTest extends TestCase
                         \fclose($stream);
                     }',
             ],
+            'varUsedInloop' => [
+                '<?php
+                    class A {
+                        public static function getA() : ?A {
+                            return rand(0, 1) ? new A : null;
+                        }
+                    }
+
+                    function foo(?A $a) : void {
+                        while ($a) {
+                            echo get_class($a);
+                            $a = A::getA();
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -1635,6 +1650,19 @@ class UnusedVariableTest extends TestCase
                     function foo() : void {
                         $a = [];
                         $a[0] = 1;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedSecondAssignmentBeforeTry' => [
+                '<?php
+                    $a = [1, 2, 3];
+                    echo($a[0]);
+                    $a = [4, 5, 6];
+
+                    try {
+                      // something
+                    } catch (\Throwable $t) {
+                      // something else
                     }',
                 'error_message' => 'UnusedVariable',
             ],
