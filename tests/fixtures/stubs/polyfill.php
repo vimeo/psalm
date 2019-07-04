@@ -22,3 +22,4 @@ if (!function_exists('new_random_bytes')) {
         return 5;
     }
 }
+

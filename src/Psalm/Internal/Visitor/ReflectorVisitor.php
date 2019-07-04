@@ -848,7 +848,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
-        if ($function_id === 'class_alias') {
+        if ($function_id === 'class_alias' && !$this->skip_if_descendants) {
             $first_arg = $node->args[0]->value ?? null;
             $second_arg = $node->args[1]->value ?? null;
 

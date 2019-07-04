@@ -34,3 +34,4 @@ foreach ($arr as list($orig, $alias)) {
     // Psalm cannot reason about this in the loading step
     class_alias($orig, $alias);
 }
+
