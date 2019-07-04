@@ -496,11 +496,7 @@ class ArrayAssignmentAnalyzer
                 }
             }
         } elseif ($root_var_id) {
-            if ($context->hasVariable($root_var_id, $statements_analyzer)) {
-                $context->vars_in_scope[$root_var_id] = $root_type;
-            } else {
-                $context->vars_in_scope[$root_var_id] = $root_type;
-            }
+            $context->vars_in_scope[$root_var_id] = $root_type;
         }
 
         return null;

@@ -1630,6 +1630,14 @@ class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
+            'detectUselessArrayAssignment' => [
+                '<?php
+                    function foo() : void {
+                        $a = [];
+                        $a[0] = 1;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
         ];
     }
 }

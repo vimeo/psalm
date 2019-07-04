@@ -147,7 +147,7 @@ class VariableFetchAnalyzer
 
         $var_name = '$' . $stmt->name;
 
-        if (!$context->hasVariable($var_name, $statements_analyzer)) {
+        if (!$context->hasVariable($var_name, !$array_assignment ? $statements_analyzer : null)) {
             if (!isset($context->vars_possibly_in_scope[$var_name]) ||
                 !$statements_analyzer->getFirstAppearance($var_name)
             ) {
