@@ -551,7 +551,7 @@ class InterfaceTest extends TestCase
 
                     function bar(IFoo $i) : void {
                         $i::doFoo();
-                    }'
+                    }',
             ],
             'inheritSystemInterface' => [
                 '<?php
@@ -559,7 +559,7 @@ class InterfaceTest extends TestCase
 
                     function f(I $c): void {
                         $c->current();
-                    }'
+                    }',
             ],
             'intersectMixedTypes' => [
                 '<?php
@@ -616,7 +616,7 @@ class InterfaceTest extends TestCase
                     /** @param I1&I2 $i */
                     function bar($i) : void {
                         foo($i);
-                    }'
+                    }',
             ],
             'intersectIterators' => [
                 '<?php
@@ -637,7 +637,7 @@ class InterfaceTest extends TestCase
                             takesA($c);
                             takesB($c);
                         }
-                    }'
+                    }',
             ],
         ];
     }

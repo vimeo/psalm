@@ -1,22 +1,21 @@
 <?php
 namespace Psalm\Tests;
 
+use function define;
+use function defined;
+use const DIRECTORY_SEPARATOR;
+use function get_class;
+use function getcwd;
+use function microtime;
+use function ob_end_clean;
+use function ob_get_clean;
+use function ob_start;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\Progress\EchoProgress;
-use function defined;
-use function define;
-use function getcwd;
-use function ob_start;
-use function ob_get_clean;
-use function get_class;
-use function ob_end_clean;
-use function microtime;
-use const DIRECTORY_SEPARATOR;
 
 class ProjectCheckerTest extends TestCase
 {

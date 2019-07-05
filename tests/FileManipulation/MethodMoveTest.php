@@ -129,7 +129,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::Foo' => 'Ns\B::Fe',
-                ]
+                ],
             ],
             'moveSimpleStaticMethodWithConstant' => [
                 '<?php
@@ -164,7 +164,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::Foo' => 'Ns\B::Fe',
-                ]
+                ],
             ],
             'moveSimpleStaticMethodWithProperty' => [
                 '<?php
@@ -207,7 +207,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::Foo' => 'Ns\B::Fe',
-                ]
+                ],
             ],
             'moveStaticMethodIntoNamespaceWithExistingUse' => [
                 '<?php
@@ -258,7 +258,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'A::Foo' => 'Ns\A\B::Fedcba',
-                ]
+                ],
             ],
             'moveEmptyStaticMethodOnly' => [
                 '<?php
@@ -367,7 +367,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::Foo' => 'Ns\B::Fedbca',
-                ]
+                ],
             ],
             'moveTwoStaticMethods' => [
                 '<?php
@@ -448,7 +448,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                 [
                     'Ns\A::Foo' => 'Ns\B::Fedbca',
                     'Ns\A::Bar' => 'Ns\B::Blacksheep',
-                ]
+                ],
             ],
             'moveInstanceMethodIntoSubclassOnly' => [
                 '<?php
@@ -526,7 +526,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::Foo' => 'Ns\AChild::Fedbca',
-                ]
+                ],
             ],
             'moveStaticMethodAndReferencesFromAbove' => [
                 '<?php
@@ -571,7 +571,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::Foo' => 'Ns\B::Fe',
-                ]
+                ],
             ],
             'moveStaticMethodAndReferencesFromBelow' => [
                 '<?php
@@ -665,7 +665,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns1\A::Foo' => 'Ns2\Ns3\B::Fe',
-                ]
+                ],
             ],
             'moveStaticMethodAndReferencesAcrossNamespacesWithExistingUse' => [
                 '<?php
@@ -718,7 +718,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns1\A::Foo' => 'Ns2\Ns3\B::Fedcba',
-                ]
+                ],
             ],
             'renameInstanceMethod' => [
                 '<?php

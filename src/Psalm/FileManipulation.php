@@ -2,8 +2,8 @@
 namespace Psalm;
 
 use function sha1;
-use function strrpos;
 use function strlen;
+use function strrpos;
 use function substr;
 use function trim;
 

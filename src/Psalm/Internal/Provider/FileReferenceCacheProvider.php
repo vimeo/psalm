@@ -1,15 +1,15 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use Psalm\Config;
 use const DIRECTORY_SEPARATOR;
-use function is_readable;
-use function unserialize;
-use function file_get_contents;
-use function is_array;
-use function file_put_contents;
-use function serialize;
 use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function is_array;
+use function is_readable;
+use Psalm\Config;
+use function serialize;
+use function unserialize;
 
 /**
  * @psalm-type  IssueData = array{
@@ -496,6 +496,7 @@ class FileReferenceCacheProvider
 
     /**
      * @param array<string, array<string, int>> $analyzed_methods
+     *
      * @return void
      */
     public function setAnalyzedMethodCache(array $analyzed_methods)
@@ -545,6 +546,7 @@ class FileReferenceCacheProvider
              *  >
              */
             $file_maps_cache = unserialize(file_get_contents($file_maps_cache_location));
+
             return $file_maps_cache;
         }
 
@@ -560,6 +562,7 @@ class FileReferenceCacheProvider
      *          2: array<int, array{0: int, 1: string, 2: int}>
      *      }
      *  > $file_maps
+     *
      * @return void
      */
     public function setFileMapCache(array $file_maps)
@@ -591,6 +594,7 @@ class FileReferenceCacheProvider
         ) {
             /** @var array<string, array{int, int}> */
             $type_coverage_cache = unserialize(file_get_contents($type_coverage_cache_location));
+
             return $type_coverage_cache;
         }
 
@@ -599,6 +603,7 @@ class FileReferenceCacheProvider
 
     /**
      * @param array<string, array{int, int}> $mixed_counts
+     *
      * @return void
      */
     public function setTypeCoverage(array $mixed_counts)
@@ -629,6 +634,7 @@ class FileReferenceCacheProvider
         ) {
             /** @var string */
             $file_maps_cache = unserialize(file_get_contents($config_hash_cache_location));
+
             return $file_maps_cache;
         }
 

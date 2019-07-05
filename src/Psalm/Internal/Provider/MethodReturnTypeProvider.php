@@ -1,16 +1,15 @@
 <?php
-
 namespace Psalm\Internal\Provider;
 
-use PhpParser;
-use Psalm\Context;
-use Psalm\CodeLocation;
-use Psalm\Type;
-use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
-use function version_compare;
 use const PHP_VERSION;
+use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
+use Psalm\StatementsSource;
+use Psalm\Type;
 use function strtolower;
+use function version_compare;
 
 class MethodReturnTypeProvider
 {
@@ -43,6 +42,7 @@ class MethodReturnTypeProvider
     /**
      * @param  class-string<MethodReturnTypeProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
+     *
      * @return void
      */
     public function registerClass(string $class)
@@ -50,6 +50,7 @@ class MethodReturnTypeProvider
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /**
              * @psalm-suppress UndefinedMethod
+             *
              * @var \Closure
              */
             $callable = \Closure::fromCallable([$class, 'getMethodReturnType']);
@@ -95,6 +96,7 @@ class MethodReturnTypeProvider
     /**
      * @param array<PhpParser\Node\Arg>  $call_args
      * @param  ?array<Type\Union> $template_type_parameters
+     *
      * @return  ?Type\Union
      */
     public function getReturnType(

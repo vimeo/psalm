@@ -1,22 +1,22 @@
 <?php
 namespace Psalm\Report;
 
+use function count;
+use function implode;
+use function is_null;
 use Psalm\Config;
 use Psalm\Report;
+use function str_split;
+use function strlen;
+use function strtoupper;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\BufferedOutput;
-use function is_null;
-use const PHP_EOL;
-use function strtoupper;
-use function strlen;
-use function implode;
-use function str_split;
-use function count;
 
 class CompactReport extends Report
 {
     /**
-     * {{@inheritdoc}}
+     * {@inheritdoc}
+     *
      * @psalm-suppress PossiblyNullReference
      */
     public function create(): string
@@ -66,7 +66,7 @@ class CompactReport extends Report
                 $severity,
                 $issue_data['line_from'],
                 $issue_data['type'],
-                $message
+                $message,
             ]);
 
             $current_file = $issue_data['file_name'];

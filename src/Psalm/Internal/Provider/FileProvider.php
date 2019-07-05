@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use function strtolower;
+use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
-use function file_exists;
 use function in_array;
+use function strtolower;
 
 class FileProvider
 {
@@ -117,8 +117,7 @@ class FileProvider
      */
     public function closeFile(string $file_path)
     {
-        unset($this->temp_files[strtolower($file_path)]);
-        unset($this->open_files[strtolower($file_path)]);
+        unset($this->temp_files[strtolower($file_path)], $this->open_files[strtolower($file_path)]);
     }
 
     /**

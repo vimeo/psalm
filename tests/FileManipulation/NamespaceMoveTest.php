@@ -155,7 +155,7 @@ class NamespaceMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Foo\*' => 'Bar\Baz\*',
-                ]
+                ],
             ],
         ];
     }

@@ -1,27 +1,27 @@
 <?php
 namespace Psalm\Config;
 
-use SimpleXMLElement;
-use Psalm\Exception\ConfigException;
-use function is_bool;
-use function strtolower;
-use const DIRECTORY_SEPARATOR;
-use function strpos;
-use function array_map;
 use function array_filter;
-use function glob;
-use function realpath;
-use function is_dir;
-use function readlink;
-use function stripos;
-use function str_replace;
-use function preg_match;
-use function set_error_handler;
+use function array_map;
+use const DIRECTORY_SEPARATOR;
 use const E_WARNING;
-use function restore_error_handler;
-use function preg_replace;
-use function in_array;
 use function explode;
+use function glob;
+use function in_array;
+use function is_bool;
+use function is_dir;
+use function preg_match;
+use function preg_replace;
+use Psalm\Exception\ConfigException;
+use function readlink;
+use function realpath;
+use function restore_error_handler;
+use function set_error_handler;
+use SimpleXMLElement;
+use function str_replace;
+use function stripos;
+use function strpos;
+use function strtolower;
 
 class FileFilter
 {
@@ -335,8 +335,9 @@ class FileFilter
             },
             E_WARNING
         );
-        $is_regexp = preg_match($string, "") !== false;
+        $is_regexp = preg_match($string, '') !== false;
         restore_error_handler();
+
         return $is_regexp;
     }
 
@@ -425,7 +426,7 @@ class FileFilter
             }
         }
 
-        return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names);
+        return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names, true);
     }
 
     /**
@@ -459,7 +460,7 @@ class FileFilter
             return false;
         }
 
-        return in_array($method_id, $this->method_ids);
+        return in_array($method_id, $this->method_ids, true);
     }
 
     /**
@@ -469,7 +470,7 @@ class FileFilter
      */
     public function allowsProperty($property_id)
     {
-        return in_array(strtolower($property_id), $this->property_ids);
+        return in_array(strtolower($property_id), $this->property_ids, true);
     }
 
     /**

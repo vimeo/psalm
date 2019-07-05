@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Report;
 
+use function json_encode;
+use function max;
 use Psalm\Config;
 use Psalm\Report;
-use function max;
-use function json_encode;
 
 /**
  * JSON report format suitable for import into SonarQube or SonarCloud as
@@ -15,7 +15,7 @@ use function json_encode;
 class SonarqubeReport extends Report
 {
     /**
-     * {{@inheritdoc}}
+     * {@inheritdoc}
      */
     public function create(): string
     {

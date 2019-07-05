@@ -610,7 +610,7 @@ class ValueTest extends TestCase
 
                     A::foo(1);
                     A::foo(2);
-                    A::foo(3);'
+                    A::foo(3);',
             ],
             'valueOf' => [
                 '<?php
@@ -629,7 +629,7 @@ class ValueTest extends TestCase
 
                     A::bar("a");
                     A::bar("b");
-                    A::bar("c");'
+                    A::bar("c");',
             ],
             'valueOfDefault' => [
                 '<?php
@@ -837,7 +837,7 @@ class ValueTest extends TestCase
                     }
 
                     A::foo(4);',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'valueOfBadValue' => [
                 '<?php
@@ -855,13 +855,13 @@ class ValueTest extends TestCase
                     }
 
                     A::bar("d");',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'casedComparison' => [
                 '<?php
                     if ("C" === "c") {}',
                 'error_message' => 'TypeDoesNotContainType',
-            ]
+            ],
         ];
     }
 }

@@ -7,7 +7,7 @@ use Psalm\Report;
 class XmlReport extends Report
 {
     /**
-     * {{@inheritdoc}}
+     * {@inheritdoc}
      */
     public function create(): string
     {

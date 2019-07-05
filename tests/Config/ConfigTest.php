@@ -1,24 +1,24 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use function array_map;
+use function define;
+use function defined;
+use const DIRECTORY_SEPARATOR;
+use function dirname;
+use function error_get_last;
+use function getcwd;
+use function implode;
+use function is_array;
+use function preg_match;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
-use function defined;
-use function define;
-use function getcwd;
 use function realpath;
-use function dirname;
-use function unlink;
-use function error_get_last;
-use function is_array;
 use function symlink;
-use function preg_match;
-use function implode;
-use function array_map;
-use const DIRECTORY_SEPARATOR;
+use function unlink;
 
 class ConfigTest extends \Psalm\Tests\TestCase
 {
@@ -496,8 +496,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
             )
         );
 
-        $this->assertSame(
-            null,
+        $this->assertNull(
             $config->getReportingLevelForClass(
                 'UndefinedClass',
                 'Psalm\Bodger'
@@ -528,16 +527,14 @@ class ConfigTest extends \Psalm\Tests\TestCase
             )
         );
 
-        $this->assertSame(
-            null,
+        $this->assertNull(
             $config->getReportingLevelForProperty(
                 'UndefinedMethod',
                 'Psalm\Bodger::$find3'
             )
         );
 
-        $this->assertSame(
-            null,
+        $this->assertNull(
             $config->getReportingLevelForProperty(
                 'UndefinedMethod',
                 'Psalm\Bodger::$find4'
@@ -599,7 +596,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testImpossibleIssue()
@@ -624,7 +620,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testRequireVoidReturnTypeExists()
@@ -862,7 +857,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testForbiddenEchoFunctionViaFunctions()
@@ -893,7 +887,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testForbiddenEchoFunctionViaFlag()
@@ -945,7 +938,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testForbiddenVarExportFunction()
@@ -977,7 +969,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testValidThrowInvalidCatch()
@@ -1029,7 +1020,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testInvalidThrowValidCatch()
@@ -1351,7 +1341,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
                 dirname(__DIR__, 2)
                     . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR
                     . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR
-                    . 'src' . DIRECTORY_SEPARATOR . 'Psalm'
+                    . 'src' . DIRECTORY_SEPARATOR . 'Psalm',
             ]
         );
 
@@ -1361,7 +1351,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
                 dirname(__DIR__, 2)
                     . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR
                     . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR
-                    . 'tests'
+                    . 'tests',
             ]
         );
 
@@ -1369,12 +1359,12 @@ class ConfigTest extends \Psalm\Tests\TestCase
 
         $this->assertSame(
             dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Psalm' . DIRECTORY_SEPARATOR . 'Foo.php',
-            $config->getPotentialComposerFilePathForClassLike("Psalm\\Foo")
+            $config->getPotentialComposerFilePathForClassLike('Psalm\\Foo')
         );
 
         $this->assertSame(
             dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Foo.php',
-            $config->getPotentialComposerFilePathForClassLike("Psalm\\Tests\\Foo")
+            $config->getPotentialComposerFilePathForClassLike('Psalm\\Tests\\Foo')
         );
     }
 }

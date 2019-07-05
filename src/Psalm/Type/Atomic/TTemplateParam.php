@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function implode;
 use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Union;
-use function implode;
 
 class TTemplateParam extends \Psalm\Type\Atomic
 {
@@ -63,7 +63,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
     public function getId()
     {
         if ($this->extra_types) {
-            return '(' . $this->param_name. ' as ' . $this->as->getId()
+            return '(' . $this->param_name . ' as ' . $this->as->getId()
                 . ')&' . implode('&', $this->extra_types);
         }
 

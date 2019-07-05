@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Internal\PluginManager\ComposerLock;
 use function json_encode;
+use Psalm\Internal\PluginManager\ComposerLock;
 
 /** @group PluginManager */
 class ComposerLockTest extends TestCase
@@ -38,7 +38,7 @@ class ComposerLockTest extends TestCase
     {
         $lock = new ComposerLock([$this->jsonFile((object)[
             'packages' => [
-                (object)$this->pluginEntry('vendor/package', 'Vendor\Package\PluginClass')
+                (object)$this->pluginEntry('vendor/package', 'Vendor\Package\PluginClass'),
             ],
             'packages-dev' => [],
         ])]);
@@ -57,7 +57,7 @@ class ComposerLockTest extends TestCase
         $lock = new ComposerLock([$this->jsonFile((object)[
             'packages' => [],
             'packages-dev' => [
-                (object) $this->pluginEntry('vendor/package', 'Vendor\Package\PluginClass')
+                (object) $this->pluginEntry('vendor/package', 'Vendor\Package\PluginClass'),
             ],
         ])]);
 
@@ -142,23 +142,23 @@ class ComposerLockTest extends TestCase
         $lock = new ComposerLock([
             $this->jsonFile([
                 'packages' => [
-                    (object) $this->pluginEntry('vendor/packageA', 'Vendor\PackageA\PluginClass')
+                    (object) $this->pluginEntry('vendor/packageA', 'Vendor\PackageA\PluginClass'),
                 ],
                 'packages-dev' => [
-                    (object) $this->pluginEntry('vendor/packageB', 'Vendor\PackageB\PluginClass')
+                    (object) $this->pluginEntry('vendor/packageB', 'Vendor\PackageB\PluginClass'),
                 ],
             ]),
             $this->jsonFile([
                 'packages' => [
-                    (object) $this->pluginEntry('vendor/packageC', 'Vendor\PackageC\PluginClass')
+                    (object) $this->pluginEntry('vendor/packageC', 'Vendor\PackageC\PluginClass'),
                 ],
                 'packages-dev' => [
-                    (object) $this->pluginEntry('vendor/packageD', 'Vendor\PackageD\PluginClass')
+                    (object) $this->pluginEntry('vendor/packageD', 'Vendor\PackageD\PluginClass'),
                 ],
             ]),
         ]);
 
-        $this->assertEquals(
+        $this->assertSame(
             [
                 'vendor/packageA' => 'Vendor\PackageA\PluginClass',
                 'vendor/packageB' => 'Vendor\PackageB\PluginClass',

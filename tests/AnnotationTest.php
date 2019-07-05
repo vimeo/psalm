@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
-use const DIRECTORY_SEPARATOR;
 
 class AnnotationTest extends TestCase
 {
@@ -991,7 +991,7 @@ class AnnotationTest extends TestCase
                     $b = (new Bar)->doFoo();',
                 [
                     '$b' => 'array<array-key, int>',
-                ]
+                ],
             ],
             'noExceptionOnIntersection' => [
                 '<?php
@@ -1013,7 +1013,7 @@ class AnnotationTest extends TestCase
                     function f(A $a) : void {
                         $a->foo();
                         $a->bar();
-                    }'
+                    }',
             ],
             'allowClosingComma' => [
                 '<?php
@@ -1037,7 +1037,7 @@ class AnnotationTest extends TestCase
                      *    baz:string,
                      * } $foo
                      */
-                    $foo = ["foo" => "", "bar" => "", "baz" => ""];'
+                    $foo = ["foo" => "", "bar" => "", "baz" => ""];',
             ],
             'inheritedSelfAnnotation' => [
                 '<?php
@@ -1591,7 +1591,7 @@ class AnnotationTest extends TestCase
                      * @param    *   $reference
                      */
                     function f($reference) {}',
-                'error_message' => 'MissingDocblockType'
+                'error_message' => 'MissingDocblockType',
             ],
         ];
     }

@@ -1,22 +1,21 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function count;
+use const PHP_URL_FRAGMENT;
+use const PHP_URL_HOST;
+use const PHP_URL_PASS;
+use const PHP_URL_PATH;
+use const PHP_URL_PORT;
+use const PHP_URL_QUERY;
+use const PHP_URL_SCHEME;
+use const PHP_URL_USER;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
-use function count;
-use const PHP_URL_SCHEME;
-use const PHP_URL_USER;
-use const PHP_URL_PASS;
-use const PHP_URL_HOST;
-use const PHP_URL_PATH;
-use const PHP_URL_QUERY;
-use const PHP_URL_FRAGMENT;
-use const PHP_URL_PORT;
+use Psalm\StatementsSource;
+use Psalm\Type;
 
 class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -53,7 +52,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     ]);
 
                     $acceptable_int_component_type = new Type\Union([
-                        new Type\Atomic\TLiteralInt(PHP_URL_PORT)
+                        new Type\Atomic\TLiteralInt(PHP_URL_PORT),
                     ]);
 
                     if (TypeAnalyzer::isContainedBy(
@@ -63,7 +62,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     )) {
                         $nullable_string = new Type\Union([
                             new Type\Atomic\TString,
-                            new Type\Atomic\TNull
+                            new Type\Atomic\TNull,
                         ]);
 
                         $codebase = $statements_source->getCodebase();
@@ -82,7 +81,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     )) {
                         $nullable_int = new Type\Union([
                             new Type\Atomic\TInt,
-                            new Type\Atomic\TNull
+                            new Type\Atomic\TNull,
                         ]);
 
                         $codebase = $statements_source->getCodebase();
@@ -99,7 +98,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             $nullable_string_or_int = new Type\Union([
                 new Type\Atomic\TString,
                 new Type\Atomic\TInt,
-                new Type\Atomic\TNull
+                new Type\Atomic\TNull,
             ]);
 
             $codebase = $statements_source->getCodebase();
@@ -124,7 +123,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
         $nullable_string_or_int = new Type\Union([
             new Type\Atomic\TArray([$component_key_type, Type::getMixed()]),
-            new Type\Atomic\TFalse
+            new Type\Atomic\TFalse,
         ]);
 
         $codebase = $statements_source->getCodebase();

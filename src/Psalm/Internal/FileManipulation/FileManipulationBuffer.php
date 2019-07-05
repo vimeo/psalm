@@ -1,11 +1,10 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
+use function array_merge;
 use Psalm\FileManipulation;
 use Psalm\Internal\Provider\FileProvider;
-use function array_merge;
 use function strlen;
-use const PHP_EOL;
 use function substr;
 
 /**
@@ -104,7 +103,7 @@ class FileManipulationBuffer
                     $bounds[0],
                     $bounds[1],
                     $replacement_text
-                )
+                ),
             ]
         );
     }

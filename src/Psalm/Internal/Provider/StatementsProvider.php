@@ -1,20 +1,19 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use PhpParser;
-use Psalm\Progress\Progress;
-use Psalm\Progress\DefaultProgress;
-use Psalm\Progress\VoidProgress;
+use function abs;
+use function array_flip;
+use function array_intersect_key;
+use function array_map;
+use function array_merge;
+use function count;
 use function filemtime;
 use function md5;
-use function abs;
+use PhpParser;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
 use function strlen;
-use function count;
-use function array_map;
-use function array_flip;
 use function substr;
-use function array_intersect_key;
-use function array_merge;
 
 /**
  * @internal
@@ -181,6 +180,7 @@ class StatementsProvider
                 $unchanged_members = array_map(
                     /**
                      * @param int $_
+                     *
                      * @return bool
                      */
                     function ($_) {
@@ -192,6 +192,7 @@ class StatementsProvider
                 $unchanged_signature_members = array_map(
                     /**
                      * @param int $_
+                     *
                      * @return bool
                      */
                     function ($_) {
@@ -216,6 +217,7 @@ class StatementsProvider
                 $changed_members = array_map(
                     /**
                      * @param int $_
+                     *
                      * @return bool
                      */
                     function ($_) {
@@ -283,6 +285,7 @@ class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_changed_members
+     *
      * @return void
      */
     public function addChangedMembers(array $more_changed_members)
@@ -300,6 +303,7 @@ class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_unchanged_members
+     *
      * @return void
      */
     public function addUnchangedSignatureMembers(array $more_unchanged_members)
@@ -309,6 +313,7 @@ class StatementsProvider
 
     /**
      * @param string $file_path
+     *
      * @return void
      */
     public function setUnchangedFile($file_path)
@@ -328,6 +333,7 @@ class StatementsProvider
 
     /**
      * @param array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>> $diff_map
+     *
      * @return void
      */
     public function addDiffMap(array $diff_map)
@@ -366,7 +372,7 @@ class StatementsProvider
         ];
 
         if (!self::$lexer) {
-            self::$lexer = new PhpParser\Lexer([ 'usedAttributes' => $attributes ]);
+            self::$lexer = new PhpParser\Lexer(['usedAttributes' => $attributes]);
         }
 
         if (!self::$parser) {

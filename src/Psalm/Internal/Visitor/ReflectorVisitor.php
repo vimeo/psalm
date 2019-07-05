@@ -1,18 +1,27 @@
 <?php
 namespace Psalm\Internal\Visitor;
 
+use function array_filter;
+use function array_key_exists;
+use function array_merge;
+use function array_pop;
+use function assert;
+use function class_exists;
+use function count;
+use const DIRECTORY_SEPARATOR;
+use function dirname;
+use function end;
+use function explode;
+use function function_exists;
+use function implode;
+use function in_array;
+use function interface_exists;
+use function is_string;
 use PhpParser;
+use function preg_match;
+use function preg_replace;
 use Psalm\Aliases;
-use Psalm\Internal\Analyzer\ClassAnalyzer;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\CommentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Codebase;
-use Psalm\Internal\Codebase\CallMap;
-use Psalm\Internal\Codebase\PropertyMap;
-use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\DocComment;
@@ -21,15 +30,23 @@ use Psalm\Exception\FileIncludeException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\PropertyMap;
+use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
-use Psalm\Issue\MisplacedRequiredParam;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
-use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -37,28 +54,10 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
-use function implode;
-use function strtolower;
-use function in_array;
-use function end;
-use function is_string;
-use function count;
-use function array_merge;
-use function trim;
-use function preg_replace;
-use function array_pop;
-use function function_exists;
-use function class_exists;
-use function interface_exists;
-use function assert;
 use function strpos;
-use function explode;
-use function array_key_exists;
+use function strtolower;
 use function substr;
-use function array_filter;
-use function preg_match;
-use function dirname;
-use const DIRECTORY_SEPARATOR;
+use function trim;
 
 /**
  * @internal
@@ -483,7 +482,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 if ($node->cond instanceof PhpParser\Node\Expr\BooleanNot) {
                     if ($node->cond->expr instanceof PhpParser\Node\Expr\FuncCall
                         && $node->cond->expr->name instanceof PhpParser\Node\Name
-                        && ($node->cond->expr->name->parts === ['function_exists']
+                        && (
+                            $node->cond->expr->name->parts === ['function_exists']
                             || $node->cond->expr->name->parts === ['class_exists']
                             || $node->cond->expr->name->parts === ['interface_exists']
                         )
@@ -492,7 +492,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
                 } elseif ($node->cond instanceof PhpParser\Node\Expr\FuncCall
                     && $node->cond->name instanceof PhpParser\Node\Name
-                    && ($node->cond->name->parts === ['function_exists']
+                    && (
+                        $node->cond->name->parts === ['function_exists']
                         || $node->cond->name->parts === ['class_exists']
                         || $node->cond->name->parts === ['interface_exists']
                     )
@@ -1096,7 +1097,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 }
 
                                 $storage->template_types[$template_name] = [
-                                    $fq_classlike_name => [$template_type]
+                                    $fq_classlike_name => [$template_type],
                                 ];
                             } else {
                                 if (IssueBuffer::accepts(
@@ -1226,6 +1227,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             $storage->has_docblock_issues = true;
+
             return;
         }
 
@@ -1312,6 +1314,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             $storage->has_docblock_issues = true;
+
             return;
         }
 
@@ -1396,6 +1399,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             $storage->has_docblock_issues = true;
+
             return;
         }
 
@@ -1889,7 +1893,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         continue;
                     }
 
-                    $param_index = \array_search($param_name, \array_keys($storage->param_types));
+                    $param_index = \array_search($param_name, \array_keys($storage->param_types), true);
 
                     if (!isset($storage->params[$param_index]->type)) {
                         continue;
@@ -1902,8 +1906,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             ? new Type\Union([
                                 new Type\Atomic\TArray([
                                     Type::getInt(),
-                                    $param_type
-                                ])
+                                    $param_type,
+                                ]),
                             ])
                             : $param_type;
                 } else {
@@ -2064,7 +2068,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $storage->has_docblock_issues = true;
                 } else {
                     $storage->template_types[$template_name] = [
-                        '' => [$template_type]
+                        '' => [$template_type],
                     ];
 
                     $storage->template_covariants[$i] = $template_map[3];
@@ -2264,7 +2268,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                     : 'object',
                                 $template_atomic_type,
                                 $template_class
-                            )
+                            ),
                         ]);
 
                         if ($param_type_nullable) {
@@ -3106,8 +3110,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 return;
             }
         }
-
-        return;
     }
 
     /**

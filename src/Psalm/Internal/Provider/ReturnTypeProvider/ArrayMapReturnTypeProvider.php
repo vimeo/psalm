@@ -1,21 +1,20 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function array_map;
+use function count;
+use function explode;
+use function in_array;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\StatementsSource;
 use Psalm\Type;
-use function count;
-use function array_map;
-use function strtolower;
-use function explode;
 use function strpos;
-use function in_array;
+use function strtolower;
 
 class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

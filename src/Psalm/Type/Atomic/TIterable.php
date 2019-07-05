@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-use function implode;
-use function substr;
 use function count;
+use function implode;
+use Psalm\Type\Atomic;
+use function substr;
 
 class TIterable extends Atomic
 {

@@ -1,15 +1,15 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Codebase;
-use Psalm\CodeLocation;
 use function array_filter;
 use function array_keys;
-use function file_exists;
-use function array_merge_recursive;
 use function array_merge;
+use function array_merge_recursive;
 use function array_unique;
+use function file_exists;
+use Psalm\Codebase;
+use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 
 /**
  * @psalm-type  IssueData = array{
@@ -411,6 +411,7 @@ class FileReferenceProvider
 
     /**
      * @param bool $force_reload
+     *
      * @return bool
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
@@ -891,6 +892,7 @@ class FileReferenceProvider
 
     /**
      * @param string $file_path
+     *
      * @return void
      */
     public function clearExistingIssuesForFile($file_path)
@@ -901,6 +903,7 @@ class FileReferenceProvider
     /**
      * @param string $file_path
      * @param IssueData $issue
+     *
      * @return void
      */
     public function clearExistingFileMapsForFile($file_path)
@@ -910,6 +913,7 @@ class FileReferenceProvider
 
     /**
      * @param string $file_path
+     *
      * @return void
      */
     public function addIssue($file_path, array $issue)
@@ -928,6 +932,7 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string, int>> $analyzed_methods
+     *
      * @return  void
      */
     public function setAnalyzedMethods(array $analyzed_methods)
@@ -960,6 +965,7 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array{int, int}> $mixed_counts
+     *
      * @return  void
      */
     public function setTypeCoverage(array $mixed_counts)

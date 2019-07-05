@@ -1,5 +1,5 @@
-<?php declare (strict_types=1);
-
+<?php
+declare(strict_types=1);
 namespace Psalm\Internal\LanguageServer;
 
 use const SORT_NUMERIC;
@@ -37,7 +37,7 @@ trait EmitterTrait
             $this->listeners[$eventName] = [
                 true,  // If there's only one item, it's sorted
                 [$priority],
-                [$callBack]
+                [$callBack],
             ];
         } else {
             $this->listeners[$eventName][0] = false; // marked as unsorted
@@ -87,7 +87,7 @@ trait EmitterTrait
             $counter = \count($listeners);
 
             foreach ($listeners as $listener) {
-                $counter--;
+                --$counter;
                 /** @psalm-suppress MixedAssignment */
                 $result = \call_user_func_array($listener, $arguments);
                 if ($result === false) {
@@ -145,11 +145,12 @@ trait EmitterTrait
         }
         foreach ($this->listeners[$eventName][2] as $index => $check) {
             if ($check === $listener) {
-                unset($this->listeners[$eventName][1][$index]);
-                unset($this->listeners[$eventName][2][$index]);
+                unset($this->listeners[$eventName][1][$index], $this->listeners[$eventName][2][$index]);
+
                 return true;
             }
         }
+
         return false;
     }
 }

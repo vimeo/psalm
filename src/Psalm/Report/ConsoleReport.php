@@ -8,7 +8,7 @@ use function substr;
 class ConsoleReport extends Report
 {
     /**
-     * {{@inheritdoc}}
+     * {@inheritdoc}
      */
     public function create(): string
     {

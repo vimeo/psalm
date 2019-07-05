@@ -1,11 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
+use function array_map;
+use function count;
+use function get_class;
 use PhpParser;
 use function strpos;
-use function count;
-use function array_map;
-use function get_class;
 use function var_export;
 
 class FileDiffTest extends TestCase

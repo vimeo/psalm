@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Plugin\Hook;
 
 use PhpParser;
@@ -14,6 +13,7 @@ interface FunctionExistenceProviderInterface
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?bool
      */
     public static function doesFunctionExist(

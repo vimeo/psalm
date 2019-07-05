@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Internal\ExecutionEnvironment;
 
 use function explode;

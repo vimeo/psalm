@@ -1,15 +1,14 @@
 <?php
-
 namespace Psalm\Internal\Provider;
 
-use PhpParser;
-use Psalm\Context;
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface;
-use function version_compare;
 use const PHP_VERSION;
+use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface;
+use Psalm\StatementsSource;
 use function strtolower;
+use function version_compare;
 
 class PropertyVisibilityProvider
 {
@@ -36,6 +35,7 @@ class PropertyVisibilityProvider
     /**
      * @param  class-string<PropertyVisibilityProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
+     *
      * @return void
      */
     public function registerClass(string $class)
@@ -43,6 +43,7 @@ class PropertyVisibilityProvider
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /**
              * @psalm-suppress UndefinedMethod
+             *
              * @var \Closure
              */
             $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
@@ -85,6 +86,7 @@ class PropertyVisibilityProvider
 
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
+     *
      * @return ?bool
      */
     public function isPropertyVisible(

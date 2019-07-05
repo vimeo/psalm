@@ -1,11 +1,18 @@
 <?php
 namespace Psalm\Type;
 
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use function array_filter;
+use function array_keys;
+use function array_search;
+use function array_values;
+use function count;
+use function get_class;
+use function is_numeric;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\ReservedWord;
@@ -21,17 +28,16 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
-use Psalm\Type\Atomic\TCallableObjectLikeArray;
 use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCallableObjectLikeArray;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\THtmlEscapedString;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -45,20 +51,14 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TScalarClassConstant;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
-use function strpos;
-use function substr;
-use function is_numeric;
-use function array_keys;
-use function strtolower;
-use function array_filter;
-use function array_search;
-use function count;
-use function array_values;
 use function reset;
-use function get_class;
+use function strpos;
+use function strtolower;
+use function substr;
 
 abstract class Atomic
 {
@@ -291,7 +291,8 @@ abstract class Atomic
     public function hasTraversableInterface(Codebase $codebase)
     {
         return $this instanceof TNamedObject
-            && (strtolower($this->value) === 'traversable'
+            && (
+                strtolower($this->value) === 'traversable'
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
@@ -300,7 +301,8 @@ abstract class Atomic
                         $this->value,
                         'Traversable'
                     )))
-                || ($this->extra_types
+                || (
+                    $this->extra_types
                     && array_filter(
                         $this->extra_types,
                         function (Atomic $a) use ($codebase) : bool {
@@ -317,7 +319,8 @@ abstract class Atomic
     public function hasCountableInterface(Codebase $codebase)
     {
         return $this instanceof TNamedObject
-            && (strtolower($this->value) === 'countable'
+            && (
+                strtolower($this->value) === 'countable'
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
@@ -326,7 +329,8 @@ abstract class Atomic
                         $this->value,
                         'Countable'
                     )))
-                || ($this->extra_types
+                || (
+                    $this->extra_types
                     && array_filter(
                         $this->extra_types,
                         function (Atomic $a) use ($codebase) : bool {
@@ -479,7 +483,7 @@ abstract class Atomic
                 $class_storage = $codebase->classlike_storage_provider->get($this->defining_class);
 
                 $template_offset = $class_storage->template_types
-                    ? array_search($this->param_name, array_keys($class_storage->template_types))
+                    ? array_search($this->param_name, array_keys($class_storage->template_types), true)
                     : false;
 
                 if ($template_offset !== false
@@ -603,11 +607,11 @@ abstract class Atomic
             } else {
                 $expected_type_params = [
                     'TKey' => [
-                        '' =>  [Type::getMixed(), null],
+                        '' => [Type::getMixed(), null],
                     ],
                     'TValue' => [
-                        '' =>  [Type::getMixed(), null],
-                    ]
+                        '' => [Type::getMixed(), null],
+                    ],
                 ];
             }
 

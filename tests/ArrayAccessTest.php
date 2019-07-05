@@ -437,7 +437,7 @@ class ArrayAccessTest extends TestCase
                     $array = new C([]);
                     $array["key"] = [];
                     /** @psalm-suppress PossiblyInvalidArrayAssignment */
-                    $array["key"][] = "testing";'
+                    $array["key"][] = "testing";',
             ],
             'singleLetterOffset' => [
                 '<?php
@@ -460,7 +460,7 @@ class ArrayAccessTest extends TestCase
                         }
                     }',
                 [],
-                ['MixedReturnStatement', 'MixedInferredReturnType']
+                ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'assertSelfClassConstantOffsetsInFunction' => [
                 '<?php
@@ -481,7 +481,7 @@ class ArrayAccessTest extends TestCase
                         }
                     }',
                 [],
-                ['MixedReturnStatement', 'MixedInferredReturnType']
+                ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'assertNamedClassConstantOffsetsInFunction' => [
                 '<?php
@@ -502,7 +502,7 @@ class ArrayAccessTest extends TestCase
                         return C::ARR[$key]["foo"];
                     }',
                 [],
-                ['MixedReturnStatement', 'MixedInferredReturnType']
+                ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'arrayAccessAfterByRefArrayOffsetAssignment' => [
                 '<?php

@@ -1,23 +1,21 @@
 <?php
 namespace Psalm;
 
-use Psalm\Config;
+use function array_filter;
+use function array_keys;
+use function count;
+use function in_array;
+use function json_encode;
+use function preg_match;
+use function preg_quote;
+use function preg_replace;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Reconciler;
-use Psalm\Type;
 use Psalm\Type\Union;
-use function in_array;
-use function count;
-use function array_filter;
-use function preg_quote;
-use function preg_match;
 use function strpos;
-use function array_keys;
 use function strtolower;
-use function preg_replace;
-use function json_encode;
 
 class Context
 {
@@ -735,6 +733,7 @@ class Context
         foreach ($this->vars_in_scope as $k => $v) {
             $summary[$k] = $v->getId();
         }
+
         return json_encode($summary);
     }
 

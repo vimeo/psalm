@@ -1,18 +1,17 @@
 <?php
 namespace Psalm\Internal;
 
-use function count;
 use function array_diff;
-use function ksort;
-use function sort;
-use function json_encode;
-use function rand;
-use function md5;
-use function spl_object_hash;
-use function implode;
-use function array_map;
 use function array_keys;
+use function array_map;
 use function array_values;
+use function count;
+use function implode;
+use function json_encode;
+use function ksort;
+use function md5;
+use function sort;
+use function spl_object_hash;
 
 /**
  * @internal
@@ -110,7 +109,7 @@ class Clause
 
         $possibility_string = json_encode($this->possibilities);
         if (!$possibility_string) {
-            return (string)rand(0, 10000000);
+            return (string) \mt_rand(0, 10000000);
         }
 
         return md5($possibility_string) .

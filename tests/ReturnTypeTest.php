@@ -608,7 +608,7 @@ class ReturnTypeTest extends TestCase
                     /** @return scalar */
                     function g() {
                         return true;
-                    }'
+                    }',
             ],
             'allowThrowAndExitToOverrideReturnType' => [
                 '<?php

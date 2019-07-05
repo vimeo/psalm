@@ -1,15 +1,15 @@
 <?php
 namespace Psalm\Internal\Visitor;
 
-use PhpParser;
-use function strlen;
 use function count;
-use function substr_count;
-use function substr;
+use PhpParser;
 use function preg_replace;
 use function reset;
-use function strrpos;
+use function strlen;
 use function strpos;
+use function strrpos;
+use function substr;
+use function substr_count;
 
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
@@ -117,6 +117,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             // we have a diff that goes outside the bounds that we care about
                             if ($a_e2 > $stmt_end_pos) {
                                 $this->must_rescan = true;
+
                                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                             }
 
@@ -135,7 +136,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             }
 
                             if ($a_s2 >= $stmt_start_pos && $a_e2 <= $stmt_end_pos) {
-                                $this->non_method_changes--;
+                                --$this->non_method_changes;
                             }
                         }
 
@@ -152,12 +153,13 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
                         if (!$method_contents) {
                             $this->must_rescan = true;
+
                             return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                         }
 
                         $error_handler = new \PhpParser\ErrorHandler\Collecting();
 
-                        $fake_class = "<?php class _ {" . $method_contents . "}";
+                        $fake_class = '<?php class _ {' . $method_contents . '}';
 
                         /** @var array<PhpParser\Node\Stmt> */
                         $replacement_stmts = $this->parser->parse(
@@ -176,6 +178,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                                 && count($replacement_stmts[0]->stmts) !== 1
                             ) {
                                 $this->must_rescan = true;
+
                                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                             }
 
@@ -198,6 +201,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                                 || count($replacement_stmts[0]->stmts) > 1
                             ) {
                                 $this->must_rescan = true;
+
                                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                             }
                         }
@@ -220,12 +224,9 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                                     $error = new PhpParser\Error(
                                         $error->getRawMessage(),
                                         [
-                                            'startFilePos' =>
-                                                $stmt_start_pos + $error_attrs['startFilePos'] - 15,
-                                            'endFilePos' =>
-                                                $stmt_start_pos + $error_attrs['endFilePos'] - 15,
-                                            'startLine' =>
-                                                $error->getStartLine() + $current_line + $line_offset
+                                            'startFilePos' => $stmt_start_pos + $error_attrs['startFilePos'] - 15,
+                                            'endFilePos' => $stmt_start_pos + $error_attrs['endFilePos'] - 15,
+                                            'startLine' => $error->getStartLine() + $current_line + $line_offset,
                                         ]
                                     );
                                 }
@@ -242,6 +243,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                     }
 
                     $this->must_rescan = true;
+
                     return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                 }
 
@@ -272,6 +274,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             }
 
             $this->must_rescan = true;
+
             return PhpParser\NodeTraverser::STOP_TRAVERSAL;
         }
 
@@ -319,8 +322,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             return $node;
         }
 
-
-
         return null;
     }
 
@@ -337,9 +338,9 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
         foreach ($tokens as $token) {
             if ($token === '{') {
-                $brace_count++;
+                ++$brace_count;
             } elseif ($token === '}') {
-                $brace_count--;
+                --$brace_count;
             }
         }
 

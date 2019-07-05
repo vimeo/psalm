@@ -1,14 +1,13 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PhpParser;
-use Psalm\Context;
-use Psalm\CodeLocation;
-use Psalm\Type;
-use Psalm\StatementsSource;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 use function count;
+use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\StatementsSource;
+use Psalm\Type;
 
 class VersionCompareReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -63,14 +62,14 @@ class VersionCompareReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRet
 
             return new Type\Union([
                 new Type\Atomic\TBool,
-                new Type\Atomic\TNull
+                new Type\Atomic\TNull,
             ]);
         }
 
         return new Type\Union([
             new Type\Atomic\TLiteralInt(-1),
             new Type\Atomic\TLiteralInt(0),
-            new Type\Atomic\TLiteralInt(1)
+            new Type\Atomic\TLiteralInt(1),
         ]);
     }
 }

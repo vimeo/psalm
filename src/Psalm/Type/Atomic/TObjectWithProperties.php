@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Union;
-use Psalm\Type\Atomic;
-use function implode;
-use function array_map;
 use function array_keys;
+use function array_map;
 use function count;
+use function implode;
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 class TObjectWithProperties extends TObject
 {

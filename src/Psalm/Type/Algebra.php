@@ -1,25 +1,25 @@
 <?php
 namespace Psalm\Type;
 
+use function array_filter;
+use function array_keys;
+use function array_map;
+use function array_merge;
+use function array_pop;
+use function array_shift;
+use function array_unique;
+use function array_values;
+use function count;
+use function in_array;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Exception\ComplicatedExpressionException;
+use Psalm\FileSource;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Clause;
-use Psalm\FileSource;
-use function array_map;
-use function count;
-use function substr;
-use function array_merge;
 use function strlen;
-use function array_unique;
-use function array_values;
-use function array_keys;
-use function array_pop;
-use function in_array;
-use function array_filter;
-use function array_shift;
 use function strpos;
+use function substr;
 
 class Algebra
 {
@@ -521,7 +521,7 @@ class Algebra
 
                     $new_clauses[] = $new_clause;
 
-                    $complexity++;
+                    ++$complexity;
                 }
             }
         }
@@ -643,6 +643,7 @@ class Algebra
         }
 
         $negated = self::simplifyCNF(self::groupImpossibilities($clauses, $complexity));
+
         return $negated;
     }
 

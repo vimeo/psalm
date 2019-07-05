@@ -1,12 +1,11 @@
 <?php
-
 namespace Psalm\Plugin\Hook;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
 use Psalm\StatementsSource;
+use Psalm\Type;
 
 interface MethodReturnTypeProviderInterface
 {
@@ -18,6 +17,7 @@ interface MethodReturnTypeProviderInterface
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      * @param  ?array<Type\Union> $template_type_parameters
+     *
      * @return ?Type\Union
      */
     public static function getMethodReturnType(

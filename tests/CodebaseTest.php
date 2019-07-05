@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use function array_values;
+use function get_class;
 use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -11,8 +13,6 @@ use Psalm\PluginRegistrationSocket;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
-use function array_values;
-use function get_class;
 
 class CodebaseTest extends TestCase
 {

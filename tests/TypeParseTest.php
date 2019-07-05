@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Type;
 use function function_exists;
-use function stripos;
 use function print_r;
+use Psalm\Type;
+use function stripos;
 
 class TypeParseTest extends TestCase
 {
@@ -305,7 +305,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testInvalidType()
@@ -315,7 +314,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBracketedUnionAndIntersection()
@@ -526,7 +524,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testCallableWithBadVariadic()
@@ -536,7 +533,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testCallableWithTrailingColon()
@@ -546,7 +542,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testCallableWithAnotherBadVariadic()
@@ -556,7 +551,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testCallableWithVariadicAndDefault()
@@ -566,7 +560,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadVariadic()
@@ -576,7 +569,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadFullStop()
@@ -586,7 +578,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadSemicolon()
@@ -596,7 +587,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadGenericString()
@@ -606,7 +596,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadAmpersand()
@@ -616,7 +605,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadColon()
@@ -626,7 +614,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadBrackets()
@@ -636,7 +623,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testMoreBadBrackets()
@@ -646,7 +632,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testGeneratorWithWBadBrackets()
@@ -656,7 +641,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadEquals()
@@ -666,7 +650,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadBar()
@@ -676,7 +659,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testBadColonDash()
@@ -686,7 +668,6 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testDoubleBar()
@@ -784,7 +765,7 @@ class TypeParseTest extends TestCase
                 null,
                 [
                     'T' => ['' => [Type::getArray()]],
-                    'K' => ['' => [new Type\Union([new Type\Atomic\TTemplateKeyOf('T', null)])]]
+                    'K' => ['' => [new Type\Union([new Type\Atomic\TTemplateKeyOf('T', null)])]],
                 ]
             )
         );
@@ -939,7 +920,6 @@ class TypeParseTest extends TestCase
                 return 'hello';
             }
         }
-
 
         $reflectionFunc = new \ReflectionFunction('Psalm\Tests\someFunction');
         $reflectionParams = $reflectionFunc->getParameters();

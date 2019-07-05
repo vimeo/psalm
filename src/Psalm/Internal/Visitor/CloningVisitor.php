@@ -1,10 +1,10 @@
-<?php declare(strict_types=1);
-
+<?php
+declare(strict_types=1);
 namespace Psalm\Internal\Visitor;
 
+use function array_map;
 use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
-use function array_map;
 
 /**
  * Visitor cloning all nodes and linking to the original nodes using an attribute.
@@ -30,6 +30,7 @@ class CloningVisitor extends NodeVisitorAbstract
                 )
             );
         }
+
         return $node;
     }
 }

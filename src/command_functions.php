@@ -75,6 +75,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
         /**
          * @psalm-suppress UnresolvableInclude
          * @psalm-suppress MixedAssignment
+         *
          * @var mixed
          */
         $autoloader = require_once $file;

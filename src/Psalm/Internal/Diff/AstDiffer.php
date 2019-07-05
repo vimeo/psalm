@@ -1,9 +1,9 @@
-<?php declare(strict_types=1);
-
+<?php
+declare(strict_types=1);
 namespace Psalm\Internal\Diff;
 
-use PhpParser;
 use function array_reverse;
+use PhpParser;
 
 /**
  * Borrows from https://github.com/nikic/PHP-Parser/blob/master/lib/PhpParser/Internal/Differ.php
@@ -21,6 +21,7 @@ class AstDiffer
      * @param  \Closure(PhpParser\Node\Stmt, PhpParser\Node\Stmt, string, string, bool=) : bool $is_equal
      * @param  array<int, PhpParser\Node\Stmt> $a
      * @param  array<int, PhpParser\Node\Stmt> $b
+     *
      * @return array{0:array<int, array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
      */
     protected static function calculateTrace(
@@ -36,13 +37,13 @@ class AstDiffer
         $v = [1 => 0];
         $bc = [];
         $trace = [];
-        for ($d = 0; $d <= $max; $d++) {
+        for ($d = 0; $d <= $max; ++$d) {
             $trace[] = $v;
             for ($k = -$d; $k <= $d; $k += 2) {
-                if ($k === -$d || ($k !== $d && $v[$k-1] < $v[$k+1])) {
-                    $x = $v[$k+1];
+                if ($k === -$d || ($k !== $d && $v[$k - 1] < $v[$k + 1])) {
+                    $x = $v[$k + 1];
                 } else {
-                    $x = $v[$k-1] + 1;
+                    $x = $v[$k - 1] + 1;
                 }
 
                 $y = $x - $k;
@@ -52,8 +53,8 @@ class AstDiffer
                 while ($x < $n && $y < $m && ($is_equal)($a[$x], $b[$y], $a_code, $b_code, $body_change)) {
                     /** @var bool */
                     $bc[$x] = $body_change;
-                    $x++;
-                    $y++;
+                    ++$x;
+                    ++$y;
 
                     $body_change = false;
                 }
@@ -74,16 +75,17 @@ class AstDiffer
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
      * @param array<int, bool> $bc
+     *
      * @return DiffElem[]
      */
     protected static function extractDiff(array $trace, $x, $y, array $a, array $b, array $bc) : array
     {
         $result = [];
-        for ($d = \count($trace) - 1; $d >= 0; $d--) {
+        for ($d = \count($trace) - 1; $d >= 0; --$d) {
             $v = $trace[$d];
             $k = $x - $y;
 
-            if ($k === -$d || ($k !== $d && $v[$k-1] < $v[$k+1])) {
+            if ($k === -$d || ($k !== $d && $v[$k - 1] < $v[$k + 1])) {
                 $prevK = $k + 1;
             } else {
                 $prevK = $k - 1;
@@ -94,12 +96,12 @@ class AstDiffer
 
             while ($x > $prevX && $y > $prevY) {
                 $result[] = new DiffElem(
-                    $bc[$x-1] ? DiffElem::TYPE_KEEP_SIGNATURE : DiffElem::TYPE_KEEP,
-                    $a[$x-1],
-                    $b[$y-1]
+                    $bc[$x - 1] ? DiffElem::TYPE_KEEP_SIGNATURE : DiffElem::TYPE_KEEP,
+                    $a[$x - 1],
+                    $b[$y - 1]
                 );
-                $x--;
-                $y--;
+                --$x;
+                --$y;
             }
 
             if ($d === 0) {
@@ -107,15 +109,16 @@ class AstDiffer
             }
 
             while ($x > $prevX) {
-                $result[] = new DiffElem(DiffElem::TYPE_REMOVE, $a[$x-1], null);
-                $x--;
+                $result[] = new DiffElem(DiffElem::TYPE_REMOVE, $a[$x - 1], null);
+                --$x;
             }
 
             while ($y > $prevY) {
-                $result[] = new DiffElem(DiffElem::TYPE_ADD, null, $b[$y-1]);
-                $y--;
+                $result[] = new DiffElem(DiffElem::TYPE_ADD, null, $b[$y - 1]);
+                --$y;
             }
         }
+
         return array_reverse($result);
     }
 }

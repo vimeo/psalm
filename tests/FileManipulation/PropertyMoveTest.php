@@ -115,7 +115,7 @@ class PropertyMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::$foo' => 'Ns\B::$fooBar',
-                ]
+                ],
             ],
             'renameInstanceProperty' => [
                 '<?php
@@ -144,7 +144,7 @@ class PropertyMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::$foo' => 'Ns\A::$fooBar',
-                ]
+                ],
             ],
             'renameStaticProperty' => [
                 '<?php
@@ -173,7 +173,7 @@ class PropertyMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::$foo' => 'Ns\A::$fooBar',
-                ]
+                ],
             ],
             'moveStaticProperty' => [
                 '<?php
@@ -212,7 +212,7 @@ class PropertyMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::$foo' => 'Ns\B::$fooBar',
-                ]
+                ],
             ],
         ];
     }

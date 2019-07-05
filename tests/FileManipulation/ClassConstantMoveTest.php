@@ -115,7 +115,7 @@ class ClassConstantMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::FOO' => 'Ns\B::FOO_BAR',
-                ]
+                ],
             ],
             'renameSimpleClassConstant' => [
                 '<?php
@@ -150,7 +150,7 @@ class ClassConstantMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A::FOO' => 'Ns\A::FOO_BAR',
-                ]
+                ],
             ],
         ];
     }

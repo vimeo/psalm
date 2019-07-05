@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
+use function array_values;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type;
-use function array_values;
 
 class TypeCombinationTest extends TestCase
 {

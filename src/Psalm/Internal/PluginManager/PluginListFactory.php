@@ -1,11 +1,11 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
-use function rtrim;
-use const DIRECTORY_SEPARATOR;
 use function array_filter;
-use function urlencode;
+use const DIRECTORY_SEPARATOR;
 use function json_encode;
+use function rtrim;
+use function urlencode;
 
 class PluginListFactory
 {
@@ -56,8 +56,8 @@ class PluginListFactory
 
         if (empty($composer_lock_filenames)) {
             $stub_composer_lock = (object)[
-                "packages" => [],
-                "packages-dev" => [],
+                'packages' => [],
+                'packages-dev' => [],
             ];
             $composer_lock_filenames[] = 'data:application/json,' . urlencode(json_encode($stub_composer_lock));
         }

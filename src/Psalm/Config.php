@@ -1,70 +1,69 @@
 <?php
 namespace Psalm;
 
+use function array_merge;
+use function array_pop;
+use function array_unique;
+use function class_exists;
 use Composer\Autoload\ClassLoader;
+use function count;
+use const DIRECTORY_SEPARATOR;
+use function dirname;
+use const E_USER_ERROR;
+use function explode;
+use function file_exists;
+use function file_get_contents;
+use function filetype;
+use function get_class;
+use function get_defined_constants;
+use function get_defined_functions;
+use function in_array;
+use function intval;
+use function is_dir;
+use function json_decode;
+use function libxml_clear_errors;
+use const LIBXML_ERR_ERROR;
+use const LIBXML_ERR_FATAL;
+use function libxml_get_errors;
+use function libxml_use_internal_errors;
+use function mkdir;
+use const PHP_EOL;
+use function phpversion;
+use function preg_match;
+use function preg_quote;
+use function preg_replace;
+use Psalm\Config\IssueHandler;
+use Psalm\Config\ProjectFileFilter;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\FunctionIssue;
 use Psalm\Issue\MethodIssue;
-use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\PropertyIssue;
-use Psalm\Config\IssueHandler;
-use Psalm\Config\ProjectFileFilter;
-use Psalm\Exception\ConfigException;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Plugin\Hook;
-use Psalm\PluginRegistrationSocket;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
-use SimpleXMLElement;
-use const PHP_EOL;
 use function realpath;
-use function is_dir;
-use function dirname;
-use const DIRECTORY_SEPARATOR;
-use function file_exists;
-use function file_get_contents;
-use function sha1;
-use function libxml_use_internal_errors;
-use function libxml_get_errors;
-use const LIBXML_ERR_FATAL;
-use const LIBXML_ERR_ERROR;
-use function libxml_clear_errors;
-use function sys_get_temp_dir;
-use function mkdir;
-use function trigger_error;
-use const E_USER_ERROR;
-use function phpversion;
-use function version_compare;
-use function intval;
-use function strtolower;
-use function preg_replace;
-use function class_exists;
-use function count;
 use function reset;
-use function preg_quote;
-use function in_array;
-use function explode;
-use function get_class;
-use function array_pop;
+use function rmdir;
+use function scandir;
+use function sha1;
+use SimpleXMLElement;
 use function strpos;
-use function preg_match;
-use function array_merge;
-use function get_defined_constants;
-use function get_defined_functions;
-use function json_decode;
-use function array_unique;
-use function strtr;
 use function strrpos;
+use function strtolower;
+use function strtr;
 use function substr;
 use function substr_count;
-use function scandir;
-use function filetype;
+use function sys_get_temp_dir;
+use function trigger_error;
 use function unlink;
-use function rmdir;
+use function version_compare;
 
 class Config
 {
@@ -402,12 +401,14 @@ class Config
 
     /**
      * Static methods to be called after codebase has been populated
+     *
      * @var class-string<Hook\AfterCodebasePopulatedInterface>[]
      */
     public $after_codebase_populated = [];
 
     /**
      * Static methods to be called after codebase has been populated
+     *
      * @var class-string<Hook\AfterAnalysisInterface>[]
      */
     public $after_analysis = [];
@@ -479,7 +480,7 @@ class Config
 
         if (!$config_path) {
             if ($output_format === \Psalm\Report::TYPE_CONSOLE) {
-                echo 'Could not locate a config XML file in path '. $path
+                echo 'Could not locate a config XML file in path ' . $path
                     . '. Have you run \'psalm --init\' ?' . PHP_EOL;
                 exit(1);
             }
@@ -493,6 +494,7 @@ class Config
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @throws ConfigException
+     *
      * @return ?string
      */
     public static function locateConfigFile(string $path)
@@ -516,6 +518,7 @@ class Config
 
             $dir_path = dirname($dir_path);
         } while (dirname($dir_path) !== $dir_path);
+
         return null;
     }
 
@@ -1049,7 +1052,8 @@ class Config
 
                 /**
                  * @psalm-suppress InvalidStringClass
-                 * @var Plugin\PluginEntryPointInterface $plugin_object
+                 *
+                 * @var Plugin\PluginEntryPointInterface
                  */
                 $plugin_object = new $plugin_class_name;
                 $plugin_object($socket, $plugin_config);
@@ -1271,6 +1275,7 @@ class Config
 
     /**
      * @param  string $issue_type
+     *
      * @return string|null
      */
     private static function getParentIssueType($issue_type)

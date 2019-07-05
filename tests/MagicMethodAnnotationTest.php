@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
-use const DIRECTORY_SEPARATOR;
 
 class MagicMethodAnnotationTest extends TestCase
 {
@@ -45,7 +45,6 @@ class MagicMethodAnnotationTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testAnnotationWithoutCallConfig()
@@ -412,7 +411,7 @@ class MagicMethodAnnotationTest extends TestCase
                         };
                     }
 
-                    echo makeConcrete()->sayHello();'
+                    echo makeConcrete()->sayHello();',
             ],
             'inheritInterfacePseudoMethodsFromParent' => [
                 '<?php
@@ -443,7 +442,7 @@ class MagicMethodAnnotationTest extends TestCase
                     test(concreteEm()->getClassMetadata());
 
                     test2(em()->getOtherMetadata());
-                    test2(concreteEm()->getOtherMetadata());'
+                    test2(concreteEm()->getOtherMetadata());',
             ],
         ];
     }

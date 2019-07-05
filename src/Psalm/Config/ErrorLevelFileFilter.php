@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Config;
 
-use SimpleXMLElement;
 use function in_array;
+use SimpleXMLElement;
 
 class ErrorLevelFileFilter extends FileFilter
 {

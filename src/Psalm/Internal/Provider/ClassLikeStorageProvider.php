@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use function array_merge;
 use Psalm\Storage\ClassLikeStorage;
 use function strtolower;
-use function array_merge;
 
 /**
  * @internal
@@ -35,8 +35,9 @@ class ClassLikeStorageProvider
     /**
      * @param  string $fq_classlike_name
      *
-     * @return ClassLikeStorage
      * @throws \InvalidArgumentException when class does not exist
+     *
+     * @return ClassLikeStorage
      */
     public function get($fq_classlike_name)
     {
@@ -82,8 +83,8 @@ class ClassLikeStorageProvider
 
         $cached_value = $this->cache->getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents);
 
-        self::$storage[$fq_classlike_name_lc] =  $cached_value;
-        self::$new_storage[$fq_classlike_name_lc] =  $cached_value;
+        self::$storage[$fq_classlike_name_lc] = $cached_value;
+        self::$new_storage[$fq_classlike_name_lc] = $cached_value;
 
         return $cached_value;
     }
@@ -106,6 +107,7 @@ class ClassLikeStorageProvider
 
     /**
      * @param array<string, ClassLikeStorage> $more
+     *
      * @return void
      */
     public function addMore(array $more)

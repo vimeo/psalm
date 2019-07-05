@@ -1,11 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
+use function count;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 use function strpos;
-use function count;
 
 class FileReferenceTest extends TestCase
 {
@@ -282,7 +282,7 @@ class FileReferenceTest extends TestCase
                 ],
                 [],
                 [],
-                []
+                [],
             ],
             'constantRefs' => [
                 '<?php
@@ -313,7 +313,7 @@ class FileReferenceTest extends TestCase
                 [],
                 [],
                 [],
-                []
+                [],
             ],
             'staticPropertyRefs' => [
                 '<?php
@@ -347,7 +347,7 @@ class FileReferenceTest extends TestCase
                 ],
                 [],
                 [],
-                []
+                [],
             ],
             'instancePropertyRefs' => [
                 '<?php
@@ -387,7 +387,7 @@ class FileReferenceTest extends TestCase
                     ],
                 ],
                 [],
-                []
+                [],
             ],
             'traitAbstractRefs' => [
                 '<?php
@@ -415,7 +415,7 @@ class FileReferenceTest extends TestCase
                 [],
                 [],
                 [],
-                []
+                [],
             ],
         ];
     }

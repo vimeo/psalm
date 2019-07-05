@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Tests;
 
 class PsalmInternalAnnotationTest extends TestCase

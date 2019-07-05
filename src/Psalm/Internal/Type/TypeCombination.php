@@ -1,6 +1,16 @@
 <?php
 namespace Psalm\Internal\Type;
 
+use function array_filter;
+use function array_intersect_key;
+use function array_keys;
+use function array_merge;
+use function array_values;
+use function count;
+use function get_class;
+use function in_array;
+use function is_int;
+use function max;
 use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -18,9 +28,9 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -33,20 +43,9 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
-use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
-use function in_array;
-use function count;
-use function array_filter;
-use function is_int;
-use function array_values;
-use function array_keys;
-use function substr;
 use function strpos;
-use function array_merge;
-use function get_class;
-use function max;
-use function array_intersect_key;
+use function substr;
 
 /**
  * @internal
@@ -230,7 +229,8 @@ class TypeCombination
         if ($combination->array_type_params
             && (isset($combination->named_object_types['Traversable'])
                 || isset($combination->builtin_type_params['Traversable']))
-            && (($codebase && !$codebase->config->allow_phpstorm_generics)
+            && (
+                ($codebase && !$codebase->config->allow_phpstorm_generics)
                 || isset($combination->builtin_type_params['Traversable'])
                 || (isset($combination->named_object_types['Traversable'])
                     && $combination->named_object_types['Traversable']->from_docblock)
@@ -633,7 +633,7 @@ class TypeCombination
                 } else {
                     $param_count = max(count($combination->closure_params), count($type->params));
 
-                    for ($i = 0, $l = $param_count; $i < $l; $i++) {
+                    for ($i = 0, $l = $param_count; $i < $l; ++$i) {
                         $input_param = $type->params[$i] ?? null;
 
                         if (isset($combination->closure_params[$i])) {
@@ -666,7 +666,7 @@ class TypeCombination
                         false,
                         false,
                         true
-                    )
+                    ),
                 ];
             }
         }
@@ -780,11 +780,13 @@ class TypeCombination
             if ($type instanceof TObject) {
                 $combination->named_object_types = null;
                 $combination->value_types[$type_key] = $type;
+
                 return null;
             }
 
             if ($type instanceof TIterable) {
                 $combination->value_types[$type_key] = $type;
+
                 return null;
             }
 
@@ -806,6 +808,7 @@ class TypeCombination
                 if (!$codebase->classlikes->classOrInterfaceExists($type_key)) {
                     // write this to the main list
                     $combination->value_types[$type_key] = $type;
+
                     return null;
                 }
 

@@ -1,15 +1,14 @@
 <?php
 namespace Psalm\Report;
 
-use LSS\Array2XML;
+use function htmlspecialchars;
 use Psalm\Report;
 use function sprintf;
-use function htmlspecialchars;
 
 class CheckstyleReport extends Report
 {
     /**
-     * {{@inheritdoc}}
+     * {@inheritdoc}
      */
     public function create(): string
     {

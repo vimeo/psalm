@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use function array_merge;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -11,7 +11,6 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use function strtolower;
-use function array_merge;
 
 /**
  * @internal

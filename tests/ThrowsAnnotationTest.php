@@ -7,7 +7,6 @@ use Psalm\Context;
 class ThrowsAnnotationTest extends TestCase
 {
     /**
-     *
      * @return void
      */
     public function testUndocumentedThrow()
@@ -149,7 +148,6 @@ class ThrowsAnnotationTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testUndocumentedThrowInFunctionCall()
@@ -308,7 +306,6 @@ class ThrowsAnnotationTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testUncaughtThrowInFunctionCall()
@@ -351,7 +348,6 @@ class ThrowsAnnotationTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testEmptyThrows()

@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function stripos;
-use function preg_replace;
 use function preg_quote;
+use function preg_replace;
+use function stripos;
 use function strtolower;
 
 class TClassString extends TString implements HasClassString
@@ -24,7 +24,7 @@ class TClassString extends TString implements HasClassString
         $this->as_type = $as_type;
     }
 
-     /**
+    /**
      * @return string
      */
     public function getKey()

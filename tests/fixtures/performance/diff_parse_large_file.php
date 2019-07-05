@@ -44,4 +44,3 @@ Psalm\Internal\Provider\StatementsProvider::parseStatements($b);
 $diff_2 = microtime(true) - $time;
 
 echo 'Full parsing: ' . number_format($diff_2, 4) . "\n";
-

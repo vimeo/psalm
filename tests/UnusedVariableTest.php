@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Tests;
 
+use function preg_quote;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 use function strpos;
-use function preg_quote;
 
 class UnusedVariableTest extends TestCase
 {
@@ -965,7 +965,7 @@ class UnusedVariableTest extends TestCase
                         if ($var !== "") {
                             echo $var;
                         }
-                    }'
+                    }',
             ],
             'useTryAssignedVariableInFinallyWhenCatchExits' => [
                 '<?php
@@ -1000,7 +1000,7 @@ class UnusedVariableTest extends TestCase
                             echo get_class($a);
                             $a = A::getA();
                         }
-                    }'
+                    }',
             ],
         ];
     }

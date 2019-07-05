@@ -1,15 +1,14 @@
 <?php
-
 namespace Psalm\Internal\Provider;
 
-use PhpParser;
-use Psalm\Context;
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\MethodParamsProviderInterface;
-use function version_compare;
 use const PHP_VERSION;
+use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\Plugin\Hook\MethodParamsProviderInterface;
+use Psalm\StatementsSource;
 use function strtolower;
+use function version_compare;
 
 class MethodParamsProvider
 {
@@ -38,6 +37,7 @@ class MethodParamsProvider
     /**
      * @param  class-string<MethodParamsProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
+     *
      * @return void
      */
     public function registerClass(string $class)
@@ -45,6 +45,7 @@ class MethodParamsProvider
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /**
              * @psalm-suppress UndefinedMethod
+             *
              * @var \Closure
              */
             $callable = \Closure::fromCallable([$class, 'getMethodParams']);
@@ -86,6 +87,7 @@ class MethodParamsProvider
 
     /**
      * @param ?array<PhpParser\Node\Arg>  $call_args
+     *
      * @return  ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
     public function getMethodParams(

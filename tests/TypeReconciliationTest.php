@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use function is_array;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -9,7 +10,6 @@ use Psalm\Internal\Clause;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
-use function is_array;
 
 class TypeReconciliationTest extends TestCase
 {
@@ -1308,7 +1308,7 @@ class TypeReconciliationTest extends TestCase
                         }
 
                         echo sprintf("padding-top:%s%%;", 100 * ($height/$width));
-                    }'
+                    }',
             ],
             'notEmptyCheckOnMixedInTernary' => [
                 '<?php
@@ -1376,7 +1376,7 @@ class TypeReconciliationTest extends TestCase
                         } else {
                             throw new \InvalidArgumentException("Bad");
                         }
-                    }'
+                    }',
             ],
             'noLeakyClassType' => [
                 '<?php
@@ -1393,7 +1393,7 @@ class TypeReconciliationTest extends TestCase
                         public function iffer() : bool {
                             return $this->foo || $this->bar;
                         }
-                    }'
+                    }',
             ],
             'noLeakyForeachType' => [
                 '<?php
@@ -1425,7 +1425,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
                 [],
-                ['MixedAssignment']
+                ['MixedAssignment'],
             ],
             'nonEmptyThing' => [
                 '<?php
@@ -1442,7 +1442,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
                 [],
-                ['MixedArgument', 'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset']
+                ['MixedArgument', 'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset'],
             ],
             'allowNonEmptyArrayComparison' => [
                 '<?php
@@ -1452,7 +1452,7 @@ class TypeReconciliationTest extends TestCase
                      */
                     function foo(array $a, array $b) : void {
                         if ($a === $b) {}
-                    }'
+                    }',
             ],
         ];
     }

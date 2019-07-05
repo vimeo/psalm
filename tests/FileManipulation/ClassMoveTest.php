@@ -133,7 +133,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     if ($i instanceof B) {}',
                 [
                     'Ns\A' => 'Ns\B',
-                ]
+                ],
             ],
             'renameEmptyClassWithSpacesInDocblock' => [
                 '<?php
@@ -166,7 +166,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A' => 'Ns\B',
-                ]
+                ],
             ],
             'renameClassWithInstanceMethod' => [
                 '<?php
@@ -199,7 +199,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A' => 'Ns\B',
-                ]
+                ],
             ],
             'renameClassWithStaticMethod' => [
                 '<?php
@@ -236,7 +236,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A' => 'Ns\B',
-                ]
+                ],
             ],
             'renameClassWithInstanceProperty' => [
                 '<?php
@@ -269,7 +269,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Ns\A' => 'Ns\B',
-                ]
+                ],
             ],
             'renameClassWithStaticProperty' => [
                 '<?php
@@ -298,7 +298,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     B::$one = "two";',
                 [
                     'Ns\A' => 'Ns\B',
-                ]
+                ],
             ],
             'moveClassIntoNamespace' => [
                 '<?php
@@ -367,7 +367,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'A' => 'Foo\Bar\Baz\B',
-                ]
+                ],
             ],
             'moveClassDeeperIntoNamespaceAdjustUseWithoutAlias' => [
                 '<?php
@@ -420,7 +420,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Bar\Bat' => 'Bar\Baz\Bahh',
-                ]
+                ],
             ],
             'moveClassesIntoNamespace' => [
                 '<?php
@@ -498,7 +498,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                 [
                     'Foo\A' => 'Bar\Baz\A',
                     'Foo\B' => 'Bar\Baz\B',
-                ]
+                ],
             ],
             'moveClassDeeperIntoNamespaceAdjustUseWithAlias' => [
                 '<?php
@@ -551,7 +551,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Bar\Bat' => 'Bar\Baz\Bahh',
-                ]
+                ],
             ],
             'moveClassDeeperIntoNamespaceDontAdjustGroupUse' => [
                 '<?php
@@ -580,7 +580,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Bar\Bat' => 'Bar\Baz\Bahh',
-                ]
+                ],
             ],
         ];
     }

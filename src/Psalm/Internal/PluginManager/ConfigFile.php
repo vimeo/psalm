@@ -1,13 +1,13 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
-use Psalm\Config;
 use DomDocument;
-use RuntimeException;
 use function file_get_contents;
+use function file_put_contents;
+use Psalm\Config;
+use RuntimeException;
 use function strpos;
 use function substr;
-use function file_put_contents;
 
 class ConfigFile
 {
@@ -122,6 +122,7 @@ class ConfigFile
         }
 
         $doc->loadXML($file_contents);
+
         return $doc;
     }
 

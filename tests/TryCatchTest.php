@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Config;
-use Psalm\Context;
-
 class TryCatchTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
@@ -219,7 +216,7 @@ class TryCatchTest extends TestCase
                     } catch (Exception $e) {
                         example();
                     }
-                    ord($str);'
+                    ord($str);',
             ],
         ];
     }

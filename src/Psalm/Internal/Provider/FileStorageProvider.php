@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use function array_merge;
 use Psalm\Storage\FileStorage;
 use function strtolower;
-use function array_merge;
 
 /**
  * @internal
@@ -114,6 +114,7 @@ class FileStorageProvider
 
     /**
      * @param array<string, FileStorage> $more
+     *
      * @return void
      */
     public function addMore(array $more)

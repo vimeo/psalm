@@ -1,13 +1,13 @@
 <?php
 namespace Psalm\Report;
 
-use Psalm\Report;
 use function json_encode;
+use Psalm\Report;
 
 class JsonReport extends Report
 {
     /**
-     * {{@inheritdoc}}
+     * {@inheritdoc}
      */
     public function create(): string
     {

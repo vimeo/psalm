@@ -1,13 +1,13 @@
 <?php
 namespace Psalm\Internal\Type;
 
-use Psalm\Exception\TypeParseTreeException;
-use function count;
 use function array_pop;
+use function count;
 use function in_array;
-use function strtolower;
 use function preg_match;
+use Psalm\Exception\TypeParseTreeException;
 use function strlen;
+use function strtolower;
 
 /**
  * @internal
@@ -480,7 +480,7 @@ class ParseTree
                             break;
 
                         case '(':
-                            if (in_array(strtolower($type_token[0]), ['closure', 'callable', '\closure'])) {
+                            if (in_array(strtolower($type_token[0]), ['closure', 'callable', '\closure'], true)) {
                                 $new_leaf = new ParseTree\CallableTree(
                                     $type_token[0],
                                     $new_parent

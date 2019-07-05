@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests\Config;
 
-use Psalm\Config\Creator;
-use function dirname;
 use const DIRECTORY_SEPARATOR;
+use function dirname;
+use Psalm\Config\Creator;
 
 class CreatorTest extends \Psalm\Tests\TestCase
 {

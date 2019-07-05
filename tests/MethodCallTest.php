@@ -329,7 +329,7 @@ class MethodCallTest extends TestCase
                     $stmt->setFetchMode(PDO::FETCH_CLASS, A::class);
                     $stmt->execute();
                     /** @psalm-suppress MixedAssignment */
-                    $a = $stmt->fetch();'
+                    $a = $stmt->fetch();',
             ],
             'datePeriodConstructor' => [
                 '<?php
@@ -339,7 +339,7 @@ class MethodCallTest extends TestCase
                             DateInterval::createFromDateString("1 month"),
                             $d2
                         );
-                    }'
+                    }',
             ],
         ];
     }

@@ -1,10 +1,23 @@
 <?php
 namespace Psalm;
 
-use LanguageServerProtocol\{Position, Range, Command};
+use function array_combine;
+use function array_merge;
+use function count;
+use function error_log;
+use function explode;
+use function in_array;
+use function krsort;
+use function ksort;
+use LanguageServerProtocol\Command;
+use LanguageServerProtocol\Position;
+use LanguageServerProtocol\Range;
+use const PHP_MAJOR_VERSION;
+use const PHP_MINOR_VERSION;
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use function preg_match;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -17,24 +30,12 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
-use const PHP_MAJOR_VERSION;
-use const PHP_MINOR_VERSION;
-use function in_array;
-use function array_combine;
-use function strpos;
-use function strtolower;
-use function explode;
-use function array_merge;
-use function substr;
-use function error_log;
-use function ksort;
-use function krsort;
-use function preg_match;
 use function strlen;
-use function count;
-use function array_shift;
-use function substr_count;
+use function strpos;
 use function strrpos;
+use function strtolower;
+use function substr;
+use function substr_count;
 
 class Codebase
 {
@@ -378,7 +379,7 @@ class Codebase
         }
 
         foreach ($referenced_files as $referenced_file_path) {
-            if (in_array($referenced_file_path, $diff_files)) {
+            if (in_array($referenced_file_path, $diff_files, true)) {
                 continue;
             }
 
@@ -593,6 +594,7 @@ class Codebase
     public function findReferencesToProperty(string $property_id)
     {
         list($fq_class_name, $property_name) = explode('::', $property_id);
+
         return $this->file_reference_provider->getClassPropertyLocations(
             strtolower($fq_class_name) . '::' . $property_name
         );
@@ -709,9 +711,10 @@ class Codebase
      * @param  string       $fq_class_name
      * @param  string       $possible_parent
      *
-     * @return bool
      * @throws \Psalm\Exception\UnpopulatedClasslikeException when called on unpopulated class
      * @throws \InvalidArgumentException when class does not exist
+     *
+     * @return bool
      */
     public function classExtends($fq_class_name, $possible_parent)
     {
@@ -1004,6 +1007,7 @@ class Codebase
             return '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name;
         } catch (\Exception $e) {
             error_log($e->getMessage());
+
             return null;
         }
     }
@@ -1077,6 +1081,7 @@ class Codebase
             return $storage->location;
         } catch (\UnexpectedValueException $e) {
             error_log($e->getMessage());
+
             return null;
         } catch (\InvalidArgumentException $e) {
             return null;
@@ -1150,7 +1155,7 @@ class Codebase
 
         $offset = $position->toOffset($file_contents);
 
-        list(,, $argument_map) = $this->analyzer->getMapsForFile($file_path);
+        list(, , $argument_map) = $this->analyzer->getMapsForFile($file_path);
 
         $reference = null;
         $argument_number = null;

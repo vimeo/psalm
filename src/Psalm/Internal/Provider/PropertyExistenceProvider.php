@@ -1,15 +1,14 @@
 <?php
-
 namespace Psalm\Internal\Provider;
 
-use PhpParser;
-use Psalm\Context;
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\PropertyExistenceProviderInterface;
-use function version_compare;
 use const PHP_VERSION;
+use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\Plugin\Hook\PropertyExistenceProviderInterface;
+use Psalm\StatementsSource;
 use function strtolower;
+use function version_compare;
 
 class PropertyExistenceProvider
 {
@@ -36,6 +35,7 @@ class PropertyExistenceProvider
     /**
      * @param  class-string<PropertyExistenceProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
+     *
      * @return void
      */
     public function registerClass(string $class)
@@ -43,6 +43,7 @@ class PropertyExistenceProvider
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /**
              * @psalm-suppress UndefinedMethod
+             *
              * @var \Closure
              */
             $callable = \Closure::fromCallable([$class, 'doesPropertyExist']);
@@ -84,6 +85,7 @@ class PropertyExistenceProvider
 
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
+     *
      * @return ?bool
      */
     public function doesPropertyExist(

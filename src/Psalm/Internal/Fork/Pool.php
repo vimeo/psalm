@@ -1,47 +1,47 @@
 <?php
 namespace Psalm\Internal\Fork;
 
-use function count;
-use function extension_loaded;
-use const PHP_EOL;
-use function ini_get;
-use function version_compare;
-use const PHP_VERSION;
-use function stream_socket_pair;
-use const STREAM_PF_UNIX;
-use const STREAM_SOCK_STREAM;
-use const STREAM_IPPROTO_IP;
-use function error_log;
-use function pcntl_fork;
-use function posix_strerror;
-use function posix_get_last_error;
-use function array_values;
-use function base64_encode;
-use function serialize;
-use function strlen;
-use function fwrite;
-use function substr;
-use function usleep;
-use function fclose;
-use function stream_set_blocking;
-use function intval;
 use function array_fill_keys;
 use function array_keys;
-use function stream_select;
-use function fread;
-use function strpos;
-use function explode;
 use function array_pop;
-use function unserialize;
+use function array_values;
 use function base64_decode;
-use function gettype;
+use function base64_encode;
+use function count;
+use function error_log;
+use function explode;
+use function extension_loaded;
+use function fclose;
 use function feof;
-use function posix_kill;
-use const SIGALRM;
+use function fread;
+use function fwrite;
+use function gettype;
+use function ini_get;
+use function intval;
+use function pcntl_fork;
 use function pcntl_waitpid;
-use function pcntl_wifsignaled;
 use function pcntl_wexitstatus;
+use function pcntl_wifsignaled;
 use function pcntl_wtermsig;
+use const PHP_EOL;
+use const PHP_VERSION;
+use function posix_get_last_error;
+use function posix_kill;
+use function posix_strerror;
+use function serialize;
+use const SIGALRM;
+use const STREAM_IPPROTO_IP;
+use const STREAM_PF_UNIX;
+use function stream_select;
+use function stream_set_blocking;
+use const STREAM_SOCK_STREAM;
+use function stream_socket_pair;
+use function strlen;
+use function strpos;
+use function substr;
+use function unserialize;
+use function usleep;
+use function version_compare;
 
 /**
  * Adapted with relatively few changes from
@@ -108,10 +108,9 @@ class Pool
         );
 
         if (!extension_loaded('pcntl')) {
-            echo(
+            echo
                 'The pcntl extension must be loaded in order for Psalm to be able to use multiple processes.'
-                . PHP_EOL
-            );
+                . PHP_EOL;
             exit(1);
         }
 
@@ -319,7 +318,7 @@ class Pool
                     $content[intval($file)] = array_pop($serialized_messages);
 
                     foreach ($serialized_messages as $serialized_message) {
-                        $message = unserialize(base64_decode($serialized_message));
+                        $message = unserialize(base64_decode($serialized_message, true));
 
                         if ($message instanceof ForkProcessDoneMessage) {
                             $terminationMessages[] = $message->data;

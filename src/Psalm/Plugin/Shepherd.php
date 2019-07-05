@@ -1,33 +1,34 @@
 <?php
 namespace Psalm\Plugin;
 
-use Psalm\Codebase;
-use Psalm\SourceControl\SourceControlInfo;
-use function function_exists;
-use function fwrite;
-use const STDERR;
-use const PHP_EOL;
 use function array_filter;
-use function json_encode;
-use function parse_url;
-use const PHP_URL_SCHEME;
-use function curl_init;
-use function curl_setopt;
-use const CURLOPT_RETURNTRANSFER;
-use const CURLINFO_HEADER_OUT;
-use const CURLOPT_POST;
-use const CURLOPT_POSTFIELDS;
-use const CURLOPT_HTTPHEADER;
-use function strlen;
+use function curl_close;
 use function curl_exec;
 use function curl_getinfo;
+use function curl_init;
+use function curl_setopt;
+use const CURLINFO_HEADER_OUT;
+use const CURLOPT_HTTPHEADER;
+use const CURLOPT_POST;
+use const CURLOPT_POSTFIELDS;
+use const CURLOPT_RETURNTRANSFER;
+use function function_exists;
+use function fwrite;
+use function json_encode;
+use function parse_url;
+use const PHP_EOL;
+use const PHP_URL_SCHEME;
+use Psalm\Codebase;
+use Psalm\SourceControl\SourceControlInfo;
+use const STDERR;
+use function strlen;
 use function var_export;
-use function curl_close;
 
 class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete
+     *
      * @param array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
      * file_name: string, file_path: string, snippet: string, from: int, to: int,
      * snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}> $issues
@@ -42,6 +43,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
     ) {
         if (!function_exists('curl_init')) {
             fwrite(STDERR, 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL);
+
             return;
         }
 
@@ -55,7 +57,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                         return $i['severity'] === 'error';
                     }
                 ),
-                'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase)
+                'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             ];
 
             $payload = json_encode($data);
@@ -79,7 +81,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                 CURLOPT_HTTPHEADER,
                 [
                     'Content-Type: application/json',
-                    'Content-Length: ' . strlen($payload)
+                    'Content-Length: ' . strlen($payload),
                 ]
             );
 

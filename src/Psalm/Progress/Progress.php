@@ -1,11 +1,11 @@
 <?php
 namespace Psalm\Progress;
 
-use function error_reporting;
 use const E_ERROR;
+use function error_reporting;
 use function fwrite;
-use const STDERR;
 use const PHP_OS;
+use const STDERR;
 
 abstract class Progress
 {

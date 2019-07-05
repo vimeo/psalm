@@ -1,14 +1,14 @@
 <?php
 namespace Psalm\Tests;
 
+use function define;
+use function defined;
+use function dirname;
+use function getcwd;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
-use function defined;
-use function define;
-use function dirname;
-use function getcwd;
 
 class StubTest extends TestCase
 {
@@ -350,7 +350,6 @@ class StubTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testStubVariadicFunctionWrongArgType()
@@ -385,7 +384,6 @@ class StubTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testUserVariadicWithFalseVariadic()
@@ -578,7 +576,6 @@ class StubTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testNoStubFunction()
@@ -884,7 +881,6 @@ class StubTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testStubFileWithPartialClassDefinitionGeneralReturnType()

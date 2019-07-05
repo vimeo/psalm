@@ -1,13 +1,25 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use function array_merge;
+use function array_pop;
+use function end;
+use function explode;
+use function get_declared_classes;
+use function get_declared_interfaces;
+use function implode;
+use const PHP_EOL;
 use PhpParser;
+use function preg_match;
+use function preg_replace;
 use Psalm\Aliases;
-use Psalm\Exception\UnpopulatedClasslikeException;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Config;
+use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
@@ -15,27 +27,15 @@ use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\IssueBuffer;
-use Psalm\Internal\Provider\ClassLikeStorageProvider;
-use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
-use function get_declared_classes;
-use function preg_replace;
-use function strtolower;
-use function get_declared_interfaces;
-use function substr;
-use function preg_match;
-use const PHP_EOL;
-use function explode;
-use function strrpos;
 use function strlen;
-use function array_pop;
-use function implode;
-use function end;
-use function array_merge;
+use function strrpos;
+use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -465,9 +465,10 @@ class ClassLikes
      * @param  string       $fq_class_name
      * @param  string       $possible_parent
      *
-     * @return bool
      * @throws UnpopulatedClasslikeException when called on unpopulated class
      * @throws \InvalidArgumentException when class does not exist
+     *
+     * @return bool
      */
     public function classExtends($fq_class_name, $possible_parent, bool $from_api = false)
     {
@@ -798,7 +799,7 @@ class ClassLikes
                             $old_method_name_bounds[0],
                             $old_method_name_bounds[1],
                             $destination_name
-                        )
+                        ),
                     ]
                 );
 
@@ -809,7 +810,7 @@ class ClassLikes
                 if (!$insert_pos) {
                     $insert_pos = strlen($selection) - 1;
                 } else {
-                    $insert_pos++;
+                    ++$insert_pos;
                 }
 
                 $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
@@ -899,7 +900,7 @@ class ClassLikes
                             $old_property_name_bounds[0],
                             $old_property_name_bounds[1],
                             '$' . $destination_name
-                        )
+                        ),
                     ]
                 );
 
@@ -910,7 +911,7 @@ class ClassLikes
                 if (!$insert_pos) {
                     $insert_pos = strlen($selection) - 1;
                 } else {
-                    $insert_pos++;
+                    ++$insert_pos;
                 }
 
                 $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
@@ -972,7 +973,7 @@ class ClassLikes
                             $old_const_name_bounds[0],
                             $old_const_name_bounds[1],
                             $destination_name
-                        )
+                        ),
                     ]
                 );
 
@@ -983,7 +984,7 @@ class ClassLikes
                 if (!$insert_pos) {
                     $insert_pos = strlen($selection) - 1;
                 } else {
-                    $insert_pos++;
+                    ++$insert_pos;
                 }
 
                 $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
@@ -1869,7 +1870,7 @@ class ClassLikes
      */
     public function addThreadData(array $thread_data)
     {
-        list (
+        list(
             $existing_classlikes_lc,
             $existing_classes_lc,
             $existing_traits_lc,
@@ -1878,8 +1879,7 @@ class ClassLikes
             $existing_interfaces,
             $existing_classes,
             $trait_nodes,
-            $trait_aliases,
-        ) = $thread_data;
+            $trait_aliases) = $thread_data;
 
         $this->existing_classlikes_lc = array_merge($existing_classlikes_lc, $this->existing_classlikes_lc);
         $this->existing_classes_lc = array_merge($existing_classes_lc, $this->existing_classes_lc);

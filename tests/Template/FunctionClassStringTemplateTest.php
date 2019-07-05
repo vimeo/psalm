@@ -242,7 +242,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     $y = filter($x, B::class);',
                 [
                     '$y' => 'array<array-key, A&B>',
-                ]
+                ],
             ],
             'unionTOrClassStringTPassedClassString' => [
                 '<?php
@@ -265,7 +265,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         }
                     }
 
-                    getObject(C::class)->sayHello();'
+                    getObject(C::class)->sayHello();',
             ],
             'unionTOrClassStringTPassedObject' => [
                 '<?php
@@ -288,7 +288,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         }
                     }
 
-                    getObject(new C())->sayHello();'
+                    getObject(new C())->sayHello();',
             ],
             'dontModifyByRefTemplatedArray' => [
                 '<?php
@@ -322,7 +322,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      */
                     function getB(int $id, array $mapB): B {
                         return get(B::class, $mapB, $id);
-                    }'
+                    }',
             ],
             'unionClassStringTWithTReturnsObjectWhenCoerced' => [
                 '<?php
@@ -342,7 +342,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     function foo(string $s) : object {
                         /** @psalm-suppress ArgumentTypeCoercion */
                         return bar($s);
-                    }'
+                    }',
             ],
 
             'allowTemplatedIntersectionFirst' => [
@@ -381,7 +381,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         mock($className)->checkExpectations();
                     }
 
-                    mock(A::class)->foo();'
+                    mock(A::class)->foo();',
             ],
             'allowTemplatedIntersectionFirstTemplatedMock' => [
                 '<?php
@@ -419,7 +419,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         mock($className)->checkExpectations();
                     }
 
-                    mock(A::class)->foo();'
+                    mock(A::class)->foo();',
             ],
             'allowTemplatedIntersectionSecond' => [
                 '<?php
@@ -464,7 +464,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         mock($className)->checkExpectations();
                     }
 
-                    mock(A::class)->foo();'
+                    mock(A::class)->foo();',
             ],
             'returnClassString' => [
                 '<?php
@@ -532,7 +532,7 @@ class FunctionClassStringTemplateTest extends TestCase
                             }
                             throw new RuntimeException();
                         }
-                    }'
+                    }',
             ],
         ];
     }
@@ -584,7 +584,7 @@ class FunctionClassStringTemplateTest extends TestCase
                             return 3;
                         }
                     }',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'forbidLossOfInformationWhenCoercing' => [
                 '<?php

@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests\Loop;
 
-use Psalm\Tests\Traits;
 use const DIRECTORY_SEPARATOR;
+use Psalm\Tests\Traits;
 
 class DoTest extends \Psalm\Tests\TestCase
 {

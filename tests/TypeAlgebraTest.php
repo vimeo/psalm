@@ -916,7 +916,7 @@ class TypeAlgebraTest extends TestCase
                         }
 
                         echo sprintf("padding-top:%s%%;", 100 * ($height/$width));
-                    }'
+                    }',
             ],
             'invertLogic' => [
                 '<?php
@@ -929,7 +929,7 @@ class TypeAlgebraTest extends TestCase
                         }
 
                         return $a;
-                    }'
+                    }',
             ],
         ];
     }

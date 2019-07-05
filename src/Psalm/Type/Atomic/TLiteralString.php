@@ -43,6 +43,7 @@ class TLiteralString extends TString
         if (strlen($this->value) > 80) {
             return 'string(' . substr($no_newline_value, 0, 80) . '...' . ')';
         }
+
         return 'string(' . $no_newline_value . ')';
     }
 

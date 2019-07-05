@@ -1,17 +1,16 @@
 <?php
 namespace Psalm\Tests;
 
+use function file_get_contents;
+use function json_decode;
+use function ob_end_clean;
+use function ob_start;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\IssueBuffer;
-use Psalm\Tests\Internal\Provider;
 use Psalm\Report;
-use function json_decode;
-use const PHP_EOL;
-use function ob_start;
-use function ob_end_clean;
-use function file_get_contents;
+use Psalm\Tests\Internal\Provider;
 use function unlink;
 
 class ReportOutputTest extends TestCase
@@ -58,7 +57,6 @@ class ReportOutputTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testReportFormatException()
@@ -72,7 +70,7 @@ class ReportOutputTest extends TestCase
 
     public function analyzeFileForReport() : void
     {
-         $file_contents = '<?php
+        $file_contents = '<?php
 function psalmCanVerify(int $your_code): ?string {
   return $as_you . "type";
 }

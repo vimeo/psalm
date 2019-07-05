@@ -1,6 +1,5 @@
 <?php
 declare(strict_types = 1);
-
 namespace Psalm\Internal\LanguageServer;
 
 /**
@@ -11,5 +10,4 @@ namespace Psalm\Internal\LanguageServer;
  */
 interface ProtocolReader extends EmitterInterface
 {
-
 }

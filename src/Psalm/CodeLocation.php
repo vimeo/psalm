@@ -1,22 +1,22 @@
 <?php
 namespace Psalm;
 
-use PhpParser;
-use Psalm\Internal\Analyzer\CommentAnalyzer;
-use function strlen;
-use function strpos;
 use function explode;
-use function substr;
-use function trim;
-use function preg_replace;
-use function str_replace;
-use function preg_quote;
+use function max;
+use function min;
+use PhpParser;
 use function preg_match;
 use const PREG_OFFSET_CAPTURE;
+use function preg_quote;
+use function preg_replace;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
+use function str_replace;
+use function strlen;
+use function strpos;
 use function strrpos;
-use function min;
-use function max;
+use function substr;
 use function substr_count;
+use function trim;
 
 class CodeLocation
 {

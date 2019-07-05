@@ -385,7 +385,7 @@ class UnusedCodeTest extends TestCase
                     protected $foo = 2;
                 }
 
-                (new D)->bar();'
+                (new D)->bar();',
             ],
             'usedClassAfterExtensionLoaded' => [
                 '<?php
@@ -422,7 +422,7 @@ class UnusedCodeTest extends TestCase
                         }
                     }
 
-                    (new C)->addType(null);'
+                    (new C)->addType(null);',
             ],
             'usedMethodAfterClassExists' => [
                 '<?php
@@ -432,7 +432,7 @@ class UnusedCodeTest extends TestCase
 
                     if (class_exists(A::class)) {
                         A::bar();
-                    }'
+                    }',
             ],
         ];
     }

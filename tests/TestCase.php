@@ -1,17 +1,17 @@
 <?php
 namespace Psalm\Tests;
 
+use function define;
+use function defined;
+use const DIRECTORY_SEPARATOR;
+use function getcwd;
+use function ini_set;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use RuntimeException;
-use function ini_set;
-use function defined;
-use function define;
-use function getcwd;
-use const DIRECTORY_SEPARATOR;
 
 class TestCase extends BaseTestCase
 {

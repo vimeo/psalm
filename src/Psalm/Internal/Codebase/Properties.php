@@ -1,19 +1,17 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use function explode;
+use function preg_replace;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Provider\{
-    ClassLikeStorageProvider,
-    FileReferenceProvider,
-    PropertyExistenceProvider,
-    PropertyTypeProvider,
-    PropertyVisibilityProvider
-};
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\PropertyExistenceProvider;
+use Psalm\Internal\Provider\PropertyTypeProvider;
+use Psalm\Internal\Provider\PropertyVisibilityProvider;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use function preg_replace;
-use function explode;
 use function strtolower;
 
 /**
@@ -200,6 +198,7 @@ class Properties
 
     /**
      * @param  string $property_id
+     *
      * @return  \Psalm\Storage\PropertyStorage
      */
     public function getStorage($property_id)
@@ -225,6 +224,7 @@ class Properties
 
     /**
      * @param  string $property_id
+     *
      * @return  ?Type\Union
      */
     public function getPropertyType(

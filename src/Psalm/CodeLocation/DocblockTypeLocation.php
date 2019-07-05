@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\CodeLocation;
 
-use PhpParser;
-
 class DocblockTypeLocation extends \Psalm\CodeLocation
 {
     /** @var int */

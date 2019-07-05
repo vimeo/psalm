@@ -2,10 +2,10 @@
 namespace Psalm\Progress;
 
 use const PHP_EOL;
-use function strlen;
 use function round;
 use function sprintf;
 use function str_repeat;
+use function strlen;
 
 class LongProgress extends Progress
 {
@@ -88,6 +88,7 @@ class LongProgress extends Progress
 
         $leadingSpaces = 1 + strlen((string) $this->number_of_tasks) - strlen((string) $this->progress);
         $percentage = round($this->progress / $this->number_of_tasks * 100);
+
         return sprintf(
             '%s%s / %s (%s%%)',
             str_repeat(' ', $leadingSpaces),

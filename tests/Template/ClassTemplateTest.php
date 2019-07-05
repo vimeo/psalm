@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests\Template;
 
+use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
-use const DIRECTORY_SEPARATOR;
 
 class ClassTemplateTest extends TestCase
 {
@@ -1183,7 +1183,7 @@ class ClassTemplateTest extends TestCase
                             if (!$t) {}
                             if ($t) {}
                          }
-                    }'
+                    }',
             ],
             'allowTemplateParamsToCoerceToMinimumTypes' => [
                 '<?php
@@ -1356,8 +1356,8 @@ class ClassTemplateTest extends TestCase
 
                     $a = $p->a;',
                 [
-                    '$a' => 'string'
-                ]
+                    '$a' => 'string',
+                ],
             ],
             'templateAsArray' => [
                 '<?php
@@ -1419,7 +1419,7 @@ class ClassTemplateTest extends TestCase
                         public function __set(string $property, $value) {
                             $this->data[$property] = $value;
                         }
-                    }'
+                    }',
             ],
             'keyOfClassTemplateReturningIndexedAccess' => [
                 '<?php
@@ -1449,7 +1449,7 @@ class ClassTemplateTest extends TestCase
                         public function __get(string $property) {
                             return $this->data[$property];
                         }
-                    }'
+                    }',
             ],
             'SKIPPED-templatedInterfaceIntersectionFirst' => [
                 '<?php
@@ -1475,7 +1475,7 @@ class ClassTemplateTest extends TestCase
                     $a = makeConcrete()->foo();',
                 [
                     '$a' => 'C',
-                ]
+                ],
             ],
             'templatedInterfaceIntersectionSecond' => [
                 '<?php
@@ -1501,7 +1501,7 @@ class ClassTemplateTest extends TestCase
                     $a = makeConcrete()->foo();',
                 [
                     '$a' => 'C',
-                ]
+                ],
             ],
             'returnTemplateIntersectionGenericObjectAndTemplate' => [
                 '<?php
@@ -1531,8 +1531,8 @@ class ClassTemplateTest extends TestCase
 
                     $a = makeConcrete(C::class);',
                 [
-                    '$a' => 'C&I<C>'
-                ]
+                    '$a' => 'C&I<C>',
+                ],
             ],
             'keyOfArrayGet' => [
                 '<?php
@@ -1586,9 +1586,9 @@ class ClassTemplateTest extends TestCase
                          * @return key-of<DATA>
                          */
                         abstract public function getRandomKey() : string;
-                    }'
+                    }',
             ],
-            'allowBoolTemplateCoercion' =>  [
+            'allowBoolTemplateCoercion' => [
                 '<?php
                     /** @template T */
                     class TestPromise {

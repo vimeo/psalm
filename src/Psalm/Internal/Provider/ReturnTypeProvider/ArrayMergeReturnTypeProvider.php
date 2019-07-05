@@ -1,15 +1,14 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PhpParser;
-use Psalm\Context;
-use Psalm\CodeLocation;
-use Psalm\Type;
-use Psalm\Internal\Type\TypeCombination;
-use Psalm\StatementsSource;
 use function array_merge;
 use function array_values;
+use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\Internal\Type\TypeCombination;
+use Psalm\StatementsSource;
+use Psalm\Type;
 
 class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -78,7 +77,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                             ) {
                                 $unpacked_type_part = new Type\Atomic\TArray([
                                     Type::getArrayKey(),
-                                    Type::getMixed(true)
+                                    Type::getMixed(true),
                                 ]);
                             } else {
                                 return Type::getArray();

@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
-use function strtolower;
 use function microtime;
 use function strpos;
+use function strtolower;
 
 class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
 {

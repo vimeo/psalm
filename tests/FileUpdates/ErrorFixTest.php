@@ -1,15 +1,15 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
+use function array_keys;
+use function count;
+use const DIRECTORY_SEPARATOR;
+use function getcwd;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
-use function count;
-use function array_keys;
-use function getcwd;
-use const DIRECTORY_SEPARATOR;
 
 class ErrorFixTest extends \Psalm\Tests\TestCase
 {
@@ -66,7 +66,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
-        for ($i = 0; $i < count($files); $i++) {
+        for ($i = 0; $i < count($files); ++$i) {
             $batch = $files[$i];
 
             foreach ($batch as $file_path => $contents) {

@@ -1,16 +1,15 @@
 <?php
 declare(strict_types = 1);
-
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
+use function Amp\asyncCall;
 use Amp\ByteStream\ResourceInputStream;
 use Exception;
-use function Amp\asyncCall;
-use function substr;
 use function explode;
-use function trim;
 use function strlen;
+use function substr;
+use function trim;
 
 /**
  * Source: https://github.com/felixfbecker/php-language-server/tree/master/src/ProtocolStreamReader.php
@@ -25,6 +24,7 @@ class ProtocolStreamReader implements ProtocolReader
     /**
      * This is checked by ProtocolStreamReader so that it will stop reading from streams in the forked process.
      * There could be buffered bytes in stdin/over TCP, those would be processed by TCP if it were not for this check.
+     *
      * @var bool
      */
     private $is_accepting_new_requests = true;
@@ -98,6 +98,7 @@ class ProtocolStreamReader implements ProtocolReader
                         if (!$this->is_accepting_new_requests) {
                             // If we fork, don't read any bytes in the input buffer from the worker process.
                             $this->emitClose();
+
                             return $emitted_messages;
                         }
                         // MessageBody::parse can throw an Error, maybe log an error?
@@ -107,12 +108,13 @@ class ProtocolStreamReader implements ProtocolReader
                             $msg = null;
                         }
                         if ($msg) {
-                            $emitted_messages++;
+                            ++$emitted_messages;
                             $this->emit('message', [$msg]);
                             /** @psalm-suppress DocblockTypeContradiction */
                             if (!$this->is_accepting_new_requests) {
                                 // If we fork, don't read any bytes in the input buffer from the worker process.
                                 $this->emitClose();
+
                                 return $emitted_messages;
                             }
                         }
@@ -123,6 +125,7 @@ class ProtocolStreamReader implements ProtocolReader
                     break;
             }
         }
+
         return $emitted_messages;
     }
 

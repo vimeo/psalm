@@ -403,7 +403,7 @@ class AssertTest extends TestCase
                     $f->bat();',
                 [
                     '$f' => 'Foo',
-                ]
+                ],
             ],
             'dontBleedBadAssertVarIntoContext' => [
                 '<?php

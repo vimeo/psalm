@@ -1,11 +1,10 @@
 <?php
 declare(strict_types = 1);
-
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
-use function explode;
 use function array_pop;
+use function explode;
 use function strlen;
 
 /**
@@ -27,6 +26,7 @@ class Message
      * Parses a message
      *
      * @param string $msg
+     *
      * @return Message
      * @psalm-suppress UnusedMethod
      */
@@ -41,6 +41,7 @@ class Message
                 $obj->headers[$pair[0]] = $pair[1];
             }
         }
+
         return $obj;
     }
 
@@ -66,6 +67,7 @@ class Message
         foreach ($this->headers as $name => $value) {
             $headers .= "$name: $value\r\n";
         }
+
         return $headers . "\r\n" . $body;
     }
 }

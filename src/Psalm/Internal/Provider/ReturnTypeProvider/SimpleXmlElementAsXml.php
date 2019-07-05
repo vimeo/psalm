@@ -1,13 +1,12 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function count;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use function count;
 
 class SimpleXmlElementAsXml implements \Psalm\Plugin\Hook\MethodReturnTypeProviderInterface
 {
@@ -18,6 +17,7 @@ class SimpleXmlElementAsXml implements \Psalm\Plugin\Hook\MethodReturnTypeProvid
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?Type\Union
      */
     public static function getMethodReturnType(

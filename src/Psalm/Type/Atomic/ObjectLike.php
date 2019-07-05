@@ -1,17 +1,17 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\Codebase;
-use Psalm\Type;
-use Psalm\Type\Atomic;
-use Psalm\Internal\Type\TypeCombination;
-use Psalm\Type\Union;
-use function implode;
-use function array_map;
 use function array_keys;
-use function is_int;
+use function array_map;
 use function count;
 use function get_class;
+use function implode;
+use function is_int;
+use Psalm\Codebase;
+use Psalm\Internal\Type\TypeCombination;
+use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 /**
  * Represents an array where we know its key values

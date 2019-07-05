@@ -391,7 +391,7 @@ class ClassTest extends TestCase
                 '<?php
                     function foo(string $s) : void {
                         if (class_exists($s) || interface_exists($s)) {}
-                    }'
+                    }',
             ],
             'classExistsWithFalseArg' => [
                 '<?php
@@ -405,7 +405,7 @@ class ClassTest extends TestCase
                         }
 
                         return $class;
-                    }'
+                    }',
             ],
             'classExistsWithFalseArgInside' => [
                 '<?php
@@ -414,7 +414,7 @@ class ClassTest extends TestCase
                             /** @psalm-suppress MixedMethodCall */
                             new $s();
                         }
-                    }'
+                    }',
             ],
             'classAliasOnNonexistantClass' => [
                 '<?php
@@ -427,7 +427,7 @@ class ClassTest extends TestCase
 
                     }',
                 [],
-                ['PropertyNotSetInConstructor']
+                ['PropertyNotSetInConstructor'],
             ],
         ];
     }

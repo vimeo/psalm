@@ -8,7 +8,7 @@ use function sprintf;
 class EmacsReport extends Report
 {
     /**
-     * {{@inheritdoc}}
+     * {@inheritdoc}
      */
     public function create(): string
     {

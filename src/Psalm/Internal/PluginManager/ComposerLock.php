@@ -1,14 +1,14 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
-use RuntimeException;
+use function array_merge;
+use function file_get_contents;
 use function is_array;
 use function is_string;
 use function json_decode;
-use function file_get_contents;
 use function json_last_error;
 use function json_last_error_msg;
-use function array_merge;
+use RuntimeException;
 
 class ComposerLock
 {
@@ -20,7 +20,6 @@ class ComposerLock
     {
         $this->file_names = $file_names;
     }
-
 
     /**
      * @param mixed $package
@@ -49,6 +48,7 @@ class ComposerLock
         foreach ($pluginPackages as $package) {
             $ret[$package['name']] = $package['extra']['psalm']['pluginClass'];
         }
+
         return $ret;
     }
 
@@ -82,6 +82,7 @@ class ComposerLock
                 $ret[] = $package;
             }
         }
+
         return $ret;
     }
 
@@ -90,20 +91,21 @@ class ComposerLock
         $packages = [];
         foreach ($this->file_names as $file_name) {
             $composer_lock_contents = $this->read($file_name);
-            if (!isset($composer_lock_contents["packages"]) || !is_array($composer_lock_contents["packages"])) {
+            if (!isset($composer_lock_contents['packages']) || !is_array($composer_lock_contents['packages'])) {
                 throw new RuntimeException('packages section is missing or not an array');
             }
-            if (!isset($composer_lock_contents["packages-dev"]) || !is_array($composer_lock_contents["packages-dev"])) {
+            if (!isset($composer_lock_contents['packages-dev']) || !is_array($composer_lock_contents['packages-dev'])) {
                 throw new RuntimeException('packages-dev section is missing or not an array');
             }
             $packages = array_merge(
                 $packages,
                 array_merge(
-                    $composer_lock_contents["packages"],
-                    $composer_lock_contents["packages-dev"]
+                    $composer_lock_contents['packages'],
+                    $composer_lock_contents['packages-dev']
                 )
             );
         }
+
         return $packages;
     }
 }

@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests\Template;
 
+use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
-use const DIRECTORY_SEPARATOR;
 
 class ClassTemplateExtendsTest extends TestCase
 {
@@ -1748,7 +1748,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }
 
-                    ord((new Child())->example("str"));'
+                    ord((new Child())->example("str"));',
             ],
             'allowTraitExtendAndImplementWithExplicitParamType' => [
                 '<?php
@@ -1886,7 +1886,7 @@ class ClassTemplateExtendsTest extends TestCase
                      */
                     function takesDogList(Collection $list) : void {
                         getSounds($list); // this probably should not be an error
-                    }'
+                    }',
             ],
             'keyOfClassTemplateExtended' => [
                 '<?php
@@ -1943,7 +1943,7 @@ class ClassTemplateExtendsTest extends TestCase
                 [
                     '$a' => 'int',
                     '$b' => 'string',
-                ]
+                ],
             ],
             'templateExtendsWithNewlineAfter' => [
                 '<?php
@@ -1959,7 +1959,7 @@ class ClassTemplateExtendsTest extends TestCase
                      *
                      * @internal
                      */
-                    class Bar extends Foo {}'
+                    class Bar extends Foo {}',
             ],
             'implementsArrayReturnTypeWithTemplate' => [
                 '<?php
@@ -2010,7 +2010,7 @@ class ClassTemplateExtendsTest extends TestCase
                         public static function getIdProperty() : string {
                             return "id";
                         }
-                    }'
+                    }',
             ],
             'interfaceParentExtends' => [
                 '<?php
@@ -2029,7 +2029,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }
 
-                    echo (new F())->getValue();'
+                    echo (new F())->getValue();',
             ],
             'classParentExtends' => [
                 '<?php
@@ -2048,7 +2048,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }
 
-                    echo (new F())->getValue();'
+                    echo (new F())->getValue();',
             ],
             'lessSpecificNonGenericReturnType' => [
                 '<?php
@@ -2211,7 +2211,7 @@ class ClassTemplateExtendsTest extends TestCase
                         public function getIterator() {
                             return parent::getIterator();
                         }
-                    }'
+                    }',
             ],
             'templatedInterfaceGetIteratorIteration' => [
                 '<?php
@@ -2267,9 +2267,9 @@ class ClassTemplateExtendsTest extends TestCase
                      */
                     class Bar implements Foo {
                         use FooTrait;
-                    }'
+                    }',
 
-            ]
+            ],
         ];
     }
 
@@ -3029,7 +3029,7 @@ class ClassTemplateExtendsTest extends TestCase
                     function bar(Child $c) : void {
                         ord($c->example("boris"));
                     }',
-                'error_message' => 'MixedArgument - src/somefile.php:31:29 - Argument 1 of ord cannot be mixed, expecting string'
+                'error_message' => 'MixedArgument - src/somefile.php:31:29 - Argument 1 of ord cannot be mixed, expecting string',
             ],
             'preventExtendingWithCovariance' => [
                 '<?php
@@ -3049,7 +3049,7 @@ class ClassTemplateExtendsTest extends TestCase
                      * @extends InvariantFoo<T>
                      */
                     class CovariantFoo extends InvariantFoo {}',
-                'error_message' => 'InvalidTemplateParam'
+                'error_message' => 'InvalidTemplateParam',
             ],
             'preventWiderParentType' => [
                 '<?php
@@ -3079,7 +3079,7 @@ class ClassTemplateExtendsTest extends TestCase
                             return "a";
                         }
                     }',
-                'error_message' => 'ArgumentTypeCoercion'
+                'error_message' => 'ArgumentTypeCoercion',
             ],
         ];
     }

@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Progress;
 
-use function error_reporting;
 use const E_ALL;
+use function error_reporting;
 
 class DebugProgress extends Progress
 {

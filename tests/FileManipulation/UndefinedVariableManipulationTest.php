@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Tests\Internal\Provider;
 use const PHP_VERSION;
 
 class UndefinedVariableManipulationTest extends FileManipulationTest

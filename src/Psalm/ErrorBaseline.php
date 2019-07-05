@@ -1,29 +1,30 @@
 <?php
 namespace Psalm;
 
-use Psalm\Internal\Provider\FileProvider;
-use RuntimeException;
-use function array_reduce;
-use const LIBXML_NOBLANKS;
-use function str_replace;
-use function min;
-use function array_intersect;
 use function array_filter;
-use function strpos;
-use function ksort;
-use function array_merge;
-use function get_loaded_extensions;
-use function usort;
-use function implode;
-use function phpversion;
+use function array_intersect;
 use function array_map;
-use function preg_replace_callback;
+use function array_merge;
+use function array_reduce;
 use function explode;
+use function get_loaded_extensions;
+use function implode;
+use function ksort;
+use const LIBXML_NOBLANKS;
+use function min;
+use const PHP_VERSION;
+use function phpversion;
+use function preg_replace_callback;
+use Psalm\Internal\Provider\FileProvider;
+use function str_replace;
+use function strpos;
+use function usort;
 
 class ErrorBaseline
 {
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
+     *
      * @return int
      */
     public static function countTotalIssues(array $existingIssues)
@@ -60,8 +61,10 @@ class ErrorBaseline
     /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
-     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+     *
      * @throws Exception\ConfigException
+     *
+     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     public static function read(FileProvider $fileProvider, string $baselineFile): array
     {
@@ -118,8 +121,10 @@ class ErrorBaseline
      * @param FileProvider $fileProvider
      * @param string $baselineFile
      * @param array<array{file_name: string, type: string, severity: string, selected_text: string}> $issues
-     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+     *
      * @throws Exception\ConfigException
+     *
+     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     public static function update(FileProvider $fileProvider, string $baselineFile, array $issues)
     {
@@ -160,6 +165,7 @@ class ErrorBaseline
 
     /**
      * @param array<array{file_name: string, type: string, severity: string, selected_text: string}> $issues
+     *
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     private static function countIssueTypesByFile(array $issues): array
@@ -169,6 +175,7 @@ class ErrorBaseline
             /**
              * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
              * @param array{type: string, file_name: string, severity: string, selected_text: string} $issue
+             *
              * @return array<string,array<string,array{o:int, s:array<int, string>}>>
              */
             function (array $carry, array $issue): array {
@@ -188,7 +195,7 @@ class ErrorBaseline
                     $carry[$fileName][$issueType] = ['o' => 0, 's' => []];
                 }
 
-                $carry[$fileName][$issueType]['o']++;
+                ++$carry[$fileName][$issueType]['o'];
 
                 if (!strpos($issue['selected_text'], "\n")) {
                     $carry[$fileName][$issueType]['s'][] = $issue['selected_text'];
@@ -213,6 +220,7 @@ class ErrorBaseline
      * @param FileProvider $fileProvider
      * @param string $baselineFile
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
+     *
      * @return void
      */
     private static function writeToFile(
@@ -230,7 +238,7 @@ class ErrorBaseline
 
         $filesNode->setAttribute('php-version', implode(';' . "\n\t", array_merge(
             [
-                ('php:' . phpversion()),
+                ('php:' . PHP_VERSION),
             ],
             array_map(
                 function (string $extension) : string {

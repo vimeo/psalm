@@ -134,7 +134,7 @@ class DeprecatedAnnotationTest extends TestCase
 
                     echo Foo::class;',
                 'error_message' => 'DeprecatedClass',
-            ]
+            ],
         ];
     }
 }

@@ -1,31 +1,39 @@
 <?php
-
 namespace Amp;
 
 /**
  * @template TReturn
+ *
  * @param callable():\Generator<mixed, mixed, mixed, TReturn> $gen
+ *
  * @return callable():Promise<TReturn>
  */
-function coroutine(callable $gen) : callable {}
+function coroutine(callable $gen) : callable
+{
+}
 
 /**
  * @template TReturn
+ *
  * @param callable():(\Generator<mixed, mixed, mixed, TReturn>|TReturn) $gen
+ *
  * @return Promise<TReturn>
  */
-function call(callable $gen) : Promise {}
-
+function call(callable $gen) : Promise
+{
+}
 
 /**
  * @template TReturn
  */
-interface Promise {
+interface Promise
+{
     /**
      * @param callable(?\Throwable, ?TReturn):void $onResolved
+     *
      * @return void
      */
-    function onResolve(callable $onResolved);
+    public function onResolve(callable $onResolved);
 }
 
 /**
@@ -33,14 +41,21 @@ interface Promise {
  *
  * @template-implements Promise<TReturn>
  */
-class Success implements Promise {
+class Success implements Promise
+{
     /**
      * @param TReturn|null $value
      */
-    public function __construct($value = null) {}
+    public function __construct($value = null)
+    {
+    }
+
     /**
      * @param callable(?Throwable, ?TReturn):void $onResolved
+     *
      * @return void
      */
-    function onResolve(callable $onResolved) {}
+    public function onResolve(callable $onResolved)
+    {
+    }
 }

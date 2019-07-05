@@ -1,22 +1,20 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use function array_shift;
+use function explode;
+use function implode;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Provider\{
-    FileStorageProvider,
-    FunctionReturnTypeProvider,
-    FunctionExistenceProvider,
-    FunctionParamsProvider
-};
+use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Provider\FunctionExistenceProvider;
+use Psalm\Internal\Provider\FunctionParamsProvider;
+use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
+use function strpos;
 use function strtolower;
 use function substr;
-use function strpos;
-use function explode;
-use function array_shift;
-use function implode;
 
 /**
  * @internal

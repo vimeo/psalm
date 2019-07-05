@@ -1,9 +1,18 @@
 <?php
 namespace Psalm;
 
+use function array_pop;
+use function array_search;
+use function array_splice;
+use function count;
+use function explode;
+use function file_put_contents;
+use function get_class;
+use function memory_get_peak_usage;
+use function microtime;
+use function number_format;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\CodeIssue;
-use Psalm\Report;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CompactReport;
 use Psalm\Report\ConsoleReport;
@@ -14,20 +23,10 @@ use Psalm\Report\PylintReport;
 use Psalm\Report\SonarqubeReport;
 use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
-use function explode;
-use function get_class;
-use function array_pop;
-use function usort;
-use function str_replace;
-use function count;
-use function array_search;
-use function array_splice;
-use function file_put_contents;
-use function str_repeat;
-use function number_format;
-use function microtime;
-use function memory_get_peak_usage;
 use function sha1;
+use function str_repeat;
+use function str_replace;
+use function usort;
 
 class IssueBuffer
 {
@@ -236,8 +235,7 @@ class IssueBuffer
         if (self::$issues_data) {
             usort(
                 self::$issues_data,
-                /** @return int */
-                function (array $d1, array $d2) {
+                function (array $d1, array $d2) : int {
                     if ($d1['file_path'] === $d2['file_path']) {
                         if ($d1['line_from'] === $d2['line_from']) {
                             if ($d1['column_from'] === $d2['column_from']) {
@@ -263,7 +261,11 @@ class IssueBuffer
 
                     if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
                         if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                            $position = array_search($issue_data['selected_text'], $issue_baseline[$file][$type]['s']);
+                            $position = array_search(
+                                $issue_data['selected_text'],
+                                $issue_baseline[$file][$type]['s'],
+                                true
+                            );
 
                             if ($position !== false) {
                                 $issue_data['severity'] = Config::REPORT_INFO;
@@ -335,7 +337,7 @@ class IssueBuffer
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
-                echo ($project_analyzer->stdout_report_options->use_color
+                echo($project_analyzer->stdout_report_options->use_color
                     ? "\e[0;31m" . $error_count . " errors\e[0m"
                     : $error_count . ' errors'
                 ) . ' found' . "\n";
@@ -486,6 +488,7 @@ class IssueBuffer
         $current_data = self::$issues_data;
         self::$issues_data = [];
         self::$emitted = [];
+
         return $current_data;
     }
 

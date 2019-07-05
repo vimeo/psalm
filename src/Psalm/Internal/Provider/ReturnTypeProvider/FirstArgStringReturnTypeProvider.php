@@ -1,12 +1,11 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
-use Psalm\Context;
 use Psalm\CodeLocation;
-use Psalm\Type;
+use Psalm\Context;
 use Psalm\StatementsSource;
+use Psalm\Type;
 
 class FirstArgStringReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -14,7 +13,7 @@ class FirstArgStringReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRet
     {
         return [
             'crypt',
-            'date'
+            'date',
         ];
     }
 

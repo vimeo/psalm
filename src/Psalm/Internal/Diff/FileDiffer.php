@@ -1,11 +1,11 @@
-<?php declare(strict_types=1);
-
+<?php
+declare(strict_types=1);
 namespace Psalm\Internal\Diff;
 
 use function array_reverse;
 use function explode;
-use function strlen;
 use function min;
+use function strlen;
 use function substr;
 
 /**
@@ -23,6 +23,7 @@ class FileDiffer
     /**
      * @param  array<int, string>    $a
      * @param  array<int, string>    $b
+     *
      * @return array{0:array<int, array<int, int>>, 1: int, 2: int}
      */
     private static function calculateTrace(
@@ -34,20 +35,20 @@ class FileDiffer
         $max = $n + $m;
         $v = [1 => 0];
         $trace = [];
-        for ($d = 0; $d <= $max; $d++) {
+        for ($d = 0; $d <= $max; ++$d) {
             $trace[] = $v;
             for ($k = -$d; $k <= $d; $k += 2) {
-                if ($k === -$d || ($k !== $d && $v[$k-1] < $v[$k+1])) {
-                    $x = $v[$k+1];
+                if ($k === -$d || ($k !== $d && $v[$k - 1] < $v[$k + 1])) {
+                    $x = $v[$k + 1];
                 } else {
-                    $x = $v[$k-1] + 1;
+                    $x = $v[$k - 1] + 1;
                 }
 
                 $y = $x - $k;
 
                 while ($x < $n && $y < $m && $a[$x] === $b[$y]) {
-                    $x++;
-                    $y++;
+                    ++$x;
+                    ++$y;
                 }
 
                 $v[$k] = $x;
@@ -69,11 +70,11 @@ class FileDiffer
     private static function extractDiff(array $trace, int $x, int $y, array $a, array $b) : array
     {
         $result = [];
-        for ($d = \count($trace) - 1; $d >= 0; $d--) {
+        for ($d = \count($trace) - 1; $d >= 0; --$d) {
             $v = $trace[$d];
             $k = $x - $y;
 
-            if ($k === -$d || ($k !== $d && $v[$k-1] < $v[$k+1])) {
+            if ($k === -$d || ($k !== $d && $v[$k - 1] < $v[$k + 1])) {
                 $prevK = $k + 1;
             } else {
                 $prevK = $k - 1;
@@ -85,11 +86,11 @@ class FileDiffer
             while ($x > $prevX && $y > $prevY) {
                 $result[] = new DiffElem(
                     DiffElem::TYPE_KEEP,
-                    $a[$x-1],
-                    $b[$y-1]
+                    $a[$x - 1],
+                    $b[$y - 1]
                 );
-                $x--;
-                $y--;
+                --$x;
+                --$y;
             }
 
             if ($d === 0) {
@@ -97,15 +98,16 @@ class FileDiffer
             }
 
             while ($x > $prevX) {
-                $result[] = new DiffElem(DiffElem::TYPE_REMOVE, $a[$x-1], null);
-                $x--;
+                $result[] = new DiffElem(DiffElem::TYPE_REMOVE, $a[$x - 1], null);
+                --$x;
             }
 
             while ($y > $prevY) {
-                $result[] = new DiffElem(DiffElem::TYPE_ADD, null, $b[$y-1]);
-                $y--;
+                $result[] = new DiffElem(DiffElem::TYPE_ADD, null, $b[$y - 1]);
+                --$y;
             }
         }
+
         return array_reverse($result);
     }
 
@@ -146,17 +148,17 @@ class FileDiffer
 
                 $text_length = strlen($diff_text);
 
-                $line_diff--;
+                --$line_diff;
 
                 if ($last_change === null) {
-                    $i++;
+                    ++$i;
                     $last_change = [
                         $a_offset,
                         $a_offset + $text_length,
                         $b_offset,
                         $b_offset,
                         $line_diff,
-                        ''
+                        '',
                     ];
                     $changes[$i - 1] = $last_change;
                 } else {
@@ -172,17 +174,17 @@ class FileDiffer
 
                 $text_length = strlen($diff_text);
 
-                $line_diff++;
+                ++$line_diff;
 
                 if ($last_change === null) {
-                    $i++;
+                    ++$i;
                     $last_change = [
                         $a_offset,
                         $a_offset,
                         $b_offset,
                         $b_offset + $text_length,
                         $line_diff,
-                        $diff_text
+                        $diff_text,
                     ];
                     $changes[$i - 1] = $last_change;
                 } else {
@@ -206,28 +208,28 @@ class FileDiffer
 
                 $max_same_count = min($old_text_length, $new_text_length);
 
-                for ($j = 0; $j < $max_same_count; $j++) {
+                for ($j = 0; $j < $max_same_count; ++$j) {
                     if ($old_diff_text[$j] !== $new_diff_text[$j]) {
                         break;
                     }
 
-                    $a_offset++;
-                    $b_offset++;
-                    $old_text_length--;
-                    $new_text_length--;
+                    ++$a_offset;
+                    ++$b_offset;
+                    --$old_text_length;
+                    --$new_text_length;
                 }
 
                 $new_diff_text = substr($new_diff_text, $j);
 
                 if ($last_change === null || $j) {
-                    $i++;
+                    ++$i;
                     $last_change = [
                         $a_offset,
                         $a_offset + $old_text_length,
                         $b_offset,
                         $b_offset + $new_text_length,
                         $line_diff,
-                        $new_diff_text
+                        $new_diff_text,
                     ];
                     $changes[$i - 1] = $last_change;
                 } else {
@@ -257,13 +259,14 @@ class FileDiffer
      * Coalesce equal-length sequences of remove+add into a replace operation.
      *
      * @param DiffElem[] $diff
+     *
      * @return DiffElem[]
      */
     private static function coalesceReplacements(array $diff)
     {
         $newDiff = [];
         $c = \count($diff);
-        for ($i = 0; $i < $c; $i++) {
+        for ($i = 0; $i < $c; ++$i) {
             $diffType = $diff[$i]->type;
             if ($diffType !== DiffElem::TYPE_REMOVE) {
                 $newDiff[] = $diff[$i];
@@ -272,17 +275,17 @@ class FileDiffer
 
             $j = $i;
             while ($j < $c && $diff[$j]->type === DiffElem::TYPE_REMOVE) {
-                $j++;
+                ++$j;
             }
 
             $k = $j;
             while ($k < $c && $diff[$k]->type === DiffElem::TYPE_ADD) {
-                $k++;
+                ++$k;
             }
 
             if ($j - $i === $k - $j) {
                 $len = $j - $i;
-                for ($n = 0; $n < $len; $n++) {
+                for ($n = 0; $n < $len; ++$n) {
                     $newDiff[] = new DiffElem(
                         DiffElem::TYPE_REPLACE,
                         $diff[$i + $n]->old,
@@ -290,7 +293,7 @@ class FileDiffer
                     );
                 }
             } else {
-                for (; $i < $k; $i++) {
+                for (; $i < $k; ++$i) {
                     $newDiff[] = $diff[$i];
                 }
             }
@@ -298,6 +301,7 @@ class FileDiffer
             /** @psalm-suppress LoopInvalidation */
             $i = $k - 1;
         }
+
         return $newDiff;
     }
 }

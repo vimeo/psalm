@@ -599,7 +599,7 @@ class RedundantConditionTest extends TestCase
                         } else {
                             return $s;
                         }
-                    }'
+                    }',
             ],
             'updateArrayAfterUnset' => [
                 '<?php
@@ -610,7 +610,7 @@ class RedundantConditionTest extends TestCase
                         $dict = ["a" => 1];
                         unset($dict[$s]);
                         if (count($dict)) {}
-                    }'
+                    }',
             ],
             'updateArrayAfterUnsetInLoop' => [
                 '<?php
@@ -625,7 +625,7 @@ class RedundantConditionTest extends TestCase
                         }
 
                         if (count($dict)) {}
-                    }'
+                    }',
             ],
         ];
     }

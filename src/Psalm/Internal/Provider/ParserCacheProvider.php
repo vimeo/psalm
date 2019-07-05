@@ -1,30 +1,30 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use const DIRECTORY_SEPARATOR;
+use function error_log;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function filemtime;
+use function gettype;
+use function igbinary_serialize;
+use function igbinary_unserialize;
+use function is_array;
+use function is_dir;
+use function is_readable;
+use function is_writable;
+use function json_decode;
+use function json_encode;
+use function md5;
+use function mkdir;
 use PhpParser;
 use Psalm\Config;
-use const DIRECTORY_SEPARATOR;
-use function is_readable;
-use function filemtime;
-use function igbinary_unserialize;
-use function file_get_contents;
-use function unserialize;
-use function error_log;
-use function json_decode;
-use function is_array;
-use function gettype;
-use function touch;
-use function is_dir;
-use function mkdir;
-use function file_put_contents;
-use function igbinary_serialize;
-use function serialize;
-use function json_encode;
-use function file_exists;
 use function scandir;
-use function is_writable;
+use function serialize;
+use function touch;
 use function unlink;
-use function md5;
+use function unserialize;
 
 /**
  * @internal
@@ -184,6 +184,7 @@ class ParserCacheProvider
                 if (!$hashes_encoded) {
                     error_log('Unexpected value when loading from file content hashes');
                     $this->existing_file_content_hashes = [];
+
                     return [];
                 }
 
@@ -193,6 +194,7 @@ class ParserCacheProvider
                 if (!is_array($hashes_decoded)) {
                     error_log('Unexpected value ' . gettype($hashes_decoded));
                     $this->existing_file_content_hashes = [];
+
                     return [];
                 }
 
@@ -259,6 +261,7 @@ class ParserCacheProvider
 
     /**
      * @param array<string, string> $file_content_hashes
+     *
      * @return void
      */
     public function addNewFileContentHashes(array $file_content_hashes)

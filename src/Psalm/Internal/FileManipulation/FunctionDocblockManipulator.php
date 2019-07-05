@@ -1,24 +1,24 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
-use Psalm\FileManipulation;
+use function count;
 
+use function ltrim;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
+use function preg_match;
 use Psalm\DocComment;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use function count;
-use function strpos;
-use function substr;
-use function str_split;
-use function preg_match;
-use function strrpos;
-use function strlen;
 use function str_replace;
-use function ltrim;
+use function str_split;
+use function strlen;
+use function strpos;
+use function strrpos;
+use function substr;
 
 /**
  * @internal
@@ -324,7 +324,7 @@ class FunctionDocblockManipulator
         if ($this->new_phpdoc_return_type) {
             $parsed_docblock['specials']['return'] = [
                 $this->new_phpdoc_return_type
-                    . ($this->return_type_description ? (' ' . $this->return_type_description) : '')
+                    . ($this->return_type_description ? (' ' . $this->return_type_description) : ''),
             ];
         }
 

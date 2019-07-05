@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Tests\Internal\Provider;
-
 class ReturnTypeManipulationTest extends FileManipulationTest
 {
     /**
@@ -1292,7 +1288,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 '7.3',
                 ['InvalidReturnType'],
                 false,
-                false
+                false,
             ],
             'dontReplaceValidReturnTypeAllowBackwardsIncompatibility' => [
                 '<?php
@@ -1318,7 +1314,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 '7.3',
                 ['InvalidReturnType'],
                 false,
-                true
+                true,
             ],
         ];
     }

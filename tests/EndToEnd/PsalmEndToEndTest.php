@@ -1,24 +1,22 @@
 <?php
-
-
 namespace Psalm\Tests\EndToEnd;
 
-use PHPUnit\Framework\TestCase;
-
-use Symfony\Component\Process\Process;
-use function tempnam;
-use function sys_get_temp_dir;
-use function unlink;
-use function mkdir;
-use function getcwd;
-use function is_string;
-use function copy;
 use function array_merge;
-use function opendir;
-use function readdir;
-use function is_dir;
+
 use function closedir;
+use function copy;
+use function getcwd;
+use function is_dir;
+use function is_string;
+use function mkdir;
+use function opendir;
+use PHPUnit\Framework\TestCase;
+use function readdir;
 use function rmdir;
+use Symfony\Component\Process\Process;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -44,7 +42,7 @@ class PsalmEndToEndTest extends TestCase
         mkdir(self::$tmpDir);
 
         $getcwd = getcwd();
-        if (! is_string($getcwd)) {
+        if (!is_string($getcwd)) {
             throw new \Exception('Couldn\'t get working directory');
         }
 
@@ -115,13 +113,14 @@ class PsalmEndToEndTest extends TestCase
 
     /**
      * @param array<string> $args
+     *
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
     private function runPsalm(array $args, bool $shouldFail = false): array
     {
         $process = new Process(array_merge([$this->psalm], $args), self::$tmpDir);
 
-        if (! $shouldFail) {
+        if (!$shouldFail) {
             $process->mustRun();
         } else {
             $process->run();
@@ -131,7 +130,7 @@ class PsalmEndToEndTest extends TestCase
         return [
             'STDOUT' => $process->getOutput(),
             'STDERR' => $process->getErrorOutput(),
-            'CODE' => $process->getExitCode()
+            'CODE' => $process->getExitCode(),
         ];
     }
 
@@ -141,8 +140,8 @@ class PsalmEndToEndTest extends TestCase
     private static function recursiveRemoveDirectory(string $src): void
     {
         $dir = opendir($src);
-        while (false !== ( $file = readdir($dir))) {
-            if (( $file != '.' ) && ( $file != '..' )) {
+        while (false !== ($file = readdir($dir))) {
+            if (($file != '.') && ($file != '..')) {
                 $full = $src . '/' . $file;
                 if (is_dir($full)) {
                     self::recursiveRemoveDirectory($full);

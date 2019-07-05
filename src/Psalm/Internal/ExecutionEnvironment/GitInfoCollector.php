@@ -1,17 +1,16 @@
 <?php
-
 namespace Psalm\Internal\ExecutionEnvironment;
 
+use function array_keys;
+use function array_unique;
+use function count;
+use function explode;
 use Psalm\SourceControl\Git\CommitInfo;
 use Psalm\SourceControl\Git\GitInfo;
 use Psalm\SourceControl\Git\RemoteInfo;
-use function strpos;
-use function explode;
-use function count;
-use function array_keys;
 use function range;
+use function strpos;
 use function trim;
-use function array_unique;
 
 /**
  * Git repository info collector.
@@ -76,7 +75,7 @@ class GitInfoCollector
      */
     protected function collectCommit() : CommitInfo
     {
-        $commitResult = $this->executor->execute("git log -1 --pretty=format:%H%n%aN%n%ae%n%cN%n%ce%n%s%n%at");
+        $commitResult = $this->executor->execute('git log -1 --pretty=format:%H%n%aN%n%ae%n%cN%n%ce%n%s%n%at');
 
         if (count($commitResult) !== 7 || array_keys($commitResult) !== range(0, 6)) {
             throw new \RuntimeException();

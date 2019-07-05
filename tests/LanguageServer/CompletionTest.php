@@ -276,7 +276,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $this->assertSame(null, $codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 41)));
+        $this->assertNull($codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 41)));
     }
 
     /**
@@ -657,8 +657,8 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $this->assertCount(2, $completion_items);
 
-        $this->assertEquals('bar($0)', $completion_items[0]->insertText);
-        $this->assertEquals('baz()', $completion_items[1]->insertText);
+        $this->assertSame('bar($0)', $completion_items[0]->insertText);
+        $this->assertSame('baz()', $completion_items[1]->insertText);
     }
 
     /**
@@ -714,7 +714,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
             [
                 '*Ex',
                 'symbol',
-                110
+                110,
             ],
             $completion_data
         );
@@ -769,7 +769,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
             [
                 '*A',
                 'symbol',
-                215
+                215,
             ],
             $completion_data
         );
@@ -821,7 +821,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
             [
                 '*A',
                 'symbol',
-                231
+                231,
             ],
             $completion_data
         );

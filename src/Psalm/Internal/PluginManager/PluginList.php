@@ -3,9 +3,9 @@ namespace Psalm\Internal\PluginManager;
 
 use function array_diff_key;
 use function array_flip;
-use function strpos;
-use function array_search;
 use function array_key_exists;
+use function array_search;
+use function strpos;
 
 class PluginList
 {
@@ -15,10 +15,10 @@ class PluginList
     /** @var ComposerLock */
     private $composer_lock;
 
-    /** @var ?array<string,string> [pluginClass => packageName]*/
+    /** @var ?array<string,string> [pluginClass => packageName] */
     private $all_plugins = null;
 
-    /** @var ?array<string,?string> [pluginClass => ?packageName]*/
+    /** @var ?array<string,?string> [pluginClass => ?packageName] */
     private $enabled_plugins = null;
 
     public function __construct(ConfigFile $config_file, ComposerLock $composer_lock)
@@ -26,7 +26,6 @@ class PluginList
         $this->config_file = $config_file;
         $this->composer_lock = $composer_lock;
     }
-
 
     /**
      * @return array<string,?string> [pluginClass => ?packageName, ...]
@@ -40,6 +39,7 @@ class PluginList
                 $this->enabled_plugins[$plugin_class] = $this->findPluginPackage($plugin_class);
             }
         }
+
         return $this->enabled_plugins;
     }
 
@@ -59,6 +59,7 @@ class PluginList
         if (null === $this->all_plugins) {
             $this->all_plugins = array_flip($this->composer_lock->getPlugins());
         }
+
         return $this->all_plugins;
     }
 
@@ -85,6 +86,7 @@ class PluginList
     {
         // pluginClass => ?pluginPackage
         $plugin_classes = $this->getAll();
+
         return $plugin_classes[$class] ?? null;
     }
 

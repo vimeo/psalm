@@ -1,43 +1,42 @@
 <?php
 declare(strict_types = 1);
-
 namespace Psalm\Internal\LanguageServer;
 
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use LanguageServerProtocol\{
-    ServerCapabilities,
-    ClientCapabilities,
-    TextDocumentSyncKind,
-    TextDocumentSyncOptions,
-    InitializeResult,
-    CompletionOptions,
-    SignatureHelpOptions
-};
-use Psalm\Internal\LanguageServer\Server\TextDocument;
-use LanguageServerProtocol\{Range, Position, Diagnostic, DiagnosticSeverity};
 use AdvancedJsonRpc;
-use Amp\Promise;
-use Symfony\Component\VarExporter\VarExporter;
-use Throwable;
-use function Amp\call;
 use function Amp\asyncCoroutine;
-use function array_keys;
+use function Amp\call;
+use Amp\Promise;
 use function array_combine;
-use function array_values;
 use function array_filter;
+use function array_keys;
 use function array_map;
-use function max;
-use function trim;
-use function str_replace;
-use function explode;
 use function array_shift;
-use function substr;
-use function rawurlencode;
 use function array_unshift;
+use function array_values;
+use function explode;
 use function implode;
+use LanguageServerProtocol\ClientCapabilities;
+use LanguageServerProtocol\CompletionOptions;
+use LanguageServerProtocol\Diagnostic;
+use LanguageServerProtocol\DiagnosticSeverity;
+use LanguageServerProtocol\InitializeResult;
+use LanguageServerProtocol\Position;
+use LanguageServerProtocol\Range;
+use LanguageServerProtocol\ServerCapabilities;
+use LanguageServerProtocol\SignatureHelpOptions;
+use LanguageServerProtocol\TextDocumentSyncKind;
+use LanguageServerProtocol\TextDocumentSyncOptions;
+use function max;
 use function parse_url;
-use function urldecode;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\LanguageServer\Server\TextDocument;
+use function rawurlencode;
+use function str_replace;
 use function strpos;
+use function substr;
+use Throwable;
+use function trim;
+use function urldecode;
 
 /**
  * @internal
@@ -261,6 +260,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
     /**
      * @psalm-suppress PossiblyUnusedMethod
+     *
      * @return void
      */
     public function initialized()
@@ -316,6 +316,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
     /**
      * @param array<string, string> $uris
+     *
      * @return void
      */
     public function emitIssues(array $uris)
@@ -411,6 +412,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * Transforms an absolute file path into a URI as used by the language server protocol.
      *
      * @param string $filepath
+     *
      * @return string
      */
     public static function pathToUri(string $filepath): string
@@ -425,6 +427,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $parts = array_map('rawurlencode', $parts);
         array_unshift($parts, $first);
         $filepath = implode('/', $parts);
+
         return 'file:///' . $filepath;
     }
 
@@ -432,6 +435,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * Transforms URI into file path
      *
      * @param string $uri
+     *
      * @return string
      */
     public static function uriToPath(string $uri)
@@ -447,6 +451,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             }
             $filepath = str_replace('/', '\\', $filepath);
         }
+
         return $filepath;
     }
 }

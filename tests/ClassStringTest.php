@@ -10,7 +10,6 @@ class ClassStringTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
-     *
      * @return void
      */
     public function testDontAllowStringStandInForNewClass()
@@ -33,7 +32,6 @@ class ClassStringTest extends TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testDontAllowStringStandInForStaticMethodCall()
@@ -578,7 +576,7 @@ class ClassStringTest extends TestCase
                                 \Doesnt\Really::something();
                             }
                         }
-                    }'
+                    }',
             ],
             'allowClassExistsCheckOnString' => [
                 '<?php
@@ -589,7 +587,7 @@ class ClassStringTest extends TestCase
                                 \Doesnt\Really::something();
                             }
                         }
-                    }'
+                    }',
             ],
             'allowComparisonToStaticClassString' => [
                 '<?php
@@ -601,7 +599,7 @@ class ClassStringTest extends TestCase
                         }
                     }
 
-                    class B extends A {}'
+                    class B extends A {}',
             ],
             'noCrashWhenClassExists' => [
                 '<?php
@@ -609,7 +607,7 @@ class ClassStringTest extends TestCase
 
                     if (class_exists(A::class)) {
                         new \RuntimeException();
-                    }'
+                    }',
             ],
 
             'noCrashWhenClassExistsNegated' => [
@@ -618,7 +616,7 @@ class ClassStringTest extends TestCase
 
                     if (!class_exists(A::class)) {
                         new \RuntimeException();
-                    }'
+                    }',
             ],
         ];
     }

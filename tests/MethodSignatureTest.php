@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Context;
 use function class_exists;
 use const DIRECTORY_SEPARATOR;
+use Psalm\Context;
 
 class MethodSignatureTest extends TestCase
 {
@@ -536,7 +536,7 @@ class MethodSignatureTest extends TestCase
                     $a = (new Bar)->getTargets();',
                 [
                     '$a' => 'string',
-                ]
+                ],
             ],
             'parentIsKnown' => [
                 '<?php
@@ -975,7 +975,7 @@ class MethodSignatureTest extends TestCase
                         public function f($f): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
-                ['MoreSpecificImplementedParamType']
+                ['MoreSpecificImplementedParamType'],
             ],
             'preventOneOfUnionMoreSpecific' => [
                 '<?php

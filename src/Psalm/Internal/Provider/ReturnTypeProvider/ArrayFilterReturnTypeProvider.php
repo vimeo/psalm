@@ -1,21 +1,20 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function array_map;
+use function assert;
+use function count;
+use function is_string;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Codebase\CallMap;
-use Psalm\IssueBuffer;
-use Psalm\Issue\InvalidReturnType;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Codebase\CallMap;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
-use function array_map;
-use function count;
-use function is_string;
-use function assert;
 
 class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -98,7 +97,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                                             $callable->params
                                         )
                                     )
-                                )
+                                ),
                             ],
                         ]);
 

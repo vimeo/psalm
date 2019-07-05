@@ -1,14 +1,14 @@
 <?php
 namespace Psalm\Config;
 
-use SimpleXMLElement;
-use function in_array;
-use function strtolower;
 use function array_filter;
 use function array_map;
-use function substr;
-use function scandir;
 use function dirname;
+use function in_array;
+use function scandir;
+use SimpleXMLElement;
+use function strtolower;
+use function substr;
 
 class IssueHandler
 {

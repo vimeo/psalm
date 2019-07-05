@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Internal\FileManipulation;
 
 class CodeMigration

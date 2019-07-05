@@ -1,22 +1,21 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use function define;
+use function defined;
+use const DIRECTORY_SEPARATOR;
+use function dirname;
+use function get_class;
+use function getcwd;
+use function microtime;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
-use function defined;
-use function define;
-use function dirname;
-use const DIRECTORY_SEPARATOR;
-use function getcwd;
-use function get_class;
-use function microtime;
 use function sprintf;
 
 class PluginTest extends \Psalm\Tests\TestCase
@@ -70,7 +69,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testStringAnalyzerPlugin()
@@ -106,7 +104,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testStringAnalyzerPluginWithClassConstant()
@@ -146,7 +143,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testStringAnalyzerPluginWithClassConstantConcat()
@@ -218,7 +214,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testEchoAnalyzerPluginWithUnescapedConcatenatedString()
@@ -258,7 +253,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testEchoAnalyzerPluginWithUnescapedString()
@@ -347,7 +341,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testFloatCheckerPlugin()
@@ -669,7 +662,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testPropertyProviderHooksInvalidAssignment()
@@ -712,7 +704,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testMethodProviderHooksInvalidArg()
@@ -755,7 +746,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     *
      * @return void
      */
     public function testFunctionProviderHooksInvalidArg()
@@ -842,7 +832,7 @@ class PluginTest extends \Psalm\Tests\TestCase
                             <plugin filename="%s/examples/plugins/StringChecker.php" />
                         </plugins>
                     </psalm>',
-                    __DIR__.'/../..'
+                    __DIR__ . '/../..'
                 )
             )
         );
@@ -868,7 +858,7 @@ class PluginTest extends \Psalm\Tests\TestCase
                             <plugin filename="%s/does-not-exist/plugins/StringChecker.php" />
                         </plugins>
                     </psalm>',
-                    __DIR__.'/..'
+                    __DIR__ . '/..'
                 )
             )
         );

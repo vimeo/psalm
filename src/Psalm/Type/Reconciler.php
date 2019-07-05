@@ -1,11 +1,21 @@
 <?php
 namespace Psalm\Type;
 
+use function array_filter;
+use function array_map;
+use function array_pop;
+use function array_shift;
+use function count;
+use function explode;
+use function get_class;
+use function implode;
+use function is_string;
+use function ksort;
+use Psalm\Codebase;
+use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\PsalmInternalError;
@@ -26,7 +36,6 @@ use Psalm\Type\Atomic\TCallableObjectLikeArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -37,22 +46,13 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
-use function strpos;
-use function array_shift;
-use function ksort;
-use function substr;
-use function implode;
-use function array_map;
-use function is_string;
-use function array_filter;
-use function get_class;
-use function count;
-use function strtolower;
-use function array_pop;
-use function str_split;
-use function explode;
 use function str_replace;
+use function str_split;
+use function strpos;
+use function strtolower;
+use function substr;
 
 class Reconciler
 {
@@ -790,7 +790,7 @@ class Reconciler
             if ($existing_var_type->hasMixed()) {
                 return new Type\Union([
                     new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]),
-                    new Type\Atomic\TNamedObject('Countable')
+                    new Type\Atomic\TNamedObject('Countable'),
                 ]);
             }
 
@@ -1016,16 +1016,16 @@ class Reconciler
                 $existing_var_type->addType(
                     new TCallableObjectLikeArray([
                         new Type\Union([new TObject, new TString]),
-                        Type::getString()
+                        Type::getString(),
                     ])
                 );
             } else {
                 $array_combination = \Psalm\Internal\Type\TypeCombination::combineTypes([
                     new TCallableObjectLikeArray([
                         new Type\Union([new TObject, new TString]),
-                        Type::getString()
+                        Type::getString(),
                     ]),
-                    $existing_var_atomic_types['array']
+                    $existing_var_atomic_types['array'],
                 ]);
 
                 $existing_var_type->addType(
@@ -1106,7 +1106,7 @@ class Reconciler
 
             if ($existing_var_type->hasMixed()) {
                 $type = new Type\Union([
-                    new Type\Atomic\TNamedObject($new_var_type)
+                    new Type\Atomic\TNamedObject($new_var_type),
                 ]);
 
                 if ($allow_string_comparison) {
@@ -1156,14 +1156,16 @@ class Reconciler
 
                     $new_type = Type::getClassString($new_var_type);
 
-                    if (($new_type_has_interface_string
+                    if ((
+                        $new_type_has_interface_string
                             && !TypeAnalyzer::isContainedBy(
                                 $codebase,
                                 $existing_var_type,
                                 $new_type
                             )
                         )
-                        || ($old_type_has_interface_string
+                        || (
+                            $old_type_has_interface_string
                             && !TypeAnalyzer::isContainedBy(
                                 $codebase,
                                 $new_type,
@@ -1212,7 +1214,7 @@ class Reconciler
 
                         if (count($acceptable_atomic_types) === 1) {
                             return new Type\Union([
-                                new TClassString('object', $acceptable_atomic_types[0])
+                                new TClassString('object', $acceptable_atomic_types[0]),
                             ]);
                         }
                     }
@@ -1275,14 +1277,16 @@ class Reconciler
         $new_type_part = Atomic::create($new_var_type, null, $template_type_map);
 
         if ($new_type_part instanceof TNamedObject
-            && (($new_type_has_interface
+            && ((
+                $new_type_has_interface
                     && !TypeAnalyzer::isContainedBy(
                         $codebase,
                         $existing_var_type,
                         $new_type
                     )
                 )
-                || ($old_type_has_interface
+                || (
+                    $old_type_has_interface
                     && !TypeAnalyzer::isContainedBy(
                         $codebase,
                         $new_type,
@@ -2721,7 +2725,7 @@ class Reconciler
                     if ($base_atomic_type instanceof Type\Atomic\TArray) {
                         $base_atomic_type = new Type\Atomic\ObjectLike(
                             [
-                                $array_key_offset => clone $result_type
+                                $array_key_offset => clone $result_type,
                             ],
                             null
                         );
@@ -2793,7 +2797,7 @@ class Reconciler
                 case ']':
                     $parts_offset++;
                     $parts[$parts_offset] = $char;
-                    $parts_offset++;
+                    ++$parts_offset;
                     continue 2;
 
                 case '\'':
@@ -2810,13 +2814,14 @@ class Reconciler
                     if ($i < $char_count - 1 && $chars[$i + 1] === '>') {
                         ++$i;
 
-                        $parts_offset++;
+                        ++$parts_offset;
                         $parts[$parts_offset] = '->';
-                        $parts_offset++;
+                        ++$parts_offset;
                         continue 2;
                     }
                     // fall through
 
+                    // no break
                 default:
                     if (!isset($parts[$parts_offset])) {
                         $parts[$parts_offset] = '';

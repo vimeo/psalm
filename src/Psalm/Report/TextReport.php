@@ -8,7 +8,7 @@ use function sprintf;
 class TextReport extends Report
 {
     /**
-     * {{@inheritdoc}}
+     * {@inheritdoc}
      */
     public function create(): string
     {

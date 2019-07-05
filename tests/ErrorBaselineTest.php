@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Tests;
 
+use const LIBXML_NOBLANKS;
 use Prophecy\Argument;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Provider\FileProvider;
-use const LIBXML_NOBLANKS;
 
 class ErrorBaselineTest extends TestCase
 {

@@ -1,44 +1,26 @@
 <?php
 declare(strict_types = 1);
-
 namespace Psalm\Internal\LanguageServer\Server;
 
-use Psalm\Internal\LanguageServer\{
-    LanguageServer,
-    LanguageClient,
-    PhpDocumentLoader,
-    PhpDocument,
-    DefinitionResolver,
-    CompletionProvider
-};
-use LanguageServerProtocol\{
-    CompletionList,
-    SymbolLocationInformation,
-    SymbolDescriptor,
-    TextDocumentItem,
-    TextDocumentIdentifier,
-    VersionedTextDocumentIdentifier,
-    Position,
-    Range,
-    FormattingOptions,
-    TextEdit,
-    Location,
-    SymbolInformation,
-    ReferenceContext,
-    Hover,
-    MarkedString,
-    SymbolKind,
-    CompletionItem,
-    CompletionItemKind
-};
-use Psalm\Codebase;
 use Amp\Promise;
 use Amp\Success;
-use function error_log;
 use function count;
-use function substr_count;
+use function error_log;
+use LanguageServerProtocol\CompletionItem;
+use LanguageServerProtocol\CompletionList;
+use LanguageServerProtocol\Hover;
+use LanguageServerProtocol\Location;
+use LanguageServerProtocol\MarkedString;
+use LanguageServerProtocol\Position;
+use LanguageServerProtocol\Range;
+use LanguageServerProtocol\TextDocumentIdentifier;
+use LanguageServerProtocol\TextDocumentItem;
+use LanguageServerProtocol\VersionedTextDocumentIdentifier;
+use Psalm\Codebase;
+use Psalm\Internal\LanguageServer\LanguageServer;
 use function strlen;
 use function strpos;
+use function substr_count;
 
 /**
  * Provides method handlers for all textDocument/* methods
@@ -73,7 +55,8 @@ class TextDocument
      * document's truth is now managed by the client and the server must not try to read the document's truth using the
      * document's uri.
      *
-     * @param \LanguageServerProtocol\TextDocumentItem $textDocument The document that was opened.
+     * @param \LanguageServerProtocol\TextDocumentItem $textDocument the document that was opened
+     *
      * @return void
      */
     public function didOpen(TextDocumentItem $textDocument)
@@ -82,6 +65,7 @@ class TextDocument
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
             error_log($file_path . ' is not in project');
+
             return;
         }
 
@@ -113,6 +97,7 @@ class TextDocument
      *
      * @param \LanguageServerProtocol\VersionedTextDocumentIdentifier $textDocument
      * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $contentChanges
+     *
      * @return void
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges)
@@ -149,6 +134,7 @@ class TextDocument
      * truth now exists on disk).
      *
      * @param \LanguageServerProtocol\TextDocumentIdentifier $textDocument The document that was closed
+     *
      * @return void
      */
     public function didClose(TextDocumentIdentifier $textDocument)
@@ -158,7 +144,6 @@ class TextDocument
         $this->codebase->file_provider->closeFile($file_path);
         $this->server->client->textDocument->publishDiagnostics($textDocument->uri, []);
     }
-
 
     /**
      * The goto definition request is sent from the client to the server to resolve the definition location of a symbol
@@ -177,6 +162,7 @@ class TextDocument
         } catch (\Psalm\Exception\UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+
             return new Success(new Hover([]));
         }
 
@@ -220,6 +206,7 @@ class TextDocument
         } catch (\Psalm\Exception\UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+
             return new Success(new Hover([]));
         }
 
@@ -262,6 +249,7 @@ class TextDocument
 
         if (!$completion_data) {
             error_log('completion not found at ' . $position->line . ':' . $position->character);
+
             return new Success([]);
         }
 
@@ -309,7 +297,7 @@ class TextDocument
             $parameters[] = new \LanguageServerProtocol\ParameterInformation([
                 strlen($signature_label),
                 strlen($signature_label) + strlen($parameter_label),
-            ]) ;
+            ]);
             $signature_label .= $parameter_label;
 
             if ($i < (count($params) - 1)) {

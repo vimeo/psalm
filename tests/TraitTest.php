@@ -867,7 +867,7 @@ class TraitTest extends TestCase
 
                     class C {
                         use T;
-                    }'
+                    }',
             ],
         ];
     }

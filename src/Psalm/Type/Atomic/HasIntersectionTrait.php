@@ -1,11 +1,11 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function array_map;
+use function implode;
+use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Codebase;
-use function implode;
-use function array_map;
 
 trait HasIntersectionTrait
 {
@@ -32,6 +32,7 @@ trait HasIntersectionTrait
             array_map(
                 /**
                  * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $extra_type
+                 *
                  * @return string
                  */
                 function (Atomic $extra_type) use (

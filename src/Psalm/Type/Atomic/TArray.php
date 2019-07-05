@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-use function get_class;
 use function count;
+use function get_class;
+use Psalm\Type\Atomic;
 
 /**
  * Represents an array with generic type parameters.

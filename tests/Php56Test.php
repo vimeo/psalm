@@ -247,7 +247,7 @@ class Php56Test extends TestCase
                     $arr = [1, 2, 3, 4];
                     foo(...$arr);',
                 'assertions' => [
-                    '$arr' => 'array<int, int>'
+                    '$arr' => 'array<int, int>',
                 ],
             ],
             'iterableSplat' => [

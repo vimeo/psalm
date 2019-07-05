@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function count;
+use function implode;
 use Psalm\Type\Atomic;
 use function substr;
-use function implode;
-use function count;
 
 class TGenericObject extends TNamedObject
 {

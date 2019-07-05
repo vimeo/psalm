@@ -1,9 +1,8 @@
 <?php
 namespace Psalm\CodeLocation;
 
-use PhpParser;
-use function substr_count;
 use function substr;
+use function substr_count;
 
 class Raw extends \Psalm\CodeLocation
 {

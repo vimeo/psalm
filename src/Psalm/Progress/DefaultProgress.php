@@ -52,6 +52,7 @@ class DefaultProgress extends LongProgress
      * https://github.com/phan/phan/blob/d61a624b1384ea220f39927d53fd656a65a75fac/src/Phan/CLI.php
      * Renders a unicode progress bar that goes from light (left) to dark (right)
      * The length in the console is the positive integer $length
+     *
      * @see https://en.wikipedia.org/wiki/Block_Elements
      */
     private static function renderInnerProgressBar(int $length, float $p) : string
@@ -62,13 +63,14 @@ class DefaultProgress extends LongProgress
 
         if (!self::doesTerminalSupportUtf8()) {
             // Show a progress bar of "XXXX>------" in Windows when utf-8 is unsupported.
-            $progress_bar = str_repeat("X", $current);
+            $progress_bar = str_repeat('X', $current);
             $delta = $current_float - $current;
             if ($delta > 0.5) {
-                $progress_bar .= ">" . str_repeat("-", $rest - 1);
+                $progress_bar .= '>' . str_repeat('-', $rest - 1);
             } else {
-                $progress_bar .= str_repeat("-", $rest);
+                $progress_bar .= str_repeat('-', $rest);
             }
+
             return $progress_bar;
         }
 

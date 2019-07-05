@@ -1,17 +1,17 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use function array_shift;
+use function assert;
+use function count;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Storage\FunctionLikeParameter;
-use function count;
-use function assert;
 use function strtolower;
-use function array_shift;
 use function substr;
 
 /**
@@ -291,7 +291,7 @@ class CallMap
         }
 
         if ($analyzer_minor_version < self::PHP_MINOR_VERSION) {
-            for ($i = self::PHP_MINOR_VERSION; $i > $analyzer_minor_version; $i--) {
+            for ($i = self::PHP_MINOR_VERSION; $i > $analyzer_minor_version; --$i) {
                 /**
                  * @var array{
                  *     old: array<string, array<int|string, string>>,

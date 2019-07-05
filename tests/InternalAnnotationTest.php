@@ -191,7 +191,7 @@ class InternalAnnotationTest extends TestCase
                                 echo (new \A\Foo)->foo;
                             }
                         }
-                    }'
+                    }',
             ],
         ];
     }

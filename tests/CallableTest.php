@@ -894,7 +894,7 @@ class CallableTest extends TestCase
                         function () : B {
                             return new B();
                         }
-                    );'
+                    );',
             ],
             'allowCallableWithWiderParam' => [
                 '<?php
@@ -911,7 +911,7 @@ class CallableTest extends TestCase
                         function (A $a) : A {
                             return $a;
                         }
-                    );'
+                    );',
             ],
             'allowCallableWithOptionalArg' => [
                 '<?php
@@ -925,7 +925,7 @@ class CallableTest extends TestCase
                         function (int $x = 5) : int {
                             return $x;
                         }
-                    );'
+                    );',
             ],
         ];
     }
@@ -1430,7 +1430,7 @@ class CallableTest extends TestCase
                         return $x;
                       }
                     );',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

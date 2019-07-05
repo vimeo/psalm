@@ -89,7 +89,7 @@ class IssueSuppressionTest extends TestCase
                          * here
                          */
                         strlen("a", "b");
-                    }'
+                    }',
             ],
             'suppressUndefinedFunction' => [
                 '<?php
