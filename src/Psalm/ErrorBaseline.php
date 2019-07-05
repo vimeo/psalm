@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use Psalm\Internal\Provider\FileProvider;
+use RuntimeException;
 use function array_reduce;
 use const LIBXML_NOBLANKS;
 use function str_replace;
@@ -16,6 +17,8 @@ use function usort;
 use function implode;
 use function phpversion;
 use function array_map;
+use function preg_replace_callback;
+use function explode;
 
 class ErrorBaseline
 {
@@ -225,7 +228,7 @@ class ErrorBaseline
 
         usort($extensions, 'strnatcasecmp');
 
-        $filesNode->setAttribute('php-version', implode('; ', array_merge(
+        $filesNode->setAttribute('php-version', implode(';' . "\n\t", array_merge(
             [
                 ('php:' . phpversion()),
             ],
@@ -261,6 +264,33 @@ class ErrorBaseline
         $baselineDoc->appendChild($filesNode);
         $baselineDoc->formatOutput = true;
 
-        $fileProvider->setContents($baselineFile, $baselineDoc->saveXML());
+        $xml = preg_replace_callback(
+            '/<files (psalm-version="[^"]+") (?:php-version="(.+)">\n)/',
+            /**
+            * @param array<int, string> $matches
+            */
+            function (array $matches) : string {
+                return
+                    '<files' .
+                    "\n  " .
+                    $matches[1] .
+                    "\n" .
+                    '  php-version="' .
+                    "\n    " .
+                    implode("\n    ", explode('&#10;&#9;', $matches[2])) .
+                    "\n" .
+                    '  "' .
+                    "\n" .
+                    '>' .
+                    "\n";
+            },
+            $baselineDoc->saveXML()
+        );
+
+        if ($xml === null) {
+            throw new RuntimeException('Failed to reformat opening attributes!');
+        }
+
+        $fileProvider->setContents($baselineFile, $xml);
     }
 }
