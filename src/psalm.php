@@ -358,6 +358,10 @@ if (isset($options['i'])) {
     exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
 }
 
+if (array_key_exists('v', $options)) {
+    echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
+    exit;
+}
 
 // initialise custom config, if passed
 try {
@@ -390,11 +394,6 @@ if (isset($options['r']) && is_string($options['r'])) {
     $current_dir = $root_path . DIRECTORY_SEPARATOR;
 }
 
-
-if (array_key_exists('v', $options)) {
-    echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
-    exit;
-}
 
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
