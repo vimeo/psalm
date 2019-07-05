@@ -640,6 +640,8 @@ class Populator
             $parent_interfaces = array_merge($parent_interfaces, $parent_interface_storage->parent_interfaces);
 
             $this->inheritMethodsFromParent($storage, $parent_interface_storage);
+
+            $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
         }
 
         $storage->parent_interfaces = array_merge($parent_interfaces, $storage->parent_interfaces);
