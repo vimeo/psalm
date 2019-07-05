@@ -88,7 +88,7 @@ class PsalmEndToEndTest extends TestCase
 
         $this->assertStringContainsString(
             'No errors found!',
-            $this->runPsalm(['--alter', '--issues=all'])['STDOUT']
+            $this->runPsalm(['--alter', '--issues=all'], false, false)['STDOUT'] // @todo get --alter working with config dir
         );
 
         $this->assertSame(0, $this->runPsalm([])['CODE']);
