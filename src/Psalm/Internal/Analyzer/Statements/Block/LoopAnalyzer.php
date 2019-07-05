@@ -462,8 +462,6 @@ class LoopAnalyzer
             foreach ($loop_scope->possibly_unreferenced_vars as $var_id => $locations) {
                 if (isset($inner_context->unreferenced_vars[$var_id])) {
                     $inner_context->unreferenced_vars[$var_id] += $locations;
-                } else {
-                    $inner_context->unreferenced_vars[$var_id] = $locations;
                 }
             }
 
