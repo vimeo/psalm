@@ -1666,6 +1666,20 @@ class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
+            'detectRedundancyAfterLoopWithContinue' => [
+                '<?php
+                    $gap = null;
+
+                    foreach ([1, 2, 3] as $_) {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+
+                        $gap = "asa";
+                        throw new \Exception($gap);
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
         ];
     }
 }

@@ -2244,6 +2244,32 @@ class ClassTemplateExtendsTest extends TestCase
 
                     foreach ($c->getIterator() as $k => $v) { atan($v); strlen($k); }',
             ],
+            'traitInImplicitExtendedClass' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface Foo {
+                        /**
+                         * @return T
+                         */
+                        public static function getItem();
+                    }
+
+                    trait FooTrait {
+                        public static function getItem() {
+                            return "hello";
+                        }
+                    }
+
+                    /**
+                     * @template-implements Foo<string>
+                     */
+                    class Bar implements Foo {
+                        use FooTrait;
+                    }'
+
+            ]
         ];
     }
 
