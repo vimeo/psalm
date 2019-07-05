@@ -16,6 +16,7 @@ use const PHP_VERSION;
 use function phpversion;
 use function preg_replace_callback;
 use Psalm\Internal\Provider\FileProvider;
+use RuntimeException;
 use function str_replace;
 use function strpos;
 use function usort;
