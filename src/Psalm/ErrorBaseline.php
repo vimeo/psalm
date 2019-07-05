@@ -287,7 +287,7 @@ class ErrorBaseline
             $baselineDoc->saveXML()
         );
 
-        if (is_null($xml)) {
+        if ($xml === null) {
             throw new RuntimeException('Failed to reformat opening attributes!');
         }
 
