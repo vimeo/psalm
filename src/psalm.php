@@ -302,7 +302,7 @@ $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vend
 
 $output_format = isset($options['output-format']) && is_string($options['output-format'])
     ? $options['output-format']
-    : ProjectAnalyzer::TYPE_CONSOLE;
+    : \Psalm\Report::TYPE_CONSOLE;
 
 // initialise custom config, if passed
 try {
