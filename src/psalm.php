@@ -2,7 +2,6 @@
 require_once('command_functions.php');
 
 use Psalm\ErrorBaseline;
-use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider;
 use Psalm\Config;
@@ -304,6 +303,62 @@ $output_format = isset($options['output-format']) && is_string($options['output-
     ? $options['output-format']
     : \Psalm\Report::TYPE_CONSOLE;
 
+if (isset($options['i'])) {
+    if (file_exists($current_dir . 'psalm.xml')) {
+        die('A config file already exists in the current directory' . PHP_EOL);
+    }
+
+    $args = array_values(array_filter(
+        $args,
+        /**
+         * @param string $arg
+         *
+         * @return bool
+         */
+        function ($arg) {
+            return $arg !== '--ansi'
+                && $arg !== '--no-ansi'
+                && $arg !== '-i'
+                && $arg !== '--init'
+                && strpos($arg, '--disable-extension=') !== 0
+                && strpos($arg, '--root=') !== 0
+                && strpos($arg, '--r=') !== 0;
+        }
+    ));
+
+    $level = 3;
+    $source_dir = null;
+
+    if (count($args)) {
+        if (count($args) > 2) {
+            die('Too many arguments provided for psalm --init' . PHP_EOL);
+        }
+
+        if (isset($args[1])) {
+            if (!preg_match('/^[1-8]$/', $args[1])) {
+                die('Config strictness must be a number between 1 and 8 inclusive' . PHP_EOL);
+            }
+
+            $level = (int)$args[1];
+        }
+
+        $source_dir = $args[0];
+    }
+
+    try {
+        $template_contents = Psalm\Config\Creator::getContents($current_dir, $source_dir, $level);
+    } catch (Psalm\Exception\ConfigCreationException $e) {
+        die($e->getMessage() . PHP_EOL);
+    }
+
+    if (!file_put_contents($current_dir . 'psalm.xml', $template_contents)) {
+        die('Could not write to psalm.xml' . PHP_EOL);
+    }
+
+    exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
+}
+
+
 // initialise custom config, if passed
 try {
     if ($path_to_config) {
@@ -393,60 +448,6 @@ if (isset($options['set-baseline'])) {
     }
 }
 
-if (isset($options['i'])) {
-    if (file_exists($current_dir . 'psalm.xml')) {
-        die('A config file already exists in the current directory' . PHP_EOL);
-    }
-
-    $args = array_values(array_filter(
-        $args,
-        /**
-         * @param string $arg
-         *
-         * @return bool
-         */
-        function ($arg) {
-            return $arg !== '--ansi'
-                && $arg !== '--no-ansi'
-                && $arg !== '-i'
-                && $arg !== '--init'
-                && strpos($arg, '--disable-extension=') !== 0
-                && strpos($arg, '--root=') !== 0
-                && strpos($arg, '--r=') !== 0;
-        }
-    ));
-
-    $level = 3;
-    $source_dir = null;
-
-    if (count($args)) {
-        if (count($args) > 2) {
-            die('Too many arguments provided for psalm --init' . PHP_EOL);
-        }
-
-        if (isset($args[1])) {
-            if (!preg_match('/^[1-8]$/', $args[1])) {
-                die('Config strictness must be a number between 1 and 8 inclusive' . PHP_EOL);
-            }
-
-            $level = (int)$args[1];
-        }
-
-        $source_dir = $args[0];
-    }
-
-    try {
-        $template_contents = Psalm\Config\Creator::getContents($current_dir, $source_dir, $level);
-    } catch (Psalm\Exception\ConfigCreationException $e) {
-        die($e->getMessage() . PHP_EOL);
-    }
-
-    if (!file_put_contents($current_dir . 'psalm.xml', $template_contents)) {
-        die('Could not write to psalm.xml' . PHP_EOL);
-    }
-
-    exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
-}
 
 $output_format = isset($options['output-format']) && is_string($options['output-format'])
     ? $options['output-format']
