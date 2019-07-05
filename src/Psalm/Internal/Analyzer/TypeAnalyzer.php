@@ -1789,6 +1789,7 @@ class TypeAnalyzer
                     && !$container_param->hasTemplate()
                     && !$input_param->hasTemplate()
                     && !$input_param->hasLiteralValue()
+                    && !$input_param->hasEmptyArray()
                 ) {
                     $input_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
 

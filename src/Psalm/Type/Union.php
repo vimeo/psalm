@@ -572,6 +572,16 @@ class Union
     /**
      * @return bool
      */
+    public function hasEmptyArray()
+    {
+        return isset($this->types['array'])
+            && $this->types['array'] instanceof Atomic\TArray
+            && $this->types['array']->type_params[1]->isEmpty();
+    }
+
+    /**
+     * @return bool
+     */
     public function hasCallableType()
     {
         return isset($this->types['callable']) || isset($this->types['Closure']);
