@@ -649,32 +649,40 @@ class Config
 
         $config_xml = new SimpleXMLElement($file_contents);
 
-        if (isset($config_xml['useDocblockTypes'])) {
-            $attribute_text = (string) $config_xml['useDocblockTypes'];
-            $config->use_docblock_types = $attribute_text === 'true' || $attribute_text === '1';
+        $booleanAttributes = [
+            'useDocblockTypes' => 'use_docblock_types',
+            'useDocblockPropertyTypes' => 'use_docblock_property_types',
+            'throwExceptionOnError' => 'throw_exception',
+            'hideExternalErrors' => 'hide_external_errors',
+            'resolveFromConfigFile' => 'resolve_from_config_file',
+            'allowFileIncludes' => 'allow_includes',
+            'totallyTyped' => 'totally_typed',
+            'strictBinaryOperands' => 'strict_binary_operands',
+            'requireVoidReturnType' => 'add_void_docblocks',
+            'useAssertForType' => 'use_assert_for_type',
+            'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
+            'allowPhpStormGenerics' => 'allow_phpstorm_generics',
+            'allowStringToStandInForClass' => 'allow_string_standin_for_class',
+            'usePhpDocMethodsWithoutMagicCall' => 'use_phpdoc_method_without_magic_or_parent',
+            'memoizeMethodCallResults' => 'memoize_method_calls',
+            'hoistConstants' => 'hoist_constants',
+            'addParamDefaultToDocblockType' => 'add_param_default_to_docblock_type',
+            'checkForThrowsDocblock' => 'check_for_throws_docblock',
+            'checkForThrowsInGlobalScope' => 'check_for_throws_in_global_scope',
+            'forbidEcho' => 'forbid_echo',
+            'ignoreInternalFunctionFalseReturn' => 'ignore_internal_falsable_issues',
+            'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
+        ];
+
+        foreach ($booleanAttributes as $xmlName => $internalName) {
+            if (isset($config_xml[$xmlName])) {
+                $attribute_text = (string) $config_xml[$xmlName];
+                $config->setBooleanAttribute(
+                    $internalName,
+                    $attribute_text === 'true' || $attribute_text === '1'
+                );
+            }
         }
-
-        if (isset($config_xml['useDocblockPropertyTypes'])) {
-            $attribute_text = (string) $config_xml['useDocblockPropertyTypes'];
-            $config->use_docblock_property_types = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['throwExceptionOnError'])) {
-            $attribute_text = (string) $config_xml['throwExceptionOnError'];
-            $config->throw_exception = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['hideExternalErrors'])) {
-            $attribute_text = (string) $config_xml['hideExternalErrors'];
-            $config->hide_external_errors = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-
-        if (isset($config_xml['resolveFromConfigFile'])) {
-            $attribute_text = (string) $config_xml['resolveFromConfigFile'];
-            $config->resolve_from_config_file = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
 
         if ($config->resolve_from_config_file) {
             $config->base_dir = $base_dir;
@@ -707,36 +715,6 @@ class Config
             trigger_error('Could not create cache directory: ' . $config->cache_directory, E_USER_ERROR);
         }
 
-        if (isset($config_xml['allowFileIncludes'])) {
-            $attribute_text = (string) $config_xml['allowFileIncludes'];
-            $config->allow_includes = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['totallyTyped'])) {
-            $attribute_text = (string) $config_xml['totallyTyped'];
-            $config->totally_typed = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['strictBinaryOperands'])) {
-            $attribute_text = (string) $config_xml['strictBinaryOperands'];
-            $config->strict_binary_operands = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['requireVoidReturnType'])) {
-            $attribute_text = (string) $config_xml['requireVoidReturnType'];
-            $config->add_void_docblocks = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['useAssertForType'])) {
-            $attribute_text = (string) $config_xml['useAssertForType'];
-            $config->use_assert_for_type = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['rememberPropertyAssignmentsAfterCall'])) {
-            $attribute_text = (string) $config_xml['rememberPropertyAssignmentsAfterCall'];
-            $config->remember_property_assignments_after_call = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
         if (isset($config_xml['serializer'])) {
             $attribute_text = (string) $config_xml['serializer'];
             $config->use_igbinary = $attribute_text === 'igbinary';
@@ -744,50 +722,6 @@ class Config
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
-        if (isset($config_xml['allowPhpStormGenerics'])) {
-            $attribute_text = (string) $config_xml['allowPhpStormGenerics'];
-            $config->allow_phpstorm_generics = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['allowStringToStandInForClass'])) {
-            $attribute_text = (string) $config_xml['allowStringToStandInForClass'];
-            $config->allow_string_standin_for_class = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['usePhpDocMethodsWithoutMagicCall'])) {
-            $attribute_text = (string) $config_xml['usePhpDocMethodsWithoutMagicCall'];
-            $config->use_phpdoc_method_without_magic_or_parent = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['memoizeMethodCallResults'])) {
-            $attribute_text = (string) $config_xml['memoizeMethodCallResults'];
-            $config->memoize_method_calls = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['hoistConstants'])) {
-            $attribute_text = (string) $config_xml['hoistConstants'];
-            $config->hoist_constants = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['addParamDefaultToDocblockType'])) {
-            $attribute_text = (string) $config_xml['addParamDefaultToDocblockType'];
-            $config->add_param_default_to_docblock_type = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['checkForThrowsDocblock'])) {
-            $attribute_text = (string) $config_xml['checkForThrowsDocblock'];
-            $config->check_for_throws_docblock = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['checkForThrowsInGlobalScope'])) {
-            $attribute_text = (string) $config_xml['checkForThrowsInGlobalScope'];
-            $config->check_for_throws_in_global_scope = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['forbidEcho'])) {
-            $attribute_text = (string) $config_xml['forbidEcho'];
-            $config->forbid_echo = $attribute_text === 'true' || $attribute_text === '1';
-        }
 
         if (isset($config_xml['findUnusedCode'])) {
             $attribute_text = (string) $config_xml['findUnusedCode'];
@@ -798,16 +732,6 @@ class Config
         if (isset($config_xml['findUnusedVariablesAndParams'])) {
             $attribute_text = (string) $config_xml['findUnusedVariablesAndParams'];
             $config->find_unused_variables = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['ignoreInternalFunctionFalseReturn'])) {
-            $attribute_text = (string) $config_xml['ignoreInternalFunctionFalseReturn'];
-            $config->ignore_internal_falsable_issues = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['ignoreInternalFunctionNullReturn'])) {
-            $attribute_text = (string) $config_xml['ignoreInternalFunctionNullReturn'];
-            $config->ignore_internal_nullable_issues = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['errorBaseline'])) {
@@ -1831,5 +1755,10 @@ class Config
     public function addStubFile(string $stub_file)
     {
         $this->stub_files[] = $stub_file;
+    }
+
+    private function setBooleanAttribute(string $name, bool $value): void
+    {
+        $this->$name = $value;
     }
 }
