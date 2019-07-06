@@ -389,8 +389,7 @@ function initialiseConfig(
     string $current_dir,
     string $output_format,
     ?ClassLoader $first_autoloader
-): Config
-{
+): Config {
     try {
         if ($path_to_config) {
             $config = Config::loadFromXMLFile($path_to_config, $current_dir);
