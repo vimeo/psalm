@@ -1,5 +1,8 @@
 <?php
 
+use Psalm\Config;
+use Psalm\Exception\ConfigException;
+
 /**
  * @param  string $current_dir
  * @param  bool   $has_explicit_root
@@ -383,4 +386,20 @@ Options:
         Run Psalm Language Server
 
 HELP;
+}
+
+function initialiseConfig(?string $path_to_config, string $current_dir, string $output_format): Config
+{
+    try {
+        if ($path_to_config) {
+            $config = Config::loadFromXMLFile($path_to_config, $current_dir);
+        } else {
+            $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
+        }
+    } catch (Psalm\Exception\ConfigException $e) {
+        fwrite(STDERR, $e->getMessage() . PHP_EOL);
+        exit(1);
+    }
+
+    return $config;
 }
