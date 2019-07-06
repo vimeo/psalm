@@ -169,5 +169,4 @@ class PsalmEndToEndTest extends TestCase
         closedir($dir);
         rmdir($src);
     }
-
 }
