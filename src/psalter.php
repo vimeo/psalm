@@ -185,11 +185,11 @@ if ($path_to_config === false) {
     die('Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
 }
 
-// initialise custom config, if passed
-if ($path_to_config) {
-    $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-} else {
-    $config = Config::getConfigForPath($current_dir, $current_dir, \Psalm\Report::TYPE_CONSOLE);
+$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE);
+
+if ($config->resolve_from_config_file) {
+    $current_dir = $config->base_dir;
+    chdir($current_dir);
 }
 
 $config->setComposerClassLoader($first_autoloader);
