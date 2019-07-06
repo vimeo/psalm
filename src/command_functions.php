@@ -197,6 +197,11 @@ function getPathsToCheck($f_paths)
             /** @var string */
             $input_path = $input_paths[$i];
 
+            if ($i > 0 && in_array($input_paths[$i-1], ['-c', '--config'])) {
+                // This is the path to the config file, not a path to check.
+                continue;
+            }
+
             if (realpath($input_path) === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalm')
                 || realpath($input_path) === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalter')
                 || realpath($input_path) === realpath(Phar::running(false))

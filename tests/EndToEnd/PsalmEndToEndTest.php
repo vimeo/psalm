@@ -17,6 +17,9 @@ use Symfony\Component\Process\Process;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
+use function file_get_contents;
+use function file_put_contents;
+use function preg_replace;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -121,10 +124,9 @@ class PsalmEndToEndTest extends TestCase
 
         file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
 
-        $process = new Process(array_merge([$this->psalm], ['--config', 'src/psalm.xml']), self::$tmpDir);
+        $process = new Process([$this->psalm, '--config', 'src/psalm.xml'], self::$tmpDir);
         $process->run();
-
-        $this->assertSame('', $process->getErrorOutput());
+        $this->assertSame(1, $process->getExitCode());
         $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
     }
 

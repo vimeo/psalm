@@ -659,6 +659,7 @@ class Config
             $config->base_dir = $base_dir;
         } else {
             $config->base_dir = $current_dir;
+            $base_dir = $current_dir;
         }
 
         if (isset($config_xml['autoloader'])) {
