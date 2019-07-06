@@ -237,11 +237,6 @@ if ($config->resolve_from_config_file) {
     chdir($current_dir);
 }
 
-if ($config->resolve_from_config_file) {
-    $current_dir = $config->base_dir;
-    chdir($current_dir);
-}
-
 $config->setComposerClassLoader($first_autoloader);
 
 $threads = isset($options['threads'])
