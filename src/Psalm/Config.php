@@ -563,17 +563,13 @@ class Config
     /**
      * Creates a new config object from an XML string
      *
+     * @throws ConfigException
+     *
      * @param  string           $base_dir
      * @param  string           $file_contents
      * @param  string|null      $current_dir Current working directory, if different to $base_dir
      *
      * @return self
-     * @psalm-suppress MixedArgument
-     * @psalm-suppress MixedPropertyFetch
-     * @psalm-suppress MixedMethodCall
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedOperand
-     * @psalm-suppress MixedPropertyAssignment
      */
     public static function loadFromXML($base_dir, $file_contents, $current_dir = null)
     {
@@ -581,8 +577,17 @@ class Config
             $current_dir = $base_dir;
         }
 
-        $config = new static();
+        self::validateXmlConfig($file_contents);
 
+        return self::fromXmlAndPaths($base_dir, $file_contents, $current_dir);
+    }
+
+
+    /**
+     * @throws ConfigException
+     */
+    private static function validateXmlConfig(string $file_contents): void
+    {
         $schema_path = dirname(dirname(__DIR__)) . '/config.xsd';
 
         if (!file_exists($schema_path)) {
@@ -625,6 +630,22 @@ class Config
             }
             libxml_clear_errors();
         }
+    }
+
+
+    /**
+     * @psalm-suppress MixedMethodCall
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedOperand
+     * @psalm-suppress MixedPropertyAssignment
+     * @psalm-suppress MixedArgument
+     * @psalm-suppress MixedPropertyFetch
+     *
+     * @throws ConfigException
+     */
+    private static function fromXmlAndPaths(string $base_dir, string $file_contents, string $current_dir): self
+    {
+        $config = new static();
 
         $config_xml = new SimpleXMLElement($file_contents);
 
