@@ -365,6 +365,16 @@ class PropertyAssignmentAnalyzer
                     }
 
                     if ($assignment_value) {
+                        if ($var_id) {
+                            $context->removeVarFromConflictingClauses(
+                                $var_id,
+                                Type::getMixed(),
+                                $statements_analyzer
+                            );
+
+                            unset($context->vars_in_scope[$var_id]);
+                        }
+
                         $fake_method_call = new PhpParser\Node\Expr\MethodCall(
                             $stmt->var,
                             new PhpParser\Node\Identifier('__set', $stmt->name->getAttributes()),
