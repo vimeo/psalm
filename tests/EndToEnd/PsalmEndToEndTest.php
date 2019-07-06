@@ -111,6 +111,23 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(1, $result['CODE']);
     }
 
+    public function testLegacyConfigWithoutresolveFromConfigFile(): void
+    {
+        $this->runPsalmInit();
+        $psalmXmlContent = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $count = 0;
+        $psalmXmlContent = preg_replace('/resolveFromConfigFile="true"/', '', $psalmXmlContent, -1, $count);
+        $this->assertEquals(1, $count);
+
+        file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
+
+        $process = new Process(array_merge([$this->psalm], ['--config', 'src/psalm.xml']), self::$tmpDir);
+        $process->run();
+
+        $this->assertSame('', $process->getErrorOutput());
+        $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
+    }
+
     /**
      * @param array<string> $args
      *
