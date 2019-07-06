@@ -141,12 +141,7 @@ $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vend
 // If XDebug is enabled, restart without it
 (new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
-
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    die('Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
-}
+$path_to_config = get_path_to_config($options);
 
 $args = getArguments();
 

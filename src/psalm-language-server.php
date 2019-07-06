@@ -199,13 +199,7 @@ $ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
-
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
-    exit(1);
-}
+$path_to_config = get_path_to_config($options);
 
 if (isset($options['tcp'])) {
     if (!is_string($options['tcp'])) {

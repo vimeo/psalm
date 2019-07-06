@@ -178,12 +178,7 @@ $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vend
 
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
-
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    die('Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
-}
+$path_to_config = get_path_to_config($options);
 
 $config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
 

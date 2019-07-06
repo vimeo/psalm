@@ -178,13 +178,7 @@ if (isset($options['root'])) {
 
 $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
-
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
-    exit(1);
-}
+$path_to_config = get_path_to_config($options);
 
 $vendor_dir = getVendorDir($current_dir);
 
