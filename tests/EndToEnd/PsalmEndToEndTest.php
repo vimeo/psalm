@@ -124,7 +124,7 @@ class PsalmEndToEndTest extends TestCase
 
         file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
 
-        $process = new Process([$this->psalm, '--config', 'src/psalm.xml'], self::$tmpDir);
+        $process = new Process([$this->psalm, '--config=src/psalm.xml'], self::$tmpDir);
         $process->run();
         $this->assertSame(1, $process->getExitCode());
         $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
@@ -141,7 +141,7 @@ class PsalmEndToEndTest extends TestCase
         // directory that the code being analysed exists in.
 
         if ($relyOnConfigDir) {
-            $process = new Process(array_merge([$this->psalm, '-c', self::$tmpDir . '/psalm.xml'], $args), null);
+            $process = new Process(array_merge([$this->psalm, '-c=' . self::$tmpDir . '/psalm.xml'], $args), null);
         } else {
             $process = new Process(array_merge([$this->psalm], $args), self::$tmpDir);
         }
