@@ -18,7 +18,7 @@ gc_disable();
 
 $args = array_slice($argv, 1);
 
-$valid_short_options = ['f:', 'm', 'h', 'r:'];
+$valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
 $valid_long_options = [
     'help', 'debug', 'debug-by-line', 'config:', 'file:', 'root:',
     'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',

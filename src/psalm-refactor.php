@@ -18,7 +18,7 @@ gc_disable();
 
 $args = array_slice($argv, 1);
 
-$valid_short_options = ['f:', 'm', 'h', 'r:'];
+$valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
 $valid_long_options = [
     'help', 'debug', 'config:', 'root:',
     'threads:', 'move:', 'into:', 'rename:', 'to:',
