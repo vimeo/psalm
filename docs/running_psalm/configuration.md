@@ -24,6 +24,18 @@ Psalm uses an XML config file (by default, `psalm.xml`). A barebones example loo
 ```
 Enabling this will make Psalm very strict, such that it needs to be able to evaluate the type of every single statement, and emitting a bevy of `Mixed*` issues if the types cannot be determined. Defaults to `false`.
 
+#### resolveFromConfigFile
+
+```xml
+<psalm
+  resolveFromConfigFile="[bool]"
+/>
+```
+If this is enabled, relative directories mentioned in the config file will be resolved relative to the location
+of the config file. If it is disabled, or absent they will be resolved relative to the working directory of the Psalm process.
+
+New versions of Psalm enable this option when generating config files. Older versions did not include it.
+
 #### useDocblockTypes
 
 ```xml
