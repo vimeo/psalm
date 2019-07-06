@@ -287,80 +287,21 @@ if (isset($options['root'])) {
 
 $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
 
-if (isset($options['r']) && is_string($options['r'])) {
-    $root_path = realpath($options['r']);
+$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 
-    if (!$root_path) {
-        fwrite(
-            STDERR,
-            'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL
-        );
-        exit(1);
-    }
-
-    $current_dir = $root_path . DIRECTORY_SEPARATOR;
+if ($path_to_config === false) {
+    /** @psalm-suppress InvalidCast */
+    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
+    exit(1);
 }
 
 $vendor_dir = getVendorDir($current_dir);
 
 $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
 
-if (array_key_exists('v', $options)) {
-    echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
-    exit;
-}
-
-$threads = isset($options['threads']) ? (int)$options['threads'] : 1;
-
-if ($threads === 1
-    && ini_get('pcre.jit') === '1'
-    && PHP_OS === 'Darwin'
-    && version_compare(PHP_VERSION, '7.3.0') >= 0
-) {
-    echo(
-        'If you want to run Psalm as a language server, or run Psalm with' . PHP_EOL
-            . 'multiple processes (--threads=4), beware:' . PHP_EOL
-            . \Psalm\Internal\Fork\Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL
-    );
-}
-
-$ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
-
-if (isset($options['disable-extension'])) {
-    if (is_array($options['disable-extension'])) {
-        /** @psalm-suppress MixedAssignment */
-        foreach ($options['disable-extension'] as $extension) {
-            if (is_string($extension)) {
-                $ini_handler->disableExtension($extension);
-            }
-        }
-    } elseif (is_string($options['disable-extension'])) {
-        $ini_handler->disableExtension($options['disable-extension']);
-    }
-}
-
-if ($threads > 1) {
-    $ini_handler->disableExtension('grpc');
-}
-
-$ini_handler->disableExtension('uopz');
-
-$type_map_location = null;
-
-if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
-    $type_map_location = $options['generate-json-map'];
-}
-
-// If XDebug is enabled, restart without it
-$ini_handler->check();
-
-setlocale(LC_CTYPE, 'C');
-
-if (isset($options['set-baseline'])) {
-    if (is_array($options['set-baseline'])) {
-        die('Only one baseline file can be created at a time' . PHP_EOL);
-    }
-}
+$output_format = isset($options['output-format']) && is_string($options['output-format'])
+    ? $options['output-format']
+    : \Psalm\Report::TYPE_CONSOLE;
 
 if (isset($options['i'])) {
     if (file_exists($current_dir . 'psalm.xml')) {
@@ -417,6 +358,96 @@ if (isset($options['i'])) {
     exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
 }
 
+if (array_key_exists('v', $options)) {
+    echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
+    exit;
+}
+
+// initialise custom config, if passed
+try {
+    if ($path_to_config) {
+        $config = Config::loadFromXMLFile($path_to_config, $current_dir);
+    } else {
+        $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
+    }
+} catch (Psalm\Exception\ConfigException $e) {
+    fwrite(STDERR, $e->getMessage() . PHP_EOL);
+    exit(1);
+}
+
+if ($config->resolve_from_config_file) {
+    $current_dir = $config->base_dir;
+}
+
+
+if (isset($options['r']) && is_string($options['r'])) {
+    $root_path = realpath($options['r']);
+
+    if (!$root_path) {
+        fwrite(
+            STDERR,
+            'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL
+        );
+        exit(1);
+    }
+
+    $current_dir = $root_path . DIRECTORY_SEPARATOR;
+}
+
+
+$threads = isset($options['threads']) ? (int)$options['threads'] : 1;
+
+if ($threads === 1
+    && ini_get('pcre.jit') === '1'
+    && PHP_OS === 'Darwin'
+    && version_compare(PHP_VERSION, '7.3.0') >= 0
+) {
+    echo(
+        'If you want to run Psalm as a language server, or run Psalm with' . PHP_EOL
+            . 'multiple processes (--threads=4), beware:' . PHP_EOL
+            . \Psalm\Internal\Fork\Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL
+    );
+}
+
+$ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
+
+if (isset($options['disable-extension'])) {
+    if (is_array($options['disable-extension'])) {
+        /** @psalm-suppress MixedAssignment */
+        foreach ($options['disable-extension'] as $extension) {
+            if (is_string($extension)) {
+                $ini_handler->disableExtension($extension);
+            }
+        }
+    } elseif (is_string($options['disable-extension'])) {
+        $ini_handler->disableExtension($options['disable-extension']);
+    }
+}
+
+if ($threads > 1) {
+    $ini_handler->disableExtension('grpc');
+}
+
+$ini_handler->disableExtension('uopz');
+
+$type_map_location = null;
+
+if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
+    $type_map_location = $options['generate-json-map'];
+}
+
+// If XDebug is enabled, restart without it
+$ini_handler->check();
+
+setlocale(LC_CTYPE, 'C');
+
+if (isset($options['set-baseline'])) {
+    if (is_array($options['set-baseline'])) {
+        die('Only one baseline file can be created at a time' . PHP_EOL);
+    }
+}
+
+
 $output_format = isset($options['output-format']) && is_string($options['output-format'])
     ? $options['output-format']
     : \Psalm\Report::TYPE_CONSOLE;
@@ -433,13 +464,7 @@ if (isset($options['plugin'])) {
     }
 }
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
-    exit(1);
-}
 
 $show_info = isset($options['show-info'])
     ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
@@ -465,17 +490,7 @@ $find_references_to = isset($options['find-references-to']) && is_string($option
     ? $options['find-references-to']
     : null;
 
-// initialise custom config, if passed
-try {
-    if ($path_to_config) {
-        $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-    } else {
-        $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
-    }
-} catch (Psalm\Exception\ConfigException $e) {
-    fwrite(STDERR, $e->getMessage() . PHP_EOL);
-    exit(1);
-}
+
 
 if (isset($options['shepherd'])) {
     if (is_string($options['shepherd'])) {

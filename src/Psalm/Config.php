@@ -334,6 +334,14 @@ class Config
     public $find_unused_variables = false;
 
     /**
+     * Whether to resolve file and directory paths from the location of the config file,
+     * instead of the current working directory.
+     *
+     * @var bool
+     */
+    public $resolve_from_config_file = false;
+
+    /**
      * @var string[]
      */
     public $plugin_paths = [];
@@ -466,15 +474,15 @@ class Config
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @param  string $path
-     * @param  string $base_dir
+     * @param  string $current_dir
      * @param  string $output_format
-     *
-     * @throws ConfigException if a config path is not found
      *
      * @return Config
      * @psalm-suppress MixedArgument
+     *@throws ConfigException if a config path is not found
+     *
      */
-    public static function getConfigForPath($path, $base_dir, $output_format)
+    public static function getConfigForPath($path, $current_dir, $output_format)
     {
         $config_path = self::locateConfigFile($path);
 
@@ -487,7 +495,7 @@ class Config
             throw new ConfigException('Config not found for path ' . $path);
         }
 
-        return self::loadFromXMLFile($config_path, $base_dir);
+        return self::loadFromXMLFile($config_path, $current_dir);
     }
 
     /**
@@ -526,20 +534,22 @@ class Config
      * Creates a new config object from the file
      *
      * @param  string           $file_path
-     * @param  string           $base_dir
+     * @param  string           $current_dir
      *
      * @return self
      */
-    public static function loadFromXMLFile($file_path, $base_dir)
+    public static function loadFromXMLFile($file_path, $current_dir)
     {
         $file_contents = file_get_contents($file_path);
+
+        $base_dir = dirname($file_path) . DIRECTORY_SEPARATOR;
 
         if ($file_contents === false) {
             throw new \InvalidArgumentException('Cannot open ' . $file_path);
         }
 
         try {
-            $config = self::loadFromXML($base_dir, $file_contents);
+            $config = self::loadFromXML($base_dir, $file_contents, $current_dir);
             $config->hash = sha1($file_contents . \PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
@@ -555,6 +565,7 @@ class Config
      *
      * @param  string           $base_dir
      * @param  string           $file_contents
+     * @param  string|null      $current_dir Current working directory, if different to $base_dir
      *
      * @return self
      * @psalm-suppress MixedArgument
@@ -564,11 +575,13 @@ class Config
      * @psalm-suppress MixedOperand
      * @psalm-suppress MixedPropertyAssignment
      */
-    public static function loadFromXML($base_dir, $file_contents)
+    public static function loadFromXML($base_dir, $file_contents, $current_dir = null)
     {
-        $config = new static();
+        if ($current_dir === null) {
+            $current_dir = $base_dir;
+        }
 
-        $config->base_dir = $base_dir;
+        $config = new static();
 
         $schema_path = dirname(dirname(__DIR__)) . '/config.xsd';
 
@@ -633,6 +646,20 @@ class Config
         if (isset($config_xml['hideExternalErrors'])) {
             $attribute_text = (string) $config_xml['hideExternalErrors'];
             $config->hide_external_errors = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+
+        if (isset($config_xml['resolveFromConfigFile'])) {
+            $attribute_text = (string) $config_xml['resolveFromConfigFile'];
+            $config->resolve_from_config_file = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+
+        if ($config->resolve_from_config_file) {
+            $config->base_dir = $base_dir;
+        } else {
+            $config->base_dir = $current_dir;
+            $base_dir = $current_dir;
         }
 
         if (isset($config_xml['autoloader'])) {

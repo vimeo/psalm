@@ -17,6 +17,9 @@ use Symfony\Component\Process\Process;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
+use function file_get_contents;
+use function file_put_contents;
+use function preg_replace;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -73,22 +76,22 @@ class PsalmEndToEndTest extends TestCase
 
     public function testVersion(): void
     {
-        $this->assertStringStartsWith('Psalm 3', $this->runPsalm(['--version'])['STDOUT']);
+        $this->assertStringStartsWith('Psalm 3', $this->runPsalm(['--version'], false, false)['STDOUT']);
     }
 
     public function testInit(): void
     {
-        $this->assertStringStartsWith('Config file created', $this->runPsalm(['--init'])['STDOUT']);
+        $this->assertStringStartsWith('Config file created', $this->runPsalmInit()['STDOUT']);
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
     }
 
     public function testAlter(): void
     {
-        $this->runPsalm(['--init']);
+        $this->runPsalmInit();
 
         $this->assertStringContainsString(
             'No errors found!',
-            $this->runPsalm(['--alter', '--issues=all'])['STDOUT']
+            $this->runPsalm(['--alter', '--issues=all'], false, false)['STDOUT'] // @todo get --alter working with config dir
         );
 
         $this->assertSame(0, $this->runPsalm([])['CODE']);
@@ -96,14 +99,14 @@ class PsalmEndToEndTest extends TestCase
 
     public function testPsalter(): void
     {
-        $this->runPsalm(['--init']);
+        $this->runPsalmInit();
         (new Process([$this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
         $this->assertSame(0, $this->runPsalm([])['CODE']);
     }
 
     public function testPsalm(): void
     {
-        $this->runPsalm(['--init']);
+        $this->runPsalmInit();
         $result = $this->runPsalm([], true);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
@@ -111,14 +114,37 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(1, $result['CODE']);
     }
 
+    public function testLegacyConfigWithoutresolveFromConfigFile(): void
+    {
+        $this->runPsalmInit();
+        $psalmXmlContent = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $count = 0;
+        $psalmXmlContent = preg_replace('/resolveFromConfigFile="true"/', '', $psalmXmlContent, -1, $count);
+        $this->assertEquals(1, $count);
+
+        file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
+
+        $process = new Process([$this->psalm, '--config', 'src/psalm.xml'], self::$tmpDir);
+        $process->run();
+        $this->assertSame(1, $process->getExitCode());
+        $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
+    }
+
     /**
      * @param array<string> $args
      *
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
-    private function runPsalm(array $args, bool $shouldFail = false): array
+    private function runPsalm(array $args, bool $shouldFail = false, bool $relyOnConfigDir = true): array
     {
-        $process = new Process(array_merge([$this->psalm], $args), self::$tmpDir);
+        // As config files all contain `resolveFromConfigFile="true"` Psalm shouldn't need to be run from the same
+        // directory that the code being analysed exists in.
+
+        if ($relyOnConfigDir) {
+            $process = new Process(array_merge([$this->psalm, '-c', self::$tmpDir . '/psalm.xml'], $args), null);
+        } else {
+            $process = new Process(array_merge([$this->psalm], $args), self::$tmpDir);
+        }
 
         if (!$shouldFail) {
             $process->mustRun();
@@ -132,6 +158,15 @@ class PsalmEndToEndTest extends TestCase
             'STDERR' => $process->getErrorOutput(),
             'CODE' => $process->getExitCode(),
         ];
+    }
+
+
+    /**
+     * @return array{STDOUT: string, STDERR: string, CODE: int|null}
+     */
+    private function runPsalmInit(): array
+    {
+        return $this->runPsalm(['--init'], false, false);
     }
 
     /** from comment by itay at itgoldman dot com at
