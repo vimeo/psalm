@@ -1,5 +1,6 @@
 <?php
 
+use Composer\Autoload\ClassLoader;
 use Psalm\Config;
 use Psalm\Exception\ConfigException;
 
@@ -84,7 +85,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
         $autoloader = require_once $file;
 
         if (!$first_autoloader
-            && $autoloader instanceof \Composer\Autoload\ClassLoader
+            && $autoloader instanceof ClassLoader
         ) {
             $first_autoloader = $autoloader;
         }
@@ -383,7 +384,12 @@ Options:
 HELP;
 }
 
-function initialiseConfig(?string $path_to_config, string $current_dir, string $output_format): Config
+function initialiseConfig(
+    ?string $path_to_config,
+    string $current_dir,
+    string $output_format,
+    ?ClassLoader $first_autoloader
+): Config
 {
     try {
         if ($path_to_config) {
@@ -395,6 +401,8 @@ function initialiseConfig(?string $path_to_config, string $current_dir, string $
         fwrite(STDERR, $e->getMessage() . PHP_EOL);
         exit(1);
     }
+
+    $config->setComposerClassLoader($first_autoloader);
 
     return $config;
 }

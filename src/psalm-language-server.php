@@ -216,7 +216,7 @@ if (isset($options['tcp'])) {
 
 $find_dead_code = isset($options['find-dead-code']);
 
-$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE);
+$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
 
 if ($config->resolve_from_config_file) {
     $current_dir = $config->base_dir;
@@ -224,7 +224,6 @@ if ($config->resolve_from_config_file) {
 }
 
 $config->setServerMode();
-$config->setComposerClassLoader($first_autoloader);
 
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();

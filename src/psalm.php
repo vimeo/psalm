@@ -254,7 +254,7 @@ if (array_key_exists('v', $options)) {
     exit;
 }
 
-$config = initialiseConfig($path_to_config, $current_dir, $output_format);
+$config = initialiseConfig($path_to_config, $current_dir, $output_format, $first_autoloader);
 
 if ($config->resolve_from_config_file) {
     $current_dir = $config->base_dir;
@@ -386,8 +386,6 @@ if (isset($options['shepherd'])) {
 
     $plugins[] = $shepherd_plugin;
 }
-
-$config->setComposerClassLoader($first_autoloader);
 
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();

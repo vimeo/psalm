@@ -230,14 +230,12 @@ if (!$to_refactor) {
     die('No --move or --rename arguments supplied' . PHP_EOL);
 }
 
-$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE);
+$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
 
 if ($config->resolve_from_config_file) {
     $current_dir = $config->base_dir;
     chdir($current_dir);
 }
-
-$config->setComposerClassLoader($first_autoloader);
 
 $threads = isset($options['threads'])
     ? (int)$options['threads']
