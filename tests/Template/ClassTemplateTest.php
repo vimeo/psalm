@@ -1618,6 +1618,26 @@ class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
+            'insideClosureVarTemplate' => [
+                '<?php
+                    /**
+                     * @template T of object
+                     */
+                    class Foo {
+                        /**
+                         * @psalm-return callable(): ?T
+                         */
+                        public function bar() {
+                            return
+                                /** @psalm-return ?T */
+                                function() {
+                                    /** @psalm-var ?T */
+                                    $data = null;
+                                    return $data;
+                                };
+                        }
+                    }',
+            ]
         ];
     }
 
