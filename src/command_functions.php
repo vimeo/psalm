@@ -125,7 +125,11 @@ function getVendorDir($current_dir)
     }
 
     if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
-        throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+        fwrite(
+            STDERR,
+            'Invalid composer.json at ' . $composer_json_path . "\n"
+        );
+        exit(1);
     }
 
     if (isset($composer_json['config']['vendor-dir'])) {
