@@ -830,28 +830,36 @@ class AssertionFinder
                 } elseif ($var_type === 'parent' || $var_type === 'static') {
                     $var_type = null;
                 }
-            } else {
-                throw new \UnexpectedValueException('Shouldn’t get here');
-            }
 
-            if ($source instanceof StatementsSource
-                && $var_type
-            ) {
-                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                    $source,
-                    $var_type,
-                    new CodeLocation($source, $whichclass_expr),
-                    $source->getSuppressedIssues(),
-                    false
-                ) === false
+                if ($source instanceof StatementsSource
+                    && $var_type
                 ) {
-                    $conditional->assertions = $if_types;
-                    return;
+                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                        $source,
+                        $var_type,
+                        new CodeLocation($source, $whichclass_expr),
+                        $source->getSuppressedIssues(),
+                        false
+                    ) === false
+                    ) {
+                        $conditional->assertions = $if_types;
+                        return;
+                    }
                 }
-            }
 
-            if ($var_name && $var_type) {
-                $if_types[$var_name] = [['=getclass-' . $var_type]];
+                if ($var_name && $var_type) {
+                    $if_types[$var_name] = [['=getclass-' . $var_type]];
+                }
+            } else {
+                $type = $whichclass_expr->inferredType;
+
+                if ($type && $var_name) {
+                    foreach ($type->getTypes() as $type_part) {
+                        if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
+                            $if_types[$var_name] = [['=' . $type_part->param_name]];
+                        }
+                    }
+                }
             }
 
             $conditional->assertions = $if_types;
@@ -1400,7 +1408,18 @@ class AssertionFinder
                     $var_type = null;
                 }
             } else {
-                throw new \UnexpectedValueException('Shouldn’t get here');
+                $type = $whichclass_expr->inferredType;
+
+                if ($type && $var_name) {
+                    foreach ($type->getTypes() as $type_part) {
+                        if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
+                            $if_types[$var_name] = [['!=' . $type_part->param_name]];
+                        }
+                    }
+                }
+
+                $conditional->assertions = $if_types;
+                return;
             }
 
             if ($source instanceof StatementsSource
@@ -2039,7 +2058,19 @@ class AssertionFinder
             && $conditional->left->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->left->name->name) === 'class';
 
-        if (($right_get_class || $right_static_class) && $left_class_string) {
+        $left_type = ($conditional->left->inferredType ?? null);
+
+        $left_class_string_t = false;
+
+        if ($left_type && $left_type->isSingle()) {
+            foreach ($left_type->getTypes() as $type_part) {
+                if ($type_part instanceof Type\Atomic\TClassString) {
+                    $left_class_string_t = true;
+                }
+            }
+        }
+
+        if (($right_get_class || $right_static_class) && ($left_class_string || $left_class_string_t)) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
@@ -2058,7 +2089,19 @@ class AssertionFinder
             && $conditional->right->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->right->name->name) === 'class';
 
-        if (($left_get_class || $left_static_class) && $right_class_string) {
+        $right_type = ($conditional->right->inferredType ?? null);
+
+        $right_class_string_t = false;
+
+        if ($right_type && $right_type->isSingle()) {
+            foreach ($right_type->getTypes() as $type_part) {
+                if ($type_part instanceof Type\Atomic\TClassString) {
+                    $right_class_string_t = true;
+                }
+            }
+        }
+
+        if (($left_get_class || $left_static_class) && ($right_class_string || $right_class_string_t)) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
