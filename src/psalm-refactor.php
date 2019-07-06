@@ -234,6 +234,7 @@ $config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CO
 
 if ($config->resolve_from_config_file) {
     $current_dir = $config->base_dir;
+    chdir($current_dir);
 }
 
 if ($config->resolve_from_config_file) {

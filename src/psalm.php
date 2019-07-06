@@ -258,6 +258,7 @@ $config = initialiseConfig($path_to_config, $current_dir, $output_format);
 
 if ($config->resolve_from_config_file) {
     $current_dir = $config->base_dir;
+    chdir($current_dir);
 }
 
 
