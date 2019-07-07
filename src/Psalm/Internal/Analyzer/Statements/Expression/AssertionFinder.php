@@ -1847,6 +1847,20 @@ class AssertionFinder
                             $if_types[$var_name] = [[$prefix . $assertion->rule[0][0]]];
                         }
                     }
+                } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
+                    $var_id = ExpressionAnalyzer::getArrayVarId(
+                        $expr->var,
+                        $this_class_name,
+                        $source
+                    );
+
+                    if ($var_id) {
+                        if ($prefix === $assertion->rule[0][0][0]) {
+                            $if_types[$var_id] = [[substr($assertion->rule[0][0], 1)]];
+                        } else {
+                            $if_types[$var_id] = [[$prefix . $assertion->rule[0][0]]];
+                        }
+                    }
                 }
             }
         }
@@ -1871,6 +1885,20 @@ class AssertionFinder
                             $if_types[$var_name] = [[substr($assertion->rule[0][0], 1)]];
                         } else {
                             $if_types[$var_name] = [[$negated_prefix . $assertion->rule[0][0]]];
+                        }
+                    }
+                } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
+                    $var_id = ExpressionAnalyzer::getArrayVarId(
+                        $expr->var,
+                        $this_class_name,
+                        $source
+                    );
+
+                    if ($var_id) {
+                        if ($negated_prefix === $assertion->rule[0][0][0]) {
+                            $if_types[$var_id] = [[substr($assertion->rule[0][0], 1)]];
+                        } else {
+                            $if_types[$var_id] = [[$negated_prefix . $assertion->rule[0][0]]];
                         }
                     }
                 }
