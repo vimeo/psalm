@@ -2084,7 +2084,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->assertions = [];
 
             foreach ($docblock_info->assertions as $assertion) {
-                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt, $template_types);
+                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt);
 
                 if (!$assertion_type_parts) {
                     continue;
@@ -2111,7 +2111,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->if_true_assertions = [];
 
             foreach ($docblock_info->if_true_assertions as $assertion) {
-                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt, $template_types);
+                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt);
 
                 if (!$assertion_type_parts) {
                     continue;
@@ -2138,7 +2138,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->if_false_assertions = [];
 
             foreach ($docblock_info->if_false_assertions as $assertion) {
-                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt, $template_types);
+                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt);
 
                 if (!$assertion_type_parts) {
                     continue;
@@ -2390,8 +2390,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      */
     private function getAssertionParts(
         string $assertion_type,
-        PhpParser\Node\FunctionLike $stmt,
-        ?array $template_types
+        PhpParser\Node\FunctionLike $stmt
     ) : ?array {
         $is_union = false;
 
