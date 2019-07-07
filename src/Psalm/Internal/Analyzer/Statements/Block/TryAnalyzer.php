@@ -368,15 +368,15 @@ class TryAnalyzer
 
             if ($catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
-                    if (isset($context->vars_in_scope[$var_id])
+                    if ($stmt_control_actions === [ScopeAnalyzer::ACTION_END]) {
+                        $context->vars_in_scope[$var_id] = $type;
+                    } elseif (isset($context->vars_in_scope[$var_id])
                         && $context->vars_in_scope[$var_id]->getId() !== $type->getId()
                     ) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
                             $type
                         );
-                    } elseif ($stmt_control_actions === [ScopeAnalyzer::ACTION_END]) {
-                        $context->vars_in_scope[$var_id] = $type;
                     }
                 }
 
