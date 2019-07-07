@@ -29,6 +29,10 @@ class IsAbsolutePathTest extends TestCase
             ['relative/path/to/something', false],
             ['relative/path/to/something/file.php', false],
             ['c:/path/to/something', true],
+            ['C:\path\to\something', true],
+            ['C:\path/to\something', true],
+            ['\path\to\something', true],
+            ['C:\path/to\..\..\something', true],
             ['file://c:/path/to/something', true],
             ['zlib://c:/path/to/something', true],
         ];
