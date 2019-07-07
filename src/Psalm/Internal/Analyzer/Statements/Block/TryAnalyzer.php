@@ -82,6 +82,12 @@ class TryAnalyzer
             return false;
         }
 
+        $stmt_control_actions = ScopeAnalyzer::getFinalControlActions(
+            $stmt->stmts,
+            $codebase->config->exit_functions,
+            $context->inside_case
+        );
+
         /** @var array<string, bool> */
         $newly_assigned_var_ids = $context->assigned_var_ids;
 
@@ -369,6 +375,8 @@ class TryAnalyzer
                             $context->vars_in_scope[$var_id],
                             $type
                         );
+                    } elseif ($stmt_control_actions === [ScopeAnalyzer::ACTION_END]) {
+                        $context->vars_in_scope[$var_id] = $type;
                     }
                 }
 
