@@ -16,7 +16,7 @@ function isAbsolutePath($path)
     $regex = '%^(?<wrappers>(?:[[:print:]]{2,}://)*)';
 
     // Optional root prefix.
-    $regex .= '(?<root>(?:[[:alpha:]]:/|/)?)';
+    $regex .= '(?<root>(?:[[:alpha:]]:[\\\/]|[\\\/])?)';
 
     // Actual path.
     $regex .= '(?<path>(?:[[:print:]]*))$%';
