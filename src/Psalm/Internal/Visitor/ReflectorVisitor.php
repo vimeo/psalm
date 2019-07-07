@@ -2440,11 +2440,18 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $assertion_type_parts = explode('|', $assertion_type);
 
         foreach ($assertion_type_parts as $i => $assertion_type_part) {
-            if ($assertion_type_part !== 'falsy'
-                && !isset($template_types[$assertion_type_part])
-                && !isset(Type::PSALM_RESERVED_WORDS[$assertion_type_part])
-            ) {
-                $assertion_type_parts[$i] = $prefix . Type::getFQCLNFromString($assertion_type_part, $this->aliases);
+            if ($assertion_type_part !== 'falsy') {
+                $namespaced_type = Type::parseTokens(
+                    Type::fixUpLocalType(
+                        $assertion_type_part,
+                        $this->aliases,
+                        $this->function_template_types + $this->class_template_types,
+                        $this->type_aliases,
+                        null
+                    )
+                );
+
+                $assertion_type_parts[$i] = $prefix . $namespaced_type->getId();
             } else {
                 $assertion_type_parts[$i] = $prefix . $assertion_type_part;
             }

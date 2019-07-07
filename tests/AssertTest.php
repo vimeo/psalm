@@ -908,6 +908,54 @@ class AssertTest extends TestCase
 
                     if (!is_int($a)) $a->bar();',
             ],
+            'assertUnionInNamespace' => [
+                '<?php
+                    namespace Foo\Bar\Baz;
+
+                    /**
+                      * @psalm-template ExpectedType of object
+                      * @param mixed $value
+                      * @psalm-param class-string<ExpectedType> $interface
+                      * @psalm-assert ExpectedType|class-string<ExpectedType> $value
+                      */
+                    function implementsInterface($value, $interface, string $message = ""): void {}
+
+                    /**
+                      * @psalm-template ExpectedType of object
+                      * @param mixed $value
+                      * @psalm-param class-string<ExpectedType> $interface
+                      * @psalm-assert null|ExpectedType|class-string<ExpectedType> $value
+                      */
+                    function nullOrImplementsInterface(?object $value, $interface, string $message = ""): void {}
+
+                    interface A
+                    {
+                    }
+
+                    /**
+                     * @param mixed $value
+                     *
+                     * @psalm-return A|class-string<A>
+                     */
+                    function consume($value) {
+                        implementsInterface($value, A::class);
+
+                        return $value;
+                    }
+
+
+                    /**
+                     * @param mixed $value
+                     *
+                     * @psalm-return A|class-string<A>|null
+                     */
+                    function consume2($value)
+                    {
+                        nullOrImplementsInterface($value, A::class);
+
+                        return $value;
+                    }'
+            ],
         ];
     }
 
