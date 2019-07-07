@@ -4,6 +4,7 @@ namespace Psalm\Tests\Config;
 use function define;
 use function defined;
 use const DIRECTORY_SEPARATOR;
+use const PHP_OS;
 use function dirname;
 use function get_class;
 use function getcwd;
@@ -17,6 +18,7 @@ use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 use function sprintf;
+use function stripos;
 
 class PluginTest extends \Psalm\Tests\TestCase
 {
@@ -819,6 +821,10 @@ class PluginTest extends \Psalm\Tests\TestCase
      */
     public function testPluginFilenameCanBeAbsolute()
     {
+        if ($this->runningOnWindows()) {
+            $this->markTestIncomplete('Test fails on Windows - see https://github.com/vimeo/psalm/issues/1913');
+        }
+
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -864,5 +870,10 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+    }
+
+    private function runningOnWindows(): bool
+    {
+        return stripos(PHP_OS, 'WIN') === 0;
     }
 }
