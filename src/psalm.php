@@ -154,118 +154,9 @@ if (isset($options['c']) && is_array($options['c'])) {
     exit(1);
 }
 
+
 if (array_key_exists('h', $options)) {
-    echo <<<HELP
-Usage:
-    psalm [options] [file...]
-
-Options:
-    -h, --help
-        Display this help message
-
-    -v, --version
-        Display the Psalm version
-
-    -i, --init [source_dir=src] [level=3]
-        Create a psalm config file in the current directory that points to [source_dir]
-        at the required level, from 1, most strict, to 8, most permissive.
-
-    --debug
-        Debug information
-
-    --debug-by-line
-        Debug information on a line-by-line level
-
-    -c, --config=psalm.xml
-        Path to a psalm.xml configuration file. Run psalm --init to create one.
-
-    -m, --monochrome
-        Enable monochrome output
-
-    -r, --root
-        If running Psalm globally you'll need to specify a project root. Defaults to cwd
-
-    --show-info[=BOOLEAN]
-        Show non-exception parser findings
-
-    --show-snippet[=true]
-        Show code snippets with errors. Options are 'true' or 'false'
-
-    --diff
-        Runs Psalm in diff mode, only checking files that have changed (and their dependents)
-
-    --diff-methods
-        Only checks methods that have changed (and their dependents)
-
-    --output-format=console
-        Changes the output format. Possible values: compact, console, emacs, json, pylint, xml, checkstyle, sonarqube
-
-    --find-dead-code[=auto]
-    --find-unused-code[=auto]
-        Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
-
-    --find-references-to=[class|method|property]
-        Searches the codebase for references to the given fully-qualified class or method,
-        where method is in the format class::methodName
-
-    --threads=INT
-        If greater than one, Psalm will run analysis on multiple threads, speeding things up.
-
-    --report=PATH
-        The path where to output report file. The output format is based on the file extension.
-        (Currently supported format: ".json", ".xml", ".txt", ".emacs")
-
-    --report-show-info[=BOOLEAN]
-        Whether the report should include non-errors in its output (defaults to true)
-
-    --clear-cache
-        Clears all cache files that Psalm uses for this specific project
-
-    --clear-global-cache
-        Clears all cache files that Psalm uses for all projects
-
-    --no-cache
-        Runs Psalm without using cache
-
-    --no-reflection-cache
-        Runs Psalm without using cached representations of unchanged classes and files.
-        Useful if you want the afterClassLikeVisit plugin hook to run every time you visit a file.
-
-    --plugin=PATH
-        Executes a plugin, an alternative to using the Psalm config
-
-    --stats
-        Shows a breakdown of Psalm's ability to infer types in the codebase
-
-    --use-ini-defaults
-        Use PHP-provided ini defaults for memory and error display
-
-    --disable-extension=[extension]
-        Used to disable certain extensions while Psalm is running.
-
-    --set-baseline=PATH
-        Save all current error level issues to a file, to mark them as info in subsequent runs
-
-    --ignore-baseline
-        Ignore the error baseline
-
-    --update-baseline
-        Update the baseline by removing fixed issues. This will not add new issues to the baseline
-
-    --generate-json-map=PATH
-        Generate a map of node references and types in JSON format, saved to the given path.
-
-    --no-progress
-        Disable the progress indicator
-
-    --alter
-        Run Psalter
-
-    --language-server
-        Run Psalm Language Server
-
-HELP;
-
+    echo getPsalmHelpText();
     /*
     --shepherd[=host]
         Send data to Shepherd, Psalm's GitHub integration tool.
@@ -287,13 +178,7 @@ if (isset($options['root'])) {
 
 $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
-
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
-    exit(1);
-}
+$path_to_config = get_path_to_config($options);
 
 $vendor_dir = getVendorDir($current_dir);
 
@@ -363,20 +248,11 @@ if (array_key_exists('v', $options)) {
     exit;
 }
 
-// initialise custom config, if passed
-try {
-    if ($path_to_config) {
-        $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-    } else {
-        $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
-    }
-} catch (Psalm\Exception\ConfigException $e) {
-    fwrite(STDERR, $e->getMessage() . PHP_EOL);
-    exit(1);
-}
+$config = initialiseConfig($path_to_config, $current_dir, $output_format, $first_autoloader);
 
 if ($config->resolve_from_config_file) {
     $current_dir = $config->base_dir;
+    chdir($current_dir);
 }
 
 
@@ -504,8 +380,6 @@ if (isset($options['shepherd'])) {
 
     $plugins[] = $shepherd_plugin;
 }
-
-$config->setComposerClassLoader($first_autoloader);
 
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();

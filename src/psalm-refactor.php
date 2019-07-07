@@ -18,7 +18,7 @@ gc_disable();
 
 $args = array_slice($argv, 1);
 
-$valid_short_options = ['f:', 'm', 'h', 'r:'];
+$valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
 $valid_long_options = [
     'help', 'debug', 'config:', 'root:',
     'threads:', 'move:', 'into:', 'rename:', 'to:',
@@ -141,12 +141,7 @@ $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vend
 // If XDebug is enabled, restart without it
 (new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
-
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    die('Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
-}
+$path_to_config = get_path_to_config($options);
 
 $args = getArguments();
 
@@ -230,15 +225,12 @@ if (!$to_refactor) {
     die('No --move or --rename arguments supplied' . PHP_EOL);
 }
 
-// initialise custom config, if passed
-// Initializing the config can be slow, so any UI logic should precede it, if possible
-if ($path_to_config) {
-    $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-} else {
-    $config = Config::getConfigForPath($current_dir, $current_dir, \Psalm\Report::TYPE_CONSOLE);
-}
+$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
 
-$config->setComposerClassLoader($first_autoloader);
+if ($config->resolve_from_config_file) {
+    $current_dir = $config->base_dir;
+    chdir($current_dir);
+}
 
 $threads = isset($options['threads'])
     ? (int)$options['threads']

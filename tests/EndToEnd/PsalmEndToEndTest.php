@@ -91,7 +91,7 @@ class PsalmEndToEndTest extends TestCase
 
         $this->assertStringContainsString(
             'No errors found!',
-            $this->runPsalm(['--alter', '--issues=all'], false, false)['STDOUT'] // @todo get --alter working with config dir
+            $this->runPsalm(['--alter', '--issues=all'], false, true)['STDOUT']
         );
 
         $this->assertSame(0, $this->runPsalm([])['CODE']);
@@ -100,7 +100,7 @@ class PsalmEndToEndTest extends TestCase
     public function testPsalter(): void
     {
         $this->runPsalmInit();
-        (new Process([$this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
+        (new Process(['php', $this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
         $this->assertSame(0, $this->runPsalm([])['CODE']);
     }
 
@@ -124,7 +124,7 @@ class PsalmEndToEndTest extends TestCase
 
         file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
 
-        $process = new Process([$this->psalm, '--config', 'src/psalm.xml'], self::$tmpDir);
+        $process = new Process(['php', $this->psalm, '--config=src/psalm.xml'], self::$tmpDir);
         $process->run();
         $this->assertSame(1, $process->getExitCode());
         $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
@@ -140,10 +140,12 @@ class PsalmEndToEndTest extends TestCase
         // As config files all contain `resolveFromConfigFile="true"` Psalm shouldn't need to be run from the same
         // directory that the code being analysed exists in.
 
+        // Windows doesn't read shabangs, so to allow this to work on windows we run `php psalm` rather than just `psalm`.
+
         if ($relyOnConfigDir) {
-            $process = new Process(array_merge([$this->psalm, '-c', self::$tmpDir . '/psalm.xml'], $args), null);
+            $process = new Process(array_merge(['php', $this->psalm, '-c=' . self::$tmpDir . '/psalm.xml'], $args), null);
         } else {
-            $process = new Process(array_merge([$this->psalm], $args), self::$tmpDir);
+            $process = new Process(array_merge(['php', $this->psalm], $args), self::$tmpDir);
         }
 
         if (!$shouldFail) {

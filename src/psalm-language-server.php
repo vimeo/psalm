@@ -199,13 +199,7 @@ $ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
-
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
-    exit(1);
-}
+$path_to_config = get_path_to_config($options);
 
 if (isset($options['tcp'])) {
     if (!is_string($options['tcp'])) {
@@ -216,20 +210,14 @@ if (isset($options['tcp'])) {
 
 $find_dead_code = isset($options['find-dead-code']);
 
-// initialise custom config, if passed
-try {
-    if ($path_to_config) {
-        $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-    } else {
-        $config = Config::getConfigForPath($current_dir, $current_dir, \Psalm\Report::TYPE_CONSOLE);
-    }
-} catch (Psalm\Exception\ConfigException $e) {
-    fwrite(STDERR, $e->getMessage());
-    exit(1);
+$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+
+if ($config->resolve_from_config_file) {
+    $current_dir = $config->base_dir;
+    chdir($current_dir);
 }
 
 $config->setServerMode();
-$config->setComposerClassLoader($first_autoloader);
 
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();

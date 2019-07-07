@@ -18,7 +18,7 @@ gc_disable();
 
 $args = array_slice($argv, 1);
 
-$valid_short_options = ['f:', 'm', 'h', 'r:'];
+$valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
 $valid_long_options = [
     'help', 'debug', 'debug-by-line', 'config:', 'file:', 'root:',
     'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
@@ -178,21 +178,14 @@ $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vend
 
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
+$path_to_config = get_path_to_config($options);
 
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    die('Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
+$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+
+if ($config->resolve_from_config_file) {
+    $current_dir = $config->base_dir;
+    chdir($current_dir);
 }
-
-// initialise custom config, if passed
-if ($path_to_config) {
-    $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-} else {
-    $config = Config::getConfigForPath($current_dir, $current_dir, \Psalm\Report::TYPE_CONSOLE);
-}
-
-$config->setComposerClassLoader($first_autoloader);
 
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 

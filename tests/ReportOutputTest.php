@@ -5,6 +5,7 @@ use function file_get_contents;
 use function json_decode;
 use function ob_end_clean;
 use function ob_start;
+use function preg_replace;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -408,10 +409,9 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
             '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . "\n" .
             '| INFO     | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . "\n" .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n",
-            IssueBuffer::getOutput($compact_report_options)
+            $this->toUnixLineEndings(IssueBuffer::getOutput($compact_report_options))
         );
     }
-
     /**
      * @return void
      */
@@ -492,5 +492,13 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         $this->assertSame('[]
 ', file_get_contents(__DIR__ . '/test-report.json'));
         unlink(__DIR__ . '/test-report.json');
+    }
+
+    /**
+     * Needed when running on Windows
+     */
+    private function toUnixLineEndings(string $output): string
+    {
+        return preg_replace('~\r\n?~', "\n", $output);
     }
 }
