@@ -2,34 +2,17 @@
 namespace Psalm;
 
 use InvalidArgumentException;
+use Webmozart\PathUtil\Path;
 use function preg_match;
 use function sprintf;
 
 /**
  * @param string $path
- *
  * @return bool
+ *
+ * @deprecated Use {@see Webmozart\PathUtil\Path::isAbsolute} instead
  */
 function isAbsolutePath($path)
 {
-    // Optional wrapper(s).
-    $regex = '%^(?<wrappers>(?:[[:print:]]{2,}://)*)';
-
-    // Optional root prefix.
-    $regex .= '(?<root>(?:[[:alpha:]]:[\\\/]|[\\\/])?)';
-
-    // Actual path.
-    $regex .= '(?<path>(?:[[:print:]]*))$%';
-
-    $parts = [];
-
-    if (!preg_match($regex, $path, $parts)) {
-        throw new InvalidArgumentException(sprintf('Path is not valid, "%s" given.', $path));
-    }
-
-    if ('' !== $parts['root']) {
-        return true;
-    }
-
-    return false;
+    return Path::isAbsolute($path);
 }

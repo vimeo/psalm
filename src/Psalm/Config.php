@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Webmozart\PathUtil\Path;
 use function array_merge;
 use function array_pop;
 use function array_unique;
@@ -832,7 +833,7 @@ class Config
                 foreach ($config_xml->plugins->plugin as $plugin) {
                     $plugin_file_name = (string) $plugin['filename'];
 
-                    $path = isAbsolutePath($plugin_file_name)
+                    $path = Path::isAbsolute($plugin_file_name)
                         ? $plugin_file_name
                         : $config->base_dir . $plugin_file_name;
 
