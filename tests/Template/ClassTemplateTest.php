@@ -1618,6 +1618,21 @@ class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
+            'classTemplatedPropertyAssignmentWithMoreSpecificArray' => [
+                '<?php
+                    /** @template T */
+                    class Foo {
+                        /** @param \Closure():T $closure */
+                        public function __construct($closure) {}
+                    }
+                    class Bar {
+                        /** @var Foo<array> */
+                        private $FooArray;
+                        public function __construct() {
+                            $this->FooArray = new Foo(function(): array { return []; });
+                        }
+                    }',
+            ],
             'insideClosureVarTemplate' => [
                 '<?php
                     /**
@@ -1637,7 +1652,46 @@ class ClassTemplateTest extends TestCase
                                 };
                         }
                     }',
-            ]
+            ],
+            'allowBoundedType' => [
+                '<?php
+                    class Base {}
+                    class Child extends Base {}
+
+                    /**
+                     * @template T
+                     */
+                    class Foo
+                    {
+                        /** @param Closure():T $t */
+                        public function __construct(Closure $t) {}
+                    }
+
+                    /**
+                     * @return Foo<Base>
+                     */
+                    function returnFooBase() : Foo {
+                        $f = new Foo(function () { return new Child(); });
+                        return $f;
+                    }',
+            ],
+            'allowMoreSpecificArray' => [
+                '<?php
+                    /** @template T */
+                    class Foo {
+                        /** @param \Closure():T $closure */
+                        public function __construct($closure) {}
+                    }
+
+                    class Bar {
+                        /** @var Foo<array> */
+                        private $FooArray;
+
+                        public function __construct() {
+                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
+                        }
+                    }'
+            ],
         ];
     }
 
