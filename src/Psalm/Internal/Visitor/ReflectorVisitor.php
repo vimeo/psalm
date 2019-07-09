@@ -2439,7 +2439,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $assertion_type_parts = explode('|', $assertion_type);
 
         foreach ($assertion_type_parts as $i => $assertion_type_part) {
-            if ($assertion_type_part !== 'falsy') {
+            if ($assertion_type_part !== 'falsy'
+                && $assertion_type_part !== 'array'
+                && $assertion_type_part !== 'iterable'
+            ) {
                 $namespaced_type = Type::parseTokens(
                     Type::fixUpLocalType(
                         $assertion_type_part,
