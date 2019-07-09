@@ -61,6 +61,12 @@ jobs:
           command: php -dextension=pcov.so vendor/bin/phpunit --coverage-html build/phpunit/coverage-html
       - store_artifacts:
           path: build/phpunit/coverage-html
+      - run:
+          name: Display link to coverage report
+          command: |
+            echo "PHPUnit coverage report available at"
+            ./bin/circle-ci-artifact-origin.php ${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} ${CIRCLE_BUILD_NUM} || true
+            echo /0/home/docker/project/build/phpunit/coverage-html/index.html;
   phar-build:
     executor: php-72
     steps:
