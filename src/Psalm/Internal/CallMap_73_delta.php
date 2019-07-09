@@ -43,11 +43,15 @@ return [
     'hrtime\'1' => ['int|float|false', 'get_as_number='=>'true'],
     'is_countable' => ['bool', 'var'=>'mixed'],
     'session_set_cookie_params\'1' => ['bool', 'options'=>'array{lifetime?:int,path?:string,domain?:?string,secure?:bool,httponly?:bool}'],
+    'setcookie' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
+    'setrawcookie' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
     'socket_wsaprotocol_info_export' => ['string|false', 'sock='=>'resource','pid'=>'int'],
     'socket_wsaprotocol_info_import' => ['resource|false', 'id'=>'string'],
     'socket_wsaprotocol_info_release' => ['bool', 'id'=>'string'],
     'SplPriorityQueue::isCorrupted' => ['bool'],
 ],
 'old' => [
+    'setcookie' => ['bool', 'name'=>'string', 'value='=>'string', 'expires='=>'int', 'path='=>'string', 'domain='=>'string', 'secure='=>'bool', 'httponly='=>'bool'],
+    'setrawcookie' => ['bool', 'name'=>'string', 'value='=>'string', 'expires='=>'int', 'path='=>'string', 'domain='=>'string', 'secure='=>'bool', 'httponly='=>'bool'],
 ]
 ];
