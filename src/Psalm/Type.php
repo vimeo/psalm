@@ -1436,6 +1436,10 @@ abstract class Type
                 $combined_type->ignore_falsable_issues = true;
             }
 
+            if ($type_1->had_template && $type_2->had_template) {
+                $combined_type->had_template = true;
+            }
+
             if ($both_failed_reconciliation) {
                 $combined_type->failed_reconciliation = true;
             }

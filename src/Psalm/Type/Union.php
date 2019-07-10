@@ -1768,11 +1768,19 @@ class Union
      */
     public function equals(Union $other_type)
     {
+        if ($other_type === $this) {
+            return true;
+        }
+
         if ($other_type->id && $this->id && $other_type->id !== $this->id) {
             return false;
         }
 
         if ($this->possibly_undefined !== $other_type->possibly_undefined) {
+            return false;
+        }
+
+        if ($this->had_template !== $other_type->had_template) {
             return false;
         }
 
