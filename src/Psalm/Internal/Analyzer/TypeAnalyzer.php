@@ -1776,10 +1776,11 @@ class TypeAnalyzer
                 } elseif (!$input_type_part instanceof TIterable
                     && !$container_param->hasTemplate()
                     && !$input_param->hasTemplate()
-                    && !$input_param->hasLiteralValue()
-                    && !$input_param->hasEmptyArray()
                 ) {
-                    if ($input_param->had_template) {
+                    if ($input_param->had_template
+                        || $input_param->hasEmptyArray()
+                        || $input_param->hasLiteralValue()
+                    ) {
                         if (!$atomic_comparison_result->replacement_atomic_type) {
                             $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
                         }
