@@ -1609,6 +1609,8 @@ class ExpressionAnalyzer
         $invalid_casts = [];
 
         foreach ($stmt->inferredType->getTypes() as $atomic_type) {
+            $atomic_type_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
             if (!$atomic_type instanceof TMixed
                 && !$atomic_type instanceof Type\Atomic\TResource
                 && !$atomic_type instanceof TNull
@@ -1618,9 +1620,9 @@ class ExpressionAnalyzer
                     new TString(),
                     false,
                     true,
-                    $has_scalar_match
+                    $atomic_type_results
                 )
-                && !$has_scalar_match
+                && !$atomic_type_results->scalar_type_match_found
             ) {
                 $invalid_casts[] = $atomic_type->getId();
             } else {

@@ -231,10 +231,7 @@ class ReturnTypeAnalyzer
                     $inferred_return_type,
                     Type::getString(),
                     $inferred_return_type->ignore_nullable_issues,
-                    $inferred_return_type->ignore_falsable_issues,
-                    $has_scalar_match,
-                    $type_coerced,
-                    $type_coerced_from_mixed
+                    $inferred_return_type->ignore_falsable_issues
                 )
             ) {
                 if (IssueBuffer::accepts(
@@ -413,19 +410,19 @@ class ReturnTypeAnalyzer
                 return null;
             }
 
+            $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
             if (!TypeAnalyzer::isContainedBy(
                 $codebase,
                 $inferred_return_type,
                 $declared_return_type,
                 true,
                 true,
-                $has_scalar_match,
-                $type_coerced,
-                $type_coerced_from_mixed
+                $union_comparison_results
             )) {
                 // is the declared return type more specific than the inferred one?
-                if ($type_coerced) {
-                    if ($type_coerced_from_mixed) {
+                if ($union_comparison_results->type_coerced) {
+                    if ($union_comparison_results->type_coerced_from_mixed) {
                         if (IssueBuffer::accepts(
                             new MixedReturnTypeCoercion(
                                 'The declared return type \'' . $declared_return_type->getId() . '\' for '

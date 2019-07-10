@@ -1450,10 +1450,7 @@ class Reconciler
                     continue;
                 }
 
-                $scalar_type_match_found = false;
-                $type_coerced = false;
-                $type_coerced_from_mixed = false;
-                $atomic_to_string_cast = false;
+                $atomic_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
                 $atomic_contained_by = TypeAnalyzer::isAtomicContainedBy(
                     $codebase,
@@ -1461,15 +1458,12 @@ class Reconciler
                     $existing_type_part,
                     true,
                     false,
-                    $scalar_type_match_found,
-                    $type_coerced,
-                    $type_coerced_from_mixed,
-                    $atomic_to_string_cast
+                    $atomic_comparison_results
                 );
 
-                if ($atomic_contained_by || $type_coerced) {
+                if ($atomic_contained_by || $atomic_comparison_results->type_coerced) {
                     $has_local_match = true;
-                    if ($type_coerced) {
+                    if ($atomic_comparison_results->type_coerced) {
                         $matching_atomic_types[] = $existing_type_part;
                     }
                 }
@@ -1519,15 +1513,15 @@ class Reconciler
                     if ($has_any_param_match) {
                         $has_local_match = true;
                         $matching_atomic_types[] = $existing_type_part;
-                        $type_coerced = true;
+                        $atomic_comparison_results->type_coerced = true;
                     }
                 }
 
-                if ($atomic_contained_by || $type_coerced) {
+                if ($atomic_contained_by || $atomic_comparison_results->type_coerced) {
                     continue;
                 }
 
-                if ($scalar_type_match_found) {
+                if ($atomic_comparison_results->scalar_type_match_found) {
                     $any_scalar_type_match_found = true;
                 }
             }
@@ -2089,11 +2083,7 @@ class Reconciler
                         $existing_var_type_part,
                         $new_type_part,
                         false,
-                        false,
-                        $scalar_type_match_found,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $atomic_to_string_cast
+                        false
                     )) {
                         $existing_var_type->removeType($part_name);
                     }

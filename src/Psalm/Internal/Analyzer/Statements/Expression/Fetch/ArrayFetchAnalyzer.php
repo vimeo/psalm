@@ -462,6 +462,8 @@ class ArrayFetchAnalyzer
                             }
                         }
 
+                        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
                         if ($original_type instanceof TTemplateParam && $templated_offset_type) {
                             foreach ($templated_offset_type->as->getTypes() as $offset_as) {
                                 if ($offset_as instanceof Type\Atomic\TTemplateKeyOf
@@ -485,15 +487,13 @@ class ArrayFetchAnalyzer
                             $expected_offset_type,
                             true,
                             $offset_type->ignore_falsable_issues,
-                            $has_scalar_match,
-                            $type_coerced,
-                            $type_coerced_from_mixed,
-                            $to_string_cast,
-                            $type_coerced_from_scalar
-                        ) && !$type_coerced_from_scalar)
-                            || $to_string_cast
+                            $union_comparison_results
+                        ) && !$union_comparison_results->type_coerced_from_scalar)
+                            || $union_comparison_results->to_string_cast
                         ) {
-                            if ($type_coerced_from_mixed && !$offset_type->isMixed()) {
+                            if ($union_comparison_results->type_coerced_from_mixed
+                                && !$offset_type->isMixed()
+                            ) {
                                 if (IssueBuffer::accepts(
                                     new MixedArrayTypeCoercion(
                                         'Coercion from array offset type \'' . $offset_type->getId() . '\' '
@@ -625,17 +625,15 @@ class ArrayFetchAnalyzer
                                 ? Type::getArrayKey()
                                 : $generic_key_type;
 
+                        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
                         $is_contained = TypeAnalyzer::isContainedBy(
                             $codebase,
                             $offset_type,
                             $key_type,
                             true,
                             $offset_type->ignore_falsable_issues,
-                            $has_scalar_match,
-                            $type_coerced,
-                            $type_coerced_from_mixed,
-                            $to_string_cast,
-                            $type_coerced_from_scalar
+                            $union_comparison_results
                         );
 
                         if ($context->inside_isset && !$is_contained) {
@@ -649,10 +647,10 @@ class ArrayFetchAnalyzer
                         }
 
                         if (($is_contained
-                            || $type_coerced_from_scalar
-                            || $type_coerced_from_mixed
+                            || $union_comparison_results->type_coerced_from_scalar
+                            || $union_comparison_results->type_coerced_from_mixed
                             || $in_assignment)
-                            && !$to_string_cast
+                            && !$union_comparison_results->to_string_cast
                         ) {
                             if ($replacement_type) {
                                 $generic_params = Type::combineUnionTypes(

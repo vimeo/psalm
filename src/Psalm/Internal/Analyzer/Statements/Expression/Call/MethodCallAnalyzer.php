@@ -1578,20 +1578,19 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $class_storage->parent_class
                     );
 
+                    $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
                     $type_match_found = TypeAnalyzer::isContainedBy(
                         $codebase,
                         $second_arg_type,
                         $pseudo_set_type,
                         $second_arg_type->ignore_nullable_issues,
                         $second_arg_type->ignore_falsable_issues,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast
+                        $union_comparison_results
                     );
 
-                    if ($type_coerced) {
-                        if ($type_coerced_from_mixed) {
+                    if ($union_comparison_results->type_coerced) {
+                        if ($union_comparison_results->type_coerced_from_mixed) {
                             if (IssueBuffer::accepts(
                                 new MixedPropertyTypeCoercion(
                                     $prop_name . ' expects \'' . $pseudo_set_type . '\', '
@@ -1618,7 +1617,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
                     }
 
-                    if (!$type_match_found && !$type_coerced_from_mixed) {
+                    if (!$type_match_found && !$union_comparison_results->type_coerced_from_mixed) {
                         if (TypeAnalyzer::canBeContainedBy(
                             $codebase,
                             $second_arg_type,

@@ -253,22 +253,20 @@ class ReturnAnalyzer
                         return null;
                     }
 
+                    $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
                     if (!TypeAnalyzer::isContainedBy(
                         $codebase,
                         $inferred_type,
                         $local_return_type,
                         true,
                         true,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast,
-                        $type_coerced_from_scalar
+                        $union_comparison_results
                     )
                     ) {
                         // is the declared return type more specific than the inferred one?
-                        if ($type_coerced) {
-                            if ($type_coerced_from_mixed) {
+                        if ($union_comparison_results->type_coerced) {
+                            if ($union_comparison_results->type_coerced_from_mixed) {
                                 if (IssueBuffer::accepts(
                                     new MixedReturnTypeCoercion(
                                         'The type \'' . $stmt->inferredType->getId() . '\' is more general than the'

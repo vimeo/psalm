@@ -617,16 +617,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
 
             if ($signature_type) {
+                $union_comparison_result = new TypeComparisonResult();
+
                 if (!TypeAnalyzer::isContainedBy(
                     $codebase,
                     $param_type,
                     $signature_type,
                     false,
                     false,
-                    $has_scalar_match,
-                    $type_coerced,
-                    $type_coerced_from_mixed
-                ) && !$type_coerced_from_mixed
+                    $union_comparison_result
+                ) && !$union_comparison_result->type_coerced_from_mixed
                 ) {
                     if ($codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['MismatchingDocblockParamType'])
@@ -676,11 +676,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $param_type,
                         false,
                         false,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast,
-                        $type_coerced_from_scalar,
+                        null,
                         true
                     )
                 ) {

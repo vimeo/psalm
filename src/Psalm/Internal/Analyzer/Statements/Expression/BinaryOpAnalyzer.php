@@ -1337,11 +1337,11 @@ class BinaryOpAnalyzer
             $left_type_match = true;
             $right_type_match = true;
 
-            $left_has_scalar_match = false;
-            $right_has_scalar_match = false;
-
             $has_valid_left_operand = false;
             $has_valid_right_operand = false;
+
+            $left_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+            $right_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
             foreach ($left_type->getTypes() as $left_type_part) {
                 if ($left_type_part instanceof Type\Atomic\TTemplateParam) {
@@ -1368,17 +1368,14 @@ class BinaryOpAnalyzer
                     new Type\Atomic\TString,
                     false,
                     false,
-                    $left_has_scalar_match,
-                    $left_type_coerced,
-                    $left_type_coerced_from_mixed,
-                    $left_to_string_cast
+                    $left_comparison_result
                 );
 
                 $left_type_match = $left_type_match && $left_type_part_match;
 
                 $has_valid_left_operand = $has_valid_left_operand || $left_type_part_match;
 
-                if ($left_to_string_cast && $config->strict_binary_operands) {
+                if ($left_comparison_result->to_string_cast && $config->strict_binary_operands) {
                     if (IssueBuffer::accepts(
                         new ImplicitToStringCast(
                             'Left side of concat op expects string, '
@@ -1417,17 +1414,14 @@ class BinaryOpAnalyzer
                     new Type\Atomic\TString,
                     false,
                     false,
-                    $right_has_scalar_match,
-                    $right_type_coerced,
-                    $right_type_coerced_from_mixed,
-                    $right_to_string_cast
+                    $right_comparison_result
                 );
 
                 $right_type_match = $right_type_match && $right_type_part_match;
 
                 $has_valid_right_operand = $has_valid_right_operand || $right_type_part_match;
 
-                if ($right_to_string_cast && $config->strict_binary_operands) {
+                if ($right_comparison_result->to_string_cast && $config->strict_binary_operands) {
                     if (IssueBuffer::accepts(
                         new ImplicitToStringCast(
                             'Right side of concat op expects string, '
@@ -1441,7 +1435,9 @@ class BinaryOpAnalyzer
                 }
             }
 
-            if (!$left_type_match && (!$left_has_scalar_match || $config->strict_binary_operands)) {
+            if (!$left_type_match
+                && (!$left_comparison_result->scalar_type_match_found || $config->strict_binary_operands)
+            ) {
                 if ($has_valid_left_operand) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidOperand(
@@ -1465,7 +1461,9 @@ class BinaryOpAnalyzer
                 }
             }
 
-            if (!$right_type_match && (!$right_has_scalar_match || $config->strict_binary_operands)) {
+            if (!$right_type_match
+                && (!$right_comparison_result->scalar_type_match_found || $config->strict_binary_operands)
+            ) {
                 if ($has_valid_right_operand) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidOperand(

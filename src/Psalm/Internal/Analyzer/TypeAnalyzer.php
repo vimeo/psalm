@@ -61,34 +61,19 @@ class TypeAnalyzer
 {
     /**
      * Does the input param type match the given param type
-     *
-     * @param  Type\Union   $input_type
-     * @param  Type\Union   $container_type
-     * @param  bool         $ignore_null
-     * @param  bool         $ignore_false
-     * @param  bool         &$has_scalar_match
-     * @param  bool         &$type_coerced    whether or not there was type coercion involved
-     * @param  bool         &$type_coerced_from_mixed
-     * @param  bool         &$to_string_cast
-     * @param  bool         &$type_coerced_from_scalar
-     * @param  bool        $allow_interface_equality
-     *
-     * @return bool
      */
     public static function isContainedBy(
         Codebase $codebase,
         Type\Union $input_type,
         Type\Union $container_type,
-        $ignore_null = false,
-        $ignore_false = false,
-        &$has_scalar_match = null,
-        &$type_coerced = null,
-        &$type_coerced_from_mixed = null,
-        &$to_string_cast = null,
-        &$type_coerced_from_scalar = null,
-        $allow_interface_equality = false
-    ) {
-        $has_scalar_match = true;
+        bool $ignore_null = false,
+        bool $ignore_false = false,
+        ?TypeComparisonResult $union_comparison_result = null,
+        bool $allow_interface_equality = false
+    ) : bool {
+        if ($union_comparison_result) {
+            $union_comparison_result->scalar_type_match_found = true;
+        }
 
         if ($container_type->hasMixed() && !$container_type->isEmptyMixed()) {
             return true;
@@ -138,9 +123,14 @@ class TypeAnalyzer
                     continue;
                 }
 
-                $atomic_to_string_cast = false;
-                $atomic_type_coerced = false;
-                $atomic_type_coerced_from_mixed = false;
+                if ($union_comparison_result) {
+                    $atomic_comparison_result = new TypeComparisonResult();
+                    $atomic_comparison_result->to_string_cast = false;
+                    $atomic_comparison_result->type_coerced = false;
+                    $atomic_comparison_result->type_coerced_from_mixed = false;
+                } else {
+                    $atomic_comparison_result = null;
+                }
 
                 $is_atomic_contained_by = self::isAtomicContainedBy(
                     $codebase,
@@ -148,12 +138,21 @@ class TypeAnalyzer
                     $container_type_part,
                     $allow_interface_equality,
                     true,
-                    $scalar_type_match_found,
-                    $atomic_type_coerced,
-                    $atomic_type_coerced_from_mixed,
-                    $atomic_to_string_cast,
-                    $type_coerced_from_scalar
+                    $atomic_comparison_result
                 );
+
+                if ($atomic_comparison_result) {
+                    if ($atomic_comparison_result->scalar_type_match_found !== null) {
+                        $scalar_type_match_found = $atomic_comparison_result->scalar_type_match_found;
+                    }
+
+                    if ($union_comparison_result
+                        && $atomic_comparison_result->type_coerced_from_scalar !== null
+                    ) {
+                        $union_comparison_result->type_coerced_from_scalar
+                            = $atomic_comparison_result->type_coerced_from_scalar;
+                    }
+                }
 
                 if ($input_type_part instanceof TNumeric
                     && $container_type->hasString()
@@ -164,31 +163,37 @@ class TypeAnalyzer
                     $is_atomic_contained_by = true;
                 }
 
-                if ($atomic_type_coerced) {
-                    $some_type_coerced = true;
-                }
+                if ($atomic_comparison_result) {
+                    if ($atomic_comparison_result->type_coerced) {
+                        $some_type_coerced = true;
+                    }
 
-                if ($atomic_type_coerced_from_mixed) {
-                    $some_type_coerced_from_mixed = true;
-                }
+                    if ($atomic_comparison_result->type_coerced_from_mixed) {
+                        $some_type_coerced_from_mixed = true;
+                    }
 
-                if ($atomic_type_coerced !== true || $all_type_coerced === false) {
-                    $all_type_coerced = false;
-                } else {
-                    $all_type_coerced = true;
-                }
+                    if ($atomic_comparison_result->type_coerced !== true || $all_type_coerced === false) {
+                        $all_type_coerced = false;
+                    } else {
+                        $all_type_coerced = true;
+                    }
 
-                if ($atomic_type_coerced_from_mixed !== true || $all_type_coerced_from_mixed === false) {
-                    $all_type_coerced_from_mixed = false;
-                } else {
-                    $all_type_coerced_from_mixed = true;
+                    if ($atomic_comparison_result->type_coerced_from_mixed !== true
+                        || $all_type_coerced_from_mixed === false
+                    ) {
+                        $all_type_coerced_from_mixed = false;
+                    } else {
+                        $all_type_coerced_from_mixed = true;
+                    }
                 }
 
                 if ($is_atomic_contained_by) {
                     $type_match_found = true;
 
-                    if ($atomic_to_string_cast !== true) {
-                        $all_to_string_cast = false;
+                    if ($atomic_comparison_result) {
+                        if ($atomic_comparison_result->to_string_cast !== true) {
+                            $all_to_string_cast = false;
+                        }
                     }
 
                     $all_type_coerced_from_mixed = false;
@@ -196,32 +201,36 @@ class TypeAnalyzer
                 }
             }
 
-            // only set this flag if we're definite that the only
-            // reason the type match has been found is because there
-            // was a __toString cast
-            if ($all_to_string_cast && $type_match_found) {
-                $to_string_cast = true;
-            }
+            if ($union_comparison_result) {
+                // only set this flag if we're definite that the only
+                // reason the type match has been found is because there
+                // was a __toString cast
+                if ($all_to_string_cast && $type_match_found) {
+                    $union_comparison_result->to_string_cast = true;
+                }
 
-            if ($all_type_coerced) {
-                $type_coerced = true;
-            }
+                if ($all_type_coerced) {
+                    $union_comparison_result->type_coerced = true;
+                }
 
-            if ($all_type_coerced_from_mixed) {
-                $type_coerced_from_mixed = true;
+                if ($all_type_coerced_from_mixed) {
+                    $union_comparison_result->type_coerced_from_mixed = true;
+                }
             }
 
             if (!$type_match_found) {
-                if ($some_type_coerced) {
-                    $type_coerced = true;
-                }
+                if ($union_comparison_result) {
+                    if ($some_type_coerced) {
+                        $union_comparison_result->type_coerced = true;
+                    }
 
-                if ($some_type_coerced_from_mixed) {
-                    $type_coerced_from_mixed = true;
-                }
+                    if ($some_type_coerced_from_mixed) {
+                        $union_comparison_result->type_coerced_from_mixed = true;
+                    }
 
-                if (!$scalar_type_match_found) {
-                    $has_scalar_match = false;
+                    if (!$scalar_type_match_found) {
+                        $union_comparison_result->scalar_type_match_found = false;
+                    }
                 }
 
                 return false;
@@ -352,23 +361,18 @@ class TypeAnalyzer
                 continue;
             }
 
-            $scalar_type_match_found = false;
-            $atomic_to_string_cast = false;
-
             foreach ($input_type->getTypes() as $input_type_part) {
+                $atomic_comparison_result = new TypeComparisonResult();
                 $is_atomic_contained_by = self::isAtomicContainedBy(
                     $codebase,
                     $input_type_part,
                     $container_type_part,
                     false,
                     false,
-                    $scalar_type_match_found,
-                    $type_coerced,
-                    $type_coerced_from_mixed,
-                    $atomic_to_string_cast
+                    $atomic_comparison_result
                 );
 
-                if ($is_atomic_contained_by && !$atomic_to_string_cast) {
+                if ($is_atomic_contained_by && !$atomic_comparison_result->to_string_cast) {
                     return true;
                 }
             }
@@ -397,7 +401,8 @@ class TypeAnalyzer
 
         foreach ($type1->getTypes() as $type1_part) {
             foreach ($type2->getTypes() as $type2_part) {
-                $second_type_coerced = false;
+                $first_comparison_result = new TypeComparisonResult();
+                $second_comparison_result = new TypeComparisonResult();
 
                 $either_contains = self::isAtomicContainedBy(
                     $codebase,
@@ -405,17 +410,15 @@ class TypeAnalyzer
                     $type2_part,
                     true,
                     false,
-                    $first_has_scalar_match,
-                    $first_type_coerced
+                    $first_comparison_result
                 ) || self::isAtomicContainedBy(
                     $codebase,
                     $type2_part,
                     $type1_part,
                     true,
                     false,
-                    $second_has_scalar_match,
-                    $second_type_coerced
-                ) || ($first_type_coerced && $second_type_coerced);
+                    $second_comparison_result
+                ) || ($first_comparison_result->type_coerced && $second_comparison_result->type_coerced);
 
                 if ($either_contains) {
                     return true;
@@ -605,32 +608,15 @@ class TypeAnalyzer
 
     /**
      * Does the input param atomic type match the given param atomic type
-     *
-     * @param  Codebase     $codebase
-     * @param  Type\Atomic  $input_type_part
-     * @param  Type\Atomic  $container_type_part
-     * @param  bool         &$has_scalar_match
-     * @param  bool         &$type_coerced    whether or not there was type coercion involved
-     * @param  bool         &$type_coerced_from_mixed
-     * @param  bool         &$to_string_cast
-     * @param  bool         &$type_coerced_from_scalar
-     * @param  bool         $allow_interface_equality
-     * @param  bool         $allow_float_int_equality  whether or not floats and its can be equal
-     *
-     * @return bool
      */
     public static function isAtomicContainedBy(
         Codebase $codebase,
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
-        $allow_interface_equality = false,
-        $allow_float_int_equality = true,
-        &$has_scalar_match = null,
-        &$type_coerced = null,
-        &$type_coerced_from_mixed = null,
-        &$to_string_cast = null,
-        &$type_coerced_from_scalar = null
-    ) {
+        bool $allow_interface_equality = false,
+        bool $allow_float_int_equality = true,
+        ?TypeComparisonResult $atomic_comparison_result = null
+    ) : bool {
         if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TTemplateParam) {
             if ($container_type_part->param_name !== $input_type_part->param_name
                 || (string)$container_type_part->defining_class !== (string)$input_type_part->defining_class
@@ -665,8 +651,10 @@ class TypeAnalyzer
             if (get_class($container_type_part) === TEmptyMixed::class
                 && get_class($input_type_part) === TMixed::class
             ) {
-                $type_coerced = true;
-                $type_coerced_from_mixed = true;
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                    $atomic_comparison_result->type_coerced_from_mixed = true;
+                }
 
                 return false;
             }
@@ -683,8 +671,10 @@ class TypeAnalyzer
                 && $input_type_part->as->isMixed()
                 && !$input_type_part->extra_types)
         ) {
-            $type_coerced = true;
-            $type_coerced_from_mixed = true;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_mixed = true;
+            }
 
             return false;
         }
@@ -739,10 +729,7 @@ class TypeAnalyzer
                 $codebase,
                 $input_type_part,
                 $container_type_part,
-                $has_scalar_match,
-                $type_coerced,
-                $type_coerced_from_mixed,
-                $to_string_cast,
+                $atomic_comparison_result ?: new TypeComparisonResult(),
                 $allow_interface_equality
             );
         }
@@ -754,11 +741,7 @@ class TypeAnalyzer
                 $container_type_part->as,
                 false,
                 false,
-                $has_scalar_match,
-                $type_coerced,
-                $type_coerced_from_mixed,
-                $to_string_cast,
-                $type_coerced_from_scalar,
+                $atomic_comparison_result,
                 $allow_interface_equality
             );
         }
@@ -771,11 +754,7 @@ class TypeAnalyzer
                     $container_as_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $has_scalar_match,
-                    $type_coerced,
-                    $type_coerced_from_mixed,
-                    $to_string_cast,
-                    $type_coerced_from_scalar
+                    $atomic_comparison_result
                 )) {
                     if ($allow_interface_equality || $input_type_part instanceof TArray) {
                         return true;
@@ -795,11 +774,7 @@ class TypeAnalyzer
                         $container_type_part,
                         $allow_interface_equality,
                         $allow_float_int_equality,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast,
-                        $type_coerced_from_scalar
+                        $atomic_comparison_result
                     )) {
                         return true;
                     }
@@ -817,11 +792,7 @@ class TypeAnalyzer
                     $container_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $has_scalar_match,
-                    $type_coerced,
-                    $type_coerced_from_mixed,
-                    $to_string_cast,
-                    $type_coerced_from_scalar
+                    $atomic_comparison_result
                 )) {
                     return true;
                 }
@@ -869,10 +840,7 @@ class TypeAnalyzer
                 $codebase,
                 $input_type_part,
                 $container_type_part,
-                $has_scalar_match,
-                $type_coerced,
-                $type_coerced_from_mixed,
-                $to_string_cast,
+                $atomic_comparison_result ?: new TypeComparisonResult(),
                 $allow_interface_equality
             );
         }
@@ -917,9 +885,7 @@ class TypeAnalyzer
                 $codebase,
                 $input_type_part,
                 $container_type_part,
-                $type_coerced,
-                $type_coerced_from_mixed,
-                $has_scalar_match,
+                $atomic_comparison_result ?: new TypeComparisonResult(),
                 $all_types_contain
             ) === false
             ) {
@@ -967,9 +933,11 @@ class TypeAnalyzer
         if ($input_type_part instanceof TArrayKey &&
             ($container_type_part instanceof TInt || $container_type_part instanceof TString)
         ) {
-            $type_coerced = true;
-            $type_coerced_from_mixed = true;
-            $has_scalar_match = true;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_mixed = true;
+                $atomic_comparison_result->scalar_type_match_found = true;
+            }
 
             return false;
         }
@@ -992,6 +960,8 @@ class TypeAnalyzer
 
                 $input_property_type = $input_type_part->properties[$key];
 
+                $property_type_comparison = new TypeComparisonResult();
+
                 if (!$input_property_type->isEmpty()
                     && !self::isContainedBy(
                         $codebase,
@@ -999,31 +969,27 @@ class TypeAnalyzer
                         $container_property_type,
                         $input_property_type->ignore_nullable_issues,
                         $input_property_type->ignore_falsable_issues,
-                        $property_has_scalar_match,
-                        $property_type_coerced,
-                        $property_type_coerced_from_mixed,
-                        $property_type_to_string_cast,
-                        $property_type_coerced_from_scalar,
+                        $property_type_comparison,
                         $allow_interface_equality
                     )
-                    && !$property_type_coerced_from_scalar
+                    && !$property_type_comparison->type_coerced_from_scalar
                 ) {
-                    if (self::isContainedBy(
-                        $codebase,
-                        $container_property_type,
-                        $input_property_type,
-                        false,
-                        false,
-                        $inverse_property_has_scalar_match,
-                        $inverse_property_type_coerced,
-                        $inverse_property_type_coerced_from_mixed,
-                        $inverse_property_type_to_string_cast,
-                        $inverse_property_type_coerced_from_scalar,
-                        $allow_interface_equality
-                    )
-                    || $inverse_property_type_coerced_from_scalar
-                    ) {
-                        $type_coerced = true;
+                    $inverse_property_type_comparison = new TypeComparisonResult();
+
+                    if ($atomic_comparison_result) {
+                        if (self::isContainedBy(
+                            $codebase,
+                            $container_property_type,
+                            $input_property_type,
+                            false,
+                            false,
+                            $inverse_property_type_comparison,
+                            $allow_interface_equality
+                        )
+                        || $inverse_property_type_comparison->type_coerced_from_scalar
+                        ) {
+                            $atomic_comparison_result->type_coerced = true;
+                        }
                     }
 
                     $all_types_contain = false;
@@ -1031,7 +997,9 @@ class TypeAnalyzer
             }
 
             if ($all_types_contain) {
-                $to_string_cast = false;
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->to_string_cast = false;
+                }
 
                 return true;
             }
@@ -1064,6 +1032,8 @@ class TypeAnalyzer
                         continue;
                     }
 
+                    $array_comparison_result = new TypeComparisonResult();
+
                     if (!$input_param->isEmpty()
                         && !self::isContainedBy(
                             $codebase,
@@ -1071,21 +1041,22 @@ class TypeAnalyzer
                             $container_param,
                             $input_param->ignore_nullable_issues,
                             $input_param->ignore_falsable_issues,
-                            $array_has_scalar_match,
-                            $array_type_coerced,
-                            $type_coerced_from_mixed,
-                            $array_to_string_cast,
-                            $array_type_coerced_from_scalar,
+                            $array_comparison_result,
                             $allow_interface_equality
                         )
-                        && !$array_type_coerced_from_scalar
+                        && !$array_comparison_result->type_coerced_from_scalar
                     ) {
+                        if ($atomic_comparison_result && $array_comparison_result->type_coerced_from_mixed) {
+                            $atomic_comparison_result->type_coerced_from_mixed = true;
+                        }
                         $all_types_contain = false;
                     }
                 }
 
                 if ($all_types_contain) {
-                    $to_string_cast = false;
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->to_string_cast = false;
+                    }
 
                     return true;
                 }
@@ -1118,15 +1089,19 @@ class TypeAnalyzer
         }
 
         if (get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt) {
-            $type_coerced = true;
-            $type_coerced_from_scalar = true;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_scalar = true;
+            }
 
             return false;
         }
 
         if (get_class($input_type_part) === TFloat::class && $container_type_part instanceof TLiteralFloat) {
-            $type_coerced = true;
-            $type_coerced_from_scalar = true;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_scalar = true;
+            }
 
             return false;
         }
@@ -1134,8 +1109,10 @@ class TypeAnalyzer
         if ((get_class($input_type_part) === TString::class || get_class($input_type_part) === TSingleLetter::class)
             && $container_type_part instanceof TLiteralString
         ) {
-            $type_coerced = true;
-            $type_coerced_from_scalar = true;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_scalar = true;
+            }
 
             return false;
         }
@@ -1160,8 +1137,10 @@ class TypeAnalyzer
                 && $input_type_part->as === 'object'
                 && !$input_type_part->as_type
             ) {
-                $type_coerced = true;
-                $type_coerced_from_scalar = true;
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                    $atomic_comparison_result->type_coerced_from_scalar = true;
+                }
 
                 return false;
             }
@@ -1190,9 +1169,7 @@ class TypeAnalyzer
                 $fake_container_object,
                 $allow_interface_equality,
                 $allow_float_int_equality,
-                $has_scalar_match,
-                $type_coerced,
-                $type_coerced_from_mixed
+                $atomic_comparison_result
             );
         }
 
@@ -1201,7 +1178,9 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof TTraitString && get_class($input_type_part) === TString::class) {
-            $type_coerced = true;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
 
             return false;
         }
@@ -1232,7 +1211,9 @@ class TypeAnalyzer
             && ($container_type_part instanceof TNumericString
                 || $container_type_part instanceof THtmlEscapedString)
         ) {
-            $type_coerced = true;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
 
             return false;
         }
@@ -1250,9 +1231,7 @@ class TypeAnalyzer
                     $codebase,
                     $input_callable,
                     $container_callable,
-                    $type_coerced,
-                    $type_coerced_from_mixed,
-                    $has_scalar_match,
+                    $atomic_comparison_result ?: new TypeComparisonResult(),
                     $all_types_contain
                 ) === false
                 ) {
@@ -1272,7 +1251,9 @@ class TypeAnalyzer
                 || $container_type_part instanceof TCallableString)
             && $input_type_part instanceof TString
         ) {
-            $type_coerced = true;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
 
             return false;
         }
@@ -1284,21 +1265,27 @@ class TypeAnalyzer
             if ($codebase->classOrInterfaceExists($input_type_part->value)
                 && $codebase->methodExists($input_type_part->value . '::__toString')
             ) {
-                $to_string_cast = true;
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->to_string_cast = true;
+                }
 
                 return true;
             }
 
             // PHP 5.6 doesn't support this natively, so this introduces a bug *just* when checking PHP 5.6 code
             if ($input_type_part->value === 'ReflectionType') {
-                $to_string_cast = true;
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->to_string_cast = true;
+                }
 
                 return true;
             }
         }
 
         if ($container_type_part instanceof Type\Atomic\TFn && $input_type_part instanceof TCallable) {
-            $type_coerced = true;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
 
             return false;
         }
@@ -1319,8 +1306,10 @@ class TypeAnalyzer
                 if ($input_type_part->type_params[1]->isMixed()
                     || $input_type_part->type_params[1]->hasScalar()
                 ) {
-                    $type_coerced_from_mixed = true;
-                    $type_coerced = true;
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced_from_mixed = true;
+                        $atomic_comparison_result->type_coerced = true;
+                    }
 
                     return false;
                 }
@@ -1330,8 +1319,10 @@ class TypeAnalyzer
                 }
 
                 if (!$input_type_part instanceof Type\Atomic\TCallableArray) {
-                    $type_coerced_from_mixed = true;
-                    $type_coerced = true;
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced_from_mixed = true;
+                        $atomic_comparison_result->type_coerced = true;
+                    }
 
                     return false;
                 }
@@ -1368,9 +1359,7 @@ class TypeAnalyzer
                     $codebase,
                     $input_callable,
                     $container_type_part,
-                    $type_coerced,
-                    $type_coerced_from_mixed,
-                    $has_scalar_match,
+                    $atomic_comparison_result ?: new TypeComparisonResult(),
                     $all_types_contain
                 ) === false
                 ) {
@@ -1387,7 +1376,9 @@ class TypeAnalyzer
 
         if ($input_type_part instanceof TNumeric) {
             if ($container_type_part->isNumericType()) {
-                $has_scalar_match = true;
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->scalar_type_match_found = true;
+                }
             }
         }
 
@@ -1397,7 +1388,9 @@ class TypeAnalyzer
                 && !$container_type_part instanceof TLiteralString
                 && !$container_type_part instanceof TLiteralFloat
             ) {
-                $has_scalar_match = true;
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->scalar_type_match_found = true;
+                }
             }
         } elseif ($container_type_part instanceof TObject
             && $input_type_part instanceof TNamedObject
@@ -1432,6 +1425,8 @@ class TypeAnalyzer
 
                     $input_property_type = $input_property_storage->type ?: Type::getMixed();
 
+                    $property_type_comparison = new TypeComparisonResult();
+
                     if (!$input_property_type->isEmpty()
                         && !self::isContainedBy(
                             $codebase,
@@ -1439,31 +1434,27 @@ class TypeAnalyzer
                             $container_property_type,
                             false,
                             false,
-                            $property_has_scalar_match,
-                            $property_type_coerced,
-                            $property_type_coerced_from_mixed,
-                            $property_type_to_string_cast,
-                            $property_type_coerced_from_scalar,
+                            $property_type_comparison,
                             $allow_interface_equality
                         )
-                        && !$property_type_coerced_from_scalar
+                        && !$property_type_comparison->type_coerced_from_scalar
                     ) {
+                        $inverse_property_type_comparison = new TypeComparisonResult();
+
                         if (self::isContainedBy(
                             $codebase,
                             $container_property_type,
                             $input_property_type,
                             false,
                             false,
-                            $inverse_property_has_scalar_match,
-                            $inverse_property_type_coerced,
-                            $inverse_property_type_coerced_from_mixed,
-                            $inverse_property_type_to_string_cast,
-                            $inverse_property_type_coerced_from_scalar,
+                            $inverse_property_type_comparison,
                             $allow_interface_equality
                         )
-                        || $inverse_property_type_coerced_from_scalar
+                        || $inverse_property_type_comparison->type_coerced_from_scalar
                         ) {
-                            $type_coerced = true;
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = true;
+                            }
                         }
 
                         $all_types_contain = false;
@@ -1478,30 +1469,32 @@ class TypeAnalyzer
             }
 
             return true;
-        } elseif ($input_type_part instanceof TObject && $container_type_part instanceof TNamedObject) {
-            $type_coerced = true;
-        } elseif ($container_type_part instanceof TNamedObject
-            && $input_type_part instanceof TNamedObject
-            && $codebase->classOrInterfaceExists($input_type_part->value)
-            && (
-                (
-                    $codebase->classExists($container_type_part->value)
-                    && $codebase->classExtendsOrImplements(
-                        $container_type_part->value,
-                        $input_type_part->value
+        } elseif ($atomic_comparison_result) {
+            if ($input_type_part instanceof TObject && $container_type_part instanceof TNamedObject) {
+                $atomic_comparison_result->type_coerced = true;
+            } elseif ($container_type_part instanceof TNamedObject
+                && $input_type_part instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($input_type_part->value)
+                && (
+                    (
+                        $codebase->classExists($container_type_part->value)
+                        && $codebase->classExtendsOrImplements(
+                            $container_type_part->value,
+                            $input_type_part->value
+                        )
+                    )
+                    ||
+                    (
+                        $codebase->interfaceExists($container_type_part->value)
+                        && $codebase->interfaceExtends(
+                            $container_type_part->value,
+                            $input_type_part->value
+                        )
                     )
                 )
-                ||
-                (
-                    $codebase->interfaceExists($container_type_part->value)
-                    && $codebase->interfaceExtends(
-                        $container_type_part->value,
-                        $input_type_part->value
-                    )
-                )
-            )
-        ) {
-            $type_coerced = true;
+            ) {
+                $atomic_comparison_result->type_coerced = true;
+            }
         }
 
         return false;
@@ -1632,28 +1625,13 @@ class TypeAnalyzer
         return $class_name . '::' . $method_name;
     }
 
-    /**
-     * @param  Codebase    $codebase
-     * @param  Type\Atomic $input_type_part
-     * @param  Type\Atomic $container_type_part
-     * @param  ?bool       &$has_scalar_match
-     * @param  ?bool       &$type_coerced
-     * @param  ?bool       &$type_coerced_from_mixed
-     * @param  ?bool       &$to_string_cast
-     * @param  bool        $allow_interface_equality
-     *
-     * @return bool
-     */
     private static function isMatchingTypeContainedBy(
         Codebase $codebase,
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
-        &$has_scalar_match,
-        &$type_coerced,
-        &$type_coerced_from_mixed,
-        &$to_string_cast,
-        $allow_interface_equality
-    ) {
+        TypeComparisonResult $atomic_comparison_result,
+        bool $allow_interface_equality
+    ) : bool {
         $all_types_contain = true;
 
         if ($container_type_part instanceof TGenericObject || $container_type_part instanceof TIterable) {
@@ -1691,8 +1669,9 @@ class TypeAnalyzer
                             array_fill(0, count($container_type_part->type_params), Type::getMixed())
                         );
                     } else {
-                        $type_coerced = true;
-                        $type_coerced_from_mixed = true;
+                        $atomic_comparison_result->type_coerced = true;
+                        $atomic_comparison_result->type_coerced_from_mixed = true;
+
                         return false;
                     }
                 }
@@ -1775,11 +1754,7 @@ class TypeAnalyzer
                     $container_param,
                     $input_param->ignore_nullable_issues,
                     $input_param->ignore_falsable_issues,
-                    $has_scalar_match,
-                    $type_coerced,
-                    $type_coerced_from_mixed,
-                    $to_string_cast,
-                    $type_coerced_from_scalar,
+                    $atomic_comparison_result,
                     $allow_interface_equality
                 )) {
                     $all_types_contain = false;
@@ -1801,21 +1776,17 @@ class TypeAnalyzer
                             $input_param,
                             $container_param->ignore_nullable_issues,
                             $container_param->ignore_falsable_issues,
-                            $has_scalar_match,
-                            $type_coerced,
-                            $type_coerced_from_mixed,
-                            $to_string_cast,
-                            $type_coerced_from_scalar,
+                            $atomic_comparison_result,
                             $allow_interface_equality
-                        ) || $type_coerced
+                        ) || $atomic_comparison_result->type_coerced
                         ) {
                             if ($container_param->hasMixed() || $container_param->isArrayKey()) {
-                                $type_coerced_from_mixed = true;
+                                $atomic_comparison_result->type_coerced_from_mixed = true;
                             } else {
                                 $all_types_contain = false;
                             }
 
-                            $type_coerced = false;
+                            $atomic_comparison_result->type_coerced = false;
                         }
                     }
                 }
@@ -1824,8 +1795,8 @@ class TypeAnalyzer
 
         if ($container_type_part instanceof Type\Atomic\TFn) {
             if (!$input_type_part instanceof Type\Atomic\TFn) {
-                $type_coerced = true;
-                $type_coerced_from_mixed = true;
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_mixed = true;
 
                 return false;
             }
@@ -1834,9 +1805,7 @@ class TypeAnalyzer
                 $codebase,
                 $input_type_part,
                 $container_type_part,
-                $type_coerced,
-                $type_coerced_from_mixed,
-                $has_scalar_match,
+                $atomic_comparison_result,
                 $all_types_contain
             ) === false
             ) {
@@ -1869,7 +1838,7 @@ class TypeAnalyzer
                         && $container_params_can_be_undefined)
                 ) {
                     $all_types_contain = false;
-                    $type_coerced = true;
+                    $atomic_comparison_result->type_coerced = true;
                 }
 
                 $container_type_part = $generic_container_type_part;
@@ -1902,7 +1871,7 @@ class TypeAnalyzer
                     return false;
                 }
 
-                $scalar_param_match = false;
+                $param_comparison_result = new TypeComparisonResult();
 
                 if (!$input_param->isEmpty() &&
                     !self::isContainedBy(
@@ -1911,24 +1880,38 @@ class TypeAnalyzer
                         $container_param,
                         $input_param->ignore_nullable_issues,
                         $input_param->ignore_falsable_issues,
-                        $scalar_param_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast,
-                        $type_coerced_from_scalar,
+                        $param_comparison_result,
                         $allow_interface_equality
                     )
                 ) {
+                    if ($param_comparison_result->type_coerced !== null) {
+                        $atomic_comparison_result->type_coerced = $param_comparison_result->type_coerced;
+                    }
+
+                    if ($param_comparison_result->type_coerced_from_mixed !== null) {
+                        $atomic_comparison_result->type_coerced_from_mixed
+                            = $param_comparison_result->type_coerced_from_mixed;
+                    }
+
+                    if ($param_comparison_result->to_string_cast !== null) {
+                        $atomic_comparison_result->to_string_cast = $param_comparison_result->to_string_cast;
+                    }
+
+                    if ($param_comparison_result->type_coerced_from_scalar !== null) {
+                        $atomic_comparison_result->type_coerced_from_scalar
+                            = $param_comparison_result->type_coerced_from_scalar;
+                    }
+
                     $all_types_contain = false;
 
-                    if ($scalar_param_match) {
+                    if ($param_comparison_result->scalar_type_match_found) {
                         $any_scalar_param_match = true;
                     }
                 }
             }
 
             if ($any_scalar_param_match) {
-                $has_scalar_match = true;
+                $atomic_comparison_result->scalar_type_match_found = true;
             }
         }
 
@@ -1937,14 +1920,14 @@ class TypeAnalyzer
             && !($input_type_part instanceof ObjectLike && $input_type_part->sealed)
         ) {
             if ($all_types_contain) {
-                $type_coerced = true;
+                $atomic_comparison_result->type_coerced = true;
             }
 
             return false;
         }
 
         if ($all_types_contain) {
-            $to_string_cast = false;
+            $atomic_comparison_result->to_string_cast = false;
 
             return true;
         }
@@ -1955,9 +1938,6 @@ class TypeAnalyzer
     /**
      * @param  TCallable|Type\Atomic\TFn   $input_type_part
      * @param  TCallable|Type\Atomic\TFn   $container_type_part
-     * @param  bool   &$type_coerced
-     * @param  bool   &$type_coerced_from_mixed
-     * @param  bool   $has_scalar_match
      * @param  bool   &$all_types_contain
      *
      * @return null|false
@@ -1966,14 +1946,12 @@ class TypeAnalyzer
         Codebase $codebase,
         $input_type_part,
         $container_type_part,
-        &$type_coerced = null,
-        &$type_coerced_from_mixed = null,
-        &$has_scalar_match = null,
-        &$all_types_contain = null
+        TypeComparisonResult $atomic_comparison_result,
+        bool &$all_types_contain
     ) {
         if ($container_type_part->params !== null && $input_type_part->params === null) {
-            $type_coerced = true;
-            $type_coerced_from_mixed = true;
+            $atomic_comparison_result->type_coerced = true;
+            $atomic_comparison_result->type_coerced_from_mixed = true;
 
             return false;
         }
@@ -2008,9 +1986,7 @@ class TypeAnalyzer
                         $input_param->type ?: Type::getMixed(),
                         false,
                         false,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed
+                        $atomic_comparison_result
                     )
                 ) {
                     $all_types_contain = false;
@@ -2020,8 +1996,8 @@ class TypeAnalyzer
 
         if (isset($container_type_part->return_type)) {
             if (!isset($input_type_part->return_type)) {
-                $type_coerced = true;
-                $type_coerced_from_mixed = true;
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_mixed = true;
 
                 $all_types_contain = false;
             } else {
@@ -2032,9 +2008,7 @@ class TypeAnalyzer
                         $container_type_part->return_type,
                         false,
                         false,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed
+                        $atomic_comparison_result
                     )
                 ) {
                     $all_types_contain = false;
@@ -2126,6 +2100,8 @@ class TypeAnalyzer
                 $string_container_part = $container_type_part->getId();
                 $string_input_part = $type_part->getId();
 
+                $atomic_comparison_result = new TypeComparisonResult();
+
                 if ($type_part !== $container_type_part &&
                     !(
                         $container_type_part instanceof TInt
@@ -2141,12 +2117,9 @@ class TypeAnalyzer
                         $container_type_part,
                         false,
                         false,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast
+                        $atomic_comparison_result
                     ) &&
-                    !$to_string_cast
+                    !$atomic_comparison_result->to_string_cast
                 ) {
                     $inverse_contains[$string_container_part][$string_input_part] = true;
 

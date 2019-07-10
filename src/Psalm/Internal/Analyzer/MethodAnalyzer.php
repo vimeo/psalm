@@ -701,18 +701,18 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $guide_method_storage_return_type = Type::getNull();
             }
 
+            $union_comparison_results = new TypeComparisonResult();
+
             if (!TypeAnalyzer::isContainedBy(
                 $codebase,
                 $implementer_method_storage_return_type,
                 $guide_method_storage_return_type,
                 false,
                 false,
-                $has_scalar_match,
-                $type_coerced,
-                $type_coerced_from_mixed
+                $union_comparison_results
             )) {
                 // is the declared return type more specific than the inferred one?
-                if ($type_coerced) {
+                if ($union_comparison_results->type_coerced) {
                     if (IssueBuffer::accepts(
                         new LessSpecificImplementedReturnType(
                             'The return type \'' . $guide_method_storage_return_type->getId()
@@ -914,18 +914,18 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     );
                 }
 
+                $union_comparison_results = new TypeComparisonResult();
+
                 if (!TypeAnalyzer::isContainedBy(
                     $codebase,
                     $guide_method_storage_param_type,
                     $implementer_method_storage_param_type,
                     !$guide_classlike_storage->user_defined,
                     !$guide_classlike_storage->user_defined,
-                    $has_scalar_match,
-                    $type_coerced,
-                    $type_coerced_from_mixed
+                    $union_comparison_results
                 )) {
                     // is the declared return type more specific than the inferred one?
-                    if ($type_coerced) {
+                    if ($union_comparison_results->type_coerced) {
                         if ($guide_classlike_storage->user_defined) {
                             if (IssueBuffer::accepts(
                                 new MoreSpecificImplementedParamType(
