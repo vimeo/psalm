@@ -61,6 +61,11 @@ jobs:
           command: php -dextension=pcov.so vendor/bin/phpunit --coverage-html build/phpunit/coverage-html
       - store_artifacts:
           path: build/phpunit/coverage-html
+      - run:
+          name: Display link to coverage report
+          command: |
+            echo "PHPUnit coverage report available at:"
+            echo https://circleci.com/api/v1.1/project/github/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM}/artifacts/0/home/docker/project/build/phpunit/coverage-html/index.html
   phar-build:
     executor: php-72
     steps:
@@ -74,6 +79,12 @@ jobs:
           command: build/psalm.phar --version
       - store_artifacts:
           path: build/psalm.phar
+      - run:
+          name: Display link to phar file
+          command: |
+            echo "Phar build available at:"
+            echo https://circleci.com/api/v1.1/project/github/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM}/artifacts/0/home/docker/project/build/psalm.phar
+
       - persist_to_workspace:
           root: /home/docker/project/
           paths:
