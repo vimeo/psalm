@@ -2029,6 +2029,34 @@ class ClassTemplateTest extends TestCase
                     function takesFooDerived($foo): void {}',
                 'error_message' => 'InvalidReturnStatement'
             ],
+            'specializeTypeInPropertyAssignment' => [
+                '<?php
+                    /** @template T */
+                    class Foo {
+                        /** @var \Closure():T $closure */
+                        private $closure;
+
+                        /** @param \Closure():T $closure */
+                        public function __construct($closure)
+                        {
+                            $this->closure = $closure;
+                        }
+                    }
+
+                    class Bar {
+                        /** @var Foo<array> */
+                        private $FooArray;
+
+                        public function __construct() {
+                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
+                            expectsShape($this->FooArray);
+                        }
+                    }
+
+                    /** @param Foo<array{foo: string}> $_ */
+                    function expectsShape($_): void {}',
+                'error_message' => 'MixedArgumentTypeCoercion'
+            ],
         ];
     }
 }

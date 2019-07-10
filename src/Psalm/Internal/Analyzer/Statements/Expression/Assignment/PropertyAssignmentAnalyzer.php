@@ -743,6 +743,12 @@ class PropertyAssignmentAnalyzer
                 $union_comparison_results
             );
 
+            if ($type_match_found && $union_comparison_results->replacement_union_type) {
+                if ($var_id) {
+                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type;
+                }
+            }
+
             if ($union_comparison_results->type_coerced) {
                 if ($union_comparison_results->type_coerced_from_mixed) {
                     if (IssueBuffer::accepts(
