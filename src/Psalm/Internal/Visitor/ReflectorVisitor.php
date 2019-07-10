@@ -121,9 +121,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     private $not_exists_cond_expr;
 
     /**
-     * @var bool
+     * @var ?int
      */
-    private $skip_if_descendants = false;
+    private $skip_if_descendants = null;
 
     /**
      * @var array<string, array<int, array{0: string, 1: int}>>
@@ -475,9 +475,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->file_storage->constants[$fq_const_name] = $const_type;
                 $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
             }
-        } elseif ($node instanceof PhpParser\Node\Stmt\If_) {
-            $this->skip_if_descendants = false;
-
+        } elseif ($node instanceof PhpParser\Node\Stmt\If_ && !$this->skip_if_descendants) {
             if (!$this->fq_classlike_names && !$this->functionlike_storages) {
                 if ($node->cond instanceof PhpParser\Node\Expr\BooleanNot) {
                     if ($node->cond->expr instanceof PhpParser\Node\Expr\FuncCall
@@ -502,22 +500,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
 
-            if ($this->exists_cond_expr && !$this->enterConditional($this->exists_cond_expr)) {
-                $this->skip_if_descendants = true;
-            } elseif ($this->not_exists_cond_expr && $this->enterConditional($this->not_exists_cond_expr)) {
-                $this->skip_if_descendants = true;
+            if (($this->exists_cond_expr && !$this->enterConditional($this->exists_cond_expr))
+                || ($this->not_exists_cond_expr && $this->enterConditional($this->not_exists_cond_expr))
+            ) {
+                // the else node should terminate the agreement
+                $this->skip_if_descendants = $node->else ? $node->else->getLine() : $node->getLine();
             }
-        } elseif ($node instanceof PhpParser\Node\Stmt\ElseIf_) {
-            $this->exists_cond_expr = null;
-            $this->not_exists_cond_expr = null;
-            $this->skip_if_descendants = false;
         } elseif ($node instanceof PhpParser\Node\Stmt\Else_) {
-            $this->skip_if_descendants = false;
-
-            if ($this->exists_cond_expr && $this->enterConditional($this->exists_cond_expr)) {
-                $this->skip_if_descendants = true;
-            } elseif ($this->not_exists_cond_expr && !$this->enterConditional($this->not_exists_cond_expr)) {
-                $this->skip_if_descendants = true;
+            if ($this->skip_if_descendants === $node->getLine()) {
+                $this->skip_if_descendants = null;
+                $this->exists_cond_expr = null;
+                $this->not_exists_cond_expr = null;
+            } elseif (!$this->skip_if_descendants) {
+                if (($this->exists_cond_expr && $this->enterConditional($this->exists_cond_expr))
+                    || ($this->not_exists_cond_expr && !$this->enterConditional($this->not_exists_cond_expr))
+                ) {
+                    $this->skip_if_descendants = $node->getLine();
+                }
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Yield_ || $node instanceof PhpParser\Node\Expr\YieldFrom) {
             $function_like_storage = end($this->functionlike_storages);
@@ -651,10 +650,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if ($functionlike_storage->has_docblock_issues) {
                 $this->file_storage->has_docblock_issues = true;
             }
-        } elseif ($node instanceof PhpParser\Node\Stmt\If_) {
+        } elseif ($node instanceof PhpParser\Node\Stmt\If_ && $node->getLine() === $this->skip_if_descendants) {
             $this->exists_cond_expr = null;
             $this->not_exists_cond_expr = null;
-            $this->skip_if_descendants = false;
+            $this->skip_if_descendants = null;
+        } elseif ($node instanceof PhpParser\Node\Stmt\Else_ && $node->getLine() === $this->skip_if_descendants) {
+            $this->exists_cond_expr = null;
+            $this->not_exists_cond_expr = null;
+            $this->skip_if_descendants = null;
         }
 
         return null;
