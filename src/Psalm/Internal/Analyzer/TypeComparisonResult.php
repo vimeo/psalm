@@ -18,4 +18,10 @@ class TypeComparisonResult
 
     /** @var ?bool */
     public $type_coerced_from_scalar = null;
+
+    /** @var ?\Psalm\Type\Union */
+    public $replacement_union_type = null;
+
+    /** @var ?\Psalm\Type\Atomic */
+    public $replacement_atomic_type = null;
 }

@@ -2298,6 +2298,7 @@ class CallAnalyzer
                 self::coerceValueAfterGatekeeperArgument(
                     $statements_analyzer,
                     $input_type,
+                    false,
                     $input_expr,
                     $param_type,
                     $signature_param_type,
@@ -2348,6 +2349,13 @@ class CallAnalyzer
             true,
             $union_comparison_results
         );
+
+        $replace_input_type = false;
+
+        if ($union_comparison_results->replacement_union_type) {
+            $replace_input_type = true;
+            $input_type = $union_comparison_results->replacement_union_type;
+        }
 
         if ($type_match_found
             && $param_type->hasCallableType()
@@ -2671,6 +2679,7 @@ class CallAnalyzer
             self::coerceValueAfterGatekeeperArgument(
                 $statements_analyzer,
                 $input_type,
+                $replace_input_type,
                 $input_expr,
                 $param_type,
                 $signature_param_type,
@@ -2685,6 +2694,7 @@ class CallAnalyzer
     private static function coerceValueAfterGatekeeperArgument(
         StatementsAnalyzer $statements_analyzer,
         Type\Union $input_type,
+        bool $input_type_changed,
         PhpParser\Node\Expr $input_expr,
         Type\Union $param_type,
         ?Type\Union $signature_param_type,
@@ -2695,9 +2705,7 @@ class CallAnalyzer
             return;
         }
 
-        if ($param_type->from_docblock && !$input_type->hasMixed()) {
-            $input_type_changed = false;
-
+        if (!$input_type_changed && $param_type->from_docblock && !$input_type->hasMixed()) {
             $input_type = clone $input_type;
 
             foreach ($param_type->getTypes() as $param_atomic_type) {
@@ -2707,7 +2715,9 @@ class CallAnalyzer
                             && $input_atomic_type->value === $param_atomic_type->value
                         ) {
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
-                                if ($type_param->isEmpty() && isset($param_atomic_type->type_params[$i])) {
+                                if (($type_param->isEmpty() || $type_param->had_template)
+                                    && isset($param_atomic_type->type_params[$i])
+                                ) {
                                     $input_type_changed = true;
 
                                     $input_atomic_type->type_params[$i] = clone $param_atomic_type->type_params[$i];

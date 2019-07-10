@@ -152,6 +152,21 @@ class TypeAnalyzer
                         $union_comparison_result->type_coerced_from_scalar
                             = $atomic_comparison_result->type_coerced_from_scalar;
                     }
+
+                    if ($is_atomic_contained_by
+                        && $union_comparison_result
+                        && $atomic_comparison_result->replacement_atomic_type
+                    ) {
+                        if (!$union_comparison_result->replacement_union_type) {
+                            $union_comparison_result->replacement_union_type = clone $input_type;
+                        }
+
+                        $union_comparison_result->replacement_union_type->removeType($input_type->getKey());
+
+                        $union_comparison_result->replacement_union_type->addType(
+                            $atomic_comparison_result->replacement_atomic_type
+                        );
+                    }
                 }
 
                 if ($input_type_part instanceof TNumeric
@@ -1759,34 +1774,43 @@ class TypeAnalyzer
                 )) {
                     $all_types_contain = false;
                 } elseif (!$input_type_part instanceof TIterable
-                    && !$container_param->had_template
-                    && !$input_param->had_template
                     && !$container_param->hasTemplate()
                     && !$input_param->hasTemplate()
                     && !$input_param->hasLiteralValue()
                     && !$input_param->hasEmptyArray()
                 ) {
-                    $input_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
+                    if ($input_param->had_template) {
+                        if (!$atomic_comparison_result->replacement_atomic_type) {
+                            $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
+                        }
 
-                    if (!($input_storage->template_covariants[$i] ?? false)) {
-                        // Make sure types are basically the same
-                        if (!self::isContainedBy(
-                            $codebase,
-                            $container_param,
-                            $input_param,
-                            $container_param->ignore_nullable_issues,
-                            $container_param->ignore_falsable_issues,
-                            $atomic_comparison_result,
-                            $allow_interface_equality
-                        ) || $atomic_comparison_result->type_coerced
-                        ) {
-                            if ($container_param->hasMixed() || $container_param->isArrayKey()) {
-                                $atomic_comparison_result->type_coerced_from_mixed = true;
-                            } else {
-                                $all_types_contain = false;
+                        if ($atomic_comparison_result->replacement_atomic_type instanceof TGenericObject) {
+                            $atomic_comparison_result->replacement_atomic_type->type_params[$i]
+                                = clone $container_param;
+                        }
+                    } else {
+                        $input_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
+
+                        if (!($input_storage->template_covariants[$i] ?? false)) {
+                            // Make sure types are basically the same
+                            if (!self::isContainedBy(
+                                $codebase,
+                                $container_param,
+                                $input_param,
+                                $container_param->ignore_nullable_issues,
+                                $container_param->ignore_falsable_issues,
+                                $atomic_comparison_result,
+                                $allow_interface_equality
+                            ) || $atomic_comparison_result->type_coerced
+                            ) {
+                                if ($container_param->hasMixed() || $container_param->isArrayKey()) {
+                                    $atomic_comparison_result->type_coerced_from_mixed = true;
+                                } else {
+                                    $all_types_contain = false;
+                                }
+
+                                $atomic_comparison_result->type_coerced = false;
                             }
-
-                            $atomic_comparison_result->type_coerced = false;
                         }
                     }
                 }

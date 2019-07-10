@@ -1999,6 +1999,36 @@ class ClassTemplateTest extends TestCase
                     $mario->ame = "Luigi";',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:47:29 - Argument 1 of CharacterRow::__set expects string(id)|string(name)|string(height), string(ame) provided',
             ],
+            'specialiseTypeBeforeReturning' => [
+                '<?php
+                    class Base {}
+                    class Derived extends Base {}
+
+                    /**
+                     * @template T of Base
+                     */
+                    class Foo {
+                        /**
+                         * @param T $t
+                         */
+                        public function __construct ($t) {}
+                    }
+
+                    /**
+                     * @return Foo<Base>
+                     */
+                    function returnFooBase() {
+                        $f = new Foo(new Derived());
+                        takesFooDerived($f);
+                        return $f;
+                    }
+
+                    /**
+                     * @param Foo<Derived> $foo
+                     */
+                    function takesFooDerived($foo): void {}',
+                'error_message' => 'InvalidReturnStatement'
+            ],
         ];
     }
 }
