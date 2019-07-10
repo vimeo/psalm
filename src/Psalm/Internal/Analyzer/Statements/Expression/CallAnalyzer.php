@@ -2715,9 +2715,7 @@ class CallAnalyzer
                             && $input_atomic_type->value === $param_atomic_type->value
                         ) {
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
-                                if (($type_param->isEmpty() || $type_param->had_template)
-                                    && isset($param_atomic_type->type_params[$i])
-                                ) {
+                                if ($type_param->isEmpty() && isset($param_atomic_type->type_params[$i])) {
                                     $input_type_changed = true;
 
                                     $input_atomic_type->type_params[$i] = clone $param_atomic_type->type_params[$i];

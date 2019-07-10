@@ -1121,8 +1121,6 @@ class Union
 
                     $this->types[$class_string->getKey()] = $class_string;
 
-                    $this->had_template = true;
-
                     if ($input_type) {
                         $valid_input_atomic_types = [];
 
