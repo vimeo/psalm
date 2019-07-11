@@ -363,11 +363,15 @@ Options:
     --set-baseline=PATH
         Save all current error level issues to a file, to mark them as info in subsequent runs
 
+        Add --include-php-versions to also include a list of PHP extension versions
+
     --ignore-baseline
         Ignore the error baseline
 
     --update-baseline
         Update the baseline by removing fixed issues. This will not add new issues to the baseline
+
+        Add --include-php-versions to also include a list of PHP extension versions
 
     --generate-json-map=PATH
         Generate a map of node references and types in JSON format, saved to the given path.

@@ -52,11 +52,15 @@ class ErrorBaseline
      *
      * @return void
      */
-    public static function create(FileProvider $fileProvider, string $baselineFile, array $issues)
-    {
+    public static function create(
+        FileProvider $fileProvider,
+        string $baselineFile,
+        array $issues,
+        bool $include_php_versions
+    ) {
         $groupedIssues = self::countIssueTypesByFile($issues);
 
-        self::writeToFile($fileProvider, $baselineFile, $groupedIssues);
+        self::writeToFile($fileProvider, $baselineFile, $groupedIssues, $include_php_versions);
     }
 
     /**
@@ -127,8 +131,12 @@ class ErrorBaseline
      *
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
-    public static function update(FileProvider $fileProvider, string $baselineFile, array $issues)
-    {
+    public static function update(
+        FileProvider $fileProvider,
+        string $baselineFile,
+        array $issues,
+        bool $include_php_versions
+    ) {
         $existingIssues = self::read($fileProvider, $baselineFile);
         $newIssues = self::countIssueTypesByFile($issues);
 
@@ -159,7 +167,7 @@ class ErrorBaseline
 
         $groupedIssues = array_filter($existingIssues);
 
-        self::writeToFile($fileProvider, $baselineFile, $groupedIssues);
+        self::writeToFile($fileProvider, $baselineFile, $groupedIssues, $include_php_versions);
 
         return $groupedIssues;
     }
@@ -227,27 +235,30 @@ class ErrorBaseline
     private static function writeToFile(
         FileProvider $fileProvider,
         string $baselineFile,
-        array $groupedIssues
+        array $groupedIssues,
+        bool $include_php_versions
     ) {
         $baselineDoc = new \DOMDocument('1.0', 'UTF-8');
         $filesNode = $baselineDoc->createElement('files');
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);
 
-        $extensions = array_merge(get_loaded_extensions(), get_loaded_extensions(true));
+        if ($include_php_versions) {
+            $extensions = array_merge(get_loaded_extensions(), get_loaded_extensions(true));
 
-        usort($extensions, 'strnatcasecmp');
+            usort($extensions, 'strnatcasecmp');
 
-        $filesNode->setAttribute('php-version', implode(';' . "\n\t", array_merge(
-            [
-                ('php:' . PHP_VERSION),
-            ],
-            array_map(
-                function (string $extension) : string {
-                    return $extension . ':' . phpversion($extension);
-                },
-                $extensions
-            )
-        )));
+            $filesNode->setAttribute('php-version', implode(';' . "\n\t", array_merge(
+                [
+                    ('php:' . PHP_VERSION),
+                ],
+                array_map(
+                    function (string $extension) : string {
+                        return $extension . ':' . phpversion($extension);
+                    },
+                    $extensions
+                )
+            )));
+        }
 
         foreach ($groupedIssues as $file => $issueTypes) {
             $fileNode = $baselineDoc->createElement('file');

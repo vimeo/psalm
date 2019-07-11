@@ -61,6 +61,7 @@ $valid_long_options = [
     'refactor',
     'shepherd::',
     'no-progress',
+    'include-php-versions', // used for baseline
 ];
 
 gc_collect_cycles();
@@ -531,7 +532,8 @@ if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
         ErrorBaseline::create(
             new \Psalm\Internal\Provider\FileProvider,
             $options['set-baseline'],
-            IssueBuffer::getIssuesData()
+            IssueBuffer::getIssuesData(),
+            isset($options['include-php-versions'])
         );
 
         fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
@@ -596,7 +598,8 @@ if (isset($options['update-baseline'])) {
             $issue_baseline = ErrorBaseline::update(
                 new \Psalm\Internal\Provider\FileProvider,
                 $baselineFile,
-                IssueBuffer::getIssuesData()
+                IssueBuffer::getIssuesData(),
+                isset($options['include-php-versions'])
             );
             $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
 

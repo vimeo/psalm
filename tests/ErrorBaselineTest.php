@@ -191,7 +191,7 @@ class ErrorBaselineTest extends TestCase
                 'severity' => 'error',
                 'selected_text' => 'hardy' . "\n",
             ],
-        ]);
+        ], false);
 
         $baselineDocument = new \DOMDocument();
         $baselineDocument->loadXML($documentContent, LIBXML_NOBLANKS);
@@ -285,7 +285,8 @@ class ErrorBaselineTest extends TestCase
         $remainingBaseline = ErrorBaseline::update(
             $this->fileProvider->reveal(),
             $baselineFile,
-            $newIssues
+            $newIssues,
+            false
         );
 
         $this->assertSame([
