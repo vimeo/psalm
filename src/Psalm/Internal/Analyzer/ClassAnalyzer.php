@@ -1746,6 +1746,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                     && ($local_offset
                                         = array_search($t->param_name, array_keys($storage->template_types)))
                                         !== false
+                                    && isset($storage->template_covariants[$local_offset])
                                     && $storage->template_covariants[$local_offset]
                                 ) {
                                     if (IssueBuffer::accepts(

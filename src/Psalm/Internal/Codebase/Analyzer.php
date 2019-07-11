@@ -247,6 +247,13 @@ class Analyzer
             $project_analyzer->interpretRefactors();
         }
 
+        $this->files_to_analyze = array_filter(
+            $this->files_to_analyze,
+            function (string $file_path) : bool {
+                return $this->file_provider->fileExists($file_path);
+            }
+        );
+
         $analysis_worker =
             /**
              * @param int $_

@@ -35,6 +35,10 @@ class FileProvider
             return $this->open_files[strtolower($file_path)];
         }
 
+        if (!file_exists($file_path)) {
+            throw new \UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
+        }
+
         return (string)file_get_contents($file_path);
     }
 
@@ -77,6 +81,10 @@ class FileProvider
      */
     public function getModifiedTime($file_path)
     {
+        if (!file_exists($file_path)) {
+            throw new \UnexpectedValueException('File should exist to get modified time');
+        }
+
         return (int)filemtime($file_path);
     }
 
