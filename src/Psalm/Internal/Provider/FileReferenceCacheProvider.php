@@ -649,6 +649,10 @@ class FileReferenceCacheProvider
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
+            if (file_exists($cache_directory)) {
+                mkdir($cache_directory, 0777, true);
+            }
+
             $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
 
             file_put_contents(
