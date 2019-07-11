@@ -47,6 +47,35 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
+    public function testPhpDocMethodWhenTemplated()
+    {
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @template T */
+                class A {
+                    /** @return ?T */
+                    public function find() {}
+                }
+
+                class B extends A {}
+
+                class Obj {}
+
+                /**
+                 * @method Obj|null find()
+                 */
+                class C extends B {}'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testAnnotationWithoutCallConfig()
     {
         $this->expectExceptionMessage('UndefinedMethod');
