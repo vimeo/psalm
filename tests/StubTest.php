@@ -929,7 +929,7 @@ class StubTest extends TestCase
      */
     public function testStubFileWithTemplatedClassDefinitionAndMagicMethodOverride()
     {
-        $this->markTestSkipped('Currently broken');
+        //$this->markTestSkipped('Currently broken');
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),

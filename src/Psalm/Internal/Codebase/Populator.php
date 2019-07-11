@@ -117,6 +117,12 @@ class Populator
                 }
             }
 
+            foreach ($class_storage->dependent_classlikes as $dependent_classlike_name => $_) {
+                $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_name);
+
+                $class_storage->dependent_classlikes += $dependee_storage->dependent_classlikes;
+            }
+
             if ($class_storage->aliases) {
                 foreach ($class_storage->public_class_constant_nodes as $const_name => $node) {
                     $const_type = \Psalm\Internal\Analyzer\StatementsAnalyzer::getSimpleType(

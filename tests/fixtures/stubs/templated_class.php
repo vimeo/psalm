@@ -10,3 +10,5 @@ class A {
      */
     public function find($id, $lockMode = null, $lockVersion = null) {}
 }
+
+
