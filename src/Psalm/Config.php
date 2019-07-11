@@ -446,6 +446,11 @@ class Config
     /** @var string|null */
     public $error_baseline = null;
 
+    /**
+     * @var bool
+     */
+    public $include_php_versions_in_error_baseline = false;
+
     /** @var string */
     public $shepherd_host = 'shepherd.dev';
 
@@ -738,6 +743,11 @@ class Config
         if (isset($config_xml['errorBaseline'])) {
             $attribute_text = (string) $config_xml['errorBaseline'];
             $config->error_baseline = $attribute_text;
+        }
+
+        if (isset($config_xml['includePhpVersionsInErrorBaseline'])) {
+            $attribute_text = (string) $config_xml['includePhpVersionsInErrorBaseline'];
+            $config->include_php_versions_in_error_baseline = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['maxStringLength'])) {

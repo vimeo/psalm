@@ -533,7 +533,7 @@ if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
             new \Psalm\Internal\Provider\FileProvider,
             $options['set-baseline'],
             IssueBuffer::getIssuesData(),
-            isset($options['include-php-versions'])
+            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
         );
 
         fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
@@ -599,7 +599,7 @@ if (isset($options['update-baseline'])) {
                 new \Psalm\Internal\Provider\FileProvider,
                 $baselineFile,
                 IssueBuffer::getIssuesData(),
-                isset($options['include-php-versions'])
+                $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
             );
             $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
 
