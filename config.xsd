@@ -53,6 +53,7 @@
         <xs:attribute name="parseSql" type="xs:string" />
         <xs:attribute name="maxStringLength" type="xs:string" />
         <xs:attribute name="resolveFromConfigFile" type="xs:string" />
+        <xs:attribute name="includePhpVersionsInErrorBaseline" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

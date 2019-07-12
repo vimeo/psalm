@@ -446,6 +446,11 @@ class Config
     /** @var string|null */
     public $error_baseline = null;
 
+    /**
+     * @var bool
+     */
+    public $include_php_versions_in_error_baseline = false;
+
     /** @var string */
     public $shepherd_host = 'shepherd.dev';
 
@@ -673,6 +678,7 @@ class Config
             'forbidEcho' => 'forbid_echo',
             'ignoreInternalFunctionFalseReturn' => 'ignore_internal_falsable_issues',
             'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
+            'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
