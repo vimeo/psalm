@@ -590,6 +590,17 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'UndefinedMethod',
             ],
+            'complainAboutUndefinedPropertyOnMixedCall' => [
+                '<?php
+                    class C {
+                        /** @param mixed $a */
+                        public function foo($a) : void {
+                            /** @psalm-suppress MixedMethodCall */
+                            $a->bar($this->d);
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
+            ],
         ];
     }
 }
