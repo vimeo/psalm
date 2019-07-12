@@ -678,6 +678,7 @@ class Config
             'forbidEcho' => 'forbid_echo',
             'ignoreInternalFunctionFalseReturn' => 'ignore_internal_falsable_issues',
             'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
+            'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -743,11 +744,6 @@ class Config
         if (isset($config_xml['errorBaseline'])) {
             $attribute_text = (string) $config_xml['errorBaseline'];
             $config->error_baseline = $attribute_text;
-        }
-
-        if (isset($config_xml['includePhpVersionsInErrorBaseline'])) {
-            $attribute_text = (string) $config_xml['includePhpVersionsInErrorBaseline'];
-            $config->include_php_versions_in_error_baseline = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['maxStringLength'])) {
