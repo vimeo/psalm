@@ -558,6 +558,17 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
+            'nestedParentFile' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'b' . DIRECTORY_SEPARATOR . 'c' . DIRECTORY_SEPARATOR . 'd' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
+                        require_once __DIR__ . "/../../../../e/begin.php";',
+                    getcwd() . DIRECTORY_SEPARATOR . 'e' . DIRECTORY_SEPARATOR . 'begin.php' => '<?php
+                        echo "hello";',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'b' . DIRECTORY_SEPARATOR . 'c' . DIRECTORY_SEPARATOR . 'd' . DIRECTORY_SEPARATOR . 'script.php',
+                ],
+            ],
         ];
     }
 
