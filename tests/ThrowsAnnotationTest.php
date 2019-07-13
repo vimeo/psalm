@@ -407,4 +407,75 @@ class ThrowsAnnotationTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
     }
+
+    /**
+     * @return void
+     */
+    public function testDocumentedThrowInInterfaceWithInheritDocblock()
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface Foo
+                {
+                    /**
+                     * @throws \InvalidArgumentException
+                     */
+                    public function test(): void;
+                }
+
+                class Bar implements Foo
+                {
+                    /**
+                     * {@inheritdoc}
+                     */
+                    public function test(): void
+                    {
+                        throw new \InvalidArgumentException();
+                    }
+                }
+                '
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDocumentedThrowInInterfaceWithoutInheritDocblock()
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface Foo
+                {
+                    /**
+                     * @throws \InvalidArgumentException
+                     */
+                    public function test(): void;
+                }
+
+                class Bar implements Foo
+                {
+                    public function test(): void
+                    {
+                        throw new \InvalidArgumentException();
+                    }
+                }
+                '
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
 }
