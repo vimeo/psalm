@@ -307,6 +307,7 @@ class Populator
                         && $method_storage->inheritdoc
                         && $declaring_method_storage->throws
                     ) {
+                        $method_storage->throws = $declaring_method_storage->throws;
                     }
 
                     if (count($storage->overridden_method_ids[$method_name]) === 1
