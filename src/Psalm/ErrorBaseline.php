@@ -285,7 +285,7 @@ class ErrorBaseline
         $baselineDoc->formatOutput = true;
 
         $xml = preg_replace_callback(
-            '/<files (psalm-version="[^"]+") (?:php-version="(.+)">\n)/',
+            '/<files (psalm-version="[^"]+") (?:php-version="(.+)"(\/?>)\n)/',
             /**
             * @param array<int, string> $matches
             */
@@ -301,7 +301,7 @@ class ErrorBaseline
                     "\n" .
                     '  "' .
                     "\n" .
-                    '>' .
+                    $matches[3] .
                     "\n";
             },
             $baselineDoc->saveXML()
