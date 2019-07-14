@@ -125,7 +125,7 @@ if (true === $first) {
 
 ``` php
 $a = ["a" => 1, "b" => 2]; // is ObjectLike, array{a:int(1),b:int(2)}
-$a = ["a" => null]; // is ObjectLike with optional keys/values, array{a:?int,b?:string}
+$a = rand(0, 1) ? ["a" => null] : ["a" => 1, "b" => "b"]; // is ObjectLike with optional keys/values, array{a:?int,b?:string}
 ```
 
 Note that not all associative arrays are considered object-like. If the keys are not known, the array is treated as a mapping between two types.
