@@ -303,11 +303,10 @@ class Populator
                     $declaring_method_storage->overridden_downstream = true;
                     $declaring_method_storage->overridden_somewhere = true;
 
-                    if (!$method_storage->throws
-                        && $method_storage->inheritdoc
-                        && $declaring_method_storage->throws
+                    if ($declaring_method_storage->throws
+                        && (!$method_storage->throws || $method_storage->inheritdoc)
                     ) {
-                        $method_storage->throws = $declaring_method_storage->throws;
+                        $method_storage->throws += $declaring_method_storage->throws;
                     }
 
                     if (count($storage->overridden_method_ids[$method_name]) === 1
@@ -774,11 +773,10 @@ class Populator
                         if (isset($interface_storage->methods[$method_name])) {
                             $interface_method_storage = $interface_storage->methods[$method_name];
 
-                            if (!$method_storage->throws
-                                && $method_storage->inheritdoc
-                                && $interface_method_storage->throws
+                            if ($interface_method_storage->throws
+                                && (!$method_storage->throws || $method_storage->inheritdoc)
                             ) {
-                                $method_storage->throws = $interface_method_storage->throws;
+                                $method_storage->throws += $interface_method_storage->throws;
                             }
 
                             if ($interface_method_storage->return_type
