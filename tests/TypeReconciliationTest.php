@@ -84,105 +84,6 @@ class TypeReconciliationTest extends TestCase
     }
 
     /**
-     * @return void
-     */
-    public function testNegateFormula()
-    {
-        $formula = [
-            new Clause(['$a' => ['!falsy']]),
-        ];
-
-        $negated_formula = Algebra::negateFormula($formula);
-
-        $this->assertCount(1, $negated_formula);
-        $this->assertSame(['$a' => ['falsy']], $negated_formula[0]->possibilities);
-
-        $formula = [
-            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']]),
-        ];
-
-        $negated_formula = Algebra::negateFormula($formula);
-
-        $this->assertCount(2, $negated_formula);
-        $this->assertSame(['$a' => ['falsy']], $negated_formula[0]->possibilities);
-        $this->assertSame(['$b' => ['falsy']], $negated_formula[1]->possibilities);
-
-        $formula = [
-            new Clause(['$a' => ['!falsy']]),
-            new Clause(['$b' => ['!falsy']]),
-        ];
-
-        $negated_formula = Algebra::negateFormula($formula);
-
-        $this->assertCount(1, $negated_formula);
-        $this->assertSame(['$a' => ['falsy'], '$b' => ['falsy']], $negated_formula[0]->possibilities);
-
-        $formula = [
-            new Clause(['$a' => ['int', 'string'], '$b' => ['!falsy']]),
-        ];
-
-        $negated_formula = Algebra::negateFormula($formula);
-
-        $this->assertCount(3, $negated_formula);
-        $this->assertSame(['$a' => ['!int']], $negated_formula[0]->possibilities);
-        $this->assertSame(['$a' => ['!string']], $negated_formula[1]->possibilities);
-        $this->assertSame(['$b' => ['falsy']], $negated_formula[2]->possibilities);
-    }
-
-    /**
-     * @return void
-     */
-    public function testContainsClause()
-    {
-        $this->assertTrue(
-            (new Clause(
-                [
-                    '$a' => ['!falsy'],
-                    '$b' => ['!falsy'],
-                ]
-            ))->contains(
-                new Clause(
-                    [
-                        '$a' => ['!falsy'],
-                    ]
-                )
-            )
-        );
-
-        $this->assertFalse(
-            (new Clause(
-                [
-                    '$a' => ['!falsy'],
-                ]
-            ))->contains(
-                new Clause(
-                    [
-                        '$a' => ['!falsy'],
-                        '$b' => ['!falsy'],
-                    ]
-                )
-            )
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testSimplifyCNF()
-    {
-        $formula = [
-            new Clause(['$a' => ['!falsy']]),
-            new Clause(['$a' => ['falsy'], '$b' => ['falsy']]),
-        ];
-
-        $simplified_formula = Algebra::simplifyCNF($formula);
-
-        $this->assertCount(2, $simplified_formula);
-        $this->assertSame(['$a' => ['!falsy']], $simplified_formula[0]->possibilities);
-        $this->assertSame(['$b' => ['falsy']], $simplified_formula[1]->possibilities);
-    }
-
-    /**
      * @return array<string,array{string,string,string}>
      */
     public function providerTestReconcilation()
@@ -1453,6 +1354,29 @@ class TypeReconciliationTest extends TestCase
                     function foo(array $a, array $b) : void {
                         if ($a === $b) {}
                     }',
+            ],
+            'preventCombinatorialExpansion' => [
+                '<?php
+                    function gameOver(
+                        int $b0,
+                        int $b1,
+                        int $b2,
+                        int $b3,
+                        int $b4,
+                        int $b5,
+                        int $b6,
+                        int $b7,
+                        int $b8
+                    ): bool {
+                        if (($b0 === 1 && $b1 === 1 && $b2 === 1)
+                            || ($b3 === 1 && $b4 === 1 && $b5 === 1)
+                            || ($b6 === 1 && $b7 === 1 && $b8 === 1)
+                        ) {
+                            return true;
+                        }
+
+                        return false;
+                    }'
             ],
         ];
     }
