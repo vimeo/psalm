@@ -1776,7 +1776,7 @@ class Reconciler
                     }
 
                     $did_remove_type = true;
-                }else {
+                } else {
                     $did_remove_type = true;
                 }
             }
