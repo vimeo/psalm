@@ -655,6 +655,9 @@ class Reconciler
                 } elseif ($type instanceof TCallable) {
                     $object_types[] = new Type\Atomic\TCallableObject();
                     $did_remove_type = true;
+                } elseif ($type instanceof TTemplateParam) {
+                    $object_types[] = $type;
+                    $did_remove_type = true;
                 } else {
                     $did_remove_type = true;
                 }
@@ -716,6 +719,9 @@ class Reconciler
                     $type = new TCallableObjectLikeArray($type->properties);
                     $callable_types[] = $type;
                     $did_remove_type = true;
+                } elseif ($type instanceof TTemplateParam) {
+                    $callable_types[] = $type;
+                    $did_remove_type = true;
                 } else {
                     $did_remove_type = true;
                 }
@@ -745,7 +751,7 @@ class Reconciler
         }
 
         if ($new_var_type === 'iterable') {
-            if ($existing_var_type->hasMixed()) {
+            if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
                 return new Type\Union([new Type\Atomic\TIterable]);
             }
 
@@ -787,7 +793,7 @@ class Reconciler
         }
 
         if ($new_var_type === 'countable') {
-            if ($existing_var_type->hasMixed()) {
+            if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
                 return new Type\Union([
                     new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]),
                     new Type\Atomic\TNamedObject('Countable'),
@@ -857,6 +863,9 @@ class Reconciler
                 } elseif ($type instanceof TScalar) {
                     $did_remove_type = true;
                     $numeric_types[] = new TNumeric();
+                } elseif ($type instanceof TTemplateParam) {
+                    $numeric_types[] = $type;
+                    $did_remove_type = true;
                 } else {
                     $did_remove_type = true;
                 }
@@ -892,6 +901,12 @@ class Reconciler
             foreach ($existing_var_atomic_types as $type) {
                 if ($type instanceof Scalar) {
                     $scalar_types[] = $type;
+                } elseif ($type instanceof TTemplateParam) {
+                    if ($type->as->hasScalarType() || $type->as->hasMixed()) {
+                        $scalar_types[] = $type;
+                    }
+
+                    $did_remove_type = true;
                 } else {
                     $did_remove_type = true;
                 }
@@ -930,6 +945,12 @@ class Reconciler
                     $type->from_docblock = false;
                 } elseif ($type instanceof TScalar) {
                     $bool_types[] = new TBool;
+                    $did_remove_type = true;
+                } elseif ($type instanceof TTemplateParam) {
+                    if ($type->as->hasBool() || $type->as->hasMixed()) {
+                        $bool_types[] = $type;
+                    }
+
                     $did_remove_type = true;
                 } else {
                     $did_remove_type = true;
@@ -978,6 +999,12 @@ class Reconciler
                     $did_remove_type = true;
                 } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
                     $string_types[] = new TString;
+                    $did_remove_type = true;
+                } elseif ($type instanceof TTemplateParam) {
+                    if ($type->as->hasString() || $type->as->hasMixed()) {
+                        $string_types[] = $type;
+                    }
+
                     $did_remove_type = true;
                 } else {
                     $did_remove_type = true;
@@ -1599,7 +1626,13 @@ class Reconciler
             $did_remove_type = false;
 
             foreach ($existing_var_atomic_types as $type) {
-                if (!$type->isObjectType()) {
+                if ($type instanceof TTemplateParam) {
+                    if (!$type->as->hasObject()) {
+                        $non_object_types[] = $type;
+                    }
+
+                    $did_remove_type = true;
+                } elseif (!$type->isObjectType()) {
                     $non_object_types[] = $type;
                 } else {
                     $did_remove_type = true;
@@ -1638,7 +1671,13 @@ class Reconciler
             $did_remove_type = false;
 
             foreach ($existing_var_atomic_types as $type) {
-                if (!($type instanceof Scalar)) {
+                if ($type instanceof TTemplateParam) {
+                    if (!$type->as->hasScalar()) {
+                        $non_scalar_types[] = $type;
+                    }
+
+                    $did_remove_type = true;
+                } elseif (!($type instanceof Scalar)) {
                     $non_scalar_types[] = $type;
                 } else {
                     $did_remove_type = true;
@@ -1677,7 +1716,13 @@ class Reconciler
             $did_remove_type = false;
 
             foreach ($existing_var_atomic_types as $type) {
-                if (!$type instanceof TBool
+                if ($type instanceof TTemplateParam) {
+                    if (!$type->as->hasBool()) {
+                        $non_bool_types[] = $type;
+                    }
+
+                    $did_remove_type = true;
+                } elseif (!$type instanceof TBool
                     || ($is_equality && get_class($type) === TBool::class)
                 ) {
                     $non_bool_types[] = $type;
@@ -1725,7 +1770,13 @@ class Reconciler
             foreach ($existing_var_atomic_types as $type) {
                 if (!$type->isNumericType()) {
                     $non_numeric_types[] = $type;
-                } else {
+                } elseif ($type instanceof TTemplateParam) {
+                    if (!$type->as->hasNumeric()) {
+                        $non_numeric_types[] = $type;
+                    }
+
+                    $did_remove_type = true;
+                }else {
                     $did_remove_type = true;
                 }
             }
