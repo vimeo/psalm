@@ -92,115 +92,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                 fwrite(STDERR, 'Error with Psalm Shepherd:' . PHP_EOL);
 
                 if ($return === false) {
-                    /** @var array */
-                    $curl_info = curl_getinfo($ch);
-
-                    if (($curl_info['ssl_verify_result'] ?? 0) !== 0) {
-                        fwrite(STDERR, 'Curl SSL error: ');
-
-                        switch ($curl_info['ssl_verify_result']) {
-                            case 2:
-                                fwrite(STDERR, 'unable to get issuer certificate');
-                                break;
-                            case 3:
-                                fwrite(STDERR, 'unable to get certificate CRL');
-                                break;
-                            case 4:
-                                fwrite(STDERR, 'unable to decrypt certificate’s signature');
-                                break;
-                            case 5:
-                                fwrite(STDERR, 'unable to decrypt CRL’s signature');
-                                break;
-                            case 6:
-                                fwrite(STDERR, 'unable to decode issuer public key');
-                                break;
-                            case 7:
-                                fwrite(STDERR, 'certificate signature failure');
-                                break;
-                            case 8:
-                                fwrite(STDERR, 'CRL signature failure');
-                                break;
-                            case 9:
-                                fwrite(STDERR, 'certificate is not yet valid');
-                                break;
-                            case 10:
-                                fwrite(STDERR, 'certificate has expired');
-                                break;
-                            case 11:
-                                fwrite(STDERR, 'CRL is not yet valid');
-                                break;
-                            case 12:
-                                fwrite(STDERR, 'CRL has expired');
-                                break;
-                            case 13:
-                                fwrite(STDERR, 'format error in certificate’s notBefore field');
-                                break;
-                            case 14:
-                                fwrite(STDERR, 'format error in certificate’s notAfter field');
-                                break;
-                            case 15:
-                                fwrite(STDERR, 'format error in CRL’s lastUpdate field');
-                                break;
-                            case 16:
-                                fwrite(STDERR, 'format error in CRL’s nextUpdate field');
-                                break;
-                            case 17:
-                                fwrite(STDERR, 'out of memory');
-                                break;
-                            case 18:
-                                fwrite(STDERR, 'self signed certificate');
-                                break;
-                            case 19:
-                                fwrite(STDERR, 'self signed certificate in certificate chain');
-                                break;
-                            case 20:
-                                fwrite(STDERR, 'unable to get local issuer certificate');
-                                break;
-                            case 21:
-                                fwrite(STDERR, 'unable to verify the first certificate');
-                                break;
-                            case 22:
-                                fwrite(STDERR, 'certificate chain too long');
-                                break;
-                            case 23:
-                                fwrite(STDERR, 'certificate revoked');
-                                break;
-                            case 24:
-                                fwrite(STDERR, 'invalid CA certificate');
-                                break;
-                            case 25:
-                                fwrite(STDERR, 'path length constraint exceeded');
-                                break;
-                            case 26:
-                                fwrite(STDERR, 'unsupported certificate purpose');
-                                break;
-                            case 27:
-                                fwrite(STDERR, 'certificate not trusted');
-                                break;
-                            case 28:
-                                fwrite(STDERR, 'certificate rejected');
-                                break;
-                            case 29:
-                                fwrite(STDERR, 'subject issuer mismatch');
-                                break;
-                            case 30:
-                                fwrite(STDERR, 'authority and subject key identifier mismatch');
-                                break;
-                            case 31:
-                                fwrite(STDERR, 'authority and issuer serial number mismatch');
-                                break;
-                            case 32:
-                                fwrite(STDERR, 'key usage does not include certificate signing');
-                                break;
-                            case 50:
-                                fwrite(STDERR, 'application verification failure');
-                                break;
-                        }
-
-                        fwrite(STDERR, PHP_EOL);
-                    } else {
-                        echo var_export(curl_getinfo($ch), true) . PHP_EOL;
-                    }
+                    fwrite(STDERR, self::getCurlErrorMessage($ch) . PHP_EOL);
                 } else {
                     echo $return . PHP_EOL;
                     echo 'Git args: ' . var_export($source_control_info->toArray(), true) . PHP_EOL;
@@ -211,5 +103,87 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             // Close cURL session handle
             curl_close($ch);
         }
+    }
+
+    /**
+     * @param resource $ch
+     */
+    public static function getCurlErrorMessage($ch) : string
+    {
+        /** @var array */
+        $curl_info = curl_getinfo($ch);
+
+        if (($curl_info['ssl_verify_result'] ?? 0) !== 0) {
+            switch ($curl_info['ssl_verify_result']) {
+                case 2:
+                    return 'unable to get issuer certificate';
+                case 3:
+                    return 'unable to get certificate CRL';
+                case 4:
+                    return 'unable to decrypt certificate’s signature';
+                case 5:
+                    return 'unable to decrypt CRL’s signature';
+                case 6:
+                    return 'unable to decode issuer public key';
+                case 7:
+                    return 'certificate signature failure';
+                case 8:
+                    return 'CRL signature failure';
+                case 9:
+                    return 'certificate is not yet valid';
+                case 10:
+                    return 'certificate has expired';
+                case 11:
+                    return 'CRL is not yet valid';
+                case 12:
+                    return 'CRL has expired';
+                case 13:
+                    return 'format error in certificate’s notBefore field';
+                case 14:
+                    return 'format error in certificate’s notAfter field';
+                case 15:
+                    return 'format error in CRL’s lastUpdate field';
+                case 16:
+                    return 'format error in CRL’s nextUpdate field';
+                case 17:
+                    return 'out of memory';
+                case 18:
+                    return 'self signed certificate';
+                case 19:
+                    return 'self signed certificate in certificate chain';
+                case 20:
+                    return 'unable to get local issuer certificate';
+                case 21:
+                    return 'unable to verify the first certificate';
+                case 22:
+                    return 'certificate chain too long';
+                case 23:
+                    return 'certificate revoked';
+                case 24:
+                    return 'invalid CA certificate';
+                case 25:
+                    return 'path length constraint exceeded';
+                case 26:
+                    return 'unsupported certificate purpose';
+                case 27:
+                    return 'certificate not trusted';
+                case 28:
+                    return 'certificate rejected';
+                case 29:
+                    return 'subject issuer mismatch';
+                case 30:
+                    return 'authority and subject key identifier mismatch';
+                case 31:
+                    return 'authority and issuer serial number mismatch';
+                case 32:
+                    return 'key usage does not include certificate signing';
+                case 50:
+                    return 'application verification failure';
+            }
+
+            return '';
+        }
+
+        return var_export(curl_getinfo($ch), true);
     }
 }
