@@ -1026,7 +1026,7 @@ return [
 'class_alias' => ['bool', 'user_class_name'=>'string', 'alias_name'=>'string', 'autoload='=>'bool'],
 'class_exists' => ['bool', 'classname'=>'string', 'autoload='=>'bool'],
 'class_implements' => ['array<string,string>|false', 'what'=>'object|string', 'autoload='=>'bool'],
-'class_parents' => ['array<string,string>|false', 'instance'=>'object|string', 'autoload='=>'bool'],
+'class_parents' => ['array<string, class-string>|false', 'instance'=>'object|string', 'autoload='=>'bool'],
 'class_uses' => ['array<string,string>|false', 'what'=>'object|string', 'autoload='=>'bool'],
 'classkit_import' => ['array', 'filename'=>'string'],
 'classkit_method_add' => ['bool', 'classname'=>'string', 'methodname'=>'string', 'args'=>'string', 'code'=>'string', 'flags='=>'int'],
