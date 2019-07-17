@@ -237,35 +237,37 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     break;
 
                 case 'explode':
-                    if ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {
-                        if ($call_args[0]->value->value === '') {
-                            return Type::getFalse();
+                    if (count($call_args) === 2) {
+                        if ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                            if ($call_args[0]->value->value === '') {
+                                return Type::getFalse();
+                            }
+
+                            return new Type\Union([
+                                new Type\Atomic\TNonEmptyArray([
+                                    Type::getInt(),
+                                    Type::getString()
+                                ])
+                            ]);
+                        } elseif (isset($call_args[0]->value->inferredType)
+                            && $call_args[0]->value->inferredType->hasString()
+                        ) {
+                            $falsable_array = new Type\Union([
+                                new Type\Atomic\TNonEmptyArray([
+                                    Type::getInt(),
+                                    Type::getString()
+                                ]),
+                                new Type\Atomic\TFalse
+                            ]);
+
+                            $codebase = $statements_analyzer->getCodebase();
+
+                            if ($codebase->config->ignore_internal_falsable_issues) {
+                                $falsable_array->ignore_falsable_issues = true;
+                            }
+
+                            return $falsable_array;
                         }
-
-                        return new Type\Union([
-                            new Type\Atomic\TNonEmptyArray([
-                                Type::getInt(),
-                                Type::getString()
-                            ])
-                        ]);
-                    } elseif (isset($call_args[0]->value->inferredType)
-                        && $call_args[0]->value->inferredType->hasString()
-                    ) {
-                        $falsable_array = new Type\Union([
-                            new Type\Atomic\TNonEmptyArray([
-                                Type::getInt(),
-                                Type::getString()
-                            ]),
-                            new Type\Atomic\TFalse
-                        ]);
-
-                        $codebase = $statements_analyzer->getCodebase();
-
-                        if ($codebase->config->ignore_internal_falsable_issues) {
-                            $falsable_array->ignore_falsable_issues = true;
-                        }
-
-                        return $falsable_array;
                     }
 
                     break;

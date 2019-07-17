@@ -922,6 +922,12 @@ class FunctionCallTest extends TestCase
                         return explode(" ", $s);
                     }',
             ],
+            'explodeWithThirdArg' => [
+                '<?php
+                    $elements = explode("_", "", -1);
+                    $element = array_shift($elements);
+                    assert(null !== $element);'
+            ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 '<?php
                     if (class_exists(Foo::class)) {}',
