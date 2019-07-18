@@ -124,7 +124,8 @@ if (true === $first) {
 `ObjectLike` represents an 'object-like array' - an array with known keys.
 
 ``` php
-$a = ["a" => 1, "b" => 2]; // is ObjectLike, array{a:int(1),b:int(2)}
+$x = ["a" => 1, "b" => 2]; // is ObjectLike, array{a: int, b: int}
+$y = rand(0, 1) ? ["a" => null] : ["a" => 1, "b" => "b"]; // is ObjectLike with optional keys/values, array{a: ?int, b?: string}
 ```
 
 Note that not all associative arrays are considered object-like. If the keys are not known, the array is treated as a mapping between two types.
