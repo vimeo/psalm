@@ -642,6 +642,21 @@ class ClassTest extends TestCase
                     class Bar implements Foo {}',
                 'error_message' => 'UndefinedInterface',
             ],
+            'classAliasAlreadyDefinedClass' => [
+                '<?php
+                    class A {}
+
+                    class B {}
+
+                    if (false) {
+                        class_alias(A::class, B::class);
+                    }
+
+                    function foo(A $a, B $b) : void {
+                        if ($a === $b) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }
