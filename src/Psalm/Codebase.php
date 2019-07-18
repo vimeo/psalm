@@ -1399,17 +1399,11 @@ class Codebase
             }
         }
 
-        foreach ($matching_classlike_names as $fq_class_name_lc) {
-            try {
-                $storage = $this->classlike_storage_provider->get($fq_class_name_lc);
-            } catch (\Exception $e) {
-                continue;
-            }
-
+        foreach ($matching_classlike_names as $fq_class_name) {
             $extra_edits = [];
 
             $insertion_text = Type::getStringFromFQCLN(
-                $storage->name,
+                $fq_class_name,
                 $aliases && $aliases->namespace ? $aliases->namespace : null,
                 $aliases ? $aliases->uses_flipped : [],
                 null
@@ -1417,12 +1411,12 @@ class Codebase
 
             if ($aliases
                 && $aliases->namespace
-                && $insertion_text === '\\' . $storage->name
+                && $insertion_text === '\\' . $fq_class_name
                 && $aliases->namespace_first_stmt_start
             ) {
                 $file_contents = $this->getFileContents($file_path);
 
-                $class_name = \preg_replace('/^.*\\\/', '', $storage->name);
+                $class_name = \preg_replace('/^.*\\\/', '', $fq_class_name);
 
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);
@@ -1431,7 +1425,7 @@ class Codebase
                             $position,
                             $position
                         ),
-                        "\n" . 'use ' . $storage->name . ';'
+                        "\n" . 'use ' . $fq_class_name . ';'
                     );
                 } else {
                     $position = self::getPositionFromOffset($aliases->namespace_first_stmt_start, $file_contents);
@@ -1440,7 +1434,7 @@ class Codebase
                             $position,
                             $position
                         ),
-                        'use ' . $storage->name . ';' . "\n" . "\n"
+                        'use ' . $fq_class_name . ';' . "\n" . "\n"
                     );
                 }
 
@@ -1448,12 +1442,12 @@ class Codebase
             }
 
             $completion_items[] = new \LanguageServerProtocol\CompletionItem(
-                $storage->name,
+                $fq_class_name,
                 \LanguageServerProtocol\CompletionItemKind::CLASS_,
                 null,
                 null,
                 null,
-                $storage->name,
+                $fq_class_name,
                 $insertion_text,
                 null,
                 $extra_edits

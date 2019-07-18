@@ -755,7 +755,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
                 class Antelope {}
 
                 function foo() : void {
-                    new A
+                    new ArrayO
                 }'
         );
 
@@ -763,20 +763,20 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(9, 25));
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(9, 30));
 
         $this->assertSame(
             [
-                '*A',
+                '*ArrayO',
                 'symbol',
-                215,
+                220,
             ],
             $completion_data
         );
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
 
-        $this->assertCount(5, $completion_items);
+        $this->assertCount(1, $completion_items);
 
         $this->assertNotNull($completion_items[0]->additionalTextEdits);
         $this->assertCount(1, $completion_items[0]->additionalTextEdits);
@@ -805,9 +805,10 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
                 class Alpha {}
                 class Antelope {}
+                class Anteater {}
 
                 function foo($a) : void {
-                    if ($a instanceof A) {}
+                    if ($a instanceof Ant) {}
                 }'
         );
 
@@ -815,19 +816,19 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(9, 39));
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 41));
 
         $this->assertSame(
             [
-                '*A',
+                '*Ant',
                 'symbol',
-                231,
+                267,
             ],
             $completion_data
         );
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
 
-        $this->assertCount(5, $completion_items);
+        $this->assertCount(2, $completion_items);
     }
 }

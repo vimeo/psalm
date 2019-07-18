@@ -155,6 +155,7 @@ class ClassLikes
                 $predefined_class_lc = strtolower($predefined_class);
                 $this->existing_classlikes_lc[$predefined_class_lc] = true;
                 $this->existing_classes_lc[$predefined_class_lc] = true;
+                $this->existing_classes[$predefined_class] = true;
             }
         }
 
@@ -170,6 +171,7 @@ class ClassLikes
                 $predefined_interface_lc = strtolower($predefined_interface);
                 $this->existing_classlikes_lc[$predefined_interface_lc] = true;
                 $this->existing_interfaces_lc[$predefined_interface_lc] = true;
+                $this->existing_interfaces[$predefined_interface] = true;
             }
         }
     }
@@ -262,13 +264,23 @@ class ClassLikes
 
         $stub = strtolower($stub);
 
-        foreach ($this->existing_classlikes_lc as $fq_classlike_name_lc => $found) {
+        foreach ($this->existing_classes as $fq_classlike_name => $found) {
             if (!$found) {
                 continue;
             }
 
-            if (preg_match('@(^|\\\)' . $stub . '.*@', $fq_classlike_name_lc)) {
-                $matching_classes[] = $fq_classlike_name_lc;
+            if (preg_match('@(^|\\\)' . $stub . '.*@i', $fq_classlike_name)) {
+                $matching_classes[] = $fq_classlike_name;
+            }
+        }
+
+        foreach ($this->existing_interfaces as $fq_classlike_name => $found) {
+            if (!$found) {
+                continue;
+            }
+
+            if (preg_match('@(^|\\\)' . $stub . '.*@i', $fq_classlike_name)) {
+                $matching_classes[] = $fq_classlike_name;
             }
         }
 
