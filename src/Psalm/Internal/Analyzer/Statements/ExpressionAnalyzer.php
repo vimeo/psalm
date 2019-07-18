@@ -32,6 +32,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\FileSource;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidDocblock;
@@ -355,6 +356,18 @@ class ExpressionAnalyzer
                 }
 
                 $var_id = self::getArrayVarId($stmt->var, null);
+
+                if ($var_id && $context->pure && strpos($var_id, '->')) {
+                    if (IssueBuffer::accepts(
+                        new ImpurePropertyAssignment(
+                            'Cannot assign to a property from a pure context',
+                            new CodeLocation($statements_analyzer, $stmt->var)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
 
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = $stmt->inferredType;

@@ -15,6 +15,7 @@ use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\InvalidFunctionCall;
+use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\PossiblyInvalidFunctionCall;
 use Psalm\Issue\PossiblyNullFunctionCall;
@@ -595,6 +596,20 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $stmt,
                 (string) $stmt->inferredType
             );
+        }
+
+        if ($context->pure) {
+            if (!$function_storage || !$function_storage->pure) {
+                if (IssueBuffer::accepts(
+                    new ImpureFunctionCall(
+                        'Cannot call an impure function from a pure context',
+                        new CodeLocation($statements_analyzer, $stmt->name)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
         }
 
         if ($function_storage) {

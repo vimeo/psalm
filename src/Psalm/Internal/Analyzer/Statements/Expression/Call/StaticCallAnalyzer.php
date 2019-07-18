@@ -12,6 +12,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\MixedMethodCall;
@@ -883,6 +884,18 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
                 if ($method_storage) {
+                    if ($context->pure && !$method_storage->pure) {
+                        if (IssueBuffer::accepts(
+                            new ImpureMethodCall(
+                                'Cannot call an impure method from a pure context',
+                                new CodeLocation($source, $stmt->name)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+
                     if ($method_storage->assertions) {
                         self::applyAssertionsToContext(
                             $stmt->name,

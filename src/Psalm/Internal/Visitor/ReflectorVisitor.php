@@ -1977,6 +1977,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->variadic = true;
         }
 
+        if ($docblock_info->pure) {
+            $storage->pure = true;
+        }
+
         if ($docblock_info->ignore_nullable_return && $storage->return_type) {
             $storage->return_type->ignore_nullable_issues = true;
         }

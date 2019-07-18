@@ -148,7 +148,7 @@ class DocComment
                         'assert', 'assert-if-true', 'assert-if-false', 'suppress',
                         'ignore-nullable-return', 'override-property-visibility',
                         'override-method-visibility', 'seal-properties', 'seal-methods',
-                        'generator-return', 'ignore-falsable-return', 'variadic',
+                        'generator-return', 'ignore-falsable-return', 'variadic', 'pure',
                         'ignore-variable-method', 'ignore-variable-property', 'internal',
                     ],
                     true
@@ -269,7 +269,7 @@ class DocComment
                         'assert', 'assert-if-true', 'assert-if-false', 'suppress',
                         'ignore-nullable-return', 'override-property-visibility',
                         'override-method-visibility', 'seal-properties', 'seal-methods',
-                        'generator-return', 'ignore-falsable-return', 'variadic',
+                        'generator-return', 'ignore-falsable-return', 'variadic', 'pure',
                         'ignore-variable-method', 'ignore-variable-property', 'internal',
                     ],
                     true

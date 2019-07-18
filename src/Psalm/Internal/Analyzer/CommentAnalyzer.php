@@ -635,6 +635,8 @@ class CommentAnalyzer
         }
 
         $info->variadic = isset($parsed_docblock['specials']['psalm-variadic']);
+        $info->pure = isset($parsed_docblock['specials']['psalm-pure'])
+            || isset($parsed_docblock['specials']['pure']);
         $info->ignore_nullable_return = isset($parsed_docblock['specials']['psalm-ignore-nullable-return']);
         $info->ignore_falsable_return = isset($parsed_docblock['specials']['psalm-ignore-falsable-return']);
 

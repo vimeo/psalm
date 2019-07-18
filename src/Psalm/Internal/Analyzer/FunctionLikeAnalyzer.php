@@ -760,6 +760,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             );
         }
 
+        if ($storage->pure) {
+            $context->pure = true;
+        }
+
         if ($storage->unused_docblock_params) {
             foreach ($storage->unused_docblock_params as $param_name => $param_location) {
                 if (IssueBuffer::accepts(

@@ -13,6 +13,7 @@ use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Issue\AssignmentToVoid;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\LoopInvalidation;
@@ -554,6 +555,18 @@ class AssignmentAnalyzer
                 $assign_value_type
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
+            if ($context->pure) {
+                if (IssueBuffer::accepts(
+                    new ImpurePropertyAssignment(
+                        'Cannot assign to a property from a pure context',
+                        new CodeLocation($statements_analyzer, $assign_var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
             if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
                 // this can happen when the user actually means to type $this-><autocompleted>, but there's
                 // a variable on the next line
@@ -693,6 +706,18 @@ class AssignmentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
         );
+
+        if ($array_var_id && $context->pure && strpos($array_var_id, '->')) {
+            if (IssueBuffer::accepts(
+                new ImpurePropertyAssignment(
+                    'Cannot assign to a property from a pure context',
+                    new CodeLocation($statements_analyzer, $stmt->var)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
 
         if ($array_var_id && $context->collect_references && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
             $location = new CodeLocation($statements_analyzer, $stmt->var);

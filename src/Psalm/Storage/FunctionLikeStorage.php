@@ -166,6 +166,11 @@ class FunctionLikeStorage
      */
     public $unused_docblock_params;
 
+    /**
+     * @var bool
+     */
+    public $pure = false;
+
     public function __toString()
     {
         return $this->getSignature(false);

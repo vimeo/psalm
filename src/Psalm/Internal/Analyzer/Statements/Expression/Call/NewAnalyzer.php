@@ -12,6 +12,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InterfaceInstantiation;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidStringClass;
@@ -401,6 +402,26 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $statements_analyzer->getSuppressedIssues()
                     ) === false) {
                         return false;
+                    }
+
+                    if ($context->pure) {
+                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+                        if ($declaring_method_id) {
+                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+                            if (!$method_storage->pure) {
+                                if (IssueBuffer::accepts(
+                                    new ImpureMethodCall(
+                                        'Cannot call an impure constructor from a pure context',
+                                        new CodeLocation($statements_analyzer, $stmt)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            }
+                        }
                     }
 
                     $generic_param_types = null;

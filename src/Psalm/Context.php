@@ -297,6 +297,11 @@ class Context
     public $ignore_variable_method = false;
 
     /**
+     * @var bool
+     */
+    public $pure = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

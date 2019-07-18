@@ -332,6 +332,63 @@ function takesString(string $s) : void {}
 takesString(new A);
 ```
 
+### ImpureFunctionCall
+
+Emitted when calling an impure function from a function or method marked as pure.
+
+```php
+/** @psalm-pure */
+function filterOdd(array $a) : void {
+    extract($a);
+}
+```
+
+### ImpureMethodCall
+
+Emitted when calling an impure method from a function or method marked as pure.
+
+```php
+class A {
+    public int $a = 5;
+
+    public function foo() : void {
+        $this->a++;
+    }
+}
+
+/** @psalm-pure */
+function filterOdd(int $i, A $a) : ?int {
+    $a->foo();
+
+    if ($i % 2 === 0 || $a->a === 2) {
+        return $i;
+    }
+
+    return null;
+}
+```
+
+### ImpurePropertyAssignment
+
+Emitted when updating a property value from a function or method marked as pure.
+
+```php
+class A {
+    public int $a = 5;
+}
+
+/** @psalm-pure */
+function filterOdd(int $i, A $a) : ?int {
+    $a->a++;
+
+    if ($i % 2 === 0 || $a->a === 2) {
+        return $i;
+    }
+
+    return null;
+}
+```
+
 ### InaccessibleClassConstant
 
 Emitted when a public/private class constant is not accessible from the calling context

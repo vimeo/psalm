@@ -75,6 +75,13 @@ class FunctionDocblockComment
     public $variadic = false;
 
     /**
+     * Whether or not the function is pure
+     *
+     * @var bool
+     */
+    public $pure = false;
+
+    /**
      * Whether or not to ignore the nullability of this function's return type
      *
      * @var bool
