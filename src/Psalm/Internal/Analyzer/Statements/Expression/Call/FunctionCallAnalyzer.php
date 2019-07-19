@@ -237,17 +237,6 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 strtolower($function_id)
             );
 
-            if (!$context->collect_initializations
-                && !$context->collect_mutations
-            ) {
-                ArgumentMapPopulator::recordArgumentPositions(
-                    $statements_analyzer,
-                    $stmt,
-                    $codebase,
-                    $function_id
-                );
-            }
-
             if (!$namespaced_function_exists
                 && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified
             ) {
@@ -264,6 +253,18 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
             if ($is_stubbed || $in_call_map || $namespaced_function_exists) {
                 $function_exists = true;
+            }
+
+            if ($function_exists
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                ArgumentMapPopulator::recordArgumentPositions(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $function_id
+                );
             }
 
             $is_predefined = true;

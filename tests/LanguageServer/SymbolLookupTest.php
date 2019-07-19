@@ -329,6 +329,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
             [new Position(10, 40), 'B\A::staticfoo', 0],
             [new Position(12, 28), 'B\foo', 0],
             [new Position(14, 30), 'B\A::__construct', 0],
+            [new Position(16, 31), 'strlen', 0],
         ];
     }
 
@@ -362,9 +363,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
                         new A();
 
-                        // Blocked by https://github.com/nikic/PHP-Parser/issues/616
-                        //$this->foo(, "Bar");
-                        //$this->foo(,,);
+                        strlen();
                     }
 
                     public function bar(string $a) {}
