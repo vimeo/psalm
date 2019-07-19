@@ -49,7 +49,7 @@ script:
 matrix:
   fast_finish: true
   allow_failures:
-    - php: nightly
+    - php: 7.4snapshot
 
 # Additional stages
 jobs:
