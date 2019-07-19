@@ -1250,7 +1250,7 @@ class Analyzer
                 ])
             );
 
-            echo (string) $differ->diff($this->file_provider->getContents($file_path), $existing_contents);
+            echo $differ->diff($this->file_provider->getContents($file_path), $existing_contents);
 
             return;
         }

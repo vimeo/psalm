@@ -3,7 +3,6 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Aliases;
-use Psalm\Codebase;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;

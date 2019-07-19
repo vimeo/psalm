@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
-use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -32,10 +31,6 @@ use function strpos;
 use function is_string;
 use function strlen;
 use function substr;
-use function token_get_all;
-use function array_reverse;
-use function array_shift;
-use function reset;
 
 /**
  * @internal

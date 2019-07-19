@@ -3,7 +3,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\FunctionAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;

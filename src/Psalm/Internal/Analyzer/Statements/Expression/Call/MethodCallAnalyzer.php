@@ -47,11 +47,6 @@ use function explode;
 use function array_search;
 use function array_keys;
 use function in_array;
-use function substr;
-use function token_get_all;
-use function array_reverse;
-use function strlen;
-use function reset;
 
 /**
  * @internal
