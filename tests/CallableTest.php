@@ -25,7 +25,7 @@ class CallableTest extends TestCase
                      * @return void
                      * @psalm-suppress MixedArgument
                      */
-                    function fn() {
+                    function f() {
                         run_function(
                             /**
                              * @return void
@@ -37,7 +37,7 @@ class CallableTest extends TestCase
                         echo $data;
                     }
 
-                    fn();',
+                    f();',
             ],
             'inferredArg' => [
                 '<?php

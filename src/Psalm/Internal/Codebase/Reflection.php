@@ -389,7 +389,7 @@ class Reflection
             $suffix = '|null';
         }
 
-        return Type::parseString($reflection_type . $suffix);
+        return Type::parseString($reflection_type->getName() . $suffix);
     }
 
     /**
