@@ -1195,6 +1195,57 @@ class Codebase
     }
 
     /**
+     * @param  array{0: string}  $argument_location
+     */
+    public function getSignatureInformation(array $argument_location) : ?\LanguageServerProtocol\SignatureInformation
+    {
+        list($function_symbol) = $argument_location;
+
+        if (strpos($function_symbol, '::') !== false) {
+            $declaring_method_id = $this->methods->getDeclaringMethodId($function_symbol);
+
+            if ($declaring_method_id === null) {
+                return null;
+            }
+
+            $method_storage = $this->methods->getStorage($declaring_method_id);
+            $params = $method_storage->params;
+        } else {
+            try {
+                $function_storage = $this->functions->getStorage(null, $function_symbol);
+            } catch (\Exception $exception) {
+                return null;
+            }
+
+            $params = $function_storage->params;
+        }
+
+        $signature_label = '(';
+        $parameters = [];
+
+        foreach ($params as $i => $param) {
+            $parameter_label = ($param->type ?: 'mixed') . ' $' . $param->name;
+            $parameters[] = new \LanguageServerProtocol\ParameterInformation([
+                strlen($signature_label),
+                strlen($signature_label) + strlen($parameter_label),
+            ]);
+
+            $signature_label .= $parameter_label;
+
+            if ($i < (count($params) - 1)) {
+                $signature_label .= ', ';
+            }
+        }
+
+        $signature_label .= ')';
+
+        return new \LanguageServerProtocol\SignatureInformation(
+            $signature_label,
+            $parameters
+        );
+    }
+
+    /**
      * @return array{0: string, 1: '->'|'::'|'symbol', 2: int}|null
      */
     public function getCompletionDataAtPosition(string $file_path, Position $position)

@@ -269,48 +269,19 @@ class TextDocument
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
+
         if ($argument_location === null) {
             return new Success(new \LanguageServerProtocol\SignatureHelp());
         }
 
-        list($function_symbol, $argument_number) = $argument_location;
-        if (strpos($function_symbol, '::') !== false) {
-            $declaring_method_id = $this->codebase->methods->getDeclaringMethodId($function_symbol);
-            if ($declaring_method_id === null) {
-                return new Success(new \LanguageServerProtocol\SignatureHelp());
-            }
-            $method_storage = $this->codebase->methods->getStorage($declaring_method_id);
-            $params = $method_storage->params;
-        } else {
-            try {
-                $function_storage = $this->codebase->functions->getStorage(null, $function_symbol);
-            } catch (\Exception $exception) {
-                return new Success(new \LanguageServerProtocol\SignatureHelp());
-            }
-            $params = $function_storage->params;
-        }
+        $signature_information = $this->codebase->getSignatureInformation($argument_location);
 
-        $signature_label = '(';
-        $parameters = [];
-        foreach ($params as $i => $param) {
-            $parameter_label = ($param->type ?: 'mixed') . ' $' . $param->name;
-            $parameters[] = new \LanguageServerProtocol\ParameterInformation([
-                strlen($signature_label),
-                strlen($signature_label) + strlen($parameter_label),
-            ]);
-            $signature_label .= $parameter_label;
-
-            if ($i < (count($params) - 1)) {
-                $signature_label .= ', ';
-            }
+        if (!$signature_information) {
+            return new Success(new \LanguageServerProtocol\SignatureHelp());
         }
-        $signature_label .= ')';
 
         return new Success(new \LanguageServerProtocol\SignatureHelp([
-            new \LanguageServerProtocol\SignatureInformation(
-                $signature_label,
-                $parameters
-            ),
-        ], 0, $argument_number));
+            $signature_information,
+        ], 0, $argument_location[1]));
     }
 }

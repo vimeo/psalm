@@ -306,30 +306,30 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return array<int, array{0: Position, 1: ?string, 2: ?int}>
+     * @return array<int, array{0: Position, 1: ?string, 2: ?int, 3: ?int}>
      */
     public function providerGetSignatureHelp(): array
     {
         return [
-            [new Position(5, 34), null, null],
-            [new Position(5, 35), 'B\A::foo', 0],
-            [new Position(5, 36), null, null],
-            [new Position(6, 34), null, null],
-            [new Position(6, 35), 'B\A::foo', 0],
-            [new Position(6, 40), 'B\A::foo', 0],
-            [new Position(6, 41), 'B\A::foo', 1],
-            [new Position(6, 47), 'B\A::foo', 1],
-            [new Position(6, 48), null, null],
-            [new Position(7, 40), 'B\A::foo', 0],
-            [new Position(7, 41), 'B\A::foo', 1],
-            [new Position(7, 42), 'B\A::foo', 1],
-            [new Position(8, 40), 'B\A::foo', 0],
-            [new Position(8, 46), 'B\A::bar', 0],
-            [new Position(8, 47), 'B\A::foo', 0],
-            [new Position(10, 40), 'B\A::staticfoo', 0],
-            [new Position(12, 28), 'B\foo', 0],
-            [new Position(14, 30), 'B\A::__construct', 0],
-            [new Position(16, 31), 'strlen', 0],
+            [new Position(5, 34), null, null, null],
+            [new Position(5, 35), 'B\A::foo', 0, 2],
+            [new Position(5, 36), null, null, null],
+            [new Position(6, 34), null, null, null],
+            [new Position(6, 35), 'B\A::foo', 0, 2],
+            [new Position(6, 40), 'B\A::foo', 0, 2],
+            [new Position(6, 41), 'B\A::foo', 1, 2],
+            [new Position(6, 47), 'B\A::foo', 1, 2],
+            [new Position(6, 48), null, null, null],
+            [new Position(7, 40), 'B\A::foo', 0, 2],
+            [new Position(7, 41), 'B\A::foo', 1, 2],
+            [new Position(7, 42), 'B\A::foo', 1, 2],
+            [new Position(8, 40), 'B\A::foo', 0, 2],
+            [new Position(8, 46), 'B\A::bar', 0, 1],
+            [new Position(8, 47), 'B\A::foo', 0, 2],
+            [new Position(10, 40), 'B\A::staticfoo', 0, 1],
+            #[new Position(12, 28), 'B\foo', 0, 1],
+            [new Position(14, 30), 'B\A::__construct', 0, 0],
+            #[new Position(16, 31), 'strlen', 0, 1],
         ];
     }
 
@@ -339,7 +339,8 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     public function testGetSignatureHelp(
         Position $position,
         ?string $expected_symbol,
-        ?int $expected_argument_number
+        ?int $expected_argument_number,
+        ?int $expected_param_count
     ): void {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -382,8 +383,24 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $reference_location = $codebase->getFunctionArgumentAtPosition('somefile.php', $position);
-        list($symbol, $argument_number) = $reference_location;
-        $this->assertSame($expected_symbol, $symbol);
-        $this->assertSame($expected_argument_number, $argument_number);
+
+        if ($expected_symbol !== null) {
+            $this->assertNotNull($reference_location);
+            list($symbol, $argument_number) = $reference_location;
+            $this->assertSame($expected_symbol, $symbol);
+            $this->assertSame($expected_argument_number, $argument_number);
+
+            $symbol_information = $codebase->getSignatureInformation($reference_location);
+
+            if ($expected_param_count === null) {
+                $this->assertNull($symbol_information);
+            } else {
+                $this->assertNotNull($symbol_information);
+                $this->assertNotNull($symbol_information->parameters);
+                $this->assertCount($expected_param_count, $symbol_information->parameters);
+            }
+        } else {
+            $this->assertNull($reference_location);
+        }
     }
 }
