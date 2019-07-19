@@ -6,7 +6,6 @@ use Amp\Promise;
 use Amp\Success;
 use function count;
 use function error_log;
-use LanguageServerProtocol\CompletionItem;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
