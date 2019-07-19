@@ -1003,8 +1003,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $this->classlike_storages[] = $storage;
 
         if ($node instanceof PhpParser\Node\Stmt\Class_) {
-            $storage->abstract = (bool)$node->isAbstract();
-            $storage->final = (bool)$node->isFinal();
+            $storage->abstract = $node->isAbstract();
+            $storage->final = $node->isFinal();
 
             $this->codebase->classlikes->addFullyQualifiedClassName($fq_classlike_name, $this->file_path);
 
@@ -1473,7 +1473,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $storage = new MethodStorage();
             $storage->defining_fqcln = '';
-            $storage->is_static = (bool) $stmt->isStatic();
+            $storage->is_static = $stmt->isStatic();
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
@@ -1624,8 +1624,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $class_storage->overridden_method_ids[strtolower($stmt->name->name)] = [];
             }
 
-            $storage->is_static = (bool) $stmt->isStatic();
-            $storage->abstract = (bool) $stmt->isAbstract();
+            $storage->is_static = $stmt->isStatic();
+            $storage->abstract = $stmt->isAbstract();
 
             $storage->final = $class_storage->final || $stmt->isFinal();
 
@@ -2893,7 +2893,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $doc_var_location = null;
 
             $property_storage = $storage->properties[$property->name->name] = new PropertyStorage();
-            $property_storage->is_static = (bool)$stmt->isStatic();
+            $property_storage->is_static = $stmt->isStatic();
             $property_storage->type = $signature_type;
             $property_storage->signature_type = $signature_type;
             $property_storage->signature_type_location = $signature_type_location;
