@@ -19,6 +19,7 @@ use function preg_match;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Codebase\CallMap;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -1195,11 +1196,11 @@ class Codebase
     }
 
     /**
-     * @param  array{0: string}  $argument_location
+     * @param  string $function_symbol
      */
-    public function getSignatureInformation(array $argument_location) : ?\LanguageServerProtocol\SignatureInformation
+    public function getSignatureInformation(string $function_symbol) : ?\LanguageServerProtocol\SignatureInformation
     {
-        list($function_symbol) = $argument_location;
+        $params = null;
 
         if (strpos($function_symbol, '::') !== false) {
             $declaring_method_id = $this->methods->getDeclaringMethodId($function_symbol);
@@ -1213,11 +1214,21 @@ class Codebase
         } else {
             try {
                 $function_storage = $this->functions->getStorage(null, $function_symbol);
-            } catch (\Exception $exception) {
-                return null;
-            }
 
-            $params = $function_storage->params;
+                $params = $function_storage->params;
+            } catch (\Exception $exception) {
+                if (CallMap::inCallMap($function_symbol)) {
+                    $callables = CallMap::getCallablesFromCallMap($function_symbol);
+
+                    if (!$callables || !$callables[0]->params) {
+                        return null;
+                    }
+
+                    $params = $callables[0]->params;
+                } else {
+                    return null;
+                }
+            }
         }
 
         $signature_label = '(';

@@ -274,7 +274,7 @@ class TextDocument
             return new Success(new \LanguageServerProtocol\SignatureHelp());
         }
 
-        $signature_information = $this->codebase->getSignatureInformation($argument_location);
+        $signature_information = $this->codebase->getSignatureInformation($argument_location[0]);
 
         if (!$signature_information) {
             return new Success(new \LanguageServerProtocol\SignatureHelp());

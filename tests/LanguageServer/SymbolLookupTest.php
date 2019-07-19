@@ -329,7 +329,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
             [new Position(10, 40), 'B\A::staticfoo', 0, 1],
             #[new Position(12, 28), 'B\foo', 0, 1],
             [new Position(14, 30), 'B\A::__construct', 0, 0],
-            #[new Position(16, 31), 'strlen', 0, 1],
+            [new Position(16, 31), 'strlen', 0, 1],
         ];
     }
 
@@ -390,7 +390,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
             $this->assertSame($expected_symbol, $symbol);
             $this->assertSame($expected_argument_number, $argument_number);
 
-            $symbol_information = $codebase->getSignatureInformation($reference_location);
+            $symbol_information = $codebase->getSignatureInformation($reference_location[0]);
 
             if ($expected_param_count === null) {
                 $this->assertNull($symbol_information);
