@@ -2972,39 +2972,43 @@ class CallAnalyzer
                     $rule = substr($rule, 1);
                 }
 
-                if (isset($template_type_map[$rule][''])) {
-                    if ($template_type_map[$rule][''][0]->hasMixed()) {
-                        continue;
-                    }
-
-                    $replacement_atomic_types = $template_type_map[$rule][''][0]->getTypes();
-
-                    if (count($replacement_atomic_types) > 1) {
-                        continue;
-                    }
-
-                    $ored_type_assertions = [];
-
-                    foreach ($replacement_atomic_types as $replacement_atomic_type) {
-                        if ($replacement_atomic_type instanceof Type\Atomic\TMixed) {
+                if (isset($template_type_map[$rule])) {
+                    foreach ($template_type_map[$rule] as $template_map) {
+                        if ($template_map[0]->hasMixed()) {
                             continue 2;
                         }
 
-                        if ($replacement_atomic_type instanceof Type\Atomic\TArray
-                            || $replacement_atomic_type instanceof Type\Atomic\ObjectLike
-                        ) {
-                            $ored_type_assertions[] = $prefix . 'array';
-                        } elseif ($replacement_atomic_type instanceof Type\Atomic\TNamedObject) {
-                            $ored_type_assertions[] = $prefix . $replacement_atomic_type->value;
-                        } elseif ($replacement_atomic_type instanceof Type\Atomic\Scalar) {
-                            $ored_type_assertions[] = $prefix . $replacement_atomic_type->getId();
-                        } elseif ($replacement_atomic_type instanceof Type\Atomic\TNull) {
-                            $ored_type_assertions[] = $prefix . 'null';
-                        }
-                    }
+                        $replacement_atomic_types = $template_map[0]->getTypes();
 
-                    if ($ored_type_assertions) {
-                        $type_assertions[$assertion_var_id] = [$ored_type_assertions];
+                        if (count($replacement_atomic_types) > 1) {
+                            continue 2;
+                        }
+
+                        $ored_type_assertions = [];
+
+                        foreach ($replacement_atomic_types as $replacement_atomic_type) {
+                            if ($replacement_atomic_type instanceof Type\Atomic\TMixed) {
+                                continue 3;
+                            }
+
+                            if ($replacement_atomic_type instanceof Type\Atomic\TArray
+                                || $replacement_atomic_type instanceof Type\Atomic\ObjectLike
+                            ) {
+                                $ored_type_assertions[] = $prefix . 'array';
+                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TNamedObject) {
+                                $ored_type_assertions[] = $prefix . $replacement_atomic_type->value;
+                            } elseif ($replacement_atomic_type instanceof Type\Atomic\Scalar) {
+                                $ored_type_assertions[] = $prefix . $replacement_atomic_type->getId();
+                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TNull) {
+                                $ored_type_assertions[] = $prefix . 'null';
+                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                                $ored_type_assertions[] = $prefix . $replacement_atomic_type->param_name;
+                            }
+                        }
+
+                        if ($ored_type_assertions) {
+                            $type_assertions[$assertion_var_id] = [$ored_type_assertions];
+                        }
                     }
                 } else {
                     $type_assertions[$assertion_var_id] = $assertion->rule;

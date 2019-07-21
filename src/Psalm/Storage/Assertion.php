@@ -50,7 +50,8 @@ class Assertion
                             if (isset($template_type_map[$rule_token[0]])) {
                                 foreach ($template_type_map[$rule_token[0]] as list($type)) {
                                     $substitute = true;
-                                    $rule_token[0] = $type->getId();
+
+                                    $rule_token[0] = $type->getKey();
                                 }
                             }
                         }

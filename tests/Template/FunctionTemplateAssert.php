@@ -173,7 +173,7 @@ class FunctionTemplateAssertTest extends TestCase
                     '$f' => 'Foo',
                 ],
             ],
-             'suppressRedundantCondition' => [
+            'suppressRedundantCondition' => [
                 '<?php
                     namespace Bar;
 
@@ -447,6 +447,69 @@ class FunctionTemplateAssertTest extends TestCase
                         nullOrImplementsInterface($value, A::class);
 
                         return $value;
+                    }'
+            ],
+            'assertTemplatedTemplateSimple' => [
+                '<?php
+                    /**
+                     * @template T1
+                     */
+                    class Clazz
+                    {
+                        /**
+                         * @param mixed $x
+                         *
+                         * @psalm-assert T1 $x
+                         */
+                        public function is($x) : void {}
+                    }
+
+                    /**
+                     * @template T2
+                     *
+                     * @param Clazz<T2> $c
+                     *
+                     * @return T2
+                     * @psalm-suppress MixedAssignment
+                     */
+                    function example(Clazz $c) {
+                        /** @var mixed */
+                        $x = 0;
+                        $c->is($x);
+                        return $x;
+                    }'
+            ],
+            'assertTemplatedTemplateIfTrue' => [
+                '<?php
+                    /**
+                     * @template T1
+                     */
+                    class Clazz
+                    {
+                        /**
+                         * @param mixed $x
+                         *
+                         * @return bool
+                         *
+                         * @psalm-assert-if-true T1 $x
+                         */
+                        public function is($x) : bool {
+                            return true;
+                        }
+                    }
+
+                    /**
+                     * @template T2
+                     *
+                     * @param Clazz<T2> $c
+                     *
+                     * @return T2|false
+                     * @psalm-suppress MixedAssignment
+                     */
+                    function example(Clazz $c) {
+                        /** @var mixed */
+                        $x = 0;
+                        return $c->is($x) ? $x : false;
                     }'
             ],
         ];
