@@ -50,7 +50,7 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
     {
         $codebase = $this->codebase;
 
-        $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
+        $path = \str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
 
         $file_storage = $codebase->createFileStorageForPath($path);
         $file_to_scan = new FileScanner($path, $this->config->shortenFileName($path), true);

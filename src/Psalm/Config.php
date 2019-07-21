@@ -1505,7 +1505,7 @@ class Config
         }
 
         foreach ($stub_files as $file_path) {
-            $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+            $file_path = \str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             $codebase->scanner->addFileToShallowScan($file_path);
         }
 
@@ -1646,7 +1646,7 @@ class Config
             $codebase->register_autoload_files = true;
 
             foreach ($autoload_files_files as $file_path) {
-                $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+                $file_path = \str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
                 $codebase->scanner->addFileToDeepScan($file_path);
             }
 
