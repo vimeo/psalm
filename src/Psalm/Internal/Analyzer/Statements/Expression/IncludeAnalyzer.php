@@ -330,15 +330,11 @@ class IncludeAnalyzer
         // first remove unnecessary / duplicates
         $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
 
-        $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
-
         $reduce_pattern = '/\/[^\/]+\/\.\.\//';
 
         while (preg_match($reduce_pattern, $path_to_file)) {
-            $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file, 1);
+            $path_to_file = preg_replace($reduce_pattern, '/', $path_to_file, 1);
         }
-
-        $path_to_file = str_replace('/./', '/', $path_to_file);
 
         if (DIRECTORY_SEPARATOR !== '/') {
             $path_to_file = str_replace('/', DIRECTORY_SEPARATOR, $path_to_file);
