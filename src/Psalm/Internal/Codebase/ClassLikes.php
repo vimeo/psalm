@@ -1688,11 +1688,26 @@ class ClassLikes
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($classlike_storage->properties as $property_name => $property_storage) {
+            $referenced_property_name = strtolower($classlike_storage->name) . '::$' . $property_name;
             $property_referenced = $this->file_reference_provider->isClassPropertyReferenced(
-                strtolower($classlike_storage->name) . '::$' . $property_name
+                $referenced_property_name
             );
 
-            if (!$property_referenced
+            $property_constructor_referenced = false;
+            if ($property_referenced && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                $all_method_references = $this->file_reference_provider->getAllMethodReferencesToClassMembers();
+
+                if (isset($all_method_references[$referenced_property_name])
+                    && count($all_method_references[$referenced_property_name]) === 1) {
+                    $constructor_name = strtolower($classlike_storage->name) . '::__construct';
+                    $property_references = $all_method_references[$referenced_property_name];
+
+                    $property_constructor_referenced = isset($property_references[$constructor_name])
+                        && !$property_storage->is_static;
+                }
+            }
+
+            if ((!$property_referenced || $property_constructor_referenced)
                 && (substr($property_name, 0, 2) !== '__' || $property_name === '__construct')
                 && $property_storage->location
             ) {
