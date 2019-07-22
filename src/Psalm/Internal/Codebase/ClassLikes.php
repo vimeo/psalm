@@ -3,6 +3,7 @@ namespace Psalm\Internal\Codebase;
 
 use function array_merge;
 use function array_pop;
+use function count;
 use function end;
 use function explode;
 use function get_declared_classes;
@@ -1780,7 +1781,8 @@ class ClassLikes
                     );
 
                     if ($codebase->alter_code) {
-                        if ($property_storage->stmt_location
+                        if (!$property_constructor_referenced
+                            && $property_storage->stmt_location
                             && isset($project_analyzer->getIssuesToFix()['UnusedProperty'])
                             && !$has_variable_calls
                             && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
