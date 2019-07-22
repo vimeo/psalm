@@ -587,6 +587,7 @@ class CallAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
             || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
             || $arg->value instanceof PhpParser\Node\Expr\Array_
+            || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
         ) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                 return false;
