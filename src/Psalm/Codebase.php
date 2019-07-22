@@ -315,7 +315,6 @@ class Codebase
         );
 
         $this->methods = new Internal\Codebase\Methods(
-            $config,
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
             $this->classlikes

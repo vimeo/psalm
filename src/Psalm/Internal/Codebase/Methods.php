@@ -37,11 +37,6 @@ class Methods
     private $classlike_storage_provider;
 
     /**
-     * @var \Psalm\Config
-     */
-    private $config;
-
-    /**
      * @var bool
      */
     public $collect_locations = false;
@@ -72,13 +67,11 @@ class Methods
      * @param ClassLikeStorageProvider $storage_provider
      */
     public function __construct(
-        \Psalm\Config $config,
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
         ClassLikes $classlikes
     ) {
         $this->classlike_storage_provider = $storage_provider;
-        $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
         $this->classlikes = $classlikes;
         $this->return_type_provider = new MethodReturnTypeProvider();
