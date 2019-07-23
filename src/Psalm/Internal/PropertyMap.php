@@ -200,6 +200,7 @@ return [
         'xmlStandalone' => 'bool',
         'xmlVersion' => 'string',
         'ownerDocument' => 'null',
+        'parentNode' => 'null',
     ],
     'libxmlerror' => [
         'level' => 'int',
@@ -319,7 +320,7 @@ return [
         'nodeName' => 'string',
         'nodeValue' => 'string',
         'nodeType' => 'int',
-        'parentNode' => 'DOMNode|null',
+        'parentNode' => 'DOMNode',
         'childNodes' => 'DOMNodeList',
         'firstChild' => 'DOMNode|null',
         'lastChild' => 'DOMNode|null',
