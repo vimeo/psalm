@@ -19,7 +19,10 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
      */
     private function checkNonTrivialExpr(PhpParser\Node\Expr $node)
     {
-        /** @psalm-suppress UndefinedClass */
+        /** 
+         * @psalm-suppress UndefinedClass
+         * @psalm-suppress TypeDoesNotContainType
+         */
         if ($node instanceof PhpParser\Node\Expr\ArrayDimFetch
             || $node instanceof PhpParser\Node\Expr\ArrayItem
             || $node instanceof PhpParser\Node\Expr\Array_
