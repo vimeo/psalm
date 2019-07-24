@@ -269,7 +269,7 @@ Optional. If your codebase uses classes and functions that are not visible to Ps
 #### `<ignoreExceptions>`
 Optional.  A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
 ```xml
-<projectFiles>
+<ignoreExceptions>
   <class name="fully\qualified\path\Exc" onlyGlobalScope="true" />
-</projectFiles>
+</ignoreExceptions>
 ```
