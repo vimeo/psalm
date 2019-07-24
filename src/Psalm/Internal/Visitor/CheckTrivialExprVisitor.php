@@ -19,7 +19,7 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
      */
     private function checkNonTrivialExpr(PhpParser\Node\Expr $node)
     {
-        /** 
+        /**
          * @psalm-suppress UndefinedClass
          * @psalm-suppress TypeDoesNotContainType
          */
