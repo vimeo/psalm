@@ -231,6 +231,52 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 true,
             ],
 
+            'removeEmptyArrayAssign' => [
+                '<?php
+                    function foo($b) : void {
+                        $a = [];
+                        echo "foo";
+                    }',
+                '<?php
+                    function foo($b) : void {
+                        echo "foo";
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
+
+            'removeUnusedArrayAssignInt' => [
+                '<?php
+                    function foo($b) : void {
+                        $a = [5];
+                        echo "foo";
+                    }',
+                '<?php
+                    function foo($b) : void {
+                        echo "foo";
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
+
+            'removeUnusedArrayAssignCallable' => [
+                '<?php
+                    function foo($b) : void {
+                        $a = [foo()];
+                        echo "foo";
+                    }',
+                '<?php
+                    function foo($b) : void {
+                        [foo()];
+                        echo "foo";
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
+
             'removeUnusedVarShellExec' => [
                 '<?php
                     function foo() : void {
@@ -341,6 +387,7 @@ class UnusedVariableManipulationTest extends FileManipulationTest
 
                     function foo() : void {
                         $a = 5;
+                        new B();
                         echo $a;
                     }',
                 '7.1',

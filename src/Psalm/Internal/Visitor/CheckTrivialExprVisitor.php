@@ -24,8 +24,6 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
          * @psalm-suppress TypeDoesNotContainType
          */
         if ($node instanceof PhpParser\Node\Expr\ArrayDimFetch
-            || $node instanceof PhpParser\Node\Expr\ArrayItem
-            || $node instanceof PhpParser\Node\Expr\Array_
             || $node instanceof PhpParser\Node\Expr\Closure
             || $node instanceof PhpParser\Node\Expr\ClosureUse
             || $node instanceof PhpParser\Node\Expr\Eval_
@@ -38,6 +36,7 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
             || $node instanceof PhpParser\Node\Expr\StaticCall
             || $node instanceof PhpParser\Node\Expr\Yield_
             || $node instanceof PhpParser\Node\Expr\YieldFrom
+            || $node instanceof PhpParser\Node\Expr\New_
         ) {
             return true;
         } else {
