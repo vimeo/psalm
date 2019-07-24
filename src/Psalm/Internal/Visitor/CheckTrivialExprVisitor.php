@@ -9,17 +9,16 @@ use PhpParser;
 class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
 {
     /**
-     * @var array<PhpParser\Node\Expr>
+     * @var array<int, PhpParser\Node\Expr>
      */
     protected $non_trivial_expr = [];
 
     /**
-     * @param  PhpParser\Node\ $node
-     *
+     * @param  PhpParser\Node\Expr $node
      * @return bool
      */
 
-    private function checkNonTrivialExpr(PhpParser\Node $node) {
+    private function checkNonTrivialExpr(PhpParser\Node\Expr $node) {
         if ($node instanceof PhpParser\Node\Expr\ArrayDimFetch ||
             $node instanceof PhpParser\Node\Expr\ArrayItem ||
             $node instanceof PhpParser\Node\Expr\Array_ ||
@@ -42,33 +41,31 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
         }
     }
     /**
-     * @param  PhpParser\Node\ $node
-     *
+     * @param  PhpParser\Node $node
      * @return null|int
      */
     public function enterNode(PhpParser\Node $node)
     {   
-        // Check for Non-Trivial Expression first
-        if ($this->checkNonTrivialExpr($node)){
-            $this->non_trivial_expr[] = $node;
-            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+        if ($node instanceof PhpParser\Node\Expr) {
+            // Check for Non-Trivial Expression first
+            if ($this->checkNonTrivialExpr($node)){
+                $this->non_trivial_expr[] = $node;
+                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+
+            } elseif ($node instanceof PhpParser\Node\Expr\ClassConstFetch ||
+                $node instanceof PhpParser\Node\Expr\ConstFetch ||
+                $node instanceof PhpParser\Node\Expr\Error ||
+                $node instanceof PhpParser\Node\Expr\PropertyFetch ||
+                $node instanceof PhpParser\Node\Expr\StaticPropertyFetch ){
+
+                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+            }
         }
-
-        if ($node instanceof PhpParser\Node\Expr\ClassConst ||
-            $node instanceof PhpParser\Node\Expr\ClassConstFetch ||
-            $node instanceof PhpParser\Node\Expr\ConstFetch ||
-            $node instanceof PhpParser\Node\Expr\Error ||
-            $node instanceof PhpParser\Node\Expr\PropertyFetch ||
-            $node instanceof PhpParser\Node\Expr\StaticPropertyFetch ){
-
-            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
-        }
-
         return null;
     }
 
     /**
-     * @return array<PhpParser\Node\Expr>
+     * @return array<int, PhpParser\Node\Expr>
      */
     public function getNonTrivialExpr()
     {

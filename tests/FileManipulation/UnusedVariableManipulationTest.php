@@ -332,6 +332,25 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 true,
             ],
 
+            'removeUnusedVariableBinaryOp' => [
+                '<?php
+                    function foo() : void {
+                        $a = 5;
+                        $b = 6;
+                        $c = $a + $b;
+                        echo "foo";
+                    }',
+                '<?php
+                    function foo() : void {
+                        $a = 5;
+                        $b = 6;
+                        echo "foo";
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
+
             'dontremoveUnusedVariableFor' => [
                 '<?php
                     function foo($b) : void {
