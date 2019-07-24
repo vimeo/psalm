@@ -847,6 +847,7 @@ class AssignmentAnalyzer
 
         if ($lhs_var_id) {
             $context->vars_in_scope[$lhs_var_id] = Type::getMixed();
+            $context->hasVariable($lhs_var_id, $statements_analyzer);
         }
 
         if ($rhs_var_id) {

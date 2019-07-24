@@ -1002,6 +1002,13 @@ class UnusedVariableTest extends TestCase
                         }
                     }',
             ],
+            'varPassedByRef' => [
+                '<?php
+                    function foo(array $b) : void {
+                        $a = &$b;
+                        $a["foo"] = 5;
+                    }',
+            ],
         ];
     }
 
