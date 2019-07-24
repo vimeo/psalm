@@ -18,7 +18,8 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
      * @return bool
      */
 
-    private function checkNonTrivialExpr(PhpParser\Node\Expr $node) {
+    private function checkNonTrivialExpr(PhpParser\Node\Expr $node)
+    {
         if ($node instanceof PhpParser\Node\Expr\ArrayDimFetch ||
             $node instanceof PhpParser\Node\Expr\ArrayItem ||
             $node instanceof PhpParser\Node\Expr\Array_ ||
@@ -34,7 +35,6 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
             $node instanceof PhpParser\Node\Expr\StaticCall ||
             $node instanceof PhpParser\Node\Expr\Yield_ ||
             $node instanceof PhpParser\Node\Expr\YieldFrom) {
-
             return true;
         } else {
             return false;
@@ -45,19 +45,17 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
      * @return null|int
      */
     public function enterNode(PhpParser\Node $node)
-    {   
+    {
         if ($node instanceof PhpParser\Node\Expr) {
             // Check for Non-Trivial Expression first
-            if ($this->checkNonTrivialExpr($node)){
+            if ($this->checkNonTrivialExpr($node)) {
                 $this->non_trivial_expr[] = $node;
                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
-
             } elseif ($node instanceof PhpParser\Node\Expr\ClassConstFetch ||
                 $node instanceof PhpParser\Node\Expr\ConstFetch ||
                 $node instanceof PhpParser\Node\Expr\Error ||
                 $node instanceof PhpParser\Node\Expr\PropertyFetch ||
-                $node instanceof PhpParser\Node\Expr\StaticPropertyFetch ){
-
+                $node instanceof PhpParser\Node\Expr\StaticPropertyFetch ) {
                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
             }
         }
