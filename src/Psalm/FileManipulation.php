@@ -21,17 +21,26 @@ class FileManipulation
     /** @var bool */
     public $preserve_indentation;
 
+    /** @var bool */
+    public $remove_trailing_newline;
+
     /**
      * @param int $start
      * @param int $end
      * @param string $insertion_text
      */
-    public function __construct(int $start, int $end, string $insertion_text, bool $preserve_indentation = false)
-    {
+    public function __construct(
+        int $start,
+        int $end,
+        string $insertion_text,
+        bool $preserve_indentation = false,
+        bool $remove_trailing_newline = false
+    ) {
         $this->start = $start;
         $this->end = $end;
         $this->insertion_text = $insertion_text;
         $this->preserve_indentation = $preserve_indentation;
+        $this->remove_trailing_newline = $remove_trailing_newline;
     }
 
     public function getKey() : string
@@ -52,6 +61,19 @@ class FileManipulation
 
             if (trim($indentation) === '') {
                 $this->insertion_text = $this->insertion_text . $indentation;
+            }
+        }
+
+        if ($this->remove_trailing_newline && $existing_contents[$this->end] === "\n") {
+            $newline_pos = strrpos($existing_contents, "\n", $this->start - strlen($existing_contents));
+
+            $newline_pos = $newline_pos !== false ? $newline_pos + 1 : 0;
+
+            $indentation = substr($existing_contents, $newline_pos, $this->start - $newline_pos);
+
+            if (trim($indentation) === '') {
+                $this->start -= strlen($indentation);
+                $this->end++;
             }
         }
 

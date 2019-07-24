@@ -27,6 +27,7 @@ use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedProperty;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
+use Psalm\Issue\UnusedVariable;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
@@ -205,6 +206,7 @@ class ProjectAnalyzer
         PossiblyUnusedProperty::class,
         UnusedMethod::class,
         UnusedProperty::class,
+        UnusedVariable::class,
     ];
 
     /**
