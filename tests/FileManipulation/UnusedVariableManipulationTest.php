@@ -494,6 +494,26 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 ['UnusedVariable'],
                 true,
             ],
+
+            'donRemoveSuppressedUnusedVariable' => [
+                '<?php
+                    /** @psalm-suppress UnusedVariable */
+                    function foo() : void {
+                        $a = 5;
+                        $b = "hello";
+                        echo $b;
+                    }',
+                '<?php
+                    /** @psalm-suppress UnusedVariable */
+                    function foo() : void {
+                        $a = 5;
+                        $b = "hello";
+                        echo $b;
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
         ];
     }
 }

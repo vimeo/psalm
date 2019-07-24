@@ -944,7 +944,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $assign_stmt = null;
         $assign_exp = null;
         $assign_exp_found = false;
-        
+
         $i = 0;
         while ($i<count($stmts) && !$assign_exp_found) {
             $stmt = $stmts[$i];
@@ -1029,6 +1029,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $loc_list = array_column($this->unused_var_locations, 1);
         $var_loc_map = array_combine($var_list, $loc_list);
 
+        $project_analyzer = $this->getProjectAnalyzer();
+
         foreach ($this->unused_var_locations as $hash => list($var_id, $original_location)) {
             if ($var_id === '$_' || isset($this->used_var_locations[$hash])) {
                 continue;
@@ -1039,7 +1041,16 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 && !isset($this->byref_uses[$var_id])
                 && !$this->isSuperGlobal($var_id)
             ) {
-                if ($codebase->alter_code && !$this->checkIfVarRemoved($var_id, $original_location)) {
+                $issue = new UnusedVariable(
+                    'Variable ' . $var_id . ' is never referenced',
+                    $original_location
+                );
+
+                if ($codebase->alter_code
+                    && !$this->checkIfVarRemoved($var_id, $original_location)
+                    && isset($project_analyzer->getIssuesToFix()['UnusedVariable'])
+                    && !IssueBuffer::isSuppressed($issue, $this->getSuppressedIssues())
+                ) {
                     $search_result = $this->findAssignStmt($stmts, $var_id, $original_location);
                     $assign_stmt = $search_result[0];
                     $assign_exp = $search_result[1];
@@ -1121,10 +1132,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
 
                 if (IssueBuffer::accepts(
-                    new UnusedVariable(
-                        'Variable ' . $var_id . ' is never referenced',
-                        $original_location
-                    ),
+                    $issue,
                     $this->getSuppressedIssues()
                 )) {
                     // fall through
