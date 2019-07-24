@@ -291,6 +291,42 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 true,
             ],
 
+            'removeUnusedVarAssignByRefPartial' => [
+                '<?php
+                    function foo() : void {
+                        $a = [1, 2, 3];
+                        $b = &$a[1];
+                        print_r($a);
+                    }',
+                '<?php
+                    function foo() : void {
+                        $a = [1, 2, 3];
+                        $a[1];
+                        print_r($a);
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
+
+            'removeUnusedVarAssignByRefPartialWithSpaceAfter' => [
+                '<?php
+                    function foo() : void {
+                        $a = [1, 2, 3];
+                        $b = & $a[1];
+                        print_r($a);
+                    }',
+                '<?php
+                    function foo() : void {
+                        $a = [1, 2, 3];
+                        $a[1];
+                        print_r($a);
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
+
             'removeUnusedVarNewObject' => [
                 '<?php
                     class B {}

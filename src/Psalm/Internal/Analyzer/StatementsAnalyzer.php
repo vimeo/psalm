@@ -816,39 +816,52 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  string   $var_id
      * @param  CodeLocation   $var_loc
      * @param  int  $end_bound
+     * @param  bool   $assign_ref
      * @return FileManipulation
      */
-    private function getPartialRemovalBounds(CodeLocation $var_loc, int $end_bound): FileManipulation
-    {
+    private function getPartialRemovalBounds(
+        CodeLocation $var_loc,
+        int $end_bound,
+        bool $assign_ref = false
+    ): FileManipulation {
         $var_start_loc= $var_loc->raw_file_start;
         $stmt_content = $this->getSource()->getCodebase()->file_provider->getContents($var_loc->file_path);
         $str_for_token = "<?php\n" . substr($stmt_content, $var_start_loc, $end_bound - $var_start_loc + 1);
         $token_list = array_slice(token_get_all($str_for_token), 1);   //Ignore "<?php"
 
-
         $offset_count = strlen($token_list[0][1]);
+        $iter = 1;
 
         // Check if second token is just whitespace
-        if (is_array($token_list[1]) && strlen(trim($token_list[1][1])) == 0) {
+        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) == 0) {
             $offset_count += strlen($token_list[1][1]);
-            $eq_char_index = 2;
-        } else {
-            $eq_char_index = 1;
+            $iter++;
         }
 
         // Add offset for assignment operator
-        if (is_string($token_list[$eq_char_index])) {
+        if (is_string($token_list[$iter])) {
             $offset_count += 1;
         } else {
-            $offset_count += strlen($token_list[$eq_char_index][1]);
+            $offset_count += strlen($token_list[$iter][1]);
         }
+        $iter++;
 
         // Remove any whitespace following assignment operator token (e.g "=", "+=")
-        if (is_array($token_list[$eq_char_index + 1]) && strlen(trim($token_list[$eq_char_index + 1][1])) == 0) {
-            $offset_count += strlen($token_list[$eq_char_index + 1 ][1]);
+        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) == 0) {
+            $offset_count += strlen($token_list[$iter][1]);
+            $iter++;
+        }
+
+        // If we are dealing with assignment by reference, we need to handle "&" and any whitespace after
+        if ($assign_ref) {
+            $offset_count += 1;
+            $iter++;
+            // Handle any whitespace after "&"
+            if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) == 0) {
+                $offset_count += strlen($token_list[$iter][1]);
+            }
         }
 
         $file_man_start = $var_start_loc;
@@ -922,9 +935,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param  string   $var_id
      * @param  CodeLocation   $original_location
      * @return array{
-                0: PhpParser\Node\Stmt|null,
-                1: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null
-                }
+     *          0: PhpParser\Node\Stmt|null,
+     *          1: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null
+     *          }
      */
     private function findAssignStmt(array $stmts, string $var_id, CodeLocation $original_location)
     {
@@ -958,9 +971,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param  int      $var_start_loc
      * @param  int     $search_level
      * @return array{
-                0: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null,
-                1: int
-                }
+     *          0: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null,
+     *          1: int
+     *          }
      */
     private function findAssignExp(
         PhpParser\Node\Expr $current_node,
@@ -1068,9 +1081,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         }
 
                         if ($treat_as_expr) {
+                            $is_assign_ref = $assign_exp instanceof PhpParser\Node\Expr\AssignRef;
                             $new_file_manipulation = $this->getPartialRemovalBounds(
                                 $original_location,
-                                $assign_stmt->getEndFilePos()
+                                $assign_stmt->getEndFilePos(),
+                                $is_assign_ref
                             );
                             $this->removed_unref_vars[$var_id] = $original_location;
                         } else {
@@ -1093,9 +1108,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                         FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
                     } elseif (!is_null($assign_exp)) {
+                        $is_assign_ref = $assign_exp instanceof PhpParser\Node\Expr\AssignRef;
                         $new_file_manipulation = $this->getPartialRemovalBounds(
                             $original_location,
-                            $assign_exp->getEndFilePos()
+                            $assign_exp->getEndFilePos(),
+                            $is_assign_ref
                         );
 
                         FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
