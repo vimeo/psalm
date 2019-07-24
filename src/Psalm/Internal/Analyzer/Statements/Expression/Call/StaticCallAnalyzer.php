@@ -621,6 +621,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         || !$codebase->classExtends($context->self, $fq_class_name)
                     )
                 ) {
+                    $is_dynamic_this_method = false;
                     if (MethodAnalyzer::checkStatic(
                         $method_id,
                         ($stmt->class instanceof PhpParser\Node\Name
