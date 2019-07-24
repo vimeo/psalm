@@ -1787,6 +1787,12 @@ class FunctionCallTest extends TestCase
                         );
                     }',
             ],
+            'compactDefinedVariable' => [
+                '<?php
+                    function foo(int $a, string $b, bool $c) : array {
+                        return compact("a", "b", "c");
+                    }',
+            ],
         ];
     }
 
@@ -2330,6 +2336,13 @@ class FunctionCallTest extends TestCase
                 '<?php
                     preg_match(\'/adsf/\');',
                 'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for method preg_match - expecting 2 but saw 1',
+            ],
+            'compactUndefinedVariable' => [
+                '<?php
+                    function foo() : array {
+                        return compact("a", "b", "c");
+                    }',
+                'error_message' => 'UndefinedVariable',
             ],
         ];
     }

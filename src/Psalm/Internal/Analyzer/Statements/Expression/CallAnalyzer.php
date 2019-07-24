@@ -28,6 +28,7 @@ use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\UndefinedFunction;
+use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -1178,6 +1179,25 @@ class CallAnalyzer
                     $template_types
                 ) === false) {
                     return;
+                }
+            }
+
+            if ($method_id === 'compact'
+                && isset($arg->value->inferredType)
+                && $arg->value->inferredType->isSingleStringLiteral()
+            ) {
+                $literal = $arg->value->inferredType->getSingleStringLiteral();
+
+                if (!$context->hasVariable('$' . $literal->value)) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedVariable(
+                            'Cannot find referenced variable $' . $literal->value,
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
 
