@@ -871,9 +871,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             $this->removed_unref_vars[$var_name] = $var_loc;
 
             $rhs_exp = $cur_assign->expr;
-            if ($rhs_exp instanceof PhpParser\Node\Expr\Assign ||
-                $rhs_exp instanceof PhpParser\Node\Expr\AssignOp ||
-                $rhs_exp instanceof PhpParser\Node\Expr\AssignRef) {
+            if ($rhs_exp instanceof PhpParser\Node\Expr\Assign
+                || $rhs_exp instanceof PhpParser\Node\Expr\AssignOp
+                || $rhs_exp instanceof PhpParser\Node\Expr\AssignRef
+            ) {
                 $this->markRemovedChainAssignVar($rhs_exp, $var_loc_map);
             }
         }
@@ -902,9 +903,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             if ($curr_removable) {
                 $rhs_exp = $cur_assign->expr;
 
-                if ($rhs_exp instanceof PhpParser\Node\Expr\Assign ||
-                    $rhs_exp instanceof PhpParser\Node\Expr\AssignOp ||
-                    $rhs_exp instanceof PhpParser\Node\Expr\AssignRef) {
+                if ($rhs_exp instanceof PhpParser\Node\Expr\Assign
+                    || $rhs_exp instanceof PhpParser\Node\Expr\AssignOp
+                    || $rhs_exp instanceof PhpParser\Node\Expr\AssignRef
+                ) {
                     $rhs_removable = $this->checkRemovableChainAssignment($rhs_exp, $var_loc_map);
                     return $rhs_removable;
                 }
@@ -919,8 +921,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param  array<PhpParser\Node\Stmt>   $stmts
      * @param  string   $var_id
      * @param  CodeLocation   $original_location
-     * @return array{0: PhpParser\Node\Stmt|null, 1:
-         PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null}
+     * @return array{
+                0: PhpParser\Node\Stmt|null,
+                1: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null
+                }
      */
     private function findAssignStmt(array $stmts, string $var_id, CodeLocation $original_location)
     {
@@ -953,8 +957,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param  string   $var_id
      * @param  int      $var_start_loc
      * @param  int     $search_level
-     * @return array{0: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|
-     PhpParser\Node\Expr\AssignRef|null, 1: int}
+     * @return array{
+                0: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null,
+                1: int
+                }
      */
     private function findAssignExp(
         PhpParser\Node\Expr $current_node,
@@ -962,14 +968,16 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         int $var_start_loc,
         int $search_level = 1
     ) {
-        if ($current_node instanceof PhpParser\Node\Expr\Assign ||
-            $current_node instanceof PhpPArser\Node\Expr\AssignOp ||
-            $current_node instanceof PhpParser\Node\Expr\AssignRef) {
+        if ($current_node instanceof PhpParser\Node\Expr\Assign
+            || $current_node instanceof PhpPArser\Node\Expr\AssignOp
+            || $current_node instanceof PhpParser\Node\Expr\AssignRef
+        ) {
             $var = $current_node->var;
 
-            if ($var instanceof PhpParser\Node\Expr\Variable &&
-                $var->name === substr($var_id, 1) &&
-                $var->getStartFilePos() === $var_start_loc) {
+            if ($var instanceof PhpParser\Node\Expr\Variable
+                && $var->name === substr($var_id, 1)
+                && $var->getStartFilePos() === $var_start_loc
+            ) {
                 return [$current_node, $search_level];
             }
 
@@ -982,17 +990,13 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  string   $var_id
      * @param  CodeLocation $var_loc
      * @return bool
      */
-    private function checkIfVarRemoved($var_id, CodeLocation $var_loc): bool
+    private function checkIfVarRemoved(string $var_id, CodeLocation $var_loc): bool
     {
-        if (array_key_exists($var_id, $this->removed_unref_vars) && $this->removed_unref_vars[$var_id] === $var_loc) {
-            return true;
-        } else {
-            return false;
-        }
+        return array_key_exists($var_id, $this->removed_unref_vars)
+                && $this->removed_unref_vars[$var_id] === $var_loc;
     }
 
     /**
@@ -1018,7 +1022,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
 
             if ((!$function_storage
-                    || !array_key_exists(substr($var_id, 1), $function_storage->param_types))
+                || !array_key_exists(substr($var_id, 1), $function_storage->param_types))
                 && !isset($this->byref_uses[$var_id])
                 && !$this->isSuperGlobal($var_id)
             ) {
@@ -1036,9 +1040,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         PhpParser\Node\Expr\AssignRef $assign_exp */
                         /** @var PhpParser\Node\Expr $rhs_exp */
                         $rhs_exp = $assign_exp->expr;
-                        if ($rhs_exp instanceof PhpParser\Node\Expr\Assign ||
-                            $rhs_exp instanceof PhpParser\Node\Expr\AssignOp ||
-                            $rhs_exp instanceof PhpParser\Node\Expr\AssignRef) {
+                        if ($rhs_exp instanceof PhpParser\Node\Expr\Assign
+                            || $rhs_exp instanceof PhpParser\Node\Expr\AssignOp
+                            || $rhs_exp instanceof PhpParser\Node\Expr\AssignRef
+                        ) {
                             $chain_assignment = true;
                             $removable_stmt = $this->checkRemovableChainAssignment($assign_exp, $var_loc_map);
                         } else {
