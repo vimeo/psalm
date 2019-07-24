@@ -330,6 +330,7 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 '<?php
                     function foo() : void {
                         $a = 5;
+                        $b = &$a;
                         echo $a;
                     }',
                 '7.1',
@@ -347,7 +348,7 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 '<?php
                     function foo() : void {
                         $a = [1, 2, 3];
-                        $a[1];
+                        $b = &$a[1];
                         print_r($a);
                     }',
                 '7.1',
@@ -365,7 +366,7 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 '<?php
                     function foo() : void {
                         $a = [1, 2, 3];
-                        $a[1];
+                        $b = & $a[1];
                         print_r($a);
                     }',
                 '7.1',
