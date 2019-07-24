@@ -1188,7 +1188,7 @@ class CallAnalyzer
             ) {
                 $literal = $arg->value->inferredType->getSingleStringLiteral();
 
-                if (!$context->hasVariable('$' . $literal->value)) {
+                if (!$context->hasVariable('$' . $literal->value, $statements_analyzer)) {
                     if (IssueBuffer::accepts(
                         new UndefinedVariable(
                             'Cannot find referenced variable $' . $literal->value,
