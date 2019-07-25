@@ -113,10 +113,9 @@ class PhpStormMetaScanner
                         ) {
                             $offset_arg_value = $call_arg_type->getSingleStringLiteral()->value;
 
-                            if ($mapped_type = $map[$offset_arg_value] ?? null) {
-                                if ($mapped_type instanceof Type\Union) {
-                                    return clone $mapped_type;
-                                }
+                            $mapped_type = $map[$offset_arg_value] ?? null;
+                            if ($mapped_type && $mapped_type instanceof Type\Union) {
+                                return clone $mapped_type;
                             }
 
                             if (($mapped_type = $map[''] ?? null) && is_string($mapped_type)) {
@@ -243,10 +242,9 @@ class PhpStormMetaScanner
                         ) {
                             $offset_arg_value = $call_arg_type->getSingleStringLiteral()->value;
 
-                            if ($mapped_type = $map[$offset_arg_value] ?? null) {
-                                if ($mapped_type instanceof Type\Union) {
-                                    return clone $mapped_type;
-                                }
+                            $mapped_type = $map[$offset_arg_value] ?? null;
+                            if ($mapped_type && $mapped_type instanceof Type\Union) {
+                                return clone $mapped_type;
                             }
 
                             if (($mapped_type = $map[''] ?? null) && is_string($mapped_type)) {

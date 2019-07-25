@@ -441,13 +441,14 @@ abstract class Atomic
             }
         }
 
+        $TGenericObjectTmp = false;
         if ($this instanceof Type\Atomic\TArray
-            || $this instanceof Type\Atomic\TGenericObject
+            || ($TGenericObjectTmp = $this instanceof Type\Atomic\TGenericObject)
             || $this instanceof Type\Atomic\TIterable
         ) {
             $codebase = $source->getCodebase();
 
-            if ($this instanceof Type\Atomic\TGenericObject) {
+            if ($TGenericObjectTmp) {
                 try {
                     $class_storage = $codebase->classlike_storage_provider->get($this->value);
                 } catch (\InvalidArgumentException $e) {

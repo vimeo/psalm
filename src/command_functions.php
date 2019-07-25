@@ -26,7 +26,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
         require_once __DIR__ . '/../vendor/netresearch/jsonmapper/src/JsonMapper/Exception.php';
     }
 
-    if (\realpath($psalm_dir) !== \realpath($current_dir) && !$in_phar) {
+    if (!$in_phar && \realpath($psalm_dir) !== \realpath($current_dir)) {
         $autoload_roots[] = $psalm_dir;
     }
 
@@ -152,13 +152,15 @@ function getPathsToCheck($f_paths)
     if ($input_paths) {
         $filtered_input_paths = [];
 
-        for ($i = 0; $i < count($input_paths); ++$i) {
+        $i_max = count($input_paths);
+        for ($i = 0; $i < $i_max; ++$i) {
             /** @var string */
             $input_path = $input_paths[$i];
 
-            if (realpath($input_path) === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalm')
-                || realpath($input_path) === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalter')
-                || realpath($input_path) === realpath(\Phar::running(false))
+            $realpath_input = realpath($input_path);
+            if ($realpath_input === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalm')
+                || $realpath_input === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalter')
+                || $realpath_input === realpath(\Phar::running(false))
             ) {
                 continue;
             }

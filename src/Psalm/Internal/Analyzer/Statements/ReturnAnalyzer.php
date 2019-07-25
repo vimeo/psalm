@@ -138,7 +138,7 @@ class ReturnAnalyzer
 
                     $local_return_type = $source->getLocalReturnType($storage->return_type);
 
-                    if ($local_return_type->isGenerator() && $storage->has_yield) {
+                    if ($storage->has_yield && $local_return_type->isGenerator()) {
                         return null;
                     }
 
@@ -157,8 +157,8 @@ class ReturnAnalyzer
 
                         if (!$context->collect_initializations
                             && !$context->collect_mutations
-                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                             && !($source->getSource() instanceof TraitAnalyzer)
+                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                         ) {
                             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                         }
@@ -178,8 +178,8 @@ class ReturnAnalyzer
 
                     if (!$context->collect_initializations
                         && !$context->collect_mutations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                         && !($source->getSource() instanceof TraitAnalyzer)
+                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     ) {
                         $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
                     }
@@ -327,8 +327,8 @@ class ReturnAnalyzer
                 }
             } else {
                 if ($storage->signature_return_type
-                    && !$storage->signature_return_type->isVoid()
                     && !$storage->has_yield
+                    && !$storage->signature_return_type->isVoid()
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidReturnStatement(

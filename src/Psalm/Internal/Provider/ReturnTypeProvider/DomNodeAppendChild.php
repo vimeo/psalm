@@ -6,7 +6,6 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
-use Psalm\Type;
 
 class DomNodeAppendChild implements \Psalm\Plugin\Hook\MethodReturnTypeProviderInterface
 {

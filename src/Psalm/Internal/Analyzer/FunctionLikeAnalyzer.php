@@ -514,9 +514,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             if ($parser_param->default) {
                 ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
 
-                $default_type = isset($parser_param->default->inferredType)
-                    ? $parser_param->default->inferredType
-                    : null;
+                $default_type = $parser_param->default->inferredType ?? null;
 
                 if ($default_type
                     && !$default_type->hasMixed()
@@ -663,7 +661,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         continue;
                     }
 
-                    self::addOrUpdateParamType(
+                    $this->addOrUpdateParamType(
                         $project_analyzer,
                         $function_param->name,
                         $possible_type
@@ -897,13 +895,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
 
             foreach ($context->vars_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if ($var !== '$this' && strpos($var, '$this->') !== 0) {
                     unset($context->vars_in_scope[$var]);
                 }
             }
 
             foreach ($context->vars_possibly_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if ($var !== '$this' && strpos($var, '$this->') !== 0) {
                     unset($context->vars_possibly_in_scope[$var]);
                 }
             }
@@ -1041,7 +1039,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
             foreach ($storage->params as $i => $param) {
-                if ($param->by_ref && isset($context->vars_in_scope['$' . $param->name]) && !$param->is_variadic) {
+                if (
+                    $param->by_ref
+                    &&
+                    !$param->is_variadic
+                    &&
+                    isset($context->vars_in_scope['$' . $param->name])
+                ) {
                     $actual_type = $context->vars_in_scope['$' . $param->name];
                     $param_out_type = $param->type;
 
@@ -1049,7 +1053,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $param_out_type = $storage->param_out_types[$i];
                     }
 
-                    if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
+                    if (
+                        $param->location
+                        &&
+                        $param_out_type
+                        &&
+                        !$actual_type->hasMixed()
+                    ) {
                         if (!TypeAnalyzer::isContainedBy(
                             $codebase,
                             $actual_type,
@@ -1288,7 +1298,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
             }
 
-            if ($mandatory_param_count > count($args) && !($last_param && $last_param->is_variadic)) {
+            if (
+                !($last_param && $last_param->is_variadic)
+                &&
+                $mandatory_param_count > count($args)
+            ) {
                 continue;
             }
 

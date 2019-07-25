@@ -74,11 +74,19 @@ class Reconciler
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
         foreach ($new_types as $nk => $type) {
-            if ((strpos($nk, '[') || strpos($nk, '->'))
-                && ($type[0][0] === '=isset'
+            if (
+                (
+                    $type[0][0] === '=isset'
                     || $type[0][0] === '!=empty'
                     || $type[0][0] === 'isset'
-                    || $type[0][0] === '!empty')
+                    || $type[0][0] === '!empty'
+                )
+                &&
+                (
+                    strpos($nk, '[')
+                    || strpos($nk, '->')
+                )
+
             ) {
                 $isset_or_empty = $type[0][0] === 'isset' || $type[0][0] === '=isset'
                     ? '=isset'
@@ -241,14 +249,14 @@ class Reconciler
                     );
                 }
             } elseif ($code_location
-                && isset($referenced_var_ids[$key])
-                && !$has_negation
-                && !$has_equality
-                && !$has_count_check
-                && !$result_type->hasMixed()
-                && !$result_type->hasTemplate()
-                && !$result_type->hasType('iterable')
-                && (!$has_isset || substr($key, -1, 1) !== ']')
+                      && !$has_negation
+                      && !$has_equality
+                      && !$has_count_check
+                      && isset($referenced_var_ids[$key])
+                      && !$result_type->hasMixed()
+                      && !$result_type->hasTemplate()
+                      && !$result_type->hasType('iterable')
+                      && (!$has_isset || substr($key, -1, 1) !== ']')
             ) {
                 $reconcile_key = implode(
                     '&',
@@ -910,9 +918,17 @@ class Reconciler
             }
         }
 
-        if (isset($existing_var_atomic_types['int'])
-            && $existing_var_type->from_calculation
-            && ($new_var_type === 'int' || $new_var_type === 'float')
+        if (
+            $existing_var_type->from_calculation
+            &&
+            (
+                $new_var_type === 'int'
+                ||
+                $new_var_type === 'float'
+            )
+            &&
+            isset($existing_var_atomic_types['int'])
+
         ) {
             if ($new_var_type === 'int') {
                 return Type::getInt();
@@ -1181,9 +1197,9 @@ class Reconciler
 
             if ($key
                 && $code_location
-                && $new_type->getId() === $existing_var_type->getId()
                 && !$is_equality
                 && !$is_maybe_callable_array
+                && $new_type->getId() === $existing_var_type->getId()
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -1658,8 +1674,10 @@ class Reconciler
             }
 
             if ($existing_var_type->hasMixed()) {
-                if ($existing_var_type->isMixed()
-                    && $existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed
+                if (
+                    $existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed
+                    &&
+                    $existing_var_type->isMixed()
                 ) {
                     if ($code_location
                         && $key
@@ -1686,7 +1704,7 @@ class Reconciler
                     if (!$existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed) {
                         $existing_var_type->addType(new Type\Atomic\TNonEmptyMixed);
                     }
-                } elseif ($existing_var_type->isMixed() && !$is_equality) {
+                } elseif (!$is_equality && $existing_var_type->isMixed()) {
                     if ($code_location
                         && $key
                         && IssueBuffer::accepts(
@@ -1795,9 +1813,13 @@ class Reconciler
         }
 
         if (!$is_equality
-            && isset($existing_var_atomic_types['int'])
             && $existing_var_type->from_calculation
-            && ($new_var_type === 'int' || $new_var_type === 'float')
+            && (
+                $new_var_type === 'int'
+                ||
+                $new_var_type === 'float'
+            )
+            && isset($existing_var_atomic_types['int'])
         ) {
             $existing_var_type->removeType($new_var_type);
 
@@ -2482,7 +2504,7 @@ class Reconciler
 
         $base_key = implode($key_parts);
 
-        if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
+        if ($array_key_offset !== false && isset($existing_types[$base_key])) {
             $base_atomic_types = $existing_types[$base_key]->getTypes();
 
             if (isset($base_atomic_types['array'])

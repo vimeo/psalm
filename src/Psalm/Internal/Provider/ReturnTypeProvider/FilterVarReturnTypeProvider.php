@@ -58,7 +58,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
 
             $has_object_like = false;
 
-            if (isset($call_args[2]->value->inferredType) && $filter_type) {
+            if ($filter_type && isset($call_args[2]->value->inferredType)) {
                 foreach ($call_args[2]->value->inferredType->getTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\ObjectLike) {
                         $has_object_like = true;
@@ -80,17 +80,18 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
                         if (isset($atomic_type->properties['flags'])
                             && $atomic_type->properties['flags']->isSingleIntLiteral()
                         ) {
-                            $filter_flag_type =
-                                $atomic_type->properties['flags']->getSingleIntLiteral();
+                            $filter_flag_type = $atomic_type->properties['flags']->getSingleIntLiteral();
 
-                            if ($filter_type->hasBool()
-                                && $filter_flag_type->value === \FILTER_NULL_ON_FAILURE
+                            if (
+                                $filter_flag_type->value === \FILTER_NULL_ON_FAILURE
+                                &&
+                                $filter_type->hasBool()
                             ) {
                                 $filter_type->addType(new Type\Atomic\TNull);
                             }
                         }
                     } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                        if ($filter_type->hasBool() && $atomic_type->value === \FILTER_NULL_ON_FAILURE) {
+                        if ($atomic_type->value === \FILTER_NULL_ON_FAILURE && $filter_type->hasBool()) {
                             $filter_type->addType(new Type\Atomic\TNull);
                         }
                     }

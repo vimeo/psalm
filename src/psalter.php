@@ -150,7 +150,7 @@ $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vend
 // If XDebug is enabled, restart without it
 (new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
 
-$paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
+$paths_to_check = getPathsToCheck($options['f'] ?? null);
 
 $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 

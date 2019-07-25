@@ -109,7 +109,8 @@ class ClassStatementsDiffer extends AstDiffer
                         $first_stmt = $a->stmts[0];
                         $a_stmts_start = (int) $first_stmt->getAttribute('startFilePos');
 
-                        if ($a_stmt_comments = $first_stmt->getComments()) {
+                        $a_stmt_comments = $first_stmt->getComments();
+                        if ($a_stmt_comments) {
                             $a_stmts_start = $a_stmt_comments[0]->getFilePos();
                         }
                     } else {
@@ -120,7 +121,8 @@ class ClassStatementsDiffer extends AstDiffer
                         $first_stmt = $b->stmts[0];
                         $b_stmts_start = (int) $first_stmt->getAttribute('startFilePos');
 
-                        if ($b_stmt_comments = $first_stmt->getComments()) {
+                        $b_stmt_comments = $first_stmt->getComments();
+                        if ($b_stmt_comments) {
                             $b_stmts_start = $b_stmt_comments[0]->getFilePos();
                         }
                     } else {
@@ -154,7 +156,11 @@ class ClassStatementsDiffer extends AstDiffer
                         return false;
                     }
 
-                    if ((string) $a->props[0]->name !== (string) $b->props[0]->name || $a->flags !== $b->flags) {
+                    if (
+                        $a->flags !== $b->flags
+                        ||
+                        (string) $a->props[0]->name !== (string) $b->props[0]->name
+                    ) {
                         return false;
                     }
 

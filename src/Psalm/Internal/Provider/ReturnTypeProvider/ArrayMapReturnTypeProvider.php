@@ -29,7 +29,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        $array_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
+        $array_arg = $call_args[1]->value ?? null;
 
         $array_arg_type = null;
 
@@ -59,9 +59,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
             if (isset($function_call_arg->value->inferredType)
                 && ($first_arg_atomic_types = $function_call_arg->value->inferredType->getTypes())
-                && ($closure_atomic_type = isset($first_arg_atomic_types['Closure'])
-                    ? $first_arg_atomic_types['Closure']
-                    : null)
+                && ($closure_atomic_type = $first_arg_atomic_types['Closure'] ?? null)
                 && $closure_atomic_type instanceof Type\Atomic\Fn
             ) {
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();

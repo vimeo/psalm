@@ -25,7 +25,7 @@ class ArrayPopReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+        $first_arg = $call_args[0]->value ?? null;
 
         $first_arg_array = $first_arg
             && isset($first_arg->inferredType)

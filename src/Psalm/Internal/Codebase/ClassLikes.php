@@ -679,8 +679,8 @@ class ClassLikes
             }
 
             if ($classlike_storage->location
-                && $this->config->isInProjectDirs($classlike_storage->location->file_path)
                 && !$classlike_storage->is_trait
+                && $this->config->isInProjectDirs($classlike_storage->location->file_path)
             ) {
                 if (!$this->file_reference_provider->isClassReferenced($fq_class_name_lc)) {
                     if (IssueBuffer::accepts(
@@ -799,8 +799,12 @@ class ClassLikes
             $method_referenced = $this->file_reference_provider->isClassMethodReferenced(strtolower($method_id));
 
             if (!$method_referenced
-                && (substr($method_name, 0, 2) !== '__' || $method_name === '__construct')
                 && $method_storage->location
+                && (
+                    $method_name === '__construct'
+                    ||
+                    substr($method_name, 0, 2) !== '__'
+                )
             ) {
                 $method_location = $method_storage->location;
 
@@ -868,8 +872,8 @@ class ClassLikes
                         if ($codebase->alter_code) {
                             if ($method_storage->stmt_location
                                 && !$declaring_classlike_storage->is_trait
-                                && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedMethod'])
                                 && !$has_variable_calls
+                                && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedMethod'])
                                 && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
                             ) {
                                 FileManipulationBuffer::addForCodeLocation(
@@ -901,8 +905,8 @@ class ClassLikes
                     if ($codebase->alter_code) {
                         if ($method_storage->stmt_location
                             && !$declaring_classlike_storage->is_trait
-                            && isset($project_analyzer->getIssuesToFix()['UnusedMethod'])
                             && !$has_variable_calls
+                            && isset($project_analyzer->getIssuesToFix()['UnusedMethod'])
                             && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
                         ) {
                             FileManipulationBuffer::addForCodeLocation(
@@ -969,8 +973,12 @@ class ClassLikes
             );
 
             if (!$property_referenced
-                && (substr($property_name, 0, 2) !== '__' || $property_name === '__construct')
                 && $property_storage->location
+                && (
+                    $property_name === '__construct'
+                    ||
+                    substr($property_name, 0, 2) !== '__'
+                )
             ) {
                 $property_id = $classlike_storage->name . '::$' . $property_name;
 
@@ -1013,8 +1021,8 @@ class ClassLikes
 
                         if ($codebase->alter_code) {
                             if ($property_storage->stmt_location
-                                && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
                                 && !$has_variable_calls
+                                && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
                                 && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
                             ) {
                                 FileManipulationBuffer::addForCodeLocation(
@@ -1042,8 +1050,8 @@ class ClassLikes
 
                     if ($codebase->alter_code) {
                         if ($property_storage->stmt_location
-                            && isset($project_analyzer->getIssuesToFix()['UnusedProperty'])
                             && !$has_variable_calls
+                            && isset($project_analyzer->getIssuesToFix()['UnusedProperty'])
                             && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
                         ) {
                             FileManipulationBuffer::addForCodeLocation(

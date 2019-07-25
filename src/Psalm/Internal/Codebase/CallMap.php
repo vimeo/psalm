@@ -157,7 +157,7 @@ class CallMap
         }
 
         /** @var array<string, array<int|string, string>> */
-        $call_map = require(__DIR__ . '/../CallMap.php');
+        $call_map = require __DIR__ . '/../CallMap.php';
 
         self::$call_map = [];
 
@@ -175,7 +175,7 @@ class CallMap
                  * }
                  * @psalm-suppress UnresolvableInclude
                  */
-                $diff_call_map = require(__DIR__ . '/../CallMap_7' . $i . '_delta.php');
+                $diff_call_map = require __DIR__ . '/../CallMap_7' . $i . '_delta.php';
 
                 foreach ($diff_call_map['new'] as $key => $_) {
                     $cased_key = strtolower($key);

@@ -452,8 +452,8 @@ class ParseTree
                                     $new_parent
                                 );
                             } elseif ($type_token !== 'array'
-                                && $type_token[0] !== '\\'
                                 && $current_leaf instanceof ParseTree\Root
+                                && $type_token[0] !== '\\'
                             ) {
                                 $new_leaf = new ParseTree\MethodTree(
                                     $type_token,

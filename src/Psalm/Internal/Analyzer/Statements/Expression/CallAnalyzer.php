@@ -173,13 +173,13 @@ class CallAnalyzer
                 $local_vars_possibly_in_scope = [];
 
                 foreach ($context->vars_in_scope as $var => $_) {
-                    if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                    if ($var !== '$this' && strpos($var, '$this->') !== 0) {
                         $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
                     }
                 }
 
                 foreach ($context->vars_possibly_in_scope as $var => $_) {
-                    if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                    if ($var !== '$this' && strpos($var, '$this->') !== 0) {
                         $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
                     }
                 }
@@ -330,7 +330,13 @@ class CallAnalyzer
             : null;
 
         // if this modifies the array type based on further args
-        if ($method_id && in_array($method_id, ['array_push', 'array_unshift'], true) && $function_params) {
+        if (
+            $method_id
+            &&
+            $function_params
+            &&
+            in_array($method_id, ['array_push', 'array_unshift'], true)
+        ) {
             if (self::handleArrayAddition($statements_analyzer, $args, $context) === false) {
                 return false;
             }
@@ -697,8 +703,6 @@ class CallAnalyzer
                 false
             );
         }
-
-        return;
     }
 
     /**
@@ -771,10 +775,12 @@ class CallAnalyzer
             ]);
         }
 
-        if (isset($array_arg->inferredType)
-            && $array_arg->inferredType->hasArray()
-            && isset($replacement_arg->inferredType)
-            && $replacement_arg->inferredType->hasArray()
+        if (
+            isset($array_arg->inferredType, $replacement_arg->inferredType)
+            &&
+            $array_arg->inferredType->hasArray()
+            &&
+            $replacement_arg->inferredType->hasArray()
         ) {
             /** @var TArray|ObjectLike */
             $array_type = $array_arg->inferredType->getTypes()['array'];
@@ -1346,9 +1352,7 @@ class CallAnalyzer
                         $template_types,
                         $generic_params,
                         $codebase,
-                        isset($arg->value->inferredType)
-                            ? $arg->value->inferredType
-                            : null
+                        $arg->value->inferredType ?? null
                     );
 
                     if ($generic_params) {
@@ -1645,7 +1649,7 @@ class CallAnalyzer
                 break;
             }
 
-            $array_arg = isset($arg->value) ? $arg->value : null;
+            $array_arg = $arg->value ?? null;
 
             /** @var ObjectLike|TArray|null */
             $array_arg_type = $array_arg
@@ -1662,7 +1666,7 @@ class CallAnalyzer
         }
 
         /** @var null|PhpParser\Node\Arg */
-        $closure_arg = isset($args[$closure_index]) ? $args[$closure_index] : null;
+        $closure_arg = $args[$closure_index] ?? null;
 
         /** @var Type\Union|null */
         $closure_arg_type = $closure_arg && isset($closure_arg->value->inferredType)
@@ -2192,9 +2196,9 @@ class CallAnalyzer
         }
 
         if ($context->strict_types
-            && !$input_type->hasArray()
             && !$param_type->from_docblock
             && $cased_method_id !== 'echo'
+            && !$input_type->hasArray()
         ) {
             $scalar_type_match_found = false;
 
@@ -2419,7 +2423,7 @@ class CallAnalyzer
             }
         }
 
-        if (!$param_type->isNullable() && $cased_method_id !== 'echo') {
+        if ($cased_method_id !== 'echo' && !$param_type->isNullable()) {
             if ($input_type->isNull()) {
                 if (IssueBuffer::accepts(
                     new NullArgument(
@@ -2436,7 +2440,7 @@ class CallAnalyzer
                 return null;
             }
 
-            if ($input_type->isNullable() && !$input_type->ignore_nullable_issues) {
+            if (!$input_type->ignore_nullable_issues && $input_type->isNullable()) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
@@ -2451,10 +2455,10 @@ class CallAnalyzer
             }
         }
 
-        if ($input_type->isFalsable()
+        if (!$input_type->ignore_falsable_issues
+            && $input_type->isFalsable()
             && !$param_type->hasBool()
             && !$param_type->hasScalar()
-            && !$input_type->ignore_falsable_issues
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyFalseArgument(
@@ -2470,11 +2474,11 @@ class CallAnalyzer
         }
 
         if ($type_match_found
-            && !$param_type->hasMixed()
             && !$param_type->from_docblock
             && !($variadic xor $unpack)
             && !$by_ref
             && $cased_method_id !== 'echo'
+            && !$param_type->hasMixed()
         ) {
             $var_id = ExpressionAnalyzer::getVarId(
                 $input_expr,
@@ -2527,9 +2531,9 @@ class CallAnalyzer
             if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $callable_arg->left->class instanceof PhpParser\Node\Name
                 && $callable_arg->left->name instanceof PhpParser\Node\Identifier
+                && $callable_arg->right instanceof PhpParser\Node\Scalar\String_
                 && strtolower($callable_arg->left->name->name) === 'class'
                 && !in_array(strtolower($callable_arg->left->class->parts[0]), ['self', 'static', 'parent'])
-                && $callable_arg->right instanceof PhpParser\Node\Scalar\String_
                 && preg_match('/^::[A-Za-z0-9]+$/', $callable_arg->right->value)
             ) {
                 return [
@@ -2565,8 +2569,8 @@ class CallAnalyzer
 
         if ($class_arg instanceof PhpParser\Node\Expr\ClassConstFetch
             && $class_arg->name instanceof PhpParser\Node\Identifier
-            && strtolower($class_arg->name->name) === 'class'
             && $class_arg->class instanceof PhpParser\Node\Name
+            && strtolower($class_arg->name->name) === 'class'
         ) {
             $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $class_arg->class,

@@ -254,9 +254,7 @@ class Analyzer
                 /** @return void */
                 function () {
                     $project_analyzer = ProjectAnalyzer::getInstance();
-                    $codebase = $project_analyzer->getCodebase();
-
-                    $file_reference_provider = $codebase->file_reference_provider;
+                    $file_reference_provider = $project_analyzer->getCodebase()->file_reference_provider;
 
                     $file_reference_provider->setFileReferencesToClasses([]);
                     $file_reference_provider->setCallingMethodReferencesToClassMembers([]);
@@ -269,8 +267,7 @@ class Analyzer
                 $analysis_worker,
                 /** @return WorkerData */
                 function () {
-                    $project_analyzer = ProjectAnalyzer::getInstance();
-                    $codebase = $project_analyzer->getCodebase();
+                    $codebase = ProjectAnalyzer::getInstance()->getCodebase();
                     $analyzer = $codebase->analyzer;
                     $file_reference_provider = $codebase->file_reference_provider;
 
@@ -317,6 +314,7 @@ class Analyzer
                 echo 'Collecting forked analysis results' . "\n";
             }
 
+            $analyzed_methods_tmp = [[]];
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
 
@@ -355,7 +353,7 @@ class Analyzer
                     $pool_data['class_property_locations']
                 );
 
-                $this->analyzed_methods = array_merge($pool_data['analyzed_methods'], $this->analyzed_methods);
+                $analyzed_methods_tmp[] = $pool_data['analyzed_methods'];
 
                 foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
                     if (!isset($this->mixed_counts[$file_path])) {
@@ -375,6 +373,7 @@ class Analyzer
                     $this->type_map[$file_path] = $type_map;
                 }
             }
+            $this->analyzed_methods = array_merge(...$analyzed_methods_tmp);
 
             if ($pool->didHaveError()) {
                 exit(1);
@@ -411,9 +410,7 @@ class Analyzer
         }
 
         if ($alter_code) {
-            $files_to_update = $this->files_to_update !== null ? $this->files_to_update : $this->files_to_analyze;
-
-            foreach ($files_to_update as $file_path) {
+            foreach ($this->files_to_update ?? $this->files_to_analyze as $file_path) {
                 $this->updateFile($file_path, $project_analyzer->dry_run, true);
             }
         }
@@ -430,9 +427,7 @@ class Analyzer
         ) {
             $this->analyzed_methods = $codebase->file_reference_provider->getAnalyzedMethods();
             $this->existing_issues = $codebase->file_reference_provider->getExistingIssues();
-            $file_maps = $codebase->file_reference_provider->getFileMaps();
-
-            foreach ($file_maps as $file_path => list($reference_map, $type_map)) {
+            foreach ($codebase->file_reference_provider->getFileMaps() as $file_path => list($reference_map, $type_map)) {
                 $this->reference_map[$file_path] = $reference_map;
                 $this->type_map[$file_path] = $type_map;
             }
@@ -489,7 +484,10 @@ class Analyzer
         $newly_invalidated_methods = [];
 
         foreach ($unchanged_signature_members as $file_unchanged_signature_members) {
-            $newly_invalidated_methods = array_merge($newly_invalidated_methods, $file_unchanged_signature_members);
+            $newly_invalidated_methods = array_merge(
+                $newly_invalidated_methods,
+                $file_unchanged_signature_members
+            );
 
             foreach ($file_unchanged_signature_members as $unchanged_signature_member_id => $_) {
                 // also check for things that might invalidate constructor property initialisation
@@ -601,51 +599,37 @@ class Analyzer
 
         $method_references_to_class_members = array_filter(
             $method_references_to_class_members,
-            function (array $a) : bool {
-                return !!$a;
-            }
+            'boolval'
         );
 
         $method_references_to_missing_class_members = array_filter(
             $method_references_to_missing_class_members,
-            function (array $a) : bool {
-                return !!$a;
-            }
+            'boolval'
         );
 
         $file_references_to_class_members = array_filter(
             $file_references_to_class_members,
-            function (array $a) : bool {
-                return !!$a;
-            }
+            'boolval'
         );
 
         $file_references_to_missing_class_members = array_filter(
             $file_references_to_missing_class_members,
-            function (array $a) : bool {
-                return !!$a;
-            }
+            'boolval'
         );
 
         $references_to_mixed_member_names = array_filter(
             $references_to_mixed_member_names,
-            function (array $a) : bool {
-                return !!$a;
-            }
+            'boolval'
         );
 
         $file_references_to_classes = array_filter(
             $file_references_to_classes,
-            function (array $a) : bool {
-                return !!$a;
-            }
+            'boolval'
         );
 
         $method_param_uses = array_filter(
             $method_param_uses,
-            function (array $a) : bool {
-                return !!$a;
-            }
+            'boolval'
         );
 
         $file_reference_provider->setCallingMethodReferencesToClassMembers(
@@ -707,9 +691,10 @@ class Analyzer
                 $matched = false;
 
                 foreach ($file_diff_map as list($from, $to, $file_offset, $line_offset)) {
-                    if ($issue_data['from'] >= $from
+                    if (
+                        !$matched
+                        && $issue_data['from'] >= $from
                         && $issue_data['from'] <= $to
-                        && !$matched
                     ) {
                         $issue_data['from'] += $file_offset;
                         $issue_data['to'] += $file_offset;

@@ -237,7 +237,7 @@ class Functions
      *
      * @return bool
      */
-    public static function isVariadic(Codebase $codebase, $function_id, $file_path)
+    public function isVariadic(Codebase $codebase, $function_id, $file_path): bool
     {
         $file_storage = $codebase->file_storage_provider->get($file_path);
 

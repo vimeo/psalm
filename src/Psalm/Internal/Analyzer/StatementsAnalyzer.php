@@ -204,7 +204,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             $new_issues = null;
 
-            if ($docblock = $stmt->getDocComment()) {
+            $docblock = $stmt->getDocComment();
+            if ($docblock) {
                 try {
                     $comments = DocComment::parse((string)$docblock);
                 } catch (DocblockParseException $e) {
@@ -777,9 +778,14 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 continue;
             }
 
-            if ((!$function_storage
-                    || !array_key_exists(substr($var_id, 1), $function_storage->param_types))
-                && !isset($this->byref_uses[$var_id])
+            if (
+                !isset($this->byref_uses[$var_id])
+                &&
+                (
+                    !$function_storage
+                    ||
+                    !array_key_exists(substr($var_id, 1), $function_storage->param_types)
+                )
                 && !$this->isSuperGlobal($var_id)
             ) {
                 if (IssueBuffer::accepts(
@@ -1183,8 +1189,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     );
                 }
 
-                if (strtolower($const_fq_class_name) === strtolower($fq_classlike_name)
-                    && isset($existing_class_constants[$stmt->name->name])
+                if (
+                    isset($existing_class_constants[$stmt->name->name])
+                    &&
+                    strtolower($const_fq_class_name) === strtolower($fq_classlike_name)
                 ) {
                     return clone $existing_class_constants[$stmt->name->name];
                 }
@@ -1349,8 +1357,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             // if this array looks like an object-like array, let's return that instead
             if ($item_value_type
                 && $item_key_type
-                && ($item_key_type->hasString() || $item_key_type->hasInt())
                 && $can_create_objectlike
+                && ($item_key_type->hasString() || $item_key_type->hasInt())
             ) {
                 $objectlike = new Type\Atomic\ObjectLike($property_types, $class_strings);
                 $objectlike->sealed = true;
@@ -1393,7 +1401,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             return Type::getArray();
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
+        if (
+            ($stmt_is_expr_unary_minus = $stmt instanceof PhpParser\Node\Expr\UnaryMinus)
+            ||
+            $stmt instanceof PhpParser\Node\Expr\UnaryPlus
+        ) {
             $type_to_invert = self::getSimpleType(
                 $codebase,
                 $stmt->expr,
@@ -1409,11 +1421,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             foreach ($type_to_invert->getTypes() as $type_part) {
                 if ($type_part instanceof Type\Atomic\TLiteralInt
-                    && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                    && $stmt_is_expr_unary_minus
                 ) {
                     $type_part->value = -$type_part->value;
                 } elseif ($type_part instanceof Type\Atomic\TLiteralFloat
-                    && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                    && $stmt_is_expr_unary_minus
                 ) {
                     $type_part->value = -$type_part->value;
                 }
@@ -1438,7 +1450,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             $this->setConstType(
                 $const->name->name,
-                isset($const->value->inferredType) ? $const->value->inferredType : Type::getMixed(),
+                $const->value->inferredType ?? Type::getMixed(),
                 $context
             );
         }
@@ -1592,7 +1604,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     public function getFirstAppearance($var_id)
     {
-        return isset($this->all_vars[$var_id]) ? $this->all_vars[$var_id] : null;
+        return $this->all_vars[$var_id] ?? null;
     }
 
     /**
@@ -1602,7 +1614,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     public function getBranchPoint($var_id)
     {
-        return isset($this->var_branch_points[$var_id]) ? $this->var_branch_points[$var_id] : null;
+        return $this->var_branch_points[$var_id] ?? null;
     }
 
     /**

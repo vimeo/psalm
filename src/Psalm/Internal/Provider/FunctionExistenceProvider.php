@@ -4,7 +4,6 @@ namespace Psalm\Internal\Provider;
 
 use PhpParser;
 use Psalm\StatementsSource;
-use \Psalm\Plugin\Hook\FunctionExistenceProviderInterface;
 
 class FunctionExistenceProvider
 {

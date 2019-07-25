@@ -3,7 +3,6 @@ declare(strict_types = 1);
 
 namespace Psalm\Internal\LanguageServer;
 
-use Psalm\Internal\LanguageServer\Message;
 use Amp\Promise;
 
 interface ProtocolWriter

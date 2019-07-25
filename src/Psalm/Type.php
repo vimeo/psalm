@@ -269,9 +269,9 @@ abstract class Type
                 return new TClassString($class_name, $param_union_types[0]);
             }
 
-            if (isset(self::PSALM_RESERVED_WORDS[$generic_type_value])
-                && $generic_type_value !== 'self'
+            if ($generic_type_value !== 'self'
                 && $generic_type_value !== 'static'
+                && isset(self::PSALM_RESERVED_WORDS[$generic_type_value])
             ) {
                 throw new TypeParseTreeException('Cannot create generic object with reserved word');
             }
@@ -502,7 +502,7 @@ abstract class Type
         if (strpos($parse_tree->value, '::')) {
             list($fq_classlike_name, $const_name) = explode('::', $parse_tree->value);
 
-            if (isset($template_type_map[$fq_classlike_name]) && $const_name === 'class') {
+            if ($const_name === 'class' && isset($template_type_map[$fq_classlike_name])) {
                 $first_class = array_keys($template_type_map[$fq_classlike_name])[0];
 
                 return self::getGenericParamClass(
@@ -725,8 +725,8 @@ abstract class Type
 
             if ($char === '.') {
                 if ($i + 1 < $c
-                    && is_numeric($chars[$i + 1])
                     && $i > 0
+                    && is_numeric($chars[$i + 1])
                     && is_numeric($chars[$i - 1])
                 ) {
                     $type_tokens[$rtc] .= $char;
@@ -790,9 +790,9 @@ abstract class Type
                 continue;
             }
 
-            if ($string_type_token[0] === '"'
+            if ($string_type_token === '0'
+                || $string_type_token[0] === '"'
                 || $string_type_token[0] === '\''
-                || $string_type_token === '0'
                 || preg_match('/[1-9]/', $string_type_token[0])
             ) {
                 continue;

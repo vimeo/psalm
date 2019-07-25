@@ -25,8 +25,8 @@ class ArrayRandReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
-        $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
+        $first_arg = $call_args[0]->value ?? null;
+        $second_arg = $call_args[1]->value ?? null;
 
         $first_arg_array = $first_arg
             && isset($first_arg->inferredType)

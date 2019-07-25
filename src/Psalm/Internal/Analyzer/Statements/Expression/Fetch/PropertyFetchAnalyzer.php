@@ -113,8 +113,8 @@ class PropertyFetchAnalyzer
                 && !$stmt->inferredType->initialized
                 && $context->collect_initializations
                 && isset($stmt->var->inferredType)
-                && $stmt->var->inferredType->hasObjectType()
                 && $stmt->name instanceof PhpParser\Node\Identifier
+                && $stmt->var->inferredType->hasObjectType()
             ) {
                 $source = $statements_analyzer->getSource();
 
@@ -150,8 +150,8 @@ class PropertyFetchAnalyzer
             }
 
             if (isset($stmt->var->inferredType)
-                && $stmt->var->inferredType->hasObjectType()
                 && $stmt->name instanceof PhpParser\Node\Identifier
+                && $stmt->var->inferredType->hasObjectType()
             ) {
                 // log the appearance
                 foreach ($stmt->var->inferredType->getTypes() as $lhs_type_part) {
@@ -280,7 +280,13 @@ class PropertyFetchAnalyzer
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getRootFilePath());
         }
 
-        if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues && !$context->inside_isset) {
+        if (
+            !$stmt_var_type->ignore_nullable_issues
+            &&
+            !$context->inside_isset
+            &&
+            $stmt_var_type->isNullable()
+        ) {
             if (IssueBuffer::accepts(
                 new PossiblyNullPropertyFetch(
                     'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
@@ -295,7 +301,7 @@ class PropertyFetchAnalyzer
         }
 
         if (!$prop_name) {
-            if ($stmt_var_type->hasObjectType() && !$context->ignore_variable_property) {
+            if (!$context->ignore_variable_property && $stmt_var_type->hasObjectType()) {
                 foreach ($stmt_var_type->getTypes() as $type) {
                     if ($type instanceof Type\Atomic\TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
@@ -719,7 +725,7 @@ class PropertyFetchAnalyzer
         }
 
         if ($var_id) {
-            $context->vars_in_scope[$var_id] = isset($stmt->inferredType) ? $stmt->inferredType : Type::getMixed();
+            $context->vars_in_scope[$var_id] = $stmt->inferredType ?? Type::getMixed();
         }
     }
 

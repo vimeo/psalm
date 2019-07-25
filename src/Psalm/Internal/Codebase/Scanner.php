@@ -291,7 +291,7 @@ class Scanner
         if (!isset($this->classlike_files[$fq_classlike_name_lc])
             || ($analyze_too && !isset($this->deep_scanned_classlike_files[$fq_classlike_name_lc]))
         ) {
-            if (!isset($this->classes_to_scan[$fq_classlike_name_lc]) || $store_failure) {
+            if ($store_failure || !isset($this->classes_to_scan[$fq_classlike_name_lc])) {
                 $this->classes_to_scan[$fq_classlike_name_lc] = $fq_classlike_name;
             }
 
@@ -302,9 +302,7 @@ class Scanner
             $this->store_scan_failure[$fq_classlike_name] = $store_failure;
 
             if (PropertyMap::inPropertyMap($fq_classlike_name_lc)) {
-                $public_mapped_properties = PropertyMap::getPropertyMap()[$fq_classlike_name_lc];
-
-                foreach ($public_mapped_properties as $public_mapped_property) {
+                foreach (PropertyMap::getPropertyMap()[$fq_classlike_name_lc] as $public_mapped_property) {
                     if (strtolower($public_mapped_property) !== $fq_classlike_name_lc) {
                         $property_type = \Psalm\Type::parseString($public_mapped_property);
                         $property_type->queueClassLikesForScanning($this->codebase);
@@ -392,13 +390,12 @@ class Scanner
                 $process_file_paths,
                 /** @return void */
                 function () {
-                    $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
-                    $codebase = $project_analyzer->getCodebase();
+                    $codebase = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance()->getCodebase();
                     $statements_provider = $codebase->statements_provider;
 
                     $codebase->scanner->isForked();
-                    $codebase->file_storage_provider->deleteAll();
-                    $codebase->classlike_storage_provider->deleteAll();
+                    $codebase->file_storage_provider::deleteAll();
+                    $codebase->classlike_storage_provider::deleteAll();
 
                     $statements_provider->resetDiffs();
                 },
@@ -407,8 +404,7 @@ class Scanner
                  * @return PoolData
                 */
                 function () {
-                    $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
-                    $codebase = $project_analyzer->getCodebase();
+                    $codebase = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance()->getCodebase();
                     $statements_provider = $codebase->statements_provider;
 
                     return [
@@ -428,12 +424,7 @@ class Scanner
             );
 
             // Wait for all tasks to complete and collect the results.
-            /**
-             * @var array<int, PoolData>
-             */
-            $forked_pool_data = $pool->wait();
-
-            foreach ($forked_pool_data as $pool_data) {
+            foreach ($pool->wait() as $pool_data) {
                 \Psalm\IssueBuffer::addIssues($pool_data['issues']);
 
                 $this->codebase->statements_provider->addChangedMembers(

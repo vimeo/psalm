@@ -130,9 +130,9 @@ class ConfigFile
             $tag_end = strpos($new_file_contents, '>', $tag_start + 1);
 
             if ($tag_end !== false
-                && ($new_file_contents[$tag_end - 1] !== '/')
                 && $this->psalm_tag_end_pos
                 && $this->psalm_header
+                && ($new_file_contents[$tag_end - 1] !== '/')
             ) {
                 $new_file_contents = $this->psalm_header . substr($new_file_contents, $tag_end);
             }

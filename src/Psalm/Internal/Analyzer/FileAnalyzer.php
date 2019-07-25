@@ -3,14 +3,12 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
-use Psalm\Type;
 
 /**
  * @internal

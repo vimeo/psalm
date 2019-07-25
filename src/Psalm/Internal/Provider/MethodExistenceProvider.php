@@ -5,7 +5,6 @@ namespace Psalm\Internal\Provider;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\MethodExistenceProviderInterface;
 
 class MethodExistenceProvider
 {

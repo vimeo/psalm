@@ -949,37 +949,48 @@ class TypeAnalyzer
             return true;
         }
 
-        if (get_class($container_type_part) === TInt::class && $input_type_part instanceof TLiteralInt) {
+        if ($input_type_part instanceof TLiteralInt && get_class($container_type_part) === TInt::class) {
             return true;
         }
 
-        if (get_class($container_type_part) === TFloat::class && $input_type_part instanceof TLiteralFloat) {
+        if ($input_type_part instanceof TLiteralFloat && get_class($container_type_part) === TFloat::class) {
             return true;
         }
 
-        if ((get_class($container_type_part) === TString::class
-                || get_class($container_type_part) === TSingleLetter::class)
-            && $input_type_part instanceof TLiteralString
+        if (
+            $input_type_part instanceof TLiteralString
+            &&
+            (
+                get_class($container_type_part) === TString::class
+                ||
+                get_class($container_type_part) === TSingleLetter::class
+            )
         ) {
             return true;
         }
 
-        if (get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt) {
+        if ($container_type_part instanceof TLiteralInt && get_class($input_type_part) === TInt::class) {
             $type_coerced = true;
             $type_coerced_from_scalar = true;
 
             return false;
         }
 
-        if (get_class($input_type_part) === TFloat::class && $container_type_part instanceof TLiteralFloat) {
+        if ($container_type_part instanceof TLiteralFloat && get_class($input_type_part) === TFloat::class) {
             $type_coerced = true;
             $type_coerced_from_scalar = true;
 
             return false;
         }
 
-        if ((get_class($input_type_part) === TString::class || get_class($input_type_part) === TSingleLetter::class)
-            && $container_type_part instanceof TLiteralString
+        if (
+            $container_type_part instanceof TLiteralString
+            &&
+            (
+                get_class($input_type_part) === TString::class
+                ||
+                get_class($input_type_part) === TSingleLetter::class
+            )
         ) {
             $type_coerced = true;
             $type_coerced_from_scalar = true;
@@ -1683,8 +1694,10 @@ class TypeAnalyzer
                     continue;
                 }
 
-                if ($input_param->isEmpty()
-                    && $container_type_part instanceof Type\Atomic\TNonEmptyArray
+                if (
+                    $container_type_part instanceof Type\Atomic\TNonEmptyArray
+                    &&
+                    $input_param->isEmpty()
                 ) {
                     return false;
                 }

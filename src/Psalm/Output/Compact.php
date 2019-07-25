@@ -27,7 +27,11 @@ class Compact extends Output
         foreach ($this->issues_data as $i => $issue_data) {
             if (!$this->show_info && $issue_data['severity'] === Config::REPORT_INFO) {
                 continue;
-            } elseif (is_null($current_file) || $current_file !== $issue_data['file_name']) {
+            } elseif (
+                $current_file === null
+                ||
+                $current_file !== $issue_data['file_name']
+            ) {
                 // If we're processing a new file, then wrap up the last table and render it out.
                 if ($buffer !== null) {
                     $table->render();

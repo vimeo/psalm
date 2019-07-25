@@ -127,8 +127,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if ($class_type
             && $stmt->name instanceof PhpParser\Node\Identifier
-            && $class_type->isNullable()
             && !$class_type->ignore_nullable_issues
+            && $class_type->isNullable()
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyNullReference(
@@ -143,8 +143,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if ($class_type
             && $stmt->name instanceof PhpParser\Node\Identifier
-            && $class_type->isFalsable()
             && !$class_type->ignore_falsable_issues
+            && $class_type->isFalsable()
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyFalseReference(
@@ -336,11 +336,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         // if we called a method on this nullable variable, remove the nullable status here
         // because any further calls must have worked
         if ($lhs_var_id
-            && !$class_type->isMixed()
             && $has_valid_method_call_type
             && !$has_mixed_method_call
             && !$invalid_method_call_types
             && $existent_method_ids
+            && !$class_type->isMixed()
             && ($class_type->from_docblock || $class_type->isNullable())
         ) {
             $keys_to_remove = [];
@@ -1461,11 +1461,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 // If a `@property` annotation is set, the type of the value passed to the
                 // magic setter must match the annotation.
-                $second_arg_type = isset($stmt->args[1]->value->inferredType)
-                    ? $stmt->args[1]->value->inferredType
-                    : null;
+                $second_arg_type = $stmt->args[1]->value->inferredType ?? null;
 
-                if (isset($class_storage->pseudo_property_set_types['$' . $prop_name]) && $second_arg_type) {
+                if ($second_arg_type && isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
                     $pseudo_set_type = ExpressionAnalyzer::fleshOutType(
                         $codebase,
                         $class_storage->pseudo_property_set_types['$' . $prop_name],

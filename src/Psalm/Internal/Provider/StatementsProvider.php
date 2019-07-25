@@ -394,7 +394,7 @@ class StatementsProvider
             }
         }
 
-        if ($error_handler->hasErrors() && $file_path) {
+        if ($file_path && $error_handler->hasErrors()) {
             $config = \Psalm\Config::getInstance();
 
             foreach ($error_handler->getErrors() as $error) {

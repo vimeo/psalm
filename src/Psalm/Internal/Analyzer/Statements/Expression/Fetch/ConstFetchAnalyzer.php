@@ -203,7 +203,7 @@ class ConstFetchAnalyzer
                     $class_visibility
                 );
 
-                if (!isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
+                if ($first_part_lc !== 'static' && !isset($class_constants[$stmt->name->name])) {
                     $all_class_constants = [];
 
                     if ($fq_class_name !== $context->self) {
@@ -259,7 +259,7 @@ class ConstFetchAnalyzer
                     }
                 }
 
-                if (isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
+                if ($first_part_lc !== 'static' && isset($class_constants[$stmt->name->name])) {
                     $stmt->inferredType = clone $class_constants[$stmt->name->name];
                     $context->vars_in_scope[$const_id] = $stmt->inferredType;
                 } else {

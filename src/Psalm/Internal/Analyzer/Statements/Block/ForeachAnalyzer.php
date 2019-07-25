@@ -314,7 +314,7 @@ class ForeachAnalyzer
             )) {
                 return false;
             }
-        } elseif ($iterator_type->isNullable() && !$iterator_type->ignore_nullable_issues) {
+        } elseif (!$iterator_type->ignore_nullable_issues && $iterator_type->isNullable()) {
             if (IssueBuffer::accepts(
                 new PossiblyNullIterator(
                     'Cannot iterate over nullable var ' . $iterator_type,
@@ -324,7 +324,7 @@ class ForeachAnalyzer
             )) {
                 return false;
             }
-        } elseif ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
+        } elseif (!$iterator_type->ignore_falsable_issues && $iterator_type->isFalsable()) {
             if (IssueBuffer::accepts(
                 new PossiblyFalseIterator(
                     'Cannot iterate over falsable var ' . $iterator_type,
@@ -790,7 +790,7 @@ class ForeachAnalyzer
         array $calling_type_params = null
     ) {
         if ($calling_class_lc === $template_class_lc) {
-            if (isset($class_template_types[$template_name]) && $calling_type_params) {
+            if ($calling_type_params && isset($class_template_types[$template_name])) {
                 $offset = array_search($template_name, array_keys($class_template_types));
 
                 if ($offset !== false) {

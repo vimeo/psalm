@@ -475,9 +475,7 @@ class IfAnalyzer
                     $if_scope->reasonable_clauses = Context::filterClauses(
                         $var_id,
                         $if_scope->reasonable_clauses,
-                        isset($context->vars_in_scope[$var_id])
-                            ? $context->vars_in_scope[$var_id]
-                            : null,
+                        $context->vars_in_scope[$var_id] ?? null,
                         $statements_analyzer
                     );
                 }
@@ -503,8 +501,8 @@ class IfAnalyzer
 
         if ($if_scope->possibly_redefined_vars) {
             foreach ($if_scope->possibly_redefined_vars as $var_id => $type) {
-                if (isset($context->vars_in_scope[$var_id])
-                    && !$type->failed_reconciliation
+                if (!$type->failed_reconciliation
+                    && isset($context->vars_in_scope[$var_id])
                     && !isset($if_scope->updated_vars[$var_id])
                 ) {
                     $combined_type = Type::combineUnionTypes(
@@ -525,9 +523,18 @@ class IfAnalyzer
 
         if ($context->collect_references) {
             foreach ($if_scope->new_unreferenced_vars as $var_id => $locations) {
-                if (($stmt->else
-                        && (isset($if_scope->assigned_var_ids[$var_id]) || isset($if_scope->new_vars[$var_id])))
-                    || !isset($context->vars_in_scope[$var_id])
+                if (
+                    !isset($context->vars_in_scope[$var_id])
+                    ||
+                    (
+                        $stmt->else
+                        &&
+                        (
+                            isset($if_scope->assigned_var_ids[$var_id])
+                            ||
+                            isset($if_scope->new_vars[$var_id])
+                        )
+                    )
                 ) {
                     $context->unreferenced_vars[$var_id] = $locations;
                 } elseif (isset($if_scope->possibly_assigned_var_ids[$var_id])) {
@@ -615,8 +622,8 @@ class IfAnalyzer
         if ($if_context->byref_constraints !== null) {
             foreach ($if_context->byref_constraints as $var_id => $byref_constraint) {
                 if ($outer_context->byref_constraints !== null
-                    && isset($outer_context->byref_constraints[$var_id])
                     && $byref_constraint->type
+                    && isset($outer_context->byref_constraints[$var_id])
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
                     && !TypeAnalyzer::isContainedBy(
                         $codebase,
@@ -673,7 +680,7 @@ class IfAnalyzer
                     $if_scope->reasonable_clauses = Context::filterClauses(
                         $var_id,
                         $if_scope->reasonable_clauses,
-                        isset($if_context->vars_in_scope[$var_id]) ? $if_context->vars_in_scope[$var_id] : null,
+                        $if_context->vars_in_scope[$var_id] ?? null,
                         $statements_analyzer
                     );
                 }
@@ -1073,9 +1080,9 @@ class IfAnalyzer
         if ($elseif_context->byref_constraints !== null) {
             foreach ($elseif_context->byref_constraints as $var_id => $byref_constraint) {
                 if ($outer_context->byref_constraints !== null
+                    && $byref_constraint->type
                     && isset($outer_context->byref_constraints[$var_id])
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
-                    && $byref_constraint->type
                     && !TypeAnalyzer::isContainedBy(
                         $codebase,
                         $byref_constraint->type,
@@ -1437,9 +1444,9 @@ class IfAnalyzer
         if ($else && $else_context->byref_constraints !== null) {
             foreach ($else_context->byref_constraints as $var_id => $byref_constraint) {
                 if ($outer_context->byref_constraints !== null
+                    && $byref_constraint->type
                     && isset($outer_context->byref_constraints[$var_id])
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
-                    && $byref_constraint->type
                     && !TypeAnalyzer::isContainedBy(
                         $codebase,
                         $byref_constraint->type,

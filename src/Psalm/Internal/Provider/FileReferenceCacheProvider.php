@@ -476,8 +476,8 @@ class FileReferenceCacheProvider
         $analyzed_methods_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ANALYZED_METHODS_CACHE_NAME;
 
         if ($cache_directory
-            && file_exists($analyzed_methods_cache_location)
             && !$this->config_changed
+            && file_exists($analyzed_methods_cache_location)
         ) {
             /** @var array<string, array<string, int>> */
             return unserialize(file_get_contents($analyzed_methods_cache_location));
@@ -516,8 +516,8 @@ class FileReferenceCacheProvider
         $file_maps_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MAPS_CACHE_NAME;
 
         if ($cache_directory
-            && file_exists($file_maps_cache_location)
             && !$this->config_changed
+            && file_exists($file_maps_cache_location)
         ) {
             /** @var array<string, array{0: TaggedCodeType, 1: TaggedCodeType}> */
             $file_maps_cache = unserialize(file_get_contents($file_maps_cache_location));
@@ -555,8 +555,8 @@ class FileReferenceCacheProvider
         $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
 
         if ($cache_directory
-            && file_exists($type_coverage_cache_location)
             && !$this->config_changed
+            && file_exists($type_coverage_cache_location)
         ) {
             /** @var array<string, array{int, int}> */
             $type_coverage_cache = unserialize(file_get_contents($type_coverage_cache_location));

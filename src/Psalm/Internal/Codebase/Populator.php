@@ -179,8 +179,8 @@ class Populator
             echo 'FileStorage is populated' . "\n";
         }
 
-        $this->classlike_storage_provider->populated();
-        $this->file_storage_provider->populated();
+        $this->classlike_storage_provider::populated();
+        $this->file_storage_provider::populated();
     }
 
     /**
@@ -220,11 +220,11 @@ class Populator
             $this->populateDataFromParentClass($storage, $storage_provider, $dependent_classlikes);
         }
 
-        if (!strpos($fq_classlike_name_lc, '\\')
+        if (!$storage->is_interface
+            && !$storage->is_trait
             && !isset($storage->methods['__construct'])
             && isset($storage->methods[$fq_classlike_name_lc])
-            && !$storage->is_interface
-            && !$storage->is_trait
+            && !strpos($fq_classlike_name_lc, '\\')
         ) {
             $storage->methods['__construct'] = $storage->methods[$fq_classlike_name_lc];
         }
@@ -308,10 +308,10 @@ class Populator
                         $method_storage->throws = $declaring_method_storage->throws;
                     }
 
-                    if (count($storage->overridden_method_ids[$method_name]) === 1
-                        && $method_storage->signature_return_type
-                        && !$method_storage->signature_return_type->isVoid()
+                    if ($method_storage->signature_return_type
                         && $method_storage->return_type === $method_storage->signature_return_type
+                        && !$method_storage->signature_return_type->isVoid()
+                        && count($storage->overridden_method_ids[$method_name]) === 1
                     ) {
                         if (isset($declaring_class_storage->methods[$method_name])) {
                             $declaring_method_storage = $declaring_class_storage->methods[$method_name];
@@ -374,8 +374,10 @@ class Populator
                     if ($trait_storage->template_type_extends) {
                         foreach ($trait_storage->template_type_extends as $t_storage_class => $type_map) {
                             foreach ($type_map as $i => $type) {
-                                if (isset($storage->template_type_extends[$t_storage_class][$i])
-                                    || is_int($i)
+                                if (
+                                    is_int($i)
+                                    ||
+                                    isset($storage->template_type_extends[$t_storage_class][$i])
                                 ) {
                                     continue;
                                 }
@@ -485,8 +487,10 @@ class Populator
                     if ($parent_storage->template_type_extends) {
                         foreach ($parent_storage->template_type_extends as $t_storage_class => $type_map) {
                             foreach ($type_map as $i => $type) {
-                                if (isset($storage->template_type_extends[$t_storage_class][$i])
-                                    || is_int($i)
+                                if (
+                                    is_int($i)
+                                    ||
+                                    isset($storage->template_type_extends[$t_storage_class][$i])
                                 ) {
                                     continue;
                                 }
@@ -611,8 +615,10 @@ class Populator
                     if ($parent_interface_storage->template_type_extends) {
                         foreach ($parent_interface_storage->template_type_extends as $t_storage_class => $type_map) {
                             foreach ($type_map as $i => $type) {
-                                if (isset($storage->template_type_extends[$t_storage_class][$i])
-                                    || is_int($i)
+                                if (
+                                    is_int($i)
+                                    ||
+                                    isset($storage->template_type_extends[$t_storage_class][$i])
                                 ) {
                                     continue;
                                 }
@@ -752,8 +758,8 @@ class Populator
                     $method_storage = $storage->methods[$method_name];
 
                     if ($method_storage->signature_return_type
-                        && !$method_storage->signature_return_type->isVoid()
                         && $method_storage->return_type === $method_storage->signature_return_type
+                        && !$method_storage->signature_return_type->isVoid()
                     ) {
                         list($interface_fqcln) = explode('::', $interface_method_ids[0]);
                         $interface_storage = $storage_provider->get($interface_fqcln);

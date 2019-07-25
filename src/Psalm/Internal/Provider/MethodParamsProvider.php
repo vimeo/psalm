@@ -2,11 +2,9 @@
 
 namespace Psalm\Internal\Provider;
 
-use PhpParser;
 use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\MethodParamsProviderInterface;
 
 class MethodParamsProvider
 {

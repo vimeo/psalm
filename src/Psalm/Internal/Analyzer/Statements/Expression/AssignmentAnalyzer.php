@@ -390,9 +390,7 @@ class AssignmentAnalyzer
                     || $var instanceof PhpParser\Node\Expr\Array_
                 ) {
                     /** @var Type\Atomic\ObjectLike|Type\Atomic\TArray|null */
-                    $array_value_type = isset($assign_value_type->getTypes()['array'])
-                        ? $assign_value_type->getTypes()['array']
-                        : null;
+                    $array_value_type = $assign_value_type->getTypes()['array'] ?? null;
 
                     if ($array_value_type instanceof Type\Atomic\ObjectLike) {
                         $array_value_type = $array_value_type->getGenericArrayType();
@@ -680,7 +678,7 @@ class AssignmentAnalyzer
         }
 
         $var_type = isset($stmt->var->inferredType) ? clone $stmt->var->inferredType : null;
-        $expr_type = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
+        $expr_type = $stmt->expr->inferredType ?? null;
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
             || $stmt instanceof PhpParser\Node\Expr\AssignOp\Minus
@@ -712,9 +710,9 @@ class AssignmentAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Div
             && $var_type
             && $expr_type
+            && $array_var_id
             && $var_type->hasDefinitelyNumericType()
             && $expr_type->hasDefinitelyNumericType()
-            && $array_var_id
         ) {
             $context->vars_in_scope[$array_var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
             $stmt->inferredType = clone $context->vars_in_scope[$array_var_id];
@@ -731,14 +729,22 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $stmt->inferredType = clone $context->vars_in_scope[$array_var_id];
             }
-        } elseif (isset($stmt->var->inferredType)
-            && isset($stmt->expr->inferredType)
-            && ($stmt->var->inferredType->hasInt() || $stmt->expr->inferredType->hasInt())
-            && ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseOr
+        } elseif (
+            isset($stmt->var->inferredType)
+            &&
+            isset($stmt->expr->inferredType)
+            &&
+            (
+                $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseOr
                 || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseXor
                 || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseAnd
                 || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftLeft
                 || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight
+            )
+            && (
+                $stmt->var->inferredType->hasInt()
+                ||
+                $stmt->expr->inferredType->hasInt()
             )
         ) {
             BinaryOpAnalyzer::analyzeNonDivArithmeticOp(

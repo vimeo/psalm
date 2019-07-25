@@ -572,7 +572,7 @@ class Codebase
      */
     public function getStubbedConstantType($const_id)
     {
-        return isset(self::$stubbed_constants[$const_id]) ? self::$stubbed_constants[$const_id] : null;
+        return self::$stubbed_constants[$const_id] ?? null;
     }
 
     /**

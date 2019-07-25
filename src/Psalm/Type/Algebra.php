@@ -345,14 +345,16 @@ class Algebra
             }
 
             foreach ($clause->possibilities as $var => $possible_types) {
+                $possibilities_count = count($clause->possibilities);
+
                 // if there's only one possible type, return it
-                if (count($clause->possibilities) === 1 && count($possible_types) === 1) {
+                if ($possibilities_count === 1 && count($possible_types) === 1) {
                     if (isset($truths[$var])) {
                         $truths[$var][] = [array_pop($possible_types)];
                     } else {
                         $truths[$var] = [[array_pop($possible_types)]];
                     }
-                } elseif (count($clause->possibilities) === 1) {
+                } elseif ($possibilities_count === 1) {
                     // if there's only one active clause, return all the non-negation clause members ORed together
                     $things_that_can_be_said = array_filter(
                         $possible_types,

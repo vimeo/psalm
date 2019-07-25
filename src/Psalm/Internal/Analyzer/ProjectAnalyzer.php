@@ -8,7 +8,6 @@ use Psalm\Internal\LanguageServer\{LanguageServer, ProtocolStreamReader, Protoco
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
-use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Type;
 
@@ -243,7 +242,7 @@ class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        $cpu_count = self::getCpuCount();
+        $cpu_count = $this->getCpuCount();
 
         // let's not go crazy
         $usable_cpus = $cpu_count - 2;
@@ -396,10 +395,12 @@ class ProjectAnalyzer
             echo 'Scanning files...' . "\n";
         }
 
-        if ($diff_files === null
+        if (
+            $diff_files === null
             || $deleted_files === null
+            || $this->codebase->find_unused_code
             || count($diff_files) > 200
-            || $this->codebase->find_unused_code) {
+        ) {
             $this->codebase->scanner->addFilesToDeepScan($this->project_files);
         }
 

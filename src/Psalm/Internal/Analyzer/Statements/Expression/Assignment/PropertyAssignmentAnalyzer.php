@@ -94,7 +94,7 @@ class PropertyAssignmentAnalyzer
                 return false;
             }
 
-            $lhs_type = isset($stmt->var->inferredType) ? $stmt->var->inferredType : null;
+            $lhs_type = $stmt->var->inferredType ?? null;
 
             if ($lhs_type === null) {
                 return null;
@@ -183,7 +183,7 @@ class PropertyAssignmentAnalyzer
                 return null;
             }
 
-            if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
+            if (!$lhs_type->ignore_nullable_issues && $lhs_type->isNullable()) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullPropertyAssignment(
                         $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
@@ -525,7 +525,7 @@ class PropertyAssignmentAnalyzer
                 if (!$class_property_type) {
                     $class_property_type = Type::getMixed();
 
-                    if (!$assignment_value_type->hasMixed() && $property_storage) {
+                    if ($property_storage && !$assignment_value_type->hasMixed()) {
                         if ($property_storage->suggested_type) {
                             $property_storage->suggested_type = Type::combineUnionTypes(
                                 $assignment_value_type,

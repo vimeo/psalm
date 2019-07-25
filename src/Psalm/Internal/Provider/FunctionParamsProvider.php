@@ -6,7 +6,6 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\FunctionParamsProviderInterface;
 
 class FunctionParamsProvider
 {

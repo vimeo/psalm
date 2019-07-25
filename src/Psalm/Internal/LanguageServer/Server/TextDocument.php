@@ -5,7 +5,6 @@ namespace Psalm\Internal\LanguageServer\Server;
 
 use Psalm\Internal\LanguageServer\{
     LanguageServer,
-    LanguageClient,
     PhpDocumentLoader,
     PhpDocument,
     DefinitionResolver,
@@ -13,21 +12,14 @@ use Psalm\Internal\LanguageServer\{
 };
 use LanguageServerProtocol\{
     CompletionList,
-    SymbolLocationInformation,
-    SymbolDescriptor,
     TextDocumentItem,
     TextDocumentIdentifier,
     VersionedTextDocumentIdentifier,
     Position,
     Range,
-    FormattingOptions,
-    TextEdit,
     Location,
-    SymbolInformation,
-    ReferenceContext,
     Hover,
     MarkedString,
-    SymbolKind,
     CompletionItem,
     CompletionItemKind
 };
@@ -53,10 +45,15 @@ class TextDocument
     /** @var ?int */
     protected $onchange_line_limit;
 
+    /**
+     * TextDocument constructor.
+     *
+     * @param int|null $onchange_line_limit
+     */
     public function __construct(
         LanguageServer $server,
         Codebase $codebase,
-        ?int $onchange_line_limit
+        $onchange_line_limit
     ) {
         $this->server = $server;
         $this->codebase = $codebase;

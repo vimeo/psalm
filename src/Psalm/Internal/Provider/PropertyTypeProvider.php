@@ -4,9 +4,7 @@ namespace Psalm\Internal\Provider;
 
 use PhpParser;
 use Psalm\Context;
-use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\PropertyTypeProviderInterface;
 
 class PropertyTypeProvider
 {

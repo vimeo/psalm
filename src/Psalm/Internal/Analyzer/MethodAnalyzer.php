@@ -874,9 +874,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
             if (!$guide_classlike_storage->user_defined
                 && $guide_param->type
-                && !$guide_param->type->hasMixed()
                 && !$guide_param->type->from_docblock
                 && ($cased_guide_method_id !== 'SoapClient::__soapCall' || $implemeneter_param_type)
+                && !$guide_param->type->hasMixed()
                 && (
                     !$implemeneter_param_type
                     || (

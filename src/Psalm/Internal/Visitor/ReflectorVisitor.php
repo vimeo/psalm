@@ -323,7 +323,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->file_storage->required_classes[strtolower($trait_fqcln)] = $trait_fqcln;
             }
 
-            if ($node_comment = $node->getDocComment()) {
+            $node_comment = $node->getDocComment();
+            if ($node_comment) {
                 $comments = DocComment::parse((string) $node_comment, 0);
 
                 if (isset($comments['specials']['template-use'])
@@ -363,7 +364,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             || $node instanceof PhpParser\Node\Stmt\While_
             || $node instanceof PhpParser\Node\Stmt\Do_
         ) {
-            if ($doc_comment = $node->getDocComment()) {
+            $doc_comment = $node->getDocComment();
+            if ($doc_comment) {
                 $var_comments = [];
 
                 try {
@@ -1388,9 +1390,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $class_name_parts = explode('\\', $fq_classlike_name);
             $class_name = array_pop($class_name_parts);
 
-            if (strtolower($stmt->name->name) === strtolower($class_name) &&
-                !isset($class_storage->methods['__construct']) &&
+            if (
+                !isset($class_storage->methods['__construct'])
+                &&
                 strpos($fq_classlike_name, '\\') === false
+                &&
+                strtolower($stmt->name->name) === strtolower($class_name)
             ) {
                 $this->codebase->methods->setDeclaringMethodId(
                     $fq_classlike_name . '::__construct',
@@ -1405,7 +1410,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $class_storage->declaring_method_ids[strtolower($stmt->name->name)] = $function_id;
             $class_storage->appearing_method_ids[strtolower($stmt->name->name)] = $function_id;
 
-            if (!$stmt->isPrivate() || $stmt->name->name === '__construct' || $class_storage->is_trait) {
+            if (
+                $stmt->name->name === '__construct'
+                ||
+                $class_storage->is_trait
+                ||
+                !$stmt->isPrivate()
+            ) {
                 $class_storage->inheritable_method_ids[strtolower($stmt->name->name)] = $function_id;
             }
 
@@ -1524,10 +1535,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $storage->required_param_count = $required_param_count;
 
-        if (($stmt instanceof PhpParser\Node\Stmt\Function_
-                || $stmt instanceof PhpParser\Node\Stmt\ClassMethod)
-            && strpos($stmt->name->name, 'assert') === 0
+        if (
+            (
+                $stmt instanceof PhpParser\Node\Stmt\Function_
+                ||
+                $stmt instanceof PhpParser\Node\Stmt\ClassMethod
+            )
             && $stmt->stmts
+            && strpos($stmt->name->name, 'assert') === 0
         ) {
             $var_assertions = [];
 
@@ -1976,7 +1991,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $storage->return_type->ignore_falsable_issues = true;
                 }
 
-                if ($stmt->returnsByRef() && $storage->return_type) {
+                if ($storage->return_type && $stmt->returnsByRef()) {
                     $storage->return_type->by_ref = true;
                 }
 
@@ -2341,7 +2356,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $existing_param_type_nullable = $storage_param->is_nullable;
 
-            if (!$storage_param->type || $storage_param->type->hasMixed() || $storage->template_types) {
+            if (
+                !$storage_param->type
+                ||
+                $storage->template_types
+                ||
+                $storage_param->type->hasMixed()
+            ) {
                 if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
                     $new_param_type->addType(new Type\Atomic\TNull());
                 }
@@ -2372,8 +2393,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     $type->from_docblock = false;
 
-                    if ($storage_param_atomic_types[$key] instanceof Type\Atomic\TArray
-                        && $type instanceof Type\Atomic\TArray
+                    if (
+                        $type instanceof Type\Atomic\TArray
+                        && $storage_param_atomic_types[$key] instanceof Type\Atomic\TArray
                         && $type->type_params[0]->hasArrayKey()
                     ) {
                         $type->type_params[0]->from_docblock = false;
@@ -2438,7 +2460,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             + $storage->private_class_constants
             + $storage->public_class_constants;
 
-        if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
+        if (
+            $comment
+            &&
+            (
+                $config->use_docblock_types
+                ||
+                $config->use_docblock_property_types
+            )
+            &&
+            $comment->getText()
+        ) {
             if (preg_match('/[ \t\*]+@psalm-suppress[ \t]+PropertyNotSetInConstructor/', (string)$comment)) {
                 $property_is_initialized = true;
             }
@@ -2483,7 +2515,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $signature_type_location = null;
 
         /** @var null|PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType */
-        $parser_property_type = isset($stmt->type) ? $stmt->type : null;
+        $parser_property_type = $stmt->type ?? null;
 
         if ($parser_property_type) {
             $suffix = '';
@@ -2653,7 +2685,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $deprecated = false;
         $config = $this->config;
 
-        if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
+        if (
+            $comment
+            &&
+            (
+                $config->use_docblock_types
+                ||
+                $config->use_docblock_property_types
+            )
+            &&
+            $comment->getText()
+        ) {
             $comments = DocComment::parse($comment->getText(), 0);
 
             if (isset($comments['specials']['deprecated'])) {
@@ -2758,8 +2800,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 return;
             }
         }
-
-        return;
     }
 
     /**

@@ -176,13 +176,26 @@ class TryAnalyzer
                     }
                 }
 
-                if (($codebase->classExists($fq_catch_class)
-                        && strtolower($fq_catch_class) !== 'exception'
-                        && !($codebase->classExtends($fq_catch_class, 'Exception')
-                            || $codebase->classImplements($fq_catch_class, 'Throwable')))
-                    || ($codebase->interfaceExists($fq_catch_class)
-                        && strtolower($fq_catch_class) !== 'throwable'
-                        && !$codebase->interfaceExtends($fq_catch_class, 'Throwable'))
+                if (
+                    (
+                        $codebase->interfaceExists($fq_catch_class)
+                        &&
+                        strtolower($fq_catch_class) !== 'throwable'
+                        &&
+                        !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
+                    )
+                    ||
+                    (
+                        $codebase->classExists($fq_catch_class)
+                        &&
+                        strtolower($fq_catch_class) !== 'exception'
+                        &&
+                        !(
+                            $codebase->classExtends($fq_catch_class, 'Exception')
+                            ||
+                            $codebase->classImplements($fq_catch_class, 'Throwable')
+                        )
+                    )
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidCatch(

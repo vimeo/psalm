@@ -29,7 +29,8 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     {
         $attrs = $node->getAttributes();
 
-        if ($cs = $node->getComments()) {
+        $cs = $node->getComments();
+        if ($cs) {
             $new_comments = [];
 
             foreach ($cs as $c) {

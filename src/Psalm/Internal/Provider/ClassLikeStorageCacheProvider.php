@@ -86,8 +86,10 @@ class ClassLikeStorageCacheProvider
         $cache_hash = $this->getCacheHash($file_path, $file_contents);
 
         /** @psalm-suppress TypeDoesNotContainType */
-        if (@get_class($cached_value) === '__PHP_Incomplete_Class'
-            || $cache_hash !== $cached_value->hash
+        if (
+            $cache_hash !== $cached_value->hash
+            ||
+            @get_class($cached_value) === '__PHP_Incomplete_Class'
         ) {
             unlink($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));
 

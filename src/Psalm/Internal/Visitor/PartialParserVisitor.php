@@ -60,7 +60,8 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     {
         $attrs = $node->getAttributes();
 
-        if ($cs = $node->getComments()) {
+        $cs = $node->getComments();
+        if ($cs) {
             /** @var int */
             $stmt_start_pos = $cs[0]->getFilePos();
         } else {

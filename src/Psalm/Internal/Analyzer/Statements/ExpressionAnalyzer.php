@@ -178,7 +178,9 @@ class ExpressionAnalyzer
             $stmt->inferredType = Type::getInt(false, $stmt->value);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
             $stmt->inferredType = Type::getFloat($stmt->value);
-        } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus ||
+        } elseif (
+            ($stmt_is_expr_unary_minus = $stmt instanceof PhpParser\Node\Expr\UnaryMinus)
+            ||
             $stmt instanceof PhpParser\Node\Expr\UnaryPlus
         ) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
@@ -195,11 +197,11 @@ class ExpressionAnalyzer
                 foreach ($stmt->expr->inferredType->getTypes() as $type_part) {
                     if ($type_part instanceof TInt || $type_part instanceof TFloat) {
                         if ($type_part instanceof Type\Atomic\TLiteralInt
-                            && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                            && $stmt_is_expr_unary_minus
                         ) {
                             $type_part->value = -$type_part->value;
                         } elseif ($type_part instanceof Type\Atomic\TLiteralFloat
-                            && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                            && $stmt_is_expr_unary_minus
                         ) {
                             $type_part->value = -$type_part->value;
                         }
@@ -442,7 +444,11 @@ class ExpressionAnalyzer
 
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
-                if (!$context->hasVariable($use_var_id, $statements_analyzer) && $use->byRef) {
+                if (
+                    $use->byRef
+                    &&
+                    !$context->hasVariable($use_var_id, $statements_analyzer)
+                ) {
                     $context->vars_in_scope[$use_var_id] = Type::getMixed();
                 }
 
@@ -607,7 +613,7 @@ class ExpressionAnalyzer
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
-            $stmt->inferredType = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
+            $stmt->inferredType = $stmt->expr->inferredType ?? null;
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             if (IssueBuffer::accepts(
                 new ForbiddenCode(
@@ -708,7 +714,7 @@ class ExpressionAnalyzer
         );
 
         if ($var_id) {
-            if (!$by_ref_type->hasMixed() && $constrain_type) {
+            if ($constrain_type && !$by_ref_type->hasMixed()) {
                 $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
             }
 
@@ -1027,11 +1033,13 @@ class ExpressionAnalyzer
         $self_class,
         $static_class_type = null
     ) {
-        if ($return_type instanceof TNamedObject
-            || $return_type instanceof TTemplateParam
+        if (
+            ($return_type_is_named_object = $return_type instanceof TNamedObject)
+            ||
+            $return_type instanceof TTemplateParam
         ) {
             if ($return_type->extra_types) {
-                $new_intersection_types = [];
+                $new_intersection_types = [[]];
 
                 foreach ($return_type->extra_types as &$extra_type) {
                     self::fleshOutAtomicType(
@@ -1042,20 +1050,18 @@ class ExpressionAnalyzer
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
-                        $new_intersection_types = array_merge(
-                            $new_intersection_types,
-                            $extra_type->extra_types
-                        );
+                        $new_intersection_types[] = $extra_type->extra_types;
                         $extra_type->extra_types = [];
                     }
                 }
 
-                if ($new_intersection_types) {
+                if ($new_intersection_types > 1) {
+                    $new_intersection_types = array_merge(...$new_intersection_types);
                     $return_type->extra_types = array_merge($return_type->extra_types, $new_intersection_types);
                 }
             }
 
-            if ($return_type instanceof TNamedObject) {
+            if ($return_type_is_named_object) {
                 $return_type_lc = strtolower($return_type->value);
 
                 if ($return_type_lc === 'static' || $return_type_lc === '$this') {
@@ -1417,8 +1423,8 @@ class ExpressionAnalyzer
             foreach ($stmt->expr->inferredType->getTypes() as $atomic_type) {
                 if ($yield_from_type === null) {
                     if ($atomic_type instanceof Type\Atomic\TGenericObject
-                        && strtolower($atomic_type->value) === 'generator'
                         && isset($atomic_type->type_params[3])
+                        && strtolower($atomic_type->value) === 'generator'
                     ) {
                         $yield_from_type = clone $atomic_type->type_params[3];
                     } elseif ($atomic_type instanceof Type\Atomic\TArray) {

@@ -303,9 +303,13 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 if ($array_type instanceof Type\Atomic\TArray) {
                                     return clone $array_type->type_params[1];
                                 }
-                            } elseif ($first_arg->inferredType->hasScalarType() &&
-                                ($second_arg = $call_args[1]->value) &&
-                                isset($second_arg->inferredType) &&
+                            } elseif (
+                                ($second_arg = $call_args[1]->value)
+                                &&
+                                isset($second_arg->inferredType)
+                                &&
+                                $first_arg->inferredType->hasScalarType()
+                                &&
                                 $second_arg->inferredType->hasScalarType()
                             ) {
                                 return Type::combineUnionTypes($first_arg->inferredType, $second_arg->inferredType);
@@ -372,8 +376,8 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
             default:
                 $codebase = $statements_analyzer->getCodebase();
 
-                if ($call_map_return_type->isFalsable()
-                    && $codebase->config->ignore_internal_falsable_issues
+                if ($codebase->config->ignore_internal_falsable_issues
+                    && $call_map_return_type->isFalsable()
                 ) {
                     $call_map_return_type->ignore_falsable_issues = true;
                 }

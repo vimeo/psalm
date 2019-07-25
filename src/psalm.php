@@ -398,7 +398,7 @@ $output_format = isset($options['output-format']) && is_string($options['output-
     ? $options['output-format']
     : ProjectAnalyzer::TYPE_CONSOLE;
 
-$paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
+$paths_to_check = getPathsToCheck($options['f'] ?? null);
 
 $plugins = [];
 

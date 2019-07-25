@@ -34,7 +34,7 @@ class DocComment
 
         $last = false;
         foreach ($lines as $k => $line) {
-            if (preg_match('/^\s?@\w/i', $line)) {
+            if (preg_match('/^\s?@\w/', $line)) {
                 $last = $k;
             } elseif (preg_match('/^\s*$/', $line)) {
                 $last = false;

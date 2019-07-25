@@ -93,7 +93,7 @@ class ArrayAssignmentAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $root_type = isset($root_array_expr->inferredType) ? $root_array_expr->inferredType : Type::getMixed();
+        $root_type = $root_array_expr->inferredType ?? Type::getMixed();
 
         if ($root_type->hasMixed()) {
             if (ExpressionAnalyzer::analyze(
@@ -221,7 +221,7 @@ class ArrayAssignmentAnalyzer
                 $statements_analyzer,
                 $child_stmt,
                 $child_stmt->var->inferredType,
-                isset($child_stmt->dim->inferredType) ? $child_stmt->dim->inferredType : Type::getInt(),
+                $child_stmt->dim->inferredType ?? Type::getInt(),
                 true,
                 $array_var_id,
                 $context,
@@ -281,12 +281,13 @@ class ArrayAssignmentAnalyzer
                 $has_matching_objectlike_property = false;
 
                 foreach ($child_stmt->inferredType->getTypes() as $type) {
-                    if ($type instanceof ObjectLike) {
-                        if (isset($type->properties[$key_value])) {
-                            $has_matching_objectlike_property = true;
+                    if (
+                        $type instanceof ObjectLike
+                        && isset($type->properties[$key_value])
+                    ) {
+                        $has_matching_objectlike_property = true;
 
-                            $type->properties[$key_value] = clone $current_type;
-                        }
+                        $type->properties[$key_value] = clone $current_type;
                     }
                 }
 
@@ -308,7 +309,7 @@ class ArrayAssignmentAnalyzer
             } else {
                 $array_assignment_type = new Type\Union([
                     new TArray([
-                        isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),
+                        $current_dim->inferredType ?? Type::getInt(),
                         $current_type,
                     ]),
                 ]);
@@ -366,12 +367,12 @@ class ArrayAssignmentAnalyzer
             $has_matching_objectlike_property = false;
 
             foreach ($root_type->getTypes() as $type) {
-                if ($type instanceof ObjectLike) {
-                    if (isset($type->properties[$key_value])) {
-                        $has_matching_objectlike_property = true;
+                if ($type instanceof ObjectLike
+                    && isset($type->properties[$key_value])
+                ) {
+                    $has_matching_objectlike_property = true;
 
-                        $type->properties[$key_value] = clone $current_type;
-                    }
+                    $type->properties[$key_value] = clone $current_type;
                 }
             }
 

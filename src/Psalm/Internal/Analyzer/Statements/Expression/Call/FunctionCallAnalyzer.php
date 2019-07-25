@@ -601,7 +601,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         }
 
         if ($function instanceof PhpParser\Node\Name) {
-            $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
+            $first_arg = $stmt->args[0] ?? null;
 
             if ($function->parts === ['method_exists']) {
                 $context->check_methods = false;
@@ -669,9 +669,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                         $statements_analyzer->setConstType(
                             $fq_const_name,
-                            isset($second_arg->value->inferredType) ?
-                                $second_arg->value->inferredType :
-                                Type::getMixed(),
+                            $second_arg->value->inferredType ?? Type::getMixed(),
                             $context
                         );
                     }
@@ -679,9 +677,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $context->check_consts = false;
                 }
             } elseif ($first_arg
-                && $function_id
-                && strpos($function_id, 'is_') === 0
-                && $function_id !== 'is_a'
+                      && $function_id
+                      && $function_id !== 'is_a'
+                      && strpos($function_id, 'is_') === 0
             ) {
                 if (isset($stmt->assertions)) {
                     $assertions = $stmt->assertions;

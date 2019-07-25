@@ -15,8 +15,6 @@ use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
-use Psalm\Plugin\Hook;
-use Psalm\PluginRegistrationSocket;
 use SimpleXMLElement;
 
 class Config
@@ -1118,8 +1116,12 @@ class Config
             $any_file_path_matched = false;
 
             foreach ($dependent_files as $dependent_file_path) {
-                if (($codebase->analyzer->canReportIssues($dependent_file_path)
-                        || $project_analyzer->canReportIssues($dependent_file_path))
+                if (
+                    (
+                        $codebase->analyzer->canReportIssues($dependent_file_path)
+                        ||
+                        $project_analyzer->canReportIssues($dependent_file_path)
+                    )
                     && !$this->mustBeIgnored($dependent_file_path)
                 ) {
                     $any_file_path_matched = true;

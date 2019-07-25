@@ -82,9 +82,9 @@ class ReturnTypeAnalyzer
         $is_to_string = $function instanceof ClassMethod && strtolower($function->name->name) === '__tostring';
 
         if ($function instanceof ClassMethod
-            && substr($function->name->name, 0, 2) === '__'
             && !$is_to_string
             && !$return_type
+            && substr($function->name->name, 0, 2) === '__'
         ) {
             // do not check __construct, __set, __get, __call etc.
             return null;
@@ -116,12 +116,12 @@ class ReturnTypeAnalyzer
         );
 
         if ((!$return_type || $return_type->from_docblock)
+            && !$inferred_yield_types
+            && count($inferred_return_type_parts)
             && ScopeAnalyzer::getFinalControlActions(
                 $function_stmts,
                 $codebase->config->exit_functions
             ) !== [ScopeAnalyzer::ACTION_END]
-            && !$inferred_yield_types
-            && count($inferred_return_type_parts)
         ) {
             // only add null if we have a return statement elsewhere and it wasn't void
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
@@ -136,8 +136,8 @@ class ReturnTypeAnalyzer
 
         if ($return_type
             && !$return_type->from_docblock
-            && !$return_type->isVoid()
             && !$inferred_yield_types
+            && !$return_type->isVoid()
             && ScopeAnalyzer::getFinalControlActions(
                 $function_stmts,
                 $codebase->config->exit_functions
@@ -158,8 +158,8 @@ class ReturnTypeAnalyzer
         }
 
         if ($return_type
-            && $return_type->isNever()
             && !$inferred_yield_types
+            && $return_type->isNever()
             && ScopeAnalyzer::getFinalControlActions(
                 $function_stmts,
                 $codebase->config->exit_functions,
@@ -197,8 +197,8 @@ class ReturnTypeAnalyzer
 
         // prevent any return types that do not return a value from being used in PHP typehints
         if ($codebase->alter_code
-            && $inferred_return_type->isNullable()
             && !$inferred_yield_types
+            && $inferred_return_type->isNullable()
         ) {
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
                 if ($inferred_return_type_part instanceof Type\Atomic\TVoid) {
@@ -517,8 +517,8 @@ class ReturnTypeAnalyzer
                 && !$declared_return_type->isVoid()
             ) {
                 if ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['InvalidNullableReturnType'])
                     && !$inferred_return_type->isNull()
+                    && isset($project_analyzer->getIssuesToFix()['InvalidNullableReturnType'])
                 ) {
                     self::addOrUpdateReturnType(
                         $function,

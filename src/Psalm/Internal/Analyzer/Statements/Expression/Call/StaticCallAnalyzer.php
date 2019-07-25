@@ -530,13 +530,13 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $local_vars_possibly_in_scope = [];
 
                             foreach ($context->vars_in_scope as $var => $_) {
-                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                                if ($var !== '$this' && strpos($var, '$this->') !== 0) {
                                     $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
                                 }
                             }
 
                             foreach ($context->vars_possibly_in_scope as $var => $_) {
-                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                                if ($var !== '$this' && strpos($var, '$this->') !== 0) {
                                     $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
                                 }
                             }
@@ -563,7 +563,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $context->include_location = $old_context_include_location;
                         $context->self = $old_self;
 
-                        if (isset($context->vars_in_scope['$this']) && $old_self) {
+                        if ($old_self && isset($context->vars_in_scope['$this'])) {
                             $context->vars_in_scope['$this'] = Type::parseString($old_self);
                         }
                     }

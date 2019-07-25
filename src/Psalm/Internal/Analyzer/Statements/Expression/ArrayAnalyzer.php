@@ -171,8 +171,8 @@ class ArrayAnalyzer
         // if this array looks like an object-like array, let's return that instead
         if ($item_value_type
             && $item_key_type
-            && ($item_key_type->hasString() || $item_key_type->hasInt())
             && $can_create_objectlike
+            && ($item_key_type->hasString() || $item_key_type->hasInt())
         ) {
             $object_like = new Type\Atomic\ObjectLike($property_types, $class_strings);
             $object_like->sealed = true;

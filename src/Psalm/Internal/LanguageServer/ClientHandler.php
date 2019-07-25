@@ -70,8 +70,8 @@ class ClientHandler
                          * @psalm-suppress MixedArgument
                          */
                         if ($msg->body
-                            && AdvancedJsonRpc\Response::isResponse($msg->body)
                             && $msg->body->id === $id
+                            && AdvancedJsonRpc\Response::isResponse($msg->body)
                         ) {
                             // Received a response
                             $this->protocolReader->removeListener('message', $listener);

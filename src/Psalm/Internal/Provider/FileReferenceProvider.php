@@ -331,7 +331,7 @@ class FileReferenceProvider
      */
     public function removeDeletedFilesFromReferences()
     {
-        $deleted_files = self::getDeletedReferencedFiles();
+        $deleted_files = $this->getDeletedReferencedFiles();
 
         if ($deleted_files) {
             foreach ($deleted_files as $file) {
@@ -351,7 +351,7 @@ class FileReferenceProvider
      */
     public function getFilesReferencingFile($file)
     {
-        return isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [];
+        return self::$file_references[$file]['a'] ?? [];
     }
 
     /**
@@ -361,7 +361,7 @@ class FileReferenceProvider
      */
     public function getFilesInheritingFromFile($file)
     {
-        return isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [];
+        return self::$file_references[$file]['i'] ?? [];
     }
 
     /**
@@ -513,14 +513,14 @@ class FileReferenceProvider
         foreach ($visited_files as $file => $_) {
             $all_file_references = array_unique(
                 array_merge(
-                    isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [],
+                    self::$file_references[$file]['a'] ?? [],
                     $this->calculateFilesReferencingFile($codebase, $file)
                 )
             );
 
             $inheritance_references = array_unique(
                 array_merge(
-                    isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [],
+                    self::$file_references[$file]['i'] ?? [],
                     $this->calculateFilesInheritingFile($codebase, $file)
                 )
             );

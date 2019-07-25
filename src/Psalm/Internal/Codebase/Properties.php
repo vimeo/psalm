@@ -11,7 +11,6 @@ use Psalm\Internal\Provider\{
     PropertyVisibilityProvider
 };
 use Psalm\StatementsSource;
-use Psalm\Type;
 
 /**
  * @internal

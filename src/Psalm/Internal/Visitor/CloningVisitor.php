@@ -15,14 +15,15 @@ class CloningVisitor extends NodeVisitorAbstract
     public function enterNode(Node $origNode)
     {
         $node = clone $origNode;
-        if ($cs = $node->getComments()) {
+        $cs = $node->getComments();
+        if ($cs) {
             $node->setAttribute(
                 'comments',
                 array_map(
                     /**
                      * @return \PhpParser\Comment
                      */
-                    function (\PhpParser\Comment $c) {
+                    static function (\PhpParser\Comment $c) {
                         return clone $c;
                     },
                     $cs

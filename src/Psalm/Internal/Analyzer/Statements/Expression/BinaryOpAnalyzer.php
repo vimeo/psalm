@@ -28,14 +28,12 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Reconciler;
 use Psalm\Internal\Type\TypeCombination;
-use Psalm\Type\Union;
 
 /**
  * @internal
@@ -153,7 +151,7 @@ class BinaryOpAnalyzer
 
             if ($context->inside_conditional) {
                 foreach ($op_context->vars_in_scope as $var => $type) {
-                    if (!isset($context->vars_in_scope[$var]) && !$type->possibly_undefined) {
+                    if (!$type->possibly_undefined && !isset($context->vars_in_scope[$var])) {
                         $context->vars_in_scope[$var] = $type;
                     }
                 }
@@ -497,12 +495,15 @@ class BinaryOpAnalyzer
 
         // let's do some fun type assignment
         if (isset($stmt->left->inferredType) && isset($stmt->right->inferredType)) {
-            if ($stmt->left->inferredType->hasString()
-                && $stmt->right->inferredType->hasString()
-                && ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+            if (
+                (
+                    $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
                 )
+                && $stmt->left->inferredType->hasString()
+                && $stmt->right->inferredType->hasString()
+
             ) {
                 $stmt->inferredType = Type::getString();
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus
@@ -658,8 +659,8 @@ class BinaryOpAnalyzer
     ) {
         $codebase = $statements_source ? $statements_source->getCodebase() : null;
 
-        $left_type = isset($left->inferredType) ? $left->inferredType : null;
-        $right_type = isset($right->inferredType) ? $right->inferredType : null;
+        $left_type = $left->inferredType ?? null;
+        $right_type = $right->inferredType ?? null;
         $config = Config::getInstance();
 
         if ($codebase
@@ -720,7 +721,7 @@ class BinaryOpAnalyzer
                 return;
             }
 
-            if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
+            if (!$left_type->ignore_nullable_issues && $left_type->isNullable()) {
                 if ($statements_source && IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Left operand cannot be nullable, got ' . $left_type,
@@ -746,7 +747,7 @@ class BinaryOpAnalyzer
                 return;
             }
 
-            if ($right_type->isNullable() && !$right_type->ignore_nullable_issues) {
+            if (!$right_type->ignore_nullable_issues && $right_type->isNullable()) {
                 if ($statements_source && IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Right operand cannot be nullable, got ' . $right_type,
@@ -772,7 +773,7 @@ class BinaryOpAnalyzer
                 return;
             }
 
-            if ($left_type->isFalsable() && !$left_type->ignore_falsable_issues) {
+            if (!$left_type->ignore_falsable_issues && $left_type->isFalsable()) {
                 if ($statements_source && IssueBuffer::accepts(
                     new PossiblyFalseOperand(
                         'Left operand cannot be falsable, got ' . $left_type,
@@ -798,7 +799,7 @@ class BinaryOpAnalyzer
                 return;
             }
 
-            if ($right_type->isFalsable() && !$right_type->ignore_falsable_issues) {
+            if (!$right_type->ignore_falsable_issues && $right_type->isFalsable()) {
                 if ($statements_source && IssueBuffer::accepts(
                     new PossiblyFalseOperand(
                         'Right operand cannot be falsable, got ' . $right_type,
@@ -1243,8 +1244,8 @@ class BinaryOpAnalyzer
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
-        $left_type = isset($left->inferredType) ? $left->inferredType : null;
-        $right_type = isset($right->inferredType) ? $right->inferredType : null;
+        $left_type = $left->inferredType ?? null;
+        $right_type = $right->inferredType ?? null;
         $config = Config::getInstance();
 
         if ($context->infer_types
@@ -1390,7 +1391,7 @@ class BinaryOpAnalyzer
                 return;
             }
 
-            if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
+            if (!$left_type->ignore_nullable_issues && $left_type->isNullable()) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Cannot concatenate with a possibly null ' . $left_type,
@@ -1402,7 +1403,7 @@ class BinaryOpAnalyzer
                 }
             }
 
-            if ($right_type->isNullable() && !$right_type->ignore_nullable_issues) {
+            if (!$right_type->ignore_nullable_issues && $right_type->isNullable()) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Cannot concatenate with a possibly null ' . $right_type,
@@ -1414,7 +1415,7 @@ class BinaryOpAnalyzer
                 }
             }
 
-            if ($left_type->isFalsable() && !$left_type->ignore_falsable_issues) {
+            if (!$left_type->ignore_falsable_issues && $left_type->isFalsable()) {
                 if (IssueBuffer::accepts(
                     new PossiblyFalseOperand(
                         'Cannot concatenate with a possibly false ' . $left_type,
@@ -1426,7 +1427,7 @@ class BinaryOpAnalyzer
                 }
             }
 
-            if ($right_type->isFalsable() && !$right_type->ignore_falsable_issues) {
+            if (!$right_type->ignore_falsable_issues && $right_type->isFalsable()) {
                 if (IssueBuffer::accepts(
                     new PossiblyFalseOperand(
                         'Cannot concatenate with a possibly false ' . $right_type,

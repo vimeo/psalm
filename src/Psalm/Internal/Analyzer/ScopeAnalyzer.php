@@ -72,14 +72,20 @@ class ScopeAnalyzer
 
         $control_actions = [];
 
-        for ($i = 0, $c = count($stmts); $i < $c; ++$i) {
-            $stmt = $stmts[$i];
+        foreach ($stmts as $stmt) {
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
-                $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
-                ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
+            if (
+                ($stmt_is_return = $stmt instanceof PhpParser\Node\Stmt\Return_)
+                ||
+                $stmt instanceof PhpParser\Node\Stmt\Throw_
+                ||
+                (
+                    $stmt instanceof PhpParser\Node\Stmt\Expression
+                    &&
+                    $stmt->expr instanceof PhpParser\Node\Expr\Exit_
+                )
             ) {
-                if (!$return_is_exit && $stmt instanceof PhpParser\Node\Stmt\Return_) {
+                if (!$return_is_exit && $stmt_is_return) {
                     return [self::ACTION_RETURN];
                 }
 
@@ -108,10 +114,12 @@ class ScopeAnalyzer
                 }
 
                 if ($exit_functions) {
-                    if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                        || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
+                    if (
+                        ($expr_is_func_call = $stmt->expr instanceof PhpParser\Node\Expr\FuncCall)
+                        ||
+                        $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
                     ) {
-                        if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall) {
+                        if ($expr_is_func_call) {
                             /** @var string|null */
                             $resolved_name = $stmt->expr->name->getAttribute('resolvedName');
 

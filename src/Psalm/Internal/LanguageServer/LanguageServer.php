@@ -9,9 +9,7 @@ use LanguageServerProtocol\{
     ClientCapabilities,
     TextDocumentSyncKind,
     TextDocumentSyncOptions,
-    InitializeResult,
-    CompletionOptions,
-    SignatureHelpOptions
+    InitializeResult
 };
 use Psalm\Internal\LanguageServer\Server\TextDocument;
 use LanguageServerProtocol\{Range, Position, Diagnostic, DiagnosticSeverity};

@@ -4,7 +4,6 @@ namespace Psalm\Plugin\Hook;
 
 use PhpParser;
 use Psalm\Context;
-use Psalm\Type;
 use Psalm\StatementsSource;
 
 interface PropertyTypeProviderInterface

@@ -29,7 +29,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        $array_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+        $array_arg = $call_args[0]->value ?? null;
 
         $first_arg_array = $array_arg
             && isset($array_arg->inferredType)
@@ -96,7 +96,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                             $codebase
                         );
 
-                        $assertions = isset($stmt->expr->assertions) ? $stmt->expr->assertions : null;
+                        $assertions = $stmt->expr->assertions ?? null;
 
                         if (isset($assertions['$' . $first_param->var->name])) {
                             $changed_var_ids = [];

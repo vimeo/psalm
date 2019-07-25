@@ -96,7 +96,7 @@ class FileFilter
                     isset($directory['useStrictTypes']) ? (string) $directory['useStrictTypes'] : ''
                 ) === 'true';
 
-                if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (DIRECTORY_SEPARATOR === '/' && $directory_path[0] === '/') {
                     $prospective_directory_path = $directory_path;
                 } else {
                     $prospective_directory_path = $base_dir . DIRECTORY_SEPARATOR . $directory_path;
@@ -210,7 +210,7 @@ class FileFilter
             foreach ($e->file as $file) {
                 $file_path = (string) $file['name'];
 
-                if ($file_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (DIRECTORY_SEPARATOR === '/' && $file_path[0] === '/') {
                     $prospective_file_path = $file_path;
                 } else {
                     $prospective_file_path = $base_dir . DIRECTORY_SEPARATOR . $file_path;

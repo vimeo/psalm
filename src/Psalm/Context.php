@@ -1,12 +1,10 @@
 <?php
 namespace Psalm;
 
-use Psalm\Config;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Reconciler;
-use Psalm\Type;
 use Psalm\Type\Union;
 
 class Context
@@ -340,7 +338,7 @@ class Context
                     ? $end_context->vars_in_scope[$var_id]
                     : null;
 
-                $existing_type = isset($this->vars_in_scope[$var_id]) ? $this->vars_in_scope[$var_id] : null;
+                $existing_type = $this->vars_in_scope[$var_id] ?? null;
 
                 if (!$existing_type) {
                     if ($new_type) {
@@ -410,10 +408,10 @@ class Context
         Type\Union $inferred_type,
         Codebase $codebase
     ) {
-        if ($original_type->getId() !== $inferred_type->getId()
+        if (array_key_exists($var_name, $function_storage->param_types)
             && !isset($this->assigned_var_ids['$' . $var_name])
-            && array_key_exists($var_name, $function_storage->param_types)
             && !$function_storage->param_types[$var_name]
+            && $original_type->getId() !== $inferred_type->getId()
         ) {
             if (isset($this->possible_param_types[$var_name])) {
                 if (\Psalm\Internal\Analyzer\TypeAnalyzer::isContainedBy(
@@ -722,7 +720,11 @@ class Context
 
         $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name);
 
-        if ($stripped_var[0] === '$' && ($stripped_var !== '$this' || $var_name !== $stripped_var)) {
+        if (
+            ($stripped_var !== '$this' || $var_name !== $stripped_var)
+            &&
+            $stripped_var[0] === '$'
+        ) {
             $this->referenced_var_ids[$var_name] = true;
 
             if (!isset($this->vars_possibly_in_scope[$var_name])

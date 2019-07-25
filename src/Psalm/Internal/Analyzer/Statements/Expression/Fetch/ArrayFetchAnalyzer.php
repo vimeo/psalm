@@ -152,9 +152,12 @@ class ArrayFetchAnalyzer
             if ($context->inside_isset
                 && $stmt->dim
                 && isset($stmt->dim->inferredType)
+                && (
+                    $stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
+                    ||
+                    $stmt->var instanceof PhpParser\Node\Expr\ConstFetch
+                )
                 && $stmt->var->inferredType->hasArray()
-                && ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
-                    || $stmt->var instanceof PhpParser\Node\Expr\ConstFetch)
             ) {
                 /** @var TArray|ObjectLike */
                 $array_type = $stmt->var->inferredType->getTypes()['array'];
@@ -303,7 +306,13 @@ class ArrayFetchAnalyzer
             return Type::getMixed();
         }
 
-        if ($offset_type->isNullable() && !$offset_type->ignore_nullable_issues && !$context->inside_isset) {
+        if (
+            !$offset_type->ignore_nullable_issues
+            &&
+            !$context->inside_isset
+            &&
+            $offset_type->isNullable()
+        ) {
             if (IssueBuffer::accepts(
                 new PossiblyNullArrayOffset(
                     'Cannot access value on variable ' . $array_var_id
@@ -372,8 +381,8 @@ class ArrayFetchAnalyzer
 
                 if ($in_assignment
                     && $type instanceof TArray
-                    && $type->type_params[0]->isEmpty()
                     && $key_value !== null
+                    && $type->type_params[0]->isEmpty()
                 ) {
                     // ok, type becomes an ObjectLike
 
@@ -455,10 +464,10 @@ class ArrayFetchAnalyzer
                         );
                     }
 
-                    if ($array_access_type->isEmpty()
-                        && !$array_type->hasMixed()
-                        && !$in_assignment
+                    if (!$in_assignment
                         && !$context->inside_isset
+                        && $array_access_type->isEmpty()
+                        && !$array_type->hasMixed()
                     ) {
                         if (IssueBuffer::accepts(
                             new EmptyArrayAccess(
@@ -478,7 +487,7 @@ class ArrayFetchAnalyzer
                     $generic_key_type = $type->getGenericKeyType();
 
                     if ($key_value !== null) {
-                        if (isset($type->properties[$key_value]) || $replacement_type) {
+                        if ($replacement_type || isset($type->properties[$key_value])) {
                             $has_valid_offset = true;
 
                             if ($replacement_type) {
@@ -764,7 +773,7 @@ class ArrayFetchAnalyzer
             if ($type instanceof TNamedObject) {
                 if (strtolower($type->value) === 'simplexmlelement') {
                     $array_access_type = Type::getMixed();
-                } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
+                } elseif ($stmt->dim && strtolower($type->value) === 'domnodelist') {
                     $fake_method_call = new PhpParser\Node\Expr\MethodCall(
                         $stmt->var,
                         new PhpParser\Node\Identifier('item', $stmt->var->getAttributes()),

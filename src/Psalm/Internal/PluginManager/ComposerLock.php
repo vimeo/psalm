@@ -48,7 +48,8 @@ class ComposerLock
         /** @psalm-suppress MixedAssignment */
         $contents = json_decode(file_get_contents($this->file_name), true);
 
-        if ($error = json_last_error()) {
+        $error = json_last_error();
+        if ($error) {
             throw new RuntimeException(json_last_error_msg(), $error);
         }
 

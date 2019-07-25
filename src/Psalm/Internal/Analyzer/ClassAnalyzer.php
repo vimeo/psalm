@@ -560,8 +560,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if ($property_storage->type) {
                 $property_type = clone $property_storage->type;
 
-                if (!$property_type->isMixed() &&
-                    !$property_storage->has_default &&
+                if (
+                    !$property_storage->has_default
+                    &&
+                    !$property_type->isMixed()
+                    &&
                     !$property_type->isNullable()
                 ) {
                     $property_type->initialized = false;
@@ -883,8 +886,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         if (!$storage->abstract
             && !$constructor_analyzer
-            && isset($storage->declaring_method_ids['__construct'])
             && $class->extends
+            && isset($storage->declaring_method_ids['__construct'])
         ) {
             list($constructor_declaring_fqcln) = explode('::', $storage->declaring_method_ids['__construct']);
             list($constructor_appearing_fqcln) = explode('::', $storage->appearing_method_ids['__construct']);
@@ -1389,8 +1392,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
 
         if ($stmt->name->name !== '__construct'
-            && $config->reportIssueInFile('InvalidReturnType', $source->getFilePath())
             && $class_context->self
+            && $config->reportIssueInFile('InvalidReturnType', $source->getFilePath())
         ) {
             $return_type_location = null;
             $secondary_return_type_location = null;

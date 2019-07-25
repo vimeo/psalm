@@ -55,8 +55,8 @@ class CommentAnalyzer
         }
 
         if ($comments) {
-            $all_vars = (isset($comments['specials']['var']) ? $comments['specials']['var'] : [])
-                + (isset($comments['specials']['psalm-var']) ? $comments['specials']['psalm-var'] : []);
+            $all_vars = ($comments['specials']['var'] ?? [])
+                + ($comments['specials']['psalm-var'] ?? []);
 
             /** @var int $line_number */
             foreach ($all_vars as $line_number => $var_line) {
@@ -69,7 +69,7 @@ class CommentAnalyzer
                 $line_parts = self::splitDocLine($var_line);
 
                 if ($line_parts && $line_parts[0]) {
-                    if ($line_parts[0][0] === '$' && $line_parts[0] !== '$this') {
+                    if ($line_parts[0] !== '$this' && $line_parts[0][0] === '$') {
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
 
@@ -248,16 +248,14 @@ class CommentAnalyzer
 
         if (isset($comments['specials']['return']) || isset($comments['specials']['psalm-return'])) {
             /** @var array<int, string> */
-            $return_specials = isset($comments['specials']['psalm-return'])
-                ? $comments['specials']['psalm-return']
-                : $comments['specials']['return'];
+            $return_specials = $comments['specials']['psalm-return'] ?? $comments['specials']['return'];
 
             self::extractReturnType((string) reset($return_specials), array_keys($return_specials)[0], $info);
         }
 
         if (isset($comments['specials']['param']) || isset($comments['specials']['psalm-param'])) {
-            $all_params = (isset($comments['specials']['param']) ? $comments['specials']['param'] : [])
-                + (isset($comments['specials']['psalm-param']) ? $comments['specials']['psalm-param'] : []);
+            $all_params = ($comments['specials']['param'] ?? [])
+                + ($comments['specials']['psalm-param'] ?? []);
 
             /** @var string $param */
             foreach ($all_params as $line_number => $param) {
@@ -268,9 +266,9 @@ class CommentAnalyzer
                 }
 
                 if (count($line_parts) > 1) {
-                    if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
+                    if ($line_parts[0][0] !== '{'
+                        && !preg_match('/\[[^\]]+\]/', $line_parts[0])
                         && preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
-                        && $line_parts[0][0] !== '{'
                     ) {
                         $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
@@ -302,9 +300,9 @@ class CommentAnalyzer
                 }
 
                 if (count($line_parts) > 1) {
-                    if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
+                    if ($line_parts[0][0] !== '{'
+                        && !preg_match('/\[[^\]]+\]/', $line_parts[0])
                         && preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
-                        && $line_parts[0][0] !== '{'
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);
@@ -332,14 +330,20 @@ class CommentAnalyzer
             foreach ($comments['specials']['global'] as $line_number => $global) {
                 $line_parts = self::splitDocLine($global);
 
-                if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
+                if (
+                    isset($line_parts[0][0])
+                    &&
+                    $line_parts[0][0] === '$'
+                    &&
+                    count($line_parts) === 1
+                ) {
                     continue;
                 }
 
                 if (count($line_parts) > 1) {
-                    if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
+                    if ($line_parts[0][0] !== '{'
+                        && !preg_match('/\[[^\]]+\]/', $line_parts[0])
                         && preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
-                        && $line_parts[0][0] !== '{'
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);
@@ -389,14 +393,19 @@ class CommentAnalyzer
             }
         }
 
-        if (strpos(strtolower($comments['description']), '@inheritdoc') !== false
-            || isset($comments['specials']['inheritdoc']) || isset($comments['specials']['inheritDoc'])) {
+        if (
+            isset($comments['specials']['inheritdoc'])
+            ||
+            isset($comments['specials']['inheritDoc'])
+            ||
+            stripos($comments['description'], '@inheritdoc') !== false
+        ) {
             $info->inheritdoc = true;
         }
 
         if (isset($comments['specials']['template']) || isset($comments['specials']['psalm-template'])) {
-            $all_templates = (isset($comments['specials']['template']) ? $comments['specials']['template'] : [])
-                + (isset($comments['specials']['psalm-template']) ? $comments['specials']['psalm-template'] : []);
+            $all_templates = ($comments['specials']['template'] ?? [])
+                + ($comments['specials']['psalm-template'] ?? []);
 
             foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
@@ -534,8 +543,8 @@ class CommentAnalyzer
         $info = new ClassLikeDocblockComment();
 
         if (isset($comments['specials']['template']) || isset($comments['specials']['psalm-template'])) {
-            $all_templates = (isset($comments['specials']['template']) ? $comments['specials']['template'] : [])
-                + (isset($comments['specials']['psalm-template']) ? $comments['specials']['psalm-template'] : []);
+            $all_templates = ($comments['specials']['template'] ?? [])
+                + ($comments['specials']['psalm-template'] ?? []);
 
             foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
@@ -616,8 +625,8 @@ class CommentAnalyzer
         }
 
         if (isset($comments['specials']['method']) || isset($comments['specials']['psalm-method'])) {
-            $all_methods = (isset($comments['specials']['method']) ? $comments['specials']['method'] : [])
-                + (isset($comments['specials']['psalm-method']) ? $comments['specials']['psalm-method'] : []);
+            $all_methods = ($comments['specials']['method'] ?? [])
+                + ($comments['specials']['psalm-method'] ?? []);
 
             foreach ($all_methods as $line_number => $method_entry) {
                 $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
@@ -714,14 +723,15 @@ class CommentAnalyzer
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 
-                /** @var \PhpParser\Comment\Doc */
+                /** @var \PhpParser\Comment\Doc $node_doc_comment */
                 $node_doc_comment = $node->getDocComment();
 
                 $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getLine());
                 $statements[0]->stmts[0]->setAttribute('startFilePos', $node_doc_comment->getFilePos());
                 $statements[0]->stmts[0]->setAttribute('endFilePos', $node->getAttribute('startFilePos'));
 
-                if ($doc_comment = $statements[0]->stmts[0]->getDocComment()) {
+                $doc_comment = $statements[0]->stmts[0]->getDocComment();
+                if ($doc_comment) {
                     $statements[0]->stmts[0]->setDocComment(
                         new \PhpParser\Comment\Doc(
                             $doc_comment->getText(),
@@ -754,7 +764,7 @@ class CommentAnalyzer
      */
     protected static function addMagicPropertyToInfo(ClassLikeDocblockComment $info, array $specials, $property_tag)
     {
-        $magic_property_comments = isset($specials[$property_tag]) ? $specials[$property_tag] : [];
+        $magic_property_comments = $specials[$property_tag] ?? [];
         foreach ($magic_property_comments as $line_number => $property) {
             $line_parts = self::splitDocLine($property);
 

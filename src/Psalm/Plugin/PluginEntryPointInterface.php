@@ -2,7 +2,6 @@
 namespace Psalm\Plugin;
 
 use SimpleXMLElement;
-use Psalm\Plugin\RegistrationInterface;
 
 interface PluginEntryPointInterface
 {

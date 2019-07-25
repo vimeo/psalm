@@ -8,8 +8,6 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
-use Psalm\IssueBuffer;
-use Psalm\Issue\TypeCoercion;
 use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;
 use Psalm\StatementsSource;
 
@@ -34,17 +32,15 @@ class StringChecker implements AfterExpressionAnalysisInterface
         if ($expr instanceof PhpParser\Node\Scalar\String_) {
             $class_or_class_method = '/^\\\?Psalm(\\\[A-Z][A-Za-z0-9]+)+(::[A-Za-z0-9]+)?$/';
 
-            if (strpos($statements_source->getFileName(), 'base/DefinitionManager.php') === false
-                && strpos($expr->value, 'TestController') === false
+            if (strpos($expr->value, 'TestController') === false
+                && strpos($statements_source->getFileName(), 'base/DefinitionManager.php') === false
                 && preg_match($class_or_class_method, $expr->value)
             ) {
-                $absolute_class = preg_split('/[:]/', $expr->value)[0];
-
                 if (\Psalm\IssueBuffer::accepts(
                     new \Psalm\Issue\InvalidClass(
                         'Use ::class constants when representing class names',
                         new CodeLocation($statements_source, $expr),
-                        $absolute_class
+                        explode('[:]', $expr->value)[0]
                     ),
                     $statements_source->getSuppressedIssues()
                 )) {
@@ -55,9 +51,9 @@ class StringChecker implements AfterExpressionAnalysisInterface
             && $expr->left instanceof PhpParser\Node\Expr\ClassConstFetch
             && $expr->left->class instanceof PhpParser\Node\Name
             && $expr->left->name instanceof PhpParser\Node\Identifier
+            && $expr->right instanceof PhpParser\Node\Scalar\String_
             && strtolower($expr->left->name->name) === 'class'
             && !in_array(strtolower($expr->left->class->parts[0]), ['self', 'static', 'parent'])
-            && $expr->right instanceof PhpParser\Node\Scalar\String_
             && preg_match('/^::[A-Za-z0-9]+$/', $expr->right->value)
         ) {
             $method_id = ((string) $expr->left->class->getAttribute('resolvedName')) . $expr->right->value;

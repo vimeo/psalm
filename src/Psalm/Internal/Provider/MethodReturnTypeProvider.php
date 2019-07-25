@@ -5,9 +5,7 @@ namespace Psalm\Internal\Provider;
 use PhpParser;
 use Psalm\Context;
 use Psalm\CodeLocation;
-use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
 
 class MethodReturnTypeProvider
 {
