@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function array_map;
+use function count;
+use function implode;
 use Psalm\Codebase;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
@@ -44,15 +47,16 @@ trait CallableTrait
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
+     * @param  array<string, string> $aliased_classes
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         if ($use_phpdoc_format) {
             if ($this instanceof TNamedObject) {
                 return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
@@ -111,7 +115,7 @@ trait CallableTrait
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
@@ -187,7 +191,7 @@ trait CallableTrait
             foreach ($this->params as $offset => $param) {
                 $input_param_type = null;
 
-                if (($input_type instanceof Atomic\Fn || $input_type instanceof Atomic\TCallable)
+                if (($input_type instanceof Atomic\TFn || $input_type instanceof Atomic\TCallable)
                     && isset($input_type->params[$offset])
                 ) {
                     $input_param_type = $input_type->params[$offset]->type;
@@ -209,7 +213,7 @@ trait CallableTrait
             }
         }
 
-        if (($input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\Fn)
+        if (($input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\TFn)
             && $this->return_type
             && $input_type->return_type
         ) {
@@ -229,7 +233,7 @@ trait CallableTrait
      *
      * @return void
      */
-    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
     {
         if ($this->params) {
             foreach ($this->params as $param) {
@@ -237,12 +241,12 @@ trait CallableTrait
                     continue;
                 }
 
-                $param->type->replaceTemplateTypesWithArgTypes($template_types);
+                $param->type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
             }
         }
 
         if ($this->return_type) {
-            $this->return_type->replaceTemplateTypesWithArgTypes($template_types);
+            $this->return_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
         }
     }
 

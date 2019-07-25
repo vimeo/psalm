@@ -2,6 +2,8 @@
 namespace Psalm\CodeLocation;
 
 use PhpParser;
+use function substr;
+use function substr_count;
 
 class ParseErrorLocation extends \Psalm\CodeLocation
 {
@@ -18,6 +20,8 @@ class ParseErrorLocation extends \Psalm\CodeLocation
     ) {
         $this->file_start = (int)$error->getAttributes()['startFilePos'];
         $this->file_end = (int)$error->getAttributes()['endFilePos'];
+        $this->raw_file_start = $this->file_start;
+        $this->raw_file_end = $this->file_end;
         $this->file_path = $file_path;
         $this->file_name = $file_name;
         $this->single_line = false;

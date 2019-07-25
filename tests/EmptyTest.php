@@ -276,7 +276,7 @@ class EmptyTest extends TestCase
                         return true;
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'MixedArrayOffset'],
+                'error_levels' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'MixedArrayOffset', 'MixedArrayAccess'],
             ],
             'possiblyEmptyIterable' => [
                 '<?php

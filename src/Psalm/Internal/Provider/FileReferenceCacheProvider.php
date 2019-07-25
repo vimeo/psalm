@@ -1,7 +1,15 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use const DIRECTORY_SEPARATOR;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function is_array;
+use function is_readable;
 use Psalm\Config;
+use function serialize;
+use function unserialize;
 
 /**
  * @psalm-type  IssueData = array{
@@ -70,7 +78,7 @@ class FileReferenceCacheProvider
     {
         $cache_directory = $this->config->getCacheDirectory();
 
-        if (!$cache_directory) {
+        if (!$cache_directory || $this->config_changed) {
             return null;
         }
 
@@ -488,6 +496,7 @@ class FileReferenceCacheProvider
 
     /**
      * @param array<string, array<string, int>> $analyzed_methods
+     *
      * @return void
      */
     public function setAnalyzedMethodCache(array $analyzed_methods)
@@ -507,7 +516,14 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return array<string, array{0: TaggedCodeType, 1: TaggedCodeType}>|false
+     * @return array<
+     *      string,
+     *      array{
+     *          0: TaggedCodeType,
+     *          1: TaggedCodeType,
+     *          2: array<int, array{0: int, 1: string, 2: int}>
+     *      }
+     *  >|false
      */
     public function getFileMapCache()
     {
@@ -519,8 +535,18 @@ class FileReferenceCacheProvider
             && !$this->config_changed
             && file_exists($file_maps_cache_location)
         ) {
-            /** @var array<string, array{0: TaggedCodeType, 1: TaggedCodeType}> */
+            /**
+             * @var array<
+             *      string,
+             *      array{
+             *          0: TaggedCodeType,
+             *          1: TaggedCodeType,
+             *          2: array<int, array{0: int, 1: string, 2: int}>
+             *      }
+             *  >
+             */
             $file_maps_cache = unserialize(file_get_contents($file_maps_cache_location));
+
             return $file_maps_cache;
         }
 
@@ -528,7 +554,15 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @param array<string, array{0: TaggedCodeType, 1: TaggedCodeType}> $file_maps
+     * @param array<
+     *      string,
+     *      array{
+     *          0: TaggedCodeType,
+     *          1: TaggedCodeType,
+     *          2: array<int, array{0: int, 1: string, 2: int}>
+     *      }
+     *  > $file_maps
+     *
      * @return void
      */
     public function setFileMapCache(array $file_maps)
@@ -560,6 +594,7 @@ class FileReferenceCacheProvider
         ) {
             /** @var array<string, array{int, int}> */
             $type_coverage_cache = unserialize(file_get_contents($type_coverage_cache_location));
+
             return $type_coverage_cache;
         }
 
@@ -568,6 +603,7 @@ class FileReferenceCacheProvider
 
     /**
      * @param array<string, array{int, int}> $mixed_counts
+     *
      * @return void
      */
     public function setTypeCoverage(array $mixed_counts)
@@ -598,6 +634,7 @@ class FileReferenceCacheProvider
         ) {
             /** @var string */
             $file_maps_cache = unserialize(file_get_contents($config_hash_cache_location));
+
             return $file_maps_cache;
         }
 
@@ -612,6 +649,10 @@ class FileReferenceCacheProvider
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
+            if (!file_exists($cache_directory)) {
+                \mkdir($cache_directory, 0777, true);
+            }
+
             $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
 
             file_put_contents(

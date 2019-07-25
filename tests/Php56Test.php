@@ -102,7 +102,7 @@ class Php56Test extends TestCase
                     $a = [[1, 2]];
                     $b = array_merge([], ...$a);',
                 'assertions' => [
-                    '$b' => 'array{0:int, 1:int}',
+                    '$b' => 'array{0: int, 1: int}',
                 ],
             ],
             'preserveTypesWhenUnpacking' => [
@@ -247,7 +247,7 @@ class Php56Test extends TestCase
                     $arr = [1, 2, 3, 4];
                     foo(...$arr);',
                 'assertions' => [
-                    '$arr' => 'array<int, int>'
+                    '$arr' => 'array<int, int>',
                 ],
             ],
             'iterableSplat' => [

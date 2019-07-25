@@ -5,16 +5,14 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
+use function strpos;
 
 abstract class FileManipulationTest extends \Psalm\Tests\TestCase
 {
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
 
-    /**
-     * @return void
-     */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
@@ -30,11 +28,18 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
      * @param string $php_version
      * @param string[] $issues_to_fix
      * @param bool $safe_types
+     * @param bool $allow_backwards_incompatible_changes
      *
      * @return void
      */
-    public function testValidCode($input_code, $output_code, $php_version, array $issues_to_fix, $safe_types)
-    {
+    public function testValidCode(
+        $input_code,
+        $output_code,
+        $php_version,
+        array $issues_to_fix,
+        $safe_types,
+        bool $allow_backwards_incompatible_changes = true
+    ) {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
@@ -77,6 +82,7 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
             false,
             $safe_types
         );
+        $this->project_analyzer->getCodebase()->allow_backwards_incompatible_changes = $allow_backwards_incompatible_changes;
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
 

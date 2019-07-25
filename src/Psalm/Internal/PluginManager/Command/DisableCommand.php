@@ -1,12 +1,16 @@
 <?php
 namespace Psalm\Internal\PluginManager\Command;
 
+use function assert;
+use const DIRECTORY_SEPARATOR;
+use function getcwd;
+use InvalidArgumentException;
+use function is_string;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use InvalidArgumentException;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
@@ -25,6 +29,7 @@ class DisableCommand extends Command
 
     /**
      * @psalm-suppress UnusedMethod
+     *
      * @return void
      */
     protected function configure()
@@ -43,6 +48,7 @@ class DisableCommand extends Command
 
     /**
      * @psalm-suppress UnusedMethod
+     *
      * @return null|int
      */
     protected function execute(InputInterface $i, OutputInterface $o)
@@ -67,11 +73,13 @@ class DisableCommand extends Command
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);
         } catch (InvalidArgumentException $e) {
             $io->error('Unknown plugin class ' . $plugin_name);
+
             return 2;
         }
 
         if (!$plugin_list->isEnabled($plugin_class)) {
             $io->note('Plugin already disabled');
+
             return 3;
         }
 

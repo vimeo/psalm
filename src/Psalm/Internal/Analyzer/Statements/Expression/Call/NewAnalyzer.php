@@ -5,12 +5,14 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InterfaceInstantiation;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidStringClass;
@@ -20,6 +22,12 @@ use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use function in_array;
+use function strtolower;
+use function implode;
+use function explode;
+use function array_values;
+use function is_string;
 
 /**
  * @internal
@@ -82,11 +90,17 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 }
             }
 
-            if ($codebase->store_node_types && $fq_class_name) {
+            if ($codebase->store_node_types
+                && $fq_class_name
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $fq_class_name
+                    $codebase->classlikes->classExists($fq_class_name)
+                        ? $fq_class_name
+                        : '*' . implode('\\', $stmt->class->parts)
                 );
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
@@ -124,7 +138,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                 $lhs_type_part->param_name,
                                 $lhs_type_part->as_type
                                     ? new Type\Union([$lhs_type_part->as_type])
-                                    : Type::parseString($lhs_type_part->as)
+                                    : Type::parseString($lhs_type_part->as),
+                                $lhs_type_part->defining_class
                             );
 
                             if ($new_type) {
@@ -245,6 +260,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         }
 
         if ($fq_class_name) {
+            if ($codebase->alter_code) {
+                $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $stmt->class,
+                    $fq_class_name,
+                    $context->calling_method_id
+                );
+            }
+
             if ($context->check_classes) {
                 if ($context->isPhantomClass($fq_class_name)) {
                     return null;
@@ -257,7 +282,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 ) === false) {
-                    return false;
+                    return;
                 }
 
                 if ($codebase->interfaceExists($fq_class_name)) {
@@ -268,7 +293,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
                     }
 
                     return null;
@@ -295,15 +319,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        return;
                     }
                 }
 
-                if ($storage->deprecated) {
+                if ($storage->deprecated && $fq_class_name !== $context->self) {
                     if (IssueBuffer::accepts(
                         new DeprecatedClass(
                             $fq_class_name . ' is marked deprecated',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $fq_class_name
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -311,15 +336,29 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
-                if ($storage->internal && $context->self) {
-                    $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
-                    $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $fq_class_name);
 
-                    if (strtolower($self_root) !== strtolower($declaring_root)) {
+                if ($storage->psalm_internal && $context->self) {
+                    if (! NamespaceAnalyzer::isWithin($context->self, $storage->psalm_internal)) {
+                        if (IssueBuffer::accepts(
+                            new InternalClass(
+                                $fq_class_name . ' is marked internal to ' . $storage->psalm_internal,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $fq_class_name
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+
+                if ($storage->internal && $context->self) {
+                    if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $fq_class_name)) {
                         if (IssueBuffer::accepts(
                             new InternalClass(
                                 $fq_class_name . ' is marked internal',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $fq_class_name
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
@@ -336,6 +375,17 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $statements_analyzer->getFilePath()
                 )) {
                     $method_id = $fq_class_name . '::__construct';
+
+                    if (!$context->collect_initializations
+                        && !$context->collect_mutations
+                    ) {
+                        ArgumentMapPopulator::recordArgumentPositions(
+                            $statements_analyzer,
+                            $stmt,
+                            $codebase,
+                            $method_id
+                        );
+                    }
 
                     if (self::checkMethodArgs(
                         $method_id,
@@ -358,6 +408,26 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         return false;
                     }
 
+                    if ($context->pure) {
+                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+                        if ($declaring_method_id) {
+                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+                            if (!$method_storage->pure) {
+                                if (IssueBuffer::accepts(
+                                    new ImpureMethodCall(
+                                        'Cannot call an impure constructor from a pure context',
+                                        new CodeLocation($statements_analyzer, $stmt)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            }
+                        }
+                    }
+
                     $generic_param_types = null;
 
                     if ($storage->template_types) {
@@ -369,17 +439,21 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                         foreach ($storage->template_types as $template_name => $base_type) {
                             if (isset($found_generic_params[$template_name][$fq_class_name])) {
-                                $generic_param_types[] = $found_generic_params[$template_name][$fq_class_name][0];
+                                $generic_param_type = $found_generic_params[$template_name][$fq_class_name][0];
                             } elseif ($storage->template_type_extends && $found_generic_params) {
-                                $generic_param_types[] = self::getGenericParamForOffset(
+                                $generic_param_type = self::getGenericParamForOffset(
                                     $declaring_fq_class_name,
                                     $template_name,
                                     $storage->template_type_extends,
                                     $found_generic_params
                                 );
                             } else {
-                                $generic_param_types[] = array_values($base_type)[0][0];
+                                $generic_param_type = array_values($base_type)[0][0];
                             }
+
+                            $generic_param_type->had_template = true;
+
+                            $generic_param_types[] = $generic_param_type;
                         }
                     }
 

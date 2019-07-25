@@ -1,8 +1,8 @@
 <?php
 require_once('command_functions.php');
 
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
 gc_disable();
 
@@ -26,12 +26,13 @@ $valid_long_options = [
     'version',
     'tcp:',
     'tcp-server',
-    'disable-on-change::'
+    'disable-on-change::',
+    'enable-autocomplete',
 ];
 
 $args = array_slice($argv, 1);
 
-$psalm_proxy = array_search('--language-server', $args);
+$psalm_proxy = array_search('--language-server', $args, true);
 
 if ($psalm_proxy !== false) {
     unset($args[$psalm_proxy]);
@@ -47,20 +48,30 @@ array_map(
         if (substr($arg, 0, 2) === '--' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
-            if (!in_array($arg_name, $valid_long_options)
-                && !in_array($arg_name . ':', $valid_long_options)
-                && !in_array($arg_name . '::', $valid_long_options)
+            if (!in_array($arg_name, $valid_long_options, true)
+                && !in_array($arg_name . ':', $valid_long_options, true)
+                && !in_array($arg_name . '::', $valid_long_options, true)
             ) {
-                echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments' . PHP_EOL
+                );
+                error_log('Bad argument');
                 exit(1);
             }
         } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
 
-            if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
-                echo 'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+            if (!in_array($arg_name, $valid_short_options, true)
+                && !in_array($arg_name . ':', $valid_short_options, true)
+            ) {
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments' . PHP_EOL
+                );
+                error_log('Bad argument');
                 exit(1);
             }
         }
@@ -90,7 +101,7 @@ if (isset($options['config'])) {
 }
 
 if (isset($options['c']) && is_array($options['c'])) {
-    echo 'Too many config files provided' . PHP_EOL;
+    fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
     exit(1);
 }
 
@@ -130,14 +141,24 @@ Options:
     --disable-on-change[=line-number-threshold]
         If added, the language server will not respond to onChange events.
         You can also specify a line count over which Psalm will not run on-change events.
+
+    --enable-autocomplete[=BOOL]
+        Enables or disables autocomplete on methods and properties. Default is true.
 HELP;
 
     exit;
 }
 
 if (getcwd() === false) {
-    echo 'Cannot get current working directory' . PHP_EOL;
+    fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
     exit(1);
+}
+
+if (ini_get('pcre.jit') === '1'
+    && PHP_OS === 'Darwin'
+    && version_compare(PHP_VERSION, '7.3.0') >= 0
+) {
+    die(\Psalm\Internal\Fork\Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL);
 }
 
 if (isset($options['root'])) {
@@ -150,7 +171,10 @@ if (isset($options['r']) && is_string($options['r'])) {
     $root_path = realpath($options['r']);
 
     if (!$root_path) {
-        echo 'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL;
+        fwrite(
+            STDERR,
+            'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL
+        );
         exit(1);
     }
 
@@ -175,41 +199,25 @@ $ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');
 
-$output_format = isset($options['output-format']) && is_string($options['output-format'])
-    ? $options['output-format']
-    : ProjectAnalyzer::TYPE_CONSOLE;
-
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
-
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    echo 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL;
-    exit(1);
-}
+$path_to_config = get_path_to_config($options);
 
 if (isset($options['tcp'])) {
     if (!is_string($options['tcp'])) {
-        echo 'tcp url should be a string' . PHP_EOL;
+        fwrite(STDERR, 'tcp url should be a string' . PHP_EOL);
         exit(1);
     }
 }
 
 $find_dead_code = isset($options['find-dead-code']);
 
-// initialise custom config, if passed
-try {
-    if ($path_to_config) {
-        $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-    } else {
-        $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
-    }
-} catch (Psalm\Exception\ConfigException $e) {
-    echo $e->getMessage();
-    exit(1);
+$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+
+if ($config->resolve_from_config_file) {
+    $current_dir = $config->base_dir;
+    chdir($current_dir);
 }
 
 $config->setServerMode();
-$config->setComposerClassLoader($first_autoloader);
 
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();
@@ -235,6 +243,10 @@ $project_analyzer = new ProjectAnalyzer(
 if (isset($options['disable-on-change'])) {
     $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
 }
+
+$project_analyzer->provide_completion = !isset($options['enable-autocomplete'])
+    || !is_string($options['enable-autocomplete'])
+    || strtolower($options['enable-autocomplete']) !== 'false';
 
 $config->visitComposerAutoloadFiles($project_analyzer);
 

@@ -21,7 +21,14 @@ class ClassLikeDocblockComment
     public $internal = false;
 
     /**
-     * @var array<int, array<int, string>>
+     * If set, the class is internal to the given namespace.
+     *
+     * @var null|string
+     */
+    public $psalm_internal = null;
+
+    /**
+     * @var array<int, array{string, ?string, ?string, bool}>
      */
     public $templates = [];
 

@@ -1,6 +1,13 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
+use function array_keys;
+use function array_map;
+use function array_shift;
+use function count;
+use const DIRECTORY_SEPARATOR;
+use function end;
+use function getcwd;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
@@ -12,7 +19,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 
@@ -33,12 +40,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers,
-            false,
-            true,
-            ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            false
+            $providers
         );
         $this->project_analyzer->setPhpVersion('7.3');
     }
@@ -55,7 +57,8 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
     public function testErrorFix(
         array $file_stages,
         array $error_positions,
-        array $error_levels = []
+        array $error_levels = [],
+        bool $test_save = true
     ) {
         $this->project_analyzer->getCodebase()->diff_methods = true;
 
@@ -119,10 +122,38 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
             $this->assertSame($error_positions[$i + 1], $found_positions);
         }
+
+        if ($test_save) {
+            $last_file_stage = end($file_stages);
+
+            foreach ($last_file_stage as $file_path => $_) {
+                $codebase->removeTemporaryFileChanges($file_path);
+            }
+
+            foreach ($last_file_stage as $file_path => $contents) {
+                $this->file_provider->registerFile($file_path, $contents);
+            }
+
+            $codebase->reloadFiles($this->project_analyzer, array_keys($last_file_stage));
+
+            $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+            $data = \Psalm\IssueBuffer::clear();
+
+            $found_positions = array_map(
+                /** @param array{from: int} $a */
+                function (array $a) : int {
+                    return $a['from'];
+                },
+                $data
+            );
+
+            $this->assertSame($error_positions[count($file_stages)], $found_positions);
+        }
     }
 
     /**
-     * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, error_levels?:array<string, string>}>
+     * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, error_levels?:array<string, string>, test_save?:bool}>
      */
     public function providerTestErrorFix()
     {
@@ -449,6 +480,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ],
+                false,
             ],
             'noChangeJustWeirdDocblocks' => [
                 [
@@ -1055,7 +1087,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             class A {}',
                     ],
                 ],
-                'error_positions' => [[], [116], []],
+                'error_positions' => [[], [122], []],
             ],
             'addMissingArgs' => [
                 [
@@ -1160,6 +1192,129 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                     ],
                 ],
                 'error_positions' => [[152, 203], [337]],
+            ],
+            'fixNotNullProperty' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string|null
+                                 */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[230], []],
+            ],
+            'dontFixNotNullProperty' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[230], [230]],
+            ],
+            'addPartialMethodWithSyntaxError' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                public function baz() : void {
+                                    if (rand(0, 1)) {}
+                                }
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function bar(
+                                    string $function_id
+                                ) {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                public function baz() : void {
+                                    if (rand(0, 1)) {
+                                }
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function bar(
+                                    string $function_id
+                                ) {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                public function baz() : void {
+                                    if (rand(0, 1)) {}
+                                }
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function bar(
+                                    string $function_id
+                                ) {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [381], []],
             ],
         ];
     }

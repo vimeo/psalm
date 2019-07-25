@@ -1,10 +1,14 @@
 <?php
-
 namespace Psalm\Internal\Provider;
 
+use const PHP_VERSION;
 use PhpParser;
 use Psalm\Context;
+use Psalm\Plugin\Hook\PropertyTypeProviderInterface;
 use Psalm\StatementsSource;
+use Psalm\Type;
+use function strtolower;
+use function version_compare;
 
 class PropertyTypeProvider
 {
@@ -30,6 +34,7 @@ class PropertyTypeProvider
     /**
      * @param  class-string<PropertyTypeProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
+     *
      * @return void
      */
     public function registerClass(string $class)
@@ -37,6 +42,7 @@ class PropertyTypeProvider
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /**
              * @psalm-suppress UndefinedMethod
+             *
              * @var \Closure
              */
             $callable = \Closure::fromCallable([$class, 'getPropertyType']);
@@ -78,6 +84,7 @@ class PropertyTypeProvider
 
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
+     *
      * @return ?Type\Union
      */
     public function getPropertyType(

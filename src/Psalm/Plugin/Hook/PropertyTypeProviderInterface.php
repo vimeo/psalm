@@ -1,10 +1,10 @@
 <?php
-
 namespace Psalm\Plugin\Hook;
 
 use PhpParser;
 use Psalm\Context;
 use Psalm\StatementsSource;
+use Psalm\Type;
 
 interface PropertyTypeProviderInterface
 {
@@ -15,6 +15,7 @@ interface PropertyTypeProviderInterface
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?Type\Union
      */
     public static function getPropertyType(

@@ -1,7 +1,15 @@
 <?php
 namespace Psalm\Internal\Visitor;
 
+use function count;
 use PhpParser;
+use function preg_replace;
+use function reset;
+use function strlen;
+use function strpos;
+use function strrpos;
+use function substr;
+use function substr_count;
 
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
@@ -110,6 +118,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             // we have a diff that goes outside the bounds that we care about
                             if ($a_e2 > $stmt_end_pos) {
                                 $this->must_rescan = true;
+
                                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                             }
 
@@ -128,7 +137,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             }
 
                             if ($a_s2 >= $stmt_start_pos && $a_e2 <= $stmt_end_pos) {
-                                $this->non_method_changes--;
+                                --$this->non_method_changes;
                             }
                         }
 
@@ -145,12 +154,13 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
                         if (!$method_contents) {
                             $this->must_rescan = true;
+
                             return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                         }
 
                         $error_handler = new \PhpParser\ErrorHandler\Collecting();
 
-                        $fake_class = "<?php class _ {" . $method_contents . "}";
+                        $fake_class = '<?php class _ {' . $method_contents . '}';
 
                         /** @var array<PhpParser\Node\Stmt> */
                         $replacement_stmts = $this->parser->parse(
@@ -162,30 +172,37 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
                             || count($replacement_stmts[0]->stmts) !== 1
                         ) {
+                            $hacky_class_fix = self::balanceBrackets($fake_class);
+
                             if ($replacement_stmts
                                 && $replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
                                 && count($replacement_stmts[0]->stmts) !== 1
                             ) {
                                 $this->must_rescan = true;
+
                                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                             }
 
-                            $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $fake_class);
+                            // changes "): {" to ") {"
+                            $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $hacky_class_fix);
 
                             // allows autocompletion
-                            $hacky_class_fix = str_replace(["->\n", "::\n"], "~;\n", $hacky_class_fix);
+                            $hacky_class_fix = preg_replace('/(->|::)(\n\s*if\s*\()/', '~;$2', $hacky_class_fix);
 
-                            /** @var array<PhpParser\Node\Stmt> */
-                            $replacement_stmts = $this->parser->parse(
-                                $hacky_class_fix,
-                                $error_handler
-                            ) ?: [];
+                            if ($hacky_class_fix !== $fake_class) {
+                                /** @var array<PhpParser\Node\Stmt> */
+                                $replacement_stmts = $this->parser->parse(
+                                    $hacky_class_fix,
+                                    $error_handler
+                                ) ?: [];
+                            }
 
                             if (!$replacement_stmts
                                 || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
                                 || count($replacement_stmts[0]->stmts) > 1
                             ) {
                                 $this->must_rescan = true;
+
                                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                             }
                         }
@@ -208,12 +225,9 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                                     $error = new PhpParser\Error(
                                         $error->getRawMessage(),
                                         [
-                                            'startFilePos' =>
-                                                $stmt_start_pos + $error_attrs['startFilePos'] - 15,
-                                            'endFilePos' =>
-                                                $stmt_start_pos + $error_attrs['endFilePos'] - 15,
-                                            'startLine' =>
-                                                $error->getStartLine() + $current_line + $line_offset
+                                            'startFilePos' => $stmt_start_pos + $error_attrs['startFilePos'] - 15,
+                                            'endFilePos' => $stmt_start_pos + $error_attrs['endFilePos'] - 15,
+                                            'startLine' => $error->getStartLine() + $current_line + $line_offset,
                                         ]
                                     );
                                 }
@@ -222,12 +236,15 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             }
                         }
 
+                        $error_handler->clearErrors();
+
                         $traverseChildren = false;
 
                         return reset($replacement_stmts);
                     }
 
                     $this->must_rescan = true;
+
                     return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                 }
 
@@ -258,6 +275,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             }
 
             $this->must_rescan = true;
+
             return PhpParser\NodeTraverser::STOP_TRAVERSAL;
         }
 
@@ -305,13 +323,32 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             return $node;
         }
 
-
-
         return null;
     }
 
     public function mustRescan() : bool
     {
         return $this->must_rescan || $this->non_method_changes;
+    }
+
+    private function balanceBrackets(string $fake_class) : string
+    {
+        $tokens = \token_get_all($fake_class);
+
+        $brace_count = 0;
+
+        foreach ($tokens as $token) {
+            if ($token === '{') {
+                ++$brace_count;
+            } elseif ($token === '}') {
+                --$brace_count;
+            }
+        }
+
+        if ($brace_count > 0) {
+            $fake_class .= \str_repeat('}', $brace_count);
+        }
+
+        return $fake_class;
     }
 }

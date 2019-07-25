@@ -14,6 +14,7 @@ use Psalm\Issue\UndefinedGlobalVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use function is_string;
 
 /**
  * @internal
@@ -78,8 +79,8 @@ class VariableFetchAnalyzer
             $stmt->inferredType = clone $context->vars_in_scope['$this'];
 
             if ($codebase->store_node_types
-                    && (!$context->collect_initializations
-                        && !$context->collect_mutations)
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
                 && isset($stmt->inferredType)
             ) {
                 $codebase->analyzer->addNodeType(
@@ -146,7 +147,7 @@ class VariableFetchAnalyzer
 
         $var_name = '$' . $stmt->name;
 
-        if (!$context->hasVariable($var_name, $statements_analyzer)) {
+        if (!$context->hasVariable($var_name, !$array_assignment ? $statements_analyzer : null)) {
             if (!isset($context->vars_possibly_in_scope[$var_name]) ||
                 !$statements_analyzer->getFirstAppearance($var_name)
             ) {
@@ -255,21 +256,48 @@ class VariableFetchAnalyzer
                     }
                 }
 
+                if ($codebase->store_node_types
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
+                    $codebase->analyzer->addNodeReference(
+                        $statements_analyzer->getFilePath(),
+                        $stmt,
+                        $first_appearance->raw_file_start . '-' . $first_appearance->raw_file_end . ':mixed'
+                    );
+                }
+
                 $statements_analyzer->registerVariableUses([$first_appearance->getHash() => $first_appearance]);
             }
         } else {
             $stmt->inferredType = clone $context->vars_in_scope[$var_name];
 
             if ($codebase->store_node_types
-                    && (!$context->collect_initializations
-                        && !$context->collect_mutations)
-                && isset($stmt->inferredType)
+                && !$context->collect_initializations
+                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt,
                     (string) $stmt->inferredType
                 );
+            }
+
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
+
+                if ($first_appearance) {
+                    $codebase->analyzer->addNodeReference(
+                        $statements_analyzer->getFilePath(),
+                        $stmt,
+                        $first_appearance->raw_file_start
+                            . '-' . $first_appearance->raw_file_end
+                            . ':' . $stmt->inferredType->getId()
+                    );
+                }
             }
         }
 

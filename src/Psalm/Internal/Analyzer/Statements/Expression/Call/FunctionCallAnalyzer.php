@@ -3,7 +3,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\FunctionAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -11,9 +10,11 @@ use Psalm\Internal\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\InvalidFunctionCall;
+use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\PossiblyInvalidFunctionCall;
 use Psalm\Issue\PossiblyNullFunctionCall;
@@ -29,6 +30,15 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use function count;
+use function reset;
+use function implode;
+use function strtolower;
+use function array_merge;
+use function is_string;
+use function array_map;
+use function extension_loaded;
+use function strpos;
 
 /**
  * @internal
@@ -69,7 +79,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
         if ($stmt->name instanceof PhpParser\Node\Expr) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
-                return false;
+                return;
             }
 
             if (isset($stmt->name->inferredType)) {
@@ -103,7 +113,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $has_valid_function_call_type = false;
 
                 foreach ($stmt->name->inferredType->getTypes() as $var_type_part) {
-                    if ($var_type_part instanceof Type\Atomic\Fn || $var_type_part instanceof Type\Atomic\TCallable) {
+                    if ($var_type_part instanceof Type\Atomic\TFn || $var_type_part instanceof Type\Atomic\TCallable) {
                         $function_params = $var_type_part->params;
 
                         if (isset($stmt->inferredType) && $var_type_part->return_type) {
@@ -160,7 +170,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $statements_analyzer
                         ) === false) {
-                            return false;
+                            return;
                         }
 
                         $invokable_return_type = $codebase->methods->getMethodReturnType(
@@ -190,7 +200,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            return;
                         }
                     } else {
                         if (IssueBuffer::accepts(
@@ -200,7 +210,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            return;
                         }
                     }
                 }
@@ -244,6 +254,18 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $function_exists = true;
             }
 
+            if ($function_exists
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                ArgumentMapPopulator::recordArgumentPositions(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $function_id
+                );
+            }
+
             $is_predefined = true;
 
             $is_maybe_root_function = !$stmt->name instanceof PhpParser\Node\Name\FullyQualified
@@ -262,7 +284,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $is_maybe_root_function
                     ) === false
                     ) {
-                        return false;
+                        return;
                     }
                 }
             } else {
@@ -296,15 +318,20 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     }
 
                     if ($in_call_map && !$is_stubbed) {
-                        $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                        $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                             $codebase,
                             $function_id,
                             $stmt->args
                         );
+
+                        $function_params = $function_callable->params;
                     }
                 }
 
-                if ($codebase->store_node_types) {
+                if ($codebase->store_node_types
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
                         $stmt->name,
@@ -343,11 +370,13 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         if ($function_exists) {
             if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
                 if (!$is_stubbed && $in_call_map) {
-                    $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                    $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                         $codebase,
                         $function_id,
                         $stmt->args
                     );
+
+                    $function_params = $function_callable->params;
                 }
             }
 
@@ -558,8 +587,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         }
 
         if ($codebase->store_node_types
-            && (!$context->collect_initializations
-                && !$context->collect_mutations)
+            && !$context->collect_initializations
+            && !$context->collect_mutations
             && isset($stmt->inferredType)
         ) {
             $codebase->analyzer->addNodeType(
@@ -567,6 +596,20 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $stmt,
                 (string) $stmt->inferredType
             );
+        }
+
+        if ($context->pure) {
+            if (!$function_storage || !$function_storage->pure) {
+                if (IssueBuffer::accepts(
+                    new ImpureFunctionCall(
+                        'Cannot call an impure function from a pure context',
+                        new CodeLocation($statements_analyzer, $stmt->name)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
         }
 
         if ($function_storage) {
@@ -598,6 +641,19 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $function_storage->if_false_assertions
                 );
             }
+
+            if ($function_storage->deprecated && $function_id) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedFunction(
+                        'The function ' . $function_id . ' has been marked as deprecated',
+                        $code_location,
+                        $function_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // continue
+                }
+            }
         }
 
         if ($function instanceof PhpParser\Node\Name) {
@@ -606,8 +662,36 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             if ($function->parts === ['method_exists']) {
                 $context->check_methods = false;
             } elseif ($function->parts === ['class_exists']) {
-                if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                if ($first_arg) {
+                    if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                        && $first_arg->value->class instanceof PhpParser\Node\Name
+                        && $first_arg->value->name instanceof PhpParser\Node\Identifier
+                        && $first_arg->value->name->name === 'class'
+                    ) {
+                        $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
+
+                        if (!$codebase->classlikes->classExists($resolved_name)) {
+                            $context->phantom_classes[strtolower($resolved_name)] = true;
+                        }
+                    }
+                }
+            } elseif ($function->parts === ['interface_exists']) {
+                if ($first_arg) {
+                    if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                        && $first_arg->value->class instanceof PhpParser\Node\Name
+                        && $first_arg->value->name instanceof PhpParser\Node\Identifier
+                        && $first_arg->value->name->name === 'class'
+                    ) {
+                        $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
+
+                        if (!$codebase->classlikes->interfaceExists($resolved_name)) {
+                            $context->phantom_classes[strtolower($resolved_name)] = true;
+                        }
+                    }
                 }
             } elseif ($function->parts === ['file_exists'] && $first_arg) {
                 $var_id = ExpressionAnalyzer::getArrayVarId($first_arg->value, null);

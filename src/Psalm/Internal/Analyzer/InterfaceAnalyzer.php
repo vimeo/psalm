@@ -63,7 +63,8 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                     if (\Psalm\IssueBuffer::accepts(
                         new UndefinedInterface(
                             $extended_interface_name . ' is not an interface',
-                            $code_location
+                            $code_location,
+                            $extended_interface_name
                         ),
                         $this->getSuppressedIssues()
                     )) {
@@ -89,6 +90,15 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $method_analyzer->analyze(new \Psalm\Context($this->getFQCLN()));
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                \Psalm\IssueBuffer::add(
+                    new \Psalm\Issue\ParseError(
+                        'Interfaces cannot have properties',
+                        new CodeLocation($this, $stmt)
+                    )
+                );
+
+                return;
             }
         }
     }

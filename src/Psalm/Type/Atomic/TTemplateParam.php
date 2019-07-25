@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function implode;
+use Psalm\Codebase;
+use Psalm\Type;
 use Psalm\Type\Union;
 
 class TTemplateParam extends \Psalm\Type\Atomic
@@ -60,7 +63,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
     public function getId()
     {
         if ($this->extra_types) {
-            return '(' . $this->param_name. ' as ' . $this->as->getId()
+            return '(' . $this->param_name . ' as ' . $this->as->getId()
                 . ')&' . implode('&', $this->extra_types);
         }
 
@@ -88,14 +91,18 @@ class TTemplateParam extends \Psalm\Type\Atomic
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         $intersection_types = $this->getNamespacedIntersectionTypes(
             $namespace,
             $aliased_classes,
@@ -112,5 +119,15 @@ class TTemplateParam extends \Psalm\Type\Atomic
     public function canBeFullyExpressedInPhp()
     {
         return false;
+    }
+
+    /**
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
+     *
+     * @return void
+     */
+    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
+    {
+        $this->replaceIntersectionTemplateTypesWithArgTypes($template_types, $codebase);
     }
 }

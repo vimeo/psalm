@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+
 class RedundantConditionTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
@@ -272,7 +274,20 @@ class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
-            'hardPhpTypeAssertionsOnDocblockType' => [
+            'hardPhpTypeAssertionsOnDocblockBoolType' => [
+                '<?php
+                    /** @param bool|null $bar */
+                    function foo($bar): void {
+                        if (!is_null($bar) && !is_bool($bar)) {
+                            throw new \Exception("bad");
+                        }
+
+                        if ($bar !== null) {}
+                    }',
+                'assertions' => [],
+                'error_levels' => ['DocblockTypeContradiction'],
+            ],
+            'hardPhpTypeAssertionsOnDocblockStringType' => [
                 '<?php
                     /** @param string|null $bar */
                     function foo($bar): void {
@@ -307,8 +322,22 @@ class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
             ],
-            'nullToMixedWithNullCheckNoContinue' => [
+            'nullToMixedWithNullCheckWithArraykey' => [
                 '<?php
+                    /** @return array<array-key, mixed> */
+                    function getStrings(): array {
+                        return ["hello", "world", 50];
+                    }
+
+                    $a = getStrings();
+
+                    if (is_string($a[0]) && strlen($a[0]) > 3) {}',
+                'assignments' => [],
+                'error_levels' => [],
+            ],
+            'nullToMixedWithNullCheckWithIntKey' => [
+                '<?php
+                    /** @return array<int, mixed> */
                     function getStrings(): array {
                         return ["hello", "world", 50];
                     }
@@ -570,7 +599,33 @@ class RedundantConditionTest extends TestCase
                         } else {
                             return $s;
                         }
-                    }'
+                    }',
+            ],
+            'updateArrayAfterUnset' => [
+                '<?php
+                    /**
+                     * @param string[] $arr
+                     */
+                    function foo(string $s) : void {
+                        $dict = ["a" => 1];
+                        unset($dict[$s]);
+                        if (count($dict)) {}
+                    }',
+            ],
+            'updateArrayAfterUnsetInLoop' => [
+                '<?php
+                    /**
+                     * @param string[] $arr
+                     */
+                    function foo(array $arr) : void {
+                        $dict = ["a" => 1, "b" => 2, "c" => 3];
+
+                        foreach ($arr as $v) {
+                            unset($dict[$v]);
+                        }
+
+                        if (count($dict)) {}
+                    }',
             ],
         ];
     }

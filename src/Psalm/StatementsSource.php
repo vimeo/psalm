@@ -14,6 +14,11 @@ interface StatementsSource extends FileSource
     public function getAliasedClassesFlipped();
 
     /**
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlippedReplaceable();
+
+    /**
      * @return string|null
      */
     public function getFQCLN();

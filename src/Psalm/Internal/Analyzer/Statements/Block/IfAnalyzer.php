@@ -4,7 +4,6 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -18,6 +17,22 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use function array_merge;
+use function array_map;
+use function array_diff_key;
+use function array_filter;
+use const ARRAY_FILTER_USE_KEY;
+use function array_values;
+use function array_keys;
+use function preg_match;
+use function preg_quote;
+use function array_unique;
+use function count;
+use function in_array;
+use function array_intersect;
+use function strpos;
+use function substr;
+use function array_intersect_key;
 
 /**
  * @internal
@@ -283,26 +298,6 @@ class IfAnalyzer
                         ) : null
                 );
 
-            if ($if_context->infer_types) {
-                $source_analyzer = $statements_analyzer->getSource();
-
-                if ($source_analyzer instanceof FunctionLikeAnalyzer) {
-                    $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
-
-                    foreach ($reconcilable_if_types as $var_id => $_) {
-                        if (isset($if_context->vars_in_scope[$var_id])) {
-                            $if_context->inferType(
-                                substr($var_id, 1),
-                                $function_storage,
-                                $if_context->vars_in_scope[$var_id],
-                                $if_vars_in_scope_reconciled[$var_id],
-                                $statements_analyzer->getCodebase()
-                            );
-                        }
-                    }
-                }
-            }
-
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
 
             foreach ($reconcilable_if_types as $var_id => $_) {
@@ -537,7 +532,9 @@ class IfAnalyzer
                     )
                 ) {
                     $context->unreferenced_vars[$var_id] = $locations;
-                } elseif (isset($if_scope->possibly_assigned_var_ids[$var_id])) {
+                } elseif (isset($if_scope->possibly_assigned_var_ids[$var_id])
+                    || isset($if_context->possibly_assigned_var_ids[$var_id])
+                ) {
                     if (!isset($context->unreferenced_vars[$var_id])) {
                         $context->unreferenced_vars[$var_id] = $locations;
                     } else {
@@ -684,10 +681,6 @@ class IfAnalyzer
                         $statements_analyzer
                     );
                 }
-            }
-
-            if ($if_context->infer_types) {
-                $if_scope->possible_param_types = $if_context->possible_param_types;
             }
         } else {
             if (!$has_break_statement) {
@@ -909,6 +902,7 @@ class IfAnalyzer
             return false;
         }
 
+        /** @var array<string, bool> */
         $new_referenced_var_ids = $elseif_context->referenced_var_ids;
         $elseif_context->referenced_var_ids = array_merge(
             $referenced_var_ids,
@@ -1206,29 +1200,6 @@ class IfAnalyzer
             }
         } else {
             $if_scope->reasonable_clauses = [];
-        }
-
-        if ($elseif_context->infer_types) {
-            $elseif_possible_param_types = $elseif_context->possible_param_types;
-
-            if ($if_scope->possible_param_types) {
-                $vars_to_remove = [];
-
-                foreach ($if_scope->possible_param_types as $var => $type) {
-                    if (isset($elseif_possible_param_types[$var])) {
-                        $if_scope->possible_param_types[$var] = Type::combineUnionTypes(
-                            $elseif_possible_param_types[$var],
-                            $type
-                        );
-                    } else {
-                        $vars_to_remove[] = $var;
-                    }
-                }
-
-                foreach ($vars_to_remove as $var) {
-                    unset($if_scope->possible_param_types[$var]);
-                }
-            }
         }
 
         if ($negated_elseif_types) {
@@ -1626,29 +1597,6 @@ class IfAnalyzer
 
         if ($outer_context->collect_exceptions) {
             $outer_context->mergeExceptions($else_context);
-        }
-
-        if ($else_context->infer_types) {
-            $else_possible_param_types = $else_context->possible_param_types;
-
-            if ($if_scope->possible_param_types) {
-                $vars_to_remove = [];
-
-                foreach ($if_scope->possible_param_types as $var => $type) {
-                    if (isset($else_possible_param_types[$var])) {
-                        $if_scope->possible_param_types[$var] = Type::combineUnionTypes(
-                            $else_possible_param_types[$var],
-                            $type
-                        );
-                    } else {
-                        $vars_to_remove[] = $var;
-                    }
-                }
-
-                foreach ($vars_to_remove as $var) {
-                    unset($if_scope->possible_param_types[$var]);
-                }
-            }
         }
     }
 

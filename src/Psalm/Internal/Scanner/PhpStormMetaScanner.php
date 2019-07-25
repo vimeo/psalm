@@ -7,6 +7,11 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
+use function strtolower;
+use function implode;
+use function is_string;
+use function strpos;
+use function str_replace;
 
 /**
  * @internal

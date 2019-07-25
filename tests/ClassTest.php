@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use function class_exists;
+
 class ClassTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
@@ -371,6 +373,62 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
+            'interfaceExistsCreatesClassString' => [
+                '<?php
+                    function funB(string $className) : ?ReflectionClass {
+                        if (class_exists($className)) {
+                            return new ReflectionClass($className);
+                        }
+
+                        if (interface_exists($className)) {
+                            return new ReflectionClass($className);
+                        }
+
+                        return null;
+                    }',
+            ],
+            'allowClassExistsAndInterfaceExists' => [
+                '<?php
+                    function foo(string $s) : void {
+                        if (class_exists($s) || interface_exists($s)) {}
+                    }',
+            ],
+            'classExistsWithFalseArg' => [
+                '<?php
+                    /**
+                     * @param class-string $class
+                     * @return string
+                     */
+                    function autoload(string $class) : string {
+                        if (class_exists($class, false)) {
+                            return $class;
+                        }
+
+                        return $class;
+                    }',
+            ],
+            'classExistsWithFalseArgInside' => [
+                '<?php
+                    function foo(string $s) : void {
+                        if (class_exists($s, false)) {
+                            /** @psalm-suppress MixedMethodCall */
+                            new $s();
+                        }
+                    }',
+            ],
+            'classAliasOnNonexistantClass' => [
+                '<?php
+                    if (!class_exists(\PHPUnit\Framework\TestCase::class)) {
+                        /** @psalm-suppress UndefinedClass */
+                        class_alias(\PHPUnit_Framework_TestCase::class, \PHPUnit\Framework\TestCase::class);
+                    }
+
+                    class T extends \PHPUnit\Framework\TestCase {
+
+                    }',
+                [],
+                ['PropertyNotSetInConstructor'],
+            ],
         ];
     }
 
@@ -583,6 +641,21 @@ class ClassTest extends TestCase
 
                     class Bar implements Foo {}',
                 'error_message' => 'UndefinedInterface',
+            ],
+            'classAliasAlreadyDefinedClass' => [
+                '<?php
+                    class A {}
+
+                    class B {}
+
+                    if (false) {
+                        class_alias(A::class, B::class);
+                    }
+
+                    function foo(A $a, B $b) : void {
+                        if ($a === $b) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

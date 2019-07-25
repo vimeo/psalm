@@ -504,6 +504,12 @@ class InterfaceTest extends TestCase
                         if ($i instanceof A) {
                             $i->foo();
                         }
+                    }
+
+                    function takeA(A $a) : void {
+                        if ($a instanceof I) {
+                            $a->foo();
+                        }
                     }',
             ],
             'docblockParamInheritance' => [
@@ -545,7 +551,7 @@ class InterfaceTest extends TestCase
 
                     function bar(IFoo $i) : void {
                         $i::doFoo();
-                    }'
+                    }',
             ],
             'inheritSystemInterface' => [
                 '<?php
@@ -553,7 +559,85 @@ class InterfaceTest extends TestCase
 
                     function f(I $c): void {
                         $c->current();
-                    }'
+                    }',
+            ],
+            'intersectMixedTypes' => [
+                '<?php
+                    interface IFoo {
+                        function foo();
+                    }
+
+                    interface IBar {
+                        function foo() : string;
+                    }
+
+                    /** @param IFoo&IBar $i */
+                    function iFooFirst($i) : string {
+                        return $i->foo();
+                    }
+
+                    /** @param IBar&IFoo $i */
+                    function iBarFirst($i) : string {
+                        return $i->foo();
+                    }',
+            ],
+            'intersectionObjectTypes' => [
+                '<?php
+
+                    class C {}
+
+                    interface IFoo {
+                        function foo() : object;
+                    }
+
+                    interface IBar {
+                        function foo() : C;
+                    }
+
+                    /** @param IFoo&IBar $i */
+                    function iFooFirst($i) : C {
+                        return $i->foo();
+                    }
+
+                    /** @param IBar&IFoo $i */
+                    function iBarFirst($i) : C {
+                        return $i->foo();
+                    }',
+            ],
+            'noTypeCoercionWhenIntersectionMatches' => [
+                '<?php
+                    interface I1 {}
+                    interface I2 {}
+                    class A implements I1 {}
+
+                    /** @param A|I2 $i */
+                    function foo($i) : void {}
+
+                    /** @param I1&I2 $i */
+                    function bar($i) : void {
+                        foo($i);
+                    }',
+            ],
+            'intersectIterators' => [
+                '<?php
+                    class A {} function takesA(A $p): void {}
+                    class B {} function takesB(B $p): void {}
+
+                    /** @psalm-param iterable<A>&iterable<B> $i */
+                    function takesIntersectionOfIterables(iterable $i): void {
+                        foreach ($i as $c) {
+                            takesA($c);
+                            takesB($c);
+                        }
+                    }
+
+                    /** @psalm-param iterable<A&B> $i */
+                    function takesIterableOfIntersections(iterable $i): void {
+                        foreach ($i as $c) {
+                            takesA($c);
+                            takesB($c);
+                        }
+                    }',
             ],
         ];
     }

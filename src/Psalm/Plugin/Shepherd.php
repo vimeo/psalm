@@ -1,13 +1,34 @@
 <?php
 namespace Psalm\Plugin;
 
+use function array_filter;
+use function curl_close;
+use function curl_exec;
+use function curl_getinfo;
+use function curl_init;
+use function curl_setopt;
+use const CURLINFO_HEADER_OUT;
+use const CURLOPT_HTTPHEADER;
+use const CURLOPT_POST;
+use const CURLOPT_POSTFIELDS;
+use const CURLOPT_RETURNTRANSFER;
+use function function_exists;
+use function fwrite;
+use function json_encode;
+use function parse_url;
+use const PHP_EOL;
+use const PHP_URL_SCHEME;
 use Psalm\Codebase;
 use Psalm\SourceControl\SourceControlInfo;
+use const STDERR;
+use function strlen;
+use function var_export;
 
 class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete
+     *
      * @param array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
      * file_name: string, file_path: string, snippet: string, from: int, to: int,
      * snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}> $issues
@@ -21,7 +42,8 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
         SourceControlInfo $source_control_info = null
     ) {
         if (!function_exists('curl_init')) {
-            echo 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL;
+            fwrite(STDERR, 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL);
+
             return;
         }
 
@@ -35,7 +57,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                         return $i['severity'] === 'error';
                     }
                 ),
-                'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase)
+                'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             ];
 
             $payload = json_encode($data);
@@ -59,7 +81,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                 CURLOPT_HTTPHEADER,
                 [
                     'Content-Type: application/json',
-                    'Content-Length: ' . strlen($payload)
+                    'Content-Length: ' . strlen($payload),
                 ]
             );
 
@@ -67,118 +89,10 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             $return = curl_exec($ch);
 
             if ($return !== '') {
-                echo 'Error with Psalm Shepherd:' . PHP_EOL;
+                fwrite(STDERR, 'Error with Psalm Shepherd:' . PHP_EOL);
 
                 if ($return === false) {
-                    /** @var array */
-                    $curl_info = curl_getinfo($ch);
-
-                    if (($curl_info['ssl_verify_result'] ?? 0) !== 0) {
-                        echo 'Curl SSL error: ';
-
-                        switch ($curl_info['ssl_verify_result']) {
-                            case 2:
-                                echo 'unable to get issuer certificate';
-                                break;
-                            case 3:
-                                echo 'unable to get certificate CRL';
-                                break;
-                            case 4:
-                                echo 'unable to decrypt certificate’s signature';
-                                break;
-                            case 5:
-                                echo 'unable to decrypt CRL’s signature';
-                                break;
-                            case 6:
-                                echo 'unable to decode issuer public key';
-                                break;
-                            case 7:
-                                echo 'certificate signature failure';
-                                break;
-                            case 8:
-                                echo 'CRL signature failure';
-                                break;
-                            case 9:
-                                echo 'certificate is not yet valid';
-                                break;
-                            case 10:
-                                echo 'certificate has expired';
-                                break;
-                            case 11:
-                                echo 'CRL is not yet valid';
-                                break;
-                            case 12:
-                                echo 'CRL has expired';
-                                break;
-                            case 13:
-                                echo 'format error in certificate’s notBefore field';
-                                break;
-                            case 14:
-                                echo 'format error in certificate’s notAfter field';
-                                break;
-                            case 15:
-                                echo 'format error in CRL’s lastUpdate field';
-                                break;
-                            case 16:
-                                echo 'format error in CRL’s nextUpdate field';
-                                break;
-                            case 17:
-                                echo 'out of memory';
-                                break;
-                            case 18:
-                                echo 'self signed certificate';
-                                break;
-                            case 19:
-                                echo 'self signed certificate in certificate chain';
-                                break;
-                            case 20:
-                                echo 'unable to get local issuer certificate';
-                                break;
-                            case 21:
-                                echo 'unable to verify the first certificate';
-                                break;
-                            case 22:
-                                echo 'certificate chain too long';
-                                break;
-                            case 23:
-                                echo 'certificate revoked';
-                                break;
-                            case 24:
-                                echo 'invalid CA certificate';
-                                break;
-                            case 25:
-                                echo 'path length constraint exceeded';
-                                break;
-                            case 26:
-                                echo 'unsupported certificate purpose';
-                                break;
-                            case 27:
-                                echo 'certificate not trusted';
-                                break;
-                            case 28:
-                                echo 'certificate rejected';
-                                break;
-                            case 29:
-                                echo 'subject issuer mismatch';
-                                break;
-                            case 30:
-                                echo 'authority and subject key identifier mismatch';
-                                break;
-                            case 31:
-                                echo 'authority and issuer serial number mismatch';
-                                break;
-                            case 32:
-                                echo 'key usage does not include certificate signing';
-                                break;
-                            case 50:
-                                echo 'application verification failure';
-                                break;
-                        }
-
-                        echo PHP_EOL;
-                    } else {
-                        echo var_export(curl_getinfo($ch), true) . PHP_EOL;
-                    }
+                    fwrite(STDERR, self::getCurlErrorMessage($ch) . PHP_EOL);
                 } else {
                     echo $return . PHP_EOL;
                     echo 'Git args: ' . var_export($source_control_info->toArray(), true) . PHP_EOL;
@@ -189,5 +103,87 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             // Close cURL session handle
             curl_close($ch);
         }
+    }
+
+    /**
+     * @param resource $ch
+     */
+    public static function getCurlErrorMessage($ch) : string
+    {
+        /** @var array */
+        $curl_info = curl_getinfo($ch);
+
+        if (($curl_info['ssl_verify_result'] ?? 0) !== 0) {
+            switch ($curl_info['ssl_verify_result']) {
+                case 2:
+                    return 'unable to get issuer certificate';
+                case 3:
+                    return 'unable to get certificate CRL';
+                case 4:
+                    return 'unable to decrypt certificate’s signature';
+                case 5:
+                    return 'unable to decrypt CRL’s signature';
+                case 6:
+                    return 'unable to decode issuer public key';
+                case 7:
+                    return 'certificate signature failure';
+                case 8:
+                    return 'CRL signature failure';
+                case 9:
+                    return 'certificate is not yet valid';
+                case 10:
+                    return 'certificate has expired';
+                case 11:
+                    return 'CRL is not yet valid';
+                case 12:
+                    return 'CRL has expired';
+                case 13:
+                    return 'format error in certificate’s notBefore field';
+                case 14:
+                    return 'format error in certificate’s notAfter field';
+                case 15:
+                    return 'format error in CRL’s lastUpdate field';
+                case 16:
+                    return 'format error in CRL’s nextUpdate field';
+                case 17:
+                    return 'out of memory';
+                case 18:
+                    return 'self signed certificate';
+                case 19:
+                    return 'self signed certificate in certificate chain';
+                case 20:
+                    return 'unable to get local issuer certificate';
+                case 21:
+                    return 'unable to verify the first certificate';
+                case 22:
+                    return 'certificate chain too long';
+                case 23:
+                    return 'certificate revoked';
+                case 24:
+                    return 'invalid CA certificate';
+                case 25:
+                    return 'path length constraint exceeded';
+                case 26:
+                    return 'unsupported certificate purpose';
+                case 27:
+                    return 'certificate not trusted';
+                case 28:
+                    return 'certificate rejected';
+                case 29:
+                    return 'subject issuer mismatch';
+                case 30:
+                    return 'authority and subject key identifier mismatch';
+                case 31:
+                    return 'authority and issuer serial number mismatch';
+                case 32:
+                    return 'key usage does not include certificate signing';
+                case 50:
+                    return 'application verification failure';
+            }
+
+            return '';
+        }
+
+        return var_export(curl_getinfo($ch), true);
     }
 }

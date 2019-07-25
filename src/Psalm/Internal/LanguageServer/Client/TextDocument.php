@@ -1,13 +1,14 @@
 <?php
 declare(strict_types = 1);
-
 namespace Psalm\Internal\LanguageServer\Client;
 
-use Psalm\Internal\LanguageServer\ClientHandler;
-use LanguageServerProtocol\{Diagnostic, TextDocumentItem, TextDocumentIdentifier};
+use function Amp\call;
 use Amp\Promise;
 use JsonMapper;
-use function Amp\call;
+use LanguageServerProtocol\Diagnostic;
+use LanguageServerProtocol\TextDocumentIdentifier;
+use LanguageServerProtocol\TextDocumentItem;
+use Psalm\Internal\LanguageServer\ClientHandler;
 
 /**
  * Provides method handlers for all textDocument/* methods
@@ -35,13 +36,14 @@ class TextDocument
      *
      * @param string $uri
      * @param Diagnostic[] $diagnostics
+     *
      * @return Promise <void>
      */
     public function publishDiagnostics(string $uri, array $diagnostics): Promise
     {
         return $this->handler->notify('textDocument/publishDiagnostics', [
             'uri' => $uri,
-            'diagnostics' => $diagnostics
+            'diagnostics' => $diagnostics,
         ]);
     }
 
@@ -50,6 +52,7 @@ class TextDocument
      * to request the current content of a text document identified by the URI
      *
      * @param TextDocumentIdentifier $textDocument The document to get the content for
+     *
      * @return Promise<TextDocumentItem> The document's current content
      */
     public function xcontent(TextDocumentIdentifier $textDocument): Promise

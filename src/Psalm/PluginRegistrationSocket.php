@@ -3,6 +3,8 @@ namespace Psalm;
 
 use Psalm\Plugin\Hook;
 use Psalm\Plugin\RegistrationInterface;
+use function class_exists;
+use function is_subclass_of;
 
 class PluginRegistrationSocket implements RegistrationInterface
 {
@@ -111,6 +113,10 @@ class PluginRegistrationSocket implements RegistrationInterface
 
         if (is_subclass_of($handler, Hook\AfterAnalysisInterface::class)) {
             $this->config->after_analysis[$handler] = $handler;
+        }
+
+        if (is_subclass_of($handler, Hook\StringInterpreterInterface::class)) {
+            $this->config->string_interpreters[$handler] = $handler;
         }
     }
 }

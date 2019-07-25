@@ -14,7 +14,7 @@ class UnusedCodeTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
 
@@ -43,7 +43,7 @@ class UnusedCodeTest extends TestCase
     public function testValidCode($code, array $error_levels = [])
     {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'SKIPPED-') !== false) {
+        if (\strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -77,12 +77,12 @@ class UnusedCodeTest extends TestCase
      */
     public function testInvalidCode($code, $error_message, $error_levels = [])
     {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageRegExp('/\b' . \preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -385,7 +385,54 @@ class UnusedCodeTest extends TestCase
                     protected $foo = 2;
                 }
 
-                (new D)->bar();'
+                (new D)->bar();',
+            ],
+            'usedClassAfterExtensionLoaded' => [
+                '<?php
+                    class A {
+                        public function __construct() {}
+                    }
+
+                    if (extension_loaded("fdsfdsfd")) {
+                        new A();
+                    }',
+            ],
+            'usedParamInIf' => [
+                '<?php
+                    class O {}
+                    class C {
+                        private bool $a = false;
+                        public array $_types = [];
+
+                        private static function mirror(array $a) : array {
+                            return $a;
+                        }
+
+                        /**
+                         * @param class-string<O>|null $type
+                         * @return self
+                         */
+                        public function addType(?string $type, array $ids = array())
+                        {
+                            if ($this->a) {
+                                $ids = self::mirror($ids);
+                            }
+                            $this->_types[$type ?: ""] = new ArrayObject($ids);
+                            return $this;
+                        }
+                    }
+
+                    (new C)->addType(null);',
+            ],
+            'usedMethodAfterClassExists' => [
+                '<?php
+                    class A {
+                        public static function bar() : void {}
+                    }
+
+                    if (class_exists(A::class)) {
+                        A::bar();
+                    }',
             ],
         ];
     }
@@ -419,7 +466,8 @@ class UnusedCodeTest extends TestCase
                     }
 
                     (new A)->foo(4);',
-                'error_message' => 'PossiblyUnusedParam',
+                'error_message' => 'PossiblyUnusedParam - src' . \DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:49 - Param #1 is never referenced in this method',
             ],
             'unusedParam' => [
                 '<?php
@@ -531,6 +579,32 @@ class UnusedCodeTest extends TestCase
 
                     new B();',
                 'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'propertyUsedOnlyInConstructor' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        private $used;
+
+                        /** @var int */
+                        private $unused;
+
+                        /** @var int */
+                        private static $staticUnused;
+
+                        public function __construct() {
+                            $this->used = 4;
+                            $this->unused = 4;
+                            self::$staticUnused = 4;
+                        }
+
+                        public function handle(): void
+                        {
+                            $this->used++;
+                        }
+                    }
+                    (new A())->handle();',
+                'error_message' => 'UnusedProperty',
             ],
         ];
     }

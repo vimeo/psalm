@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Plugin\Hook;
 
 use PhpParser;
@@ -16,6 +15,7 @@ interface MethodParamsProviderInterface
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
     public static function getMethodParams(

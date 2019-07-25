@@ -138,6 +138,19 @@ class ToStringTest extends TestCase
                     fooFoo(new A());',
                 'error_message' => 'InvalidArgument',
             ],
+            'implicitCastWithStrictTypesToEchoOrSprintf' => [
+                '<?php declare(strict_types=1);
+                    class A {
+                        public function __toString(): string
+                        {
+                            return "hello";
+                        }
+                    }
+
+                    echo(new A());
+                    sprintf("hello *", new A());',
+                'error_message' => 'ImplicitToStringCast',
+            ],
             'implicitCast' => [
                 '<?php
                     class A {
@@ -148,6 +161,20 @@ class ToStringTest extends TestCase
                     }
 
                     function fooFoo(string $b): void {}
+                    fooFoo(new A());',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'implicitCastToUnion' => [
+                '<?php
+                    class A {
+                        public function __toString(): string
+                        {
+                            return "hello";
+                        }
+                    }
+
+                    /** @param string|int $b */
+                    function fooFoo($b): void {}
                     fooFoo(new A());',
                 'error_message' => 'ImplicitToStringCast',
             ],
@@ -218,6 +245,25 @@ class ToStringTest extends TestCase
 
                     maybeShow(new ClassWithToString());',
                 'error_message' => 'ImplicitToStringCast',
+            ],
+            'possiblyInvalidCastOnIsSubclassOf' => [
+                '<?php
+                    class Foo {}
+
+                    /**
+                     * @param mixed $a
+                     */
+                    function bar($a) : ?string {
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        if (is_subclass_of($a, Foo::class)) {
+                            return "hello" . $a;
+                        }
+
+                        return null;
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
             ],
         ];
     }

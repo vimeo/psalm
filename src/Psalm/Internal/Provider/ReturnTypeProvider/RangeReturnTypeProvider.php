@@ -1,12 +1,11 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
-use Psalm\Context;
 use Psalm\CodeLocation;
-use Psalm\Type;
+use Psalm\Context;
 use Psalm\StatementsSource;
+use Psalm\Type;
 
 class RangeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -69,13 +68,13 @@ class RangeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
         if ($all_numbers) {
             return new Type\Union([new Type\Atomic\TArray([
                 Type::getInt(),
-                new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat])
+                new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat]),
             ])]);
         }
 
         return new Type\Union([new Type\Atomic\TArray([
             Type::getInt(),
-            new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat, new Type\Atomic\TString])
+            new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat, new Type\Atomic\TString]),
         ])]);
     }
 }

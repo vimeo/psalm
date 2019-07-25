@@ -1,23 +1,29 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
+use function array_merge;
+use function file_get_contents;
+use function is_array;
+use function is_string;
+use function json_decode;
+use function json_last_error;
+use function json_last_error_msg;
 use RuntimeException;
 
 class ComposerLock
 {
-    /** @var string */
-    private $file_name;
+    /** @var string[] */
+    private $file_names;
 
-    public function __construct(string $file_name)
+    /** @param string[] $file_names */
+    public function __construct(array $file_names)
     {
-        $this->file_name = $file_name;
+        $this->file_names = $file_names;
     }
-
 
     /**
      * @param mixed $package
-     * @psalm-assert-if-true array{type:'psalm-plugin',name:string,extra:array{psalm:array{pluginClass:string}}}
-     *                        $package
+     * @psalm-assert-if-true array $package
      */
     public function isPlugin($package): bool
     {
@@ -27,6 +33,8 @@ class ComposerLock
             && isset($package['type'])
             && $package['type'] === 'psalm-plugin'
             && isset($package['extra']['psalm']['pluginClass'])
+            && is_array($package['extra'])
+            && is_array($package['extra']['psalm'])
             && is_string($package['extra']['psalm']['pluginClass']);
     }
 
@@ -40,13 +48,14 @@ class ComposerLock
         foreach ($pluginPackages as $package) {
             $ret[$package['name']] = $package['extra']['psalm']['pluginClass'];
         }
+
         return $ret;
     }
 
-    private function read(): array
+    private function read(string $file_name): array
     {
         /** @psalm-suppress MixedAssignment */
-        $contents = json_decode(file_get_contents($this->file_name), true);
+        $contents = json_decode(file_get_contents($file_name), true);
 
         $error = json_last_error();
         if ($error) {
@@ -54,7 +63,7 @@ class ComposerLock
         }
 
         if (!is_array($contents)) {
-            throw new RuntimeException('Malformed ' . $this->file_name . ', expecting JSON-encoded object');
+            throw new RuntimeException('Malformed ' . $file_name . ', expecting JSON-encoded object');
         }
 
         return $contents;
@@ -70,21 +79,34 @@ class ComposerLock
         /** @psalm-suppress MixedAssignment */
         foreach ($packages as $package) {
             if ($this->isPlugin($package)) {
+                /** @var array{type:'psalm-plugin',name:string,extra:array{psalm:array{pluginClass:string}}} */
                 $ret[] = $package;
             }
         }
+
         return $ret;
     }
 
     private function getAllPackages(): array
     {
-        $composer_lock_contents = $this->read();
-        if (!isset($composer_lock_contents["packages"]) || !is_array($composer_lock_contents["packages"])) {
-            throw new RuntimeException('packages section is missing or not an array');
+        $packages = [];
+        foreach ($this->file_names as $file_name) {
+            $composer_lock_contents = $this->read($file_name);
+            if (!isset($composer_lock_contents['packages']) || !is_array($composer_lock_contents['packages'])) {
+                throw new RuntimeException('packages section is missing or not an array');
+            }
+            if (!isset($composer_lock_contents['packages-dev']) || !is_array($composer_lock_contents['packages-dev'])) {
+                throw new RuntimeException('packages-dev section is missing or not an array');
+            }
+            $packages = array_merge(
+                $packages,
+                array_merge(
+                    $composer_lock_contents['packages'],
+                    $composer_lock_contents['packages-dev']
+                )
+            );
         }
-        if (!isset($composer_lock_contents["packages-dev"]) || !is_array($composer_lock_contents["packages-dev"])) {
-            throw new RuntimeException('packages-dev section is missing or not an array');
-        }
-        return array_merge($composer_lock_contents["packages"], $composer_lock_contents["packages-dev"]);
+
+        return $packages;
     }
 }

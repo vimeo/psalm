@@ -1,21 +1,33 @@
 <?php
 namespace Psalm\Type;
 
+use function array_filter;
+use function array_merge;
+use function array_shift;
+use function array_values;
+use function count;
+use function get_class;
+use function is_string;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\TypeCombination;
+use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Type\Atomic\TTemplateParam;
+use function reset;
+use function strpos;
+use function substr;
 
 class Union
 {
@@ -91,6 +103,13 @@ class Union
      * @var bool
      */
     public $possibly_undefined_from_try = false;
+
+    /**
+     * Whether or not this union had a template, since replaced
+     *
+     * @var bool
+     */
+    public $had_template = false;
 
     /**
      * @var array<string, TLiteralString>
@@ -178,26 +197,22 @@ class Union
             $this->literal_float_types[$type->getKey()] = $type;
         } elseif ($type instanceof TString && $this->literal_string_types) {
             foreach ($this->literal_string_types as $key => $_) {
-                unset($this->literal_string_types[$key]);
-                unset($this->types[$key]);
+                unset($this->literal_string_types[$key], $this->types[$key]);
             }
             if (!$type instanceof Type\Atomic\TClassString
                 || !$type->as_type
             ) {
                 foreach ($this->typed_class_strings as $key => $_) {
-                    unset($this->typed_class_strings[$key]);
-                    unset($this->types[$key]);
+                    unset($this->typed_class_strings[$key], $this->types[$key]);
                 }
             }
         } elseif ($type instanceof TInt && $this->literal_int_types) {
             foreach ($this->literal_int_types as $key => $_) {
-                unset($this->literal_int_types[$key]);
-                unset($this->types[$key]);
+                unset($this->literal_int_types[$key], $this->types[$key]);
             }
         } elseif ($type instanceof TFloat && $this->literal_float_types) {
             foreach ($this->literal_float_types as $key => $_) {
-                unset($this->literal_float_types[$key]);
-                unset($this->types[$key]);
+                unset($this->literal_float_types[$key], $this->types[$key]);
             }
         }
 
@@ -264,6 +279,47 @@ class Union
         return substr($s, 0, -1) ?: '';
     }
 
+    public function getKey() : string
+    {
+        if (empty($this->types)) {
+            return '';
+        }
+        $s = '';
+
+        $printed_int = false;
+        $printed_float = false;
+        $printed_string = false;
+
+        foreach ($this->types as $type) {
+            if ($type instanceof TLiteralFloat) {
+                if ($printed_float) {
+                    continue;
+                }
+
+                $s .= 'float|';
+                $printed_float = true;
+            } elseif ($type instanceof TLiteralString) {
+                if ($printed_string) {
+                    continue;
+                }
+
+                $s .= 'string|';
+                $printed_string = true;
+            } elseif ($type instanceof TLiteralInt) {
+                if ($printed_int) {
+                    continue;
+                }
+
+                $s .= 'int|';
+                $printed_int = true;
+            } else {
+                $s .= $type->getKey() . '|';
+            }
+        }
+
+        return substr($s, 0, -1) ?: '';
+    }
+
     /**
      * @return string
      */
@@ -298,15 +354,16 @@ class Union
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
+     * @param  array<string, string> $aliased_classes
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         $printed_int = false;
         $printed_float = false;
         $printed_string = false;
@@ -314,19 +371,21 @@ class Union
         $s = '';
 
         foreach ($this->types as $type) {
-            if ($type instanceof TLiteralFloat) {
+            $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
+
+            if ($type instanceof TLiteralFloat && $type_string === 'float') {
                 if ($printed_float) {
                     continue;
                 }
 
                 $printed_float = true;
-            } elseif ($type instanceof TLiteralString) {
+            } elseif ($type instanceof TLiteralString && $type_string === 'string') {
                 if ($printed_string) {
                     continue;
                 }
 
                 $printed_string = true;
-            } elseif ($type instanceof TLiteralInt) {
+            } elseif ($type instanceof TLiteralInt && $type_string === 'int') {
                 if ($printed_int) {
                     continue;
                 }
@@ -334,7 +393,7 @@ class Union
                 $printed_int = true;
             }
 
-            $s .= $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format) . '|';
+            $s .= $type_string . '|';
         }
 
         return substr($s, 0, -1) ?: '';
@@ -342,7 +401,7 @@ class Union
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
@@ -441,9 +500,11 @@ class Union
             unset($this->types[$type_string]);
 
             if (strpos($type_string, '(')) {
-                unset($this->literal_string_types[$type_string]);
-                unset($this->literal_int_types[$type_string]);
-                unset($this->literal_float_types[$type_string]);
+                unset(
+                    $this->literal_string_types[$type_string],
+                    $this->literal_int_types[$type_string],
+                    $this->literal_float_types[$type_string]
+                );
             }
 
             $this->id = null;
@@ -466,7 +527,7 @@ class Union
                 $this->typed_class_strings = [];
             }
 
-            unset($this->types['class-string']);
+            unset($this->types['class-string'], $this->types['trait-string']);
         } elseif ($type_string === 'int' && $this->literal_int_types) {
             foreach ($this->literal_int_types as $literal_key => $_) {
                 unset($this->types[$literal_key]);
@@ -506,6 +567,16 @@ class Union
     public function hasArray()
     {
         return isset($this->types['array']);
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasEmptyArray()
+    {
+        return isset($this->types['array'])
+            && $this->types['array'] instanceof Atomic\TArray
+            && $this->types['array']->type_params[1]->isEmpty();
     }
 
     /**
@@ -597,10 +668,19 @@ class Union
     {
         return isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
             || isset($this->types['array-key'])
             || $this->literal_string_types
             || $this->typed_class_strings;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasLiteralClassString()
+    {
+        return count($this->typed_class_strings) > 0;
     }
 
     /**
@@ -678,6 +758,7 @@ class Union
             || isset($this->types['float'])
             || isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['trait-string'])
             || isset($this->types['bool'])
             || isset($this->types['false'])
             || isset($this->types['true'])
@@ -785,7 +866,9 @@ class Union
      */
     public function isGenerator()
     {
-        return count($this->types) === 1 && isset($this->types['Generator']);
+        return count($this->types) === 1
+            && (($single_type = reset($this->types)) instanceof TNamedObject)
+            && ($single_type->value === 'Generator');
     }
 
     /**
@@ -898,6 +981,12 @@ class Union
         $keys_to_unset = [];
 
         foreach ($this->types as $key => $atomic_type) {
+            $original_key = $key;
+
+            if ($bracket_pos = strpos($key, '<')) {
+                $key = substr($key, 0, $bracket_pos);
+            }
+
             if ($atomic_type instanceof Type\Atomic\TTemplateParam
                 && isset($template_types[$key][$atomic_type->defining_class ?: ''])
             ) {
@@ -915,22 +1004,81 @@ class Union
                             }
                         } else {
                             foreach ($replacement_type->getTypes() as $replacement_atomic_type) {
-                                $this->types[$replacement_atomic_type->getKey()] = clone $replacement_atomic_type;
+                                $replacements_found = false;
+
+                                // @codingStandardsIgnoreStart
+                                if ($replacement_atomic_type instanceof Type\Atomic\TTemplateKeyOf
+                                    && isset($template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class ?: ''][0])
+                                ) {
+                                    $keyed_template = $template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class ?: ''][0];
+
+                                    if ($keyed_template->isSingle()) {
+                                        $keyed_template = array_values($keyed_template->getTypes())[0];
+                                    }
+
+                                    if ($keyed_template instanceof Type\Atomic\ObjectLike
+                                        || $keyed_template instanceof Type\Atomic\TArray
+                                    ) {
+                                        if ($keyed_template instanceof Type\Atomic\ObjectLike) {
+                                            $key_type = $keyed_template->getGenericKeyType();
+                                        } else {
+                                            $key_type = $keyed_template->type_params[0];
+                                        }
+
+                                        $replacements_found = true;
+
+                                        foreach ($key_type->getTypes() as $key_type_atomic) {
+                                            $this->types[$key_type_atomic->getKey()] = clone $key_type_atomic;
+                                        }
+
+                                        $generic_params[$key][$atomic_type->defining_class ?: ''][0]
+                                            = clone $key_type;
+                                    }
+                                }
+
+                                if ($replacement_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                                    foreach ($replacement_atomic_type->as->getTypes() as $nested_type_atomic) {
+                                        $this->types[$nested_type_atomic->getKey()] = clone $nested_type_atomic;
+                                    }
+                                }
+                                // @codingStandardsIgnoreEnd
+
+                                if (!$replacements_found) {
+                                    $this->types[$replacement_atomic_type->getKey()] = clone $replacement_atomic_type;
+                                }
                             }
 
                             foreach ($replacement_type->getTypes() as $replacement_key => $_) {
                                 if ($replacement_key !== $key) {
-                                    $keys_to_unset[] = $key;
+                                    $keys_to_unset[] = $original_key;
                                 }
                             }
                         }
 
-                        if ($input_type) {
+                        $this->had_template = true;
+
+                        if ($input_type
+                            && (
+                                $atomic_type->as->isMixed()
+                                || !$codebase
+                                || TypeAnalyzer::isContainedBy(
+                                    $codebase,
+                                    $input_type,
+                                    $atomic_type->as
+                                )
+                            )
+                        ) {
                             $generic_param = clone $input_type;
+
+                            if ($this->isNullable() && $generic_param->isNullable() && !$generic_param->isNull()) {
+                                $generic_param->removeType('null');
+                            }
+
                             $generic_param->setFromDocblock();
 
                             if (isset($generic_params[$key][$atomic_type->defining_class ?: ''][0])) {
                                 $existing_depth = $generic_params[$key][$atomic_type->defining_class ?: ''][1] ?? -1;
+
                                 if ($existing_depth > $depth) {
                                     continue;
                                 }
@@ -946,7 +1094,7 @@ class Union
 
                             $generic_params[$key][$atomic_type->defining_class ?: ''] = [
                                 $generic_param,
-                                $depth
+                                $depth,
                             ];
                         }
                     } elseif ($add_upper_bound && $input_type) {
@@ -965,9 +1113,11 @@ class Union
                 && isset($template_types[$atomic_type->param_name])
             ) {
                 if ($replace) {
+                    $was_single = $this->isSingle();
+
                     $class_string = new Type\Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
 
-                    $keys_to_unset[] = $key;
+                    $keys_to_unset[] = $original_key;
 
                     $this->types[$class_string->getKey()] = $class_string;
 
@@ -995,6 +1145,8 @@ class Union
                                     $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
                                         $input_atomic_type->as
                                     );
+                                } else {
+                                    $valid_input_atomic_types[] = new Type\Atomic\TObject();
                                 }
                             }
                         }
@@ -1002,21 +1154,90 @@ class Union
                         if ($valid_input_atomic_types) {
                             $generic_param = new Union($valid_input_atomic_types);
                             $generic_param->setFromDocblock();
-                        } else {
-                            $generic_param = Type::getMixed();
-                        }
 
-                        $generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''] = [
-                            $generic_param,
-                            $depth
-                        ];
+                            $generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''] = [
+                                $generic_param,
+                                $depth,
+                            ];
+                        } elseif ($was_single) {
+                            $generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''] = [
+                                Type::getMixed(),
+                                $depth,
+                            ];
+                        }
+                    }
+                }
+            } elseif ($atomic_type instanceof Type\Atomic\TTemplateIndexedAccess) {
+                if ($replace) {
+                    if (isset($template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''])
+                        && isset($generic_params[$atomic_type->offset_param_name][''])
+                    ) {
+                        $array_template_type
+                            = $template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''][0];
+                        $offset_template_type
+                            = $generic_params[$atomic_type->offset_param_name][''][0];
+
+                        if ($array_template_type->isSingle()
+                            && $offset_template_type->isSingle()
+                            && !$array_template_type->isMixed()
+                            && !$offset_template_type->isMixed()
+                        ) {
+                            $array_template_type = array_values($array_template_type->types)[0];
+                            $offset_template_type = array_values($offset_template_type->types)[0];
+
+                            if ($array_template_type instanceof Type\Atomic\ObjectLike
+                                && ($offset_template_type instanceof Type\Atomic\TLiteralString
+                                    || $offset_template_type instanceof Type\Atomic\TLiteralInt)
+                                && isset($array_template_type->properties[$offset_template_type->value])
+                            ) {
+                                $replacement_type
+                                    = clone $array_template_type->properties[$offset_template_type->value];
+
+                                $keys_to_unset[] = $original_key;
+
+                                foreach ($replacement_type->getTypes() as $replacement_atomic_type) {
+                                    $this->types[$replacement_atomic_type->getKey()] = $replacement_atomic_type;
+                                }
+                            }
+                        }
+                    }
+                }
+            } elseif ($atomic_type instanceof Type\Atomic\TTemplateKeyOf) {
+                if ($replace) {
+                    if (isset($template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''])) {
+                        $template_type
+                            = $template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''][0];
+
+                        if ($template_type->isSingle()) {
+                            $template_type = array_values($template_type->types)[0];
+
+                            if ($template_type instanceof Type\Atomic\ObjectLike
+                                || $template_type instanceof Type\Atomic\TArray
+                            ) {
+                                if ($template_type instanceof Type\Atomic\ObjectLike) {
+                                    $key_type = $template_type->getGenericKeyType();
+                                } else {
+                                    $key_type = clone $template_type->type_params[0];
+                                }
+
+                                $keys_to_unset[] = $original_key;
+
+                                foreach ($key_type->getTypes() as $key_atomic_type) {
+                                    $this->types[$key_atomic_type->getKey()] = $key_atomic_type;
+                                }
+                            }
+                        }
                     }
                 }
             } else {
                 $matching_atomic_type = null;
 
-                if ($input_type && $codebase) {
+                if ($input_type && $codebase && !$input_type->hasMixed()) {
                     foreach ($input_type->types as $input_key => $atomic_input_type) {
+                        if ($bracket_pos = strpos($input_key, '<')) {
+                            $input_key = substr($input_key, 0, $bracket_pos);
+                        }
+
                         if ($input_key === $key) {
                             $matching_atomic_type = $atomic_input_type;
                             break;
@@ -1057,19 +1278,19 @@ class Union
                                     $codebase->classlike_storage_provider->get($atomic_input_type->value);
 
                                 if ($atomic_input_type instanceof TGenericObject
-                                    && isset($classlike_storage->template_type_extends[strtolower($key)])
+                                    && isset($classlike_storage->template_type_extends[$atomic_type->value])
                                 ) {
                                     $matching_atomic_type = $atomic_input_type;
                                     break;
                                 }
 
-                                if (isset($classlike_storage->template_type_extends[strtolower($key)])) {
-                                    $extends_list = $classlike_storage->template_type_extends[strtolower($key)];
+                                if (isset($classlike_storage->template_type_extends[$atomic_type->value])) {
+                                    $extends_list = $classlike_storage->template_type_extends[$atomic_type->value];
 
                                     $new_generic_params = [];
 
-                                    foreach ($extends_list as $key => $value) {
-                                        if (is_string($key)) {
+                                    foreach ($extends_list as $extends_key => $value) {
+                                        if (is_string($extends_key)) {
                                             $new_generic_params[] = $value;
                                         }
                                     }
@@ -1126,18 +1347,39 @@ class Union
         $is_mixed = false;
 
         foreach ($this->types as $key => $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
-                $keys_to_unset[] = $key;
+            $atomic_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
 
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $template_type = null;
 
-                if (isset($template_types[$key][$atomic_type->defining_class ?: ''])) {
-                    $template_type = $template_types[$key][$atomic_type->defining_class ?: ''][0];
+                if (isset($template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''])) {
+                    $template_type = $template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''][0];
 
                     if (!$atomic_type->as->isMixed() && $template_type->isMixed()) {
                         $template_type = clone $atomic_type->as;
                     } else {
                         $template_type = clone $template_type;
+                    }
+
+                    if ($atomic_type->extra_types) {
+                        foreach ($template_type->getTypes() as $template_type_key => $atomic_template_type) {
+                            if ($atomic_template_type instanceof TNamedObject
+                                || $atomic_template_type instanceof TTemplateParam
+                                || $atomic_template_type instanceof TIterable
+                                || $atomic_template_type instanceof Type\Atomic\TObjectWithProperties
+                            ) {
+                                $atomic_template_type->extra_types = $atomic_type->extra_types;
+                            } elseif ($atomic_template_type instanceof Type\Atomic\TObject) {
+                                $first_atomic_type = array_shift($atomic_type->extra_types);
+
+                                if ($atomic_type->extra_types) {
+                                    $first_atomic_type->extra_types = $atomic_type->extra_types;
+                                }
+
+                                $template_type->removeType($template_type_key);
+                                $template_type->addType($first_atomic_type);
+                            }
+                        }
                     }
                 } elseif ($codebase && $atomic_type->defining_class) {
                     foreach ($template_types as $template_type_map) {
@@ -1150,18 +1392,16 @@ class Union
                                 $classlike_storage = $codebase->classlike_storage_provider->get($template_class);
 
                                 if ($classlike_storage->template_type_extends) {
-                                    $defining_class_lc = strtolower($atomic_type->defining_class);
+                                    $defining_class = $atomic_type->defining_class;
 
-                                    if (isset($classlike_storage->template_type_extends[$defining_class_lc])) {
-                                        $param_map = $classlike_storage->template_type_extends[$defining_class_lc];
+                                    if (isset($classlike_storage->template_type_extends[$defining_class])) {
+                                        $param_map = $classlike_storage->template_type_extends[$defining_class];
 
                                         if (isset($param_map[$key])
                                             && isset($template_types[(string) $param_map[$key]][$template_class])
                                         ) {
-                                            $template_type = clone $template_types
-                                                [(string) $param_map[$key]]
-                                                [$template_class]
-                                                [0];
+                                            $template_type
+                                                = clone $template_types[(string) $param_map[$key]][$template_class][0];
                                         }
                                     }
                                 }
@@ -1172,6 +1412,8 @@ class Union
                 }
 
                 if ($template_type) {
+                    $keys_to_unset[] = $key;
+
                     foreach ($template_type->types as $template_type_part) {
                         if ($template_type_part instanceof Type\Atomic\TMixed) {
                             $is_mixed = true;
@@ -1179,8 +1421,6 @@ class Union
 
                         $new_types[$template_type_part->getKey()] = $template_type_part;
                     }
-                } else {
-                    $new_types[$key] = $atomic_type;
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
                 $template_type = isset($template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''])
@@ -1205,8 +1445,48 @@ class Union
                         $keys_to_unset[] = $key;
                     }
                 }
-            } else {
-                $atomic_type->replaceTemplateTypesWithArgTypes($template_types);
+            } elseif ($atomic_type instanceof Type\Atomic\TTemplateIndexedAccess) {
+                $keys_to_unset[] = $key;
+
+                $template_type = null;
+
+                if (isset($template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''])
+                    && isset($template_types[$atomic_type->offset_param_name][''])
+                ) {
+                    $array_template_type
+                        = $template_types[$atomic_type->array_param_name][$atomic_type->defining_class ?: ''][0];
+                    $offset_template_type
+                        = $template_types[$atomic_type->offset_param_name][''][0];
+
+                    if ($array_template_type->isSingle()
+                        && $offset_template_type->isSingle()
+                        && !$array_template_type->isMixed()
+                        && !$offset_template_type->isMixed()
+                    ) {
+                        $array_template_type = array_values($array_template_type->types)[0];
+                        $offset_template_type = array_values($offset_template_type->types)[0];
+
+                        if ($array_template_type instanceof Type\Atomic\ObjectLike
+                            && ($offset_template_type instanceof Type\Atomic\TLiteralString
+                                || $offset_template_type instanceof Type\Atomic\TLiteralInt)
+                            && isset($array_template_type->properties[$offset_template_type->value])
+                        ) {
+                            $template_type = clone $array_template_type->properties[$offset_template_type->value];
+                        }
+                    }
+                }
+
+                if ($template_type) {
+                    foreach ($template_type->types as $template_type_part) {
+                        if ($template_type_part instanceof Type\Atomic\TMixed) {
+                            $is_mixed = true;
+                        }
+
+                        $new_types[$template_type_part->getKey()] = $template_type_part;
+                    }
+                } else {
+                    $new_types[$key] = new Type\Atomic\TMixed();
+                }
             }
         }
 
@@ -1316,6 +1596,7 @@ class Union
 
         return isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
             || $this->literal_string_types;
     }
@@ -1329,13 +1610,14 @@ class Union
     }
 
     /**
-     * @return TLiteralString the only string literal represented by this union type
      * @throws \InvalidArgumentException if isSingleStringLiteral is false
+     *
+     * @return TLiteralString the only string literal represented by this union type
      */
     public function getSingleStringLiteral()
     {
         if (count($this->types) !== 1 || count($this->literal_string_types) !== 1) {
-            throw new \InvalidArgumentException("Not a string literal");
+            throw new \InvalidArgumentException('Not a string literal');
         }
 
         return reset($this->literal_string_types);
@@ -1352,6 +1634,15 @@ class Union
         return true;
     }
 
+    public function hasLiteralValue() : bool
+    {
+        return $this->literal_int_types
+            || $this->literal_string_types
+            || $this->literal_float_types
+            || isset($this->types['false'])
+            || isset($this->types['true']);
+    }
+
     /**
      * @return bool true if this is a int literal with only one possible value
      */
@@ -1361,13 +1652,14 @@ class Union
     }
 
     /**
-     * @return TLiteralInt the only int literal represented by this union type
      * @throws \InvalidArgumentException if isSingleIntLiteral is false
+     *
+     * @return TLiteralInt the only int literal represented by this union type
      */
     public function getSingleIntLiteral()
     {
         if (count($this->types) !== 1 || count($this->literal_int_types) !== 1) {
-            throw new \InvalidArgumentException("Not an int literal");
+            throw new \InvalidArgumentException('Not an int literal');
         }
 
         return reset($this->literal_int_types);
@@ -1403,7 +1695,8 @@ class Union
         CodeLocation $code_location,
         array $suppressed_issues,
         array $phantom_classes = [],
-        $inferred = true
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
     ) {
         if ($this->checked) {
             return;
@@ -1417,7 +1710,8 @@ class Union
                 $code_location,
                 $suppressed_issues,
                 $phantom_classes,
-                $inferred
+                $inferred,
+                $prevent_template_covariance
             ) === false) {
                 $all_good = false;
             }
@@ -1425,9 +1719,8 @@ class Union
 
         if (!$all_good) {
             return false;
-        } else {
-            $this->checked = true;
         }
+        $this->checked = true;
     }
 
     /**
@@ -1449,16 +1742,45 @@ class Union
         }
     }
 
+    public function containsClassLike(string $fq_class_like_name) : bool
+    {
+        foreach ($this->types as $atomic_type) {
+            if ($atomic_type->containsClassLike($fq_class_like_name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function replaceClassLike(string $old, string $new) : void
+    {
+        foreach ($this->types as $key => $atomic_type) {
+            $atomic_type->replaceClassLike($old, $new);
+
+            $this->removeType($key);
+            $this->addType($atomic_type);
+        }
+    }
+
     /**
      * @return bool
      */
     public function equals(Union $other_type)
     {
+        if ($other_type === $this) {
+            return true;
+        }
+
         if ($other_type->id && $this->id && $other_type->id !== $this->id) {
             return false;
         }
 
         if ($this->possibly_undefined !== $other_type->possibly_undefined) {
+            return false;
+        }
+
+        if ($this->had_template !== $other_type->had_template) {
             return false;
         }
 

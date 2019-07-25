@@ -1,24 +1,28 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use function array_pop;
+use function assert;
+use function count;
+use function explode;
 use PhpParser;
+use function preg_replace;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
-use Psalm\Internal\Provider\{
-    ClassLikeStorageProvider,
-    FileReferenceProvider,
-    MethodReturnTypeProvider,
-    MethodExistenceProvider,
-    MethodParamsProvider,
-    MethodVisibilityProvider
-};
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\MethodExistenceProvider;
+use Psalm\Internal\Provider\MethodParamsProvider;
+use Psalm\Internal\Provider\MethodReturnTypeProvider;
+use Psalm\Internal\Provider\MethodVisibilityProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use function reset;
+use function strtolower;
 
 /**
  * @internal
@@ -31,11 +35,6 @@ class Methods
      * @var ClassLikeStorageProvider
      */
     private $classlike_storage_provider;
-
-    /**
-     * @var \Psalm\Config
-     */
-    private $config;
 
     /**
      * @var bool
@@ -68,13 +67,11 @@ class Methods
      * @param ClassLikeStorageProvider $storage_provider
      */
     public function __construct(
-        \Psalm\Config $config,
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
         ClassLikes $classlikes
     ) {
         $this->classlike_storage_provider = $storage_provider;
-        $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
         $this->classlikes = $classlikes;
         $this->return_type_provider = new MethodReturnTypeProvider();
@@ -324,16 +321,18 @@ class Methods
             $class_storage = $this->classlike_storage_provider->get($declaring_fq_class_name);
 
             if (!$class_storage->stubbed) {
-                $function_param_options = CallMap::getParamsFromCallMap($declaring_method_id ?: $method_id);
+                $function_callables = CallMap::getCallablesFromCallMap($declaring_method_id ?: $method_id);
 
-                if ($function_param_options === null) {
+                if ($function_callables === null) {
                     throw new \UnexpectedValueException(
-                        'Not expecting $function_param_options to be null for ' . $declaring_method_id
+                        'Not expecting $function_callables to be null for ' . $declaring_method_id
                     );
                 }
 
-                if (!$source || $args === null || count($function_param_options) === 1) {
-                    return $function_param_options[0];
+                if (!$source || $args === null || count($function_callables) === 1) {
+                    assert($function_callables[0]->params !== null);
+
+                    return $function_callables[0]->params;
                 }
 
                 if ($context && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
@@ -346,11 +345,15 @@ class Methods
                     }
                 }
 
-                return FunctionLikeAnalyzer::getMatchingParamsFromCallMapOptions(
+                $matching_callable = CallMap::getMatchingCallableFromCallMapOptions(
                     $source->getCodebase(),
-                    $function_param_options,
+                    $function_callables,
                     $args
                 );
+
+                assert($matching_callable->params !== null);
+
+                return $matching_callable->params;
             }
         }
 
@@ -396,11 +399,12 @@ class Methods
                     $params[$i]->type = clone $overridden_storage->params[$i]->type;
 
                     if ($source) {
+                        $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
                         $params[$i]->type = self::localizeParamType(
                             $source->getCodebase(),
                             $params[$i]->type,
                             $appearing_fq_class_name,
-                            $overriding_fq_class_name
+                            $overridden_class_storage->name
                         );
                     }
 
@@ -439,11 +443,9 @@ class Methods
             if ($atomic_type instanceof Type\Atomic\TTemplateParam
                 || $atomic_type instanceof Type\Atomic\TTemplateParamClass
             ) {
-                if ($atomic_type->defining_class
-                    && strcasecmp($atomic_type->defining_class, $base_fq_class_name) === 0
-                ) {
-                    if (isset($extends[strtolower($base_fq_class_name)][$atomic_type->param_name])) {
-                        $extended_param = $extends[strtolower($base_fq_class_name)][$atomic_type->param_name];
+                if ($atomic_type->defining_class === $base_fq_class_name) {
+                    if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
+                        $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];
 
                         $type->removeType($key);
                         $type = Type::combineUnionTypes(
@@ -459,7 +461,7 @@ class Methods
                 || $atomic_type instanceof Type\Atomic\TIterable
                 || $atomic_type instanceof Type\Atomic\TGenericObject
             ) {
-                foreach ($atomic_type->type_params as $type_param) {
+                foreach ($atomic_type->type_params as &$type_param) {
                     $type_param = self::localizeParamType(
                         $codebase,
                         $type_param,
@@ -470,7 +472,7 @@ class Methods
             }
 
             if ($atomic_type instanceof Type\Atomic\TCallable
-                || $atomic_type instanceof Type\Atomic\Fn
+                || $atomic_type instanceof Type\Atomic\TFn
             ) {
                 if ($atomic_type->params) {
                     foreach ($atomic_type->params as $param) {
@@ -528,38 +530,20 @@ class Methods
      */
     public function getMethodReturnType($method_id, &$self_class, array $args = null)
     {
-        $checked_for_pseudo_method = false;
+        list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
 
-        if ($this->config->use_phpdoc_method_without_magic_or_parent) {
-            list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
+        $original_fq_class_name = $this->classlikes->getUnAliasedName($original_fq_class_name);
 
-            $original_fq_class_name = $this->classlikes->getUnAliasedName($original_fq_class_name);
+        $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
 
-            $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
-
-            if (isset($original_class_storage->pseudo_methods[strtolower($original_method_name)])) {
-                return $original_class_storage->pseudo_methods[strtolower($original_method_name)]->return_type;
-            }
-
-            $checked_for_pseudo_method = true;
+        if (isset($original_class_storage->pseudo_methods[strtolower($original_method_name)])) {
+            return $original_class_storage->pseudo_methods[strtolower($original_method_name)]->return_type;
         }
 
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {
             return null;
-        }
-
-        if (!$checked_for_pseudo_method) {
-            list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
-
-            $original_fq_class_name = $this->classlikes->getUnAliasedName($original_fq_class_name);
-
-            $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
-
-            if (isset($original_class_storage->pseudo_methods[strtolower($original_method_name)])) {
-                return $original_class_storage->pseudo_methods[strtolower($original_method_name)]->return_type;
-            }
         }
 
         $appearing_method_id = $this->getAppearingMethodId($method_id);
@@ -572,7 +556,7 @@ class Methods
             $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
             if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
-                $appearing_method_id = $class_storage->overridden_method_ids[$method_name][0];
+                $appearing_method_id = reset($class_storage->overridden_method_ids[$method_name]);
             } else {
                 return null;
             }
@@ -582,18 +566,21 @@ class Methods
 
         $appearing_fq_class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
 
-        if (!$appearing_fq_class_storage->user_defined && CallMap::inCallMap($appearing_method_id)) {
+        if (!$appearing_fq_class_storage->user_defined
+            && !$appearing_fq_class_storage->stubbed
+            && CallMap::inCallMap($appearing_method_id)
+        ) {
             if ($appearing_method_id === 'Closure::fromcallable'
                 && isset($args[0]->value->inferredType)
                 && $args[0]->value->inferredType->isSingle()
             ) {
                 foreach ($args[0]->value->inferredType->getTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TCallable
-                        || $atomic_type instanceof Type\Atomic\Fn
+                        || $atomic_type instanceof Type\Atomic\TFn
                     ) {
                         $callable_type = clone $atomic_type;
 
-                        return new Type\Union([new Type\Atomic\Fn(
+                        return new Type\Union([new Type\Atomic\TFn(
                             'Closure',
                             $callable_type->params,
                             $callable_type->return_type
@@ -605,7 +592,7 @@ class Methods
                     ) {
                         $invokable_storage = $this->getStorage($atomic_type->value . '::__invoke');
 
-                        return new Type\Union([new Type\Atomic\Fn(
+                        return new Type\Union([new Type\Atomic\TFn(
                             'Closure',
                             $invokable_storage->params,
                             $invokable_storage->return_type
@@ -614,7 +601,13 @@ class Methods
                 }
             }
 
-            $return_type_candidate = CallMap::getReturnTypeFromCallMap($appearing_method_id);
+            $callmap_callables = CallMap::getCallablesFromCallMap($appearing_method_id);
+
+            if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
+                throw new \UnexpectedValueException('Shouldn’t get here');
+            }
+
+            $return_type_candidate = $callmap_callables[0]->return_type;
 
             if ($return_type_candidate->isFalsable()) {
                 $return_type_candidate->ignore_falsable_issues = true;
@@ -775,7 +768,7 @@ class Methods
         }
 
         if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
-            return $class_storage->overridden_method_ids[$method_name][0];
+            return reset($class_storage->overridden_method_ids[$method_name]);
         }
     }
 

@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Storage;
 
-use Psalm\CodeLocation;
-
 class MethodStorage extends FunctionLikeStorage
 {
     /**
@@ -26,16 +24,6 @@ class MethodStorage extends FunctionLikeStorage
     public $abstract;
 
     /**
-     * @var array<int, CodeLocation>
-     */
-    public $unused_params = [];
-
-    /**
-     * @var array<int, bool>
-     */
-    public $used_params = [];
-
-    /**
      * @var bool
      */
     public $overridden_downstream = false;
@@ -49,6 +37,11 @@ class MethodStorage extends FunctionLikeStorage
      * @var bool
      */
     public $inheritdoc = false;
+
+    /**
+     * @var bool
+     */
+    public $inherited_return_type = false;
 
     /**
      * @var string

@@ -1,8 +1,11 @@
 <?php
-
 namespace Psalm\Internal\Diff;
 
+use function array_merge;
+use function end;
+use function get_class;
 use PhpParser;
+use function substr;
 
 /**
  * @internal

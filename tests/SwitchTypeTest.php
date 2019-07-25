@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+
 class SwitchTypeTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;

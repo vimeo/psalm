@@ -10,6 +10,13 @@ use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
+use function in_array;
+use function array_values;
+use function array_filter;
+use function array_keys;
+use function preg_match;
+use function preg_quote;
+use function array_merge;
 
 /**
  * @internal
@@ -70,7 +77,7 @@ class DoAnalyzer
                 continue;
             }
 
-            if ($do_context->hasVariable($var)) {
+            if (isset($do_context->vars_in_scope[$var])) {
                 if ($do_context->vars_in_scope[$var]->getId() !== $type->getId()) {
                     $do_context->vars_in_scope[$var] = Type::combineUnionTypes($do_context->vars_in_scope[$var], $type);
                 }

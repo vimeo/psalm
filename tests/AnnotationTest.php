@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
 
@@ -134,13 +135,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidScalarArgument
-     *
-     * @return                   void
+     * @return void
      */
     public function testPhpStormGenericsInvalidArgument()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('InvalidScalarArgument');
+
         Config::getInstance()->allow_phpstorm_generics = true;
 
         $this->addFile(
@@ -159,13 +160,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage PossiblyInvalidMethodCall
-     *
-     * @return                   void
+     * @return void
      */
     public function testPhpStormGenericsNoTypehint()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('PossiblyInvalidMethodCall');
+
         Config::getInstance()->allow_phpstorm_generics = true;
 
         $this->addFile(
@@ -181,13 +182,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidParamDefault
-     *
-     * @return                   void
+     * @return void
      */
     public function testInvalidParamDefault()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('InvalidParamDefault');
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -224,13 +225,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidParamDefault
-     *
-     * @return                   void
+     * @return void
      */
     public function testInvalidTypehintParamDefaultButAllowedInConfig()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('InvalidParamDefault');
+
         Config::getInstance()->add_param_default_to_docblock_type = true;
 
         $this->addFile(
@@ -515,42 +516,67 @@ class AnnotationTest extends TestCase
             ],
             'megaClosureAnnotationWithSpacing' => [
                 '<?php
-                    /** @var array{
-                      a: Closure() : (array<mixed, mixed>|null),
-                      b?: Closure() : array<mixed, mixed>,
-                      c?: Closure() : array<mixed, mixed>,
-                      d?: Closure() : array<mixed, mixed>,
-                      e?: Closure() : (array{
-                        f: null|string,
-                        g: null|string,
-                        h: null|string,
-                        i: string,
-                        j: mixed,
-                        k: mixed,
-                        l: mixed,
-                        m: mixed,
-                        n: bool,
-                        o?: array{0:string}
-                      }|null),
-                      p?: Closure() : (array{
-                        f: null|string,
-                        g: null|string,
-                        h: null|string,
-                        q: string,
-                        i: string,
-                        j: mixed,
-                        k: mixed,
-                        l: mixed,
-                        m: mixed,
-                        n: bool,
-                        o?: array{0:string}
-                      }|null),
-                      r?: Closure() : (array<mixed, mixed>|null),
-                      s: array<mixed, mixed>
-                    } */
+                    /**
+                     * @var array{
+                     * a: Closure() : (array<mixed, mixed>|null),
+                     * b?: Closure() : array<mixed, mixed>,
+                     * c?: Closure() : array<mixed, mixed>,
+                     * d?: Closure() : array<mixed, mixed>,
+                     * e?: Closure() : (array{
+                     *   f: null|string,
+                     *   g: null|string,
+                     *   h: null|string,
+                     *   i: string,
+                     *   j: mixed,
+                     *   k: mixed,
+                     *   l: mixed,
+                     *   m: mixed,
+                     *   n: bool,
+                     *   o?: array{0:string}
+                     * }|null),
+                     * p?: Closure() : (array{
+                     *   f: null|string,
+                     *   g: null|string,
+                     *   h: null|string,
+                     *   q: string,
+                     *   i: string,
+                     *   j: mixed,
+                     *   k: mixed,
+                     *   l: mixed,
+                     *   m: mixed,
+                     *   n: bool,
+                     *   o?: array{0:string}
+                     * }|null),
+                     * r?: Closure() : (array<mixed, mixed>|null),
+                     * s: array<mixed, mixed>
+                     * }
+                     *
+                     * Some text
+                     */
                     $arr = [];
 
                     $arr["a"]();',
+            ],
+            'multipeLineGenericArray' => [
+                '<?php
+                    /**
+                     * @psalm-type MiddlewareArray = array<
+                     *     class-string<\Exception>,
+                     *     array<int, string>
+                     * >
+                     *
+                     * @psalm-type RuleArray = array{
+                     *     rule: string,
+                     *     controller?: class-string<\Exception>,
+                     *     redirect?: string,
+                     *     code?: int,
+                     *     type?: string,
+                     *     middleware?: MiddlewareArray
+                     * }
+                     *
+                     * Foo Bar
+                     */
+                    class A {}',
             ],
             'slashAfter?' => [
                 '<?php
@@ -965,7 +991,73 @@ class AnnotationTest extends TestCase
                     $b = (new Bar)->doFoo();',
                 [
                     '$b' => 'array<array-key, int>',
-                ]
+                ],
+            ],
+            'noExceptionOnIntersection' => [
+                '<?php
+                    class Foo {
+                        /** @var null|\DateTime&\DateTimeImmutable */
+                        private $s = null;
+                    }',
+            ],
+            'intersectionWithSpace' => [
+                '<?php
+                    interface A {
+                        public function foo() : void;
+                    }
+                    interface B {
+                        public function bar() : void;
+                    }
+
+                    /** @param A & B $a */
+                    function f(A $a) : void {
+                        $a->foo();
+                        $a->bar();
+                    }',
+            ],
+            'allowClosingComma' => [
+                '<?php
+                    /**
+                     * @param array{
+                     *    foo: string,
+                     *    bar: string,
+                     *    baz: array{
+                     *       a: int,
+                     *    },
+                     * } $foo
+                     */
+                    function foo(array $foo) : int {
+                      return count($foo);
+                    }
+
+                    /**
+                     * @var array{
+                     *    foo:string,
+                     *    bar:string,
+                     *    baz:string,
+                     * } $foo
+                     */
+                    $foo = ["foo" => "", "bar" => "", "baz" => ""];',
+            ],
+            'inheritedSelfAnnotation' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @param self $i
+                         * @return self
+                         */
+                        function foo(self $i) : self;
+                    }
+
+                    class C implements I {
+                        public function foo(I $i) : I {
+                            return $i;
+                        }
+                    }
+
+                    function takeI(I $i) : I {
+                        return (new C)->foo($i);
+                    }',
             ],
         ];
     }
@@ -976,7 +1068,43 @@ class AnnotationTest extends TestCase
     public function providerInvalidCodeParse()
     {
         return [
-            'invalidReturn' => [
+            'invalidClassMethodReturn' => [
+                '<?php
+                    class C {
+                        /**
+                         * @return $thus
+                         */
+                        public function barBar() {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MissingDocblockType',
+            ],
+            'invalidClassMethodReturnClass' => [
+                '<?php
+                    class C {
+                        /**
+                         * @return 1
+                         */
+                        public static function barBar() {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidClassMethodReturnBrackets' => [
+                '<?php
+                    class C {
+                        /**
+                         * @return []
+                         */
+                        public static function barBar() {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidInterfaceMethodReturn' => [
                 '<?php
                     interface I {
                         /**
@@ -986,7 +1114,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingDocblockType',
             ],
-            'invalidReturnClass' => [
+            'invalidInterfaceMethodReturnClass' => [
                 '<?php
                     interface I {
                         /**
@@ -996,7 +1124,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'invalidReturnBrackets' => [
+            'invalidInterfaceMethodReturnBrackets' => [
                 '<?php
                     interface I {
                         /**
@@ -1177,6 +1305,26 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass',
             ],
+            'undefinedDocblockClassCall' => [
+                '<?php
+                    class B {
+                        /**
+                         * @return A
+                         * @psalm-suppress UndefinedDocblockClass
+                         * @psalm-suppress InvalidReturnStatement
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        public function foo() {
+                            return new stdClass();
+                        }
+
+                        public function bar() {
+                            $this->foo()->bar();
+                        }
+                    }
+                    ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
             'preventBadObjectLikeFormat' => [
                 '<?php
                     /**
@@ -1321,7 +1469,7 @@ class AnnotationTest extends TestCase
                 '<?php
                     /** @var Foo */
                     $a = $_GET["foo"];',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'badPsalmType' => [
                 '<?php
@@ -1430,6 +1578,20 @@ class AnnotationTest extends TestCase
                     $c = 3;
                     foo($c);',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'identifyReturnType' => [
+                '<?php
+                    /** @return array{hello: string} */
+                    function foo() {}',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
+            ],
+            'invalidParamDocblockAsterisk' => [
+                '<?php
+                    /**
+                     * @param    *   $reference
+                     */
+                    function f($reference) {}',
+                'error_message' => 'MissingDocblockType',
             ],
         ];
     }

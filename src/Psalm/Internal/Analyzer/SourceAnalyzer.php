@@ -15,6 +15,12 @@ abstract class SourceAnalyzer implements StatementsSource
      */
     protected $source;
 
+    public function __destruct()
+    {
+        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
+        $this->source = null;
+    }
+
     /**
      * @return Aliases
      */
@@ -29,6 +35,14 @@ abstract class SourceAnalyzer implements StatementsSource
     public function getAliasedClassesFlipped()
     {
         return $this->source->getAliasedClassesFlipped();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlippedReplaceable()
+    {
+        return $this->source->getAliasedClassesFlippedReplaceable();
     }
 
     /**

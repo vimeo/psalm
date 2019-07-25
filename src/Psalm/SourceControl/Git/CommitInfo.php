@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\SourceControl\Git;
 
 /**
@@ -85,6 +84,7 @@ class CommitInfo
 
     /**
      * Return commit ID.
+     *
      * @return ?string
      */
     public function getId()
@@ -126,6 +126,7 @@ class CommitInfo
 
     /**
      * Return author email.
+     *
      * @return null|string
      */
     public function getAuthorEmail()
@@ -145,6 +146,7 @@ class CommitInfo
 
     /**
      * Return committer name.
+     *
      * @return null|string
      */
     public function getCommitterName()
@@ -164,6 +166,7 @@ class CommitInfo
 
     /**
      * Return committer email.
+     *
      * @return null|string
      */
     public function getCommitterEmail()
@@ -183,6 +186,7 @@ class CommitInfo
 
     /**
      * Return commit message.
+     *
      * @return null|string
      */
     public function getMessage()
@@ -202,6 +206,7 @@ class CommitInfo
 
     /**
      * Return commit date.
+     *
      * @return null|int
      */
     public function getDate()

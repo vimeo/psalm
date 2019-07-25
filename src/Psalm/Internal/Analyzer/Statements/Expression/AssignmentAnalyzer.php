@@ -13,6 +13,7 @@ use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Issue\AssignmentToVoid;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\LoopInvalidation;
@@ -23,6 +24,9 @@ use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use function is_string;
+use function strpos;
+use function strtolower;
 
 /**
  * @internal
@@ -35,8 +39,7 @@ class AssignmentAnalyzer
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
      * @param  Type\Union|null          $assign_value_type
      * @param  Context                  $context
-     * @param  string                   $doc_comment
-     * @param  int|null                 $came_from_line_number
+     * @param  ?PhpParser\Comment\Doc   $doc_comment
      *
      * @return false|Type\Union
      */
@@ -46,8 +49,7 @@ class AssignmentAnalyzer
         $assign_value,
         $assign_value_type,
         Context $context,
-        $doc_comment,
-        $came_from_line_number = null
+        ?PhpParser\Comment\Doc $doc_comment
     ) {
         $var_id = ExpressionAnalyzer::getVarId(
             $assign_var,
@@ -82,8 +84,6 @@ class AssignmentAnalyzer
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getAliases(),
                     $template_type_map,
-                    $came_from_line_number,
-                    null,
                     $file_storage->type_aliases
                 );
             } catch (IncorrectDocblockException $e) {
@@ -112,7 +112,8 @@ class AssignmentAnalyzer
                         $codebase,
                         $var_comment->type,
                         $context->self,
-                        $context->self
+                        $context->self,
+                        $statements_analyzer->getParentFQCLN()
                     );
 
                     $var_comment_type->setFromDocblock();
@@ -122,6 +123,27 @@ class AssignmentAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                         $statements_analyzer->getSuppressedIssues()
                     );
+
+                    if ($codebase->alter_code
+                        && $var_comment->type_start
+                        && $var_comment->type_end
+                        && $var_comment->line_number
+                    ) {
+                        $type_location = new CodeLocation\DocblockTypeLocation(
+                            $statements_analyzer,
+                            $var_comment->type_start,
+                            $var_comment->type_end,
+                            $var_comment->line_number
+                        );
+
+                        $codebase->classlikes->handleDocblockTypeInMigration(
+                            $codebase,
+                            $statements_analyzer,
+                            $var_comment_type,
+                            $type_location,
+                            $context->calling_method_id
+                        );
+                    }
 
                     if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
                         $comment_type = $var_comment_type;
@@ -140,6 +162,10 @@ class AssignmentAnalyzer
                     }
                 }
             }
+        }
+
+        if ($array_var_id) {
+            unset($context->referenced_var_ids[$array_var_id]);
         }
 
         if ($assign_value) {
@@ -494,7 +520,8 @@ class AssignmentAnalyzer
                                     $codebase,
                                     $var_comment->type,
                                     $context->self,
-                                    $context->self
+                                    $context->self,
+                                    $statements_analyzer->getParentFQCLN()
                                 );
 
                                 $var_comment_type->setFromDocblock();
@@ -526,6 +553,18 @@ class AssignmentAnalyzer
                 $assign_value_type
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
+            if ($context->pure) {
+                if (IssueBuffer::accepts(
+                    new ImpurePropertyAssignment(
+                        'Cannot assign to a property from a pure context',
+                        new CodeLocation($statements_analyzer, $assign_var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
             if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
                 // this can happen when the user actually means to type $this-><autocompleted>, but there's
                 // a variable on the next line
@@ -666,6 +705,18 @@ class AssignmentAnalyzer
             $statements_analyzer
         );
 
+        if ($array_var_id && $context->pure && strpos($array_var_id, '->')) {
+            if (IssueBuffer::accepts(
+                new ImpurePropertyAssignment(
+                    'Cannot assign to a property from a pure context',
+                    new CodeLocation($statements_analyzer, $stmt->var)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
         if ($array_var_id && $context->collect_references && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
             $location = new CodeLocation($statements_analyzer, $stmt->var);
             $context->assigned_var_ids[$array_var_id] = true;
@@ -783,7 +834,7 @@ class AssignmentAnalyzer
             $stmt->expr,
             null,
             $context,
-            (string)$stmt->getDocComment()
+            $stmt->getDocComment()
         ) === false) {
             return false;
         }
@@ -802,6 +853,7 @@ class AssignmentAnalyzer
 
         if ($lhs_var_id) {
             $context->vars_in_scope[$lhs_var_id] = Type::getMixed();
+            $context->hasVariable($lhs_var_id, $statements_analyzer);
         }
 
         if ($rhs_var_id) {

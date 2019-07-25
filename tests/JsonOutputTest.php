@@ -6,13 +6,14 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider;
+use function substr;
 
 class JsonOutputTest extends TestCase
 {
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
         // case, so don't run a `parent::setUp()` call here.
@@ -22,15 +23,16 @@ class JsonOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
+        $stdout_report_options = new \Psalm\Report\ReportOptions();
+        $stdout_report_options->format = \Psalm\Report::TYPE_JSON;
+
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),
-            false,
-            true,
-            ProjectAnalyzer::TYPE_JSON
+            $stdout_report_options
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();

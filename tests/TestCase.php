@@ -1,6 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
+use function define;
+use function defined;
+use const DIRECTORY_SEPARATOR;
+use function getcwd;
+use function ini_set;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -22,7 +27,7 @@ class TestCase extends BaseTestCase
     /**
      * @return void
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass() : void
     {
         ini_set('memory_limit', '-1');
 
@@ -41,7 +46,7 @@ class TestCase extends BaseTestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 
@@ -58,15 +63,15 @@ class TestCase extends BaseTestCase
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers,
-            false,
-            true,
-            ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            false
+            $providers
         );
 
         $this->project_analyzer->setPhpVersion('7.3');
+    }
+
+    public function tearDown() : void
+    {
+        FileAnalyzer::clearCache();
     }
 
     /**
@@ -96,6 +101,10 @@ class TestCase extends BaseTestCase
 
         $codebase->config->visitStubFiles($codebase);
 
+        if ($codebase->alter_code) {
+            $this->project_analyzer->interpretRefactors();
+        }
+
         $file_analyzer = new FileAnalyzer(
             $this->project_analyzer,
             $file_path,
@@ -112,7 +121,10 @@ class TestCase extends BaseTestCase
     protected function getTestName($withDataSet = true)
     {
         $name = parent::getName($withDataSet);
-        /** @psalm-suppress DocblockTypeContradiction PHPUnit 7 introduced nullable name */
+        /**
+         * @psalm-suppress DocblockTypeContradiction PHPUnit 7 introduced nullable name
+         * @psalm-suppress TypeDoesNotContainNull PHPUnit 8.2 made it non-nullable again
+         */
         if (null === $name) {
             throw new RuntimeException('anonymous test - shouldn\'t happen');
         }

@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -16,6 +15,7 @@ class DomNodeAppendChild implements \Psalm\Plugin\Hook\MethodReturnTypeProviderI
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?Type\Union
      */
     public static function getMethodReturnType(

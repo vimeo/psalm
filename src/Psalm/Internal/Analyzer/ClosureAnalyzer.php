@@ -19,4 +19,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         parent::__construct($function, $source, $storage);
     }
+
+    public function getTemplateTypeMap()
+    {
+        return $this->source->getTemplateTypeMap();
+    }
 }

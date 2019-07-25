@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
 
@@ -10,13 +11,12 @@ class PropertyTypeTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage NullableReturnStatement
-     *
-     * @return                   void
+     * @return void
      */
     public function testForgetPropertyAssignments()
     {
+        $this->expectExceptionMessage('NullableReturnStatement');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         Config::getInstance()->remember_property_assignments_after_call = false;
 
         $this->addFile(
@@ -44,7 +44,7 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testForgetPropertyAssignmentsInBranchWithThrow()
     {
@@ -1545,7 +1545,7 @@ class PropertyTypeTest extends TestCase
                         public static function getInstance(): self { return new static; }
                     }
 
-                    class Concrete extends Base {}'
+                    class Concrete extends Base {}',
             ],
             'preventCrashWhenCallingInternalMethodInPropertyInitialisationChecks' => [
                 '<?php
@@ -1560,6 +1560,106 @@ class PropertyTypeTest extends TestCase
                     }
 
                     class Bar extends Foo {}',
+            ],
+            'parentSetsWiderTypeInConstructor' => [
+                '<?php
+                    interface Foo {}
+
+                    interface FooMore extends Foo {
+                        public function something(): void;
+                    }
+
+                    class Bar {
+                        /** @var Foo */
+                        protected $foo;
+
+                        public function __construct(Foo $foo) {
+                            $this->foo = $foo;
+                        }
+                    }
+
+
+                    class BarMore extends Bar {
+                        /** @var FooMore */
+                        protected $foo;
+
+                        public function __construct(FooMore $foo) {
+                            parent::__construct($foo);
+                            $this->foo->something();
+                        }
+                    }',
+            ],
+            'inferPropertyTypesForSimpleConstructors' => [
+                '<?php
+                    class A {
+                        private $foo;
+                        private $bar;
+
+                        public function __construct(int $foot, string $bart) {
+                            $this->foo = $foot;
+                            $this->bar = $bart;
+                        }
+
+                        public function getFoo() : int {
+                            return $this->foo;
+                        }
+
+                        public function getBar() : string {
+                            return $this->bar;
+                        }
+                    }',
+            ],
+            'nullableDocblockTypedPropertyNoConstructor' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private $foo;
+                    }',
+            ],
+            'nullableDocblockTypedPropertyEmptyConstructor' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private $foo;
+
+                        public function __construct() {}
+                    }',
+            ],
+            'nullableDocblockTypedPropertyUseBeforeInitialised' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private $foo;
+
+                        public function __construct() {
+                            echo $this->foo;
+                        }
+                    }',
+            ],
+            'dontAlterClosureParams' => [
+                '<?php
+                    class C {
+                      /** @var array */
+                      public $i;
+
+                      public function __construct() {
+                        $this->i = [
+                          function (Exception $e): void {},
+                          function (LogicException $e): void {},
+                        ];
+                      }
+                    }',
+            ],
+            'inferSpreadParamType' => [
+                '<?php
+                    class Tag {}
+                    class EntityTags {
+                        private $tags;
+
+                        public function __construct(Tag ...$tags) {
+                            $this->tags = $tags;
+                        }
+                    }',
             ],
         ];
     }
@@ -1906,7 +2006,7 @@ class PropertyTypeTest extends TestCase
 
                         public function __construct() { }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'noConstructor' => [
                 '<?php
@@ -1956,7 +2056,7 @@ class PropertyTypeTest extends TestCase
                     class B extends A {
                         public function __construct() {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:11'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
             ],
             'notSetInAllBranchesOfIf' => [
                 '<?php
@@ -1970,7 +2070,7 @@ class PropertyTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'propertySetInProtectedMethod' => [
                 '<?php
@@ -1990,7 +2090,7 @@ class PropertyTypeTest extends TestCase
                     class B extends A {
                         protected function foo() : void {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:15'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:15',
             ],
             'definedInTraitNotSetInEmptyConstructor' => [
                 '<?php
@@ -2004,7 +2104,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct() {
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:6'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:6',
             ],
             'propertySetInPrivateMethodWithIf' => [
                 '<?php
@@ -2022,7 +2122,7 @@ class PropertyTypeTest extends TestCase
                             $this->a = 5;
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'privatePropertySameNameNotSetInConstructor' => [
                 '<?php
@@ -2039,7 +2139,7 @@ class PropertyTypeTest extends TestCase
                         /** @var string */
                         private $b;
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:13'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:13',
             ],
             'privateMethodCalledInParentConstructor' => [
                 '<?php
@@ -2064,7 +2164,7 @@ class PropertyTypeTest extends TestCase
 
                         private function privateMethod() : void {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:2'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:2',
             ],
             'privatePropertySetInParentConstructorReversedOrder' => [
                 '<?php
@@ -2106,7 +2206,7 @@ class PropertyTypeTest extends TestCase
                         /** @var B */
                         public $foo;
                     }',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'abstractClassWithNoConstructorButChild' => [
                 '<?php
@@ -2118,7 +2218,7 @@ class PropertyTypeTest extends TestCase
                     class B extends A {
                         public function __construct() {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],
             'badAssignmentToUndefinedVars' => [
                 '<?php
@@ -2169,7 +2269,7 @@ class PropertyTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'invalidPropertyDefault' => [
                 '<?php
@@ -2350,7 +2450,7 @@ class PropertyTypeTest extends TestCase
 
                         public function __call(string $var, array $args) {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'reportGoodLocationForPropertyError' => [
                 '<?php
@@ -2372,7 +2472,102 @@ class PropertyTypeTest extends TestCase
                             // nothing happens here
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:15'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:15',
+            ],
+            'noCrashWhenUnsettingPropertyWithoutDefaultInConstructor' => [
+                '<?php
+                    class A {
+                        /** @var bool */
+                        private $foo;
+
+                        public function __construct() {
+                            unset($this->foo);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'parentSetsWiderTypeInConstructor' => [
+                '<?php
+                    interface Foo {}
+
+                    interface FooMore extends Foo {}
+
+                    class Bar {
+                        /** @var Foo */
+                        protected $foo;
+
+                        public function __construct(Foo $foo) {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    class BarMore extends Bar {
+                        /** @var FooMore */
+                        protected $foo;
+
+                        public function __construct(FooMore $foo) {
+                            parent::__construct($foo);
+                            $this->foo->something();
+                        }
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod',
+            ],
+            'nullableTypedPropertyNoConstructor' => [
+                '<?php
+                    class A {
+                        private ?bool $foo;
+                    }',
+                'error_message' => 'MissingConstructor',
+            ],
+            'nullableTypedPropertyEmptyConstructor' => [
+                '<?php
+                    class A {
+                        private ?bool $foo;
+
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'nullableTypedPropertyUseBeforeInitialised' => [
+                '<?php
+                    class A {
+                        private ?bool $foo;
+
+                        public function __construct() {
+                            echo $this->foo;
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty',
+            ],
+            'nullableTypedPropertyNoConstructorWithDocblock' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private ?bool $foo;
+                    }',
+                'error_message' => 'MissingConstructor',
+            ],
+            'nullableTypedPropertyEmptyConstructorWithDocblock' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private ?bool $foo;
+
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'nullableTypedPropertyUseBeforeInitialisedWithDocblock' => [
+                '<?php
+                    class A {
+                        /** @var ?bool */
+                        private ?bool $foo;
+
+                        public function __construct() {
+                            echo $this->foo;
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty',
             ],
         ];
     }

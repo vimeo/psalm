@@ -1,12 +1,12 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function in_array;
 use PhpParser;
-use Psalm\Context;
 use Psalm\CodeLocation;
-use Psalm\Type;
+use Psalm\Context;
 use Psalm\StatementsSource;
+use Psalm\Type;
 
 class StrReplaceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -17,7 +17,7 @@ class StrReplaceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
             'str_ireplace',
             'substr_replace',
             'preg_replace',
-            'preg_replace_callback'
+            'preg_replace_callback',
         ];
     }
 

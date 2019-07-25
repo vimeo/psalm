@@ -8,6 +8,9 @@ use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 use Psalm\Type\Algebra;
+use function array_intersect_key;
+use function count;
+use function array_unique;
 
 /**
  * @internal

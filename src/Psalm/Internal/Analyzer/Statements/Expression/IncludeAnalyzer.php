@@ -11,6 +11,26 @@ use Psalm\Exception\FileIncludeException;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
+use function str_replace;
+use const DIRECTORY_SEPARATOR;
+use function dirname;
+use function preg_match;
+use function in_array;
+use function realpath;
+use function get_included_files;
+use function str_repeat;
+use const PHP_EOL;
+use function is_string;
+use function implode;
+use function defined;
+use function constant;
+use const PATH_SEPARATOR;
+use function preg_split;
+use function get_include_path;
+use function explode;
+use function substr;
+use function file_exists;
+use function preg_replace;
 
 /**
  * @internal
@@ -90,10 +110,10 @@ class IncludeAnalyzer
 
                 $file_name = $config->shortenFileName($path_to_file);
 
-                if ($current_file_analyzer->project_analyzer->debug_output) {
-                    $nesting = $statements_analyzer->getRequireNesting() + 1;
-                    echo (str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL);
-                }
+                $nesting = $statements_analyzer->getRequireNesting() + 1;
+                $current_file_analyzer->project_analyzer->progress->debug(
+                    str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL
+                );
 
                 $include_file_analyzer = new \Psalm\Internal\Analyzer\FileAnalyzer(
                     $current_file_analyzer->project_analyzer,
@@ -310,15 +330,11 @@ class IncludeAnalyzer
         // first remove unnecessary / duplicates
         $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
 
-        $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
-
         $reduce_pattern = '/\/[^\/]+\/\.\.\//';
 
         while (preg_match($reduce_pattern, $path_to_file)) {
-            $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
+            $path_to_file = preg_replace($reduce_pattern, '/', $path_to_file, 1);
         }
-
-        $path_to_file = str_replace('/./', '/', $path_to_file);
 
         if (DIRECTORY_SEPARATOR !== '/') {
             $path_to_file = str_replace('/', DIRECTORY_SEPARATOR, $path_to_file);

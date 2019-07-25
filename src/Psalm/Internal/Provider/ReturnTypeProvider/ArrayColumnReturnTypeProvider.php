@@ -1,13 +1,13 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function assert;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
-use Psalm\StatementsSource;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\StatementsSource;
+use Psalm\Type;
 
 class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -50,7 +50,7 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         $value_column_name = null;
         // calculate value column name
         if (isset($call_args[1]->value->inferredType)) {
-            $value_column_name_arg= $call_args[1]->value->inferredType;
+            $value_column_name_arg = $call_args[1]->value->inferredType;
             if ($value_column_name_arg->isSingleIntLiteral()) {
                 $value_column_name = $value_column_name_arg->getSingleIntLiteral()->value;
             } elseif ($value_column_name_arg->isSingleStringLiteral()) {
@@ -88,11 +88,15 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             return new Type\Union([
                 new Type\Atomic\TArray([
                     $result_key_type,
-                    $result_element_type
-                ])
+                    $result_element_type,
+                ]),
             ]);
         }
 
-        return CallMap::getReturnTypeFromCallMap($function_id);
+        $callmap_callables = CallMap::getCallablesFromCallMap($function_id);
+
+        assert($callmap_callables && $callmap_callables[0]->return_type);
+
+        return $callmap_callables[0]->return_type;
     }
 }

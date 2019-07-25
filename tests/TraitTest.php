@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+
 class TraitTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
@@ -854,6 +856,19 @@ class TraitTest extends TestCase
                     $f1 = new Foo();
                     $f2 = (new Foo())->bar($f1);',
             ],
+            'traitSelfDocblockReturn' => [
+                '<?php
+                    trait T {
+                        /** @return self */
+                        public function getSelf() {
+                            return $this;
+                        }
+                    }
+
+                    class C {
+                        use T;
+                    }',
+            ],
         ];
     }
 
@@ -1047,7 +1062,7 @@ class TraitTest extends TestCase
                       /** @var T|null */
                       public $hm;
                     }',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedDocblockClass',
             ],
         ];
     }

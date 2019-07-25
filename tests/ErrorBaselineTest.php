@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use const LIBXML_NOBLANKS;
 use Prophecy\Argument;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\ErrorBaseline;
@@ -15,7 +16,7 @@ class ErrorBaselineTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         $this->fileProvider = $this->prophesize(FileProvider::class);
     }
@@ -143,7 +144,7 @@ class ErrorBaselineTest extends TestCase
                 'selected_text' => 'foo',
             ],
             [
-                'file_name' => 'sample/sample-file.php',
+                'file_name' => 'sample\sample-file.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
                 'selected_text' => 'bar',
@@ -155,7 +156,7 @@ class ErrorBaselineTest extends TestCase
                 'selected_text' => 'bat',
             ],
             [
-                'file_name' => 'sample/sample-file.php',
+                'file_name' => 'sample\sample-file.php',
                 'type' => 'MixedOperand',
                 'severity' => 'error',
                 'selected_text' => 'bing',
@@ -167,7 +168,7 @@ class ErrorBaselineTest extends TestCase
                 'selected_text' => 'bong',
             ],
             [
-                'file_name' => 'sample/sample-file.php',
+                'file_name' => 'sample\sample-file.php',
                 'type' => 'CircularReference',
                 'severity' => 'suppress',
                 'selected_text' => 'birdy',
@@ -179,7 +180,7 @@ class ErrorBaselineTest extends TestCase
                 'selected_text' => 'boardy',
             ],
             [
-                'file_name' => 'sample/sample-file2.php',
+                'file_name' => 'sample\sample-file2.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
                 'selected_text' => 'bardy',
@@ -190,7 +191,7 @@ class ErrorBaselineTest extends TestCase
                 'severity' => 'error',
                 'selected_text' => 'hardy' . "\n",
             ],
-        ]);
+        ], false);
 
         $baselineDocument = new \DOMDocument();
         $baselineDocument->loadXML($documentContent, LIBXML_NOBLANKS);
@@ -284,7 +285,8 @@ class ErrorBaselineTest extends TestCase
         $remainingBaseline = ErrorBaseline::update(
             $this->fileProvider->reveal(),
             $baselineFile,
-            $newIssues
+            $newIssues,
+            false
         );
 
         $this->assertSame([

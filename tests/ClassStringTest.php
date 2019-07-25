@@ -10,13 +10,12 @@ class ClassStringTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidStringClass
-     *
-     * @return                   void
+     * @return void
      */
     public function testDontAllowStringStandInForNewClass()
     {
+        $this->expectExceptionMessage('InvalidStringClass');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         Config::getInstance()->allow_string_standin_for_class = false;
 
         $this->addFile(
@@ -33,13 +32,12 @@ class ClassStringTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidStringClass
-     *
-     * @return                   void
+     * @return void
      */
     public function testDontAllowStringStandInForStaticMethodCall()
     {
+        $this->expectExceptionMessage('InvalidStringClass');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         Config::getInstance()->allow_string_standin_for_class = false;
 
         $this->addFile(
@@ -567,6 +565,57 @@ class ClassStringTest extends TestCase
                          * @psalm-suppress MixedArgument
                          */
                         if (!is_subclass_of($s, A::class)) {}
+                    }',
+            ],
+            'allowClassExistsCheckOnClassString' => [
+                '<?php
+                    class C
+                    {
+                        public function __construct() {
+                            if (class_exists(\Doesnt\Really::class)) {
+                                \Doesnt\Really::something();
+                            }
+                        }
+                    }',
+            ],
+            'allowClassExistsCheckOnString' => [
+                '<?php
+                    class C
+                    {
+                        public function __construct() {
+                            if (class_exists("Doesnt\\Really")) {
+                                \Doesnt\Really::something();
+                            }
+                        }
+                    }',
+            ],
+            'allowComparisonToStaticClassString' => [
+                '<?php
+                    class A {
+                        const CLASSES = ["foobar" => B::class];
+
+                        function foo(): bool {
+                            return self::CLASSES["foobar"] === static::class;
+                        }
+                    }
+
+                    class B extends A {}',
+            ],
+            'noCrashWhenClassExists' => [
+                '<?php
+                    class A {}
+
+                    if (class_exists(A::class)) {
+                        new \RuntimeException();
+                    }',
+            ],
+
+            'noCrashWhenClassExistsNegated' => [
+                '<?php
+                    class A {}
+
+                    if (!class_exists(A::class)) {
+                        new \RuntimeException();
                     }',
             ],
         ];

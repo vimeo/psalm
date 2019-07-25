@@ -4,6 +4,8 @@ require_once('command_functions.php');
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
 use Psalm\IssueBuffer;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\DefaultProgress;
 
 // show all errors
 error_reporting(-1);
@@ -16,11 +18,12 @@ gc_disable();
 
 $args = array_slice($argv, 1);
 
-$valid_short_options = ['f:', 'm', 'h', 'r:'];
+$valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
 $valid_long_options = [
     'help', 'debug', 'debug-by-line', 'config:', 'file:', 'root:',
-    'plugin:', 'issues:', 'php-version:', 'dry-run', 'safe-types',
+    'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
     'find-unused-code', 'threads:', 'codeowner:',
+    'allow-backwards-incompatible-changes:',
 ];
 
 // get options from command line
@@ -36,20 +39,31 @@ array_map(
         if (substr($arg, 0, 2) === '--' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
+            if ($arg_name === 'alter') {
+                // valid option for psalm, ignored by psalter
+                return;
+            }
+
             if (!in_array($arg_name, $valid_long_options)
                 && !in_array($arg_name . ':', $valid_long_options)
                 && !in_array($arg_name . '::', $valid_long_options)
             ) {
-                echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL
+                );
                 exit(1);
             }
         } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
 
             if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
-                echo 'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                fwrite(
+                    STDERR,
+                    'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL
+                );
                 exit(1);
             }
         }
@@ -107,7 +121,11 @@ Options:
     --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
 
     --issues=IssueType1,IssueType2
-        If any issues can be fixed automatically, Psalm will update the codebase
+        If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as possible,
+        use --issues=all
+
+     --list-supported-issues
+        Display the list of issues that psalter knows how to fix
 
     --find-unused-code
         Include unused code as a candidate for removal
@@ -117,14 +135,22 @@ Options:
 
     --codeowner=[codeowner]
         You can specify a GitHub code ownership group, and only that owner's code will be updated.
+
+    --allow-backwards-incompatible-changes=BOOL
+        Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
+
 HELP;
 
     exit;
 }
 
-if (!isset($options['issues']) && (!isset($options['plugin']) || $options['plugin'] === false)) {
-    die('Please specify the issues you want to fix with --issues=IssueOne,IssueTwo '
-        . 'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
+if (!isset($options['issues']) &&
+    !isset($options['list-supported-issues']) &&
+    (!isset($options['plugin']) || $options['plugin'] === false)
+) {
+    fwrite(STDERR, 'Please specify the issues you want to fix with --issues=IssueOne,IssueTwo or --issues=all, ' .
+        'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
+    exit(1);
 }
 
 if (isset($options['root'])) {
@@ -152,21 +178,14 @@ $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vend
 
 $paths_to_check = getPathsToCheck($options['f'] ?? null);
 
-$path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
+$path_to_config = get_path_to_config($options);
 
-if ($path_to_config === false) {
-    /** @psalm-suppress InvalidCast */
-    die('Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
+$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+
+if ($config->resolve_from_config_file) {
+    $current_dir = $config->base_dir;
+    chdir($current_dir);
 }
-
-// initialise custom config, if passed
-if ($path_to_config) {
-    $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-} else {
-    $config = Config::getConfigForPath($current_dir, $current_dir, ProjectAnalyzer::TYPE_CONSOLE);
-}
-
-$config->setComposerClassLoader($first_autoloader);
 
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
@@ -177,14 +196,26 @@ $providers = new Psalm\Internal\Provider\Providers(
     new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config)
 );
 
+if (array_key_exists('list-supported-issues', $options)) {
+    echo implode(',', ProjectAnalyzer::getSupportedIssuesToFix()) . PHP_EOL;
+    exit();
+}
+
+$debug = array_key_exists('debug', $options);
+$progress = $debug
+    ? new DebugProgress()
+    : new DefaultProgress();
+
+$stdout_report_options = new \Psalm\Report\ReportOptions();
+$stdout_report_options->use_color = !array_key_exists('m', $options);
+
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
-    !array_key_exists('m', $options),
-    false,
-    ProjectAnalyzer::TYPE_CONSOLE,
+    $stdout_report_options,
+    [],
     $threads,
-    array_key_exists('debug', $options)
+    $progress
 );
 
 if (array_key_exists('debug-by-line', $options)) {
@@ -302,6 +333,20 @@ if (isset($options['codeowner'])) {
     }
 }
 
+if (isset($options['allow-backwards-incompatible-changes'])) {
+    $allow_backwards_incompatible_changes = filter_var(
+        $options['allow-backwards-incompatible-changes'],
+        FILTER_VALIDATE_BOOLEAN,
+        ['flags' => FILTER_NULL_ON_FAILURE]
+    );
+
+    if ($allow_backwards_incompatible_changes === null) {
+        die('--allow-backwards-incompatible-changes expectes a boolean value [true|false|1|0]' . PHP_EOL);
+    }
+
+    $project_analyzer->getCodebase()->allow_backwards_incompatible_changes = $allow_backwards_incompatible_changes;
+}
+
 $plugins = [];
 
 if (isset($options['plugin'])) {
@@ -323,26 +368,32 @@ if ($config->find_unused_code) {
     $find_unused_code = true;
 }
 
+foreach ($keyed_issues as $issue_name => $_) {
+    // MissingParamType requires the scanning of all files to inform possible params
+    if (strpos($issue_name, 'Unused') !== false || $issue_name === 'MissingParamType' || $issue_name === 'all') {
+        $find_unused_code = true;
+    }
+}
+
 if ($find_unused_code) {
     $project_analyzer->getCodebase()->reportUnusedCode();
-} else {
-    foreach ($keyed_issues as $issue_name => $_) {
-        if (strpos($issue_name, 'Unused') !== false) {
-            die(
-                'Error: Psalm can only fix issue '
-                    . $issue_name
-                    . ' if you enable unused code detection with --find-unused-code'
-                    . PHP_EOL
-            );
-        }
-    }
 }
 
 $project_analyzer->alterCodeAfterCompletion(
     array_key_exists('dry-run', $options),
     array_key_exists('safe-types', $options)
 );
-$project_analyzer->setIssuesToFix($keyed_issues);
+
+if ($keyed_issues === ['all' => true]) {
+    $project_analyzer->setAllIssuesToFix();
+} else {
+    try {
+        $project_analyzer->setIssuesToFix($keyed_issues);
+    } catch (\Psalm\Exception\UnsupportedIssueToFixException $e) {
+        fwrite(STDERR, $e->getMessage() . PHP_EOL);
+        exit(1);
+    }
+}
 
 $start_time = microtime(true);
 

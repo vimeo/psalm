@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Storage;
 
+use function array_map;
+use function implode;
+
 class Assertion
 {
     /**
@@ -18,7 +21,7 @@ class Assertion
      * @param string|int $var_id
      * @param array<int, array<int, string>> $rule
      */
-    public function __construct($var_id, $rule)
+    public function __construct($var_id, array $rule)
     {
         $this->rule = $rule;
         $this->var_id = $var_id;
@@ -38,19 +41,35 @@ class Assertion
                 function (array $rules) use ($template_type_map) : array {
                     $first_rule = $rules[0];
 
-                    $rule_tokens = \Psalm\Type::tokenize($first_rule);
-
                     if ($template_type_map) {
+                        $rule_tokens = \Psalm\Type::tokenize($first_rule);
+
+                        $substitute = false;
+
                         foreach ($rule_tokens as &$rule_token) {
-                            if (isset($template_type_map[$rule_token])) {
-                                foreach ($template_type_map[$rule_token] as list($type)) {
-                                    $rule_token = $type->getId();
+                            if (isset($template_type_map[$rule_token[0]])) {
+                                foreach ($template_type_map[$rule_token[0]] as list($type)) {
+                                    $substitute = true;
+
+                                    $rule_token[0] = $type->getKey();
                                 }
                             }
                         }
+
+                        if ($substitute) {
+                            return [implode(
+                                '',
+                                array_map(
+                                    function ($f) {
+                                        return $f[0];
+                                    },
+                                    $rule_tokens
+                                )
+                            )];
+                        }
                     }
 
-                    return [implode('', $rule_tokens)];
+                    return [$first_rule];
                 },
                 $this->rule
             )

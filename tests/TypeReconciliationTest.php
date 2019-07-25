@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use function is_array;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -24,7 +25,7 @@ class TypeReconciliationTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 
@@ -80,105 +81,6 @@ class TypeReconciliationTest extends TestCase
                 Type::parseString($container)
             )
         );
-    }
-
-    /**
-     * @return void
-     */
-    public function testNegateFormula()
-    {
-        $formula = [
-            new Clause(['$a' => ['!falsy']]),
-        ];
-
-        $negated_formula = Algebra::negateFormula($formula);
-
-        $this->assertCount(1, $negated_formula);
-        $this->assertSame(['$a' => ['falsy']], $negated_formula[0]->possibilities);
-
-        $formula = [
-            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']]),
-        ];
-
-        $negated_formula = Algebra::negateFormula($formula);
-
-        $this->assertCount(2, $negated_formula);
-        $this->assertSame(['$a' => ['falsy']], $negated_formula[0]->possibilities);
-        $this->assertSame(['$b' => ['falsy']], $negated_formula[1]->possibilities);
-
-        $formula = [
-            new Clause(['$a' => ['!falsy']]),
-            new Clause(['$b' => ['!falsy']]),
-        ];
-
-        $negated_formula = Algebra::negateFormula($formula);
-
-        $this->assertCount(1, $negated_formula);
-        $this->assertSame(['$a' => ['falsy'], '$b' => ['falsy']], $negated_formula[0]->possibilities);
-
-        $formula = [
-            new Clause(['$a' => ['int', 'string'], '$b' => ['!falsy']]),
-        ];
-
-        $negated_formula = Algebra::negateFormula($formula);
-
-        $this->assertCount(3, $negated_formula);
-        $this->assertSame(['$a' => ['!int']], $negated_formula[0]->possibilities);
-        $this->assertSame(['$a' => ['!string']], $negated_formula[1]->possibilities);
-        $this->assertSame(['$b' => ['falsy']], $negated_formula[2]->possibilities);
-    }
-
-    /**
-     * @return void
-     */
-    public function testContainsClause()
-    {
-        $this->assertTrue(
-            (new Clause(
-                [
-                    '$a' => ['!falsy'],
-                    '$b' => ['!falsy'],
-                ]
-            ))->contains(
-                new Clause(
-                    [
-                        '$a' => ['!falsy'],
-                    ]
-                )
-            )
-        );
-
-        $this->assertFalse(
-            (new Clause(
-                [
-                    '$a' => ['!falsy'],
-                ]
-            ))->contains(
-                new Clause(
-                    [
-                        '$a' => ['!falsy'],
-                        '$b' => ['!falsy'],
-                    ]
-                )
-            )
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testSimplifyCNF()
-    {
-        $formula = [
-            new Clause(['$a' => ['!falsy']]),
-            new Clause(['$a' => ['falsy'], '$b' => ['falsy']]),
-        ];
-
-        $simplified_formula = Algebra::simplifyCNF($formula);
-
-        $this->assertCount(2, $simplified_formula);
-        $this->assertSame(['$a' => ['!falsy']], $simplified_formula[0]->possibilities);
-        $this->assertSame(['$b' => ['falsy']], $simplified_formula[1]->possibilities);
     }
 
     /**
@@ -244,12 +146,12 @@ class TypeReconciliationTest extends TestCase
             'unionContainsWithstring' => ['string', 'string|false'],
             'unionContainsWithFalse' => ['false', 'string|false'],
             'objectLikeTypeWithPossiblyUndefinedToGeneric' => [
-                'array{0:array{a:string}, 1:array{c:string, e:string}}',
+                'array{0: array{a: string}, 1: array{c: string, e: string}}',
                 'array<int, array<string, string>>',
             ],
             'objectLikeTypeWithPossiblyUndefinedToEmpty' => [
                 'array<empty, empty>',
-                'array{a?:string, b?:string}',
+                'array{a?: string, b?: string}',
             ],
         ];
     }
@@ -1307,7 +1209,7 @@ class TypeReconciliationTest extends TestCase
                         }
 
                         echo sprintf("padding-top:%s%%;", 100 * ($height/$width));
-                    }'
+                    }',
             ],
             'notEmptyCheckOnMixedInTernary' => [
                 '<?php
@@ -1320,6 +1222,161 @@ class TypeReconciliationTest extends TestCase
                     } else {
                         $a = false;
                     }',
+            ],
+            'dontRewriteNullableArrayAfterEmptyCheck' => [
+                '<?php
+                    /**
+                     * @param array{x:int,y:int}|null $start_pos
+                     * @return array{x:int,y:int}|null
+                     */
+                    function foo(?array $start_pos) : ?array {
+                        if ($start_pos) {}
+
+                        return $start_pos;
+                    }',
+            ],
+            'falseEqualsBoolean' => [
+                '<?php
+                    class A {}
+                    class B extends A {
+                        public function foo() : void {}
+                    }
+                    class C extends A {
+                        public function foo() : void {}
+                    }
+                    function bar(A $a) : void {
+                        if (false === (!$a instanceof B || !$a instanceof C)) {
+                            return;
+                        }
+                        $a->foo();
+                    }
+                    function baz(A $a) : void {
+                        if ((!$a instanceof B || !$a instanceof C) === false) {
+                            return;
+                        }
+                        $a->foo();
+                    }',
+            ],
+            'selfInstanceofStatic' => [
+                '<?php
+                    class A {
+                        public function foo(self $value): void {
+                            if ($value instanceof static) {}
+                        }
+                    }',
+            ],
+            'reconcileCallable' => [
+                '<?php
+                    function reflectCallable(callable $callable): ReflectionFunctionAbstract {
+                        if (\is_array($callable)) {
+                            return new \ReflectionMethod($callable[0], $callable[1]);
+                        } elseif ($callable instanceof \Closure || \is_string($callable)) {
+                            return new \ReflectionFunction($callable);
+                        } elseif (\is_object($callable)) {
+                            return new \ReflectionMethod($callable, "__invoke");
+                        } else {
+                            throw new \InvalidArgumentException("Bad");
+                        }
+                    }',
+            ],
+            'noLeakyClassType' => [
+                '<?php
+                    class A {
+                        public array $foo = [];
+                        public array $bar = [];
+
+                        public function setter() : void {
+                            if ($this->foo) {
+                                $this->foo = [];
+                            }
+                        }
+
+                        public function iffer() : bool {
+                            return $this->foo || $this->bar;
+                        }
+                    }',
+            ],
+            'noLeakyForeachType' => [
+                '<?php
+
+                    class A {
+                        /** @var mixed */
+                        public $_array_value;
+
+                        private function getArrayValue() : ?array {
+                            return rand(0, 1) ? [] : null;
+                        }
+
+                        public function setValue(string $var) : void {
+                            $this->_array_value = $this->getArrayValue();
+
+                            if ($this->_array_value !== null && !count($this->_array_value)) {
+                                return;
+                            }
+
+                            switch ($var) {
+                                case "a":
+                                    foreach ($this->_array_value ?: [] as $v) {}
+                                    break;
+
+                                case "b":
+                                    foreach ($this->_array_value ?: [] as $v) {}
+                                    break;
+                            }
+                        }
+                    }',
+                [],
+                ['MixedAssignment'],
+            ],
+            'nonEmptyThing' => [
+                '<?php
+                    /** @param mixed $clips */
+                    function foo($clips, bool $found, int $id) : void {
+                        if ($found === false) {
+                            $clips = [];
+                        }
+
+                        $i = array_search($id, $clips);
+
+                        if ($i !== false) {
+                            unset($clips[$i]);
+                        }
+                    }',
+                [],
+                ['MixedArgument', 'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset'],
+            ],
+            'allowNonEmptyArrayComparison' => [
+                '<?php
+                    /**
+                     * @param non-empty-array $a
+                     * @param array<string> $b
+                     */
+                    function foo(array $a, array $b) : void {
+                        if ($a === $b) {}
+                    }',
+            ],
+            'preventCombinatorialExpansion' => [
+                '<?php
+                    function gameOver(
+                        int $b0,
+                        int $b1,
+                        int $b2,
+                        int $b3,
+                        int $b4,
+                        int $b5,
+                        int $b6,
+                        int $b7,
+                        int $b8
+                    ): bool {
+                        if (($b0 === 1 && $b1 === 1 && $b2 === 1)
+                            || ($b3 === 1 && $b4 === 1 && $b5 === 1)
+                            || ($b6 === 1 && $b7 === 1 && $b8 === 1)
+                        ) {
+                            return true;
+                        }
+
+                        return false;
+                    }'
             ],
         ];
     }

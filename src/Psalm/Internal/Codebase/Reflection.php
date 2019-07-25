@@ -1,15 +1,16 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use function array_merge;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use function strtolower;
 
 /**
  * @internal
@@ -158,7 +159,7 @@ class Reflection
         }
 
         $reflection_methods = $reflected_class->getMethods(
-            (int) (\ReflectionMethod::IS_PUBLIC | \ReflectionMethod::IS_PROTECTED)
+            (\ReflectionMethod::IS_PUBLIC | \ReflectionMethod::IS_PROTECTED)
         );
 
         if ($class_name_lower === 'generator') {
@@ -251,20 +252,26 @@ class Reflection
         $class_storage->appearing_method_ids[$method_name] = $class_storage->declaring_method_ids[$method_name];
         $class_storage->overridden_method_ids[$method_name] = [];
 
-        try {
-            $storage->return_type = CallMap::getReturnTypeFromCallMap($method_id);
-            $storage->return_type->queueClassLikesForScanning($this->codebase);
-        } catch (\InvalidArgumentException $e) {
-            // do nothing
-        }
-
         $storage->visibility = $method->isPrivate()
             ? ClassLikeAnalyzer::VISIBILITY_PRIVATE
             : ($method->isProtected() ? ClassLikeAnalyzer::VISIBILITY_PROTECTED : ClassLikeAnalyzer::VISIBILITY_PUBLIC);
 
-        $possible_params = CallMap::getParamsFromCallMap($method_id);
+        $callables = CallMap::getCallablesFromCallMap($method_id);
 
-        if ($possible_params === null) {
+        if ($callables && $callables[0]->params !== null && $callables[0]->return_type !== null) {
+            $storage->params = [];
+
+            foreach ($callables[0]->params as $param) {
+                if ($param->type) {
+                    $param->type->queueClassLikesForScanning($this->codebase);
+                }
+            }
+
+            $storage->params = $callables[0]->params;
+
+            $storage->return_type = $callables[0]->return_type;
+            $storage->return_type->queueClassLikesForScanning($this->codebase);
+        } else {
             $params = $method->getParameters();
 
             $storage->params = [];
@@ -275,14 +282,6 @@ class Reflection
                 $storage->params[] = $param_array;
                 $storage->param_types[$param->name] = $param_array->type;
             }
-        } else {
-            foreach ($possible_params[0] as $param) {
-                if ($param->type) {
-                    $param->type->queueClassLikesForScanning($this->codebase);
-                }
-            }
-
-            $storage->params = $possible_params[0];
         }
 
         $storage->required_param_count = 0;
@@ -306,7 +305,7 @@ class Reflection
 
         $is_optional = (bool)$param->isOptional();
 
-        return new FunctionLikeParameter(
+        $parameter = new FunctionLikeParameter(
             $param_name,
             (bool)$param->isPassedByReference(),
             $param_type,
@@ -316,6 +315,10 @@ class Reflection
             $param_type->isNullable(),
             $param->isVariadic()
         );
+
+        $parameter->signature_type = Type::getMixed();
+
+        return $parameter;
     }
 
     /**
@@ -328,24 +331,24 @@ class Reflection
         try {
             $reflection_function = new \ReflectionFunction($function_id);
 
-            $callmap_function_params = null;
-
-            $callmap_return_type = null;
+            $callmap_callable = null;
 
             $storage = self::$builtin_functions[$function_id] = new FunctionLikeStorage();
 
             if (CallMap::inCallMap($function_id)) {
-                $callmap_function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                $callmap_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                     $this->codebase,
                     $function_id,
                     []
                 );
-
-                $callmap_return_type = CallMap::getReturnTypeFromCallMap($function_id);
             }
 
-            if ($callmap_function_params !== null) {
-                $storage->params = $callmap_function_params;
+            if ($callmap_callable !== null
+                && $callmap_callable->params !== null
+                && $callmap_callable->return_type !== null
+            ) {
+                $storage->params = $callmap_callable->params;
+                $storage->return_type = $callmap_callable->return_type;
             } else {
                 $reflection_params = $reflection_function->getParameters();
 
@@ -353,6 +356,10 @@ class Reflection
                 foreach ($reflection_params as $param) {
                     $param_obj = $this->getReflectionParamData($param);
                     $storage->params[] = $param_obj;
+                }
+
+                if ($reflection_return_type = $reflection_function->getReturnType()) {
+                    $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
                 }
             }
 
@@ -365,12 +372,6 @@ class Reflection
             }
 
             $storage->cased_name = $reflection_function->getName();
-
-            if ($callmap_return_type) {
-                $storage->return_type = $callmap_return_type;
-            } elseif ($reflection_return_type = $reflection_function->getReturnType()) {
-                $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
-            }
         } catch (\ReflectionException $e) {
             return false;
         }
@@ -388,7 +389,7 @@ class Reflection
             $suffix = '|null';
         }
 
-        return Type::parseString($reflection_type . $suffix);
+        return Type::parseString($reflection_type->getName() . $suffix);
     }
 
     /**
@@ -414,7 +415,7 @@ class Reflection
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
             $storage->inheritable_method_ids[$method_name] = $declaring_method_id;
 
-            $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
+            $storage->overridden_method_ids[$method_name][$declaring_method_id] = $declaring_method_id;
         }
     }
 
@@ -490,5 +491,10 @@ class Reflection
         }
 
         throw new \UnexpectedValueException('Expecting to have a function for ' . $function_id);
+    }
+
+    public static function clearCache() : void
+    {
+        self::$builtin_functions = [];
     }
 }

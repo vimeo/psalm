@@ -14,10 +14,6 @@ init:
 environment:
   SSL_CERT_FILE: "C:\\tools\\php\\cacert.pem"
   matrix:
-    - php_ver_target: 7.0
-      DEPS: 'low'
-    - php_ver_target: 7.0
-      DEPS: 'high'
     - php_ver_target: 7.1
       DEPS: 'low'
     - php_ver_target: 7.1
@@ -70,5 +66,9 @@ install:
 ## Run the actual test
 test_script:
     - cd c:\projects\php-project-workspace
-    - vendor/bin/phpunit
+    - vendor/bin/phpunit --log-junit build/phpunit/phpunit.xml
     - php ./psalm --shepherd
+
+on_finish:
+    - ps: $wc = New-Object 'System.Net.WebClient'
+    - ps: $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\build\phpunit\phpunit.xml))

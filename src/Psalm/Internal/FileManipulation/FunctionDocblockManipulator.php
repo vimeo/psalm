@@ -1,15 +1,24 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
-use Psalm\FileManipulation;
+use function count;
 
+use function ltrim;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
+use function preg_match;
 use Psalm\DocComment;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use function str_replace;
+use function str_split;
+use function strlen;
+use function strpos;
+use function strrpos;
+use function substr;
 
 /**
  * @internal
@@ -58,15 +67,6 @@ class FunctionDocblockManipulator
 
     /** @var null|string */
     private $new_psalm_return_type;
-
-    /** @var array<string, int> */
-    private $param_typehint_area_starts = [];
-
-    /** @var array<string, int> */
-    private $param_typehint_starts = [];
-
-    /** @var array<string, int> */
-    private $param_typehint_ends = [];
 
     /** @var array<string, string> */
     private $new_php_param_types = [];
@@ -252,7 +252,7 @@ class FunctionDocblockManipulator
      */
     public function setReturnType($php_type, $new_type, $phpdoc_type, $is_php_compatible, $description)
     {
-        $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<empty, empty>'], '', $new_type);
+        $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>'], '', $new_type);
 
         $this->new_php_return_type = $php_type;
         $this->new_phpdoc_return_type = $phpdoc_type;
@@ -324,7 +324,7 @@ class FunctionDocblockManipulator
         if ($this->new_phpdoc_return_type) {
             $parsed_docblock['specials']['return'] = [
                 $this->new_phpdoc_return_type
-                    . ($this->return_type_description ? (' ' . $this->return_type_description) : '')
+                    . ($this->return_type_description ? (' ' . $this->return_type_description) : ''),
             ];
         }
 
@@ -363,7 +363,8 @@ class FunctionDocblockManipulator
                         ': ' . $manipulator->new_php_return_type
                     );
                 }
-            } elseif ($manipulator->return_typehint_colon_start
+            } elseif ($manipulator->new_php_return_type === ''
+                && $manipulator->return_typehint_colon_start
                 && $manipulator->new_phpdoc_return_type
                 && $manipulator->return_typehint_start
                 && $manipulator->return_typehint_end

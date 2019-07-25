@@ -1,11 +1,21 @@
 <?php
 namespace Psalm;
 
+use function array_filter;
+use function array_keys;
+use function count;
+use function in_array;
+use function json_encode;
+use function preg_match;
+use function preg_quote;
+use function preg_replace;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
+use function strpos;
+use function strtolower;
 
 class Context
 {
@@ -59,6 +69,13 @@ class Context
      * @var bool
      */
     public $inside_class_exists = false;
+
+    /**
+     * Whether or not we're inside a function/method call
+     *
+     * @var bool
+     */
+    public $inside_call = false;
 
     /**
      * @var null|CodeLocation
@@ -267,11 +284,6 @@ class Context
     /**
      * @var bool
      */
-    public $infer_types = false;
-
-    /**
-     * @var bool
-     */
     public $inside_negation = false;
 
     /**
@@ -285,6 +297,11 @@ class Context
     public $ignore_variable_method = false;
 
     /**
+     * @var bool
+     */
+    public $pure = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)
@@ -292,15 +309,17 @@ class Context
         $this->self = $self;
     }
 
+    public function __destruct()
+    {
+        $this->case_scope = null;
+        $this->parent_context = null;
+    }
+
     /**
      * @return void
      */
     public function __clone()
     {
-        foreach ($this->vars_in_scope as &$type) {
-            $type = clone $type;
-        }
-
         foreach ($this->clauses as &$clause) {
             $clause = clone $clause;
         }
@@ -349,6 +368,8 @@ class Context
                     continue;
                 }
 
+                $existing_type = clone $existing_type;
+
                 // if the type changed within the block of statements, process the replacement
                 // also never allow ourselves to remove all types from a union
                 if ((!$new_type || !$old_type->equals($new_type))
@@ -362,6 +383,8 @@ class Context
 
                     $updated_vars[$var_id] = true;
                 }
+
+                $this->vars_in_scope[$var_id] = $existing_type;
             }
         }
     }
@@ -396,41 +419,6 @@ class Context
         }
 
         return $redefined_vars;
-    }
-
-    /**
-     * @return void
-     */
-    public function inferType(
-        string $var_name,
-        FunctionLikeStorage $function_storage,
-        Type\Union $original_type,
-        Type\Union $inferred_type,
-        Codebase $codebase
-    ) {
-        if (array_key_exists($var_name, $function_storage->param_types)
-            && !isset($this->assigned_var_ids['$' . $var_name])
-            && !$function_storage->param_types[$var_name]
-            && $original_type->getId() !== $inferred_type->getId()
-        ) {
-            if (isset($this->possible_param_types[$var_name])) {
-                if (\Psalm\Internal\Analyzer\TypeAnalyzer::isContainedBy(
-                    $codebase,
-                    $inferred_type,
-                    $this->possible_param_types[$var_name]
-                )) {
-                    $this->possible_param_types[$var_name] = clone $inferred_type;
-                } else {
-                    $this->possible_param_types[$var_name] = Type::combineUnionTypes(
-                        $this->possible_param_types[$var_name],
-                        $inferred_type
-                    );
-                }
-            } else {
-                $this->possible_param_types[$var_name] = clone $inferred_type;
-                $this->vars_in_scope['$' . $var_name] = clone $inferred_type;
-            }
-        }
     }
 
     /**
@@ -754,6 +742,7 @@ class Context
         foreach ($this->vars_in_scope as $k => $v) {
             $summary[$k] = $v->getId();
         }
+
         return json_encode($summary);
     }
 

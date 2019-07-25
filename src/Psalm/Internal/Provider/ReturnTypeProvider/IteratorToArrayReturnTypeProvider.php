@@ -1,22 +1,22 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function assert;
 use PhpParser;
-use Psalm\Context;
 use Psalm\CodeLocation;
-use Psalm\Type;
-use Psalm\StatementsSource;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\StatementsSource;
+use Psalm\Type;
 
 class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
     public static function getFunctionIds() : array
     {
         return [
-            'iterator_to_array'
+            'iterator_to_array',
         ];
     }
 
@@ -71,12 +71,16 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
                                     && ((string) $call_args[1]->value->inferredType === 'true')))
                             ? $key_type
                             : Type::getArrayKey(),
-                        $value_type
-                    ])
+                        $value_type,
+                    ]),
                 ]);
             }
         }
 
-        return CallMap::getReturnTypeFromCallMap($function_id);
+        $callmap_callables = CallMap::getCallablesFromCallMap($function_id);
+
+        assert($callmap_callables && $callmap_callables[0]->return_type);
+
+        return $callmap_callables[0]->return_type;
     }
 }

@@ -1,6 +1,11 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function preg_quote;
+use function preg_replace;
+use function stripos;
+use function strtolower;
+
 class TLiteralClassString extends TLiteralString
 {
     /**
@@ -75,8 +80,12 @@ class TLiteralClassString extends TLiteralString
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         if ($this->value === 'static') {
             return 'static::class';
         }

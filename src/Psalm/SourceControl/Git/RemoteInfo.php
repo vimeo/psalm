@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\SourceControl\Git;
 
 /**

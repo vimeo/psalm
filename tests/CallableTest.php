@@ -25,7 +25,7 @@ class CallableTest extends TestCase
                      * @return void
                      * @psalm-suppress MixedArgument
                      */
-                    function fn() {
+                    function f() {
                         run_function(
                             /**
                              * @return void
@@ -37,7 +37,7 @@ class CallableTest extends TestCase
                         echo $data;
                     }
 
-                    fn();',
+                    f();',
             ],
             'inferredArg' => [
                 '<?php
@@ -175,12 +175,12 @@ class CallableTest extends TestCase
                     $e = array_map([$a_instance, "bar"], ["one", "two"]);
                     $f = array_map("baz", ["one", "two"]);',
                 'assertions' => [
-                    '$a' => 'array{0:string, 1:string}',
-                    '$b' => 'array{0:string, 1:string}',
-                    '$c' => 'array{0:string, 1:string}',
-                    '$d' => 'array{0:string, 1:string}',
-                    '$e' => 'array{0:string, 1:string}',
-                    '$f' => 'array{0:string, 1:string}',
+                    '$a' => 'array{0: string, 1: string}',
+                    '$b' => 'array{0: string, 1: string}',
+                    '$c' => 'array{0: string, 1: string}',
+                    '$d' => 'array{0: string, 1: string}',
+                    '$e' => 'array{0: string, 1: string}',
+                    '$f' => 'array{0: string, 1: string}',
                 ],
             ],
             'arrayMapClosureVar' => [
@@ -188,7 +188,7 @@ class CallableTest extends TestCase
                     $mirror = function(int $i) : int { return $i; };
                     $a = array_map($mirror, [1, 2, 3]);',
                 'assertions' => [
-                    '$a' => 'array{0:int, 1:int, 2:int}',
+                    '$a' => 'array{0: int, 1: int, 2: int}',
                 ],
             ],
             'arrayCallableMethod' => [
@@ -874,8 +874,8 @@ class CallableTest extends TestCase
                      * @psalm-suppress MixedArgument
                      */
                     function foo($c) : void {
-                        if (is_array($c)) {
-                            echo $c[2];
+                        if (is_array($c) && is_string($c[1])) {
+                            echo $c[1];
                         }
                     }',
             ],
@@ -894,7 +894,7 @@ class CallableTest extends TestCase
                         function () : B {
                             return new B();
                         }
-                    );'
+                    );',
             ],
             'allowCallableWithWiderParam' => [
                 '<?php
@@ -911,7 +911,7 @@ class CallableTest extends TestCase
                         function (A $a) : A {
                             return $a;
                         }
-                    );'
+                    );',
             ],
             'allowCallableWithOptionalArg' => [
                 '<?php
@@ -925,7 +925,7 @@ class CallableTest extends TestCase
                         function (int $x = 5) : int {
                             return $x;
                         }
-                    );'
+                    );',
             ],
         ];
     }
@@ -1430,7 +1430,7 @@ class CallableTest extends TestCase
                         return $x;
                       }
                     );',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

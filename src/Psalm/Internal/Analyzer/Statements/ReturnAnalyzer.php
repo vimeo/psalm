@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
@@ -21,6 +22,8 @@ use Psalm\Issue\NoValue;
 use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use function explode;
+use function strtolower;
 
 /**
  * @internal
@@ -38,7 +41,7 @@ class ReturnAnalyzer
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context
     ) {
-        $doc_comment_text = (string)$stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];
         $var_comment_type = null;
@@ -47,12 +50,14 @@ class ReturnAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($doc_comment_text) {
+        if ($doc_comment && ($parsed_docblock = $statements_analyzer->getParsedDocblock())) {
             try {
-                $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $doc_comment_text,
-                    $source,
-                    $source->getAliases()
+                $var_comments = CommentAnalyzer::arrayToDocblocks(
+                    $doc_comment,
+                    $parsed_docblock,
+                    $statements_analyzer->getSource(),
+                    $statements_analyzer->getAliases(),
+                    $statements_analyzer->getTemplateTypeMap()
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
@@ -70,8 +75,30 @@ class ReturnAnalyzer
                     $codebase,
                     $var_comment->type,
                     $context->self,
-                    $context->self
+                    $context->self,
+                    $statements_analyzer->getParentFQCLN()
                 );
+
+                if ($codebase->alter_code
+                    && $var_comment->type_start
+                    && $var_comment->type_end
+                    && $var_comment->line_number
+                ) {
+                    $type_location = new CodeLocation\DocblockTypeLocation(
+                        $statements_analyzer,
+                        $var_comment->type_start,
+                        $var_comment->type_end,
+                        $var_comment->line_number
+                    );
+
+                    $codebase->classlikes->handleDocblockTypeInMigration(
+                        $codebase,
+                        $statements_analyzer,
+                        $comment_type,
+                        $type_location,
+                        $context->calling_method_id
+                    );
+                }
 
                 if (!$var_comment->var_id) {
                     $var_comment_type = $comment_type;
@@ -133,10 +160,38 @@ class ReturnAnalyzer
                         $codebase,
                         $stmt->inferredType,
                         $source->getFQCLN(),
-                        $source->getFQCLN()
+                        $source->getFQCLN(),
+                        $source->getParentFQCLN()
                     );
 
                     $local_return_type = $source->getLocalReturnType($storage->return_type);
+
+                    if ($storage instanceof \Psalm\Storage\MethodStorage) {
+                        list($fq_class_name, $method_name) = explode('::', $cased_method_id);
+
+                        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                        $found_generic_params = MethodCallAnalyzer::getClassTemplateParams(
+                            $codebase,
+                            $class_storage,
+                            $fq_class_name,
+                            strtolower($method_name),
+                            null,
+                            null
+                        );
+
+                        if ($found_generic_params) {
+                            foreach ($found_generic_params as $template_name => $_) {
+                                unset($found_generic_params[$template_name][$fq_class_name]);
+                            }
+
+                            $local_return_type = clone $local_return_type;
+
+                            $local_return_type->replaceTemplateTypesWithArgTypes(
+                                $found_generic_params
+                            );
+                        }
+                    }
 
                     if ($storage->has_yield && $local_return_type->isGenerator()) {
                         return null;
@@ -198,22 +253,20 @@ class ReturnAnalyzer
                         return null;
                     }
 
+                    $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
                     if (!TypeAnalyzer::isContainedBy(
                         $codebase,
                         $inferred_type,
                         $local_return_type,
                         true,
                         true,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast,
-                        $type_coerced_from_scalar
+                        $union_comparison_results
                     )
                     ) {
                         // is the declared return type more specific than the inferred one?
-                        if ($type_coerced) {
-                            if ($type_coerced_from_mixed) {
+                        if ($union_comparison_results->type_coerced) {
+                            if ($union_comparison_results->type_coerced_from_mixed) {
                                 if (IssueBuffer::accepts(
                                     new MixedReturnTypeCoercion(
                                         'The type \'' . $stmt->inferredType->getId() . '\' is more general than the'

@@ -1,15 +1,32 @@
 <?php
 namespace Psalm;
 
+use function array_pop;
+use function array_search;
+use function array_splice;
+use function count;
+use function explode;
+use function file_put_contents;
+use function get_class;
+use function memory_get_peak_usage;
+use function microtime;
+use function number_format;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\CodeIssue;
-use Psalm\Output\Compact;
-use Psalm\Output\Console;
-use Psalm\Output\Emacs;
-use Psalm\Output\Json;
-use Psalm\Output\Pylint;
-use Psalm\Output\Text;
-use Psalm\Output\Xml;
+use Psalm\Report\CheckstyleReport;
+use Psalm\Report\CompactReport;
+use Psalm\Report\ConsoleReport;
+use Psalm\Report\EmacsReport;
+use Psalm\Report\JsonReport;
+use Psalm\Report\JsonSummaryReport;
+use Psalm\Report\PylintReport;
+use Psalm\Report\SonarqubeReport;
+use Psalm\Report\TextReport;
+use Psalm\Report\XmlReport;
+use function sha1;
+use function str_repeat;
+use function str_replace;
+use function usort;
 
 class IssueBuffer
 {
@@ -43,7 +60,7 @@ class IssueBuffer
 
     /**
      * @param   CodeIssue $e
-     * @param   array     $suppressed_issues
+     * @param   string[]  $suppressed_issues
      *
      * @return  bool
      */
@@ -58,7 +75,7 @@ class IssueBuffer
 
     /**
      * @param   CodeIssue $e
-     * @param   array     $suppressed_issues
+     * @param   string[]  $suppressed_issues
      *
      * @return  bool
      */
@@ -129,9 +146,11 @@ class IssueBuffer
         }
 
         if ($config->throw_exception) {
+            \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
+
             throw new Exception\CodeException(
                 $issue_type
-                    . ' - ' . $e->getShortLocation()
+                    . ' - ' . $e->getShortLocationWithPrevious()
                     . ':' . $e->getLocation()->getColumn()
                     . ' - ' . $e->getMessage()
             );
@@ -200,7 +219,11 @@ class IssueBuffer
         bool $add_stats = false,
         array $issue_baseline = []
     ) {
-        if ($project_analyzer->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
+        if (!$project_analyzer->stdout_report_options) {
+            throw new \UnexpectedValueException('Cannot finish without stdout report options');
+        }
+
+        if ($project_analyzer->stdout_report_options->format === Report::TYPE_CONSOLE) {
             echo "\n";
         }
 
@@ -212,8 +235,7 @@ class IssueBuffer
         if (self::$issues_data) {
             usort(
                 self::$issues_data,
-                /** @return int */
-                function (array $d1, array $d2) {
+                function (array $d1, array $d2) : int {
                     if ($d1['file_path'] === $d2['file_path']) {
                         if ($d1['line_from'] === $d2['line_from']) {
                             if ($d1['column_from'] === $d2['column_from']) {
@@ -239,7 +261,11 @@ class IssueBuffer
 
                     if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
                         if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                            $position = array_search($issue_data['selected_text'], $issue_baseline[$file][$type]['s']);
+                            $position = array_search(
+                                $issue_data['selected_text'],
+                                $issue_baseline[$file][$type]['s'],
+                                true
+                            );
 
                             if ($position !== false) {
                                 $issue_data['severity'] = Config::REPORT_INFO;
@@ -266,10 +292,8 @@ class IssueBuffer
             }
 
             echo self::getOutput(
-                $project_analyzer->output_format,
-                $project_analyzer->use_color,
-                $project_analyzer->show_snippet,
-                $project_analyzer->show_info
+                $project_analyzer->stdout_report_options,
+                $codebase->analyzer->getTotalTypeCoverage($codebase)
             );
         }
 
@@ -295,18 +319,25 @@ class IssueBuffer
             }
         }
 
-        foreach ($project_analyzer->reports as $format => $path) {
+        foreach ($project_analyzer->generated_report_options as $report_options) {
+            if (!$report_options->output_path) {
+                throw new \UnexpectedValueException('Output path should not be null here');
+            }
+
             file_put_contents(
-                $path,
-                self::getOutput($format, $project_analyzer->use_color)
+                $report_options->output_path,
+                self::getOutput(
+                    $report_options,
+                    $codebase->analyzer->getTotalTypeCoverage($codebase)
+                )
             );
         }
 
-        if ($project_analyzer->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
+        if ($project_analyzer->stdout_report_options->format === Report::TYPE_CONSOLE) {
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
-                echo ($project_analyzer->use_color
+                echo($project_analyzer->stdout_report_options->use_color
                     ? "\e[0;31m" . $error_count . " errors\e[0m"
                     : $error_count . ' errors'
                 ) . ' found' . "\n";
@@ -314,12 +345,12 @@ class IssueBuffer
                 echo 'No errors found!' . "\n";
             }
 
-            if ($info_count && $project_analyzer->show_info) {
+            if ($info_count && $project_analyzer->stdout_report_options->show_info) {
                 echo str_repeat('-', 30) . "\n";
 
                 echo $info_count . ' other issues found.' . "\n"
                     . 'You can hide them with ' .
-                    ($project_analyzer->use_color
+                    ($project_analyzer->stdout_report_options->use_color
                         ? "\e[30;48;5;195m--show-info=false\e[0m"
                         : '--show-info=false') . "\n";
             }
@@ -355,43 +386,61 @@ class IssueBuffer
     }
 
     /**
-     * @param string $format
-     * @param bool   $use_color
-     * @param bool   $show_snippet
-     * @param bool   $show_info
+     * @param array{int, int} $mixed_counts
      *
      * @return string
      */
-    public static function getOutput($format, $use_color, $show_snippet = true, $show_info = true)
-    {
-        switch ($format) {
-            case ProjectAnalyzer::TYPE_COMPACT:
-                $output = new Compact(self::$issues_data, $use_color, $show_snippet, $show_info);
+    public static function getOutput(
+        \Psalm\Report\ReportOptions $report_options,
+        array $mixed_counts = [0, 0]
+    ) {
+        $total_expression_count = $mixed_counts[0] + $mixed_counts[1];
+        $mixed_expression_count = $mixed_counts[0];
+
+        switch ($report_options->format) {
+            case Report::TYPE_COMPACT:
+                $output = new CompactReport(self::$issues_data, $report_options);
                 break;
 
-            case ProjectAnalyzer::TYPE_EMACS:
-                $output = new Emacs(self::$issues_data, $use_color, $show_snippet, $show_info);
+            case Report::TYPE_EMACS:
+                $output = new EmacsReport(self::$issues_data, $report_options);
                 break;
 
-            case ProjectAnalyzer::TYPE_TEXT:
-                $output = new Text(self::$issues_data, $use_color, $show_snippet, $show_info);
+            case Report::TYPE_TEXT:
+                $output = new TextReport(self::$issues_data, $report_options);
                 break;
 
-            case ProjectAnalyzer::TYPE_JSON:
-                $output = new Json(self::$issues_data, $use_color, $show_snippet, $show_info);
+            case Report::TYPE_JSON:
+                $output = new JsonReport(self::$issues_data, $report_options);
                 break;
 
-            case ProjectAnalyzer::TYPE_PYLINT:
-                $output = new Pylint(self::$issues_data, $use_color, $show_snippet, $show_info);
+            case Report::TYPE_JSON_SUMMARY:
+                $output = new JsonSummaryReport(
+                    self::$issues_data,
+                    $report_options,
+                    $mixed_expression_count,
+                    $total_expression_count
+                );
                 break;
 
-            case ProjectAnalyzer::TYPE_XML:
-                $output = new Xml(self::$issues_data, $use_color, $show_snippet, $show_info);
+            case Report::TYPE_SONARQUBE:
+                $output = new SonarqubeReport(self::$issues_data, $report_options);
                 break;
 
-            case ProjectAnalyzer::TYPE_CONSOLE:
-            default:
-                $output = new Console(self::$issues_data, $use_color, $show_snippet, $show_info);
+            case Report::TYPE_PYLINT:
+                $output = new PylintReport(self::$issues_data, $report_options);
+                break;
+
+            case Report::TYPE_CHECKSTYLE:
+                $output = new CheckstyleReport(self::$issues_data, $report_options);
+                break;
+
+            case Report::TYPE_XML:
+                $output = new XmlReport(self::$issues_data, $report_options);
+                break;
+
+            case Report::TYPE_CONSOLE:
+                $output = new ConsoleReport(self::$issues_data, $report_options);
                 break;
         }
 
@@ -439,6 +488,7 @@ class IssueBuffer
         $current_data = self::$issues_data;
         self::$issues_data = [];
         self::$emitted = [];
+
         return $current_data;
     }
 

@@ -10,6 +10,14 @@ use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use function array_reverse;
+use function array_shift;
+use function count;
+use function array_unshift;
+use function preg_match;
+use function is_string;
+use function implode;
+use function array_pop;
 
 /**
  * @internal
@@ -489,11 +497,7 @@ class ArrayAssignmentAnalyzer
                 }
             }
         } elseif ($root_var_id) {
-            if ($context->hasVariable($root_var_id, $statements_analyzer)) {
-                $context->vars_in_scope[$root_var_id] = $root_type;
-            } else {
-                $context->vars_in_scope[$root_var_id] = $root_type;
-            }
+            $context->vars_in_scope[$root_var_id] = $root_type;
         }
 
         return null;

@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Tests;
 
+use function preg_quote;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
+use function strpos;
 
 class UnusedVariableTest extends TestCase
 {
@@ -14,7 +16,7 @@ class UnusedVariableTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
 
@@ -100,7 +102,7 @@ class UnusedVariableTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string,error_levels?:string[]}
+     * @return array<string, array{string,error_levels?:string[]}>
      */
     public function providerValidCodeParse()
     {
@@ -594,15 +596,15 @@ class UnusedVariableTest extends TestCase
             ],
             'loopTypeChangedInIfAndBreakWithReference' => [
                 '<?php
-                    $a = false;
+                    $a = 1;
 
                     while (rand(0, 1)) {
                         if (rand(0, 1)) {
-                            $a = true;
+                            $a = 2;
                             break;
                         }
 
-                        $a = false;
+                        $a = 3;
                     }
 
                     echo $a;',
@@ -919,6 +921,92 @@ class UnusedVariableTest extends TestCase
                             echo ($counter = $counter + 1);
                             echo rand(0, 1) ? 1 : 0;
                         }
+                    }',
+            ],
+            'useParamInsideIfLoop' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                            }
+                        }
+
+                        echo $a;
+                    }',
+            ],
+            'useVariableInsideTry' => [
+                '<?php
+                    $foo = false;
+
+                    try {
+                        if (rand(0, 1)) {
+                            throw new \Exception("bad");
+                        }
+
+                        $foo = rand(0, 1);
+
+                        if ($foo) {}
+                    } catch (Exception $e) {}
+
+                    if ($foo) {}',
+            ],
+            'useTryAssignedVariableInsideFinally' => [
+                '<?php
+                    $var = "";
+                    try {
+                        if (rand(0, 1)) {
+                            throw new \Exception();
+                        }
+                        $var = "hello";
+                    } finally {
+                        if ($var !== "") {
+                            echo $var;
+                        }
+                    }',
+            ],
+            'useTryAssignedVariableInFinallyWhenCatchExits' => [
+                '<?php
+                    /**
+                     * @return resource
+                     */
+                    function getStream() {
+                        throw new \Exception();
+                    }
+
+                    $stream = null;
+
+                    try {
+                        $stream = getStream();
+                        \file_put_contents("./foobar", $stream);
+                    } catch (\Exception $e) {
+                        throw new \Exception("Something went wrong");
+                    } finally {
+                        \fclose($stream);
+                    }',
+            ],
+            'varUsedInloop' => [
+                '<?php
+                    class A {
+                        public static function getA() : ?A {
+                            return rand(0, 1) ? new A : null;
+                        }
+                    }
+
+                    function foo(?A $a) : void {
+                        while ($a) {
+                            echo get_class($a);
+                            $a = A::getA();
+                        }
+                    }',
+            ],
+            'varPassedByRef' => [
+                '<?php
+                    function foo(array $b) : void {
+                        $a = &$b;
+                        $a["foo"] = 5;
                     }',
             ],
         ];
@@ -1435,6 +1523,167 @@ class UnusedVariableTest extends TestCase
                         while (rand(0, 1)) {
                             try {} catch (\Exception $e) {}
                         }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideIfLoop' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideIfElseLoop' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                        } else {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideIfElseifLoop' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                        } elseif (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideIfLoopWithEchoInside' => [
+                '<?php
+                    function foo() : void {
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                $a = 2;
+                                echo $a;
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideLoopAfterAssignment' => [
+                '<?php
+                    function foo() : void {
+                        foreach ([1, 2, 3] as $i) {
+                            $i = $i;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideLoopAfterAssignmentWithAddition' => [
+                '<?php
+                    function foo() : void {
+                        foreach ([1, 2, 3] as $i) {
+                            $i = $i + 1;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableInsideLoopCalledInFunction' => [
+                '<?php
+                    function foo(int $s) : int {
+                        return $s;
+                    }
+
+                    function bar() : void {
+                        foreach ([1, 2, 3] as $i) {
+                            $i = foo($i);
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableReassignedInIfFollowedByTryInsideForLoop' => [
+                '<?php
+                    $user_id = 0;
+                    $user = null;
+
+                    if (rand(0, 1)) {
+                        $user_id = rand(0, 1);
+                        $user = $user_id;
+                    }
+
+                    if ($user) {
+                        $a = 0;
+                        for ($i = 1; $i <= 10; $i++) {
+                            $a += $i;
+                            try {} catch (\Exception $e) {}
+                        }
+                        echo $i;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedVariableReassignedInIfFollowedByTryInsideForeachLoop' => [
+                '<?php
+                    $user_id = 0;
+                    $user = null;
+
+                    if (rand(0, 1)) {
+                        $user_id = rand(0, 1);
+                        $user = $user_id;
+                    }
+
+                    if ($user) {
+                        $a = 0;
+                        foreach ([1, 2, 3] as $i) {
+                            $a += $i;
+                            try {} catch (\Exception $e) {}
+                        }
+                        echo $i;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUselessArrayAssignment' => [
+                '<?php
+                    function foo() : void {
+                        $a = [];
+                        $a[0] = 1;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectUnusedSecondAssignmentBeforeTry' => [
+                '<?php
+                    $a = [1, 2, 3];
+                    echo($a[0]);
+                    $a = [4, 5, 6];
+
+                    try {
+                      // something
+                    } catch (\Throwable $t) {
+                      // something else
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'detectRedundancyAfterLoopWithContinue' => [
+                '<?php
+                    $gap = null;
+
+                    foreach ([1, 2, 3] as $_) {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+
+                        $gap = "asa";
+                        throw new \Exception($gap);
                     }',
                 'error_message' => 'UnusedVariable',
             ],

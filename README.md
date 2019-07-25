@@ -9,7 +9,7 @@
 
 Psalm is a static analysis tool for finding errors in PHP applications, built on top of [PHP Parser](https://github.com/nikic/php-parser).
 
-It's able to find a [large number of issues](https://github.com/vimeo/psalm/blob/master/docs/issues.md), but it can also be configured to only care about a small subset of those.
+It's able to find a [large number of issues](https://github.com/vimeo/psalm/blob/master/docs/running_psalm/issues.md), but it can also be configured to only care about a small subset of those.
 
 [Try a live demo](https://psalm.dev/), or install it in your project by following the Quickstart Guide below.
 
@@ -43,7 +43,7 @@ The config created above will show you all issues in your code, but will emit `I
 ./vendor/bin/psalm --init [source_dir] [level]
 ```
 
-You can also [learn how to suppress certain issues](https://github.com/vimeo/psalm/blob/master/docs/dealing_with_code_issues.md).
+You can also [learn how to suppress certain issues](https://github.com/vimeo/psalm/blob/master/docs/running_psalm/dealing_with_code_issues.md).
 
 ## How Psalm Works
 

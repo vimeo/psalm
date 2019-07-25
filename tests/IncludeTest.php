@@ -1,7 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+use function getcwd;
+use function preg_quote;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use function strpos;
 
 class IncludeTest extends TestCase
 {
@@ -543,7 +547,7 @@ class IncludeTest extends TestCase
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         function getEndpoints() : void {
-                            $listFile = "tests/stubs/custom_functions.php";
+                            $listFile = "tests/fixtures/stubs/custom_functions.php";
                             if (!file_exists($listFile)) {
                                 throw new RuntimeException("Endpoint list not found");
                             }
@@ -552,6 +556,17 @@ class IncludeTest extends TestCase
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
+            'nestedParentFile' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'b' . DIRECTORY_SEPARATOR . 'c' . DIRECTORY_SEPARATOR . 'd' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
+                        require_once __DIR__ . "/../../../../e/begin.php";',
+                    getcwd() . DIRECTORY_SEPARATOR . 'e' . DIRECTORY_SEPARATOR . 'begin.php' => '<?php
+                        echo "hello";',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'b' . DIRECTORY_SEPARATOR . 'c' . DIRECTORY_SEPARATOR . 'd' . DIRECTORY_SEPARATOR . 'script.php',
                 ],
             ],
         ];

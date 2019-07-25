@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Config;
-use Psalm\Context;
-
 class TryCatchTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
@@ -204,6 +201,52 @@ class TryCatchTest extends TestCase
                             }
                         }
                     }',
+            ],
+            'noReturnInsideCatch' => [
+                '<?php
+                    /**
+                     * @return never-returns
+                     */
+                    function example() : void {
+                        throw new Exception();
+                    }
+
+                    try {
+                        $str = "a";
+                    } catch (Exception $e) {
+                        example();
+                    }
+                    ord($str);',
+            ],
+            'varSetInOnlyCatch' => [
+                '<?php
+                    try {
+                        if (rand(0, 1)) {
+                            throw new \Exception("Gotcha!");
+                        }
+
+                        exit;
+                    } catch (\Exception $e) {
+                        $lastException = $e;
+                    }
+
+                    echo $lastException->getMessage();'
+            ],
+            'varSetInOnlyCatchWithNull' => [
+                '<?php
+                    $lastException = null;
+
+                    try {
+                        if (rand(0, 1)) {
+                            throw new \Exception("Gotcha!");
+                        }
+
+                        exit;
+                    } catch (\Exception $e) {
+                        $lastException = $e;
+                    }
+
+                    echo $lastException->getMessage();'
             ],
         ];
     }

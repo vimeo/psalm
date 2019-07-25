@@ -4,12 +4,83 @@ namespace Psalm\Internal\Analyzer;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\UnsupportedIssueToFixException;
+use Psalm\FileManipulation;
 use Psalm\Internal\LanguageServer\{LanguageServer, ProtocolStreamReader, ProtocolStreamWriter};
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Issue\InvalidFalsableReturnType;
+use Psalm\Issue\InvalidNullableReturnType;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\Issue\LessSpecificReturnType;
+use Psalm\Issue\MismatchingDocblockParamType;
+use Psalm\Issue\MismatchingDocblockReturnType;
+use Psalm\Issue\MissingClosureReturnType;
+use Psalm\Issue\MissingParamType;
+use Psalm\Issue\MissingReturnType;
+use Psalm\Issue\PossiblyUndefinedGlobalVariable;
+use Psalm\Issue\PossiblyUndefinedVariable;
+use Psalm\Issue\PossiblyUnusedMethod;
+use Psalm\Issue\PossiblyUnusedProperty;
+use Psalm\Issue\UnusedMethod;
+use Psalm\Issue\UnusedProperty;
+use Psalm\Issue\UnusedVariable;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
+use Psalm\Report;
+use Psalm\Report\ReportOptions;
 use Psalm\Type;
+use Psalm\Issue\CodeIssue;
+use function in_array;
+use function substr;
+use function strlen;
+use function cli_set_process_title;
+use function stream_socket_client;
+use function fwrite;
+use const STDERR;
+use function stream_set_blocking;
+use function stream_socket_server;
+use const STDOUT;
+use function extension_loaded;
+use function stream_socket_accept;
+use function pcntl_fork;
+use const STDIN;
+use function microtime;
+use function array_merge;
+use function count;
+use function implode;
+use function array_diff;
+use function strpos;
+use function explode;
+use function array_pop;
+use function strtolower;
+use function usort;
+use function file_exists;
+use function dirname;
+use function mkdir;
+use function rename;
+use function is_dir;
+use function is_file;
+use const PHP_EOL;
+use function array_shift;
+use function array_combine;
+use function preg_match;
+use function array_keys;
+use function array_fill_keys;
+use function defined;
+use function trim;
+use function shell_exec;
+use function is_string;
+use function filter_var;
+use const FILTER_VALIDATE_INT;
+use function is_int;
+use function is_readable;
+use function file_get_contents;
+use function substr_count;
+use function array_map;
+use function end;
 
 /**
  * @internal
@@ -48,35 +119,9 @@ class ProjectAnalyzer
     private $file_reference_provider;
 
     /**
-     * Whether or not to use colors in error output
-     *
-     * @var bool
+     * @var Progress
      */
-    public $use_color;
-
-    /**
-     * Whether or not to show snippets in error output
-     *
-     * @var bool
-     */
-    public $show_snippet;
-
-    /**
-     * Whether or not to show informational messages
-     *
-     * @var bool
-     */
-    public $show_info;
-
-    /**
-     * @var string
-     */
-    public $output_format;
-
-    /**
-     * @var bool
-     */
-    public $debug_output = false;
+    public $progress;
 
     /**
      * @var bool
@@ -90,11 +135,6 @@ class ProjectAnalyzer
 
     /** @var int */
     public $threads;
-
-    /**
-     * @var array<string,string>
-     */
-    public $reports = [];
 
     /**
      * @var array<string, bool>
@@ -122,91 +162,92 @@ class ProjectAnalyzer
     public $onchange_line_limit;
 
     /**
+     * @var bool
+     */
+    public $provide_completion = false;
+
+    /**
      * @var array<string,string>
      */
     private $project_files;
 
-    const TYPE_COMPACT = 'compact';
-    const TYPE_CONSOLE = 'console';
-    const TYPE_PYLINT = 'pylint';
-    const TYPE_JSON = 'json';
-    const TYPE_EMACS = 'emacs';
-    const TYPE_XML = 'xml';
-    const TYPE_TEXT = 'text';
+    /**
+     * @var array<string, string>
+     */
+    private $to_refactor = [];
 
-    const SUPPORTED_OUTPUT_TYPES = [
-        self::TYPE_COMPACT,
-        self::TYPE_CONSOLE,
-        self::TYPE_PYLINT,
-        self::TYPE_JSON,
-        self::TYPE_EMACS,
-        self::TYPE_XML,
-        self::TYPE_TEXT,
+    /**
+     * @var ?ReportOptions
+     */
+    public $stdout_report_options;
+
+    /**
+     * @var array<ReportOptions>
+     */
+    public $generated_report_options;
+
+    /**
+     * @var array<int, class-string<CodeIssue>>
+     */
+    const SUPPORTED_ISSUES_TO_FIX = [
+        InvalidFalsableReturnType::class,
+        InvalidNullableReturnType::class,
+        InvalidReturnType::class,
+        LessSpecificReturnType::class,
+        MismatchingDocblockParamType::class,
+        MismatchingDocblockReturnType::class,
+        MissingClosureReturnType::class,
+        MissingParamType::class,
+        MissingReturnType::class,
+        PossiblyUndefinedGlobalVariable::class,
+        PossiblyUndefinedVariable::class,
+        PossiblyUnusedMethod::class,
+        PossiblyUnusedProperty::class,
+        UnusedMethod::class,
+        UnusedProperty::class,
+        UnusedVariable::class,
     ];
 
     /**
-     * @param bool          $use_color
-     * @param bool          $show_info
-     * @param string        $output_format
+     * @param array<ReportOptions> $generated_report_options
      * @param int           $threads
-     * @param bool          $debug_output
      * @param string        $reports
-     * @param bool          $show_snippet
      */
     public function __construct(
         Config $config,
         Providers $providers,
-        $use_color = true,
-        $show_info = true,
-        $output_format = self::TYPE_CONSOLE,
-        $threads = 1,
-        $debug_output = false,
-        $reports = null,
-        $show_snippet = true
+        ?ReportOptions $stdout_report_options = null,
+        array $generated_report_options = [],
+        int $threads = 1,
+        Progress $progress = null
     ) {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
         $this->parser_cache_provider = $providers->parser_cache_provider;
         $this->file_provider = $providers->file_provider;
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
         $this->file_reference_provider = $providers->file_reference_provider;
 
-        $this->use_color = $use_color;
-        $this->show_info = $show_info;
-        $this->debug_output = $debug_output;
+        $this->progress = $progress;
         $this->threads = $threads;
         $this->config = $config;
-        $this->show_snippet = $show_snippet;
 
         $this->codebase = new Codebase(
             $config,
             $providers,
-            $debug_output
+            $progress
         );
 
-        if (!in_array($output_format, self::SUPPORTED_OUTPUT_TYPES, true)) {
-            throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
+        if ($stdout_report_options
+            && !in_array($stdout_report_options->format, Report::SUPPORTED_OUTPUT_TYPES, true)
+        ) {
+            throw new \UnexpectedValueException('Unrecognised output format ' . $stdout_report_options->format);
         }
 
-        if ($reports) {
-            /**
-             * @var array<string,string>
-             */
-            $mapping = [
-                '.xml' => self::TYPE_XML,
-                '.json' => self::TYPE_JSON,
-                '.txt' => self::TYPE_TEXT,
-                '.emacs' => self::TYPE_EMACS,
-                '.pylint' => self::TYPE_PYLINT,
-            ];
-            foreach ($mapping as $extension => $type) {
-                if (substr($reports, -strlen($extension)) === $extension) {
-                    $this->reports[$type] = $reports;
-                    break;
-                }
-            }
-            if (empty($this->reports)) {
-                throw new \UnexpectedValueException('Unrecognised report format ' . $reports);
-            }
-        }
+        $this->stdout_report_options = $stdout_report_options;
+        $this->generated_report_options = $generated_report_options;
 
         $project_files = [];
 
@@ -228,8 +269,46 @@ class ProjectAnalyzer
 
         $this->project_files = $project_files;
 
-        $this->output_format = $output_format;
         self::$instance = $this;
+    }
+
+    /**
+     * @param  array<string>  $report_file_paths
+     * @param  bool   $show_info
+     * @return array<ReportOptions>
+     */
+    public static function getFileReportOptions(array $report_file_paths, bool $show_info = true)
+    {
+        $report_options = [];
+
+        $mapping = [
+            'checkstyle.xml' => Report::TYPE_CHECKSTYLE,
+            'sonarqube.json' => Report::TYPE_SONARQUBE,
+            'summary.json' => Report::TYPE_JSON_SUMMARY,
+            '.xml' => Report::TYPE_XML,
+            '.json' => Report::TYPE_JSON,
+            '.txt' => Report::TYPE_TEXT,
+            '.emacs' => Report::TYPE_EMACS,
+            '.pylint' => Report::TYPE_PYLINT,
+        ];
+
+        foreach ($report_file_paths as $report_file_path) {
+            foreach ($mapping as $extension => $type) {
+                if (substr($report_file_path, -strlen($extension)) === $extension) {
+                    $o = new ReportOptions();
+
+                    $o->format = $type;
+                    $o->show_info = $show_info;
+                    $o->output_path = $report_file_path;
+                    $report_options[] = $o;
+                    continue 2;
+                }
+            }
+
+            throw new \UnexpectedValueException('Unknown report format ' . $report_file_path);
+        }
+
+        return $report_options;
     }
 
     /**
@@ -256,8 +335,6 @@ class ProjectAnalyzer
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $this->checkDirWithConfig($dir_name, $this->config);
         }
-
-        $this->output_format = self::TYPE_JSON;
 
         @cli_set_process_title('Psalm PHP Language Server');
 
@@ -391,9 +468,7 @@ class ProjectAnalyzer
             }
         }
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . "\n";
-        }
+        $this->progress->startScanningFiles();
 
         if (
             $diff_files === null
@@ -414,10 +489,8 @@ class ProjectAnalyzer
 
             $this->codebase->scanFiles($this->threads);
         } else {
-            if ($this->debug_output) {
-                echo count($diff_files) . ' changed files: ' . "\n";
-                echo '    ' . implode("\n    ", $diff_files) . "\n";
-            }
+            $this->progress->debug(count($diff_files) . ' changed files: ' . "\n");
+            $this->progress->debug('    ' . implode("\n    ", $diff_files) . "\n");
 
             if ($diff_files || $this->codebase->find_unused_code) {
                 $file_list = $this->getReferencedFilesFromDiff($diff_files);
@@ -433,11 +506,7 @@ class ProjectAnalyzer
             }
         }
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . "\n";
-        }
-
-        $this->config->visitStubFiles($this->codebase, $this->debug_output);
+        $this->config->visitStubFiles($this->codebase, $this->progress);
 
         $plugin_classes = $this->config->after_codebase_populated;
 
@@ -447,6 +516,8 @@ class ProjectAnalyzer
             }
         }
 
+        $this->progress->startAnalyzingFiles();
+
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
 
         if ($this->parser_cache_provider) {
@@ -454,8 +525,8 @@ class ProjectAnalyzer
                 $is_diff ? $this->parser_cache_provider->getLastGoodRun() : $start_checks
             );
 
-            if ($this->debug_output && $removed_parser_files) {
-                echo 'Removed ' . $removed_parser_files . ' old parser caches' . "\n";
+            if ($removed_parser_files) {
+                $this->progress->debug('Removed ' . $removed_parser_files . ' old parser caches' . "\n");
             }
 
             if ($is_diff) {
@@ -475,8 +546,282 @@ class ProjectAnalyzer
 
         $this->codebase->classlikes->checkClassReferences(
             $this->codebase->methods,
-            $this->debug_output
+            $this->progress
         );
+    }
+
+    public function interpretRefactors() : void
+    {
+        if (!$this->codebase->alter_code) {
+            throw new \UnexpectedValueException('Should not be checking references');
+        }
+
+        // interpret wildcards
+        foreach ($this->to_refactor as $source => $destination) {
+            if (($source_pos = strpos($source, '*'))
+                && ($destination_pos = strpos($destination, '*'))
+                && $source_pos === (strlen($source) - 1)
+                && $destination_pos === (strlen($destination) - 1)
+            ) {
+                foreach ($this->codebase->classlike_storage_provider->getAll() as $class_storage) {
+                    if (substr($class_storage->name, 0, $source_pos) === substr($source, 0, -1)) {
+                        $this->to_refactor[$class_storage->name]
+                            = substr($destination, 0, -1) . substr($class_storage->name, $source_pos);
+                    }
+                }
+
+                unset($this->to_refactor[$source]);
+            }
+        }
+
+        foreach ($this->to_refactor as $source => $destination) {
+            $source_parts = explode('::', $source);
+            $destination_parts = explode('::', $destination);
+
+            if (!$this->codebase->classlikes->hasFullyQualifiedClassName($source_parts[0])) {
+                throw new \Psalm\Exception\RefactorException(
+                    'Source class ' . $source_parts[0] . ' doesn’t exist'
+                );
+            }
+
+            if (count($source_parts) === 1 && count($destination_parts) === 1) {
+                if ($this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination class ' . $destination_parts[0] . ' already exists'
+                    );
+                }
+
+                $source_class_storage = $this->codebase->classlike_storage_provider->get($source_parts[0]);
+
+                $destination_parts = explode('\\', $destination);
+
+                array_pop($destination_parts);
+                $destination_ns = implode('\\', $destination_parts);
+
+                $this->codebase->classes_to_move[strtolower($source)] = $destination;
+
+                $destination_class_storage = $this->codebase->classlike_storage_provider->create($destination);
+
+                $destination_class_storage->name = $destination;
+
+                if ($source_class_storage->aliases) {
+                    $destination_class_storage->aliases = clone $source_class_storage->aliases;
+                    $destination_class_storage->aliases->namespace = $destination_ns;
+                }
+
+                $destination_class_storage->location = $source_class_storage->location;
+                $destination_class_storage->stmt_location = $source_class_storage->stmt_location;
+                $destination_class_storage->populated = true;
+
+                $this->codebase->class_transforms[strtolower($source)] = $destination;
+
+                continue;
+            }
+
+            if ($this->codebase->methods->methodExists($source)) {
+                if ($this->codebase->methods->methodExists($destination)) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination method ' . $destination . ' already exists'
+                    );
+                }
+
+                if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination class ' . $destination_parts[0] . ' doesn’t exist'
+                    );
+                }
+
+                if (strtolower($source_parts[0]) !== strtolower($destination_parts[0])) {
+                    $source_method_storage = $this->codebase->methods->getStorage($source);
+                    $destination_class_storage
+                        = $this->codebase->classlike_storage_provider->get($destination_parts[0]);
+
+                    if (!$source_method_storage->is_static
+                        && !isset($destination_class_storage->parent_classes[strtolower($source_parts[0])])
+                    ) {
+                        throw new \Psalm\Exception\RefactorException(
+                            'Cannot move non-static method ' . $source
+                                . ' into unrelated class ' . $destination_parts[0]
+                        );
+                    }
+
+                    $this->codebase->methods_to_move[strtolower($source)] = $destination;
+                } else {
+                    $this->codebase->methods_to_rename[strtolower($source)] = $destination_parts[1];
+                }
+
+                $this->codebase->call_transforms[strtolower($source) . '\((.*\))'] = $destination . '($1)';
+                continue;
+            }
+
+            if ($source_parts[1][0] === '$') {
+                if ($destination_parts[1][0] !== '$') {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination property must be of the form Foo::$bar'
+                    );
+                }
+
+                if (!$this->codebase->properties->propertyExists($source, true)) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Property ' . $source . ' does not exist'
+                    );
+                }
+
+                if ($this->codebase->properties->propertyExists($destination, true)) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination property ' . $destination . ' already exists'
+                    );
+                }
+
+                if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination class ' . $destination_parts[0] . ' doesn’t exist'
+                    );
+                }
+
+                $source_id = strtolower($source_parts[0]) . '::' . $source_parts[1];
+
+                if (strtolower($source_parts[0]) !== strtolower($destination_parts[0])) {
+                    $source_storage = $this->codebase->properties->getStorage($source);
+
+                    if (!$source_storage->is_static) {
+                        throw new \Psalm\Exception\RefactorException(
+                            'Cannot move non-static property ' . $source
+                        );
+                    }
+
+                    $this->codebase->properties_to_move[$source_id] = $destination;
+                } else {
+                    $this->codebase->properties_to_rename[$source_id] = substr($destination_parts[1], 1);
+                }
+
+                $this->codebase->property_transforms[$source_id] = $destination;
+                continue;
+            }
+
+            $source_class_constants = $this->codebase->classlikes->getConstantsForClass(
+                $source_parts[0],
+                \ReflectionProperty::IS_PRIVATE
+            );
+
+            if (isset($source_class_constants[$source_parts[1]])) {
+                if (!$this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination class ' . $destination_parts[0] . ' doesn’t exist'
+                    );
+                }
+
+                $destination_class_constants = $this->codebase->classlikes->getConstantsForClass(
+                    $destination_parts[0],
+                    \ReflectionProperty::IS_PRIVATE
+                );
+
+                if (isset($destination_class_constants[$destination_parts[1]])) {
+                    throw new \Psalm\Exception\RefactorException(
+                        'Destination constant ' . $destination . ' already exists'
+                    );
+                }
+
+                $source_id = strtolower($source_parts[0]) . '::' . $source_parts[1];
+
+                if (strtolower($source_parts[0]) !== strtolower($destination_parts[0])) {
+                    $this->codebase->class_constants_to_move[$source_id] = $destination;
+                } else {
+                    $this->codebase->class_constants_to_rename[$source_id] = $destination_parts[1];
+                }
+
+                $this->codebase->class_constant_transforms[$source_id] = $destination;
+                continue;
+            }
+
+            throw new \Psalm\Exception\RefactorException(
+                'Psalm cannot locate ' . $source
+            );
+        }
+    }
+
+    public function prepareMigration() : void
+    {
+        if (!$this->codebase->alter_code) {
+            throw new \UnexpectedValueException('Should not be checking references');
+        }
+
+        $this->codebase->classlikes->moveMethods(
+            $this->codebase->methods,
+            $this->progress
+        );
+
+        $this->codebase->classlikes->moveProperties(
+            $this->codebase->properties,
+            $this->progress
+        );
+
+        $this->codebase->classlikes->moveClassConstants(
+            $this->progress
+        );
+    }
+
+    public function migrateCode() : void
+    {
+        if (!$this->codebase->alter_code) {
+            throw new \UnexpectedValueException('Should not be checking references');
+        }
+
+        $migration_manipulations = \Psalm\Internal\FileManipulation\FileManipulationBuffer::getMigrationManipulations(
+            $this->codebase->file_provider
+        );
+
+        if ($migration_manipulations) {
+            foreach ($migration_manipulations as $file_path => $file_manipulations) {
+                usort(
+                    $file_manipulations,
+                    /**
+                     * @return int
+                     */
+                    function (FileManipulation $a, FileManipulation $b) {
+                        if ($a->start === $b->start) {
+                            if ($b->end === $a->end) {
+                                return $b->insertion_text > $a->insertion_text ? 1 : -1;
+                            }
+
+                            return $b->end > $a->end ? 1 : -1;
+                        }
+
+                        return $b->start > $a->start ? 1 : -1;
+                    }
+                );
+
+                $existing_contents = $this->codebase->file_provider->getContents($file_path);
+
+                foreach ($file_manipulations as $manipulation) {
+                    $existing_contents = $manipulation->transform($existing_contents);
+                }
+
+                $this->codebase->file_provider->setContents($file_path, $existing_contents);
+            }
+        }
+
+        if ($this->codebase->classes_to_move) {
+            foreach ($this->codebase->classes_to_move as $source => $destination) {
+                $source_class_storage = $this->codebase->classlike_storage_provider->get($source);
+
+                if (!$source_class_storage->location) {
+                    continue;
+                }
+
+                $potential_file_path = $this->config->getPotentialComposerFilePathForClassLike($destination);
+
+                if ($potential_file_path && !file_exists($potential_file_path)) {
+                    $containing_dir = dirname($potential_file_path);
+
+                    if (!file_exists($containing_dir)) {
+                        mkdir($containing_dir, 0777, true);
+                    }
+
+                    rename($source_class_storage->location->file_path, $potential_file_path);
+                }
+            }
+        }
     }
 
     /**
@@ -486,6 +831,10 @@ class ProjectAnalyzer
      */
     public function findReferencesTo($symbol)
     {
+        if (!$this->stdout_report_options) {
+            throw new \UnexpectedValueException('Not expecting to emit output');
+        }
+
         $locations = $this->codebase->findReferencesToSymbol($symbol);
 
         foreach ($locations as $location) {
@@ -499,7 +848,7 @@ class ProjectAnalyzer
 
             echo $location->file_name . ':' . $location->getLineNumber() . "\n" .
                 (
-                    $this->use_color
+                    $this->stdout_report_options->use_color
                     ? substr($snippet, 0, $selection_start) .
                     "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
                     "\e[0m" . substr($snippet, $selection_length + $selection_start)
@@ -519,19 +868,15 @@ class ProjectAnalyzer
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . "\n";
-        }
+        $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
 
         $this->codebase->scanFiles($this->threads);
 
-        $this->config->visitStubFiles($this->codebase, $this->debug_output);
+        $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . "\n";
-        }
+        $this->progress->startAnalyzingFiles();
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
     }
@@ -627,9 +972,7 @@ class ProjectAnalyzer
             }
 
             if (!$config->isInProjectDirs($file_path)) {
-                if ($this->debug_output) {
-                    echo 'skipping ' . $file_path . "\n";
-                }
+                $this->progress->debug('skipping ' . $file_path . "\n");
 
                 continue;
             }
@@ -647,9 +990,7 @@ class ProjectAnalyzer
      */
     public function checkFile($file_path)
     {
-        if ($this->debug_output) {
-            echo 'Checking ' . $file_path . "\n";
-        }
+        $this->progress->debug('Checking ' . $file_path . "\n");
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
@@ -657,19 +998,15 @@ class ProjectAnalyzer
 
         $this->file_reference_provider->loadReferenceCache();
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . "\n";
-        }
+        $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
 
         $this->codebase->scanFiles($this->threads);
 
-        $this->config->visitStubFiles($this->codebase, $this->debug_output);
+        $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . "\n";
-        }
+        $this->progress->startAnalyzingFiles();
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
     }
@@ -681,9 +1018,7 @@ class ProjectAnalyzer
     public function checkPaths(array $paths_to_check)
     {
         foreach ($paths_to_check as $path) {
-            if ($this->debug_output) {
-                echo 'Checking ' . $path . "\n";
-            }
+            $this->progress->debug('Checking ' . $path . "\n");
 
             if (is_dir($path)) {
                 $this->checkDirWithConfig($path, $this->config, true);
@@ -695,26 +1030,28 @@ class ProjectAnalyzer
 
         $this->file_reference_provider->loadReferenceCache();
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . "\n";
-        }
+        $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
 
         $this->codebase->scanFiles($this->threads);
 
-        $this->config->visitStubFiles($this->codebase, $this->debug_output);
+        $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . "\n";
-        }
+        $this->progress->startAnalyzingFiles();
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
 
-        if ($this->output_format === ProjectAnalyzer::TYPE_CONSOLE && $this->codebase->collect_references) {
-            echo PHP_EOL . 'To whom it may concern: Psalm cannot detect unused classes, methods and properties'
+        if ($this->stdout_report_options
+            && $this->stdout_report_options->format === Report::TYPE_CONSOLE
+            && $this->codebase->collect_references
+        ) {
+            fwrite(
+                STDERR,
+                PHP_EOL . 'To whom it may concern: Psalm cannot detect unused classes, methods and properties'
                 . PHP_EOL . 'when analyzing individual files and folders. Run on the full project to enable'
-                . PHP_EOL . 'complete unused code detection.' . PHP_EOL;
+                . PHP_EOL . 'complete unused code detection.' . PHP_EOL
+            );
         }
     }
 
@@ -788,6 +1125,18 @@ class ProjectAnalyzer
     }
 
     /**
+     * @param array<string, string> $to_refactor
+     *
+     * @return void
+     */
+    public function refactorCodeAfterCompletion(array $to_refactor)
+    {
+        $this->to_refactor = $to_refactor;
+        $this->codebase->alter_code = true;
+        $this->show_issues = false;
+    }
+
+    /**
      * @return void
      */
     public function setPhpVersion(string $version)
@@ -804,12 +1153,32 @@ class ProjectAnalyzer
 
     /**
      * @param array<string, bool> $issues
+     * @throws UnsupportedIssueToFixException
      *
      * @return void
      */
     public function setIssuesToFix(array $issues)
     {
+        $supported_issues_to_fix = static::getSupportedIssuesToFix();
+
+        $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
+
+        if (! empty($unsupportedIssues)) {
+            throw new UnsupportedIssueToFixException(
+                'Psalm doesn\'t know how to fix issue(s): ' . implode(', ', $unsupportedIssues) . PHP_EOL
+                . 'Supported issues to fix are: ' . implode(',', $supported_issues_to_fix)
+            );
+        }
+
         $this->issues_to_fix = $issues;
+    }
+
+    public function setAllIssuesToFix(): void
+    {
+        /** @var array<string, true> $keyed_issues */
+        $keyed_issues = array_fill_keys(static::getSupportedIssuesToFix(), true);
+
+        $this->setIssuesToFix($keyed_issues);
     }
 
     /**
@@ -902,6 +1271,29 @@ class ProjectAnalyzer
 
         $file_analyzer->class_analyzers_to_analyze = [];
         $file_analyzer->interface_analyzers_to_analyze = [];
+        $file_analyzer->clearSourceBeforeDestruction();
+    }
+
+    public function getFunctionLikeAnalyzer(string $method_id, string $file_path) : ?FunctionLikeAnalyzer
+    {
+        $file_analyzer = new FileAnalyzer(
+            $this,
+            $file_path,
+            $this->config->shortenFileName($file_path)
+        );
+
+        $stmts = $this->codebase->getStatementsForFile(
+            $file_analyzer->getFilePath()
+        );
+
+        $file_analyzer->populateCheckers($stmts);
+
+        $function_analyzer = $file_analyzer->getFunctionLikeAnalyzer($method_id);
+
+        $file_analyzer->class_analyzers_to_analyze = [];
+        $file_analyzer->interface_analyzers_to_analyze = [];
+
+        return $function_analyzer;
     }
 
     /**
@@ -913,7 +1305,7 @@ class ProjectAnalyzer
      * @return int
      * @psalm-suppress ForbiddenCode
      */
-    private function getCpuCount(): int
+    public static function getCpuCount(): int
     {
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             /*
@@ -962,5 +1354,20 @@ class ProjectAnalyzer
         }
 
         throw new \LogicException('failed to detect number of CPUs!');
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getSupportedIssuesToFix(): array
+    {
+        return array_map(
+            /** @param class-string $issue_class */
+            function (string $issue_class): string {
+                $parts = explode('\\', $issue_class);
+                return end($parts);
+            },
+            self::SUPPORTED_ISSUES_TO_FIX
+        );
     }
 }

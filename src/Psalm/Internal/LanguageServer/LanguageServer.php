@@ -1,23 +1,42 @@
 <?php
 declare(strict_types = 1);
-
 namespace Psalm\Internal\LanguageServer;
 
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use LanguageServerProtocol\{
-    ServerCapabilities,
-    ClientCapabilities,
-    TextDocumentSyncKind,
-    TextDocumentSyncOptions,
-    InitializeResult
-};
-use Psalm\Internal\LanguageServer\Server\TextDocument;
-use LanguageServerProtocol\{Range, Position, Diagnostic, DiagnosticSeverity};
 use AdvancedJsonRpc;
-use Amp\Promise;
-use Throwable;
-use function Amp\call;
 use function Amp\asyncCoroutine;
+use function Amp\call;
+use Amp\Promise;
+use function array_combine;
+use function array_filter;
+use function array_keys;
+use function array_map;
+use function array_shift;
+use function array_unshift;
+use function array_values;
+use function explode;
+use function implode;
+use LanguageServerProtocol\ClientCapabilities;
+use LanguageServerProtocol\CompletionOptions;
+use LanguageServerProtocol\Diagnostic;
+use LanguageServerProtocol\DiagnosticSeverity;
+use LanguageServerProtocol\InitializeResult;
+use LanguageServerProtocol\Position;
+use LanguageServerProtocol\Range;
+use LanguageServerProtocol\ServerCapabilities;
+use LanguageServerProtocol\SignatureHelpOptions;
+use LanguageServerProtocol\TextDocumentSyncKind;
+use LanguageServerProtocol\TextDocumentSyncOptions;
+use function max;
+use function parse_url;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\LanguageServer\Server\TextDocument;
+use function rawurlencode;
+use function str_replace;
+use function strpos;
+use function substr;
+use Throwable;
+use function trim;
+use function urldecode;
 
 /**
  * @internal
@@ -103,13 +122,18 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                         return;
                     }
 
+                    /** @psalm-suppress UndefinedPropertyFetch */
+                    if ($msg->body->method === 'textDocument/signatureHelp') {
+                        $this->doAnalysis();
+                    }
+
                     $result = null;
                     $error = null;
                     try {
                         // Invoke the method handler to get a result
                         /**
                          * @var Promise
-                         * @psalm-suppress UndefinedClass
+                         * @psalm-suppress UndefinedDocblockClass
                          */
                         $dispatched = $this->dispatch($msg->body);
                         $result = yield $dispatched;
@@ -182,7 +206,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
                 $codebase->scanFiles($this->project_analyzer->threads);
 
-                $codebase->config->visitStubFiles($codebase, false);
+                $codebase->config->visitStubFiles($codebase, null);
 
                 if ($this->textDocument === null) {
                     $this->textDocument = new TextDocument(
@@ -216,16 +240,13 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 $serverCapabilities->hoverProvider = true;
                 // Support "Completion"
 
-                /**
-                $serverCapabilities->completionProvider = new CompletionOptions;
-                $serverCapabilities->completionProvider->resolveProvider = false;
-                $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':'];
-                */
+                if ($this->project_analyzer->provide_completion) {
+                    $serverCapabilities->completionProvider = new CompletionOptions();
+                    $serverCapabilities->completionProvider->resolveProvider = false;
+                    $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':'];
+                }
 
-                /*
-                $serverCapabilities->signatureHelpProvider = new SignatureHelpOptions();
-                $serverCapabilities->signatureHelpProvider->triggerCharacters = ['(', ','];
-                */
+                $serverCapabilities->signatureHelpProvider = new SignatureHelpOptions(['(', ',']);
 
                 // Support global references
                 $serverCapabilities->xworkspaceReferencesProvider = false;
@@ -239,6 +260,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
     /**
      * @psalm-suppress PossiblyUnusedMethod
+     *
      * @return void
      */
     public function initialized()
@@ -285,6 +307,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $all_file_paths_to_analyze = array_keys($all_files_to_analyze);
         $codebase->analyzer->addFiles(array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze));
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
         $this->emitIssues($all_files_to_analyze);
 
         $this->onchange_paths_to_analyze = [];
@@ -293,6 +316,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
     /**
      * @param array<string, string> $uris
+     *
      * @return void
      */
     public function emitIssues(array $uris)
@@ -388,6 +412,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * Transforms an absolute file path into a URI as used by the language server protocol.
      *
      * @param string $filepath
+     *
      * @return string
      */
     public static function pathToUri(string $filepath): string
@@ -402,6 +427,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $parts = array_map('rawurlencode', $parts);
         array_unshift($parts, $first);
         $filepath = implode('/', $parts);
+
         return 'file:///' . $filepath;
     }
 
@@ -409,6 +435,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * Transforms URI into file path
      *
      * @param string $uri
+     *
      * @return string
      */
     public static function uriToPath(string $uri)
@@ -424,6 +451,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             }
             $filepath = str_replace('/', '\\', $filepath);
         }
+
         return $filepath;
     }
 }

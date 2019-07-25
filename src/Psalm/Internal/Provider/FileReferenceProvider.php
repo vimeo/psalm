@@ -1,9 +1,15 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use function array_filter;
+use function array_keys;
+use function array_merge;
+use function array_merge_recursive;
+use function array_unique;
+use function file_exists;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 
 /**
  * @psalm-type  IssueData = array{
@@ -124,7 +130,14 @@ class FileReferenceProvider
     private static $issues = [];
 
     /**
-     * @var array<string, array{0: array<int, array{0: int, 1: string}>, 1: array<int, array{0: int, 1: string}>}>
+     * @var array<
+     *      string,
+     *      array{
+     *          0: TaggedCodeType,
+     *          1: TaggedCodeType,
+     *          2: array<int, array{0: int, 1: string, 2: int}>
+     *      }
+     *  >
      */
     private static $file_maps = [];
 
@@ -398,6 +411,7 @@ class FileReferenceProvider
 
     /**
      * @param bool $force_reload
+     *
      * @return bool
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
@@ -724,10 +738,22 @@ class FileReferenceProvider
      */
     public function addMethodParamUses(array $references)
     {
-        self::$method_param_uses = array_merge_recursive(
-            $references,
-            self::$method_param_uses
-        );
+        foreach ($references as $method_id => $method_param_uses) {
+            if (isset(self::$method_param_uses[$method_id])) {
+                foreach ($method_param_uses as $offset => $reference_map) {
+                    if (isset(self::$method_param_uses[$method_id][$offset])) {
+                        self::$method_param_uses[$method_id][$offset] = array_merge(
+                            self::$method_param_uses[$method_id][$offset],
+                            $reference_map
+                        );
+                    } else {
+                        self::$method_param_uses[$method_id][$offset] = $reference_map;
+                    }
+                }
+            } else {
+                self::$method_param_uses[$method_id] = $method_param_uses;
+            }
+        }
     }
 
     /**
@@ -866,6 +892,7 @@ class FileReferenceProvider
 
     /**
      * @param string $file_path
+     *
      * @return void
      */
     public function clearExistingIssuesForFile($file_path)
@@ -876,6 +903,7 @@ class FileReferenceProvider
     /**
      * @param string $file_path
      * @param IssueData $issue
+     *
      * @return void
      */
     public function clearExistingFileMapsForFile($file_path)
@@ -885,6 +913,7 @@ class FileReferenceProvider
 
     /**
      * @param string $file_path
+     *
      * @return void
      */
     public function addIssue($file_path, array $issue)
@@ -903,6 +932,7 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string, int>> $analyzed_methods
+     *
      * @return  void
      */
     public function setAnalyzedMethods(array $analyzed_methods)
@@ -911,10 +941,16 @@ class FileReferenceProvider
     }
 
     /**
-     * @param array<string, array{0: TaggedCodeType, 1: TaggedCodeType}> $file_maps
-     * @return  void
+     * @param array<
+     *      string,
+     *      array{
+     *          0: TaggedCodeType,
+     *          1: TaggedCodeType,
+     *          2: array<int, array{0: int, 1: string, 2: int}>
+     *      }
+     *  > $file_maps
      */
-    public function setFileMaps(array $file_maps)
+    public function setFileMaps(array $file_maps) : void
     {
         self::$file_maps = $file_maps;
     }
@@ -929,6 +965,7 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array{int, int}> $mixed_counts
+     *
      * @return  void
      */
     public function setTypeCoverage(array $mixed_counts)
@@ -945,7 +982,14 @@ class FileReferenceProvider
     }
 
     /**
-     * @return array<string, array{0: TaggedCodeType, 1: TaggedCodeType}>
+     * @return array<
+     *      string,
+     *      array{
+     *          0: TaggedCodeType,
+     *          1: TaggedCodeType,
+     *          2: array<int, array{0: int, 1: string, 2: int}>
+     *      }
+     *  >
      */
     public function getFileMaps()
     {

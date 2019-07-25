@@ -1,5 +1,5 @@
-<?php declare (strict_types=1);
-
+<?php
+declare(strict_types=1);
 namespace Psalm\Internal\LanguageServer;
 
 /**
@@ -14,7 +14,6 @@ namespace Psalm\Internal\LanguageServer;
  */
 interface EmitterInterface
 {
-
     /**
      * Subscribe to an event.
      *

@@ -1,12 +1,11 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
 use Psalm\StatementsSource;
+use Psalm\Type;
 
 class ArrayRandReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

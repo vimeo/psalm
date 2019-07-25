@@ -1,7 +1,27 @@
 <?php
 namespace Psalm\Config;
 
+use function array_filter;
+use function array_map;
+use const DIRECTORY_SEPARATOR;
+use const E_WARNING;
+use function explode;
+use function glob;
+use function in_array;
+use function is_bool;
+use function is_dir;
+use function preg_match;
+use function preg_replace;
+use Psalm\Exception\ConfigException;
+use function readlink;
+use function realpath;
+use function restore_error_handler;
+use function set_error_handler;
 use SimpleXMLElement;
+use function str_replace;
+use function stripos;
+use function strpos;
+use function strtolower;
 
 class FileFilter
 {
@@ -116,9 +136,10 @@ class FileFilter
                             continue;
                         }
 
-                        echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                            (string)$directory['name'] . PHP_EOL;
-                        exit(1);
+                        throw new ConfigException(
+                            'Could not resolve config path to ' . $base_dir
+                                . DIRECTORY_SEPARATOR . (string)$directory['name']
+                        );
                     }
 
                     foreach ($globs as $glob_index => $directory_path) {
@@ -127,9 +148,10 @@ class FileFilter
                                 continue;
                             }
 
-                            echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                                (string)$directory['name'] . ':' . $glob_index . PHP_EOL;
-                            exit(1);
+                            throw new ConfigException(
+                                'Could not resolve config path to ' . $base_dir
+                                    . DIRECTORY_SEPARATOR . (string)$directory['name'] . ':' . $glob_index
+                            );
                         }
 
                         if (!$directory_path) {
@@ -156,15 +178,17 @@ class FileFilter
                         continue;
                     }
 
-                    echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                        (string)$directory['name'] . PHP_EOL;
-                    exit(1);
+                    throw new ConfigException(
+                        'Could not resolve config path to ' . $base_dir
+                            . DIRECTORY_SEPARATOR . (string)$directory['name']
+                    );
                 }
 
                 if (!is_dir($directory_path)) {
-                    echo $base_dir . DIRECTORY_SEPARATOR . (string)$directory['name']
-                        . ' is not a directory ' . PHP_EOL;
-                    exit(1);
+                    throw new ConfigException(
+                        $base_dir . DIRECTORY_SEPARATOR . (string)$directory['name']
+                            . ' is not a directory'
+                    );
                 }
 
                 /** @var \RecursiveDirectoryIterator */
@@ -226,16 +250,18 @@ class FileFilter
                     );
 
                     if (empty($globs)) {
-                        echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                            (string)$file['name'] . PHP_EOL;
-                        exit(1);
+                        throw new ConfigException(
+                            'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
+                                (string)$file['name']
+                        );
                     }
 
                     foreach ($globs as $glob_index => $file_path) {
                         if (!$file_path) {
-                            echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                                (string)$file['name'] . ':' . $glob_index . PHP_EOL;
-                            exit(1);
+                            throw new ConfigException(
+                                'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
+                                    (string)$file['name'] . ':' . $glob_index
+                            );
                         }
                         $filter->addFile($file_path);
                     }
@@ -245,9 +271,10 @@ class FileFilter
                 $file_path = realpath($prospective_file_path);
 
                 if (!$file_path) {
-                    echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                        (string)$file['name'] . PHP_EOL;
-                    exit(1);
+                    throw new ConfigException(
+                        'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
+                        (string)$file['name']
+                    );
                 }
 
                 $filter->addFile($file_path);
@@ -274,8 +301,9 @@ class FileFilter
                 $method_id = (string)$referenced_method['name'];
 
                 if (!preg_match('/^[^:]+::[^:]+$/', $method_id) && !static::isRegularExpression($method_id)) {
-                    echo 'Invalid referencedMethod ' . $method_id . PHP_EOL;
-                    exit(1);
+                    throw new ConfigException(
+                        'Invalid referencedMethod ' . $method_id
+                    );
                 }
 
                 $filter->method_ids[] = strtolower($method_id);
@@ -307,8 +335,9 @@ class FileFilter
             },
             E_WARNING
         );
-        $is_regexp = preg_match($string, "") !== false;
+        $is_regexp = preg_match($string, '') !== false;
         restore_error_handler();
+
         return $is_regexp;
     }
 
@@ -397,7 +426,7 @@ class FileFilter
             }
         }
 
-        return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names);
+        return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names, true);
     }
 
     /**
@@ -431,7 +460,7 @@ class FileFilter
             return false;
         }
 
-        return in_array($method_id, $this->method_ids);
+        return in_array($method_id, $this->method_ids, true);
     }
 
     /**
@@ -441,7 +470,7 @@ class FileFilter
      */
     public function allowsProperty($property_id)
     {
-        return in_array(strtolower($property_id), $this->property_ids);
+        return in_array(strtolower($property_id), $this->property_ids, true);
     }
 
     /**

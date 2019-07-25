@@ -59,7 +59,7 @@ class TTemplateParamClass extends TClassString
      */
     public function getId()
     {
-        return $this->getKey();
+        return 'class-string<' . $this->param_name . ' as ' . $this->as . '>';
     }
 
     /**
@@ -94,8 +94,12 @@ class TTemplateParamClass extends TClassString
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         return $this->param_name . '::class';
     }
 }

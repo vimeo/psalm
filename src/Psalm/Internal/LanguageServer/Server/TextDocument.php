@@ -1,31 +1,25 @@
 <?php
 declare(strict_types = 1);
-
 namespace Psalm\Internal\LanguageServer\Server;
 
-use Psalm\Internal\LanguageServer\{
-    LanguageServer,
-    PhpDocumentLoader,
-    PhpDocument,
-    DefinitionResolver,
-    CompletionProvider
-};
-use LanguageServerProtocol\{
-    CompletionList,
-    TextDocumentItem,
-    TextDocumentIdentifier,
-    VersionedTextDocumentIdentifier,
-    Position,
-    Range,
-    Location,
-    Hover,
-    MarkedString,
-    CompletionItem,
-    CompletionItemKind
-};
-use Psalm\Codebase;
 use Amp\Promise;
 use Amp\Success;
+use function count;
+use function error_log;
+use LanguageServerProtocol\CompletionList;
+use LanguageServerProtocol\Hover;
+use LanguageServerProtocol\Location;
+use LanguageServerProtocol\MarkedString;
+use LanguageServerProtocol\Position;
+use LanguageServerProtocol\Range;
+use LanguageServerProtocol\TextDocumentIdentifier;
+use LanguageServerProtocol\TextDocumentItem;
+use LanguageServerProtocol\VersionedTextDocumentIdentifier;
+use Psalm\Codebase;
+use Psalm\Internal\LanguageServer\LanguageServer;
+use function strlen;
+use function strpos;
+use function substr_count;
 
 /**
  * Provides method handlers for all textDocument/* methods
@@ -65,7 +59,8 @@ class TextDocument
      * document's truth is now managed by the client and the server must not try to read the document's truth using the
      * document's uri.
      *
-     * @param \LanguageServerProtocol\TextDocumentItem $textDocument The document that was opened.
+     * @param \LanguageServerProtocol\TextDocumentItem $textDocument the document that was opened
+     *
      * @return void
      */
     public function didOpen(TextDocumentItem $textDocument)
@@ -74,6 +69,7 @@ class TextDocument
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
             error_log($file_path . ' is not in project');
+
             return;
         }
 
@@ -95,6 +91,7 @@ class TextDocument
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
+        $this->codebase->file_provider->setOpenContents($file_path, $textDocument->text);
 
         $this->server->queueFileAnalysis($file_path, $textDocument->uri);
     }
@@ -104,6 +101,7 @@ class TextDocument
      *
      * @param \LanguageServerProtocol\VersionedTextDocumentIdentifier $textDocument
      * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $contentChanges
+     *
      * @return void
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges)
@@ -140,6 +138,7 @@ class TextDocument
      * truth now exists on disk).
      *
      * @param \LanguageServerProtocol\TextDocumentIdentifier $textDocument The document that was closed
+     *
      * @return void
      */
     public function didClose(TextDocumentIdentifier $textDocument)
@@ -150,14 +149,13 @@ class TextDocument
         $this->server->client->textDocument->publishDiagnostics($textDocument->uri, []);
     }
 
-
     /**
      * The goto definition request is sent from the client to the server to resolve the definition location of a symbol
      * at a given text document position.
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position inside the text document
-     * @psalm-return Promise<Location|Hover>
+     * @psalm-return Promise<Location>|Promise<Hover>
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
@@ -168,6 +166,7 @@ class TextDocument
         } catch (\Psalm\Exception\UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+
             return new Success(new Hover([]));
         }
 
@@ -211,6 +210,7 @@ class TextDocument
         } catch (\Psalm\Exception\UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+
             return new Success(new Hover([]));
         }
 
@@ -241,85 +241,51 @@ class TextDocument
      *
      * @param TextDocumentIdentifier The text document
      * @param Position $position The position
-     * @psalm-return Promise<CompletionItem[]|CompletionList>
+     * @psalm-return Promise<array<empty, empty>>|Promise<CompletionList>
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        $this->server->doAnalysis();
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
 
         if (!$completion_data) {
             error_log('completion not found at ' . $position->line . ':' . $position->character);
+
             return new Success([]);
         }
 
-        list($recent_type, $gap) = $completion_data;
-
-        error_log('gap: "' . $gap . '" and type: "' . $recent_type . '"');
-
-        $completion_items = [];
+        list($recent_type, $gap, $offset) = $completion_data;
 
         if ($gap === '->' || $gap === '::') {
-            $instance_completion_items = [];
-            $static_completion_items = [];
-
-            try {
-                $class_storage = $this->codebase->classlike_storage_provider->get($recent_type);
-
-                foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
-                    $method_storage = $this->codebase->methods->getStorage($declaring_method_id);
-
-                    $instance_completion_items[] = new CompletionItem(
-                        (string)$method_storage,
-                        CompletionItemKind::METHOD,
-                        null,
-                        null,
-                        null,
-                        null,
-                        $method_storage->cased_name . '()'
-                    );
-                }
-
-                foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
-                    $property_storage = $this->codebase->properties->getStorage(
-                        $declaring_class . '::$' . $property_name
-                    );
-
-                    $instance_completion_items[] = new CompletionItem(
-                        $property_storage->getInfo() . ' $' . $property_name,
-                        CompletionItemKind::PROPERTY,
-                        null,
-                        null,
-                        null,
-                        null,
-                        ($gap === '::' ? '$' : '') . $property_name
-                    );
-                }
-
-                foreach ($class_storage->class_constant_locations as $const_name => $_) {
-                    $static_completion_items[] = new CompletionItem(
-                        'const ' . $const_name,
-                        CompletionItemKind::VARIABLE,
-                        null,
-                        null,
-                        null,
-                        null,
-                        $const_name
-                    );
-                }
-            } catch (\Exception $e) {
-                error_log($e->getMessage());
-                return new Success([]);
-            }
-
-            $completion_items = $gap === '->'
-                ? $instance_completion_items
-                : array_merge($instance_completion_items, $static_completion_items);
-
-            error_log('Found ' . count($completion_items) . ' items');
+            $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap);
+        } else {
+            $completion_items = $this->codebase->getCompletionItemsForPartialSymbol($recent_type, $offset, $file_path);
         }
 
         return new Success(new CompletionList($completion_items, false));
+    }
+
+    public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
+    {
+        $file_path = LanguageServer::uriToPath($textDocument->uri);
+
+        $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
+
+        if ($argument_location === null) {
+            return new Success(new \LanguageServerProtocol\SignatureHelp());
+        }
+
+        $signature_information = $this->codebase->getSignatureInformation($argument_location[0]);
+
+        if (!$signature_information) {
+            return new Success(new \LanguageServerProtocol\SignatureHelp());
+        }
+
+        return new Success(new \LanguageServerProtocol\SignatureHelp([
+            $signature_information,
+        ], 0, $argument_location[1]));
     }
 }

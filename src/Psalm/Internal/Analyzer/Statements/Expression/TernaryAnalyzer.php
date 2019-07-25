@@ -10,6 +10,16 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use function array_merge;
+use function array_map;
+use function array_diff_key;
+use function array_filter;
+use const ARRAY_FILTER_USE_KEY;
+use function array_values;
+use function array_keys;
+use function preg_match;
+use function preg_quote;
+use function array_intersect_key;
 
 /**
  * @internal
@@ -300,7 +310,7 @@ class TernaryAnalyzer
         } elseif (isset($stmt->cond->inferredType)) {
             $if_return_type_reconciled = Reconciler::reconcileTypes(
                 '!falsy',
-                $stmt->cond->inferredType,
+                clone $stmt->cond->inferredType,
                 '',
                 $statements_analyzer,
                 $context->inside_loop,

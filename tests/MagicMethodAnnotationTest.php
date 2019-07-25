@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
 
@@ -44,13 +45,41 @@ class MagicMethodAnnotationTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedMethod
-     *
+     * @return void
+     */
+    public function testPhpDocMethodWhenTemplated()
+    {
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @template T */
+                class A {
+                    /** @return ?T */
+                    public function find() {}
+                }
+
+                class B extends A {}
+
+                class Obj {}
+
+                /**
+                 * @method Obj|null find()
+                 */
+                class C extends B {}'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
      * @return void
      */
     public function testAnnotationWithoutCallConfig()
     {
+        $this->expectExceptionMessage('UndefinedMethod');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = false;
 
         $this->addFile(
@@ -396,6 +425,54 @@ class MagicMethodAnnotationTest extends TestCase
                     '$a' => 'string',
                 ],
             ],
+            'alwaysAllowAnnotationOnInterface' => [
+                '<?php
+                    /**
+                     * @method string sayHello()
+                     */
+                    interface A {}
+
+                    function makeConcrete() : A {
+                        return new class implements A {
+                            function sayHello() : string {
+                                return "Hello";
+                            }
+                        };
+                    }
+
+                    echo makeConcrete()->sayHello();',
+            ],
+            'inheritInterfacePseudoMethodsFromParent' => [
+                '<?php
+                    interface ClassMetadata {}
+                    interface ORMClassMetadata extends ClassMetadata {}
+
+                    interface EntityManagerInterface {
+                        public function getClassMetadata() : ClassMetadata;
+                    }
+
+                    /**
+                     * @method ORMClassMetadata getClassMetadata()
+                     * @method int getOtherMetadata()
+                     */
+                    interface ORMEntityManagerInterface extends EntityManagerInterface{}
+
+                    interface ConcreteEntityManagerInterface extends ORMEntityManagerInterface {}
+
+                    /** @psalm-suppress InvalidReturnType */
+                    function em(): ORMEntityManagerInterface {}
+                    /** @psalm-suppress InvalidReturnType */
+                    function concreteEm(): ConcreteEntityManagerInterface {}
+
+                    function test(ORMClassMetadata $metadata): void {}
+                    function test2(int $metadata): void {}
+
+                    test(em()->getClassMetadata());
+                    test(concreteEm()->getClassMetadata());
+
+                    test2(em()->getOtherMetadata());
+                    test2(concreteEm()->getOtherMetadata());',
+            ],
         ];
     }
 
@@ -522,7 +599,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /** @method D foo(int $s) */
                     class B extends A {}',
-                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:11:21',
+                'error_message' => 'ImplementedParamTypeMismatch - src/somefile.php:11:21',
             ],
         ];
     }

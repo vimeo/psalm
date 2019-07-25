@@ -1,7 +1,10 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function count;
+use function implode;
 use Psalm\Type\Atomic;
+use function substr;
 
 class TGenericObject extends TNamedObject
 {
@@ -26,6 +29,25 @@ class TGenericObject extends TNamedObject
     }
 
     /**
+     * @return string
+     */
+    public function getKey()
+    {
+        $s = '';
+        foreach ($this->type_params as $type_param) {
+            $s .= $type_param->getKey() . ', ';
+        }
+
+        $extra_types = '';
+
+        if ($this instanceof TNamedObject && $this->extra_types) {
+            $extra_types = '&' . implode('&', $this->extra_types);
+        }
+
+        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
+    }
+
+    /**
      * @return bool
      */
     public function canBeFullyExpressedInPhp()
@@ -35,7 +57,7 @@ class TGenericObject extends TNamedObject
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  int           $php_major_version
      * @param  int           $php_minor_version

@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function count;
+use function get_class;
 use Psalm\Type\Atomic;
 
 /**

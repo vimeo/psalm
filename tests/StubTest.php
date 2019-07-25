@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
+use function define;
+use function defined;
+use function dirname;
+use function getcwd;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -14,7 +18,7 @@ class StubTest extends TestCase
     /**
      * @return void
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
 
@@ -30,7 +34,7 @@ class StubTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
@@ -52,19 +56,18 @@ class StubTest extends TestCase
         );
         $project_analyzer->setPhpVersion('7.3');
 
-        $config->visitComposerAutoloadFiles($project_analyzer, false);
+        $config->visitComposerAutoloadFiles($project_analyzer, null);
 
         return $project_analyzer;
     }
 
     /**
-     * @expectedException        \Psalm\Exception\ConfigException
-     * @expectedExceptionMessage Cannot resolve stubfile path
-     *
-     * @return                   void
+     * @return void
      */
     public function testNonexistentStubFile()
     {
+        $this->expectException(\Psalm\Exception\ConfigException::class);
+        $this->expectExceptionMessage('Cannot resolve stubfile path');
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
@@ -97,7 +100,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/systemclass.php" />
+                        <file name="tests/fixtures/stubs/systemclass.php" />
                     </stubs>
                 </psalm>'
             )
@@ -134,7 +137,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/systemclass.php" />
+                        <file name="tests/fixtures/stubs/systemclass.php" />
                     </stubs>
                 </psalm>'
             )
@@ -171,7 +174,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/phpstorm.meta.php" />
+                        <file name="tests/fixtures/stubs/phpstorm.meta.php" />
                     </stubs>
                 </psalm>'
             )
@@ -259,7 +262,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/namespaced_class.php" />
+                        <file name="tests/fixtures/stubs/namespaced_class.php" />
                     </stubs>
                 </psalm>'
             )
@@ -297,7 +300,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -329,7 +332,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -347,13 +350,12 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidScalarArgument
-     *
-     * @return                   void
+     * @return void
      */
     public function testStubVariadicFunctionWrongArgType()
     {
+        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -364,7 +366,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -382,13 +384,12 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TooManyArguments
-     *
-     * @return                   void
+     * @return void
      */
     public function testUserVariadicWithFalseVariadic()
     {
+        $this->expectExceptionMessage('TooManyArguments');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -426,7 +427,7 @@ class StubTest extends TestCase
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
-                    autoloader="tests/stubs/polyfill.php"
+                    autoloader="tests/fixtures/stubs/polyfill.php"
                 >
                     <projectFiles>
                         <directory name="src" />
@@ -457,7 +458,7 @@ class StubTest extends TestCase
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
-                    autoloader="tests/stubs/class_alias.php"
+                    autoloader="tests/fixtures/stubs/class_alias.php"
                 >
                     <projectFiles>
                         <directory name="src" />
@@ -522,7 +523,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -555,7 +556,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -575,13 +576,12 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist
-     *
-     * @return                   void
+     * @return void
      */
     public function testNoStubFunction()
     {
+        $this->expectExceptionMessage('UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -620,7 +620,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/namespaced_functions.php" />
+                        <file name="tests/fixtures/stubs/namespaced_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -652,7 +652,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/conditional_namespaced_functions.php" />
+                        <file name="tests/fixtures/stubs/conditional_namespaced_functions.php" />
                     </stubs>
                 </psalm>'
             )
@@ -664,6 +664,54 @@ class StubTest extends TestCase
             $file_path,
             '<?php
                 echo Foo\barBar("hello");'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testConditionallyExtendingInterface()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/conditional_interface.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class C implements I1, I2, I3, I4 {}
+
+                function foo(I5 $d) : void {
+                    $d->getMessage();
+                }
+
+                function bar(I6 $d) : void {
+                    $d->getMessage();
+                }
+
+                function bat(I7 $d) : void {
+                    $d->getMessage();
+                }
+
+                function baz(I8 $d) : void {
+                    $d->getMessage();
+                }'
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -684,7 +732,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/DomainException.php" />
+                        <file name="tests/fixtures/stubs/DomainException.php" />
                     </stubs>
                 </psalm>'
             )
@@ -716,7 +764,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.php" />
                     </stubs>
                 </psalm>'
             )
@@ -765,7 +813,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.php" />
                     </stubs>
                 </psalm>'
             )
@@ -787,13 +835,12 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage TypeCoercion
-     *
-     * @return                   void
+     * @return void
      */
     public function testStubFileWithPartialClassDefinitionWithCoercion()
     {
+        $this->expectExceptionMessage('TypeCoercion');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -804,7 +851,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.php" />
                     </stubs>
                 </psalm>'
             )
@@ -834,13 +881,12 @@ class StubTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidReturnStatement
-     *
-     * @return                   void
+     * @return void
      */
     public function testStubFileWithPartialClassDefinitionGeneralReturnType()
     {
+        $this->expectExceptionMessage('InvalidReturnStatement');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -851,7 +897,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.php" />
                     </stubs>
                 </psalm>'
             )
@@ -873,6 +919,56 @@ class StubTest extends TestCase
                         return new \stdClass;
                     }
                 }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testStubFileWithTemplatedClassDefinitionAndMagicMethodOverride()
+    {
+        //$this->markTestSkipped('Currently broken');
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/templated_class.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    /**
+                     * @param int $id
+                     * @param ?int $lockMode
+                     * @param ?int $lockVersion
+                     * @return mixed
+                     */
+                    public function find($id, $lockMode = null, $lockVersion = null) {}
+                }
+
+                class B extends A {}
+
+                class Obj {}
+
+                /**
+                 * @method ?Obj find(int $id, $lockMode = null, $lockVersion = null)
+                 */
+                class C extends B {}'
         );
 
         $this->analyzeFile($file_path, new Context());

@@ -2,8 +2,8 @@
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
-use Psalm\Type;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Type;
 
 class PropertyStorage
 {
@@ -69,6 +69,11 @@ class PropertyStorage
      */
     public $internal = false;
 
+    /**
+     * @var null|string
+     */
+    public $psalm_internal = null;
+
     public function getInfo() : string
     {
         switch ($this->visibility) {
@@ -84,6 +89,6 @@ class PropertyStorage
                 $visibility_text = 'public';
         }
 
-        return $visibility_text . ' ' . ($this->type ?: 'mixed');
+        return $visibility_text . ' ' . ($this->type ? $this->type->getId() : 'mixed');
     }
 }

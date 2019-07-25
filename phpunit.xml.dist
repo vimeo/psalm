@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/5.7/phpunit.xsd"
+         xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          backupGlobals="false"
          beStrictAboutCoversAnnotation="true"
          beStrictAboutOutputDuringTests="true"
          beStrictAboutTestsThatDoNotTestAnything="false"
          beStrictAboutTodoAnnotatedTests="true"
-         verbose="true">
-    <testsuite name="default">
+         verbose="true"
+         executionOrder="default"
+>
+    <testsuite name="psalm">
         <directory>tests</directory>
     </testsuite>
 
@@ -26,6 +28,7 @@
                 <file>src/psalm-language-server.php</file>
                 <file>src/psalter.php</file>
                 <file>src/psalm_plugin.php</file>
+                <file>src/psalm-refactor.php</file>
                 <file>src/Psalm/Plugin/Shepherd.php</file>
                 <file>src/Psalm/Internal/CallMap.php</file>
                 <file>src/Psalm/Internal/Fork/Pool.php</file>

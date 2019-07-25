@@ -1,8 +1,25 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use function array_merge;
+use const DIRECTORY_SEPARATOR;
+use function dirname;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function filemtime;
+use function get_class;
+use function igbinary_serialize;
+use function igbinary_unserialize;
+use function is_dir;
+use function mkdir;
 use Psalm\Config;
 use Psalm\Storage\FileStorage;
+use function serialize;
+use function sha1;
+use function strtolower;
+use function unlink;
+use function unserialize;
 
 /**
  * @internal
@@ -47,7 +64,7 @@ class FileStorageCacheProvider
             $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
         }
 
-        $this->modified_timestamps .= PSALM_VERSION . $this->config->hash;
+        $this->modified_timestamps .= $this->config->hash;
     }
 
     /**

@@ -13,6 +13,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\InvalidScope;
@@ -35,6 +36,17 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
+use function is_string;
+use function array_values;
+use function array_shift;
+use function get_class;
+use function strtolower;
+use function array_map;
+use function array_merge;
+use function explode;
+use function array_search;
+use function array_keys;
+use function in_array;
 
 /**
  * @internal
@@ -51,7 +63,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
-        Context $context
+        Context $context,
+        bool $real_method_call = true
     ) {
         $stmt->inferredType = null;
 
@@ -189,6 +202,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $codebase,
                 $context,
                 $lhs_type_part,
+                $lhs_type_part instanceof Type\Atomic\TNamedObject ? $lhs_type_part : null,
                 $lhs_var_id,
                 $return_type,
                 $returns_by_ref,
@@ -306,6 +320,19 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $stmt->inferredType->by_ref = $returns_by_ref;
         }
 
+        if ($codebase->store_node_types
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+            && isset($stmt->inferredType)
+        ) {
+            $codebase->analyzer->addNodeType(
+                $statements_analyzer->getFilePath(),
+                $stmt->name,
+                (string) $stmt->inferredType,
+                $stmt
+            );
+        }
+
         if ($no_method_id) {
             return self::checkMethodArgs(
                 null,
@@ -314,18 +341,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer
-            );
-        }
-
-        if ($codebase->store_node_types
-            && (!$context->collect_initializations
-                && !$context->collect_mutations)
-            && isset($stmt->inferredType)
-        ) {
-            $codebase->analyzer->addNodeType(
-                $statements_analyzer->getFilePath(),
-                $stmt->name,
-                (string) $stmt->inferredType
             );
         }
 
@@ -342,8 +357,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && $existent_method_ids
             && !$class_type->isMixed()
             && ($class_type->from_docblock || $class_type->isNullable())
+            && $real_method_call
         ) {
             $keys_to_remove = [];
+
+            $class_type = clone $class_type;
 
             foreach ($class_type->getTypes() as $key => $type) {
                 if (!$type instanceof TNamedObject) {
@@ -390,6 +408,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         Codebase $codebase,
         Context $context,
         Type\Atomic $lhs_type_part,
+        ?Type\Atomic\TNamedObject $static_type,
         $lhs_var_id,
         &$return_type,
         &$returns_by_ref,
@@ -399,7 +418,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         &$invalid_method_call_types,
         &$existent_method_ids,
         &$non_existent_class_method_ids,
-        &$non_existent_interface_method_ids
+        &$non_existent_interface_method_ids,
+        bool &$check_visibility = true
     ) {
         $config = $codebase->config;
 
@@ -416,6 +436,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             if ($lhs_type_part instanceof TNamedObject) {
                 $lhs_type_part->extra_types = $extra_types;
+            } elseif ($lhs_type_part instanceof Type\Atomic\TObject && $extra_types) {
+                $lhs_type_part = array_shift($extra_types);
+                if ($extra_types) {
+                    $lhs_type_part->extra_types = $extra_types;
+                }
             }
 
             $has_mixed_method_call = true;
@@ -519,8 +544,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $fq_class_name = $lhs_type_part->value;
 
-        $intersection_types = $lhs_type_part->getIntersectionTypes();
-
         $is_mock = ExpressionAnalyzer::isMock($fq_class_name);
 
         $has_mock = $has_mock || $is_mock;
@@ -554,12 +577,66 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $statements_analyzer,
                 $fq_class_name,
                 new CodeLocation($source, $stmt->var),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
+                true,
+                false,
+                true,
+                $lhs_type_part->from_docblock
             );
         }
 
         if (!$does_class_exist) {
-            return $does_class_exist;
+            $non_existent_class_method_ids[] = $fq_class_name . '::*';
+            return false;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        $check_visibility = $check_visibility && !$class_storage->override_method_visibility;
+
+        $intersection_types = $lhs_type_part->getIntersectionTypes();
+
+        $all_intersection_return_type = null;
+        $all_intersection_existent_method_ids = [];
+
+        if ($intersection_types) {
+            foreach ($intersection_types as $intersection_type) {
+                $i_non_existent_class_method_ids = [];
+                $i_non_existent_interface_method_ids = [];
+
+                $intersection_return_type = null;
+
+                self::analyzeAtomicCall(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $context,
+                    $intersection_type,
+                    $lhs_type_part,
+                    $lhs_var_id,
+                    $intersection_return_type,
+                    $returns_by_ref,
+                    $has_mock,
+                    $has_valid_method_call_type,
+                    $has_mixed_method_call,
+                    $invalid_method_call_types,
+                    $all_intersection_existent_method_ids,
+                    $i_non_existent_class_method_ids,
+                    $i_non_existent_interface_method_ids,
+                    $check_visibility
+                );
+
+                if ($intersection_return_type) {
+                    if (!$all_intersection_return_type || $all_intersection_return_type->isMixed()) {
+                        $all_intersection_return_type = $intersection_return_type;
+                    } else {
+                        $all_intersection_return_type = Type::intersectUnionTypes(
+                            $all_intersection_return_type,
+                            $intersection_return_type
+                        );
+                    }
+                }
+            }
         }
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
@@ -597,8 +674,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $statements_analyzer->getSource()
             )
         ) {
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
             $interface_has_method = false;
 
             if ($class_storage->abstract && $class_storage->class_implements) {
@@ -659,8 +734,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $codebase,
                             $return_type_candidate,
                             $fq_class_name,
-                            $fq_class_name
+                            $fq_class_name,
+                            $class_storage->parent_class
                         );
+
+                        if ($all_intersection_return_type) {
+                            $return_type_candidate = Type::intersectUnionTypes(
+                                $all_intersection_return_type,
+                                $return_type_candidate
+                            );
+                        }
 
                         if (!$return_type) {
                             $return_type = $return_type_candidate;
@@ -727,74 +810,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $fq_class_name = $context->self;
         }
 
-        $check_visibility = true;
-
-        if ($intersection_types) {
-            foreach ($intersection_types as $intersection_type) {
-                if ($intersection_type instanceof TNamedObject
-                    && $codebase->interfaceExists($intersection_type->value)
-                ) {
-                    $interface_storage = $codebase->classlike_storage_provider->get($intersection_type->value);
-
-                    $check_visibility = $check_visibility && !$interface_storage->override_method_visibility;
-                }
-            }
-        }
-
         $is_interface = false;
 
         if ($codebase->interfaceExists($fq_class_name)) {
             $is_interface = true;
-        }
-
-        if ($intersection_types && !$codebase->methodExists($method_id)) {
-            if ($is_interface) {
-                $interface_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-                $check_visibility = $check_visibility && !$interface_storage->override_method_visibility;
-            }
-
-            foreach ($intersection_types as $intersection_type) {
-                if ($intersection_type instanceof Type\Atomic\TTemplateParam) {
-                    if (!$intersection_type->as->isMixed()
-                        && !$intersection_type->as->hasObject()
-                    ) {
-                        $intersection_type = array_values(
-                            $intersection_type->as->getTypes()
-                        )[0];
-
-                        if (!$intersection_type instanceof TNamedObject) {
-                            throw new \UnexpectedValueException(
-                                'Shouldn’t get a non-object generic param here'
-                            );
-                        }
-
-                        $intersection_type->from_docblock = true;
-                    } else {
-                        continue;
-                    }
-                }
-
-                $method_id = $intersection_type->value . '::' . $method_name_lc;
-                $fq_class_name = $intersection_type->value;
-
-                $does_class_exist = ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                    $statements_analyzer,
-                    $fq_class_name,
-                    new CodeLocation($source, $stmt->var),
-                    $statements_analyzer->getSuppressedIssues()
-                );
-
-                if (!$does_class_exist) {
-                    return false;
-                }
-
-                if ($codebase->methodExists($method_id)) {
-                    $is_interface = $codebase->interfaceExists($fq_class_name);
-
-                    break;
-                }
-            }
         }
 
         $source_method_id = $source instanceof FunctionLikeAnalyzer
@@ -806,57 +825,76 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $context->calling_method_id,
             $method_id !== $source_method_id ? new CodeLocation($source, $stmt->name) : null
         )) {
-            if ($config->use_phpdoc_method_without_magic_or_parent) {
-                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                if (isset($class_storage->pseudo_methods[$method_name_lc])) {
-                    $has_valid_method_call_type = true;
-                    $existent_method_ids[] = $method_id;
+            if (($is_interface || $config->use_phpdoc_method_without_magic_or_parent)
+                && isset($class_storage->pseudo_methods[$method_name_lc])
+            ) {
+                $has_valid_method_call_type = true;
+                $existent_method_ids[] = $method_id;
 
-                    $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+                $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
-                    if (self::checkFunctionArguments(
-                        $statements_analyzer,
-                        $args,
-                        $pseudo_method_storage->params,
-                        $method_id,
-                        $context
-                    ) === false) {
-                        return false;
+                if (self::checkFunctionArguments(
+                    $statements_analyzer,
+                    $args,
+                    $pseudo_method_storage->params,
+                    $method_id,
+                    $context
+                ) === false) {
+                    return false;
+                }
+
+                $generic_params = [];
+
+                if (self::checkFunctionLikeArgumentsMatch(
+                    $statements_analyzer,
+                    $args,
+                    null,
+                    $pseudo_method_storage->params,
+                    $pseudo_method_storage,
+                    null,
+                    $generic_params,
+                    new CodeLocation($source, $stmt->name),
+                    $context
+                ) === false) {
+                    return false;
+                }
+
+                if ($pseudo_method_storage->return_type) {
+                    $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+                    if ($all_intersection_return_type) {
+                        $return_type_candidate = Type::intersectUnionTypes(
+                            $all_intersection_return_type,
+                            $return_type_candidate
+                        );
                     }
 
-                    $generic_params = [];
-
-                    if (self::checkFunctionLikeArgumentsMatch(
-                        $statements_analyzer,
-                        $args,
-                        null,
-                        $pseudo_method_storage->params,
-                        $pseudo_method_storage,
-                        null,
-                        $generic_params,
-                        new CodeLocation($source, $stmt->name),
-                        $context
-                    ) === false) {
-                        return false;
+                    if (!$return_type) {
+                        $return_type = $return_type_candidate;
+                    } else {
+                        $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
                     }
-
-                    if ($pseudo_method_storage->return_type) {
-                        $return_type_candidate = clone $pseudo_method_storage->return_type;
-
-                        if (!$return_type) {
-                            $return_type = $return_type_candidate;
-                        } else {
-                            $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
-                        }
-
-                        return;
-                    }
-
-                    $return_type = Type::getMixed();
 
                     return;
                 }
+
+                $return_type = Type::getMixed();
+
+                return;
+            }
+
+            if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
+                $existent_method_ids = array_merge($existent_method_ids, $all_intersection_existent_method_ids);
+
+                if (!$return_type) {
+                    $return_type = $all_intersection_return_type;
+                } else {
+                    $return_type = Type::combineUnionTypes($all_intersection_return_type, $return_type);
+                }
+
+                return;
             }
 
             if ($is_interface) {
@@ -866,6 +904,18 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
 
             return true;
+        }
+
+        if ($codebase->store_node_types
+            && $method_id
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            $codebase->analyzer->addNodeReference(
+                $statements_analyzer->getFilePath(),
+                $stmt->name,
+                $method_id . '()'
+            );
         }
 
         if ($context->collect_initializations && $context->calling_method_id) {
@@ -920,6 +970,17 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     );
                 }
             }
+        }
+
+        if (!$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            ArgumentMapPopulator::recordArgumentPositions(
+                $statements_analyzer,
+                $stmt,
+                $codebase,
+                $method_id
+            );
         }
 
         if (self::checkMethodArgs(
@@ -998,7 +1059,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         }
                     } else {
-                        $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
+                        $callmap_callables = CallMap::getCallablesFromCallMap($call_map_id);
+
+                        if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
+                            throw new \UnexpectedValueException('Shouldn’t get here');
+                        }
+
+                        $return_type_candidate = $callmap_callables[0]->return_type;
                     }
 
                     if ($return_type_candidate->isFalsable()) {
@@ -1009,7 +1076,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $codebase,
                         $return_type_candidate,
                         $fq_class_name,
-                        $lhs_type_part
+                        $static_type,
+                        $class_storage->parent_class
                     );
                 } else {
                     $name_code_location = new CodeLocation($source, $stmt->name);
@@ -1053,14 +1121,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $args
                     );
 
-                    if ($codebase->store_node_types && $method_id) {
-                        $codebase->analyzer->addNodeReference(
-                            $statements_analyzer->getFilePath(),
-                            $stmt->name,
-                            $method_id . '()'
-                        );
-                    }
-
                     if (isset($stmt->inferredType)) {
                         $return_type_candidate = $stmt->inferredType;
                     }
@@ -1079,7 +1139,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $codebase,
                             $return_type_candidate,
                             $self_fq_class_name,
-                            $lhs_type_part
+                            $static_type,
+                            $class_storage->parent_class
                         );
 
                         $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
@@ -1109,6 +1170,18 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
                     if ($method_storage) {
+                        if ($context->pure && !$method_storage->pure) {
+                            if (IssueBuffer::accepts(
+                                new ImpureMethodCall(
+                                    'Cannot call an impure method from a pure context',
+                                    new CodeLocation($source, $stmt->name)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+
                         if ($method_storage->assertions) {
                             self::applyAssertionsToContext(
                                 $stmt->name,
@@ -1154,6 +1227,27 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         }
 
+        if ($codebase->methods_to_rename) {
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            foreach ($codebase->methods_to_rename as $original_method_id => $new_method_name) {
+                if ($declaring_method_id && strtolower($declaring_method_id) === $original_method_id) {
+                    $file_manipulations = [
+                        new \Psalm\FileManipulation(
+                            (int) $stmt->name->getAttribute('startFilePos'),
+                            (int) $stmt->name->getAttribute('endFilePos') + 1,
+                            $new_method_name
+                        )
+                    ];
+
+                    \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                        $statements_analyzer->getFilePath(),
+                        $file_manipulations
+                    );
+                }
+            }
+        }
+
         if ($config->after_method_checks) {
             $file_manipulations = [];
 
@@ -1183,10 +1277,23 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         if ($return_type_candidate) {
+            if ($all_intersection_return_type) {
+                $return_type_candidate = Type::intersectUnionTypes(
+                    $all_intersection_return_type,
+                    $return_type_candidate
+                );
+            }
+
             if (!$return_type) {
                 $return_type = $return_type_candidate;
             } else {
                 $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
+            }
+        } elseif ($all_intersection_return_type) {
+            if (!$return_type) {
+                $return_type = $all_intersection_return_type;
+            } else {
+                $return_type = Type::combineUnionTypes($all_intersection_return_type, $return_type);
             }
         } else {
             $return_type = Type::getMixed();
@@ -1206,15 +1313,20 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     ) {
         $calling_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
+        $non_trait_class_storage = $class_storage->is_trait
+            ? $calling_class_storage
+            : $class_storage;
+
         $template_types = $class_storage->template_types;
 
         if ($calling_class_storage->template_type_extends
             && $method_name
-            && !empty($class_storage->overridden_method_ids[$method_name])
+            && !empty($non_trait_class_storage->overridden_method_ids[$method_name])
             && isset($class_storage->methods[$method_name])
-            && !isset($class_storage->methods[$method_name]->return_type)
+            && (!isset($non_trait_class_storage->methods[$method_name]->return_type)
+                || $class_storage->methods[$method_name]->inherited_return_type)
         ) {
-            foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
+            foreach ($non_trait_class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
 
                 if (!$overridden_storage->return_type) {
@@ -1268,9 +1380,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if ($class_storage !== $calling_class_storage
-                    && isset($e[strtolower($class_storage->name)][$type_name])
+                    && isset($e[$class_storage->name][$type_name])
                 ) {
-                    $input_type_extends = $e[strtolower($class_storage->name)][$type_name];
+                    $input_type_extends = $e[$class_storage->name][$type_name];
 
                     $output_type_extends = null;
 
@@ -1298,7 +1410,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 && isset(
                                     $calling_class_storage
                                         ->template_type_extends
-                                            [strtolower($type_extends_atomic->defining_class)]
+                                            [$type_extends_atomic->defining_class]
                                             [$type_extends_atomic->param_name]
                                 )
                             ) {
@@ -1306,7 +1418,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     $type_extends_atomic->param_name,
                                     array_keys($calling_class_storage
                                     ->template_type_extends
-                                        [strtolower($type_extends_atomic->defining_class)])
+                                        [$type_extends_atomic->defining_class])
                                 );
 
                                 if (isset($lhs_type_part->type_params[(int) $mapped_offset])) {
@@ -1349,9 +1461,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             foreach ($template_types as $type_name => $type_map) {
                 foreach ($type_map as list($type)) {
                     if ($class_storage !== $calling_class_storage
-                        && isset($e[strtolower($class_storage->name)][$type_name])
+                        && isset($e[$class_storage->name][$type_name])
                     ) {
-                        $input_type_extends = $e[strtolower($class_storage->name)][$type_name];
+                        $input_type_extends = $e[$class_storage->name][$type_name];
 
                         $output_type_extends = null;
 
@@ -1468,8 +1580,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $codebase,
                         $class_storage->pseudo_property_set_types['$' . $prop_name],
                         $fq_class_name,
-                        new Type\Atomic\TNamedObject($fq_class_name)
+                        new Type\Atomic\TNamedObject($fq_class_name),
+                        $class_storage->parent_class
                     );
+
+                    $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
                     $type_match_found = TypeAnalyzer::isContainedBy(
                         $codebase,
@@ -1477,14 +1592,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $pseudo_set_type,
                         $second_arg_type->ignore_nullable_issues,
                         $second_arg_type->ignore_falsable_issues,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast
+                        $union_comparison_results
                     );
 
-                    if ($type_coerced) {
-                        if ($type_coerced_from_mixed) {
+                    if ($union_comparison_results->type_coerced) {
+                        if ($union_comparison_results->type_coerced_from_mixed) {
                             if (IssueBuffer::accepts(
                                 new MixedPropertyTypeCoercion(
                                     $prop_name . ' expects \'' . $pseudo_set_type . '\', '
@@ -1511,7 +1623,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
                     }
 
-                    if (!$type_match_found && !$type_coerced_from_mixed) {
+                    if (!$type_match_found && !$union_comparison_results->type_coerced_from_mixed) {
                         if (TypeAnalyzer::canBeContainedBy(
                             $codebase,
                             $second_arg_type,

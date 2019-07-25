@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Plugin\Hook;
 
 use Psalm\CodeLocation;

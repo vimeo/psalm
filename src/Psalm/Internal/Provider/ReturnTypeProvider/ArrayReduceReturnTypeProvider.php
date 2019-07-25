@@ -1,17 +1,21 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function count;
+use function explode;
+use function in_array;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
-use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidArgument;
+use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
+use Psalm\Type;
+use function strpos;
+use function strtolower;
 
 class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -77,7 +81,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
         if (($first_arg_atomic_types = $function_call_arg->inferredType->getTypes())
             && ($closure_atomic_type = $first_arg_atomic_types['Closure'] ?? null)
-            && $closure_atomic_type instanceof Type\Atomic\Fn
+            && $closure_atomic_type instanceof Type\Atomic\TFn
         ) {
             $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -106,18 +110,21 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                 $item_param = $closure_atomic_type->params[1];
 
                 if ($carry_param->type
-                    && (!TypeAnalyzer::isContainedBy(
-                        $codebase,
-                        $initial_type,
-                        $carry_param->type
-                    ) || (!$reduce_return_type->hasMixed()
-                            && !TypeAnalyzer::isContainedBy(
-                                $codebase,
-                                $reduce_return_type,
-                                $carry_param->type
+                    && (
+                        !TypeAnalyzer::isContainedBy(
+                            $codebase,
+                            $initial_type,
+                            $carry_param->type
+                        )
+                        || (
+                            !$reduce_return_type->hasMixed()
+                                && !TypeAnalyzer::isContainedBy(
+                                    $codebase,
+                                    $reduce_return_type,
+                                    $carry_param->type
+                                )
                             )
                         )
-                    )
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidArgument(

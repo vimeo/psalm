@@ -5,9 +5,11 @@ use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\PropertyProperty;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
@@ -35,6 +37,10 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use function count;
+use function in_array;
+use function strtolower;
+use function explode;
 
 /**
  * @internal
@@ -86,7 +92,19 @@ class PropertyAssignmentAnalyzer
                 $context
             );
 
-            $class_property_types[] = $class_property_type ? clone $class_property_type : Type::getMixed();
+            if ($class_property_type && $context->self) {
+                $class_storage = $codebase->classlike_storage_provider->get($context->self);
+
+                $class_property_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $class_property_type,
+                    $context->self,
+                    null,
+                    $class_storage->parent_class
+                );
+            }
+
+            $class_property_types[] = $class_property_type ?: Type::getMixed();
 
             $var_id = '$this->' . $prop_name;
         } else {
@@ -344,8 +362,51 @@ class PropertyAssignmentAnalyzer
                             $property_exists = true;
                             continue;
                         }
+                    }
 
-                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                    if ($assignment_value) {
+                        if ($var_id) {
+                            $context->removeVarFromConflictingClauses(
+                                $var_id,
+                                Type::getMixed(),
+                                $statements_analyzer
+                            );
+
+                            unset($context->vars_in_scope[$var_id]);
+                        }
+
+                        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                            $stmt->var,
+                            new PhpParser\Node\Identifier('__set', $stmt->name->getAttributes()),
+                            [
+                                new PhpParser\Node\Arg(
+                                    new PhpParser\Node\Scalar\String_(
+                                        $prop_name,
+                                        $stmt->name->getAttributes()
+                                    )
+                                ),
+                                new PhpParser\Node\Arg(
+                                    $assignment_value
+                                )
+                            ]
+                        );
+
+                        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+                        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                            $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
+                        }
+
+                        \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                            $statements_analyzer,
+                            $fake_method_call,
+                            $context,
+                            false
+                        );
+
+                        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                            $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
+                        }
                     }
 
                     /*
@@ -434,8 +495,8 @@ class PropertyAssignmentAnalyzer
                 }
 
                 if ($codebase->store_node_types
-                    && (!$context->collect_initializations
-                        && !$context->collect_mutations)
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
                 ) {
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
@@ -476,6 +537,27 @@ class PropertyAssignmentAnalyzer
                     false
                 );
 
+                if ($codebase->properties_to_rename) {
+                    $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
+
+                    foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
+                        if ($declaring_property_id === $original_property_id) {
+                            $file_manipulations = [
+                                new \Psalm\FileManipulation(
+                                    (int) $stmt->name->getAttribute('startFilePos'),
+                                    (int) $stmt->name->getAttribute('endFilePos') + 1,
+                                    $new_property_name
+                                )
+                            ];
+
+                            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                $statements_analyzer->getFilePath(),
+                                $file_manipulations
+                            );
+                        }
+                    }
+                }
+
                 $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
                 $property_storage = null;
@@ -496,11 +578,23 @@ class PropertyAssignmentAnalyzer
                         }
                     }
 
-                    if ($property_storage->internal && $context->self) {
-                        $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
-                        $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_property_class);
+                    if ($property_storage->psalm_internal && $context->self) {
+                        if (! NamespaceAnalyzer::isWithin($context->self, $property_storage->psalm_internal)) {
+                            if (IssueBuffer::accepts(
+                                new InternalProperty(
+                                    $property_id . ' is marked internal to ' . $property_storage->psalm_internal,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $property_id
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
 
-                        if (strtolower($self_root) !== strtolower($declaring_root)) {
+                    if ($property_storage->internal && $context->self) {
+                        if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_property_class)) {
                             if (IssueBuffer::accepts(
                                 new InternalProperty(
                                     $property_id . ' is marked internal',
@@ -544,7 +638,8 @@ class PropertyAssignmentAnalyzer
                         $codebase,
                         $class_property_type,
                         $fq_class_name,
-                        $lhs_type_part
+                        $lhs_type_part,
+                        $class_storage->parent_class
                     );
 
                     if (!$class_property_type->hasMixed() && $assignment_value_type->hasMixed()) {
@@ -621,8 +716,8 @@ class PropertyAssignmentAnalyzer
         $has_valid_assignment_value_type = false;
 
         if ($codebase->store_node_types
-            && (!$context->collect_initializations
-                && !$context->collect_mutations)
+            && !$context->collect_initializations
+            && !$context->collect_mutations
             && count($class_property_types) === 1
         ) {
             $codebase->analyzer->addNodeType(
@@ -637,20 +732,25 @@ class PropertyAssignmentAnalyzer
                 continue;
             }
 
+            $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
             $type_match_found = TypeAnalyzer::isContainedBy(
                 $codebase,
                 $assignment_value_type,
                 $class_property_type,
                 true,
                 true,
-                $has_scalar_match,
-                $type_coerced,
-                $type_coerced_from_mixed,
-                $to_string_cast
+                $union_comparison_results
             );
 
-            if ($type_coerced) {
-                if ($type_coerced_from_mixed) {
+            if ($type_match_found && $union_comparison_results->replacement_union_type) {
+                if ($var_id) {
+                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type;
+                }
+            }
+
+            if ($union_comparison_results->type_coerced) {
+                if ($union_comparison_results->type_coerced_from_mixed) {
                     if (IssueBuffer::accepts(
                         new MixedPropertyTypeCoercion(
                             $var_id . ' expects \'' . $class_property_type->getId() . '\', '
@@ -685,7 +785,7 @@ class PropertyAssignmentAnalyzer
                 }
             }
 
-            if ($to_string_cast) {
+            if ($union_comparison_results->to_string_cast) {
                 if (IssueBuffer::accepts(
                     new ImplicitToStringCast(
                         $var_id . ' expects \'' . $class_property_type . '\', '
@@ -702,7 +802,7 @@ class PropertyAssignmentAnalyzer
                 }
             }
 
-            if (!$type_match_found && !$type_coerced) {
+            if (!$type_match_found && !$union_comparison_results->type_coerced) {
                 if (TypeAnalyzer::canBeContainedBy(
                     $codebase,
                     $assignment_value_type,
@@ -877,6 +977,50 @@ class PropertyAssignmentAnalyzer
             false
         );
 
+        $declaring_property_id = strtolower((string) $declaring_property_class) . '::$' . $prop_name;
+
+        if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
+            $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
+                $codebase,
+                $statements_analyzer,
+                $stmt->class,
+                $fq_class_name,
+                $context->calling_method_id
+            );
+
+            if (!$moved_class) {
+                foreach ($codebase->property_transforms as $original_pattern => $transformation) {
+                    if ($declaring_property_id === $original_pattern) {
+                        list($old_declaring_fq_class_name) = explode('::$', $declaring_property_id);
+                        list($new_fq_class_name, $new_property_name) = explode('::$', $transformation);
+
+                        $file_manipulations = [];
+
+                        if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
+                            $file_manipulations[] = new \Psalm\FileManipulation(
+                                (int) $stmt->class->getAttribute('startFilePos'),
+                                (int) $stmt->class->getAttribute('endFilePos') + 1,
+                                Type::getStringFromFQCLN(
+                                    $new_fq_class_name,
+                                    $statements_analyzer->getNamespace(),
+                                    $statements_analyzer->getAliasedClassesFlipped(),
+                                    null
+                                )
+                            );
+                        }
+
+                        $file_manipulations[] = new \Psalm\FileManipulation(
+                            (int) $stmt->name->getAttribute('startFilePos'),
+                            (int) $stmt->name->getAttribute('endFilePos') + 1,
+                            '$' . $new_property_name
+                        );
+
+                        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+                    }
+                }
+            }
+        }
+
         $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
 
         $property_storage = $class_storage->properties[$prop_name->name];
@@ -924,8 +1068,11 @@ class PropertyAssignmentAnalyzer
             $codebase,
             $class_property_type,
             $fq_class_name,
-            $fq_class_name
+            $fq_class_name,
+            $class_storage->parent_class
         );
+
+        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
         $type_match_found = TypeAnalyzer::isContainedBy(
             $codebase,
@@ -933,14 +1080,11 @@ class PropertyAssignmentAnalyzer
             $class_property_type,
             true,
             true,
-            $has_scalar_match,
-            $type_coerced,
-            $type_coerced_from_mixed,
-            $to_string_cast
+            $union_comparison_results
         );
 
-        if ($type_coerced) {
-            if ($type_coerced_from_mixed) {
+        if ($union_comparison_results->type_coerced) {
+            if ($union_comparison_results->type_coerced_from_mixed) {
                 if (IssueBuffer::accepts(
                     new MixedPropertyTypeCoercion(
                         $var_id . ' expects \'' . $class_property_type . '\', '
@@ -975,7 +1119,7 @@ class PropertyAssignmentAnalyzer
             }
         }
 
-        if ($to_string_cast) {
+        if ($union_comparison_results->to_string_cast) {
             if (IssueBuffer::accepts(
                 new ImplicitToStringCast(
                     $var_id . ' expects \'' . $class_property_type . '\', '
@@ -992,7 +1136,7 @@ class PropertyAssignmentAnalyzer
             }
         }
 
-        if (!$type_match_found && !$type_coerced) {
+        if (!$type_match_found && !$union_comparison_results->type_coerced) {
             if (TypeAnalyzer::canBeContainedBy($codebase, $assignment_value_type, $class_property_type)) {
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidPropertyAssignmentValue(

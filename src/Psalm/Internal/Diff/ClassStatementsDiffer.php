@@ -1,8 +1,13 @@
 <?php
-
 namespace Psalm\Internal\Diff;
 
+use function count;
+use function get_class;
 use PhpParser;
+use function strpos;
+use function strtolower;
+use function substr;
+use function trim;
 
 /**
  * @internal
@@ -232,7 +237,7 @@ class ClassStatementsDiffer extends AstDiffer
                     }
                 }
             }
-        };
+        }
 
         return [$keep, $keep_signature, $add_or_delete, $diff_map];
     }

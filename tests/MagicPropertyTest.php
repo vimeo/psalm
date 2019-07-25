@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+
 class MagicPropertyTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
@@ -320,6 +322,22 @@ class MagicPropertyTest extends TestCase
                 'assertions' => [],
                 'error_level' => ['MixedArgument'],
             ],
+            'dontAssumeNonNullAfterPossibleMagicFetch' => [
+                '<?php
+                    class C {
+                        public function __get(string $name) : string {
+                            return "hello";
+                        }
+                    }
+
+                    function foo(?C $c) : void {
+                        echo $c->foo;
+
+                        if ($c) {}
+                    }',
+                'assertions' => [],
+                'error_level' => ['PossiblyNullPropertyFetch'],
+            ],
             'accessInMagicGet' => [
                 '<?php
                     class X {
@@ -498,6 +516,35 @@ class MagicPropertyTest extends TestCase
 
                     $a = new A();
                     $a->takesString($a->foo);',
+            ],
+            'removeAssertionsAfterCall' => [
+                '<?php
+                    class C {
+                        /**
+                         * @return mixed
+                         */
+                        public function __get(string $name) {
+                            return rand();
+                        }
+
+                        /**
+                         * @param mixed $value
+                         * @return void
+                         */
+                        public function __set(string $name, $value) {}
+
+                        public function main() : void {
+                            if (!isset($this->a)) {
+                                $this->a = ["something"];
+
+                                /**
+                                 * @psalm-suppress MixedArrayAccess
+                                 * @psalm-suppress MixedArgument
+                                 */
+                                echo $this->a[0];
+                            }
+                        }
+                    }'
             ],
         ];
     }

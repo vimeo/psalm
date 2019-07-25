@@ -4,8 +4,10 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
@@ -19,6 +21,7 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
@@ -29,6 +32,13 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use function strtolower;
+use function array_values;
+use function in_array;
+use function array_reverse;
+use function array_keys;
+use function count;
+use function explode;
 
 /**
  * @internal
@@ -99,8 +109,8 @@ class PropertyFetchAnalyzer
             }
 
             if ($codebase->store_node_types
-                && (!$context->collect_initializations
-                    && !$context->collect_mutations)
+                && !$context->collect_initializations
+                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
@@ -133,6 +143,7 @@ class PropertyFetchAnalyzer
                 if ($property_id
                     && $source instanceof FunctionLikeAnalyzer
                     && $source->getMethodName() === '__construct'
+                    && !$context->inside_unset
                 ) {
                     if (IssueBuffer::accepts(
                         new UninitializedProperty(
@@ -172,7 +183,10 @@ class PropertyFetchAnalyzer
                                 : null
                         );
 
-                        if ($codebase->store_node_types) {
+                        if ($codebase->store_node_types
+                            && !$context->collect_initializations
+                            && !$context->collect_mutations
+                        ) {
                             $codebase->analyzer->addNodeReference(
                                 $statements_analyzer->getFilePath(),
                                 $stmt->name,
@@ -256,8 +270,8 @@ class PropertyFetchAnalyzer
                 $stmt->inferredType = Type::getMixed();
 
                 if ($codebase->store_node_types
-                    && (!$context->collect_initializations
-                        && !$context->collect_mutations)
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
                 ) {
                     $codebase->analyzer->addNodeType(
                         $statements_analyzer->getFilePath(),
@@ -430,15 +444,28 @@ class PropertyFetchAnalyzer
                 }
 
                 if (!$class_exists && !$interface_exists) {
-                    if (IssueBuffer::accepts(
-                        new UndefinedClass(
-                            'Cannot set properties of undefined class ' . $lhs_type_part->value,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $lhs_type_part->value
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if ($lhs_type_part->from_docblock) {
+                        if (IssueBuffer::accepts(
+                            new UndefinedDocblockClass(
+                                'Cannot set properties of undefined docblock class ' . $lhs_type_part->value,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $lhs_type_part->value
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new UndefinedClass(
+                                'Cannot set properties of undefined class ' . $lhs_type_part->value,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $lhs_type_part->value
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
 
                     return null;
@@ -470,7 +497,46 @@ class PropertyFetchAnalyzer
                     continue;
                 }
 
-                $stmt->inferredType = Type::getMixed();
+                $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                    $stmt->var,
+                    new PhpParser\Node\Identifier('__get', $stmt->name->getAttributes()),
+                    [
+                        new PhpParser\Node\Arg(
+                            new PhpParser\Node\Scalar\String_(
+                                $prop_name,
+                                $stmt->name->getAttributes()
+                            )
+                        )
+                    ]
+                );
+
+                $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+                if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                    $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
+                }
+
+                if (!in_array('InternalMethod', $suppressed_issues, true)) {
+                    $statements_analyzer->addSuppressedIssues(['InternalMethod']);
+                }
+
+                \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                    $statements_analyzer,
+                    $fake_method_call,
+                    $context,
+                    false
+                );
+
+                if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                    $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
+                }
+
+                if (!in_array('InternalMethod', $suppressed_issues, true)) {
+                    $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
+                }
+
+                $stmt->inferredType = $fake_method_call->inferredType ?? Type::getMixed();
+
                 /*
                  * If we have an explicit list of all allowed magic properties on the class, and we're
                  * not in that list, fall through
@@ -497,7 +563,10 @@ class PropertyFetchAnalyzer
                 continue;
             }
 
-            if ($codebase->store_node_types) {
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
@@ -580,6 +649,27 @@ class PropertyFetchAnalyzer
                 true
             );
 
+            if ($codebase->properties_to_rename) {
+                $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
+
+                foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
+                    if ($declaring_property_id === $original_property_id) {
+                        $file_manipulations = [
+                            new \Psalm\FileManipulation(
+                                (int) $stmt->name->getAttribute('startFilePos'),
+                                (int) $stmt->name->getAttribute('endFilePos') + 1,
+                                $new_property_name
+                            )
+                        ];
+
+                        \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                            $statements_analyzer->getFilePath(),
+                            $file_manipulations
+                        );
+                    }
+                }
+            }
+
             $declaring_class_storage = $codebase->classlike_storage_provider->get(
                 $declaring_property_class
             );
@@ -600,11 +690,23 @@ class PropertyFetchAnalyzer
                     }
                 }
 
-                if ($property_storage->internal && $context->self) {
-                    $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
-                    $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_property_class);
+                if ($property_storage->psalm_internal && $context->self) {
+                    if (! NamespaceAnalyzer::isWithin($context->self, $property_storage->psalm_internal)) {
+                        if (IssueBuffer::accepts(
+                            new InternalProperty(
+                                $property_id . ' is marked internal to ' . $property_storage->psalm_internal,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $property_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
 
-                    if (strtolower($self_root) !== strtolower($declaring_root)) {
+                if ($property_storage->internal && $context->self) {
+                    if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_property_class)) {
                         if (IssueBuffer::accepts(
                             new InternalProperty(
                                 $property_id . ' is marked internal',
@@ -644,7 +746,8 @@ class PropertyFetchAnalyzer
                     $codebase,
                     clone $class_property_type,
                     $declaring_property_class,
-                    $declaring_property_class
+                    $declaring_property_class,
+                    $declaring_class_storage->parent_class
                 );
 
                 if ($lhs_type_part instanceof TGenericObject) {
@@ -668,13 +771,20 @@ class PropertyFetchAnalyzer
 
                         $type_tokens = Type::tokenize((string)$class_property_type);
 
-                        foreach ($type_tokens as &$type_token) {
-                            if (isset($class_template_params[$type_token])) {
-                                $type_token = $class_template_params[$type_token];
+                        $new_type_tokens = [];
+
+                        foreach ($type_tokens as $type_token_map) {
+                            if (isset($class_template_params[$type_token_map[0]])) {
+                                $tokened = Type::tokenize($class_template_params[$type_token_map[0]]);
+                                foreach ($tokened as $new_t) {
+                                    $new_type_tokens[] = [$new_t[0], $type_token_map[1]];
+                                }
+                            } else {
+                                $new_type_tokens[] = $type_token_map;
                             }
                         }
 
-                        $class_property_type = Type::parseString(implode('', $type_tokens));
+                        $class_property_type = Type::parseTokens($new_type_tokens);
                     }
                 }
             }
@@ -687,8 +797,8 @@ class PropertyFetchAnalyzer
         }
 
         if ($codebase->store_node_types
-            && (!$context->collect_initializations
-                && !$context->collect_mutations)
+            && !$context->collect_initializations
+            && !$context->collect_mutations
             && isset($stmt->inferredType)
         ) {
             $codebase->analyzer->addNodeType(
@@ -813,6 +923,22 @@ class PropertyFetchAnalyzer
                 }
             }
 
+            if ($fq_class_name
+                && $codebase->methods_to_move
+                && $context->calling_method_id
+                && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
+            ) {
+                $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
+
+                $codebase->classlikes->airliftClassLikeReference(
+                    $fq_class_name,
+                    explode('::', $destination_method_id)[0],
+                    $statements_analyzer->getFilePath(),
+                    (int) $stmt->class->getAttribute('startFilePos'),
+                    (int) $stmt->class->getAttribute('endFilePos') + 1
+                );
+            }
+
             $stmt->class->inferredType = $fq_class_name ? new Type\Union([new TNamedObject($fq_class_name)]) : null;
         }
 
@@ -853,7 +979,10 @@ class PropertyFetchAnalyzer
 
         $property_id = $fq_class_name . '::$' . $prop_name;
 
-        if ($codebase->store_node_types) {
+        if ($codebase->store_node_types
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
@@ -877,8 +1006,8 @@ class PropertyFetchAnalyzer
             }
 
             if ($codebase->store_node_types
-                && (!$context->collect_initializations
-                    && !$context->collect_mutations)
+                && !$context->collect_initializations
+                && !$context->collect_mutations
                 && isset($stmt->inferredType)
             ) {
                 $codebase->analyzer->addNodeType(
@@ -928,6 +1057,50 @@ class PropertyFetchAnalyzer
             true
         );
 
+        $declaring_property_id = strtolower((string) $declaring_property_class) . '::$' . $prop_name;
+
+        if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
+            $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
+                $codebase,
+                $statements_analyzer,
+                $stmt->class,
+                $fq_class_name,
+                $context->calling_method_id
+            );
+
+            if (!$moved_class) {
+                foreach ($codebase->property_transforms as $original_pattern => $transformation) {
+                    if ($declaring_property_id === $original_pattern) {
+                        list($old_declaring_fq_class_name) = explode('::$', $declaring_property_id);
+                        list($new_fq_class_name, $new_property_name) = explode('::$', $transformation);
+
+                        $file_manipulations = [];
+
+                        if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
+                            $file_manipulations[] = new \Psalm\FileManipulation(
+                                (int) $stmt->class->getAttribute('startFilePos'),
+                                (int) $stmt->class->getAttribute('endFilePos') + 1,
+                                Type::getStringFromFQCLN(
+                                    $new_fq_class_name,
+                                    $statements_analyzer->getNamespace(),
+                                    $statements_analyzer->getAliasedClassesFlipped(),
+                                    null
+                                )
+                            );
+                        }
+
+                        $file_manipulations[] = new \Psalm\FileManipulation(
+                            (int) $stmt->name->getAttribute('startFilePos'),
+                            (int) $stmt->name->getAttribute('endFilePos') + 1,
+                            '$' . $new_property_name
+                        );
+
+                        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+                    }
+                }
+            }
+        }
+
         $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
         $property = $class_storage->properties[$prop_name];
 
@@ -937,7 +1110,8 @@ class PropertyFetchAnalyzer
                     $codebase,
                     clone $property->type,
                     $declaring_property_class,
-                    $declaring_property_class
+                    $declaring_property_class,
+                    $class_storage->parent_class
                 );
             } else {
                 $context->vars_in_scope[$var_id] = Type::getMixed();
@@ -946,8 +1120,8 @@ class PropertyFetchAnalyzer
             $stmt->inferredType = clone $context->vars_in_scope[$var_id];
 
             if ($codebase->store_node_types
-                && (!$context->collect_initializations
-                    && !$context->collect_mutations)
+                && !$context->collect_initializations
+                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),

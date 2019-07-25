@@ -1,7 +1,10 @@
-<?php declare(strict_types=1);
-
+<?php
+declare(strict_types=1);
 namespace Psalm\Internal\Traverser;
 
+use function array_pop;
+use function array_splice;
+use function gettype;
 use PhpParser\Node;
 use PhpParser\NodeTraverserInterface;
 
@@ -18,14 +21,14 @@ class CustomTraverser extends \PhpParser\NodeTraverser implements NodeTraverserI
     /**
      * Recursively traverse a node.
      *
-     * @param Node $node Node to traverse.
+     * @param Node $node node to traverse
      *
      * @return Node Result of traversal (may be original node or new one)
      */
     protected function traverseNode(Node $node) : Node
     {
         foreach ($node->getSubNodeNames() as $name) {
-            $subNode =& $node->$name;
+            $subNode = &$node->$name;
 
             if (\is_array($subNode)) {
                 $subNode = $this->traverseArray($subNode);

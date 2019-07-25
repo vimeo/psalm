@@ -18,6 +18,13 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use function substr;
+use function count;
+use function strtolower;
+use function in_array;
+use function array_merge;
+use function strpos;
+use function is_int;
 
 /**
  * @internal
@@ -63,6 +70,10 @@ class AssertionFinder
                     $var_type = $conditional->expr->inferredType ?? null;
 
                     foreach ($instanceof_types as $instanceof_type) {
+                        if ($instanceof_type[0] === '=') {
+                            $instanceof_type = substr($instanceof_type, 1);
+                        }
+
                         if ($codebase
                             && $var_type
                             && $inside_negation
@@ -288,7 +299,9 @@ class AssertionFinder
             return;
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\MethodCall) {
+        if ($conditional instanceof PhpParser\Node\Expr\MethodCall
+            || $conditional instanceof PhpParser\Node\Expr\StaticCall
+        ) {
             $conditional->assertions = self::processCustomAssertion($conditional, $this_class_name, $source, false);
             return;
         }
@@ -822,28 +835,36 @@ class AssertionFinder
                 } elseif ($var_type === 'parent' || $var_type === 'static') {
                     $var_type = null;
                 }
-            } else {
-                throw new \UnexpectedValueException('Shouldn’t get here');
-            }
 
-            if ($source instanceof StatementsSource
-                && $var_type
-            ) {
-                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                    $source,
-                    $var_type,
-                    new CodeLocation($source, $whichclass_expr),
-                    $source->getSuppressedIssues(),
-                    false
-                ) === false
+                if ($source instanceof StatementsSource
+                    && $var_type
                 ) {
-                    $conditional->assertions = $if_types;
-                    return;
+                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                        $source,
+                        $var_type,
+                        new CodeLocation($source, $whichclass_expr),
+                        $source->getSuppressedIssues(),
+                        false
+                    ) === false
+                    ) {
+                        $conditional->assertions = $if_types;
+                        return;
+                    }
                 }
-            }
 
-            if ($var_name && $var_type) {
-                $if_types[$var_name] = [['=getclass-' . $var_type]];
+                if ($var_name && $var_type) {
+                    $if_types[$var_name] = [['=getclass-' . $var_type]];
+                }
+            } else {
+                $type = $whichclass_expr->inferredType;
+
+                if ($type && $var_name) {
+                    foreach ($type->getTypes() as $type_part) {
+                        if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
+                            $if_types[$var_name] = [['=' . $type_part->param_name]];
+                        }
+                    }
+                }
             }
 
             $conditional->assertions = $if_types;
@@ -1392,7 +1413,18 @@ class AssertionFinder
                     $var_type = null;
                 }
             } else {
-                throw new \UnexpectedValueException('Shouldn’t get here');
+                $type = $whichclass_expr->inferredType;
+
+                if ($type && $var_name) {
+                    foreach ($type->getTypes() as $type_part) {
+                        if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
+                            $if_types[$var_name] = [['!=' . $type_part->param_name]];
+                        }
+                    }
+                }
+
+                $conditional->assertions = $if_types;
+                return;
             }
 
             if ($source instanceof StatementsSource
@@ -1669,9 +1701,29 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'iterable']];
             }
-        } elseif (self::hasClassExistsCheck($expr)) {
+        } elseif (self::hasCountableCheck($expr)) {
             if ($first_var_name) {
-                $if_types[$first_var_name] = [[$prefix . 'class-string']];
+                $if_types[$first_var_name] = [[$prefix . 'countable']];
+            }
+        } elseif ($class_exists_check_type = self::hasClassExistsCheck($expr)) {
+            if ($first_var_name) {
+                if ($class_exists_check_type === 2) {
+                    $if_types[$first_var_name] = [[$prefix . 'class-string']];
+                } elseif (!$prefix) {
+                    $if_types[$first_var_name] = [['=class-string']];
+                }
+            }
+        } elseif ($class_exists_check_type = self::hasTraitExistsCheck($expr)) {
+            if ($first_var_name) {
+                if ($class_exists_check_type === 2) {
+                    $if_types[$first_var_name] = [[$prefix . 'trait-string']];
+                } elseif (!$prefix) {
+                    $if_types[$first_var_name] = [['=trait-string']];
+                }
+            }
+        } elseif (self::hasInterfaceExistsCheck($expr)) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = [[$prefix . 'interface-string']];
             }
         } elseif (self::hasFunctionExistsCheck($expr)) {
             if ($first_var_name) {
@@ -1749,7 +1801,7 @@ class AssertionFinder
     }
 
     /**
-     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall      $expr
+     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      * @param  string|null  $this_class_name
      * @param  FileSource   $source
      * @param  bool         $negate
@@ -1800,6 +1852,20 @@ class AssertionFinder
                             $if_types[$var_name] = [[$prefix . $assertion->rule[0][0]]];
                         }
                     }
+                } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
+                    $var_id = ExpressionAnalyzer::getArrayVarId(
+                        $expr->var,
+                        $this_class_name,
+                        $source
+                    );
+
+                    if ($var_id) {
+                        if ($prefix === $assertion->rule[0][0][0]) {
+                            $if_types[$var_id] = [[substr($assertion->rule[0][0], 1)]];
+                        } else {
+                            $if_types[$var_id] = [[$prefix . $assertion->rule[0][0]]];
+                        }
+                    }
                 }
             }
         }
@@ -1824,6 +1890,20 @@ class AssertionFinder
                             $if_types[$var_name] = [[substr($assertion->rule[0][0], 1)]];
                         } else {
                             $if_types[$var_name] = [[$negated_prefix . $assertion->rule[0][0]]];
+                        }
+                    }
+                } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
+                    $var_id = ExpressionAnalyzer::getArrayVarId(
+                        $expr->var,
+                        $this_class_name,
+                        $source
+                    );
+
+                    if ($var_id) {
+                        if ($negated_prefix === $assertion->rule[0][0][0]) {
+                            $if_types[$var_id] = [[substr($assertion->rule[0][0], 1)]];
+                        } else {
+                            $if_types[$var_id] = [[$negated_prefix . $assertion->rule[0][0]]];
                         }
                     }
                 }
@@ -1856,6 +1936,10 @@ class AssertionFinder
             } elseif ($this_class_name
                 && (in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true))
             ) {
+                if ($stmt->class->parts[0] === 'static') {
+                    return ['=' . $this_class_name];
+                }
+
                 return [$this_class_name];
             }
         } elseif (isset($stmt->class->inferredType)) {
@@ -1900,7 +1984,7 @@ class AssertionFinder
      *
      * @return  int|null
      */
-    protected static function hasFalseVariable(PhpParser\Node\Expr\BinaryOp $conditional)
+    public static function hasFalseVariable(PhpParser\Node\Expr\BinaryOp $conditional)
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
             && strtolower($conditional->right->name->parts[0]) === 'false'
@@ -2017,7 +2101,19 @@ class AssertionFinder
             && $conditional->left->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->left->name->name) === 'class';
 
-        if (($right_get_class || $right_static_class) && $left_class_string) {
+        $left_type = ($conditional->left->inferredType ?? null);
+
+        $left_class_string_t = false;
+
+        if ($left_type && $left_type->isSingle()) {
+            foreach ($left_type->getTypes() as $type_part) {
+                if ($type_part instanceof Type\Atomic\TClassString) {
+                    $left_class_string_t = true;
+                }
+            }
+        }
+
+        if (($right_get_class || $right_static_class) && ($left_class_string || $left_class_string_t)) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
@@ -2036,7 +2132,19 @@ class AssertionFinder
             && $conditional->right->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->right->name->name) === 'class';
 
-        if (($left_get_class || $left_static_class) && $right_class_string) {
+        $right_type = ($conditional->right->inferredType ?? null);
+
+        $right_class_string_t = false;
+
+        if ($right_type && $right_type->isSingle()) {
+            foreach ($right_type->getTypes() as $type_part) {
+                if ($type_part instanceof Type\Atomic\TClassString) {
+                    $right_class_string_t = true;
+                }
+            }
+        }
+
+        if (($left_get_class || $left_static_class) && ($right_class_string || $right_class_string_t)) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -2310,9 +2418,83 @@ class AssertionFinder
      *
      * @return  bool
      */
+    protected static function hasCountableCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_countable') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
+     * @return  0|1|2
+     */
     protected static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'class_exists') {
+        if ($stmt->name instanceof PhpParser\Node\Name
+            && strtolower($stmt->name->parts[0]) === 'class_exists'
+        ) {
+            if (!isset($stmt->args[1])) {
+                return 2;
+            }
+
+            $second_arg = $stmt->args[1]->value;
+
+            if ($second_arg instanceof PhpParser\Node\Expr\ConstFetch
+                && $second_arg->name instanceof PhpParser\Node\Name
+                && strtolower($second_arg->name->parts[0]) === 'true'
+            ) {
+                return 2;
+            }
+
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
+     * @return  0|1|2
+     */
+    protected static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name
+            && strtolower($stmt->name->parts[0]) === 'trait_exists'
+        ) {
+            if (!isset($stmt->args[1])) {
+                return 2;
+            }
+
+            $second_arg = $stmt->args[1]->value;
+
+            if ($second_arg instanceof PhpParser\Node\Expr\ConstFetch
+                && $second_arg->name instanceof PhpParser\Node\Name
+                && strtolower($second_arg->name->parts[0]) === 'true'
+            ) {
+                return 2;
+            }
+
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
+     * @return  bool
+     */
+    protected static function hasInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name
+            && strtolower($stmt->name->parts[0]) === 'interface_exists'
+        ) {
             return true;
         }
 

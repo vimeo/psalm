@@ -1,11 +1,17 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Union;
+use function array_keys;
+use function array_map;
+use function count;
+use function implode;
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 class TObjectWithProperties extends TObject
 {
+    use HasIntersectionTrait;
+
     /**
      * @var array<string|int, Union>
      */
@@ -23,6 +29,12 @@ class TObjectWithProperties extends TObject
 
     public function __toString()
     {
+        $extra_types = '';
+
+        if ($this->extra_types) {
+            $extra_types = '&' . implode('&', $this->extra_types);
+        }
+
         return 'object{' .
                 implode(
                     ', ',
@@ -40,11 +52,17 @@ class TObjectWithProperties extends TObject
                         $this->properties
                     )
                 ) .
-                '}';
+                '}' . $extra_types;
     }
 
     public function getId()
     {
+        $extra_types = '';
+
+        if ($this->extra_types) {
+            $extra_types = '&' . implode('&', $this->extra_types);
+        }
+
         return 'object{' .
                 implode(
                     ', ',
@@ -62,19 +80,23 @@ class TObjectWithProperties extends TObject
                         $this->properties
                     )
                 ) .
-                '}';
+                '}' . $extra_types;
     }
 
     /**
      * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
+     * @param  array<string, string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         if ($use_phpdoc_format) {
             return 'object';
         }

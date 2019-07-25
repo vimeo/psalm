@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use function array_values;
+use function get_class;
 use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -18,7 +20,7 @@ class CodebaseTest extends TestCase
     private $codebase;
 
     /** @return void */
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
         $this->codebase = $this->project_analyzer->getCodebase();
@@ -43,7 +45,7 @@ class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,string,bool} */
+    /** @return iterable<int,array{string,string,bool}> */
     public function typeContainments()
     {
         yield ['int', 'int|string', true];
@@ -74,7 +76,7 @@ class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,string,bool} */
+    /** @return iterable<int,array{string,string,bool}> */
     public function typeIntersections()
     {
         yield ['int', 'int|string', true];
@@ -114,11 +116,11 @@ class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,array{string,string}} */
+    /** @return iterable<int,array{string,array{string,string}}> */
     public function iterableParams()
     {
         yield ['iterable<int,string>', ['int', 'string']];
-        yield ['iterable<int|string,bool|float', ['int|string', 'bool|float']];
+        yield ['iterable<int|string,bool|float>', ['int|string', 'bool|float']];
     }
 
     /**

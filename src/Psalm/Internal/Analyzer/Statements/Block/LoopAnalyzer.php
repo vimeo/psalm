@@ -14,6 +14,11 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use function array_merge;
+use function array_keys;
+use function array_unique;
+use function array_intersect_key;
+use function in_array;
 
 /**
  * @internal
@@ -90,8 +95,15 @@ class LoopAnalyzer
 
         $loop_scope->loop_context->parent_context = $loop_scope->loop_parent_context;
 
+        $pre_outer_context = $loop_scope->loop_parent_context;
+
         if ($assignment_depth === 0 || $has_break_statement) {
             $inner_context = clone $loop_scope->loop_context;
+
+            foreach ($inner_context->vars_in_scope as $context_var_id => $context_type) {
+                $inner_context->vars_in_scope[$context_var_id] = clone $context_type;
+            }
+
             $inner_context->loop_scope = $loop_scope;
 
             $inner_context->parent_context = $loop_scope->loop_context;
@@ -161,6 +173,11 @@ class LoopAnalyzer
             $pre_loop_context = clone $loop_scope->loop_context;
 
             $inner_context = clone $loop_scope->loop_context;
+
+            foreach ($inner_context->vars_in_scope as $context_var_id => $context_type) {
+                $inner_context->vars_in_scope[$context_var_id] = clone $context_type;
+            }
+
             $inner_context->parent_context = $loop_scope->loop_context;
             $inner_context->loop_scope = $loop_scope;
 
@@ -187,7 +204,10 @@ class LoopAnalyzer
              * @var array<string, bool>
              */
             $new_referenced_var_ids = $inner_context->referenced_var_ids;
-            $inner_context->referenced_var_ids = $old_referenced_var_ids + $inner_context->referenced_var_ids;
+            $inner_context->referenced_var_ids = array_intersect_key(
+                $old_referenced_var_ids,
+                $inner_context->referenced_var_ids
+            );
 
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
@@ -248,6 +268,14 @@ class LoopAnalyzer
                         // the where conditional
                         if (!$is_do) {
                             $vars_to_remove[] = $var_id;
+                        }
+                    }
+                }
+
+                if ($inner_context->collect_references) {
+                    foreach ($inner_context->unreferenced_vars as $var_id => $_) {
+                        if (!isset($pre_outer_context->vars_in_scope[$var_id])) {
+                            unset($inner_context->unreferenced_vars[$var_id]);
                         }
                     }
                 }
@@ -424,7 +452,10 @@ class LoopAnalyzer
         }
 
         $loop_scope->loop_context->referenced_var_ids = array_merge(
-            $inner_context->referenced_var_ids,
+            array_intersect_key(
+                $inner_context->referenced_var_ids,
+                $pre_outer_context->vars_in_scope
+            ),
             $loop_scope->loop_context->referenced_var_ids
         );
 
@@ -432,13 +463,14 @@ class LoopAnalyzer
             foreach ($loop_scope->possibly_unreferenced_vars as $var_id => $locations) {
                 if (isset($inner_context->unreferenced_vars[$var_id])) {
                     $inner_context->unreferenced_vars[$var_id] += $locations;
-                } else {
-                    $inner_context->unreferenced_vars[$var_id] = $locations;
                 }
             }
 
             foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
-                if ($has_break_statement || !isset($new_referenced_var_ids[$var_id])) {
+                if (!isset($new_referenced_var_ids[$var_id])
+                    || !isset($pre_outer_context->vars_in_scope[$var_id])
+                    || $has_break_statement
+                ) {
                     if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
                         $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;
                     } else {

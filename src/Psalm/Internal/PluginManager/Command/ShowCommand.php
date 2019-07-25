@@ -1,6 +1,13 @@
 <?php
 namespace Psalm\Internal\PluginManager\Command;
 
+use function array_keys;
+use function array_map;
+use function array_values;
+use function count;
+use const DIRECTORY_SEPARATOR;
+use function getcwd;
+use function is_string;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -57,8 +64,7 @@ class ShowCommand extends Command
             /** @param null|string $package */
             function (string $class, $package): array {
                 return [$package, $class];
-            }
-        ;
+            };
 
         $io->section('Enabled');
         if (count($enabled)) {

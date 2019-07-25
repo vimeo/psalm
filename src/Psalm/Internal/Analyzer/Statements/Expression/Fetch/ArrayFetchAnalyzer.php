@@ -41,6 +41,16 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
+use function array_values;
+use function array_keys;
+use function count;
+use function array_pop;
+use function implode;
+use function strlen;
+use function strtolower;
+use function in_array;
+use function is_int;
+use function preg_match;
 
 /**
  * @internal
@@ -105,6 +115,7 @@ class ArrayFetchAnalyzer
         if ($keyed_array_var_id
             && $context->hasVariable($keyed_array_var_id)
             && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
+            && !$context->vars_in_scope[$keyed_array_var_id]->isVanillaMixed()
         ) {
             $stmt->inferredType = clone $context->vars_in_scope[$keyed_array_var_id];
 
@@ -200,7 +211,10 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id, $statements_analyzer)) {
+        if ($keyed_array_var_id
+            && $context->hasVariable($keyed_array_var_id, $statements_analyzer)
+            && (!isset($stmt->inferredType) || $stmt->inferredType->isVanillaMixed())
+        ) {
             $stmt->inferredType = $context->vars_in_scope[$keyed_array_var_id];
         }
 
@@ -325,7 +339,53 @@ class ArrayFetchAnalyzer
             }
         }
 
-        foreach ($array_type->getTypes() as &$type) {
+        foreach ($array_type->getTypes() as $type_string => $type) {
+            $original_type = $type;
+
+            if ($type instanceof TMixed || $type instanceof TTemplateParam || $type instanceof TEmpty) {
+                if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingle()) {
+                    if (!$context->collect_initializations
+                        && !$context->collect_mutations
+                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                        && (!(($parent_source = $statements_analyzer->getSource())
+                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                            || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    ) {
+                        $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                    }
+
+                    if (!$context->inside_isset) {
+                        if ($in_assignment) {
+                            if (IssueBuffer::accepts(
+                                new MixedArrayAssignment(
+                                    'Cannot access array value on mixed variable ' . $array_var_id,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new MixedArrayAccess(
+                                    'Cannot access array value on mixed variable ' . $array_var_id,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+
+                    $has_valid_offset = true;
+                    $array_access_type = Type::getMixed();
+                    break;
+                }
+
+                $type = clone array_values($type->as->getTypes())[0];
+            }
+
             if ($type instanceof TNull) {
                 if ($array_type->ignore_nullable_issues) {
                     continue;
@@ -385,8 +445,9 @@ class ArrayFetchAnalyzer
                     && $type->type_params[0]->isEmpty()
                 ) {
                     // ok, type becomes an ObjectLike
-
+                    $array_type->removeType($type_string);
                     $type = new ObjectLike([$key_value => new Type\Union([new TEmpty])]);
+                    $array_type->addType($type);
                 }
 
                 $offset_type = self::replaceOffsetTypeWithInts($offset_type);
@@ -402,21 +463,46 @@ class ArrayFetchAnalyzer
                             ? new Type\Union([ new TArrayKey ])
                             : $type->type_params[0];
 
-                        if ((!TypeAnalyzer::isContainedBy(
+                        $templated_offset_type = null;
+
+                        foreach ($offset_type->getTypes() as $offset_atomic_type) {
+                            if ($offset_atomic_type instanceof TTemplateParam) {
+                                $templated_offset_type = $offset_atomic_type;
+                            }
+                        }
+
+                        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
+                        if ($original_type instanceof TTemplateParam && $templated_offset_type) {
+                            foreach ($templated_offset_type->as->getTypes() as $offset_as) {
+                                if ($offset_as instanceof Type\Atomic\TTemplateKeyOf
+                                    && $offset_as->param_name === $original_type->param_name
+                                    && $offset_as->defining_class === $original_type->defining_class
+                                ) {
+                                    $type->type_params[1] = new Type\Union([
+                                        new Type\Atomic\TTemplateIndexedAccess(
+                                            $offset_as->param_name,
+                                            $templated_offset_type->param_name,
+                                            $offset_as->defining_class
+                                        )
+                                    ]);
+
+                                    $has_valid_offset = true;
+                                }
+                            }
+                        } elseif ((!TypeAnalyzer::isContainedBy(
                             $codebase,
                             $offset_type,
                             $expected_offset_type,
                             true,
                             $offset_type->ignore_falsable_issues,
-                            $has_scalar_match,
-                            $type_coerced,
-                            $type_coerced_from_mixed,
-                            $to_string_cast,
-                            $type_coerced_from_scalar
-                        ) && !$type_coerced_from_scalar)
-                            || $to_string_cast
+                            $union_comparison_results
+                        ) && !$union_comparison_results->type_coerced_from_scalar)
+                            || $union_comparison_results->to_string_cast
                         ) {
-                            if ($type_coerced_from_mixed && !$offset_type->isMixed()) {
+                            if ($union_comparison_results->type_coerced_from_mixed
+                                && !$offset_type->isMixed()
+                            ) {
                                 if (IssueBuffer::accepts(
                                     new MixedArrayTypeCoercion(
                                         'Coercion from array offset type \'' . $offset_type->getId() . '\' '
@@ -548,17 +634,15 @@ class ArrayFetchAnalyzer
                                 ? Type::getArrayKey()
                                 : $generic_key_type;
 
+                        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
                         $is_contained = TypeAnalyzer::isContainedBy(
                             $codebase,
                             $offset_type,
                             $key_type,
                             true,
                             $offset_type->ignore_falsable_issues,
-                            $has_scalar_match,
-                            $type_coerced,
-                            $type_coerced_from_mixed,
-                            $to_string_cast,
-                            $type_coerced_from_scalar
+                            $union_comparison_results
                         );
 
                         if ($context->inside_isset && !$is_contained) {
@@ -572,10 +656,10 @@ class ArrayFetchAnalyzer
                         }
 
                         if (($is_contained
-                            || $type_coerced_from_scalar
-                            || $type_coerced_from_mixed
+                            || $union_comparison_results->type_coerced_from_scalar
+                            || $union_comparison_results->type_coerced_from_mixed
                             || $in_assignment)
-                            && !$to_string_cast
+                            && !$union_comparison_results->to_string_cast
                         ) {
                             if ($replacement_type) {
                                 $generic_params = Type::combineUnionTypes(
@@ -592,16 +676,20 @@ class ArrayFetchAnalyzer
 
                                 if (!$stmt->dim && $property_count) {
                                     ++$property_count;
+                                    $array_type->removeType($type_string);
                                     $type = new TNonEmptyArray([
                                         $new_key_type,
                                         $generic_params,
                                     ]);
+                                    $array_type->addType($type);
                                     $type->count = $property_count;
                                 } else {
+                                    $array_type->removeType($type_string);
                                     $type = new TArray([
                                         $new_key_type,
                                         $generic_params,
                                     ]);
+                                    $array_type->addType($type);
                                 }
 
                                 if (!$array_access_type) {
@@ -714,46 +802,6 @@ class ArrayFetchAnalyzer
                 }
 
                 continue;
-            }
-
-            if ($type instanceof TMixed || $type instanceof TTemplateParam || $type instanceof TEmpty) {
-                if (!$context->collect_initializations
-                    && !$context->collect_mutations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
-
-                if (!$context->inside_isset) {
-                    if ($in_assignment) {
-                        if (IssueBuffer::accepts(
-                            new MixedArrayAssignment(
-                                'Cannot access array value on mixed variable ' . $array_var_id,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } else {
-                        if (IssueBuffer::accepts(
-                            new MixedArrayAccess(
-                                'Cannot access array value on mixed variable ' . $array_var_id,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-
-                $has_valid_offset = true;
-                $array_access_type = Type::getMixed();
-                break;
             }
 
             if (!$context->collect_initializations
@@ -998,7 +1046,8 @@ class ArrayFetchAnalyzer
         }
 
         if ($array_access_type === null) {
-            throw new \InvalidArgumentException('This is a bad place');
+            // shouldn’t happen, but don’t crash
+            return Type::getMixed();
         }
 
         if ($in_assignment) {

@@ -1,8 +1,22 @@
 <?php
 namespace Psalm;
 
+use function explode;
+use function max;
+use function min;
 use PhpParser;
+use function preg_match;
+use const PREG_OFFSET_CAPTURE;
+use function preg_quote;
+use function preg_replace;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use function str_replace;
+use function strlen;
+use function strpos;
+use function strrpos;
+use function substr;
+use function substr_count;
+use function trim;
 
 class CodeLocation
 {
@@ -17,6 +31,12 @@ class CodeLocation
 
     /** @var int */
     private $end_line_number = -1;
+
+    /** @var int */
+    public $raw_file_start;
+
+    /** @var int */
+    public $raw_file_end;
 
     /** @var int */
     protected $file_start;
@@ -91,6 +111,8 @@ class CodeLocation
     ) {
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
         $this->file_end = (int)$stmt->getAttribute('endFilePos');
+        $this->raw_file_start = $this->file_start;
+        $this->raw_file_end = $this->file_end;
         $this->file_path = $file_source->getFilePath();
         $this->file_name = $file_source->getFileName();
         $this->single_line = $single_line;

@@ -1,7 +1,19 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use function abs;
+use function array_flip;
+use function array_intersect_key;
+use function array_map;
+use function array_merge;
+use function count;
+use function filemtime;
+use function md5;
 use PhpParser;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
+use function strlen;
+use function substr;
 
 /**
  * @internal
@@ -49,9 +61,14 @@ class StatementsProvider
     private $diff_map = [];
 
     /**
+     * @var PhpParser\Lexer|null
+     */
+    private static $lexer;
+
+    /**
      * @var PhpParser\Parser|null
      */
-    protected static $parser;
+    private static $parser;
 
     public function __construct(
         FileProvider $file_provider,
@@ -65,13 +82,16 @@ class StatementsProvider
     }
 
     /**
-     * @param  string  $file_path
-     * @param  bool    $debug_output
+     * @param string    $file_path
      *
      * @return array<int, \PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile($file_path, $debug_output = false)
+    public function getStatementsForFile($file_path, Progress $progress = null)
     {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
         $from_cache = false;
 
         $version = (string) PHP_PARSER_VERSION . $this->this_modified_time;
@@ -80,9 +100,7 @@ class StatementsProvider
         $modified_time = $this->file_provider->getModifiedTime($file_path);
 
         if (!$this->parser_cache_provider) {
-            if ($debug_output) {
-                echo 'Parsing ' . $file_path . "\n";
-            }
+            $progress->debug('Parsing ' . $file_path . "\n");
 
             $stmts = self::parseStatements($file_contents, $file_path);
 
@@ -98,9 +116,7 @@ class StatementsProvider
         );
 
         if ($stmts === null) {
-            if ($debug_output) {
-                echo 'Parsing ' . $file_path . "\n";
-            }
+            $progress->debug('Parsing ' . $file_path . "\n");
 
             $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_path);
 
@@ -164,6 +180,7 @@ class StatementsProvider
                 $unchanged_members = array_map(
                     /**
                      * @param int $_
+                     *
                      * @return bool
                      */
                     function ($_) {
@@ -175,6 +192,7 @@ class StatementsProvider
                 $unchanged_signature_members = array_map(
                     /**
                      * @param int $_
+                     *
                      * @return bool
                      */
                     function ($_) {
@@ -199,6 +217,7 @@ class StatementsProvider
                 $changed_members = array_map(
                     /**
                      * @param int $_
+                     *
                      * @return bool
                      */
                     function ($_) {
@@ -266,6 +285,7 @@ class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_changed_members
+     *
      * @return void
      */
     public function addChangedMembers(array $more_changed_members)
@@ -283,6 +303,7 @@ class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_unchanged_members
+     *
      * @return void
      */
     public function addUnchangedSignatureMembers(array $more_unchanged_members)
@@ -292,6 +313,7 @@ class StatementsProvider
 
     /**
      * @param string $file_path
+     *
      * @return void
      */
     public function setUnchangedFile($file_path)
@@ -311,6 +333,7 @@ class StatementsProvider
 
     /**
      * @param array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>> $diff_map
+     *
      * @return void
      */
     public function addDiffMap(array $diff_map)
@@ -344,14 +367,16 @@ class StatementsProvider
         array $existing_statements = null,
         array $file_changes = null
     ) {
+        $attributes = [
+            'comments', 'startLine', 'startFilePos', 'endFilePos',
+        ];
+
+        if (!self::$lexer) {
+            self::$lexer = new PhpParser\Lexer(['usedAttributes' => $attributes]);
+        }
+
         if (!self::$parser) {
-            $attributes = [
-                'comments', 'startLine', 'startFilePos', 'endFilePos',
-            ];
-
-            $lexer = new PhpParser\Lexer([ 'usedAttributes' => $attributes ]);
-
-            self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
+            self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::ONLY_PHP7, self::$lexer);
         }
 
         $used_cached_statements = false;
@@ -413,6 +438,11 @@ class StatementsProvider
                 }
             }
         }
+
+        /** @psalm-suppress NoInterfaceProperties */
+        unset(self::$parser->errorHander);
+
+        $error_handler->clearErrors();
 
         $resolving_traverser = new PhpParser\NodeTraverser;
         $name_resolver = new \Psalm\Internal\Visitor\SimpleNameResolver(

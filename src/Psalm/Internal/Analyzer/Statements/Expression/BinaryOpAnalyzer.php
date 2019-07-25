@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -34,6 +33,18 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Reconciler;
 use Psalm\Internal\Type\TypeCombination;
+use function array_merge;
+use function array_diff_key;
+use function array_filter;
+use const ARRAY_FILTER_USE_KEY;
+use function array_intersect_key;
+use function array_values;
+use function array_map;
+use function array_keys;
+use function preg_match;
+use function preg_quote;
+use function strtolower;
+use function strlen;
 
 /**
  * @internal
@@ -78,6 +89,7 @@ class BinaryOpAnalyzer
                 return false;
             }
 
+            /** @var array<string, bool> */
             $new_referenced_var_ids = $context->referenced_var_ids;
             $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
 
@@ -269,7 +281,7 @@ class BinaryOpAnalyzer
                 if ($var_id && isset($pre_op_context->vars_in_scope[$var_id])) {
                     $left_inferred_reconciled = Reconciler::reconcileTypes(
                         '!falsy',
-                        $pre_op_context->vars_in_scope[$var_id],
+                        clone $pre_op_context->vars_in_scope[$var_id],
                         '',
                         $statements_analyzer,
                         $context->inside_loop,
@@ -541,42 +553,6 @@ class BinaryOpAnalyzer
             ) {
                 $stmt->inferredType = Type::getBool();
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div) {
-                if ($context->infer_types
-                    && isset($stmt->left->inferredType)
-                    && isset($stmt->right->inferredType)
-                    && ($stmt->left->inferredType->isMixed() || $stmt->right->inferredType->isMixed())
-                ) {
-                    $source_analyzer = $statements_analyzer->getSource();
-
-                    if ($source_analyzer instanceof FunctionLikeAnalyzer) {
-                        $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
-
-                        if ($stmt->left instanceof PhpParser\Node\Expr\Variable
-                            && is_string($stmt->left->name)
-                        ) {
-                            $context->inferType(
-                                $stmt->left->name,
-                                $function_storage,
-                                $stmt->left->inferredType,
-                                new Type\Union([new TInt, new TFloat]),
-                                $codebase
-                            );
-                        }
-
-                        if ($stmt->right instanceof PhpParser\Node\Expr\Variable
-                            && is_string($stmt->right->name)
-                        ) {
-                            $context->inferType(
-                                $stmt->right->name,
-                                $function_storage,
-                                $stmt->right->inferredType,
-                                new Type\Union([new TInt, new TFloat]),
-                                $codebase
-                            );
-                        }
-                    }
-                }
-
                 self::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
                     $stmt->left,
@@ -662,49 +638,6 @@ class BinaryOpAnalyzer
         $left_type = $left->inferredType ?? null;
         $right_type = $right->inferredType ?? null;
         $config = Config::getInstance();
-
-        if ($codebase
-            && $statements_source
-            && $context
-            && $context->infer_types
-            && $left_type
-            && $right_type
-            && ($left_type->isVanillaMixed() || $right_type->isVanillaMixed())
-            && ($left_type->hasDefinitelyNumericType() || $right_type->hasDefinitelyNumericType())
-        ) {
-            $source_analyzer = $statements_source->getSource();
-            if ($source_analyzer instanceof FunctionLikeAnalyzer
-                && $statements_source instanceof StatementsAnalyzer
-            ) {
-                $function_storage = $source_analyzer->getFunctionLikeStorage($statements_source);
-
-                if ($left instanceof PhpParser\Node\Expr\Variable
-                    && is_string($left->name)
-                    && isset($left->inferredType)
-                ) {
-                    $context->inferType(
-                        $left->name,
-                        $function_storage,
-                        $left->inferredType,
-                        new Type\Union([new TInt, new TFloat]),
-                        $codebase
-                    );
-                }
-
-                if ($right instanceof PhpParser\Node\Expr\Variable
-                    && is_string($right->name)
-                    && isset($right->inferredType)
-                ) {
-                    $context->inferType(
-                        $right->name,
-                        $function_storage,
-                        $right->inferredType,
-                        new Type\Union([new TInt, new TFloat]),
-                        $codebase
-                    );
-                }
-            }
-        }
 
         if ($left_type && $right_type) {
             if ($left_type->isNull()) {
@@ -1248,44 +1181,6 @@ class BinaryOpAnalyzer
         $right_type = $right->inferredType ?? null;
         $config = Config::getInstance();
 
-        if ($context->infer_types
-            && $left_type
-            && $right_type
-            && ($left_type->isMixed() || $right_type->isMixed())
-        ) {
-            $source_analyzer = $statements_analyzer->getSource();
-
-            if ($source_analyzer instanceof FunctionLikeAnalyzer) {
-                $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
-
-                if ($left instanceof PhpParser\Node\Expr\Variable
-                    && is_string($left->name)
-                    && isset($left->inferredType)
-                ) {
-                    $context->inferType(
-                        $left->name,
-                        $function_storage,
-                        $left->inferredType,
-                        new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt]),
-                        $codebase
-                    );
-                }
-
-                if ($right instanceof PhpParser\Node\Expr\Variable
-                    && is_string($right->name)
-                    && isset($right->inferredType)
-                ) {
-                    $context->inferType(
-                        $right->name,
-                        $function_storage,
-                        $right->inferredType,
-                        new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt]),
-                        $codebase
-                    );
-                }
-            }
-        }
-
         if ($left_type && $right_type) {
             $result_type = Type::getString();
 
@@ -1442,11 +1337,11 @@ class BinaryOpAnalyzer
             $left_type_match = true;
             $right_type_match = true;
 
-            $left_has_scalar_match = false;
-            $right_has_scalar_match = false;
-
             $has_valid_left_operand = false;
             $has_valid_right_operand = false;
+
+            $left_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+            $right_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
             foreach ($left_type->getTypes() as $left_type_part) {
                 if ($left_type_part instanceof Type\Atomic\TTemplateParam) {
@@ -1473,17 +1368,14 @@ class BinaryOpAnalyzer
                     new Type\Atomic\TString,
                     false,
                     false,
-                    $left_has_scalar_match,
-                    $left_type_coerced,
-                    $left_type_coerced_from_mixed,
-                    $left_to_string_cast
+                    $left_comparison_result
                 );
 
                 $left_type_match = $left_type_match && $left_type_part_match;
 
                 $has_valid_left_operand = $has_valid_left_operand || $left_type_part_match;
 
-                if ($left_to_string_cast && $config->strict_binary_operands) {
+                if ($left_comparison_result->to_string_cast && $config->strict_binary_operands) {
                     if (IssueBuffer::accepts(
                         new ImplicitToStringCast(
                             'Left side of concat op expects string, '
@@ -1522,17 +1414,14 @@ class BinaryOpAnalyzer
                     new Type\Atomic\TString,
                     false,
                     false,
-                    $right_has_scalar_match,
-                    $right_type_coerced,
-                    $right_type_coerced_from_mixed,
-                    $right_to_string_cast
+                    $right_comparison_result
                 );
 
                 $right_type_match = $right_type_match && $right_type_part_match;
 
                 $has_valid_right_operand = $has_valid_right_operand || $right_type_part_match;
 
-                if ($right_to_string_cast && $config->strict_binary_operands) {
+                if ($right_comparison_result->to_string_cast && $config->strict_binary_operands) {
                     if (IssueBuffer::accepts(
                         new ImplicitToStringCast(
                             'Right side of concat op expects string, '
@@ -1546,7 +1435,9 @@ class BinaryOpAnalyzer
                 }
             }
 
-            if (!$left_type_match && (!$left_has_scalar_match || $config->strict_binary_operands)) {
+            if (!$left_type_match
+                && (!$left_comparison_result->scalar_type_match_found || $config->strict_binary_operands)
+            ) {
                 if ($has_valid_left_operand) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidOperand(
@@ -1570,7 +1461,9 @@ class BinaryOpAnalyzer
                 }
             }
 
-            if (!$right_type_match && (!$right_has_scalar_match || $config->strict_binary_operands)) {
+            if (!$right_type_match
+                && (!$right_comparison_result->scalar_type_match_found || $config->strict_binary_operands)
+            ) {
                 if ($has_valid_right_operand) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidOperand(

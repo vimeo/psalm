@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+use function getcwd;
 use Psalm\Config;
 
 class TestConfig extends Config
@@ -47,5 +49,10 @@ class TestConfig extends Config
     public function getComposerFilePathForClassLike($fq_classlike_name)
     {
         return false;
+    }
+
+    public function getProjectDirectories()
+    {
+        return [];
     }
 }

@@ -30,11 +30,18 @@ class ClassLikeStorage
     public $private_class_constants = [];
 
     /**
-     * A lookup table for private class constants
+     * A lookup table for class constant name locations
      *
      * @var array<string, CodeLocation>
      */
     public $class_constant_locations = [];
+
+    /**
+     * A lookup table for class constant statement locations
+     *
+     * @var array<string, CodeLocation>
+     */
+    public $class_constant_stmt_locations = [];
 
     /**
      * A lookup table for nodes of unresolvable public class constants
@@ -83,6 +90,11 @@ class ClassLikeStorage
      * @var bool
      */
     public $internal = false;
+
+    /**
+     * @var null|string
+     */
+    public $psalm_internal = null;
 
     /**
      * @var array<string, bool>
@@ -141,6 +153,13 @@ class ClassLikeStorage
     public $parent_interfaces = [];
 
     /**
+     * There can only be one direct parent class
+     *
+     * @var ?string
+     */
+    public $parent_class;
+
+    /**
      * Parent classes
      *
      * @var array<string, string>
@@ -151,6 +170,16 @@ class ClassLikeStorage
      * @var CodeLocation|null
      */
     public $location;
+
+    /**
+     * @var CodeLocation|null
+     */
+    public $stmt_location;
+
+    /**
+     * @var CodeLocation|null
+     */
+    public $namespace_name_location;
 
     /**
      * @var bool
@@ -213,7 +242,7 @@ class ClassLikeStorage
     public $appearing_method_ids = [];
 
     /**
-     * @var array<string, array<string>>
+     * @var array<string, array<string, string>>
      */
     public $overridden_method_ids = [];
 
@@ -276,6 +305,11 @@ class ClassLikeStorage
      * @var array<string, array<string, array{Type\Union}>>|null
      */
     public $template_types;
+
+    /**
+     * @var array<int, bool>|null
+     */
+    public $template_covariants;
 
     /**
      * @var array<string, array<int|string, Type\Union>>|null

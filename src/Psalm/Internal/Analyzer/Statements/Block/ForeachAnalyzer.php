@@ -23,6 +23,15 @@ use Psalm\Issue\RawObjectIteration;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
+use function is_string;
+use function in_array;
+use function array_merge;
+use function array_intersect_key;
+use function array_values;
+use function strtolower;
+use function array_map;
+use function array_search;
+use function array_keys;
 
 /**
  * @internal
@@ -43,14 +52,14 @@ class ForeachAnalyzer
     ) {
         $var_comments = [];
 
-        $doc_comment_text = (string)$stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment();
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($doc_comment_text) {
+        if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $doc_comment_text,
+                    $doc_comment,
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getSource()->getAliases()
                 );
@@ -106,8 +115,29 @@ class ForeachAnalyzer
                 $codebase,
                 $var_comment->type,
                 $context->self,
-                $context->self
+                $context->self,
+                $statements_analyzer->getParentFQCLN()
             );
+
+            if ($var_comment->type_start
+                && $var_comment->type_end
+                && $var_comment->line_number
+            ) {
+                $type_location = new CodeLocation\DocblockTypeLocation(
+                    $statements_analyzer,
+                    $var_comment->type_start,
+                    $var_comment->type_end,
+                    $var_comment->line_number
+                );
+
+                $codebase->classlikes->handleDocblockTypeInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $comment_type,
+                    $type_location,
+                    $context->calling_method_id
+                );
+            }
 
             if (isset($context->vars_in_scope[$var_comment->var_id])
                 || $statements_analyzer->isSuperGlobal($var_comment->var_id)
@@ -156,6 +186,10 @@ class ForeachAnalyzer
 
         $foreach_context = clone $context;
 
+        foreach ($foreach_context->vars_in_scope as $context_var_id => $context_type) {
+            $foreach_context->vars_in_scope[$context_var_id] = clone $context_type;
+        }
+
         $foreach_context->inside_loop = true;
         $foreach_context->inside_case = false;
 
@@ -173,6 +207,7 @@ class ForeachAnalyzer
 
             if ($context->collect_references && !isset($foreach_context->byref_constraints[$key_var_id])) {
                 $foreach_context->unreferenced_vars[$key_var_id] = [$location->getHash() => $location];
+                unset($foreach_context->referenced_var_ids[$key_var_id]);
             }
 
             if (!$statements_analyzer->hasVariable($key_var_id)) {
@@ -208,7 +243,7 @@ class ForeachAnalyzer
             null,
             $value_type ?: Type::getMixed(),
             $foreach_context,
-            $doc_comment_text
+            $doc_comment
         );
 
         foreach ($var_comments as $var_comment) {
@@ -220,7 +255,8 @@ class ForeachAnalyzer
                 $codebase,
                 $var_comment->type,
                 $context->self,
-                $context->self
+                $context->self,
+                $statements_analyzer->getParentFQCLN()
             );
 
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
@@ -267,7 +303,7 @@ class ForeachAnalyzer
             $context->vars_possibly_in_scope
         );
 
-        $context->referenced_var_ids = array_merge(
+        $context->referenced_var_ids = array_intersect_key(
             $foreach_context->referenced_var_ids,
             $context->referenced_var_ids
         );
@@ -405,19 +441,62 @@ class ForeachAnalyzer
                 $has_valid_iterator = true;
                 $value_type = Type::getMixed();
             } elseif ($iterator_atomic_type instanceof Type\Atomic\TIterable) {
-                $value_type_part = $iterator_atomic_type->type_params[1];
-                $key_type_part = $iterator_atomic_type->type_params[0];
+                if ($iterator_atomic_type->extra_types) {
+                    $iterator_atomic_type_copy = clone $iterator_atomic_type;
+                    $iterator_atomic_type_copy->extra_types = [];
+                    $iterator_atomic_types = [$iterator_atomic_type_copy];
+                    $iterator_atomic_types = array_merge(
+                        $iterator_atomic_types,
+                        $iterator_atomic_type->extra_types
+                    );
+                } else {
+                    $iterator_atomic_types = [$iterator_atomic_type];
+                }
+
+                $intersection_value_type = null;
+                $intersection_key_type = null;
+
+                foreach ($iterator_atomic_types as $iat) {
+                    if (!$iat instanceof Type\Atomic\TIterable) {
+                        continue;
+                    }
+
+                    $value_type_part = $iat->type_params[1];
+                    $key_type_part = $iat->type_params[0];
+
+                    if (!$intersection_value_type) {
+                        $intersection_value_type = $value_type_part;
+                    } else {
+                        $intersection_value_type = Type::intersectUnionTypes(
+                            $intersection_value_type,
+                            $value_type_part
+                        );
+                    }
+
+                    if (!$intersection_key_type) {
+                        $intersection_key_type = $key_type_part;
+                    } else {
+                        $intersection_key_type = Type::intersectUnionTypes(
+                            $intersection_key_type,
+                            $key_type_part
+                        );
+                    }
+                }
+
+                if (!$intersection_value_type || !$intersection_key_type) {
+                    throw new \UnexpectedValueException('Should not happen');
+                }
 
                 if (!$value_type) {
-                    $value_type = $value_type_part;
+                    $value_type = $intersection_value_type;
                 } else {
-                    $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                    $value_type = Type::combineUnionTypes($value_type, $intersection_value_type);
                 }
 
                 if (!$key_type) {
-                    $key_type = $key_type_part;
+                    $key_type = $intersection_key_type;
                 } else {
-                    $key_type = Type::combineUnionTypes($key_type, $key_type_part);
+                    $key_type = Type::combineUnionTypes($key_type, $intersection_key_type);
                 }
 
                 $has_valid_iterator = true;
@@ -514,9 +593,12 @@ class ForeachAnalyzer
         }
 
         foreach ($iterator_atomic_types as $iterator_atomic_type) {
-            if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam) {
+            if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam
+                || $iterator_atomic_type instanceof Type\Atomic\TObjectWithProperties
+            ) {
                 throw new \UnexpectedValueException('Shouldn’t get a generic param here');
             }
+
 
             $has_valid_iterator = true;
 
@@ -584,9 +666,43 @@ class ForeachAnalyzer
                                 $key_type_part = $array_atomic_type->type_params[0];
                                 $value_type_part = $array_atomic_type->type_params[1];
                             } else {
+                                if ($array_atomic_type instanceof Type\Atomic\TNamedObject
+                                    && $codebase->classExists($array_atomic_type->value)
+                                    && $codebase->classImplements(
+                                        $array_atomic_type->value,
+                                        'Traversable'
+                                    )
+                                ) {
+                                    $generic_storage = $codebase->classlike_storage_provider->get(
+                                        $array_atomic_type->value
+                                    );
+
+                                    // The collection might be an iterator, in which case
+                                    // we want to call the iterator function
+                                    if (!isset($generic_storage->template_type_extends['Traversable'])
+                                        || ($generic_storage
+                                                ->template_type_extends['Traversable']['TKey']->isMixed()
+                                            && $generic_storage
+                                                ->template_type_extends['Traversable']['TValue']->isMixed())
+                                    ) {
+                                        self::handleIterable(
+                                            $statements_analyzer,
+                                            $array_atomic_type,
+                                            $fake_method_call,
+                                            $codebase,
+                                            $context,
+                                            $key_type,
+                                            $value_type,
+                                            $has_valid_iterator
+                                        );
+
+                                        continue;
+                                    }
+                                }
+
                                 if ($array_atomic_type instanceof Type\Atomic\TIterable
                                     || ($array_atomic_type instanceof Type\Atomic\TNamedObject
-                                        && (strtolower($array_atomic_type->value) === 'traversable'
+                                        && ($array_atomic_type->value === 'Traversable'
                                             || ($codebase->classOrInterfaceExists($array_atomic_type->value)
                                                 && $codebase->classImplements(
                                                     $array_atomic_type->value,
@@ -724,7 +840,7 @@ class ForeachAnalyzer
                 $iterator_atomic_type->value
             );
 
-            if (!isset($generic_storage->template_type_extends['traversable'])) {
+            if (!isset($generic_storage->template_type_extends['Traversable'])) {
                 return;
             }
 
@@ -754,8 +870,8 @@ class ForeachAnalyzer
 
             $key_type = self::getExtendedType(
                 'TKey',
-                'traversable',
-                strtolower($generic_storage->name),
+                'Traversable',
+                $generic_storage->name,
                 $generic_storage->template_type_extends,
                 $generic_storage->template_types,
                 $passed_type_params
@@ -763,8 +879,8 @@ class ForeachAnalyzer
 
             $value_type = self::getExtendedType(
                 'TValue',
-                'traversable',
-                strtolower($generic_storage->name),
+                'Traversable',
+                $generic_storage->name,
                 $generic_storage->template_type_extends,
                 $generic_storage->template_types,
                 $passed_type_params
@@ -783,13 +899,13 @@ class ForeachAnalyzer
      */
     private static function getExtendedType(
         string $template_name,
-        string $template_class_lc,
-        string $calling_class_lc,
+        string $template_class,
+        string $calling_class,
         array $template_type_extends,
         array $class_template_types = null,
         array $calling_type_params = null
     ) {
-        if ($calling_class_lc === $template_class_lc) {
+        if ($calling_class === $template_class) {
             if ($calling_type_params && isset($class_template_types[$template_name])) {
                 $offset = array_search($template_name, array_keys($class_template_types));
 
@@ -801,8 +917,8 @@ class ForeachAnalyzer
             return null;
         }
 
-        if (isset($template_type_extends[$template_class_lc][$template_name])) {
-            $extended_type = $template_type_extends[$template_class_lc][$template_name];
+        if (isset($template_type_extends[$template_class][$template_name])) {
+            $extended_type = $template_type_extends[$template_class][$template_name];
 
             $return_type = null;
 
@@ -823,8 +939,8 @@ class ForeachAnalyzer
                 if ($extended_atomic_type->defining_class) {
                     $candidate_type = self::getExtendedType(
                         $extended_atomic_type->param_name,
-                        strtolower($extended_atomic_type->defining_class),
-                        $calling_class_lc,
+                        $extended_atomic_type->defining_class,
+                        $calling_class,
                         $template_type_extends,
                         $class_template_types,
                         $calling_type_params

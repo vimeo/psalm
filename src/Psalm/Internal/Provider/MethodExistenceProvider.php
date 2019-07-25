@@ -1,10 +1,13 @@
 <?php
-
 namespace Psalm\Internal\Provider;
 
+use const PHP_VERSION;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Plugin\Hook\MethodExistenceProviderInterface;
 use Psalm\StatementsSource;
+use function strtolower;
+use function version_compare;
 
 class MethodExistenceProvider
 {
@@ -29,6 +32,7 @@ class MethodExistenceProvider
     /**
      * @param  class-string<MethodExistenceProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
+     *
      * @return void
      */
     public function registerClass(string $class)
@@ -36,6 +40,7 @@ class MethodExistenceProvider
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /**
              * @psalm-suppress UndefinedMethod
+             *
              * @var \Closure
              */
             $callable = \Closure::fromCallable([$class, 'doesMethodExist']);
@@ -76,6 +81,7 @@ class MethodExistenceProvider
 
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
+     *
      * @return ?bool
      */
     public function doesMethodExist(

@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Tests\Internal\Provider;
-
 class UnusedCodeManipulationTest extends FileManipulationTest
 {
     /**

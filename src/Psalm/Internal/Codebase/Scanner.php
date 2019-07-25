@@ -1,12 +1,27 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use function array_filter;
+use function array_merge;
+use function array_pop;
+use function ceil;
+use function count;
+use const DIRECTORY_SEPARATOR;
+use function error_reporting;
+use function explode;
+use function file_exists;
+use function min;
+use const PHP_EOL;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Progress\Progress;
+use function realpath;
+use function strtolower;
+use function substr;
 
 /**
  * @psalm-type  IssueData = array{
@@ -127,9 +142,9 @@ class Scanner
     private $config;
 
     /**
-     * @var bool
+     * @var Progress
      */
-    private $debug_output;
+    private $progress;
 
     /**
      * @var FileStorageProvider
@@ -151,9 +166,6 @@ class Scanner
      */
     private $is_forked = false;
 
-    /**
-     * @param bool $debug_output
-     */
     public function __construct(
         Codebase $codebase,
         Config $config,
@@ -161,12 +173,12 @@ class Scanner
         FileProvider $file_provider,
         Reflection $reflection,
         FileReferenceProvider $file_reference_provider,
-        $debug_output
+        Progress $progress
     ) {
         $this->codebase = $codebase;
         $this->reflection = $reflection;
         $this->file_provider = $file_provider;
-        $this->debug_output = $debug_output;
+        $this->progress = $progress;
         $this->file_storage_provider = $file_storage_provider;
         $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
@@ -226,12 +238,15 @@ class Scanner
 
     /**
      * @param  string $fq_classlike_name_lc
+     *
      * @return void
      */
     public function removeClassLike($fq_classlike_name_lc)
     {
-        unset($this->classlike_files[$fq_classlike_name_lc]);
-        unset($this->deep_scanned_classlike_files[$fq_classlike_name_lc]);
+        unset(
+            $this->classlike_files[$fq_classlike_name_lc],
+            $this->deep_scanned_classlike_files[$fq_classlike_name_lc]
+        );
     }
 
     /**
@@ -303,10 +318,12 @@ class Scanner
 
             if (PropertyMap::inPropertyMap($fq_classlike_name_lc)) {
                 foreach (PropertyMap::getPropertyMap()[$fq_classlike_name_lc] as $public_mapped_property) {
-                    if (strtolower($public_mapped_property) !== $fq_classlike_name_lc) {
-                        $property_type = \Psalm\Type::parseString($public_mapped_property);
-                        $property_type->queueClassLikesForScanning($this->codebase);
-                    }
+                    $property_type = \Psalm\Type::parseString($public_mapped_property);
+                    $property_type->queueClassLikesForScanning(
+                        $this->codebase,
+                        null,
+                        [$fq_classlike_name_lc => true]
+                    );
                 }
             }
         }
@@ -331,6 +348,7 @@ class Scanner
                 $this->convertClassesToFilePaths($classlikes);
             }
         }
+
         return $has_changes;
     }
 
@@ -340,8 +358,9 @@ class Scanner
         $files_to_scan = array_filter(
             $this->files_to_scan,
             function (string $file_path) : bool {
-                return !isset($this->scanned_files[$file_path])
-                    || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path]);
+                return $this->file_provider->fileExists($file_path)
+                    && (!isset($this->scanned_files[$file_path])
+                        || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path]));
             }
         );
 
@@ -384,13 +403,17 @@ class Scanner
                 ++$i;
             }
 
+            $this->progress->debug('Forking process for scanning' . PHP_EOL);
+
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new \Psalm\Internal\Fork\Pool(
                 $process_file_paths,
-                /** @return void */
                 function () {
-                    $codebase = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance()->getCodebase();
+                    $this->progress->debug('Initialising forked process for scanning' . PHP_EOL);
+
+                    $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+                    $codebase = $project_analyzer->getCodebase();
                     $statements_provider = $codebase->statements_provider;
 
                     $codebase->scanner->isForked();
@@ -398,13 +421,18 @@ class Scanner
                     $codebase->classlike_storage_provider::deleteAll();
 
                     $statements_provider->resetDiffs();
+
+                    $this->progress->debug('Have initialised forked process for scanning' . PHP_EOL);
                 },
                 $scanner_worker,
                 /**
                  * @return PoolData
-                */
+                 */
                 function () {
-                    $codebase = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance()->getCodebase();
+                    $this->progress->debug('Collecting data from forked scanner process' . PHP_EOL);
+
+                    $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+                    $codebase = $project_analyzer->getCodebase();
                     $statements_provider = $codebase->statements_provider;
 
                     return [
@@ -496,9 +524,7 @@ class Scanner
                         continue;
                     }
 
-                    if ($this->debug_output) {
-                        echo 'Using reflection to get metadata for ' . $fq_classlike_name . "\n";
-                    }
+                    $this->progress->debug('Using reflection to get metadata for ' . $fq_classlike_name . "\n");
 
                     /** @psalm-suppress TypeCoercion */
                     $reflected_class = new \ReflectionClass($fq_classlike_name);
@@ -572,7 +598,7 @@ class Scanner
             $this->codebase,
             $file_storage,
             $from_cache,
-            $this->debug_output
+            $this->progress
         );
 
         if (!$from_cache) {
@@ -608,7 +634,9 @@ class Scanner
 
             if ($this->codebase->register_autoload_files) {
                 foreach ($file_storage->functions as $function_storage) {
-                    $this->codebase->functions->addGlobalFunction($function_storage->cased_name, $function_storage);
+                    if (!$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)) {
+                        $this->codebase->functions->addGlobalFunction($function_storage->cased_name, $function_storage);
+                    }
                 }
 
                 foreach ($file_storage->constants as $name => $type) {
@@ -684,9 +712,7 @@ class Scanner
         $composer_file_path = $this->config->getComposerFilePathForClassLike($fq_class_name);
 
         if ($composer_file_path && file_exists($composer_file_path)) {
-            if ($this->debug_output) {
-                echo 'Using composer to locate file for ' . $fq_class_name . "\n";
-            }
+            $this->progress->debug('Using composer to locate file for ' . $fq_class_name . "\n");
 
             $classlikes->addFullyQualifiedClassLikeName(
                 $fq_class_name_lc,
@@ -698,14 +724,10 @@ class Scanner
 
         $old_level = error_reporting();
 
-        if (!$this->debug_output) {
-            error_reporting(E_ERROR);
-        }
+        $this->progress->setErrorReporting();
 
         try {
-            if ($this->debug_output) {
-                echo 'Using reflection to locate file for ' . $fq_class_name . "\n";
-            }
+            $this->progress->debug('Using reflection to locate file for ' . $fq_class_name . "\n");
 
             /** @psalm-suppress TypeCoercion */
             $reflected_class = new \ReflectionClass($fq_class_name);
@@ -772,7 +794,7 @@ class Scanner
             $this->classlike_files,
             $this->deep_scanned_classlike_files,
             $this->scanned_files,
-            $this->reflected_classlikes_lc
+            $this->reflected_classlikes_lc,
         ];
     }
 

@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+
 class FunctionCallTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
@@ -93,6 +95,16 @@ class FunctionCallTest extends TestCase
                                 [1, 2, 3]
                             )
                         );
+                    }',
+            ],
+            'arrayFilterNamedFunction' => [
+                '<?php
+                    /**
+                     * @param array<int, DateTimeImmutable|null> $a
+                     * @return array<int, DateTimeImmutable>
+                     */
+                    function foo(array $a) : array {
+                        return array_filter($a, "is_object");
                     }',
             ],
             'typedArrayWithDefault' => [
@@ -209,14 +221,21 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    '$c' => 'array<string, int>',
+                    '$c' => 'array<string, int>|false',
+                ],
+            ],
+            'arrayCombineFalse' => [
+                '<?php
+                    $c = array_combine(["a", "b"], [1, 2, 3]);',
+                'assertions' => [
+                    '$c' => 'array<string, int>|false',
                 ],
             ],
             'arrayMerge' => [
                 '<?php
                     $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    '$d' => 'array{0:string, 1:string, 2:string, 3:int, 4:int, 5:int}',
+                    '$d' => 'array{0: string, 1: string, 2: string, 3: int, 4: int, 5: int}',
                 ],
             ],
             'arrayReverseDontPreserveKey' => [
@@ -572,7 +591,7 @@ class FunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{hi:int, bye:int}',
+                    '$a3' => 'array{hi: int, bye: int}',
                 ],
             ],
             'arrayRand' => [
@@ -584,10 +603,10 @@ class FunctionCallTest extends TestCase
                     $e = array_rand($more_vars);',
 
                 'assertions' => [
-                    '$vars' => 'array{x:string, y:string}',
+                    '$vars' => 'array{x: string, y: string}',
                     '$c' => 'string',
                     '$d' => 'string',
-                    '$more_vars' => 'array{0:string, 1:string}',
+                    '$more_vars' => 'array{0: string, 1: string}',
                     '$e' => 'int',
                 ],
             ],
@@ -601,7 +620,7 @@ class FunctionCallTest extends TestCase
                     $f = array_rand($vars, $b);',
 
                 'assertions' => [
-                    '$vars' => 'array{x:string, y:string}',
+                    '$vars' => 'array{x: string, y: string}',
                     '$c' => 'string',
                     '$e' => 'array<int, string>',
                     '$f' => 'array<int, string>|string',
@@ -619,7 +638,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+                'error_levels' => ['MixedAssignment', 'MixedArgument', 'MixedArgumentTypeCoercion'],
             ],
             'compact' => [
                 '<?php
@@ -902,6 +921,12 @@ class FunctionCallTest extends TestCase
                     function exploder(string $s) : array {
                         return explode(" ", $s);
                     }',
+            ],
+            'explodeWithThirdArg' => [
+                '<?php
+                    $elements = explode("_", "", -1);
+                    $element = array_shift($elements);
+                    assert(null !== $element);'
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 '<?php
@@ -1209,8 +1234,8 @@ class FunctionCallTest extends TestCase
                     array_splice($d, -1, 1);',
                 'assertions' => [
                     '$a' => 'non-empty-array<int, string|int>',
-                    '$b' => 'array{0:string, 1:string, 2:string}',
-                    '$c' => 'array{0:int, 1:int, 2:int}',
+                    '$b' => 'array{0: string, 1: string, 2: string}',
+                    '$c' => 'array{0: int, 1: int, 2: int}',
                 ],
             ],
             'arraySpliceOtherType' => [
@@ -1218,7 +1243,7 @@ class FunctionCallTest extends TestCase
                     $d = [["red"], ["green"], ["blue"]];
                     array_splice($d, -1, 1, "foo");',
                 'assertions' => [
-                    '$d' => 'array<int, array{0:string}|string>',
+                    '$d' => 'array<int, array{0: string}|string>',
                 ],
             ],
             'ksortPreserveShape' => [
@@ -1263,7 +1288,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = microtime(true);
                     $b = microtime();
-                    /** @psalm-suppress InvalidArgument */
+                    /** @psalm-suppress InvalidScalarArgument */
                     $c = microtime(1);
                     $d = microtime(false);',
                 'assertions' => [
@@ -1571,7 +1596,7 @@ class FunctionCallTest extends TestCase
                     '$a' => 'int|false',
                     '$b' => 'int|false',
                     '$c' => 'int',
-                ]
+                ],
             ],
             'PHP73-hrtime' => [
                 '<?php
@@ -1582,9 +1607,9 @@ class FunctionCallTest extends TestCase
                     $d = hrtime(false);',
                 'assertions' => [
                     '$a' => 'int',
-                    '$b' => 'array{0:int, 1:int}',
-                    '$c' => 'array{0:int, 1:int}|int',
-                    '$d' => 'array{0:int, 1:int}',
+                    '$b' => 'array{0: int, 1: int}',
+                    '$c' => 'array{0: int, 1: int}|int',
+                    '$d' => 'array{0: int, 1: int}',
                 ],
             ],
             'PHP73-hrtimeCanBeFloat' => [
@@ -1627,6 +1652,147 @@ class FunctionCallTest extends TestCase
                     '$seconds' => 'string|int|float',
                 ],
             ],
+            'inferArrayMapReturnType' => [
+                '<?php
+                    /** @return array<string> */
+                    function Foo(DateTime ...$dateTimes) : array {
+                        return array_map(
+                            function ($dateTime) {
+                                return (string) ($dateTime->format("c"));
+                            },
+                            $dateTimes
+                        );
+                    }',
+            ],
+            'noImplicitAssignmentToStringFromMixedWithDocblockTypes' => [
+                '<?php
+                    /** @param string $s */
+                    function takesString($s) : void {}
+                    function takesInt(int $i) : void {}
+
+                    /**
+                     * @param mixed $s
+                     * @psalm-suppress MixedArgument
+                     */
+                    function bar($s) : void {
+                        takesString($s);
+                        takesInt($s);
+                    }',
+            ],
+            'ignoreNullableIssuesAfterMixedCoercion' => [
+                '<?php
+                    function takesNullableString(?string $s) : void {}
+                    function takesString(string $s) : void {}
+
+                    /**
+                     * @param mixed $s
+                     * @psalm-suppress MixedArgument
+                     */
+                    function bar($s) : void {
+                        takesNullableString($s);
+                        takesString($s);
+                    }',
+            ],
+            'countableSimpleXmlElement' => [
+                '<?php
+                    $xml = new SimpleXMLElement("<?xml version=\"1.0\"?><a><b></b><b></b></a>");
+                    echo count($xml);',
+            ],
+            'refineWithTraitExists' => [
+                '<?php
+                    function foo(string $s) : void {
+                        if (trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }',
+            ],
+            'refineWithClassExistsOrTraitExists' => [
+                '<?php
+                    function foo(string $s) : void {
+                        if (trait_exists($s) || class_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }
+
+                    function bar(string $s) : void {
+                        if (class_exists($s) || trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }
+
+                    function baz(string $s) : void {
+                        if (class_exists($s) || interface_exists($s) || trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }',
+            ],
+            'minSingleArg' => [
+                '<?php
+                    /** @psalm-suppress TooFewArguments */
+                    min(0);',
+            ],
+            'PHP73-allowIsCountableToInformType' => [
+                '<?php
+                    function getObject() : iterable{
+                       return [];
+                    }
+
+                    $iterableObject = getObject();
+
+                    if (is_countable($iterableObject)) {
+                       if (count($iterableObject) === 0) {}
+                    }',
+            ],
+            'versionCompareAsCallable' => [
+                '<?php
+                    $a = ["1.0", "2.0"];
+                    uksort($a, "version_compare");',
+            ],
+            'coerceToObjectAfterBeingCalled' => [
+                '<?php
+                    class Foo {
+                        public function bar() : void {}
+                    }
+
+                    function takesFoo(Foo $foo) : void {}
+
+                    /** @param mixed $f */
+                    function takesMixed($f) : void {
+                        if (rand(0, 1)) {
+                            $f = new Foo();
+                        }
+                        /** @psalm-suppress MixedArgument */
+                        takesFoo($f);
+                        $f->bar();
+                    }',
+            ],
+            'functionExists' => [
+                '<?php
+                    if (!function_exists("in_array")) {
+                        function in_array($a, $b) {
+                            return true;
+                        }
+                    }',
+            ],
+            'pregReplaceCallback' => [
+                '<?php
+                    function foo(string $s) : string {
+                        return preg_replace_callback(
+                            \'/<files (psalm-version="[^"]+") (?:php-version="(.+)">\n)/\',
+                            /** @param array<int, string> $matches */
+                            function (array $matches) : string {
+                                return $matches[1];
+                            },
+                            $s
+                        );
+                    }',
+            ],
+            'compactDefinedVariable' => [
+                '<?php
+                    function foo(int $a, string $b, bool $c) : array {
+                        return compact("a", "b", "c");
+                    }',
+            ],
         ];
     }
 
@@ -1646,6 +1812,16 @@ class FunctionCallTest extends TestCase
                     );',
                 'error_message' => 'MixedArgumentTypeCoercion',
                 'error_levels' => ['MissingClosureParamType', 'MissingClosureReturnType'],
+            ],
+            'arrayFilterUseMethodOnInferrableInt' => [
+                '<?php
+                    $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
+                'error_message' => 'InvalidMethodCall',
+            ],
+            'arrayMapUseMethodOnInferrableInt' => [
+                '<?php
+                    $a = array_map(function ($i) { return $i->foo(); }, [1, 2, 3, 4]);',
+                'error_message' => 'InvalidMethodCall',
             ],
             'invalidScalarArgument' => [
                 '<?php
@@ -2138,7 +2314,35 @@ class FunctionCallTest extends TestCase
                     $a = rand(0, 1) ? null : 5;
                     /** @psalm-suppress MixedArgument */
                     foo((int) $a);',
-                'InvalidPassByReference',
+                'error_message' => 'InvalidPassByReference',
+            ],
+            'implicitAssignmentToStringFromMixed' => [
+                '<?php
+                    /** @param "a"|"b" $s */
+                    function takesString(string $s) : void {}
+                    function takesInt(int $i) : void {}
+
+                    /**
+                     * @param mixed $s
+                     * @psalm-suppress MixedArgument
+                     */
+                    function bar($s) : void {
+                        takesString($s);
+                        takesInt($s);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'tooFewArgsAccurateCount' => [
+                '<?php
+                    preg_match(\'/adsf/\');',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for method preg_match - expecting 2 but saw 1',
+            ],
+            'compactUndefinedVariable' => [
+                '<?php
+                    function foo() : array {
+                        return compact("a", "b", "c");
+                    }',
+                'error_message' => 'UndefinedVariable',
             ],
         ];
     }

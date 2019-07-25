@@ -7,13 +7,12 @@ use Psalm\Context;
 class ThrowsInGlobalScopeTest extends TestCase
 {
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UncaughtThrowInGlobalScope
-     *
-     * @return                   void
+     * @return void
      */
     public function testUncaughtDocumentedThrowCall()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UncaughtThrowInGlobalScope');
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
         $this->addFile(
@@ -44,7 +43,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testCaughtDocumentedThrowCall()
     {
@@ -81,7 +80,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testUncaughtUndocumentedThrowCall()
     {
@@ -111,13 +110,12 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UncaughtThrowInGlobalScope
-     *
-     * @return                   void
+     * @return void
      */
     public function testUncaughtDocumentedThrowCallInNamespace()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UncaughtThrowInGlobalScope');
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
         $this->addFile(
@@ -149,13 +147,13 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UncaughtThrowInGlobalScope
-     *
-     * @return                   void
+     * @return void
      */
     public function testUncaughtThrow()
     {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UncaughtThrowInGlobalScope');
+
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
         $this->addFile(
@@ -170,7 +168,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testCaughtThrow()
     {
@@ -190,7 +188,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testUncaughtThrowWhenSuppressing()
     {
@@ -209,7 +207,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testUncaughtThrowInNamespaceWhenSuppressing()
     {
@@ -229,7 +227,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testUncaughtDocumentedThrowCallWhenSuppressing()
     {
@@ -264,7 +262,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @return                   void
+     * @return void
      */
     public function testUncaughtDocumentedThrowCallInNamespaceWhenSuppressing()
     {
@@ -300,13 +298,12 @@ class ThrowsInGlobalScopeTest extends TestCase
     }
 
     /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UncaughtThrowInGlobalScope
-     *
-     * @return                   void
+     * @return void
      */
     public function testUncaughtDocumentedThrowCallWhenSuppressingFirst()
     {
+        $this->expectExceptionMessage('UncaughtThrowInGlobalScope');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
         $this->addFile(

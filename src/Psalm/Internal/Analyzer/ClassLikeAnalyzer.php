@@ -12,10 +12,19 @@ use Psalm\Issue\InvalidClass;
 use Psalm\Issue\MissingDependency;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use function strtolower;
+use function preg_replace;
+use function in_array;
+use function preg_match;
+use function explode;
+use function array_pop;
+use function implode;
+use function gettype;
 
 /**
  * @internal
@@ -166,9 +175,24 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                             $method_analyzer->analyze($context, null, true);
                         }
                     }
+
+                    $trait_file_analyzer->clearSourceBeforeDestruction();
                 }
             }
         }
+    }
+
+    public function getFunctionLikeAnalyzer(string $method_name) : ?FunctionLikeAnalyzer
+    {
+        foreach ($this->class->stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
+                strtolower($stmt->name->name) === strtolower($method_name)
+            ) {
+                return new MethodAnalyzer($stmt, $this);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -180,12 +204,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
      */
     public static function checkFullyQualifiedClassLikeName(
         StatementsSource $statements_source,
-        $fq_class_name,
+        string $fq_class_name,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $inferred = true,
+        bool $inferred = true,
         bool $allow_trait = false,
-        bool $allow_interface = true
+        bool $allow_interface = true,
+        bool $from_docblock = false
     ) {
         $codebase = $statements_source->getCodebase();
         if (empty($fq_class_name)) {
@@ -242,15 +267,28 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
         if (!$class_exists && !$interface_exists) {
             if (!$allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $code_location)) {
-                if (IssueBuffer::accepts(
-                    new UndefinedClass(
-                        'Class or interface ' . $fq_class_name . ' does not exist',
-                        $code_location,
-                        $fq_class_name
-                    ),
-                    $suppressed_issues
-                )) {
-                    return false;
+                if ($from_docblock) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedDocblockClass(
+                            'Docblock-defined class or interface ' . $fq_class_name . ' does not exist',
+                            $code_location,
+                            $fq_class_name
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new UndefinedClass(
+                            'Class or interface ' . $fq_class_name . ' does not exist',
+                            $code_location,
+                            $fq_class_name
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
                 }
             }
 
@@ -391,6 +429,18 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
+     * @return array<string, string>
+     */
+    public function getAliasedClassesFlippedReplaceable()
+    {
+        if ($this->source instanceof NamespaceAnalyzer || $this->source instanceof FileAnalyzer) {
+            return $this->source->getAliasedClassesFlippedReplaceable();
+        }
+
+        return [];
+    }
+
+    /**
      * @return string
      */
     public function getFQCLN()
@@ -472,7 +522,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
      * @param  string|null      $calling_context
      * @param  SourceAnalyzer   $source
      * @param  CodeLocation     $code_location
-     * @param  array            $suppressed_issues
+     * @param  string[]         $suppressed_issues
      * @param  bool             $emit_issues
      *
      * @return bool|null

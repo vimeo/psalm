@@ -12,6 +12,10 @@ use Psalm\Type;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
+use function preg_match;
+use function array_merge;
+use function array_values;
+use function count;
 
 /**
  * @internal
@@ -117,6 +121,25 @@ class ArrayAnalyzer
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
                 return false;
+            }
+
+            if ($item->byRef) {
+                $var_id = ExpressionAnalyzer::getArrayVarId(
+                    $item->value,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer
+                );
+
+                if ($var_id) {
+                    $context->removeDescendents(
+                        $var_id,
+                        $context->vars_in_scope[$var_id] ?? null,
+                        null,
+                        $statements_analyzer
+                    );
+
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                }
             }
 
             if ($item_value_atomic_types && !$can_create_objectlike) {

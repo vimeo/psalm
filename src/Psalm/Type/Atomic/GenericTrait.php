@@ -1,9 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function array_map;
+use function implode;
 use Psalm\Codebase;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use function substr;
 
 trait GenericTrait
 {
@@ -48,15 +51,16 @@ trait GenericTrait
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
+     * @param  array<string, string> $aliased_classes
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         $base_value = $this instanceof TNamedObject
             ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
             : $this->value;
@@ -72,7 +76,7 @@ trait GenericTrait
 
             $value_type = $this->type_params[1];
 
-            if ($value_type->isMixed()) {
+            if ($value_type->isMixed() || $value_type->isEmpty()) {
                 return $base_value;
             }
 
@@ -191,10 +195,14 @@ trait GenericTrait
      *
      * @return void
      */
-    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
     {
         foreach ($this->type_params as $type_param) {
-            $type_param->replaceTemplateTypesWithArgTypes($template_types);
+            $type_param->replaceTemplateTypesWithArgTypes($template_types, $codebase);
+        }
+
+        if ($this instanceof TGenericObject || $this instanceof TIterable) {
+            $this->replaceIntersectionTemplateTypesWithArgTypes($template_types, $codebase);
         }
     }
 }

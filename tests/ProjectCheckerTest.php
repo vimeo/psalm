@@ -1,11 +1,21 @@
 <?php
 namespace Psalm\Tests;
 
+use function define;
+use function defined;
+use const DIRECTORY_SEPARATOR;
+use function get_class;
+use function getcwd;
+use function microtime;
+use function ob_end_clean;
+use function ob_get_clean;
+use function ob_start;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Progress\EchoProgress;
 
 class ProjectCheckerTest extends TestCase
 {
@@ -18,7 +28,7 @@ class ProjectCheckerTest extends TestCase
     /**
      * @return void
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
 
@@ -34,7 +44,7 @@ class ProjectCheckerTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
@@ -55,7 +65,8 @@ class ProjectCheckerTest extends TestCase
                 new Provider\FileStorageInstanceCacheProvider(),
                 new Provider\ClassLikeStorageInstanceCacheProvider(),
                 new Provider\FakeFileReferenceCacheProvider()
-            )
+            ),
+            new \Psalm\Report\ReportOptions()
         );
     }
 
@@ -70,17 +81,19 @@ class ProjectCheckerTest extends TestCase
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
-                        <directory name="tests/DummyProject" />
+                        <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                 </psalm>'
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
-        $this->project_analyzer->check('tests/DummyProject');
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -118,7 +131,7 @@ class ProjectCheckerTest extends TestCase
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
-                        <directory name="tests/DummyProject" />
+                        <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                 </psalm>'
             )
@@ -130,7 +143,7 @@ class ProjectCheckerTest extends TestCase
         $this->project_analyzer->getCodebase()->config->after_codebase_populated[] = $hook_class;
 
         ob_start();
-        $this->project_analyzer->check('tests/DummyProject');
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
         ob_end_clean();
 
         $this->assertTrue($hook::$called);
@@ -147,15 +160,17 @@ class ProjectCheckerTest extends TestCase
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
-                        <directory name="tests/DummyProject" />
+                        <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                 </psalm>'
             )
         );
 
-        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->assertNotNull($this->project_analyzer->stdout_report_options);
 
-        $this->project_analyzer->check('tests/DummyProject', true);
+        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
 
         $this->assertSame(
@@ -167,7 +182,7 @@ class ProjectCheckerTest extends TestCase
 
         $this->project_analyzer->getCodebase()->reloadFiles($this->project_analyzer, []);
 
-        $this->project_analyzer->check('tests/DummyProject', true);
+        $this->project_analyzer->check('tests/fixtures/DummyProject', true);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -190,15 +205,17 @@ class ProjectCheckerTest extends TestCase
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
-                        <directory name="tests/DummyProject" />
+                        <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                 </psalm>'
             )
         );
 
-        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->assertNotNull($this->project_analyzer->stdout_report_options);
 
-        $this->project_analyzer->check('tests/DummyProject', true);
+        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
 
         $this->assertSame(
@@ -208,7 +225,11 @@ class ProjectCheckerTest extends TestCase
             )
         );
 
-        $bat_file_path = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'DummyProject' . DIRECTORY_SEPARATOR . 'Bat.php';
+        $bat_file_path = getcwd()
+            . DIRECTORY_SEPARATOR . 'tests'
+            . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'DummyProject'
+            . DIRECTORY_SEPARATOR . 'Bat.php';
 
         $bat_replacement_contents = '<?php
 
@@ -227,7 +248,7 @@ class Bat
 
         $this->project_analyzer->getCodebase()->reloadFiles($this->project_analyzer, []);
 
-        $this->project_analyzer->check('tests/DummyProject', true);
+        $this->project_analyzer->check('tests/fixtures/DummyProject', true);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -250,17 +271,19 @@ class Bat
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
-                        <directory name="tests/DummyProject" />
+                        <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                 </psalm>'
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
-        $this->project_analyzer->checkDir('tests/DummyProject');
+        $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -283,17 +306,19 @@ class Bat
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
-                        <directory name="tests/DummyProject" />
+                        <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                 </psalm>'
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
-        $this->project_analyzer->checkPaths(['tests/DummyProject/Bar.php']);
+        $this->project_analyzer->checkPaths(['tests/fixtures/DummyProject/Bar.php']);
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -316,17 +341,19 @@ class Bat
                 '<?xml version="1.0"?>
                 <psalm>
                     <projectFiles>
-                        <directory name="tests/DummyProject" />
+                        <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                 </psalm>'
             )
         );
 
+        $this->project_analyzer->progress = new EchoProgress();
+
         ob_start();
-        $this->project_analyzer->checkFile('tests/DummyProject/Bar.php');
+        $this->project_analyzer->checkFile('tests/fixtures/DummyProject/Bar.php');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
+        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 

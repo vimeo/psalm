@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Issue\DeprecatedMethod;
+use Psalm\Issue\ImplementedParamTypeMismatch;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalMethod;
@@ -24,6 +25,10 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use function strtolower;
+use function explode;
+use function is_string;
+use function in_array;
 
 /**
  * @internal
@@ -141,7 +146,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * @param  string       $method_id
      * @param  CodeLocation $code_location
-     * @param  array        $suppressed_issues
+     * @param  string[]     $suppressed_issues
      * @param  string|null  $calling_method_id
      *
      * @return bool|null
@@ -176,7 +181,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * @param  string       $method_id
      * @param  CodeLocation $code_location
-     * @param  array        $suppressed_issues
+     * @param  string[]     $suppressed_issues
      *
      * @return false|null
      */
@@ -206,16 +211,34 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
+        if ($storage->psalm_internal
+            && $context->self
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            if (! NamespaceAnalyzer::isWithin($context->self, $storage->psalm_internal)
+            ) {
+                if (IssueBuffer::accepts(
+                    new InternalMethod(
+                        'The method ' . $codebase_methods->getCasedMethodId($method_id) .
+                        ' has been marked as internal to ' . $storage->psalm_internal,
+                        $code_location,
+                        $method_id
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
+                }
+            }
+        }
+
         if ($storage->internal
             && $context->self
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
             $declaring_class = explode('::', $method_id)[0];
-            $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
-            $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_class);
-
-            if (strtolower($self_root) !== strtolower($declaring_root)) {
+            if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_class)) {
                 if (IssueBuffer::accepts(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id) .
@@ -238,7 +261,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      * @param  Context          $context
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
-     * @param  array            $suppressed_issues
+     * @param  string[]         $suppressed_issues
      *
      * @return false|null
      */
@@ -479,7 +502,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      * @param  MethodStorage    $implementer_method_storage
      * @param  MethodStorage    $guide_method_storage
      * @param  CodeLocation     $code_location
-     * @param  array            $suppressed_issues
+     * @param  string[]         $suppressed_issues
      * @param  bool             $prevent_abstract_override
      * @param  bool             $prevent_method_signature_mismatch
      *
@@ -546,7 +569,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $codebase,
                 $guide_method_storage->signature_return_type,
                 $guide_classlike_storage->name,
-                $guide_classlike_storage->name
+                $guide_classlike_storage->name,
+                $guide_classlike_storage->parent_class
             );
 
             $implementer_signature_return_type = $implementer_method_storage->signature_return_type
@@ -554,7 +578,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $codebase,
                     $implementer_method_storage->signature_return_type,
                     $implementer_classlike_storage->name,
-                    $implementer_classlike_storage->name
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->parent_class
                 ) : null;
 
             if (!TypeAnalyzer::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type)) {
@@ -599,20 +624,22 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $codebase,
                 $implementer_method_storage->return_type,
                 $implementer_classlike_storage->name,
-                $implementer_called_class_name
+                $implementer_called_class_name,
+                $implementer_classlike_storage->parent_class
             );
 
             $guide_method_storage_return_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $guide_method_storage->return_type,
                 $guide_classlike_storage->name,
-                $guide_classlike_storage->name
+                $guide_classlike_storage->name,
+                $guide_classlike_storage->parent_class
             );
 
-            $guide_class_name_lc = strtolower($guide_classlike_storage->name);
+            $guide_class_name = $guide_classlike_storage->name;
 
-            if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name_lc])) {
-                $map = $implementer_classlike_storage->template_type_extends[$guide_class_name_lc];
+            if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name])) {
+                $map = $implementer_classlike_storage->template_type_extends[$guide_class_name];
 
                 $template_types = [];
 
@@ -622,22 +649,27 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     }
                 }
 
+                $implementer_method_storage_return_type->replaceTemplateTypesWithArgTypes(
+                    $template_types,
+                    $codebase
+                );
+
                 $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
                     $template_types,
                     $codebase
                 );
             }
 
-            $guide_trait_name_lc = null;
+            $guide_trait_name = null;
 
             if ($guide_classlike_storage === $implementer_classlike_storage) {
-                $guide_trait_name_lc = strtolower($implementer_method_storage->defining_fqcln);
+                $guide_trait_name = $implementer_method_storage->defining_fqcln;
             }
 
-            if ($guide_trait_name_lc
-                && isset($implementer_classlike_storage->template_type_extends[$guide_trait_name_lc])
+            if ($guide_trait_name
+                && isset($implementer_classlike_storage->template_type_extends[$guide_trait_name])
             ) {
-                $map = $implementer_classlike_storage->template_type_extends[$guide_trait_name_lc];
+                $map = $implementer_classlike_storage->template_type_extends[$guide_trait_name];
 
                 $template_types = [];
 
@@ -653,6 +685,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $template_types,
                     $codebase
                 );
+
+                $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
+                    $template_types,
+                    $codebase
+                );
             }
 
             // treat void as null when comparing against docblock implementer
@@ -664,18 +701,18 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $guide_method_storage_return_type = Type::getNull();
             }
 
+            $union_comparison_results = new TypeComparisonResult();
+
             if (!TypeAnalyzer::isContainedBy(
                 $codebase,
                 $implementer_method_storage_return_type,
                 $guide_method_storage_return_type,
                 false,
                 false,
-                $has_scalar_match,
-                $type_coerced,
-                $type_coerced_from_mixed
+                $union_comparison_results
             )) {
                 // is the declared return type more specific than the inferred one?
-                if ($type_coerced) {
+                if ($union_comparison_results->type_coerced) {
                     if (IssueBuffer::accepts(
                         new LessSpecificImplementedReturnType(
                             'The return type \'' . $guide_method_storage_return_type->getId()
@@ -729,6 +766,57 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             $implementer_param = $implementer_method_storage->params[$i];
 
             if ($prevent_method_signature_mismatch
+                && !$guide_classlike_storage->user_defined
+                && $guide_param->type
+            ) {
+                $implementer_param_type = $implementer_method_storage->params[$i]->signature_type;
+
+                $guide_param_signature_type = $guide_param->type;
+
+                $or_null_guide_param_signature_type = $guide_param->signature_type
+                    ? clone $guide_param->signature_type
+                    : null;
+
+                if ($or_null_guide_param_signature_type) {
+                    $or_null_guide_param_signature_type->addType(new Type\Atomic\TNull);
+                }
+
+                if ($cased_guide_method_id === 'Serializable::unserialize') {
+                    $guide_param_signature_type = null;
+                    $or_null_guide_param_signature_type = null;
+                }
+
+                if (!$guide_param->type->hasMixed()
+                    && !$guide_param->type->from_docblock
+                    && ($implementer_param_type || $guide_param_signature_type)
+                ) {
+                    if ($implementer_param_type
+                        && (!$guide_param_signature_type
+                            || strtolower($implementer_param_type->getId())
+                                !== strtolower($guide_param_signature_type->getId()))
+                        && (!$or_null_guide_param_signature_type
+                            || strtolower($implementer_param_type->getId())
+                                !== strtolower($or_null_guide_param_signature_type->getId()))
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new MethodSignatureMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                    $implementer_param_type . '\', expecting \'' .
+                                    $guide_param_signature_type . '\' as defined by ' .
+                                    $cased_guide_method_id,
+                                $implementer_method_storage->params[$i]->location
+                                    ?: $code_location
+                            )
+                        )) {
+                            return false;
+                        }
+
+                        return null;
+                    }
+                }
+            }
+
+            if ($prevent_method_signature_mismatch
                 && $guide_classlike_storage->user_defined
                 && $implementer_param->signature_type
             ) {
@@ -737,7 +825,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         $codebase,
                         $guide_param->signature_type,
                         $guide_classlike_storage->name,
-                        $guide_classlike_storage->name
+                        $guide_classlike_storage->name,
+                        $guide_classlike_storage->parent_class
                     )
                     : null;
 
@@ -745,7 +834,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $codebase,
                     $implementer_param->signature_type,
                     $implementer_classlike_storage->name,
-                    $implementer_classlike_storage->name
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->parent_class
                 );
 
                 if (!TypeAnalyzer::isContainedByInPhp(
@@ -785,8 +875,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 }
             }
 
-            if ($guide_classlike_storage->user_defined
-                && $implementer_param->type
+            if ($implementer_param->type
                 && $guide_param->type
                 && $implementer_param->type->getId() !== $guide_param->type->getId()
             ) {
@@ -794,20 +883,22 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $codebase,
                     $implementer_param->type,
                     $implementer_classlike_storage->name,
-                    $implementer_called_class_name
+                    $implementer_called_class_name,
+                    $implementer_classlike_storage->parent_class
                 );
 
                 $guide_method_storage_param_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
                     $guide_param->type,
                     $guide_classlike_storage->name,
-                    $guide_classlike_storage->name
+                    $guide_classlike_storage->name,
+                    $guide_classlike_storage->parent_class
                 );
 
-                $guide_class_name_lc = strtolower($guide_classlike_storage->name);
+                $guide_class_name = $guide_classlike_storage->name;
 
-                if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name_lc])) {
-                    $map = $implementer_classlike_storage->template_type_extends[$guide_class_name_lc];
+                if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name])) {
+                    $map = $implementer_classlike_storage->template_type_extends[$guide_class_name];
 
                     $template_types = [];
 
@@ -823,25 +914,72 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     );
                 }
 
+                $union_comparison_results = new TypeComparisonResult();
+
                 if (!TypeAnalyzer::isContainedBy(
                     $codebase,
                     $guide_method_storage_param_type,
                     $implementer_method_storage_param_type,
-                    false,
-                    false
+                    !$guide_classlike_storage->user_defined,
+                    !$guide_classlike_storage->user_defined,
+                    $union_comparison_results
                 )) {
-                    if (IssueBuffer::accepts(
-                        new MoreSpecificImplementedParamType(
-                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                                $implementer_method_storage_param_type->getId() . '\', expecting \'' .
-                                $guide_method_storage_param_type->getId() . '\' as defined by ' .
-                                $cased_guide_method_id,
-                            $implementer_method_storage->params[$i]->location
-                                ?: $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
-                        return false;
+                    // is the declared return type more specific than the inferred one?
+                    if ($union_comparison_results->type_coerced) {
+                        if ($guide_classlike_storage->user_defined) {
+                            if (IssueBuffer::accepts(
+                                new MoreSpecificImplementedParamType(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                                        . ' has the more specific type \'' .
+                                        $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                        $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                        $cased_guide_method_id,
+                                    $implementer_method_storage->params[$i]->location
+                                        ?: $code_location
+                                ),
+                                $suppressed_issues
+                            )) {
+                                return false;
+                            }
+                        }
+                    } else {
+                        if (TypeAnalyzer::isContainedBy(
+                            $codebase,
+                            $implementer_method_storage_param_type,
+                            $guide_method_storage_param_type,
+                            !$guide_classlike_storage->user_defined,
+                            !$guide_classlike_storage->user_defined
+                        )) {
+                            if (IssueBuffer::accepts(
+                                new MoreSpecificImplementedParamType(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                                        . ' has the more specific type \'' .
+                                        $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                        $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                        $cased_guide_method_id,
+                                    $implementer_method_storage->params[$i]->location
+                                        ?: $code_location
+                                ),
+                                $suppressed_issues
+                            )) {
+                                return false;
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new ImplementedParamTypeMismatch(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                                        . ' has wrong type \'' .
+                                        $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                        $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                        $cased_guide_method_id,
+                                    $implementer_method_storage->params[$i]->location
+                                        ?: $code_location
+                                ),
+                                $suppressed_issues
+                            )) {
+                                return false;
+                            }
+                        }
                     }
                 }
             }
@@ -852,49 +990,6 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' is' .
                             ($implementer_param->by_ref ? '' : ' not') . ' passed by reference, but argument ' .
                             ($i + 1) . ' of ' . $cased_guide_method_id . ' is' . ($guide_param->by_ref ? '' : ' not'),
-                        $implementer_method_storage->params[$i]->location
-                            ?: $code_location
-                    )
-                )) {
-                    return false;
-                }
-
-                return null;
-            }
-
-            $implemeneter_param_type = $implementer_method_storage->params[$i]->type;
-
-            $or_null_guide_type = $guide_param->signature_type
-                ? clone $guide_param->signature_type
-                : null;
-
-            if ($or_null_guide_type) {
-                $or_null_guide_type->addType(new Type\Atomic\TNull);
-            }
-
-            if (!$guide_classlike_storage->user_defined
-                && $guide_param->type
-                && !$guide_param->type->from_docblock
-                && ($cased_guide_method_id !== 'SoapClient::__soapCall' || $implemeneter_param_type)
-                && !$guide_param->type->hasMixed()
-                && (
-                    !$implemeneter_param_type
-                    || (
-                        strtolower($implemeneter_param_type->getId()) !== strtolower($guide_param->type->getId())
-                        && (
-                            !$or_null_guide_type
-                            || strtolower($implemeneter_param_type->getId())
-                                !== strtolower($or_null_guide_type->getId())
-                        )
-                    )
-                )
-            ) {
-                if (IssueBuffer::accepts(
-                    new MethodSignatureMismatch(
-                        'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                            $implemeneter_param_type . '\', expecting \'' .
-                            $guide_param->type . '\' as defined by ' .
-                            $cased_guide_method_id,
                         $implementer_method_storage->params[$i]->location
                             ?: $code_location
                     )

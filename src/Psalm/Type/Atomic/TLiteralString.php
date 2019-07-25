@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function preg_replace;
+use function strlen;
+use function substr;
+
 class TLiteralString extends TString
 {
     /** @var string */
@@ -39,6 +43,7 @@ class TLiteralString extends TString
         if (strlen($this->value) > 80) {
             return 'string(' . substr($no_newline_value, 0, 80) . '...' . ')';
         }
+
         return 'string(' . $no_newline_value . ')';
     }
 
@@ -69,8 +74,12 @@ class TLiteralString extends TString
      *
      * @return string
      */
-    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
-    {
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ) {
         return 'string';
     }
 }

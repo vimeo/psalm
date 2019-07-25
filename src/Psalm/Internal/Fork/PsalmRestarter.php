@@ -1,6 +1,12 @@
 <?php
-
 namespace Psalm\Internal\Fork;
+
+use function array_filter;
+use function extension_loaded;
+use function file_get_contents;
+use function file_put_contents;
+use function implode;
+use function preg_replace;
 
 /**
  * @internal
@@ -29,6 +35,8 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
 
     /**
      * @psalm-suppress UnusedMethod
+     *
+     * @param mixed $loaded
      */
     protected function requiresRestart($loaded)
     {
@@ -49,6 +57,9 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
 
     /**
      * @psalm-suppress UnusedMethod
+     *
+     * @param mixed $command
+     *
      * @return void
      */
     protected function restart($command)

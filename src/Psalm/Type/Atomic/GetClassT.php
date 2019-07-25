@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function array_values;
 use Psalm\Type\Union;
 
 /**

@@ -1,14 +1,18 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function array_map;
+use function assert;
+use function count;
+use function is_string;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\IssueBuffer;
-use Psalm\Issue\InvalidReturnType;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Codebase\CallMap;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
@@ -58,10 +62,60 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         } elseif (!isset($call_args[2])) {
             $function_call_arg = $call_args[1];
 
-            if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure
-                && isset($function_call_arg->value->inferredType)
-                && ($closure_atomic_type = $function_call_arg->value->inferredType->getTypes()['Closure'])
-                && $closure_atomic_type instanceof Type\Atomic\Fn
+            $first_arg_value = $function_call_arg->value;
+
+            if ($first_arg_value instanceof PhpParser\Node\Scalar\String_
+                && CallMap::inCallMap($first_arg_value->value)
+            ) {
+                $callables = CallMap::getCallablesFromCallMap($first_arg_value->value);
+
+                if ($callables) {
+                    $callable = clone $callables[0];
+
+                    if ($callable->params !== null && $callable->return_type) {
+                        $first_arg_value = new PhpParser\Node\Expr\Closure([
+                            'params' => array_map(
+                                function (\Psalm\Storage\FunctionLikeParameter $param) {
+                                    return new PhpParser\Node\Param(
+                                        new PhpParser\Node\Expr\Variable($param->name)
+                                    );
+                                },
+                                $callable->params
+                            ),
+                            'stmts' => [
+                                new PhpParser\Node\Stmt\Return_(
+                                    new PhpParser\Node\Expr\FuncCall(
+                                        new PhpParser\Node\Name\FullyQualified(
+                                            $first_arg_value->value
+                                        ),
+                                        array_map(
+                                            function (\Psalm\Storage\FunctionLikeParameter $param) {
+                                                return new PhpParser\Node\Arg(
+                                                    new PhpParser\Node\Expr\Variable($param->name)
+                                                );
+                                            },
+                                            $callable->params
+                                        )
+                                    )
+                                ),
+                            ],
+                        ]);
+
+                        $closure_atomic_type = new Type\Atomic\TFn(
+                            'Closure',
+                            $callable->params,
+                            $callable->return_type
+                        );
+
+                        $first_arg_value->inferredType = new Type\Union([$closure_atomic_type]);
+                    }
+                }
+            }
+
+            if ($first_arg_value instanceof PhpParser\Node\Expr\Closure
+                && isset($first_arg_value->inferredType)
+                && ($closure_atomic_type = $first_arg_value->inferredType->getTypes()['Closure'])
+                && $closure_atomic_type instanceof Type\Atomic\TFn
             ) {
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -77,9 +131,9 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     return Type::getArray();
                 }
 
-                if (count($function_call_arg->value->stmts) === 1 && count($function_call_arg->value->params)) {
-                    $first_param = $function_call_arg->value->params[0];
-                    $stmt = $function_call_arg->value->stmts[0];
+                if (count($first_arg_value->stmts) === 1 && count($first_arg_value->params)) {
+                    $first_param = $first_arg_value->params[0];
+                    $stmt = $first_arg_value->stmts[0];
 
                     if ($first_param->variadic === false
                         && $first_param->var instanceof PhpParser\Node\Expr\Variable

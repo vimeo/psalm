@@ -1,6 +1,13 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function filemtime;
+use function in_array;
+use function strtolower;
+
 class FileProvider
 {
     /**
@@ -24,8 +31,12 @@ class FileProvider
             return $this->temp_files[strtolower($file_path)];
         }
 
-        if (isset($this->temp_files[strtolower($file_path)])) {
+        if (isset($this->open_files[strtolower($file_path)])) {
             return $this->open_files[strtolower($file_path)];
+        }
+
+        if (!file_exists($file_path)) {
+            throw new \UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
         }
 
         return (string)file_get_contents($file_path);
@@ -51,12 +62,29 @@ class FileProvider
     }
 
     /**
+     * @param  string  $file_path
+     * @param  string  $file_contents
+     *
+     * @return void
+     */
+    public function setOpenContents($file_path, $file_contents)
+    {
+        if (isset($this->open_files[strtolower($file_path)])) {
+            $this->open_files[strtolower($file_path)] = $file_contents;
+        }
+    }
+
+    /**
      * @param  string $file_path
      *
      * @return int
      */
     public function getModifiedTime($file_path)
     {
+        if (!file_exists($file_path)) {
+            throw new \UnexpectedValueException('File should exist to get modified time');
+        }
+
         return (int)filemtime($file_path);
     }
 
@@ -89,7 +117,7 @@ class FileProvider
      */
     public function isOpen(string $file_path)
     {
-        return isset($this->open_files[strtolower($file_path)]);
+        return isset($this->temp_files[strtolower($file_path)]) || isset($this->open_files[strtolower($file_path)]);
     }
 
     /**
@@ -97,8 +125,7 @@ class FileProvider
      */
     public function closeFile(string $file_path)
     {
-        unset($this->temp_files[strtolower($file_path)]);
-        unset($this->open_files[strtolower($file_path)]);
+        unset($this->temp_files[strtolower($file_path)], $this->open_files[strtolower($file_path)]);
     }
 
     /**

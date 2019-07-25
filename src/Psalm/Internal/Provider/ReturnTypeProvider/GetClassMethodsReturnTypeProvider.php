@@ -1,19 +1,18 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
-use Psalm\Context;
 use Psalm\CodeLocation;
-use Psalm\Type;
+use Psalm\Context;
 use Psalm\StatementsSource;
+use Psalm\Type;
 
 class GetClassMethodsReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
     public static function getFunctionIds() : array
     {
         return [
-            'get_class_methods'
+            'get_class_methods',
         ];
     }
 

@@ -1,9 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
+use function count;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
+use function strpos;
 
 class FileReferenceTest extends TestCase
 {
@@ -13,7 +15,7 @@ class FileReferenceTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
@@ -280,7 +282,7 @@ class FileReferenceTest extends TestCase
                 ],
                 [],
                 [],
-                []
+                [],
             ],
             'constantRefs' => [
                 '<?php
@@ -311,7 +313,7 @@ class FileReferenceTest extends TestCase
                 [],
                 [],
                 [],
-                []
+                [],
             ],
             'staticPropertyRefs' => [
                 '<?php
@@ -345,7 +347,7 @@ class FileReferenceTest extends TestCase
                 ],
                 [],
                 [],
-                []
+                [],
             ],
             'instancePropertyRefs' => [
                 '<?php
@@ -385,7 +387,35 @@ class FileReferenceTest extends TestCase
                     ],
                 ],
                 [],
-                []
+                [],
+            ],
+            'traitAbstractRefs' => [
+                '<?php
+                    namespace Ns;
+
+                    abstract class A {
+                        public function foo() : void {}
+                    }
+
+                    trait T {
+                        public function bar(A $a) : void {
+                            $a->foo();
+                        }
+                    }
+
+                    class C {
+                        use T;
+                    }',
+                [
+                    'ns\a::foo' => [
+                        'ns\c::bar' => true,
+                    ],
+                ],
+                [],
+                [],
+                [],
+                [],
+                [],
             ],
         ];
     }

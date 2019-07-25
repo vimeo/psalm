@@ -1,6 +1,11 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
+use function array_keys;
+use function array_pop;
+use const DIRECTORY_SEPARATOR;
+use function getcwd;
+use function preg_quote;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
@@ -12,7 +17,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 
@@ -32,12 +37,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers,
-            false,
-            true,
-            ProjectAnalyzer::TYPE_CONSOLE,
-            1,
-            false
+            $providers
         );
         $this->project_analyzer->setPhpVersion('7.3');
     }

@@ -1,15 +1,20 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use function array_map;
+use function count;
+use function explode;
+use function in_array;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\StatementsSource;
 use Psalm\Type;
+use function strpos;
+use function strtolower;
 
 class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -60,7 +65,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             if (isset($function_call_arg->value->inferredType)
                 && ($first_arg_atomic_types = $function_call_arg->value->inferredType->getTypes())
                 && ($closure_atomic_type = $first_arg_atomic_types['Closure'] ?? null)
-                && $closure_atomic_type instanceof Type\Atomic\Fn
+                && $closure_atomic_type instanceof Type\Atomic\TFn
             ) {
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -179,7 +184,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     $codebase,
                                     $return_type,
                                     $self_class,
-                                    $self_class
+                                    $self_class,
+                                    $statements_source->getParentFQCLN()
                                 );
 
                                 if ($mapping_return_type) {

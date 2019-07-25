@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
+use function class_exists;
+use const DIRECTORY_SEPARATOR;
+
 class MethodCallTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
@@ -326,7 +329,7 @@ class MethodCallTest extends TestCase
                     $stmt->setFetchMode(PDO::FETCH_CLASS, A::class);
                     $stmt->execute();
                     /** @psalm-suppress MixedAssignment */
-                    $a = $stmt->fetch();'
+                    $a = $stmt->fetch();',
             ],
             'datePeriodConstructor' => [
                 '<?php
@@ -336,7 +339,7 @@ class MethodCallTest extends TestCase
                             DateInterval::createFromDateString("1 month"),
                             $d2
                         );
-                    }'
+                    }',
             ],
         ];
     }
@@ -586,6 +589,29 @@ class MethodCallTest extends TestCase
                         $a->bar(B::bat());
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'complainAboutUndefinedPropertyOnMixedCall' => [
+                '<?php
+                    class C {
+                        /** @param mixed $a */
+                        public function foo($a) : void {
+                            /** @psalm-suppress MixedMethodCall */
+                            $a->bar($this->d);
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            'complainAboutUndefinedPropertyOnMixedCallConcatOp' => [
+                '<?php
+                    class A {
+                        /**
+                         * @psalm-suppress MixedMethodCall
+                         */
+                        public function foo(object $a) : void {
+                            $a->bar("bat" . $this->baz);
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
             ],
         ];
     }

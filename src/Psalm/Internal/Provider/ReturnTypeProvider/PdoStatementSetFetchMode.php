@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -17,6 +16,7 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\Hook\MethodParamsProvide
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
     public static function getMethodParams(
@@ -51,7 +51,7 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\Hook\MethodParamsProvide
                         null,
                         null,
                         false
-                    )
+                    ),
                 ];
 
                 $value = $call_args[0]->value->inferredType->getSingleIntLiteral()->value;

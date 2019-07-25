@@ -1,14 +1,10 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Tests\Internal\Provider;
-
 class ReturnTypeManipulationTest extends FileManipulationTest
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{string,string,string,string[],bool,5?:bool}>
      */
     public function providerValidCodeParse()
     {
@@ -173,7 +169,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0:string}
+                     * @psalm-return array{0: string}
                      */
                     function foo() {
                         return ["hello"];
@@ -191,7 +187,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0:string}
+                     * @psalm-return array{0: string}
                      */
                     function foo(): array {
                         return ["hello"];
@@ -209,7 +205,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a:string, b?:string}
+                     * @psalm-return array{a: string, b?: string}
                      */
                     function foo(): array {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
@@ -234,7 +230,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return int[]
                      *
-                     * @psalm-return array{a?:int, b?:int}
+                     * @psalm-return array{a?: int, b?: int}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -244,6 +240,48 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                         return [
                             "a" => 1,
                             "b" => 2,
+                        ];
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                true,
+            ],
+            'addMissingObjectLikeReturnTypeWithNestedArrays' => [
+                '<?php
+                    function foo() {
+                        return [
+                            "a" => 1,
+                            "b" => 2,
+                            "c" => [
+                                "a" => 1,
+                                "b" => 2,
+                                "c" => [
+                                    "a" => 1,
+                                    "b" => 2,
+                                    "c" => 3,
+                                ],
+                            ],
+                        ];
+                    }',
+                '<?php
+                    /**
+                     * @return ((int[]|int)[]|int)[]
+                     *
+                     * @psalm-return array{a: int, b: int, c: array{a: int, b: int, c: array{a: int, b: int, c: int}}}
+                     */
+                    function foo(): array {
+                        return [
+                            "a" => 1,
+                            "b" => 2,
+                            "c" => [
+                                "a" => 1,
+                                "b" => 2,
+                                "c" => [
+                                    "a" => 1,
+                                    "b" => 2,
+                                    "c" => 3,
+                                ],
+                            ],
                         ];
                     }',
                 '7.0',
@@ -267,7 +305,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a:string, b?:string}
+                     * @psalm-return array{a: string, b?: string}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -888,9 +926,9 @@ class ReturnTypeManipulationTest extends FileManipulationTest
 
                         class D {
                             /**
-                             * @return \A\B\C[]
+                             * @return B\C[]
                              *
-                             * @psalm-return array{0:\A\B\C}
+                             * @psalm-return array{0: B\C}
                              */
                             public function getArrayOfC(): array {
                                 return [new \A\B\C];
@@ -1035,6 +1073,247 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '7.1',
                 ['LessSpecificReturnType'],
+                true,
+            ],
+            'addMissingReturnTypeWhenParentHasNone' => [
+                '<?php
+                    class A {
+                        /** @psalm-suppress MissingReturnType */
+                        public function foo() {
+                            return;
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo() {
+                            return;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /** @psalm-suppress MissingReturnType */
+                        public function foo() {
+                            return;
+                        }
+                    }
+
+                    class B extends A {
+                        /**
+                         * @return void
+                         */
+                        public function foo() {
+                            return;
+                        }
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+            ],
+            'dontAddMissingReturnTypeWhenChildHasNone' => [
+                '<?php
+                    class A {
+                        public function foo() {}
+                    }
+
+                    class B extends A {
+                        /** @psalm-suppress MissingReturnType */
+                        public function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return void
+                         */
+                        public function foo() {}
+                    }
+
+                    class B extends A {
+                        /** @psalm-suppress MissingReturnType */
+                        public function foo() {}
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+            ],
+            'fixInvalidIntReturnTypeJustInPhpDoc' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        protected function foo() {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @return int
+                         */
+                        protected function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return int
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        protected function foo() {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @return void
+                         */
+                        protected function foo() {}
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+            ],
+            'fixInvalidIntReturnTypeJustInPhpDocWhenDisallowingBackwardsIncompatibleChanges' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int
+                         */
+                        protected function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return void
+                         */
+                        protected function foo() {}
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false,
+            ],
+            'fixInvalidIntReturnTypeInFinalMethodWhenDisallowingBackwardsIncompatibleChanges' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int
+                         */
+                        protected final function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return void
+                         */
+                        protected final function foo(): void {}
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false,
+            ],
+            'fixInvalidIntReturnTypeInFinalClassWhenDisallowingBackwardsIncompatibleChanges' => [
+                '<?php
+                    final class A {
+                        /**
+                         * @return int
+                         */
+                        protected function foo() {}
+                    }',
+                '<?php
+                    final class A {
+                        /**
+                         * @return void
+                         */
+                        protected function foo(): void {}
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false,
+            ],
+            'fixInvalidIntReturnTypeInFunctionWhenDisallowingBackwardsIncompatibleChanges' => [
+                '<?php
+                    /**
+                     * @return int
+                     */
+                    function foo() {}',
+                '<?php
+                    /**
+                     * @return void
+                     */
+                    function foo(): void {}',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false,
+            ],
+            'noEmptyArrayAnnotation' => [
+                '<?php
+                    function foo() {
+                        return [];
+                    }',
+                '<?php
+                    /**
+                     * @return array
+                     *
+                     * @psalm-return array<empty, empty>
+                     */
+                    function foo(): array {
+                        return [];
+                    }',
+                '7.3',
+                ['MissingReturnType'],
+                false,
+            ],
+            'dontReplaceValidReturnTypePreventingBackwardsIncompatibility' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int[]|null
+                         */
+                        public function foo(): ?array {
+                            return ["hello"];
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return string[]
+                         *
+                         * @psalm-return array{0: string}
+                         */
+                        public function foo(): ?array {
+                            return ["hello"];
+                        }
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                false,
+            ],
+            'dontReplaceValidReturnTypeAllowBackwardsIncompatibility' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return int[]|null
+                         */
+                        public function foo(): ?array {
+                            return ["hello"];
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return string[]
+                         *
+                         * @psalm-return array{0: string}
+                         */
+                        public function foo(): array {
+                            return ["hello"];
+                        }
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
                 true,
             ],
         ];

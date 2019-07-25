@@ -1,12 +1,12 @@
 <?php
 declare(strict_types = 1);
-
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc;
+use function Amp\call;
 use Amp\Deferred;
 use Amp\Promise;
-use function Amp\call;
+use function error_log;
 
 /**
  * @internal
@@ -40,6 +40,7 @@ class ClientHandler
      *
      * @param string $method The method to call
      * @param array|object $params The method parameters
+     *
      * @return Promise<mixed> Resolved with the result of the request or rejected with an error
      */
     public function request(string $method, $params): Promise
@@ -83,6 +84,7 @@ class ClientHandler
                         }
                     };
                 $this->protocolReader->on('message', $listener);
+
                 return $deferred->promise();
             }
         );
@@ -93,6 +95,7 @@ class ClientHandler
      *
      * @param string $method The method to call
      * @param array|object $params The method parameters
+     *
      * @return Promise <null> Will be resolved as soon as the notification has been sent
      */
     public function notify(string $method, $params): Promise

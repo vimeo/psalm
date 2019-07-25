@@ -1,10 +1,23 @@
 <?php
 namespace Psalm\Tests;
 
+use function array_keys;
+use function count;
+use const DIRECTORY_SEPARATOR;
+use function dirname;
+use function explode;
+use function file_exists;
+use function file_get_contents;
+use function implode;
+use function preg_quote;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
+use function sort;
+use function strpos;
+use function substr;
+use function trim;
 
 class DocumentationTest extends TestCase
 {
@@ -16,7 +29,7 @@ class DocumentationTest extends TestCase
      */
     private static function getCodeBlocksFromDocs()
     {
-        $issue_file = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'issues.md';
+        $issue_file = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'running_psalm' . DIRECTORY_SEPARATOR . 'issues.md';
 
         if (!file_exists($issue_file)) {
             throw new \UnexpectedValueException('docs not found');
@@ -62,7 +75,7 @@ class DocumentationTest extends TestCase
     /**
      * @return void
      */
-    public function setUp()
+    public function setUp() : void
     {
         FileAnalyzer::clearCache();
         \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
@@ -101,6 +114,8 @@ class DocumentationTest extends TestCase
         // these are deprecated
         $code_blocks['TypeCoercion'] = true;
         $code_blocks['MixedTypeCoercion'] = true;
+        $code_blocks['MixedTypeCoercion'] = true;
+        $code_blocks['MisplacedRequiredParam'] = true;
 
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);

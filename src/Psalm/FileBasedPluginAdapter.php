@@ -3,6 +3,7 @@ namespace Psalm;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
+use function reset;
 use SimpleXMLElement;
 
 class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
@@ -27,7 +28,14 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
         $this->codebase = $codebase;
     }
 
-    /** @return void */
+    /**
+     * @psalm-suppress PossiblyUnusedParam
+     *
+     * @param  Plugin\RegistrationInterface $registration
+     * @param  SimpleXMLElement|null        $config
+     *
+     * @return  void
+     */
     public function __invoke(Plugin\RegistrationInterface $registration, SimpleXMLElement $config = null)
     {
         $fq_class_name = $this->getPluginClassForPath($this->path);
@@ -41,6 +49,8 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
     private function getPluginClassForPath(string $path): string
     {
         $codebase = $this->codebase;
+
+        $path = \str_replace(['/', '\\'], \DIRECTORY_SEPARATOR, $path);
 
         $file_storage = $codebase->createFileStorageForPath($path);
         $file_to_scan = new FileScanner($path, $this->config->shortenFileName($path), true);
