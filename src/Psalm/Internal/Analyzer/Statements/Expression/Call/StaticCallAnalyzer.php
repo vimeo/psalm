@@ -927,8 +927,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         if ($declaring_method_id
                             && strtolower($declaring_method_id) . '\((.*\))' === $original_pattern
                         ) {
-                            if (strpos($transformation, '($1)') === strlen($transformation) - 4
-                                && $stmt->class instanceof PhpParser\Node\Name
+                            if (
+                                $stmt->class instanceof PhpParser\Node\Name
+                                &&
+                                strpos($transformation, '($1)') === strlen($transformation) - 4
                             ) {
                                 $new_method_id = substr($transformation, 0, -4);
                                 list($old_declaring_fq_class_name) = explode('::', $declaring_method_id);

@@ -543,8 +543,8 @@ class ReturnTypeAnalyzer
             ) {
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['InvalidNullableReturnType'])
-                    && !in_array('InvalidNullableReturnType', $suppressed_issues)
                     && !$inferred_return_type->isNull()
+                    && !in_array('InvalidNullableReturnType', $suppressed_issues)
                 ) {
                     self::addOrUpdateReturnType(
                         $function,

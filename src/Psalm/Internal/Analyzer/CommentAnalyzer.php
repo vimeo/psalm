@@ -353,8 +353,8 @@ class CommentAnalyzer
                 }
 
                 if (count($line_parts) > 1) {
-                    if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
-                        && $line_parts[0][0] !== '{'
+                    if ($line_parts[0][0] !== '{'
+                        && preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
                     ) {
                         $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
@@ -1006,8 +1006,8 @@ class CommentAnalyzer
             }
 
             if (count($line_parts) > 1) {
-                if (preg_match('/^&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
-                    && $line_parts[0][0] !== '{'
+                if ($line_parts[0][0] !== '{'
+                    && preg_match('/^&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
 

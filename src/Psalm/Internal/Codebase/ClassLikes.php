@@ -800,10 +800,10 @@ class ClassLikes
             }
 
             if ($classlike_storage->stmt_location
-                && $this->config->isInProjectDirs($classlike_storage->stmt_location->file_path)
                 && $source_method_storage->stmt_location
                 && $source_method_storage->stmt_location->file_path
                 && $source_method_storage->location
+                && $this->config->isInProjectDirs($classlike_storage->stmt_location->file_path)
             ) {
                 $new_class_bounds = $classlike_storage->stmt_location->getSnippetBounds();
                 $old_method_bounds = $source_method_storage->stmt_location->getSnippetBounds();
@@ -878,10 +878,10 @@ class ClassLikes
             $destination_classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
 
             if ($destination_classlike_storage->stmt_location
-                && $this->config->isInProjectDirs($destination_classlike_storage->stmt_location->file_path)
                 && $source_property_storage->stmt_location
                 && $source_property_storage->stmt_location->file_path
                 && $source_property_storage->location
+                && $this->config->isInProjectDirs($destination_classlike_storage->stmt_location->file_path)
             ) {
                 if ($source_property_storage->type
                     && $source_property_storage->type_location
@@ -976,8 +976,8 @@ class ClassLikes
             $source_const_location = $source_classlike_storage->class_constant_locations[$source_const_name];
 
             if ($destination_classlike_storage->stmt_location
-                && $this->config->isInProjectDirs($destination_classlike_storage->stmt_location->file_path)
                 && $source_const_stmt_location->file_path
+                && $this->config->isInProjectDirs($destination_classlike_storage->stmt_location->file_path)
             ) {
                 $new_class_bounds = $destination_classlike_storage->stmt_location->getSnippetBounds();
                 $old_const_bounds = $source_const_stmt_location->getSnippetBounds();
@@ -1665,8 +1665,10 @@ class ClassLikes
                     && !$classlike_storage->is_interface
                 ) {
                     foreach ($method_storage->params as $offset => $param_storage) {
-                        if (!$this->file_reference_provider->isMethodParamUsed(strtolower($method_id), $offset)
-                            && $param_storage->location
+                        if (
+                            $param_storage->location
+                            &&
+                            !$this->file_reference_provider->isMethodParamUsed(strtolower($method_id), $offset)
                         ) {
                             if (IssueBuffer::accepts(
                                 new PossiblyUnusedParam(
@@ -1713,8 +1715,8 @@ class ClassLikes
             }
 
             if ((!$property_referenced || $property_constructor_referenced)
-                && (substr($property_name, 0, 2) !== '__' || $property_name === '__construct')
                 && $property_storage->location
+                && (substr($property_name, 0, 2) !== '__' || $property_name === '__construct')
             ) {
                 $property_id = $classlike_storage->name . '::$' . $property_name;
 

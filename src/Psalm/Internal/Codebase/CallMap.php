@@ -97,7 +97,11 @@ class CallMap
                 }
             }
 
-            if ($mandatory_param_count > count($args) && !($last_param && $last_param->is_variadic)) {
+            if (
+                !($last_param && $last_param->is_variadic)
+                &&
+                $mandatory_param_count > count($args)
+            ) {
                 continue;
             }
 

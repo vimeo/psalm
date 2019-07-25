@@ -2393,7 +2393,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->return_type->ignore_falsable_issues = true;
             }
 
-            if ($stmt->returnsByRef() && $storage->return_type) {
+            if ($storage->return_type && $stmt->returnsByRef()) {
                 $storage->return_type->by_ref = true;
             }
 

@@ -355,9 +355,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && !$has_mixed_method_call
             && !$invalid_method_call_types
             && $existent_method_ids
+            && $real_method_call
             && !$class_type->isMixed()
             && ($class_type->from_docblock || $class_type->isNullable())
-            && $real_method_call
         ) {
             $keys_to_remove = [];
 

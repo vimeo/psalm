@@ -269,8 +269,8 @@ class TypeCombination
         }
 
         if (isset($combination->named_object_types['Closure'])
-            && $combination->named_object_types['Closure'] instanceof Type\Atomic\TFn
             && $combination->closure_params
+            && $combination->named_object_types['Closure'] instanceof Type\Atomic\TFn
         ) {
             $combination->named_object_types['Closure']->params = $combination->closure_params;
         }
@@ -284,8 +284,8 @@ class TypeCombination
         if (count($combination->objectlike_entries)) {
             if (!$combination->has_mixed || $combination->mixed_from_loop_isset) {
                 if ($combination->array_type_params
-                    && $combination->array_type_params[0]->allStringLiterals()
                     && $combination->array_always_filled
+                    && $combination->array_type_params[0]->allStringLiterals()
                 ) {
                     foreach ($combination->array_type_params[0]->getTypes() as $atomic_key_type) {
                         if ($atomic_key_type instanceof TLiteralString) {
@@ -983,8 +983,8 @@ class TypeCombination
                                 } else {
                                     $combination->value_types[$type_key] = new TClassString();
                                 }
-                            } elseif ($combination->value_types['string'] instanceof TTraitString
-                                && $type instanceof TClassString
+                            } elseif ($type instanceof TClassString
+                                      && $combination->value_types['string'] instanceof TTraitString
                             ) {
                                 $combination->value_types['trait-string'] = $combination->value_types['string'];
                                 $combination->value_types['class-string'] = $type;

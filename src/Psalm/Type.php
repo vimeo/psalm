@@ -944,9 +944,9 @@ abstract class Type
                 continue;
             }
 
-            if ($string_type_token[0][0] === '"'
+            if ($string_type_token[0] === '0'
+                || $string_type_token[0][0] === '"'
                 || $string_type_token[0][0] === '\''
-                || $string_type_token[0] === '0'
                 || preg_match('/[1-9]/', $string_type_token[0][0])
             ) {
                 continue;
@@ -968,12 +968,12 @@ abstract class Type
                 = $string_type_token[0]
                 = self::fixScalarTerms($string_type_token[0]);
 
-            if ($string_type_token[0] === 'self' && $self_fqcln) {
+            if ($self_fqcln && $string_type_token[0] === 'self') {
                 $type_tokens[$i][0] = $self_fqcln;
                 continue;
             }
 
-            if ($string_type_token[0] === 'parent' && $parent_fqcln) {
+            if ($parent_fqcln && $string_type_token[0] === 'parent') {
                 $type_tokens[$i][0] = $parent_fqcln;
                 continue;
             }
@@ -1073,7 +1073,7 @@ abstract class Type
 
         if ($namespace && stripos($value, $namespace . '\\') === 0) {
             $candidate = preg_replace(
-                '/^' . preg_quote($namespace . '\\') . '/i',
+                '/^' . preg_quote($namespace . '\\', '/') . '/i',
                 '',
                 $value
             );

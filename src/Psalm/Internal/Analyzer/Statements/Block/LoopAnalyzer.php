@@ -467,9 +467,10 @@ class LoopAnalyzer
             }
 
             foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
-                if (!isset($new_referenced_var_ids[$var_id])
-                    || !isset($pre_outer_context->vars_in_scope[$var_id])
-                    || $has_break_statement
+                if (
+                    $has_break_statement
+                    ||
+                    !isset($new_referenced_var_ids[$var_id], $pre_outer_context->vars_in_scope[$var_id])
                 ) {
                     if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
                         $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;

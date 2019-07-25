@@ -437,9 +437,14 @@ class CallAnalyzer
                         }
                     )
                 ) {
-                    if (count($args) === 2
-                        && (($argument_offset === 1 && $method_id === 'array_filter')
-                            || ($argument_offset === 0 && $method_id === 'array_map'))
+                    if (
+                        (
+                            ($argument_offset === 1 && $method_id === 'array_filter')
+                            ||
+                            ($argument_offset === 0 && $method_id === 'array_map')
+                        )
+                        &&
+                        count($args) === 2
                     ) {
                         $replaced_type = new Type\Union([
                             new Type\Atomic\TCallable(
@@ -509,9 +514,14 @@ class CallAnalyzer
                     $context->inside_call = false;
                 }
 
-                if (count($args) === 2
-                    && (($argument_offset === 0 && $method_id === 'array_filter')
-                        || ($argument_offset === 1 || $method_id === 'array_map'))
+                if (
+                    (
+                        ($argument_offset === 0 && $method_id === 'array_filter')
+                        ||
+                        ($argument_offset === 1 || $method_id === 'array_map')
+                    )
+                    &&
+                    count($args) === 2
                 ) {
                     $generic_param_type = new Type\Union([
                         new Type\Atomic\TArray([
@@ -2264,9 +2274,9 @@ class CallAnalyzer
 
         if ($param_type->hasMixed()) {
             if ($codebase->infer_types_from_usage
-                && !$input_type->hasMixed()
                 && !$param_type->from_docblock
                 && $cased_method_id
+                && !$input_type->hasMixed()
                 && strpos($cased_method_id, '::')
                 && !strpos($cased_method_id, '__')
             ) {
@@ -2776,7 +2786,7 @@ class CallAnalyzer
                 foreach ($input_type->getTypes() as $atomic_type) {
                     $atomic_type->from_docblock = false;
                 }
-            } elseif ($input_type->hasMixed() && $signature_param_type) {
+            } elseif ($signature_param_type && $input_type->hasMixed()) {
                 $input_type = clone $signature_param_type;
 
                 if ($input_type->isNullable()) {

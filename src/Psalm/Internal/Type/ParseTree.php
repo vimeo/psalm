@@ -145,8 +145,8 @@ class ParseTree
 
                 case ')':
                     if ($last_token !== null
-                        && $last_token[0] === '('
                         && $current_leaf instanceof ParseTree\CallableTree
+                        && $last_token[0] === '('
                     ) {
                         break;
                     }
@@ -485,9 +485,10 @@ class ParseTree
                                     $type_token[0],
                                     $new_parent
                                 );
-                            } elseif ($type_token[0] !== 'array'
-                                      && $type_token[0][0] !== '\\'
-                                      && $current_leaf instanceof ParseTree\Root
+                            } elseif (
+                                $current_leaf instanceof ParseTree\Root
+                                && $type_token[0] !== 'array'
+                                && $type_token[0][0] !== '\\'
                             ) {
                                 $new_leaf = new ParseTree\MethodTree(
                                     $type_token[0],

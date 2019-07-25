@@ -786,9 +786,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $or_null_guide_param_signature_type = null;
                 }
 
-                if (!$guide_param->type->hasMixed()
-                    && !$guide_param->type->from_docblock
+                if (!$guide_param->type->from_docblock
                     && ($implementer_param_type || $guide_param_signature_type)
+                    && !$guide_param->type->hasMixed()
                 ) {
                     if ($implementer_param_type
                         && (!$guide_param_signature_type

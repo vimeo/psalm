@@ -322,9 +322,9 @@ class TypeAnalyzer
 
         foreach ($input_type->getTypes() as $input_key => $input_type_part) {
             foreach ($container_type->getTypes() as $container_key => $container_type_part) {
-                if (get_class($container_type_part) === TNamedObject::class
-                    && $input_type_part instanceof TNamedObject
+                if ($input_type_part instanceof TNamedObject
                     && $input_type_part->value === $container_type_part->value
+                    && get_class($container_type_part) === TNamedObject::class
                 ) {
                     continue 2;
                 }
