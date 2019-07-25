@@ -286,7 +286,7 @@ class IfAnalyzer
                     $changed_var_ids,
                     $cond_referenced_var_ids,
                     $statements_analyzer,
-                    [],
+                    $statements_analyzer->getTemplateTypeMap() ?: [],
                     $if_context->inside_loop,
                     $context->check_variables
                         ? new CodeLocation(
@@ -333,7 +333,7 @@ class IfAnalyzer
                 $changed_var_ids,
                 $stmt->else || $stmt->elseifs ? $cond_referenced_var_ids : [],
                 $statements_analyzer,
-                [],
+                $statements_analyzer->getTemplateTypeMap() ?: [],
                 $context->inside_loop,
                 $context->check_variables
                     ? new CodeLocation(
@@ -691,7 +691,7 @@ class IfAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
-                    [],
+                    $statements_analyzer->getTemplateTypeMap() ?: [],
                     $outer_context->inside_loop,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
@@ -1022,7 +1022,7 @@ class IfAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
-                [],
+                $statements_analyzer->getTemplateTypeMap() ?: [],
                 $elseif_context->inside_loop,
                 new CodeLocation(
                     $statements_analyzer->getSource(),
@@ -1205,7 +1205,7 @@ class IfAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
-                    [],
+                    $statements_analyzer->getTemplateTypeMap() ?: [],
                     $elseif_context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $elseif, $outer_context->include_location)
                 );
