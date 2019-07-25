@@ -1009,6 +1009,17 @@ class UnusedVariableTest extends TestCase
                         $a["foo"] = 5;
                     }',
             ],
+            'usedAsMethodName' => [
+                '<?php
+                    class A {
+                        public static function foo() : void {}
+                    }
+
+                    function foo() : void {
+                        $method = "foo";
+                        A::$method();
+                    }',
+            ],
         ];
     }
 

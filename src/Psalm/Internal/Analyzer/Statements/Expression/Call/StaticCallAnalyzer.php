@@ -996,6 +996,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
             } else {
+                if ($stmt->name instanceof PhpParser\Node\Expr) {
+                    ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
+                }
+
                 if (!$context->ignore_variable_method) {
                     $codebase->analyzer->addMixedMemberName(
                         strtolower($fq_class_name) . '::',
