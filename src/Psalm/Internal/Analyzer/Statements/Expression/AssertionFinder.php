@@ -1943,6 +1943,8 @@ class AssertionFinder
             foreach ($stmt->class->inferredType->getTypes() as $atomic_type) {
                 if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
                     $literal_class_strings[] = $atomic_type->value;
+                } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                    $literal_class_strings[] = $atomic_type->param_name;
                 }
             }
 
