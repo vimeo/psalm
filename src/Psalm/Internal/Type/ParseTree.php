@@ -506,7 +506,7 @@ class ParseTree
                             $nexter_token = $i + 2 < $c ? $type_tokens[$i + 2] : null;
 
                             if (!$nexter_token
-                                || (!preg_match('/^[A-Z_][A-Z_0-9]*$/', $nexter_token[0])
+                                || (!preg_match('/^[A-Z_][a-zA-Z_0-9]*$/', $nexter_token[0])
                                     && strtolower($nexter_token[0]) !== 'class')
                             ) {
                                 throw new TypeParseTreeException(
