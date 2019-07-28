@@ -11741,6 +11741,7 @@ return [
 'set_magic_quotes_runtime' => ['bool', 'new_setting'=>'bool'],
 'set_time_limit' => ['bool', 'seconds'=>'int'],
 'setcookie' => ['bool', 'name'=>'string', 'value='=>'string', 'expires='=>'int', 'path='=>'string', 'domain='=>'string', 'secure='=>'bool', 'httponly='=>'bool'],
+'setcookie\'1' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
 'setLeftFill' => ['void', 'red'=>'int', 'green'=>'int', 'blue'=>'int', 'a='=>'int'],
 'setLine' => ['void', 'width'=>'int', 'red'=>'int', 'green'=>'int', 'blue'=>'int', 'a='=>'int'],
 'setlocale' => ['string|false', 'category'=>'int', 'locale'=>'string', '...args='=>'string'],

@@ -1793,6 +1793,20 @@ class FunctionCallTest extends TestCase
                         return compact("a", "b", "c");
                     }',
             ],
+            'PHP73-setCookiePhp73' => [
+                '<?php
+                    setcookie(
+                        "name",
+                        "value",
+                        [
+                            "path"     => "/",
+                            "expires"  => 0,
+                            "httponly" => true,
+                            "secure"   => true,
+                            "samesite" => "Lax"
+                        ]
+                    );',
+            ],
         ];
     }
 
