@@ -1209,6 +1209,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         PhpParser\Node\Stmt\ClassLike $node,
         string $extended_class_name
     ) {
+        if (trim($extended_class_name) === '') {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                )
+            )) {
+            }
+
+            $storage->has_docblock_issues = true;
+
+            return;
+        }
+
         try {
             $extended_union_type = Type::parseTokens(
                 Type::fixUpLocalType(
@@ -1296,6 +1310,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         PhpParser\Node\Stmt\ClassLike $node,
         string $implemented_class_name
     ) {
+        if (trim($implemented_class_name) === '') {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                )
+            )) {
+            }
+
+            $storage->has_docblock_issues = true;
+
+            return;
+        }
+
         try {
             $implemented_union_type = Type::parseTokens(
                 Type::fixUpLocalType(
@@ -1381,6 +1409,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         PhpParser\Node\Stmt\TraitUse $node,
         string $used_class_name
     ) {
+        if (trim($used_class_name) === '') {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                )
+            )) {
+            }
+
+            $storage->has_docblock_issues = true;
+
+            return;
+        }
+
         try {
             $used_union_type = Type::parseTokens(
                 Type::fixUpLocalType(

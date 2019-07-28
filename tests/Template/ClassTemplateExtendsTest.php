@@ -3081,6 +3081,14 @@ class ClassTemplateExtendsTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'invalidExtendsAnnotation' => [
+                '<?php
+                    /**
+                    * @template-extends
+                    */
+                    class Foo extends DateTimeImmutable {}',
+                'error_message' => 'InvalidDocblock'
+            ],
         ];
     }
 }
