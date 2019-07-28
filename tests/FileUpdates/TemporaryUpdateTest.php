@@ -1251,6 +1251,68 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[230], [230]],
             ],
+            'updatePropertyInitialization' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                /**
+                                 * @var int
+                                 */
+                                public $bar;
+
+                                public function __construct(string $foo, int $bar) {
+                                    $this->foo = $foo;
+                                    $this->bar = $bar;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                /**
+                                 * @var int
+                                 */
+                                public $bar;
+
+                                public function __construct(string $foo, int $bar) {
+                                    // $this->foo = $foo;
+                                    $this->bar = $bar;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                /**
+                                 * @var int
+                                 */
+                                public $bar;
+
+                                public function __construct(string $foo, int $bar) {
+                                    $this->foo = $foo;
+                                    $this->bar = $bar;
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [202], []],
+            ],
             'addPartialMethodWithSyntaxError' => [
                 [
                     [

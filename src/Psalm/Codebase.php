@@ -356,6 +356,8 @@ class Codebase
 
         $this->file_reference_provider->loadReferenceCache(false);
 
+        Internal\Analyzer\FunctionLikeAnalyzer::clearCache();
+
         if (!$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
         } else {
