@@ -1640,6 +1640,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
         }
 
+        $original_fq_classlike_name = $fq_classlike_name;
+
         $return_type = $codebase->methods->getMethodReturnType($analyzed_method_id, $fq_classlike_name);
 
         if ($return_type && $class_storage->template_type_extends) {
@@ -1656,7 +1658,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $class_template_params = Statements\Expression\Call\MethodCallAnalyzer::getClassTemplateParams(
                 $codebase,
                 $class_storage,
-                $fq_classlike_name,
+                $original_fq_classlike_name,
                 strtolower($stmt->name->name)
             ) ?: [];
 
@@ -1671,7 +1673,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $overridden_method_ids['overridden::downstream'] = 'overridden::downstream';
         }
 
-        if (!$return_type && isset($class_storage->interface_method_ids[strtolower($stmt->name->name)])) {
+        if (!$return_type
+            && !$class_storage->is_interface
+            && isset($class_storage->interface_method_ids[strtolower($stmt->name->name)])
+        ) {
             $interface_method_ids = $class_storage->interface_method_ids[strtolower($stmt->name->name)];
 
             foreach ($interface_method_ids as $interface_method_id) {

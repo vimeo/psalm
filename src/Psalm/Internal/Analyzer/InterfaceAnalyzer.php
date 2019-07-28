@@ -116,7 +116,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $actual_method_id,
                         $actual_method_id
                     );
-        }
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 \Psalm\IssueBuffer::add(
                     new \Psalm\Issue\ParseError(

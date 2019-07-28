@@ -2282,7 +2282,7 @@ Emitted when a class extends another, but does not implement all of its abstract
 
 ```php
 abstract class A {
-    abstract public function foo();
+    abstract public function foo() : void;
 }
 class B extends A {}
 ```
@@ -2293,7 +2293,7 @@ Emitted when a class `implements` an interface but does not implement all of its
 
 ```php
 interface I {
-    public function foo();
+    public function foo() : void;
 }
 class A implements I {}
 ```

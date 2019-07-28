@@ -752,7 +752,7 @@ class TraitTest extends TestCase
             'allowImplementMethodMadePublicInClass' => [
                 '<?php
                     interface I {
-                        public function boo();
+                        public function boo() : void;
                     }
 
                     trait T {
@@ -766,7 +766,7 @@ class TraitTest extends TestCase
             'allowImplementMethodMadePublicInParent' => [
                 '<?php
                     interface I {
-                        public function boo();
+                        public function boo() : void;
                     }
 
                     trait T {

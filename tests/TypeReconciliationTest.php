@@ -496,7 +496,7 @@ class TypeReconciliationTest extends TestCase
                       public function bat() : void {}
                     }
                     interface I {
-                      public function baz();
+                      public function baz() : void;
                     }
 
                     function foo(I $i) : void {
