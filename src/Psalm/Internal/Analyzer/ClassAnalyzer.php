@@ -1595,86 +1595,15 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             && $config->reportIssueInFile('InvalidReturnType', $source->getFilePath())
             && $class_context->self
         ) {
-            $return_type_location = null;
-            $secondary_return_type_location = null;
-
-            $actual_method_storage = $codebase->methods->getStorage($actual_method_id);
-
-            if ($actual_method_id) {
-                $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
-                    $actual_method_id,
-                    $secondary_return_type_location
-                );
-            }
-
-            $self_class = $class_context->self;
-
-            $return_type = $codebase->methods->getMethodReturnType($analyzed_method_id, $self_class);
-
-            if ($return_type && $class_storage->template_type_extends) {
-                $generic_params = [];
-
-                $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
-
-                if ($declaring_method_id) {
-                    $declaring_class_name = explode('::', $declaring_method_id)[0];
-
-                    $class_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
-                }
-
-                $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
-                    $codebase,
-                    $class_storage,
-                    $class_context->self,
-                    strtolower($stmt->name->name)
-                ) ?: [];
-
-                $return_type->replaceTemplateTypesWithStandins($class_template_params, $generic_params);
-            }
-
-            $overridden_method_ids = isset($class_storage->overridden_method_ids[strtolower($stmt->name->name)])
-                ? $class_storage->overridden_method_ids[strtolower($stmt->name->name)]
-                : [];
-
-            if ($actual_method_storage->overridden_downstream) {
-                $overridden_method_ids['overridden::downstream'] = 'overridden::downstream';
-            }
-
-            if (!$return_type && isset($class_storage->interface_method_ids[strtolower($stmt->name->name)])) {
-                $interface_method_ids = $class_storage->interface_method_ids[strtolower($stmt->name->name)];
-
-                foreach ($interface_method_ids as $interface_method_id) {
-                    list($interface_class) = explode('::', $interface_method_id);
-
-                    $interface_return_type = $codebase->methods->getMethodReturnType(
-                        $interface_method_id,
-                        $interface_class
-                    );
-
-                    $interface_return_type_location = $codebase->methods->getMethodReturnTypeLocation(
-                        $interface_method_id
-                    );
-
-                    ReturnTypeAnalyzer::verifyReturnType(
-                        $stmt,
-                        $source,
-                        $method_analyzer,
-                        $interface_return_type,
-                        $interface_class,
-                        $interface_return_type_location,
-                        [$analyzed_method_id]
-                    );
-                }
-            }
-
-            ReturnTypeAnalyzer::verifyReturnType(
+            self::analyzeClassMethodReturnType(
                 $stmt,
-                $source,
                 $method_analyzer,
-                $return_type,
-                $self_class,
-                $return_type_location,
-                $overridden_method_ids
+                $source,
+                $codebase,
+                $class_storage,
+                $class_context->self,
+                $analyzed_method_id,
+                $actual_method_id
             );
         }
 
@@ -1687,6 +1616,97 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         return $method_analyzer;
+    }
+
+    public static function analyzeClassMethodReturnType(
+        PhpParser\Node\Stmt\ClassMethod $stmt,
+        MethodAnalyzer $method_analyzer,
+        SourceAnalyzer $source,
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        string $fq_classlike_name,
+        string $analyzed_method_id,
+        string $actual_method_id
+    ) : void {
+        $return_type_location = null;
+        $secondary_return_type_location = null;
+
+        $actual_method_storage = $codebase->methods->getStorage($actual_method_id);
+
+        if ($actual_method_id) {
+            $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+                $actual_method_id,
+                $secondary_return_type_location
+            );
+        }
+
+        $return_type = $codebase->methods->getMethodReturnType($analyzed_method_id, $fq_classlike_name);
+
+        if ($return_type && $class_storage->template_type_extends) {
+            $generic_params = [];
+
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
+
+            if ($declaring_method_id) {
+                $declaring_class_name = explode('::', $declaring_method_id)[0];
+
+                $class_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
+            }
+
+            $class_template_params = Statements\Expression\Call\MethodCallAnalyzer::getClassTemplateParams(
+                $codebase,
+                $class_storage,
+                $fq_classlike_name,
+                strtolower($stmt->name->name)
+            ) ?: [];
+
+            $return_type->replaceTemplateTypesWithStandins($class_template_params, $generic_params);
+        }
+
+        $overridden_method_ids = isset($class_storage->overridden_method_ids[strtolower($stmt->name->name)])
+            ? $class_storage->overridden_method_ids[strtolower($stmt->name->name)]
+            : [];
+
+        if ($actual_method_storage->overridden_downstream) {
+            $overridden_method_ids['overridden::downstream'] = 'overridden::downstream';
+        }
+
+        if (!$return_type && isset($class_storage->interface_method_ids[strtolower($stmt->name->name)])) {
+            $interface_method_ids = $class_storage->interface_method_ids[strtolower($stmt->name->name)];
+
+            foreach ($interface_method_ids as $interface_method_id) {
+                list($interface_class) = explode('::', $interface_method_id);
+
+                $interface_return_type = $codebase->methods->getMethodReturnType(
+                    $interface_method_id,
+                    $interface_class
+                );
+
+                $interface_return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+                    $interface_method_id
+                );
+
+                FunctionLike\ReturnTypeAnalyzer::verifyReturnType(
+                    $stmt,
+                    $source,
+                    $method_analyzer,
+                    $interface_return_type,
+                    $interface_class,
+                    $interface_return_type_location,
+                    [$analyzed_method_id]
+                );
+            }
+        }
+
+        FunctionLike\ReturnTypeAnalyzer::verifyReturnType(
+            $stmt,
+            $source,
+            $method_analyzer,
+            $return_type,
+            $fq_classlike_name,
+            $return_type_location,
+            $overridden_method_ids
+        );
     }
 
     /**

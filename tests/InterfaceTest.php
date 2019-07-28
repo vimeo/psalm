@@ -112,7 +112,7 @@ class InterfaceTest extends TestCase
 
                     interface B extends A
                     {
-                        public function barBar();
+                        public function barBar() : void;
                     }
 
                     /** @return void */
@@ -176,7 +176,7 @@ class InterfaceTest extends TestCase
                 '<?php
                     interface A { }
                     interface B {
-                        function foo();
+                        function foo() : void;
                     }
                     function bar(A $a): void {
                         if ($a instanceof B) {
@@ -187,7 +187,7 @@ class InterfaceTest extends TestCase
             'abstractInterfaceImplements' => [
                 '<?php
                     interface I {
-                        public function fnc();
+                        public function fnc() : void;
                     }
 
                     abstract class A implements I {}',
@@ -195,7 +195,7 @@ class InterfaceTest extends TestCase
             'abstractInterfaceImplementsButCallMethod' => [
                 '<?php
                     interface I {
-                        public function foo();
+                        public function foo() : void;
                     }
 
                     abstract class A implements I {
@@ -546,7 +546,7 @@ class InterfaceTest extends TestCase
             'allowStaticCallOnInterfaceMethod' => [
                 '<?php
                     interface IFoo {
-                        public static function doFoo();
+                        public static function doFoo() : void;
                     }
 
                     function bar(IFoo $i) : void {
@@ -564,7 +564,7 @@ class InterfaceTest extends TestCase
             'intersectMixedTypes' => [
                 '<?php
                     interface IFoo {
-                        function foo();
+                        function foo() : string;
                     }
 
                     interface IBar {
@@ -676,7 +676,7 @@ class InterfaceTest extends TestCase
             'unimplementedInterfaceMethod' => [
                 '<?php
                     interface A {
-                        public function fooFoo();
+                        public function fooFoo() : void;
                     }
 
                     class B implements A { }',
@@ -766,7 +766,7 @@ class InterfaceTest extends TestCase
             'abstractInterfaceImplementsButCallUndefinedMethod' => [
                 '<?php
                     interface I {
-                        public function foo();
+                        public function foo() : void;
                     }
 
                     abstract class A implements I {
@@ -779,7 +779,7 @@ class InterfaceTest extends TestCase
             'abstractInterfaceImplementsWithSubclass' => [
                 '<?php
                     interface I {
-                        public function fnc();
+                        public function fnc() : void;
                     }
 
                     abstract class A implements I {}
@@ -864,6 +864,20 @@ class InterfaceTest extends TestCase
 
                     Foo::doFoo();',
                 'error_message' => 'UndefinedClass',
+            ],
+            'missingReturnType' => [
+                '<?php
+                    interface foo {
+                        public function withoutAnyReturnType();
+                    }',
+                'error_message' => 'MissingReturnType'
+            ],
+            'missingParamType' => [
+                '<?php
+                    interface foo {
+                        public function withoutAnyReturnType($s) : void;
+                    }',
+                'error_message' => 'MissingParamType'
             ],
         ];
     }

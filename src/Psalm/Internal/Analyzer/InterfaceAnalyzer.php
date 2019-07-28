@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Issue\UndefinedInterface;
+use UnexpectedValueException;
 
 /**
  * @internal
@@ -28,10 +29,11 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             throw new \LogicException('Something went badly wrong');
         }
 
-        if ($this->class->extends) {
-            $project_analyzer = $this->file_analyzer->project_analyzer;
-            $codebase = $project_analyzer->getCodebase();
+        $project_analyzer = $this->file_analyzer->project_analyzer;
+        $codebase = $project_analyzer->getCodebase();
+        $config = $project_analyzer->getConfig();
 
+        if ($this->class->extends) {
             foreach ($this->class->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(
                     $extended_interface,
@@ -85,11 +87,36 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             }
         }
 
+        $fq_interface_name = $this->getFQCLN();
+
+        if (!$fq_interface_name) {
+            throw new \UnexpectedValueException('bad');
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $method_analyzer->analyze(new \Psalm\Context($this->getFQCLN()));
+
+                $actual_method_id = (string)$method_analyzer->getMethodId();
+
+                if ($stmt->name->name !== '__construct'
+                    && $config->reportIssueInFile('InvalidReturnType', $this->getFilePath())
+                ) {
+                    ClassAnalyzer::analyzeClassMethodReturnType(
+                        $stmt,
+                        $method_analyzer,
+                        $this,
+                        $codebase,
+                        $class_storage,
+                        $fq_interface_name,
+                        $actual_method_id,
+                        $actual_method_id
+                    );
+        }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 \Psalm\IssueBuffer::add(
                     new \Psalm\Issue\ParseError(
