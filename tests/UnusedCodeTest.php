@@ -187,7 +187,7 @@ class UnusedCodeTest extends TestCase
             'everythingUsed' => [
                 '<?php
                     interface I {
-                        public function foo();
+                        public function foo() : void;
                     }
                     class B implements I {
                         public function foo() : void {}
