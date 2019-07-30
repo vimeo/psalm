@@ -4,7 +4,7 @@ Psalm can be extended through plugins to find and fix domain-specific issues.
 
 ## Using your own plugins
 
-You can [write your own Psalm plugins](authoring_plugins.md) and reference them in you Psalm config.
+You can [write your own Psalm plugins](authoring_plugins.md) and reference them in your Psalm config.
 
 ## Using Composer-based plugins
 
