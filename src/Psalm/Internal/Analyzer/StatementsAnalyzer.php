@@ -637,17 +637,15 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         ExpressionAnalyzer::analyze($this, $prop->default, $context);
 
                         if (isset($prop->default->inferredType)) {
-                            if (!$stmt->isStatic()) {
-                                if (PropertyAssignmentAnalyzer::analyzeInstance(
-                                    $this,
-                                    $prop,
-                                    $prop->name->name,
-                                    $prop->default,
-                                    $prop->default->inferredType,
-                                    $context
-                                ) === false) {
-                                    // fall through
-                                }
+                            if (PropertyAssignmentAnalyzer::analyzeInstance(
+                                $this,
+                                $prop,
+                                $prop->name->name,
+                                $prop->default,
+                                $prop->default->inferredType,
+                                $context
+                            ) === false) {
+                                // fall through
                             }
                         }
                     }

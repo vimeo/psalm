@@ -2569,6 +2569,16 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'UninitializedProperty',
             ],
+            'badStaticPropertyDefault' => [
+                '<?php
+                    class TestStatic {
+                        /**
+                         * @var array<string, bool>
+                         */
+                        public static $test = ["string-key" => 1];
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue'
+            ],
         ];
     }
 }
