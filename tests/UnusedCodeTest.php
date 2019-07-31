@@ -463,7 +463,7 @@ class UnusedCodeTest extends TestCase
                             if (rand(0, 1)) {
                                 $foo1 = $foo2;
 
-                                break;
+                                continue;
                             }
                         }
 
