@@ -85,7 +85,7 @@ class LoopAnalyzer
         }
 
         $final_actions = ScopeAnalyzer::getFinalControlActions($stmts, Config::getInstance()->exit_functions);
-        $has_break_statement = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
+        $does_always_break = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
         if ($assignment_map) {
             $first_var_id = array_keys($assignment_map)[0];
@@ -97,7 +97,7 @@ class LoopAnalyzer
 
         $pre_outer_context = $loop_scope->loop_parent_context;
 
-        if ($assignment_depth === 0 || $has_break_statement) {
+        if ($assignment_depth === 0 || $does_always_break) {
             $inner_context = clone $loop_scope->loop_context;
 
             foreach ($inner_context->vars_in_scope as $context_var_id => $context_type) {
@@ -468,7 +468,7 @@ class LoopAnalyzer
             foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
                 if (!isset($new_referenced_var_ids[$var_id])
                     || !isset($pre_outer_context->vars_in_scope[$var_id])
-                    || $has_break_statement
+                    || $does_always_break
                 ) {
                     if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
                         $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;
