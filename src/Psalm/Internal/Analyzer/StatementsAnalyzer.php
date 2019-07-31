@@ -471,6 +471,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                     if ($context->collect_references && (!$context->case_scope || $stmt->num)) {
                         foreach ($context->unreferenced_vars as $var_id => $locations) {
+                            if (isset($loop_scope->unreferenced_vars[$var_id])) {
+                                $loop_scope->unreferenced_vars[$var_id] += $locations;
+                            } else {
+                                $loop_scope->unreferenced_vars[$var_id] = $locations;
+                            }
+
                             if (isset($loop_scope->possibly_unreferenced_vars[$var_id])) {
                                 $loop_scope->possibly_unreferenced_vars[$var_id] += $locations;
                             } else {
