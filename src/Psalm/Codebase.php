@@ -1278,8 +1278,6 @@ class Codebase
             return null;
         }
 
-        $recent_type = null;
-
         krsort($type_map);
 
         foreach ($type_map as $start_pos => list($end_pos_excluding_whitespace, $possible_type)) {
