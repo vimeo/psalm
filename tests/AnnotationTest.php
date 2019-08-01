@@ -1195,6 +1195,16 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - Badly-formatted @param',
             ],
+            'invalidSlashWithString' => [
+                '<?php
+                    /**
+                     * @return \?string
+                     */
+                    function foo() {
+                      return rand(0, 1) ? "hello" : null;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'missingReturnTypeWithBadDocblock' => [
                 '<?php
                     /**
