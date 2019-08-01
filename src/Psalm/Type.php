@@ -944,6 +944,12 @@ abstract class Type
                 continue;
             }
 
+            if ($string_type_token[0][0] === '\\'
+                && strlen($string_type_token[0]) === 1
+            ) {
+                throw new TypeParseTreeException("Backslash \"\\\" has to be part of class name.");
+            }
+
             if ($string_type_token[0][0] === '"'
                 || $string_type_token[0][0] === '\''
                 || $string_type_token[0] === '0'
