@@ -919,6 +919,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $this->checkForMissingPropertyType($trait_analyzer, $trait_stmt, $class_context);
                         }
                     }
+
+                    $trait_file_analyzer->clearSourceBeforeDestruction();
                 }
             }
         }
@@ -1378,6 +1380,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
                 }
+
+                $trait_file_analyzer->clearSourceBeforeDestruction();
             }
         }
 

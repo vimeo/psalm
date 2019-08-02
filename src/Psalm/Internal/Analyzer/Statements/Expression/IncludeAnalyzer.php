@@ -153,6 +153,8 @@ class IncludeAnalyzer
                     $current_file_analyzer->addRequiredFilePath($required_file_path);
                 }
 
+                $include_file_analyzer->clearSourceBeforeDestruction();
+
                 return null;
             }
 
