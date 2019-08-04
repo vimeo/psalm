@@ -47,6 +47,7 @@ use function explode;
 use function array_search;
 use function array_keys;
 use function in_array;
+use Psalm\Internal\Taint\TypeSource;
 
 /**
  * @internal
@@ -1143,6 +1144,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $class_storage->parent_class
                         );
 
+                        $return_type_candidate->sources = [
+                            new TypeSource(strtolower($method_id), new CodeLocation($source, $stmt->name))
+                        ];
+
                         $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
                             $method_id,
                             $secondary_return_type_location
@@ -1282,6 +1287,15 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $all_intersection_return_type,
                     $return_type_candidate
                 );
+            }
+
+            if ($codebase->taint && $method_id) {
+                $method_source = new TypeSource(strtolower($method_id), new CodeLocation($source, $stmt->name));
+
+                if ($codebase->taint->hasPreviousSource($method_source)) {
+                    $return_type_candidate->tainted = 1;
+                    $return_type_candidate->sources = [$method_source];
+                }
             }
 
             if (!$return_type) {

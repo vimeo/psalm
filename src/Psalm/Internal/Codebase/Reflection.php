@@ -245,8 +245,9 @@ class Reflection
         $storage->is_static = $method->isStatic();
         $storage->abstract = $method->isAbstract();
 
-        $class_storage->declaring_method_ids[$method_name] =
-            $declaring_class->name . '::' . strtolower((string)$method->getName());
+        $declaring_method_id = $declaring_class->name . '::' . strtolower((string)$method->getName());
+
+        $class_storage->declaring_method_ids[$method_name] = $declaring_method_id;
 
         $class_storage->inheritable_method_ids[$method_name] = $class_storage->declaring_method_ids[$method_name];
         $class_storage->appearing_method_ids[$method_name] = $class_storage->declaring_method_ids[$method_name];
@@ -261,9 +262,13 @@ class Reflection
         if ($callables && $callables[0]->params !== null && $callables[0]->return_type !== null) {
             $storage->params = [];
 
-            foreach ($callables[0]->params as $param) {
+            foreach ($callables[0]->params as $i => $param) {
                 if ($param->type) {
                     $param->type->queueClassLikesForScanning($this->codebase);
+                }
+
+                if ($declaring_method_id === 'PDO::exec' && $i === 0) {
+                    $param->is_sink = true;
                 }
             }
 

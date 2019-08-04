@@ -82,6 +82,7 @@ use function file_get_contents;
 use function substr_count;
 use function array_map;
 use function end;
+use Psalm\Internal\Codebase\Taint;
 
 /**
  * @internal
@@ -547,6 +548,14 @@ class ProjectAnalyzer
             $this->codebase->methods,
             $this->progress
         );
+    }
+
+    /**
+     * @return void
+     */
+    public function trackTaintedInputs()
+    {
+        $this->codebase->taint = new Taint();
     }
 
     public function interpretRefactors() : void

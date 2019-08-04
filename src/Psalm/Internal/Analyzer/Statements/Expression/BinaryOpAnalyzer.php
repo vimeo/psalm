@@ -329,6 +329,29 @@ class BinaryOpAnalyzer
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $context) === false) {
                 return false;
             }
+
+            if ($codebase->taint) {
+                $sources = [];
+                $either_tainted = 0;
+
+                if (isset($stmt->left->inferredType)) {
+                    $sources = $stmt->left->inferredType->sources ?: [];
+                    $either_tainted = $stmt->left->inferredType->tainted;
+                }
+
+                if (isset($stmt->right->inferredType)) {
+                    $sources = array_merge($sources, $stmt->right->inferredType->sources ?: []);
+                    $either_tainted = $either_tainted | $stmt->right->inferredType->tainted;
+                }
+
+                if ($sources) {
+                    $stmt->inferredType->sources = $sources;
+                }
+
+                if ($either_tainted) {
+                    $stmt->inferredType->tainted = $either_tainted;
+                }
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
             $t_if_context = clone $context;
 
@@ -577,6 +600,22 @@ class BinaryOpAnalyzer
 
                 if ($result_type) {
                     $stmt->inferredType = $result_type;
+                }
+
+                if ($codebase->taint && $stmt->inferredType) {
+                    $sources = $stmt->left->inferredType->sources ?: [];
+                    $either_tainted = $stmt->left->inferredType->tainted;
+
+                    $sources = array_merge($sources, $stmt->right->inferredType->sources ?: []);
+                    $either_tainted = $either_tainted | $stmt->right->inferredType->tainted;
+
+                    if ($sources) {
+                        $stmt->inferredType->sources = $sources;
+                    }
+
+                    if ($either_tainted) {
+                        $stmt->inferredType->tainted = $either_tainted;
+                    }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
                 self::analyzeNonDivArithmeticOp(

@@ -69,6 +69,16 @@ class FunctionLikeParameter
     public $is_variadic;
 
     /**
+     * @var bool
+     */
+    public $is_sink = false;
+
+    /**
+     * @var bool
+     */
+    public $assert_untainted = false;
+
+    /**
      * @param string        $name
      * @param bool       $by_ref
      * @param Type\Union|null    $type

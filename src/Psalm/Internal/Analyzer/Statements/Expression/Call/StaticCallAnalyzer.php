@@ -31,6 +31,7 @@ use function strpos;
 use function is_string;
 use function strlen;
 use function substr;
+use Psalm\Internal\Taint\TypeSource;
 
 /**
  * @internal
@@ -989,6 +990,15 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if ($return_type_candidate) {
+                    if ($codebase->taint && $method_id) {
+                        $method_source = new TypeSource(strtolower($method_id), new CodeLocation($source, $stmt->name));
+
+                        if ($codebase->taint->hasPreviousSource($method_source)) {
+                            $return_type_candidate->tainted = 1;
+                            $return_type_candidate->sources = [$method_source];
+                        }
+                    }
+
                     if (isset($stmt->inferredType)) {
                         $stmt->inferredType = Type::combineUnionTypes($stmt->inferredType, $return_type_candidate);
                     } else {

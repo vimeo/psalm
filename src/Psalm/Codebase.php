@@ -171,6 +171,11 @@ class Codebase
     public $populator;
 
     /**
+     * @var ?Internal\Codebase\Taint
+     */
+    public $taint = null;
+
+    /**
      * @var bool
      */
     public $server_mode = false;
@@ -266,6 +271,8 @@ class Codebase
      * @var int
      */
     public $php_minor_version = PHP_MINOR_VERSION;
+
+
 
     public function __construct(
         Config $config,

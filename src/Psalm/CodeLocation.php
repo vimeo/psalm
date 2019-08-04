@@ -404,4 +404,9 @@ class CodeLocation
     {
         return (string) $this->file_start;
     }
+
+    public function getShortSummary() : string
+    {
+        return $this->file_name . ':' . $this->getLineNumber() . ':' . $this->getColumn();
+    }
 }

@@ -62,6 +62,7 @@ $valid_long_options = [
     'shepherd::',
     'no-progress',
     'include-php-versions', // used for baseline
+    'track-tainted-input'
 ];
 
 gc_collect_cycles();
@@ -127,7 +128,7 @@ array_map(
 if (!array_key_exists('use-ini-defaults', $options)) {
     ini_set('display_errors', '1');
     ini_set('display_startup_errors', '1');
-    ini_set('memory_limit', (string) (4 * 1024 * 1024 * 1024));
+    ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
 }
 
 if (array_key_exists('help', $options)) {
@@ -506,6 +507,10 @@ if ($find_unused_code) {
 
 if ($config->find_unused_variables) {
     $project_analyzer->getCodebase()->reportUnusedVariables();
+}
+
+if (isset($options['track-tainted-input'])) {
+    $project_analyzer->trackTaintedInputs();
 }
 
 /** @var string $plugin_path */

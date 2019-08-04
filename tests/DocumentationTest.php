@@ -110,6 +110,7 @@ class DocumentationTest extends TestCase
         $code_blocks['UnrecognizedExpression'] = true;
         $code_blocks['UnrecognizedStatement'] = true;
         $code_blocks['PluginIssue'] = true;
+        $code_blocks['TaintedInput'] = true;
 
         // these are deprecated
         $code_blocks['TypeCoercion'] = true;

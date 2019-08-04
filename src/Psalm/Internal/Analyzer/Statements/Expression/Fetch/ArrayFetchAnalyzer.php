@@ -51,6 +51,7 @@ use function strtolower;
 use function in_array;
 use function is_int;
 use function preg_match;
+use Psalm\Internal\Taint\TypeSource;
 
 /**
  * @internal
@@ -159,6 +160,13 @@ class ArrayFetchAnalyzer
                 $context,
                 null
             );
+
+            if ($array_var_id === '$_GET' || $array_var_id === '$_POST') {
+                $stmt->inferredType->tainted = Type\Union::TAINTED;
+                $stmt->inferredType->sources = [
+                    new TypeSource('$_GET', new CodeLocation($statements_analyzer->getSource(), $stmt))
+                ];
+            }
 
             if ($context->inside_isset
                 && $stmt->dim

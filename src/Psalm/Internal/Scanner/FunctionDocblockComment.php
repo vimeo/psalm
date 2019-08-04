@@ -42,6 +42,16 @@ class FunctionDocblockComment
     public $params_out = [];
 
     /**
+     * @var array<int, array{name:string}>
+     */
+    public $taint_sink_params = [];
+
+    /**
+     * @var array<int, array{name:string}>
+     */
+    public $assert_untainted_params = [];
+
+    /**
      * @var array<int, array{name:string, type:string, line_number: int}>
      */
     public $globals = [];

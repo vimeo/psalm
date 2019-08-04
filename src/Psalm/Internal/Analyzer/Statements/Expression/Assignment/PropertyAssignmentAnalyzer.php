@@ -41,6 +41,7 @@ use function count;
 use function in_array;
 use function strtolower;
 use function explode;
+use Psalm\Internal\Taint\TypeSource;
 
 /**
  * @internal
@@ -452,6 +453,45 @@ class PropertyAssignmentAnalyzer
                         )
                     ) {
                         $property_id = $self_property_id;
+                    }
+                }
+
+                if ($codebase->taint) {
+                    $method_source = new TypeSource(
+                        $property_id,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    );
+
+                    if ($codebase->taint->hasPreviousSink($method_source)) {
+                        if ($assignment_value_type->sources) {
+                            $codebase->taint->addSinks(
+                                $statements_analyzer,
+                                $assignment_value_type->sources,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $method_source
+                            );
+                        }
+                    }
+
+                    if ($assignment_value_type->sources) {
+                        foreach ($assignment_value_type->sources as $type_source) {
+                            if ($codebase->taint->hasPreviousSource($type_source)
+                                || $assignment_value_type->tainted
+                            ) {
+                                $codebase->taint->addSources(
+                                    $statements_analyzer,
+                                    [$method_source],
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $type_source
+                                );
+                            }
+                        }
+                    } elseif ($assignment_value_type->tainted) {
+                        throw new \UnexpectedValueException(
+                            'sources should exist for tainted var in '
+                                . $statements_analyzer->getFileName() . ':'
+                                . $stmt->getLine()
+                        );
                     }
                 }
 

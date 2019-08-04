@@ -31,6 +31,10 @@ use function substr;
 
 class Union
 {
+    const TAINTED = 1;
+    const TAINTED_MYSQL_SAFE = 2;
+    const TAINTED_HTML_SAFE = 4;
+
     /**
      * @var array<string, Atomic>
      */
@@ -140,6 +144,16 @@ class Union
 
     /** @var null|string */
     private $id;
+
+    /**
+     * @var ?int
+     */
+    public $tainted = null;
+
+    /**
+     * @var ?array<\Psalm\Internal\Taint\TypeSource>
+     */
+    public $sources;
 
     /**
      * Constructs an Union instance

@@ -46,7 +46,7 @@ abstract class Progress
     {
     }
 
-    protected function write(string $message): void
+    public function write(string $message): void
     {
         fwrite(STDERR, $message);
     }

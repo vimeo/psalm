@@ -39,6 +39,7 @@ use function array_reverse;
 use function array_keys;
 use function count;
 use function explode;
+use Psalm\Internal\Taint\TypeSource;
 
 /**
  * @internal
@@ -172,6 +173,18 @@ class PropertyFetchAnalyzer
                         }
 
                         $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
+
+                        if ($codebase->taint) {
+                            $method_source = new TypeSource(
+                                $property_id,
+                                new CodeLocation($statements_analyzer, $stmt->name)
+                            );
+
+                            if ($codebase->taint->hasPreviousSource($method_source)) {
+                                $stmt->inferredType->tainted = 1;
+                                $stmt->inferredType->sources = [$method_source];
+                            }
+                        }
 
                         $codebase->properties->propertyExists(
                             $property_id,
@@ -780,6 +793,15 @@ class PropertyFetchAnalyzer
 
                         $class_property_type = Type::parseTokens($new_type_tokens);
                     }
+                }
+            }
+
+            if ($codebase->taint) {
+                $method_source = new TypeSource($property_id, new CodeLocation($statements_analyzer, $stmt->name));
+
+                if ($codebase->taint->hasPreviousSource($method_source)) {
+                    $class_property_type->tainted = 1;
+                    $class_property_type->sources = [$method_source];
                 }
             }
 

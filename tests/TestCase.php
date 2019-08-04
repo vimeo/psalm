@@ -111,6 +111,14 @@ class TestCase extends BaseTestCase
             $codebase->config->shortenFileName($file_path)
         );
         $file_analyzer->analyze($context);
+
+        if ($codebase->taint) {
+            while ($codebase->taint->hasNewSinksAndSources()) {
+                $codebase->taint->clearNewSinksAndSources();
+
+                $file_analyzer->analyze($context);
+            }
+        }
     }
 
     /**

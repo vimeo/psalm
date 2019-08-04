@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Taint\TypeSource;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -55,6 +56,7 @@ use function preg_replace;
 use function is_int;
 use function substr;
 use function array_merge;
+use Psalm\Issue\TaintedInput;
 
 /**
  * @internal
@@ -1740,7 +1742,9 @@ class CallAnalyzer
             $context,
             $function_param->by_ref,
             $function_param->is_variadic,
-            $arg->unpack
+            $arg->unpack,
+            $function_param->is_sink,
+            $function_param->assert_untainted
         ) === false) {
             return false;
         }
@@ -2231,15 +2235,6 @@ class CallAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer   $statements_analyzer
-     * @param   Type\Union          $input_type
-     * @param   Type\Union          $param_type
-     * @param   string|null         $cased_method_id
-     * @param   int                 $argument_offset
-     * @param   CodeLocation        $code_location
-     * @param   bool                $by_ref
-     * @param   bool                $variadic
-     *
      * @return  null|false
      */
     public static function checkFunctionArgumentType(
@@ -2247,14 +2242,16 @@ class CallAnalyzer
         Type\Union $input_type,
         Type\Union $param_type,
         ?Type\Union $signature_param_type,
-        $cased_method_id,
+        ?string $cased_method_id,
         int $argument_offset,
         CodeLocation $code_location,
         PhpParser\Node\Expr $input_expr,
         Context $context,
         bool $by_ref = false,
         bool $variadic = false,
-        bool $unpack = false
+        bool $unpack = false,
+        bool $is_sink = false,
+        bool $assert_untainted = false
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -2377,6 +2374,98 @@ class CallAnalyzer
         if ($union_comparison_results->replacement_union_type) {
             $replace_input_type = true;
             $input_type = $union_comparison_results->replacement_union_type;
+        }
+
+        if ($codebase->taint && $cased_method_id) {
+            $method_source = TypeSource::getForMethodArgument($cased_method_id, $argument_offset, $code_location);
+
+            $has_previous_sink = $codebase->taint->hasPreviousSink($method_source);
+
+            if (($is_sink || $has_previous_sink)
+                && $input_type->sources
+            ) {
+                $all_possible_sinks = [];
+
+                foreach ($input_type->sources as $source) {
+                    if ($codebase->taint->hasExistingSink($source)) {
+                        continue;
+                    }
+
+                    $all_possible_sinks[] = $source;
+
+                    if (strpos($source->id, '::') && strpos($source->id, '#')) {
+                        list($fq_classlike_name, $method_name) = explode('::', $source->id);
+
+                        $method_name_parts = explode('#', $method_name);
+
+                        $method_name = strtolower($method_name_parts[0]);
+
+                        $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
+
+                        foreach ($class_storage->dependent_classlikes as $dependent_classlike => $_) {
+                            $all_possible_sinks[] = TypeSource::getForMethodArgument(
+                                $dependent_classlike . '::' . $method_name,
+                                (int) $method_name_parts[1] - 1,
+                                $code_location
+                            );
+                        }
+
+                        if (isset($class_storage->overridden_method_ids[$method_name])) {
+                            foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
+                                $all_possible_sinks[] = TypeSource::getForMethodArgument(
+                                    $parent_method_id,
+                                    (int) $method_name_parts[1] - 1,
+                                    $code_location
+                                );
+                            }
+                        }
+                    }
+                }
+
+                $codebase->taint->addSinks(
+                    $statements_analyzer,
+                    $all_possible_sinks,
+                    $code_location,
+                    $method_source
+                );
+            }
+
+            if ($is_sink && $input_type->tainted) {
+                if (IssueBuffer::accepts(
+                    new TaintedInput(
+                        'in path ' . $codebase->taint->getPredecessorPath($method_source)
+                            . ' out path ' . $codebase->taint->getSuccessorPath($method_source),
+                        $code_location
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($input_type->sources) {
+                foreach ($input_type->sources as $type_source) {
+                    if ($codebase->taint->hasPreviousSource($type_source) || $input_type->tainted) {
+                        $codebase->taint->addSources(
+                            $statements_analyzer,
+                            [$method_source],
+                            $code_location,
+                            $type_source
+                        );
+                    }
+                }
+            } elseif ($input_type->tainted) {
+                throw new \UnexpectedValueException(
+                    'sources should exist for tainted var in '
+                        . $statements_analyzer->getFileName() . ':'
+                        . $input_expr->getLine()
+                );
+            }
+
+            if ($assert_untainted) {
+                $input_type = clone $input_type;
+                $replace_input_type = true;
+                $input_type->tainted = null;
+                $input_type->sources = [];
+            }
         }
 
         if ($type_match_found
@@ -2760,19 +2849,27 @@ class CallAnalyzer
         );
 
         if ($var_id) {
-            $input_type = clone $input_type;
+            $was_cloned = false;
 
             if ($input_type->isNullable() && !$param_type->isNullable()) {
+                $input_type = clone $input_type;
+                $was_cloned = true;
                 $input_type->removeType('null');
             }
 
             if ($input_type->getId() === $param_type->getId()) {
+                if (!$was_cloned) {
+                    $was_cloned = true;
+                    $input_type = clone $input_type;
+                }
+
                 $input_type->from_docblock = false;
 
                 foreach ($input_type->getTypes() as $atomic_type) {
                     $atomic_type->from_docblock = false;
                 }
             } elseif ($input_type->hasMixed() && $signature_param_type) {
+                $was_cloned = true;
                 $input_type = clone $signature_param_type;
 
                 if ($input_type->isNullable()) {
@@ -2780,7 +2877,9 @@ class CallAnalyzer
                 }
             }
 
-            $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
+            if ($was_cloned) {
+                $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
+            }
 
             if ($unpack) {
                 $input_type = new Type\Union([

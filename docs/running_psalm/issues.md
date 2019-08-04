@@ -2044,6 +2044,10 @@ Emitted when using a reserved word as a class name
 function foo(resource $res) : void {}
 ```
 
+### TaintedInput
+
+Emitted when tainted input detection is turned on
+
 ### TraitMethodSignatureMismatch
 
 Emitted when a method's signature or return type differs from corresponding trait-defined method

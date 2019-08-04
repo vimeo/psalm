@@ -523,6 +523,11 @@ class ExpressionAnalyzer
             }
 
             $stmt->inferredType = Type::getString();
+
+            if (isset($stmt->expr->inferredType) && $stmt->expr->inferredType->tainted) {
+                $stmt->inferredType->tainted = $stmt->expr->inferredType->tainted;
+                $stmt->inferredType->sources = $stmt->expr->inferredType->sources;
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -1064,6 +1069,8 @@ class ExpressionAnalyzer
         $fleshed_out_type->by_ref = $return_type->by_ref;
         $fleshed_out_type->initialized = $return_type->initialized;
         $fleshed_out_type->had_template = $return_type->had_template;
+        $fleshed_out_type->sources = $return_type->sources;
+        $fleshed_out_type->tainted = $return_type->tainted;
 
         return $fleshed_out_type;
     }

@@ -309,6 +309,7 @@
             <xs:element name="RedundantConditionGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedInput" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TraitMethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="TooManyArguments" type="ArgumentIssueHandlerType" minOccurs="0" />
