@@ -172,26 +172,68 @@ class ReturnAnalyzer
                         new CodeLocation($source, $stmt->expr)
                     );
 
-                    if ($codebase->taint->hasPreviousSink($method_source)) {
+                    if ($codebase->taint->hasPreviousSink($method_source, $suffixes)) {
                         if ($inferred_type->sources) {
-                            $codebase->taint->addSinks(
-                                $statements_analyzer,
-                                $inferred_type->sources,
-                                new CodeLocation($source, $stmt->expr),
-                                $method_source
-                            );
+                            if ($suffixes !== null) {
+                                foreach ($suffixes as $suffix) {
+                                    foreach ($inferred_type->sources as $inferred_source) {
+                                        $codebase->taint->addSpecialization($inferred_source->id, $suffix);
+
+                                        $codebase->taint->addSinks(
+                                            $statements_analyzer,
+                                            [new TypeSource(
+                                                $inferred_source->id . '-' . $suffix,
+                                                $inferred_source->code_location
+                                            )],
+                                            new CodeLocation($source, $stmt->expr),
+                                            new TypeSource(
+                                                strtolower($cased_method_id . '-' . $suffix),
+                                                new CodeLocation($source, $stmt->expr)
+                                            )
+                                        );
+                                    }
+                                }
+                            } else {
+                                $codebase->taint->addSinks(
+                                    $statements_analyzer,
+                                    $inferred_type->sources,
+                                    new CodeLocation($source, $stmt->expr),
+                                    $method_source
+                                );
+                            }
                         }
                     }
 
                     if ($inferred_type->sources) {
                         foreach ($inferred_type->sources as $type_source) {
-                            if ($codebase->taint->hasPreviousSource($type_source) || $inferred_type->tainted) {
-                                $codebase->taint->addSources(
-                                    $statements_analyzer,
-                                    [$method_source],
-                                    new CodeLocation($source, $stmt->expr),
-                                    $type_source
-                                );
+                            if ($codebase->taint->hasPreviousSource($type_source, $suffixes)
+                                || $inferred_type->tainted
+                            ) {
+                                if ($suffixes !== null) {
+                                    foreach ($suffixes as $suffix) {
+                                        $codebase->taint->addSpecialization(strtolower($cased_method_id), $suffix);
+
+                                        $codebase->taint->addSources(
+                                            $statements_analyzer,
+                                            [new TypeSource(
+                                                strtolower($cased_method_id . '-' . $suffix),
+                                                new CodeLocation($source, $stmt->expr)
+                                            )],
+                                            new CodeLocation($source, $stmt->expr),
+                                            new TypeSource(
+                                                $type_source->id . '-' . $suffix,
+                                                $type_source->code_location
+                                            )
+                                        );
+                                    }
+                                } else {
+                                    $codebase->taint->addSources(
+                                        $statements_analyzer,
+                                        [$method_source],
+                                        new CodeLocation($source, $stmt->expr),
+                                        $type_source
+                                    );
+                                }
                             }
                         }
                     } elseif ($inferred_type->tainted) {

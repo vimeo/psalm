@@ -21,9 +21,16 @@ class TypeSource
     public static function getForMethodArgument(
         string $method_id,
         int $argument_offset,
-        ?CodeLocation $code_location
+        ?CodeLocation $code_location,
+        ?CodeLocation $function_location = null
     ) : self {
-        return new self(\strtolower($method_id . '#' . ($argument_offset + 1)), $code_location);
+        $function_id = $method_id . '#' . ($argument_offset + 1);
+
+        if ($function_location) {
+            $function_id .= '-' . $function_location->getShortSummary();
+        }
+
+        return new self(\strtolower($function_id), $code_location);
     }
 
     public function __toString()

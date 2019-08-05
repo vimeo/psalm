@@ -991,11 +991,37 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if ($return_type_candidate) {
                     if ($codebase->taint && $method_id) {
-                        $method_source = new TypeSource(strtolower($method_id), new CodeLocation($source, $stmt->name));
+                        if ($method_storage && $method_storage->pure) {
+                            $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                        if ($codebase->taint->hasPreviousSource($method_source)) {
+                            $method_source = new TypeSource(
+                                strtolower($method_id . '-' . $code_location->getShortSummary()),
+                                new CodeLocation($source, $stmt->name)
+                            );
+                        } else {
+                            $method_source = new TypeSource(
+                                strtolower($method_id),
+                                new CodeLocation($source, $stmt->name)
+                            );
+                        }
+
+                        if ($codebase->taint->hasPreviousSource($method_source, $suffixes)) {
                             $return_type_candidate->tainted = 1;
-                            $return_type_candidate->sources = [$method_source];
+
+                            if ($suffixes !== null) {
+                                $specialized_sources = [];
+
+                                foreach ($suffixes as $suffix) {
+                                    $specialized_sources[] = new TypeSource(
+                                        $method_source->id . '-' . $suffix,
+                                        $method_source->code_location
+                                    );
+                                }
+
+                                $return_type_candidate->sources = $specialized_sources;
+                            } else {
+                                $return_type_candidate->sources = [$method_source];
+                            }
                         }
                     }
 

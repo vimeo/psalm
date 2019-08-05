@@ -1208,13 +1208,15 @@ class CallAnalyzer
                 $cased_method_id,
                 $self_fq_class_name,
                 $static_fq_class_name,
+                $code_location,
                 $function_param,
                 $argument_offset,
                 $arg,
                 $context,
                 $existing_generic_params,
                 $generic_params,
-                $template_types
+                $template_types,
+                $function_storage ? $function_storage->pure : false
             ) === false) {
                 return false;
             }
@@ -1336,10 +1338,6 @@ class CallAnalyzer
     }
 
     /**
-     * @param  string|null $cased_method_id
-     * @param  string|null $self_fq_class_name
-     * @param  string|null $static_fq_class_name
-     * @param  FunctionLikeParameter|null $function_param
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $existing_generic_params
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
      * @param  array<string, array<string, array{Type\Union}>> $template_types
@@ -1347,16 +1345,18 @@ class CallAnalyzer
      */
     private static function checkFunctionLikeArgumentMatches(
         StatementsAnalyzer $statements_analyzer,
-        $cased_method_id,
-        $self_fq_class_name,
-        $static_fq_class_name,
-        $function_param,
+        ?string $cased_method_id,
+        ?string $self_fq_class_name,
+        ?string $static_fq_class_name,
+        CodeLocation $function_location,
+        ?FunctionLikeParameter $function_param,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
         array $existing_generic_params,
         array &$generic_params = null,
-        array $template_types = null
+        array $template_types = null,
+        bool $function_is_pure
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1402,12 +1402,17 @@ class CallAnalyzer
             return;
         }
 
+        if (!$function_param) {
+            return;
+        }
+
         if (self::checkFunctionLikeTypeMatches(
             $statements_analyzer,
             $codebase,
             $cased_method_id,
             $self_fq_class_name,
             $static_fq_class_name,
+            $function_location,
             $function_param,
             $arg->value->inferredType,
             $argument_offset,
@@ -1415,7 +1420,8 @@ class CallAnalyzer
             $context,
             $existing_generic_params,
             $generic_params,
-            $template_types
+            $template_types,
+            $function_is_pure
         ) === false) {
             return false;
         }
@@ -1558,34 +1564,28 @@ class CallAnalyzer
     }
 
     /**
-     * @param  string|null $cased_method_id
-     * @param  string|null $self_fq_class_name
-     * @param  string|null $static_fq_class_name
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $existing_generic_params
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
      * @param  array<string, array<string, array{Type\Union}>> $template_types
-     * @param  FunctionLikeParameter|null $function_param
      * @return false|null
      */
     private static function checkFunctionLikeTypeMatches(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
-        $cased_method_id,
-        $self_fq_class_name,
-        $static_fq_class_name,
-        $function_param,
+        ?string $cased_method_id,
+        ?string $self_fq_class_name,
+        ?string $static_fq_class_name,
+        CodeLocation $function_location,
+        FunctionLikeParameter $function_param,
         Type\Union $arg_type,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
-        array $existing_generic_params = null,
-        array &$generic_params = null,
-        array $template_types = null
+        ?array $existing_generic_params,
+        ?array &$generic_params,
+        ?array $template_types,
+        bool $function_is_pure
     ) {
-        if (!$function_param) {
-            return;
-        }
-
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage) {
                 return;
@@ -1740,11 +1740,10 @@ class CallAnalyzer
             new CodeLocation($statements_analyzer->getSource(), $arg->value),
             $arg->value,
             $context,
-            $function_param->by_ref,
-            $function_param->is_variadic,
+            $function_param,
             $arg->unpack,
-            $function_param->is_sink,
-            $function_param->assert_untainted
+            $function_is_pure,
+            $function_location
         ) === false) {
             return false;
         }
@@ -2247,11 +2246,10 @@ class CallAnalyzer
         CodeLocation $code_location,
         PhpParser\Node\Expr $input_expr,
         Context $context,
-        bool $by_ref = false,
-        bool $variadic = false,
-        bool $unpack = false,
-        bool $is_sink = false,
-        bool $assert_untainted = false
+        FunctionLikeParameter $function_param,
+        bool $unpack,
+        bool $function_is_pure,
+        CodeLocation $function_location
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -2310,8 +2308,8 @@ class CallAnalyzer
                 // fall through
             }
 
-            if (!$by_ref
-                && !($variadic xor $unpack)
+            if (!$function_param->by_ref
+                && !($function_param->is_variadic xor $unpack)
                 && $cased_method_id !== 'echo'
             ) {
                 self::coerceValueAfterGatekeeperArgument(
@@ -2377,11 +2375,13 @@ class CallAnalyzer
         }
 
         if ($codebase->taint && $cased_method_id) {
-            $method_source = TypeSource::getForMethodArgument($cased_method_id, $argument_offset, $code_location);
+            $method_source = TypeSource::getForMethodArgument(
+                $cased_method_id,
+                $argument_offset,
+                $code_location
+            );
 
-            $has_previous_sink = $codebase->taint->hasPreviousSink($method_source);
-
-            if (($is_sink || $has_previous_sink)
+            if (($function_param->is_sink || $codebase->taint->hasPreviousSink($method_source))
                 && $input_type->sources
             ) {
                 $all_possible_sinks = [];
@@ -2406,7 +2406,8 @@ class CallAnalyzer
                             $all_possible_sinks[] = TypeSource::getForMethodArgument(
                                 $dependent_classlike . '::' . $method_name,
                                 (int) $method_name_parts[1] - 1,
-                                $code_location
+                                $code_location,
+                                null
                             );
                         }
 
@@ -2415,7 +2416,8 @@ class CallAnalyzer
                                 $all_possible_sinks[] = TypeSource::getForMethodArgument(
                                     $parent_method_id,
                                     (int) $method_name_parts[1] - 1,
-                                    $code_location
+                                    $code_location,
+                                    null
                                 );
                             }
                         }
@@ -2430,7 +2432,7 @@ class CallAnalyzer
                 );
             }
 
-            if ($is_sink && $input_type->tainted) {
+            if ($function_param->is_sink && $input_type->tainted) {
                 if (IssueBuffer::accepts(
                     new TaintedInput(
                         'in path ' . $codebase->taint->getPredecessorPath($method_source)
@@ -2442,6 +2444,20 @@ class CallAnalyzer
                     // fall through
                 }
             } elseif ($input_type->sources) {
+                if ($function_is_pure) {
+                    $codebase->taint->addSpecialization(
+                        strtolower($cased_method_id . '#' . ($argument_offset + 1)),
+                        $function_location->getShortSummary()
+                    );
+
+                    $method_source = TypeSource::getForMethodArgument(
+                        $cased_method_id,
+                        $argument_offset,
+                        $code_location,
+                        $function_location
+                    );
+                }
+
                 foreach ($input_type->sources as $type_source) {
                     if ($codebase->taint->hasPreviousSource($type_source) || $input_type->tainted) {
                         $codebase->taint->addSources(
@@ -2460,7 +2476,7 @@ class CallAnalyzer
                 );
             }
 
-            if ($assert_untainted) {
+            if ($function_param->assert_untainted) {
                 $input_type = clone $input_type;
                 $replace_input_type = true;
                 $input_type->tainted = null;
@@ -2783,8 +2799,8 @@ class CallAnalyzer
         }
 
         if ($type_match_found
-            && !$by_ref
-            && !($variadic xor $unpack)
+            && !$function_param->by_ref
+            && !($function_param->is_variadic xor $unpack)
             && $cased_method_id !== 'echo'
         ) {
             self::coerceValueAfterGatekeeperArgument(

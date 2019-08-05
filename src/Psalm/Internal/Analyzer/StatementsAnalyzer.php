@@ -67,6 +67,7 @@ use function trim;
 use function is_null;
 use function array_column;
 use function array_combine;
+use Psalm\Storage\FunctionLikeParameter;
 
 /**
  * @internal
@@ -501,6 +502,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
                 $this->analyzeStatic($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
+                $echo_param = new FunctionLikeParameter(
+                    'var',
+                    false
+                );
+                $echo_param->is_sink = true;
+
                 foreach ($stmt->exprs as $i => $expr) {
                     ExpressionAnalyzer::analyze($this, $expr, $context);
 
@@ -515,10 +522,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             new CodeLocation($this->getSource(), $expr),
                             $expr,
                             $context,
+                            $echo_param,
                             false,
-                            false,
-                            false,
-                            true
+                            true,
+                            new CodeLocation($this->source, $stmt)
                         ) === false) {
                             return false;
                         }

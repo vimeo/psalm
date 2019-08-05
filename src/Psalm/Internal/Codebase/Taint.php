@@ -44,24 +44,70 @@ class Taint
      */
     private $archived_sources = [];
 
+    /**
+     * @var array<string, array<string>>
+     */
+    private $specializations = [];
+
     public function hasExistingSink(TypeSource $source) : ?TypeSource
     {
         return $this->archived_sinks[$source->id] ?? null;
     }
 
-    public function hasPreviousSink(TypeSource $source) : bool
-    {
-        return isset($this->previous_sinks[$source->id]);
-    }
-
-    public function hasPreviousSource(TypeSource $source) : bool
-    {
-        return isset($this->previous_sources[$source->id]);
-    }
-
     public function hasExistingSource(TypeSource $source) : ?TypeSource
     {
         return $this->archived_sources[$source->id] ?? null;
+    }
+
+    /**
+     * @param ?array<string> $suffixes
+     */
+    public function hasPreviousSink(TypeSource $source, ?array &$suffixes = null) : bool
+    {
+        if (isset($this->specializations[$source->id])) {
+            $suffixes = $this->specializations[$source->id];
+
+            foreach ($suffixes as $suffix) {
+                if (isset($this->previous_sinks[$source->id . '-' . $suffix])) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return isset($this->previous_sinks[$source->id]);
+    }
+
+    /**
+     * @param ?array<string> $suffixes
+     */
+    public function hasPreviousSource(TypeSource $source, ?array &$suffixes = null) : bool
+    {
+        if (isset($this->specializations[$source->id])) {
+            $suffixes = $this->specializations[$source->id];
+
+            foreach ($suffixes as $suffix) {
+                if (isset($this->previous_sources[$source->id . '-' . $suffix])) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return isset($this->previous_sources[$source->id]);
+    }
+
+    public function addSpecialization(string $base_id, string $suffix) : void
+    {
+        if (isset($this->specializations[$base_id])) {
+            if (!\in_array($suffix, $this->specializations)) {
+                $this->specializations[$base_id][] = $suffix;
+            }
+        } else {
+            $this->specializations[$base_id] = [$suffix];
+        }
     }
 
     /**
@@ -156,7 +202,7 @@ class Taint
 
     public function hasNewSinksAndSources() : bool
     {
-        return $this->new_sinks && $this->new_sources;
+        return $this->new_sinks || $this->new_sources;
     }
 
     public function addThreadData(self $taint) : void
@@ -170,6 +216,16 @@ class Taint
             $this->new_sources,
             $taint->new_sources
         );
+
+        foreach ($taint->specializations as $id => $specializations) {
+            if (!isset($this->specializations[$id])) {
+                $this->specializations[$id] = $specializations;
+            } else {
+                $this->specializations[$id] = \array_unique(
+                    array_merge($this->specializations[$id], $specializations)
+                );
+            }
+        }
     }
 
     public function clearNewSinksAndSources() : void
