@@ -41,6 +41,38 @@ class TaintTest extends TestCase
     /**
      * @return void
      */
+    public function testTaintedInputFromReturnTypeToEcho()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    public function getUserId() : string {
+                        return (string) $_GET["user_id"];
+                    }
+
+                    public function getAppendedUserId() : string {
+                        return "aaaa" . $this->getUserId();
+                    }
+
+                    public function deleteUser(PDO $pdo) : void {
+                        $userId = $this->getAppendedUserId();
+                        echo $userId;
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testTaintedInputDirectly()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);

@@ -515,6 +515,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             new CodeLocation($this->getSource(), $expr),
                             $expr,
                             $context,
+                            false,
+                            false,
+                            false,
                             true
                         ) === false) {
                             return false;
