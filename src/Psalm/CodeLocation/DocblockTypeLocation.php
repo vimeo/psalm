@@ -25,6 +25,6 @@ class DocblockTypeLocation extends \Psalm\CodeLocation
         $this->single_line = false;
 
         $this->preview_start = $this->file_start;
-        $this->line_number = $line_number;
+        $this->raw_line_number = $line_number;
     }
 }

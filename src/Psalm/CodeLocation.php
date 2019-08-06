@@ -27,7 +27,7 @@ class CodeLocation
     public $file_name;
 
     /** @var int */
-    protected $line_number;
+    public $raw_line_number;
 
     /** @var int */
     private $end_line_number = -1;
@@ -123,7 +123,7 @@ class CodeLocation
         $doc_comment = $stmt->getDocComment();
         $this->preview_start = $doc_comment ? $doc_comment->getFilePos() : $this->file_start;
         $this->docblock_start_line_number = $doc_comment ? $doc_comment->getLine() : null;
-        $this->line_number = $stmt->getLine();
+        $this->raw_line_number = $stmt->getLine();
     }
 
     /**
@@ -324,7 +324,7 @@ class CodeLocation
      */
     public function getLineNumber()
     {
-        return $this->docblock_line_number ?: $this->line_number;
+        return $this->docblock_line_number ?: $this->raw_line_number;
     }
 
     /**
@@ -408,5 +408,10 @@ class CodeLocation
     public function getShortSummary() : string
     {
         return $this->file_name . ':' . $this->getLineNumber() . ':' . $this->getColumn();
+    }
+
+    public function getQuickSummary() : string
+    {
+        return $this->file_name . ':' . $this->raw_line_number;
     }
 }

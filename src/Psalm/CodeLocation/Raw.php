@@ -26,7 +26,7 @@ class Raw extends \Psalm\CodeLocation
         $this->single_line = false;
 
         $this->preview_start = $this->file_start;
-        $this->line_number = substr_count(
+        $this->raw_line_number = substr_count(
             substr($file_contents, 0, $this->file_start),
             "\n"
         ) + 1;
