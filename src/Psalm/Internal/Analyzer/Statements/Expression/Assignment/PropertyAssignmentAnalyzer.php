@@ -408,6 +408,8 @@ class PropertyAssignmentAnalyzer
                         if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
                             $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
                         }
+
+                        self::taintProperty($statements_analyzer, $stmt, $property_id, $assignment_value_type);
                     }
 
                     /*
@@ -456,44 +458,7 @@ class PropertyAssignmentAnalyzer
                     }
                 }
 
-                if ($codebase->taint) {
-                    $method_source = new TypeSource(
-                        $property_id,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    );
-
-                    if ($codebase->taint->hasPreviousSink($method_source)) {
-                        if ($assignment_value_type->sources) {
-                            $codebase->taint->addSinks(
-                                $statements_analyzer,
-                                $assignment_value_type->sources,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $method_source
-                            );
-                        }
-                    }
-
-                    if ($assignment_value_type->sources) {
-                        foreach ($assignment_value_type->sources as $type_source) {
-                            if ($codebase->taint->hasPreviousSource($type_source)
-                                || $assignment_value_type->tainted
-                            ) {
-                                $codebase->taint->addSources(
-                                    $statements_analyzer,
-                                    [$method_source],
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $type_source
-                                );
-                            }
-                        }
-                    } elseif ($assignment_value_type->tainted) {
-                        throw new \UnexpectedValueException(
-                            'sources should exist for tainted var in '
-                                . $statements_analyzer->getFileName() . ':'
-                                . $stmt->getLine()
-                        );
-                    }
-                }
+                self::taintProperty($statements_analyzer, $stmt, $property_id, $assignment_value_type);
 
                 if (!$codebase->properties->propertyExists(
                     $property_id,
@@ -944,6 +909,56 @@ class PropertyAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    private static function taintProperty(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $property_id,
+        Type\Union $assignment_value_type
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!$codebase->taint) {
+            return;
+        }
+
+        $method_source = new TypeSource(
+            $property_id,
+            new CodeLocation($statements_analyzer->getSource(), $stmt)
+        );
+
+        if ($codebase->taint->hasPreviousSink($method_source)) {
+            if ($assignment_value_type->sources) {
+                $codebase->taint->addSinks(
+                    $statements_analyzer,
+                    $assignment_value_type->sources,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $method_source
+                );
+            }
+        }
+
+        if ($assignment_value_type->sources) {
+            foreach ($assignment_value_type->sources as $type_source) {
+                if ($codebase->taint->hasPreviousSource($type_source)
+                    || $assignment_value_type->tainted
+                ) {
+                    $codebase->taint->addSources(
+                        $statements_analyzer,
+                        [$method_source],
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $type_source
+                    );
+                }
+            }
+        } elseif ($assignment_value_type->tainted) {
+            throw new \UnexpectedValueException(
+                'sources should exist for tainted var in '
+                    . $statements_analyzer->getFileName() . ':'
+                    . $stmt->getLine()
+            );
+        }
     }
 
     /**

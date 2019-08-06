@@ -657,4 +657,37 @@ class TaintTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testTaintedInputFromMagicProperty() : void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    /** @var array<string, string> */
+                    private $vars = [];
+
+                    public function __get(string $s) : string {
+                        return $this->vars[$s];
+                    }
+
+                    public function __set(string $s, string $t) {
+                        $this->vars[$s] = $t;
+                    }
+                }
+
+                function getAppendedUserId() : void {
+                    $a = new A();
+                    $a->userId = (string) $_GET["user_id"];
+                    echo $a->userId;
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }

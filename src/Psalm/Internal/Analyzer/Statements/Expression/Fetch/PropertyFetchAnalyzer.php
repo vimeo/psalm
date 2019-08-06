@@ -544,6 +544,20 @@ class PropertyFetchAnalyzer
 
                 $stmt->inferredType = $fake_method_call->inferredType ?? Type::getMixed();
 
+                $property_id = $lhs_type_part->value . '::$' . $prop_name;
+
+                if ($codebase->taint) {
+                    $method_source = new TypeSource(
+                        $property_id,
+                        new CodeLocation($statements_analyzer, $stmt->name)
+                    );
+
+                    if ($codebase->taint->hasPreviousSource($method_source)) {
+                        $stmt->inferredType->tainted = 1;
+                        $stmt->inferredType->sources = [$method_source];
+                    }
+                }
+
                 /*
                  * If we have an explicit list of all allowed magic properties on the class, and we're
                  * not in that list, fall through
