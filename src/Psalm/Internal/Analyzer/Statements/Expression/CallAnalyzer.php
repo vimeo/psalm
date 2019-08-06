@@ -2841,7 +2841,7 @@ class CallAnalyzer
             if ($function_is_pure) {
                 $codebase->taint->addSpecialization(
                     strtolower($cased_method_id . '#' . ($argument_offset + 1)),
-                    $function_location->getShortSummary()
+                    $function_location->file_name . ':' . $function_location->raw_file_start
                 );
 
                 $method_source = TypeSource::getForMethodArgument(

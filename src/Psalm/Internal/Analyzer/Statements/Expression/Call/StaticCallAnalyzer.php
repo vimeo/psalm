@@ -995,7 +995,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                             $method_source = new TypeSource(
-                                strtolower($method_id . '-' . $code_location->getShortSummary()),
+                                strtolower(
+                                    $method_id
+                                        . '-' . $code_location->file_name
+                                        . ':' . $code_location->raw_file_start
+                                    ),
                                 new CodeLocation($source, $stmt->name)
                             );
                         } else {

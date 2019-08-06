@@ -27,7 +27,7 @@ class TypeSource
         $function_id = $method_id . '#' . ($argument_offset + 1);
 
         if ($function_location) {
-            $function_id .= '-' . $function_location->getShortSummary();
+            $function_id .= '-' . $function_location->file_name . ':' . $function_location->raw_file_start;
         }
 
         return new self(\strtolower($function_id), $code_location);

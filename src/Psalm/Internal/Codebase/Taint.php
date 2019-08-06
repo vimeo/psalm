@@ -149,29 +149,49 @@ class Taint
         }
     }
 
-    public function getPredecessorPath(TypeSource $source) : string
+    /**
+     * @var array<string, bool> $visited_paths
+     */
+    public function getPredecessorPath(TypeSource $source, array $visited_paths = []) : string
     {
-        $source_descriptor = $source->id
-            . ($source->code_location ? ' (' . $source->code_location->getShortSummary() . ')' : '');
+        $location_summary = $source->code_location->getQuickSummary();
+
+        if (isset($visited_paths[$location_summary])) {
+            return '';
+        }
+
+        $visited_paths[$location_summary] = true;
+
+        $source_descriptor = $source->id . ($source->code_location ? ' (' . $location_summary . ')' : '');
 
         if ($previous_source = $this->new_sources[$source->id] ?? self::$archived_sources[$source->id] ?? null) {
             if ($previous_source === $source) {
                 throw new \UnexpectedValueException('bad');
             }
 
-            return $this->getPredecessorPath($previous_source) . ' -> ' . $source_descriptor;
+            return $this->getPredecessorPath($previous_source, $visited_paths) . ' -> ' . $source_descriptor;
         }
 
         return $source_descriptor;
     }
 
-    public function getSuccessorPath(TypeSource $source) : string
+    /**
+     * @var array<string, bool> $visited_paths
+     */
+    public function getSuccessorPath(TypeSource $source, array $visited_paths = []) : string
     {
-        $source_descriptor = $source->id
-            . ($source->code_location ? ' (' . $source->code_location->getShortSummary() . ')' : '');
+        $location_summary = $source->code_location->getQuickSummary();
+
+        if (isset($visited_paths[$location_summary])) {
+            return '';
+        }
+
+        $visited_paths[$location_summary] = true;
+
+        $source_descriptor = $source->id . ($source->code_location ? ' (' . $location_summary . ')' : '');
 
         if ($next_source = $this->new_sinks[$source->id] ?? self::$archived_sinks[$source->id] ?? null) {
-            return $source_descriptor . ' -> ' . $this->getSuccessorPath($next_source);
+            return $source_descriptor . ' -> ' . $this->getSuccessorPath($next_source, $visited_paths);
         }
 
         return $source_descriptor;
