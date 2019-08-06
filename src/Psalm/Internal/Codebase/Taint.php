@@ -27,36 +27,44 @@ class Taint
     /**
      * @var array<string, ?TypeSource>
      */
-    private $previous_sinks = [];
+    private static $previous_sinks = [];
 
     /**
      * @var array<string, ?TypeSource>
      */
-    private $previous_sources = [];
+    private static $previous_sources = [];
 
     /**
      * @var array<string, ?TypeSource>
      */
-    private $archived_sinks = [];
+    private static $archived_sinks = [];
 
     /**
      * @var array<string, ?TypeSource>
      */
-    private $archived_sources = [];
+    private static $archived_sources = [];
 
     /**
      * @var array<string, array<string>>
      */
     private $specializations = [];
 
+    public function __construct()
+    {
+        self::$previous_sinks = [];
+        self::$previous_sources = [];
+        self::$archived_sinks = [];
+        self::$archived_sources = [];
+    }
+
     public function hasExistingSink(TypeSource $source) : ?TypeSource
     {
-        return $this->archived_sinks[$source->id] ?? null;
+        return self::$archived_sinks[$source->id] ?? null;
     }
 
     public function hasExistingSource(TypeSource $source) : ?TypeSource
     {
-        return $this->archived_sources[$source->id] ?? null;
+        return self::$archived_sources[$source->id] ?? null;
     }
 
     /**
@@ -68,7 +76,7 @@ class Taint
             $suffixes = $this->specializations[$source->id];
 
             foreach ($suffixes as $suffix) {
-                if (isset($this->previous_sinks[$source->id . '-' . $suffix])) {
+                if (isset(self::$previous_sinks[$source->id . '-' . $suffix])) {
                     return true;
                 }
             }
@@ -76,7 +84,7 @@ class Taint
             return false;
         }
 
-        return isset($this->previous_sinks[$source->id]);
+        return isset(self::$previous_sinks[$source->id]);
     }
 
     /**
@@ -88,7 +96,7 @@ class Taint
             $suffixes = $this->specializations[$source->id];
 
             foreach ($suffixes as $suffix) {
-                if (isset($this->previous_sources[$source->id . '-' . $suffix])) {
+                if (isset(self::$previous_sources[$source->id . '-' . $suffix])) {
                     return true;
                 }
             }
@@ -96,7 +104,7 @@ class Taint
             return false;
         }
 
-        return isset($this->previous_sources[$source->id]);
+        return isset(self::$previous_sources[$source->id]);
     }
 
     public function addSpecialization(string $base_id, string $suffix) : void
@@ -146,7 +154,7 @@ class Taint
         $source_descriptor = $source->id
             . ($source->code_location ? ' (' . $source->code_location->getShortSummary() . ')' : '');
 
-        if ($previous_source = $this->new_sources[$source->id] ?? $this->archived_sources[$source->id] ?? null) {
+        if ($previous_source = $this->new_sources[$source->id] ?? self::$archived_sources[$source->id] ?? null) {
             if ($previous_source === $source) {
                 throw new \UnexpectedValueException('bad');
             }
@@ -162,7 +170,7 @@ class Taint
         $source_descriptor = $source->id
             . ($source->code_location ? ' (' . $source->code_location->getShortSummary() . ')' : '');
 
-        if ($next_source = $this->new_sinks[$source->id] ?? $this->archived_sinks[$source->id] ?? null) {
+        if ($next_source = $this->new_sinks[$source->id] ?? self::$archived_sinks[$source->id] ?? null) {
             return $source_descriptor . ' -> ' . $this->getSuccessorPath($next_source);
         }
 
@@ -230,21 +238,21 @@ class Taint
 
     public function clearNewSinksAndSources() : void
     {
-        $this->archived_sinks = array_merge(
-            $this->archived_sinks,
+        self::$archived_sinks = array_merge(
+            self::$archived_sinks,
             $this->new_sinks
         );
 
-        $this->previous_sinks = $this->new_sinks;
+        self::$previous_sinks = $this->new_sinks;
 
         $this->new_sinks = [];
 
-        $this->archived_sources = array_merge(
-            $this->archived_sources,
+        self::$archived_sources = array_merge(
+            self::$archived_sources,
             $this->new_sources
         );
 
-        $this->previous_sources = $this->new_sources;
+        self::$previous_sources = $this->new_sources;
 
         $this->new_sources = [];
     }

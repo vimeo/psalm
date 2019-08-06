@@ -417,6 +417,8 @@ class PropertyAssignmentAnalyzer
                      * not in that list, fall through
                      */
                     if (!$var_id || !$class_storage->sealed_properties) {
+                        self::taintProperty($statements_analyzer, $stmt, $property_id, $assignment_value_type);
+
                         continue;
                     }
 
