@@ -2280,6 +2280,19 @@ class CallAnalyzer
                 }
             }
 
+            if ($cased_method_id) {
+                self::processTaintedness(
+                    $statements_analyzer,
+                    $cased_method_id,
+                    $argument_offset,
+                    $code_location,
+                    $function_location,
+                    $function_param,
+                    $input_type,
+                    $function_is_pure
+                );
+            }
+
             return null;
         }
 
@@ -2321,6 +2334,19 @@ class CallAnalyzer
                     $signature_param_type,
                     $context,
                     $unpack
+                );
+            }
+
+            if ($cased_method_id) {
+                self::processTaintedness(
+                    $statements_analyzer,
+                    $cased_method_id,
+                    $argument_offset,
+                    $code_location,
+                    $function_location,
+                    $function_param,
+                    $input_type,
+                    $function_is_pure
                 );
             }
 
@@ -2374,113 +2400,22 @@ class CallAnalyzer
             $input_type = $union_comparison_results->replacement_union_type;
         }
 
-        if ($codebase->taint && $cased_method_id) {
-            $method_source = TypeSource::getForMethodArgument(
+        if ($cased_method_id) {
+            $old_input_type = $input_type;
+
+            self::processTaintedness(
+                $statements_analyzer,
                 $cased_method_id,
                 $argument_offset,
-                $code_location
+                $code_location,
+                $function_location,
+                $function_param,
+                $input_type,
+                $function_is_pure
             );
 
-            if (($function_param->is_sink || $codebase->taint->hasPreviousSink($method_source))
-                && $input_type->sources
-            ) {
-                $all_possible_sinks = [];
-
-                foreach ($input_type->sources as $source) {
-                    if ($codebase->taint->hasExistingSink($source)) {
-                        continue;
-                    }
-
-                    $all_possible_sinks[] = $source;
-
-                    if (strpos($source->id, '::') && strpos($source->id, '#')) {
-                        list($fq_classlike_name, $method_name) = explode('::', $source->id);
-
-                        $method_name_parts = explode('#', $method_name);
-
-                        $method_name = strtolower($method_name_parts[0]);
-
-                        $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
-
-                        foreach ($class_storage->dependent_classlikes as $dependent_classlike => $_) {
-                            $all_possible_sinks[] = TypeSource::getForMethodArgument(
-                                $dependent_classlike . '::' . $method_name,
-                                (int) $method_name_parts[1] - 1,
-                                $code_location,
-                                null
-                            );
-                        }
-
-                        if (isset($class_storage->overridden_method_ids[$method_name])) {
-                            foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
-                                $all_possible_sinks[] = TypeSource::getForMethodArgument(
-                                    $parent_method_id,
-                                    (int) $method_name_parts[1] - 1,
-                                    $code_location,
-                                    null
-                                );
-                            }
-                        }
-                    }
-                }
-
-                $codebase->taint->addSinks(
-                    $statements_analyzer,
-                    $all_possible_sinks,
-                    $code_location,
-                    $method_source
-                );
-            }
-
-            if ($function_param->is_sink && $input_type->tainted) {
-                if (IssueBuffer::accepts(
-                    new TaintedInput(
-                        'in path ' . $codebase->taint->getPredecessorPath($method_source)
-                            . ' out path ' . $codebase->taint->getSuccessorPath($method_source),
-                        $code_location
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            } elseif ($input_type->sources) {
-                if ($function_is_pure) {
-                    $codebase->taint->addSpecialization(
-                        strtolower($cased_method_id . '#' . ($argument_offset + 1)),
-                        $function_location->getShortSummary()
-                    );
-
-                    $method_source = TypeSource::getForMethodArgument(
-                        $cased_method_id,
-                        $argument_offset,
-                        $code_location,
-                        $function_location
-                    );
-                }
-
-                foreach ($input_type->sources as $type_source) {
-                    if ($codebase->taint->hasPreviousSource($type_source) || $input_type->tainted) {
-                        $codebase->taint->addSources(
-                            $statements_analyzer,
-                            [$method_source],
-                            $code_location,
-                            $type_source
-                        );
-                    }
-                }
-            } elseif ($input_type->tainted) {
-                throw new \UnexpectedValueException(
-                    'sources should exist for tainted var in '
-                        . $statements_analyzer->getFileName() . ':'
-                        . $input_expr->getLine()
-                );
-            }
-
-            if ($function_param->assert_untainted) {
-                $input_type = clone $input_type;
+            if ($old_input_type !== $input_type) {
                 $replace_input_type = true;
-                $input_type->tainted = null;
-                $input_type->sources = [];
             }
         }
 
@@ -2816,6 +2751,129 @@ class CallAnalyzer
         }
 
         return null;
+    }
+
+    private static function processTaintedness(
+        StatementsAnalyzer $statements_analyzer,
+        string $cased_method_id,
+        int $argument_offset,
+        CodeLocation $code_location,
+        CodeLocation $function_location,
+        FunctionLikeParameter $function_param,
+        Type\Union &$input_type,
+        bool $function_is_pure
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!$codebase->taint) {
+            return;
+        }
+
+        $method_source = TypeSource::getForMethodArgument(
+            $cased_method_id,
+            $argument_offset,
+            $code_location
+        );
+
+        if (($function_param->is_sink || $codebase->taint->hasPreviousSink($method_source))
+            && $input_type->sources
+        ) {
+            $all_possible_sinks = [];
+
+            foreach ($input_type->sources as $source) {
+                if ($codebase->taint->hasExistingSink($source)) {
+                    continue;
+                }
+
+                $all_possible_sinks[] = $source;
+
+                if (strpos($source->id, '::') && strpos($source->id, '#')) {
+                    list($fq_classlike_name, $method_name) = explode('::', $source->id);
+
+                    $method_name_parts = explode('#', $method_name);
+
+                    $method_name = strtolower($method_name_parts[0]);
+
+                    $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
+
+                    foreach ($class_storage->dependent_classlikes as $dependent_classlike => $_) {
+                        $all_possible_sinks[] = TypeSource::getForMethodArgument(
+                            $dependent_classlike . '::' . $method_name,
+                            (int) $method_name_parts[1] - 1,
+                            $code_location,
+                            null
+                        );
+                    }
+
+                    if (isset($class_storage->overridden_method_ids[$method_name])) {
+                        foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
+                            $all_possible_sinks[] = TypeSource::getForMethodArgument(
+                                $parent_method_id,
+                                (int) $method_name_parts[1] - 1,
+                                $code_location,
+                                null
+                            );
+                        }
+                    }
+                }
+            }
+
+            $codebase->taint->addSinks(
+                $statements_analyzer,
+                $all_possible_sinks,
+                $code_location,
+                $method_source
+            );
+        }
+
+        if ($function_param->is_sink && $input_type->tainted) {
+            if (IssueBuffer::accepts(
+                new TaintedInput(
+                    'in path ' . $codebase->taint->getPredecessorPath($method_source)
+                        . ' out path ' . $codebase->taint->getSuccessorPath($method_source),
+                    $code_location
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        } elseif ($input_type->sources) {
+            if ($function_is_pure) {
+                $codebase->taint->addSpecialization(
+                    strtolower($cased_method_id . '#' . ($argument_offset + 1)),
+                    $function_location->getShortSummary()
+                );
+
+                $method_source = TypeSource::getForMethodArgument(
+                    $cased_method_id,
+                    $argument_offset,
+                    $code_location,
+                    $function_location
+                );
+            }
+
+            foreach ($input_type->sources as $type_source) {
+                if ($codebase->taint->hasPreviousSource($type_source) || $input_type->tainted) {
+                    $codebase->taint->addSources(
+                        $statements_analyzer,
+                        [$method_source],
+                        $code_location,
+                        $type_source
+                    );
+                }
+            }
+        } elseif ($input_type->tainted) {
+            throw new \UnexpectedValueException(
+                'sources should exist for tainted var in '
+                    . $code_location->getShortSummary()
+            );
+        }
+
+        if ($function_param->assert_untainted) {
+            $input_type = clone $input_type;
+            $input_type->tainted = null;
+            $input_type->sources = [];
+        }
     }
 
     private static function coerceValueAfterGatekeeperArgument(

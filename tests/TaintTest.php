@@ -690,4 +690,27 @@ class TaintTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testTaintOverMixed() : void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @psalm-suppress MixedAssignment
+                 * @psalm-suppress MixedArgument
+                 */
+                function foo() : void {
+                    $a = $_GET["bad"];
+                    echo $a;
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }
