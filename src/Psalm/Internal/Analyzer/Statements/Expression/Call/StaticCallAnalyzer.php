@@ -999,7 +999,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     $method_id
                                         . '-' . $code_location->file_name
                                         . ':' . $code_location->raw_file_start
-                                    ),
+                                ),
                                 new CodeLocation($source, $stmt->name)
                             );
                         } else {
