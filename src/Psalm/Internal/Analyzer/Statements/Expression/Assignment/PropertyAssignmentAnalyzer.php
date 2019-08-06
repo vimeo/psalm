@@ -361,6 +361,8 @@ class PropertyAssignmentAnalyzer
 
                             $has_regular_setter = true;
                             $property_exists = true;
+
+                            self::taintProperty($statements_analyzer, $stmt, $property_id, $assignment_value_type);
                             continue;
                         }
                     }
@@ -408,8 +410,6 @@ class PropertyAssignmentAnalyzer
                         if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
                             $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
                         }
-
-                        self::taintProperty($statements_analyzer, $stmt, $property_id, $assignment_value_type);
                     }
 
                     /*

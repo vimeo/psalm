@@ -668,6 +668,9 @@ class TaintTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
+                /**
+                 * @property string $userId
+                 */
                 class A {
                     /** @var array<string, string> */
                     private $vars = [];

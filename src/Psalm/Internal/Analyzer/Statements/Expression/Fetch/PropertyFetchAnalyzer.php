@@ -537,8 +537,6 @@ class PropertyFetchAnalyzer
 
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
-                self::processTaints($statements_analyzer, $stmt, $stmt->inferredType, $property_id);
-
                 /*
                  * If we have an explicit list of all allowed magic properties on the class, and we're
                  * not in that list, fall through
