@@ -174,17 +174,7 @@ class PropertyFetchAnalyzer
 
                         $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
 
-                        if ($codebase->taint) {
-                            $method_source = new TypeSource(
-                                $property_id,
-                                new CodeLocation($statements_analyzer, $stmt->name)
-                            );
-
-                            if ($codebase->taint->hasPreviousSource($method_source)) {
-                                $stmt->inferredType->tainted = 1;
-                                $stmt->inferredType->sources = [$method_source];
-                            }
-                        }
+                        self::processTaints($statements_analyzer, $stmt, $stmt->inferredType, $property_id);
 
                         $codebase->properties->propertyExists(
                             $property_id,
@@ -501,6 +491,7 @@ class PropertyFetchAnalyzer
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
                     $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+                    self::processTaints($statements_analyzer, $stmt, $stmt->inferredType, $property_id);
                     continue;
                 }
 
@@ -546,17 +537,7 @@ class PropertyFetchAnalyzer
 
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
-                if ($codebase->taint) {
-                    $method_source = new TypeSource(
-                        $property_id,
-                        new CodeLocation($statements_analyzer, $stmt->name)
-                    );
-
-                    if ($codebase->taint->hasPreviousSource($method_source)) {
-                        $stmt->inferredType->tainted = 1;
-                        $stmt->inferredType->sources = [$method_source];
-                    }
-                }
+                self::processTaints($statements_analyzer, $stmt, $stmt->inferredType, $property_id);
 
                 /*
                  * If we have an explicit list of all allowed magic properties on the class, and we're
@@ -810,14 +791,7 @@ class PropertyFetchAnalyzer
                 }
             }
 
-            if ($codebase->taint) {
-                $method_source = new TypeSource($property_id, new CodeLocation($statements_analyzer, $stmt->name));
-
-                if ($codebase->taint->hasPreviousSource($method_source)) {
-                    $class_property_type->tainted = 1;
-                    $class_property_type->sources = [$method_source];
-                }
-            }
+            self::processTaints($statements_analyzer, $stmt, $class_property_type, $property_id);
 
             if (isset($stmt->inferredType)) {
                 $stmt->inferredType = Type::combineUnionTypes($class_property_type, $stmt->inferredType);
@@ -866,6 +840,28 @@ class PropertyFetchAnalyzer
 
         if ($var_id) {
             $context->vars_in_scope[$var_id] = isset($stmt->inferredType) ? $stmt->inferredType : Type::getMixed();
+        }
+    }
+
+    private static function processTaints(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        Type\Union $type,
+        string $property_id
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($codebase->taint) {
+            $method_source = new TypeSource(
+                $property_id,
+                new CodeLocation($statements_analyzer, $stmt->name)
+            );
+
+            $type->sources = [$method_source];
+
+            if ($codebase->taint->hasPreviousSource($method_source)) {
+                $type->tainted = 1;
+            }
         }
     }
 
