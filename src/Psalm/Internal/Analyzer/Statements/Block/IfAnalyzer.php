@@ -989,8 +989,13 @@ class IfAnalyzer
             )
         );
 
-        $reconcilable_elseif_types = Algebra::getTruthsFromFormula($elseif_context->clauses);
-        $negated_elseif_types = Algebra::getTruthsFromFormula(Algebra::negateFormula($elseif_clauses));
+        try {
+            $reconcilable_elseif_types = Algebra::getTruthsFromFormula($elseif_context->clauses);
+            $negated_elseif_types = Algebra::getTruthsFromFormula(Algebra::negateFormula($elseif_clauses));
+        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+            $reconcilable_elseif_types = [];
+            $negated_elseif_types = [];
+        }
 
         $all_negated_vars = array_unique(
             array_merge(
@@ -1303,10 +1308,14 @@ class IfAnalyzer
             $outer_context->mergeExceptions($elseif_context);
         }
 
-        $if_scope->negated_clauses = array_merge(
-            $if_scope->negated_clauses,
-            Algebra::negateFormula($elseif_clauses)
-        );
+        try {
+            $if_scope->negated_clauses = array_merge(
+                $if_scope->negated_clauses,
+                Algebra::negateFormula($elseif_clauses)
+            );
+        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+            $if_scope->negated_clauses = [];
+        }
     }
 
     /**
