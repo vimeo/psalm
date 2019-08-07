@@ -599,7 +599,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         }
 
         if ($context->pure) {
-            if (!$function_storage || !$function_storage->pure) {
+            if ($function_storage && !$function_storage->pure) {
                 if (IssueBuffer::accepts(
                     new ImpureFunctionCall(
                         'Cannot call an impure function from a pure context',

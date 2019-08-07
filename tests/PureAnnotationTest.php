@@ -33,6 +33,15 @@ class PureAnnotationTest extends TestCase
                         return null;
                     }',
             ],
+            'pureFunctionCallingBuiltinFunctions' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @psalm-pure */
+                    function lower(string $s) : string {
+                        return substr(strtolower($s), 0, 10);
+                    }',
+            ],
         ];
     }
 
@@ -90,9 +99,18 @@ class PureAnnotationTest extends TestCase
                 '<?php
                     namespace Bar;
 
+                    function impure() : ?string {
+                        /** @var int */
+                        static $i = 0;
+
+                        ++$i;
+
+                        return $i % 2 ? "hello" : null;
+                    }
+
                     /** @psalm-pure */
                     function filterOdd(array $a) : void {
-                        extract($a);
+                        impure();
                     }',
                 'error_message' => 'ImpureFunctionCall',
             ],

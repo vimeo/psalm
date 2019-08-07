@@ -368,6 +368,8 @@ class Reflection
                 }
             }
 
+            $storage->pure = true;
+
             $storage->required_param_count = 0;
 
             foreach ($storage->params as $i => $param) {
