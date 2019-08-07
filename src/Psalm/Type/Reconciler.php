@@ -125,10 +125,6 @@ class Reconciler
                         $new_base_key = $base_key . '[' . $array_key . ']';
 
                         if (strpos($array_key, '\'') !== false) {
-                            if (!isset($existing_types[$base_key])) {
-                                $new_types[$base_key][] = ['~array', '~ArrayAccess'];
-                            }
-
                             $new_types[$base_key][] = ['!string'];
                             $new_types[$base_key][] = ['!=falsy'];
                         }
