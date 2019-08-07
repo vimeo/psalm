@@ -528,6 +528,19 @@ class ArrayAccessTest extends TestCase
                     /** @psalm-suppress MixedPropertyFetch */
                     print_r([&$a->foo->bar]);',
             ],
+            'coerceAfterIsset' => [
+                '<?php
+                    /**
+                     * @return array|ArrayAccess
+                     */
+                    function getBar(array $array) {
+                        if (isset($array["foo"]["bar"])) {
+                            return $array["foo"];
+                        }
+
+                        return [];
+                    }'
+            ],
         ];
     }
 
