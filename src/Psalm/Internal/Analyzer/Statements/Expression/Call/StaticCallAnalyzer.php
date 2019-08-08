@@ -178,7 +178,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         } else {
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
-            $lhs_type = $stmt->class->inferredType;
+            $lhs_type = $stmt->class->inferredType ?? Type::getMixed();
         }
 
         if (!$lhs_type) {
