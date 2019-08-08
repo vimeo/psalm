@@ -715,8 +715,11 @@ class CommentAnalyzer
      * @return ClassLikeDocblockComment
      * @psalm-suppress MixedArrayAccess
      */
-    public static function extractClassLikeDocblockInfo(\PhpParser\Node $node, PhpParser\Comment\Doc $comment)
-    {
+    public static function extractClassLikeDocblockInfo(
+        \PhpParser\Node $node,
+        PhpParser\Comment\Doc $comment,
+        Aliases $aliases
+    ) {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
         $info = new ClassLikeDocblockComment();
@@ -895,7 +898,13 @@ class CommentAnalyzer
                 $method_entry = preg_replace('/ (?!(\$|\.\.\.|&))/', '', trim($method_entry));
 
                 try {
-                    $method_tree = ParseTree::createFromTokens(Type::tokenize($method_entry, false));
+                    $method_tree = ParseTree::createFromTokens(
+                        Type::fixUpLocalType(
+                            $method_entry,
+                            $aliases,
+                            null
+                        )
+                    );
                 } catch (TypeParseTreeException $e) {
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
@@ -929,7 +938,7 @@ class CommentAnalyzer
 
                     if ($method_tree_child->children) {
                         $param_type = Type::getTypeFromTree($method_tree_child->children[0]);
-                        $docblock_lines[] = '@param ' . $param_type . ' '
+                        $docblock_lines[] = '@param \\' . $param_type . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;
                     }

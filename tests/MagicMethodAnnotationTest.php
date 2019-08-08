@@ -444,6 +444,8 @@ class MagicMethodAnnotationTest extends TestCase
             ],
             'inheritInterfacePseudoMethodsFromParent' => [
                 '<?php
+                    namespace Foo;
+
                     interface ClassMetadata {}
                     interface ORMClassMetadata extends ClassMetadata {}
 
@@ -472,6 +474,22 @@ class MagicMethodAnnotationTest extends TestCase
 
                     test2(em()->getOtherMetadata());
                     test2(concreteEm()->getOtherMetadata());',
+            ],
+            'fullyQualifiedParam' => [
+                '<?php
+                    namespace Foo {
+                        /**
+                         * @method  void setInteger(\Closure $c)
+                         */
+                        class Child {
+                            public function __call(string $s, array $args) {}
+                        }
+                    }
+
+                    namespace {
+                        $child = new Foo\Child();
+                        $child->setInteger(function() : void {});
+                    }',
             ],
         ];
     }

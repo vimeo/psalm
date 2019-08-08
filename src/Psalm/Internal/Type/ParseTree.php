@@ -337,6 +337,11 @@ class ParseTree
 
                     $current_parent = $current_leaf->parent;
 
+                    if ($current_parent instanceof ParseTree\CallableTree) {
+                        ++$i;
+                        break;
+                    }
+
                     while ($current_parent && !$current_parent instanceof ParseTree\MethodTree) {
                         $current_leaf = $current_parent;
                         $current_parent = $current_parent->parent;
