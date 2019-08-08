@@ -1216,6 +1216,31 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         }
                     }
+
+                    if ($return_type_candidate && $codebase->taint && $method_id) {
+                        if ($method_storage && $method_storage->pure) {
+                            $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                            $method_source = new TypeSource(
+                                strtolower(
+                                    $method_id
+                                        . '-' . $code_location->file_name
+                                        . ':' . $code_location->raw_file_start
+                                ),
+                                new CodeLocation($source, $stmt->name)
+                            );
+                        } else {
+                            $method_source = new TypeSource(
+                                strtolower($method_id),
+                                new CodeLocation($source, $stmt->name)
+                            );
+                        }
+
+                        if ($codebase->taint->hasPreviousSource($method_source)) {
+                            $return_type_candidate->tainted = 1;
+                            $return_type_candidate->sources = [$method_source];
+                        }
+                    }
                 }
             }
         }
@@ -1287,15 +1312,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $all_intersection_return_type,
                     $return_type_candidate
                 );
-            }
-
-            if ($codebase->taint && $method_id) {
-                $method_source = new TypeSource(strtolower($method_id), new CodeLocation($source, $stmt->name));
-
-                if ($codebase->taint->hasPreviousSource($method_source)) {
-                    $return_type_candidate->tainted = 1;
-                    $return_type_candidate->sources = [$method_source];
-                }
             }
 
             if (!$return_type) {

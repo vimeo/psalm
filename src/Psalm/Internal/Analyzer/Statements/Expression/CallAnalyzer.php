@@ -2826,16 +2826,18 @@ class CallAnalyzer
             );
         }
 
-        if ($function_param->is_sink && $input_type->tainted) {
-            if (IssueBuffer::accepts(
-                new TaintedInput(
-                    'in path ' . $codebase->taint->getPredecessorPath($method_source)
-                        . ' out path ' . $codebase->taint->getSuccessorPath($method_source),
-                    $code_location
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+        if ($function_param->is_sink && $input_type->tainted && $input_type->sources) {
+            foreach ($input_type->sources as $input_source) {
+                if (IssueBuffer::accepts(
+                    new TaintedInput(
+                        'in path ' . $codebase->taint->getPredecessorPath($input_source)
+                            . ' out path ' . $codebase->taint->getSuccessorPath($method_source),
+                        $code_location
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         } elseif ($input_type->sources) {
             if ($function_is_pure) {
