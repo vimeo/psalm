@@ -358,6 +358,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testObjectWithDollarArgs()
+    {
+        $this->assertSame('object{a:int, $b:string}', (string) Type::parseString('object{a:int, $b:string}'));
+    }
+
+    /**
+     * @return void
+     */
     public function testObjectLikeWithUnionArgs()
     {
         $this->assertSame(
@@ -521,6 +529,15 @@ class TypeParseTest extends TestCase
             'callable(string):void|int',
             (string)Type::parseString('callable(string):void|int')
         );
+    }
+
+    /**
+     * @return void
+     */
+    public function testCallableWithGoodVariadic()
+    {
+        Type::parseString('callable(int, string...) : void');
+        Type::parseString('callable(int,string...) : void');
     }
 
     /**

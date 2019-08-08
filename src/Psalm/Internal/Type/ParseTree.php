@@ -335,10 +335,13 @@ class ParseTree
                         throw new TypeParseTreeException('Unexpected space');
                     }
 
+                    if ($current_leaf instanceof ParseTree\ObjectLikeTree) {
+                        break;
+                    }
+
                     $current_parent = $current_leaf->parent;
 
                     if ($current_parent instanceof ParseTree\CallableTree) {
-                        ++$i;
                         break;
                     }
 
