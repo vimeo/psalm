@@ -1233,11 +1233,12 @@ class Analyzer
      */
     public function updateFile($file_path, $dry_run)
     {
-        $new_return_type_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
+        FileManipulationBuffer::add(
+            $file_path,
+            FunctionDocblockManipulator::getManipulationsForFile($file_path)
+        );
 
-        $other_manipulations = FileManipulationBuffer::getManipulationsForFile($file_path);
-
-        $file_manipulations = array_merge($new_return_type_manipulations, $other_manipulations);
+        $file_manipulations = FileManipulationBuffer::getManipulationsForFile($file_path);
 
         if (!$file_manipulations) {
             return;
@@ -1249,22 +1250,27 @@ class Analyzer
              * @return int
              */
             function (FileManipulation $a, FileManipulation $b) {
-                if ($a->start === $b->start) {
-                    if ($b->end === $a->end) {
+                if ($b->end === $a->end) {
+                    if ($a->start === $b->start) {
+
                         return $b->insertion_text > $a->insertion_text ? 1 : -1;
                     }
 
-                    return $b->end > $a->end ? 1 : -1;
+                    return $b->start > $a->start ? 1 : -1;
                 }
 
-                return $b->start > $a->start ? 1 : -1;
+                return $b->end > $a->end ? 1 : -1;
             }
         );
 
+        $last_start = \PHP_INT_MAX;
         $existing_contents = $this->file_provider->getContents($file_path);
 
         foreach ($file_manipulations as $manipulation) {
-            $existing_contents = $manipulation->transform($existing_contents);
+            if ($manipulation->start <= $last_start) {
+                $existing_contents = $manipulation->transform($existing_contents);
+                $last_start = $manipulation->start;
+            }
         }
 
         if ($dry_run) {

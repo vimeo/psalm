@@ -348,6 +348,23 @@ class UnusedCodeManipulationTest extends FileManipulationTest
                 ['PossiblyUnusedMethod'],
                 true,
             ],
+            'removePossiblyUnusedMethodAndMissingReturnType' => [
+                '<?php
+                    class A {
+                        public function foo() {}
+                    }
+
+                    new A();',
+                '<?php
+                    class A {
+
+                    }
+
+                    new A();',
+                '7.1',
+                ['PossiblyUnusedMethod', 'MissingReturnType'],
+                true,
+            ],
             'removePossiblyUnusedPropertyWithDocblock' => [
                 '<?php
                     class A {
