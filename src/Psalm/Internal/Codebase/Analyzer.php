@@ -1252,7 +1252,6 @@ class Analyzer
             function (FileManipulation $a, FileManipulation $b) {
                 if ($b->end === $a->end) {
                     if ($a->start === $b->start) {
-
                         return $b->insertion_text > $a->insertion_text ? 1 : -1;
                     }
 
