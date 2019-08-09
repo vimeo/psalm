@@ -426,3 +426,28 @@ class A {
 
 new A();
 ```
+
+### UnusedVariable
+
+This removes unused variables.
+
+Running `vendor/bin/psalter --issues=UnusedVariable` on
+
+```php
+function foo() : void {
+    $a = 5;
+    $b = 6;
+    $c = $d = $a + $b;
+    echo "foo";
+}
+```
+
+gives
+
+```php
+function foo() : void {
+    $a = 5;
+    $b = 6;
+    echo "foo";
+}
+```
