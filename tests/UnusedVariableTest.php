@@ -1020,6 +1020,20 @@ class UnusedVariableTest extends TestCase
                         A::$method();
                     }',
             ],
+            'usedAsStaticPropertyName' => [
+                '<?php
+                    class A {
+                        private static bool $something = false;
+
+                        public function foo() : void {
+                            $var = "something";
+
+                            if (true) {
+                                static::${$var} = true;
+                            }
+                        }
+                    }'
+            ],
         ];
     }
 

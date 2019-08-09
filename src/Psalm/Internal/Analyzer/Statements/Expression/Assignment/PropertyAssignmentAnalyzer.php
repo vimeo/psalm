@@ -992,6 +992,10 @@ class PropertyAssignmentAnalyzer
         $prop_name = $stmt->name;
 
         if (!$prop_name instanceof PhpParser\Node\Identifier) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $prop_name, $context) === false) {
+                return false;
+            }
+
             if ($fq_class_name && !$context->ignore_variable_property) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($fq_class_name) . '::$',
