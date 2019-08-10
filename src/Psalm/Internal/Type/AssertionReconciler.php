@@ -538,7 +538,6 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
         $old_type_has_interface = false;
 
         if ($existing_var_type->hasObjectType()) {
