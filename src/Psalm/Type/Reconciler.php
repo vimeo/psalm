@@ -283,6 +283,8 @@ class Reconciler
                     $code_location,
                     $suppressed_issues
                 );
+            } elseif (!$has_negation) {
+                $changed_var_ids[] = $key;
             }
 
             if ($failed_reconciliation === 2) {

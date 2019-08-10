@@ -1406,7 +1406,18 @@ class TypeReconciliationTest extends TestCase
                     $x = null;
                     assert($x instanceof Traversable);
                     takesTraversable($x);',
-            ]
+            ],
+            'dontReconcileArrayOffset' => [
+                '<?php
+                    /** @psalm-suppress TypeDoesNotContainType */
+                    function foo(array $a) : void {
+                        if (!is_array($a)) {
+                            return;
+                        }
+
+                        if ($a[0] === 5) {}
+                    }'
+            ],
         ];
     }
 

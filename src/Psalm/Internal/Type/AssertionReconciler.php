@@ -1316,6 +1316,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $code_location,
                     $suppressed_issues
                 );
+
+                if (!$did_remove_type) {
+                    $failed_reconciliation = 1;
+                }
             }
         }
 
