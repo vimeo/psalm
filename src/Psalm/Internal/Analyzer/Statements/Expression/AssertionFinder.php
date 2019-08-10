@@ -1861,6 +1861,15 @@ class AssertionFinder
                             $if_types[$var_id] = [[$prefix . $assertion->rule[0][0]]];
                         }
                     }
+                } elseif (is_string($assertion->var_id)
+                    && strpos($assertion->var_id, '$this->') === 0
+                    && $expr instanceof PhpParser\Node\Expr\MethodCall
+                ) {
+                    if ($prefix === $assertion->rule[0][0][0]) {
+                        $if_types[$assertion->var_id] = [[substr($assertion->rule[0][0], 1)]];
+                    } else {
+                        $if_types[$assertion->var_id] = [[$prefix . $assertion->rule[0][0]]];
+                    }
                 }
             }
         }
@@ -1900,6 +1909,15 @@ class AssertionFinder
                         } else {
                             $if_types[$var_id] = [[$negated_prefix . $assertion->rule[0][0]]];
                         }
+                    }
+                } elseif (is_string($assertion->var_id)
+                    && strpos($assertion->var_id, '$this->') === 0
+                    && $expr instanceof PhpParser\Node\Expr\MethodCall
+                ) {
+                    if ($prefix === $assertion->rule[0][0][0]) {
+                        $if_types[$assertion->var_id] = [[substr($assertion->rule[0][0], 1)]];
+                    } else {
+                        $if_types[$assertion->var_id] = [[$negated_prefix . $assertion->rule[0][0]]];
                     }
                 }
             }
