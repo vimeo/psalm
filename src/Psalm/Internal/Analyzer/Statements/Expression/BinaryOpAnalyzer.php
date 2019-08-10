@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Reconciler;
+use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\TypeCombination;
 use function array_merge;
 use function array_diff_key;
@@ -279,7 +280,7 @@ class BinaryOpAnalyzer
                 $var_id = ExpressionAnalyzer::getVarId($stmt->left->var, $context->self);
 
                 if ($var_id && isset($pre_op_context->vars_in_scope[$var_id])) {
-                    $left_inferred_reconciled = Reconciler::reconcileTypes(
+                    $left_inferred_reconciled = AssertionReconciler::reconcile(
                         '!falsy',
                         clone $pre_op_context->vars_in_scope[$var_id],
                         '',
@@ -487,7 +488,7 @@ class BinaryOpAnalyzer
             $lhs_type = null;
 
             if (isset($stmt->left->inferredType)) {
-                $if_return_type_reconciled = Reconciler::reconcileTypes(
+                $if_return_type_reconciled = AssertionReconciler::reconcile(
                     '!null',
                     $stmt->left->inferredType,
                     '',

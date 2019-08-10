@@ -12,7 +12,7 @@ use function preg_replace;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Type\Reconciler;
+use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Type\Union;
 use function strpos;
 use function strtolower;
@@ -538,7 +538,7 @@ class Context
                         break;
                     }
 
-                    $result_type = Reconciler::reconcileTypes(
+                    $result_type = AssertionReconciler::reconcile(
                         $type,
                         clone $new_type,
                         null,

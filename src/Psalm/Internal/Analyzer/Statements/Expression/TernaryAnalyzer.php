@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+use Psalm\Internal\Type\AssertionReconciler;
 use function array_merge;
 use function array_map;
 use function array_diff_key;
@@ -308,7 +309,7 @@ class TernaryAnalyzer
                 $lhs_type = $stmt->if->inferredType;
             }
         } elseif (isset($stmt->cond->inferredType)) {
-            $if_return_type_reconciled = Reconciler::reconcileTypes(
+            $if_return_type_reconciled = AssertionReconciler::reconcile(
                 '!falsy',
                 clone $stmt->cond->inferredType,
                 '',

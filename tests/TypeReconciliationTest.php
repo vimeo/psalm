@@ -45,7 +45,7 @@ class TypeReconciliationTest extends TestCase
      */
     public function testReconcilation($expected, $type, $string)
     {
-        $reconciled = Reconciler::reconcileTypes(
+        $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
             $type,
             Type::parseString($string),
             null,

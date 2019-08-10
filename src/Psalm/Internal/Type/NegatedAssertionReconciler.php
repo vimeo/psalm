@@ -54,7 +54,7 @@ class NegatedAssertionReconciler extends Reconciler
      *
      * @return Type\Union
      */
-    public static function handleNegatedType(
+    public static function reconcile(
         StatementsAnalyzer $statements_analyzer,
         $new_var_type,
         $is_strict_equality,
