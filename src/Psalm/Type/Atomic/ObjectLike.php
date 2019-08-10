@@ -281,7 +281,8 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function getKey()
     {
-        return 'array';
+        /** @var string */
+        return static::KEY;
     }
 
     public function setFromDocblock()

@@ -131,6 +131,11 @@ class TypeReconciliationTest extends TestCase
             'nullableClassStringFalsy' => ['null', 'falsy', 'class-string<A>|null'],
             'nullableClassStringEqualsNull' => ['null', '=null', 'class-string<A>|null'],
             'nullableClassStringTruthy' => ['class-string<A>', '!falsy', 'class-string<A>|null'],
+            'iterableToArray' => ['array<int, int>', 'array', 'iterable<int, int>'],
+            'iterableToTraversable' => ['Traversable<int, int>', 'Traversable', 'iterable<int, int>'],
+            'callableToCallableArray' => ['callable-array{0: string|object, 1: string}', 'array', 'callable'],
+            'callableOrArrayToCallableArray' => ['array<array-key, mixed>|callable-array{0: string|object, 1: string}', 'array', 'callable|array'],
+            'traversableToIntersection' => ['Countable&Traversable', 'Traversable', 'Countable'],
         ];
     }
 
@@ -1378,6 +1383,30 @@ class TypeReconciliationTest extends TestCase
                         return false;
                     }'
             ],
+            'checkIterableType' => [
+                '<?php
+                    /**
+                     * @param array<int> $x
+                     * @psalm-suppress UnusedParam
+                     */
+                    function takesArray (array $x): void {}
+
+                    /** @var iterable<int> */
+                    $x = null;
+                    assert(is_array($x));
+                    takesArray($x);
+
+                    /**
+                     * @param Traversable<int> $x
+                     * @psalm-suppress UnusedParam
+                     */
+                    function takesTraversable (Traversable $x): void {}
+
+                    /** @var iterable<int> */
+                    $x = null;
+                    assert($x instanceof Traversable);
+                    takesTraversable($x);',
+            ]
         ];
     }
 
