@@ -1861,7 +1861,7 @@ class AssertionFinder
                             $if_types[$var_id] = [[$prefix . $assertion->rule[0][0]]];
                         }
                     }
-                } elseif (is_string($assertion->var_id)
+                } elseif (\is_string($assertion->var_id)
                     && strpos($assertion->var_id, '$this->') === 0
                     && $expr instanceof PhpParser\Node\Expr\MethodCall
                 ) {
@@ -1910,7 +1910,7 @@ class AssertionFinder
                             $if_types[$var_id] = [[$negated_prefix . $assertion->rule[0][0]]];
                         }
                     }
-                } elseif (is_string($assertion->var_id)
+                } elseif (\is_string($assertion->var_id)
                     && strpos($assertion->var_id, '$this->') === 0
                     && $expr instanceof PhpParser\Node\Expr\MethodCall
                 ) {
