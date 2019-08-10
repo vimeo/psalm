@@ -196,6 +196,7 @@ class Reconciler
 
                     $has_isset = $has_isset
                         || $new_type_part_part === 'isset'
+                        || $new_type_part_part === '=isset'
                         || $new_type_part_part === 'array-key-exists';
 
                     $has_not_isset = $has_not_isset || $new_type_part_part === '!isset';
@@ -283,7 +284,7 @@ class Reconciler
                     $code_location,
                     $suppressed_issues
                 );
-            } elseif (!$has_negation) {
+            } elseif (!$has_negation && !$has_isset) {
                 $changed_var_ids[] = $key;
             }
 
