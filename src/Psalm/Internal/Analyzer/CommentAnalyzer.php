@@ -96,10 +96,6 @@ class CommentAnalyzer
 
         $comment_text = $comment->getText();
 
-        if (!isset($parsed_docblock['specials']['var']) && !isset($parsed_docblock['specials']['psalm-var'])) {
-            return [];
-        }
-
         $var_line_number = $comment->getLine();
 
         if ($parsed_docblock) {
@@ -184,6 +180,7 @@ class CommentAnalyzer
                 $var_comment->type_end = $type_end;
                 $var_comment->deprecated = isset($parsed_docblock['specials']['deprecated']);
                 $var_comment->internal = isset($parsed_docblock['specials']['internal']);
+                $var_comment->readonly = isset($parsed_docblock['specials']['readonly']);
                 if (isset($parsed_docblock['specials']['psalm-internal'])) {
                     $psalm_internal = reset($parsed_docblock['specials']['psalm-internal']);
                     if ($psalm_internal) {
@@ -200,6 +197,19 @@ class CommentAnalyzer
 
                 $var_comments[] = $var_comment;
             }
+        }
+
+        if (!$var_comments
+            && (isset($parsed_docblock['specials']['deprecated'])
+                || isset($parsed_docblock['specials']['internal'])
+                || isset($parsed_docblock['specials']['readonly']))
+        ) {
+            $var_comment = new VarDocblockComment();
+            $var_comment->deprecated = isset($parsed_docblock['specials']['deprecated']);
+            $var_comment->internal = isset($parsed_docblock['specials']['internal']);
+            $var_comment->readonly = isset($parsed_docblock['specials']['readonly']);
+
+            $var_comments[] = $var_comment;
         }
 
         return $var_comments;

@@ -14,6 +14,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
+use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
@@ -607,6 +608,32 @@ class PropertyAssignmentAnalyzer
                                     $property_id . ' is marked internal',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+
+                    if ($property_storage->readonly) {
+                        $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
+                            $property_id,
+                            true
+                        );
+
+                        if ($appearing_property_class
+                            && !($context->self
+                                && ($appearing_property_class === $context->self
+                                    || $codebase->classExtends($context->self, $appearing_property_class))
+                                && (!$context->calling_method_id
+                                    || \strpos($context->calling_method_id, '::__construct'))
+                            )
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new InaccessibleProperty(
+                                    $property_id . ' is marked readonly',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {

@@ -70,6 +70,11 @@ class PropertyStorage
     public $internal = false;
 
     /**
+     * @var bool
+     */
+    public $readonly = false;
+
+    /**
      * @var null|string
      */
     public $psalm_internal = null;

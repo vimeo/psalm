@@ -1661,6 +1661,38 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'readonlyPropertySetInConstructor' => [
+                '<?php
+                    class A {
+                        /**
+                         * @readonly
+                         */
+                        public string $bar;
+
+                        public function __construct() {
+                            $this->bar = "hello";
+                        }
+                    }
+
+                    echo (new A)->bar;'
+            ],
+            'readonlyPropertySetChildClass' => [
+                '<?php
+                    abstract class A {
+                        /**
+                         * @readonly
+                         */
+                        public string $bar;
+                    }
+
+                    class B extends A {
+                        public function __construct() {
+                            $this->bar = "hello";
+                        }
+                    }
+
+                    echo (new B)->bar;'
+            ],
         ];
     }
 
@@ -2591,6 +2623,61 @@ class PropertyTypeTest extends TestCase
                         public static $test = ["string-key" => 1];
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue'
+            ],
+            'readonlyPropertySetInConstructorAndAlsoAnotherMethodInsideClass' => [
+                '<?php
+                    class A {
+                        /**
+                         * @readonly
+                         */
+                        public string $bar;
+
+                        public function __construct() {
+                            $this->bar = "hello";
+                        }
+
+                        public function setBar() : void {
+                            $this->bar = "goodbye";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+            ],
+            'readonlyPropertySetInConstructorAndAlsoAnotherMethodInSublass' => [
+                '<?php
+                    class A {
+                        /**
+                         * @readonly
+                         */
+                        public string $bar;
+
+                        public function __construct() {
+                            $this->bar = "hello";
+                        }
+                    }
+
+                    class B extends A {
+                        public function setBar() : void {
+                            $this->bar = "hello";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+            ],
+            'readonlyPropertySetInConstructorAndAlsoOutsideClass' => [
+                '<?php
+                    class A {
+                        /**
+                         * @readonly
+                         */
+                        public string $bar;
+
+                        public function __construct() {
+                            $this->bar = "hello";
+                        }
+                    }
+
+                    $a = new A();
+                    $a->bar = "goodbye";',
+                'error_message' => 'InaccessibleProperty',
             ],
         ];
     }

@@ -58,4 +58,11 @@ class VarDocblockComment
      * @var null|string
      */
     public $psalm_internal = null;
+
+    /**
+     * Whether or not the property is readonly
+     *
+     * @var bool
+     */
+    public $readonly = false;
 }
