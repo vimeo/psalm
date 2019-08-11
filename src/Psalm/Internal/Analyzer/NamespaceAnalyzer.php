@@ -176,7 +176,7 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param string $namespace Generally a namespace, but may also be a fully qualified class name (FQCN)_.
      * @param string $className Generally a FQCN, but may be a FQCN
      *
-     * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparision.
+     * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparison.
      *
      * @return bool
      */

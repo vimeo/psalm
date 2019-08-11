@@ -793,7 +793,7 @@ class AssertTest extends TestCase
                         // some code
                     }
 
-                    // Returns concreate implmenetation of Foo, which in this case is Bar
+                    // Returns concreate implementation of Foo, which in this case is Bar
                     function getImplementationOfFoo(): Foo {
                         return new Bar();
                     }

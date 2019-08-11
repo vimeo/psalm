@@ -207,7 +207,7 @@ class Pool
         $bytes_written = 0;
 
         while ($bytes_written < $bytes_to_write) {
-            // attemt to write the remaining unsent part
+            // attempt to write the remaining unsent part
             $bytes_written += @fwrite($write_stream, substr($serialized_message, $bytes_written));
 
             if ($bytes_written < $bytes_to_write) {
