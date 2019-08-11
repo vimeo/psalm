@@ -110,7 +110,7 @@ Options:
         --move "Ns\Foo::bar,Ns\Foo::baz" --into "Biz\Bang\DestinationClass"
 
     --rename "[Identifier]" --to "[NewIdentifier]"
-        Renames a specfied item (e.g. method) and updates all references to it that Psalm can
+        Renames a specified item (e.g. method) and updates all references to it that Psalm can
         identify.
 
 HELP;
