@@ -164,8 +164,8 @@ class IssetTest extends TestCase
             'issetVariableKeysWithoutChange' => [
                 '<?php
                     $arr = [[1, 2, 3], null, [1, 2, 3], null];
-                    $b = 2;
-                    $c = 0;
+                    $b = rand(0, 2);
+                    $c = rand(0, 2);
                     if (isset($arr[$b][$c])) {
                         echo $arr[$b][$c];
                     }',

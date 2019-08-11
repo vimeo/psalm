@@ -102,12 +102,12 @@ class Reconciler
 
                 $base_key = array_shift($key_parts);
 
-                if (!isset($new_types[$base_key])) {
-                    $new_types[$base_key] = [['!~bool'], ['!~int'], ['=isset']];
-                } else {
-                    $new_types[$base_key][] = ['!~bool'];
-                    $new_types[$base_key][] = ['!~int'];
-                    $new_types[$base_key][] = ['=isset'];
+                if (!isset($existing_types[$base_key]) || $existing_types[$base_key]->isNullable()) {
+                    if (!isset($new_types[$base_key])) {
+                        $new_types[$base_key] = [['=isset']];
+                    } else {
+                        $new_types[$base_key][] = ['=isset'];
+                    }
                 }
 
                 while ($key_parts) {
@@ -120,12 +120,17 @@ class Reconciler
                         $new_base_key = $base_key . '[' . $array_key . ']';
 
                         if (strpos($array_key, '\'') !== false) {
-                            $new_types[$base_key][] = ['!string'];
-                            $new_types[$base_key][] = ['!=falsy'];
+                            $new_types[$base_key][] = ['=string-array-access'];
+                        } else {
+                            $new_types[$base_key][] = ['=int-or-string-array-access'];
                         }
 
                         $base_key = $new_base_key;
-                    } elseif ($divider === '->') {
+
+                        continue;
+                    }
+
+                    if ($divider === '->') {
                         $property_name = array_shift($key_parts);
                         $new_base_key = $base_key . '->' . $property_name;
 

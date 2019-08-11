@@ -1941,7 +1941,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     $param_index = \array_search($param_name, \array_keys($storage->param_types), true);
 
-                    if (!isset($storage->params[$param_index]->type)) {
+                    if ($param_index === false || !isset($storage->params[$param_index]->type)) {
                         continue;
                     }
 

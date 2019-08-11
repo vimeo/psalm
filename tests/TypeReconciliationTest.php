@@ -1418,6 +1418,47 @@ class TypeReconciliationTest extends TestCase
                         if ($a[0] === 5) {}
                     }'
             ],
+            'assertHasArrayAccess' => [
+                '<?php
+                    /**
+                     * @return array|ArrayAccess
+                     */
+                    function getBar(array $array) {
+                        if (isset($array[\'foo\'][\'bar\'])) {
+                            return $array[\'foo\'];
+                        }
+
+                        return [];
+                    }',
+            ],
+            'assertHasArrayAccessWithType' => [
+                '<?php
+                    /**
+                     * @param array<string, array<string, string>> $array
+                     * @return array<string, string>
+                     */
+                    function getBar(array $array) : array {
+                        if (isset($array[\'foo\'][\'bar\'])) {
+                            return $array[\'foo\'];
+                        }
+
+                        return [];
+                    }',
+            ],
+            'assertHasArrayAccessOnSimpleXMLElement' => [
+                '<?php
+                    function getBar(SimpleXMLElement $e, string $s) : void {
+                        if (isset($e[$s])) {
+                            echo (string) $e[$s];
+                        }
+
+                        if (isset($e[\'foo\'])) {
+                            echo (string) $e[\'foo\'];
+                        }
+
+                        if (isset($e->bar)) {}
+                    }',
+            ],
         ];
     }
 

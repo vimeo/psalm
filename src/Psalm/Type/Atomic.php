@@ -342,6 +342,54 @@ abstract class Atomic
     }
 
     /**
+     * @return bool
+     */
+    public function isArrayAccessibleWithStringKey(Codebase $codebase)
+    {
+        return $this instanceof TArray
+            || $this instanceof ObjectLike
+            || $this->hasArrayAccessInterface($codebase)
+            || ($this instanceof TNamedObject && $this->value === 'SimpleXMLElement');
+    }
+
+    /**
+     * @return bool
+     */
+    public function isArrayAccessibleWithIntOrStringKey(Codebase $codebase)
+    {
+        return $this instanceof TString
+            || $this->isArrayAccessibleWithStringKey($codebase);
+    }
+
+    /**
+     * @return bool
+     */
+    private function hasArrayAccessInterface(Codebase $codebase)
+    {
+        return $this instanceof TNamedObject
+            && (
+                strtolower($this->value) === 'arrayaccess'
+                || ($codebase->classOrInterfaceExists($this->value)
+                    && ($codebase->classExtendsOrImplements(
+                        $this->value,
+                        'ArrayAccess'
+                    ) || $codebase->interfaceExtends(
+                        $this->value,
+                        'ArrayAccess'
+                    )))
+                || (
+                    $this->extra_types
+                    && array_filter(
+                        $this->extra_types,
+                        function (Atomic $a) use ($codebase) : bool {
+                            return $a->hasArrayAccessInterface($codebase);
+                        }
+                    )
+                )
+            );
+    }
+
+    /**
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues

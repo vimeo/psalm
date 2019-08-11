@@ -267,6 +267,28 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
+        if ($assertion === 'string-array-access') {
+            return self::reconcileStringArrayAccess(
+                $codebase,
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation
+            );
+        }
+
+        if ($assertion === 'int-or-string-array-access') {
+            return self::reconcileIntArrayAccess(
+                $codebase,
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation
+            );
+        }
+
         if ($assertion === 'numeric' && !$existing_var_type->hasMixed()) {
             return self::reconcileNumeric(
                 $existing_var_type,
@@ -1320,6 +1342,126 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 if (!$did_remove_type) {
                     $failed_reconciliation = 1;
                 }
+            }
+        }
+
+        if ($array_types) {
+            return new Type\Union($array_types);
+        }
+
+        $failed_reconciliation = 2;
+
+        return Type::getMixed();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileStringArrayAccess(
+        Codebase $codebase,
+        Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation
+    ) : Union {
+        $old_var_type_string = $existing_var_type->getId();
+
+        $existing_var_atomic_types = $existing_var_type->getTypes();
+
+        if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
+            return new Union([
+                new Atomic\TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
+                new TNamedObject('ArrayAccess'),
+            ]);
+        }
+
+        $array_types = [];
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type->isArrayAccessibleWithStringKey($codebase)) {
+                if (get_class($type) === TArray::class) {
+                    $array_types[] = new Atomic\TNonEmptyArray($type->type_params);
+                } else {
+                    $array_types[] = $type;
+                }
+            } elseif ($type instanceof TTemplateParam) {
+                $array_types[] = $type;
+            }
+        }
+
+        if (!$array_types) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    'string-array-access',
+                    true,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+        }
+
+        if ($array_types) {
+            return new Type\Union($array_types);
+        }
+
+        $failed_reconciliation = 2;
+
+        return Type::getMixed();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileIntArrayAccess(
+        Codebase $codebase,
+        Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation
+    ) : Union {
+        $old_var_type_string = $existing_var_type->getId();
+
+        $existing_var_atomic_types = $existing_var_type->getTypes();
+
+        if ($existing_var_type->hasMixed()) {
+            return new Union([
+                new Atomic\TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
+                new TNamedObject('ArrayAccess'),
+            ]);
+        }
+
+        $array_types = [];
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type->isArrayAccessibleWithIntOrStringKey($codebase)) {
+                if (get_class($type) === TArray::class) {
+                    $array_types[] = new Atomic\TNonEmptyArray($type->type_params);
+                } else {
+                    $array_types[] = $type;
+                }
+            } elseif ($type instanceof TTemplateParam) {
+                $array_types[] = $type;
+            }
+        }
+
+        if (!$array_types) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    'int-or-string-array-access',
+                    true,
+                    $code_location,
+                    $suppressed_issues
+                );
             }
         }
 
