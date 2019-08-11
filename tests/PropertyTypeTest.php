@@ -158,7 +158,7 @@ class PropertyTypeTest extends TestCase
                         /**
                          * @var mixed
                          */
-                        public $foo;
+                        public $foo = "hello";
 
                         /** @return void */
                         public function barBar()
@@ -176,7 +176,7 @@ class PropertyTypeTest extends TestCase
             'propertyWithoutTypeSuppressingIssue' => [
                 '<?php
                     class A {
-                        public $foo;
+                        public $foo = "hello";
                     }
 
                     $a = (new A)->foo;',
@@ -937,7 +937,7 @@ class PropertyTypeTest extends TestCase
                         /**
                          * @var mixed
                          */
-                        private $mixed;
+                        private $mixed = "hello";
 
                         /**
                          * @param mixed $value
@@ -1718,7 +1718,7 @@ class PropertyTypeTest extends TestCase
             'missingPropertyType' => [
                 '<?php
                     class A {
-                        public $foo;
+                        public $foo = null;
 
                         public function assignToFoo(): void {
                             $this->foo = 5;
@@ -2406,6 +2406,19 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
+            ],
+            'unitializedPropertyWithoutType' => [
+                '<?php
+                    class A {
+                        public $foo;
+
+                        public function __construct() {
+                            echo strlen($this->foo);
+                            $this->foo = "foo";
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty',
+                ['MixedArgument', 'MissingPropertyType']
             ],
             'unitializedObjectProperty' => [
                 '<?php

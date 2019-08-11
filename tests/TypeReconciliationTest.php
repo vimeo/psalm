@@ -1306,7 +1306,7 @@ class TypeReconciliationTest extends TestCase
 
                     class A {
                         /** @var mixed */
-                        public $_array_value;
+                        public $_array_value = null;
 
                         private function getArrayValue() : ?array {
                             return rand(0, 1) ? [] : null;

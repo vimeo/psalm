@@ -678,15 +678,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             if ($property_storage->type) {
                 $property_type = clone $property_storage->type;
-
-                if (!$property_type->isMixed() &&
-                    !$property_storage->has_default &&
-                    !($property_type->isNullable() && $property_type->from_docblock)
-                ) {
-                    $property_type->initialized = false;
-                }
             } else {
                 $property_type = Type::getMixed();
+            }
+
+            if (!$property_storage->has_default
+                && !($property_type->isNullable() && $property_type->from_docblock)
+            ) {
+                $property_type->initialized = false;
             }
 
             $property_type_location = $property_storage->type_location;
@@ -1048,13 +1047,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property->has_default || !$property->type || $property_is_initialized) {
+            if ($property->has_default || $property_is_initialized) {
                 continue;
             }
 
-            if ($property->type->isMixed()
-                || ($property->type->isNullable() && $property->type->from_docblock)
-            ) {
+            if ($property->type && $property->type->isNullable() && $property->type->from_docblock) {
                 continue;
             }
 

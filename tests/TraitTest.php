@@ -906,7 +906,7 @@ class TraitTest extends TestCase
             'missingPropertyType' => [
                 '<?php
                     trait T {
-                        public $foo;
+                        public $foo = null;
                     }
                     class A {
                         use T;
@@ -987,7 +987,7 @@ class TraitTest extends TestCase
             'missingTraitPropertyType' => [
                 '<?php
                     trait T {
-                        public $foo;
+                        public $foo = 5;
                     }
 
                     class A {
