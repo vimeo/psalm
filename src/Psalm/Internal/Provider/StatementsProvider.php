@@ -439,9 +439,6 @@ class StatementsProvider
             }
         }
 
-        /** @psalm-suppress NoInterfaceProperties */
-        unset(self::$parser->errorHander);
-
         $error_handler->clearErrors();
 
         $resolving_traverser = new PhpParser\NodeTraverser;
