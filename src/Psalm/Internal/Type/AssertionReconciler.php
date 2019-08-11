@@ -1431,10 +1431,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $existing_var_atomic_types = $existing_var_type->getTypes();
 
         if ($existing_var_type->hasMixed()) {
-            return new Union([
-                new Atomic\TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
-                new TNamedObject('ArrayAccess'),
-            ]);
+            return Type::getMixed();
         }
 
         $array_types = [];
