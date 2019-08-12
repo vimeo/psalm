@@ -2998,7 +2998,13 @@ class CallAnalyzer
         }
 
         if ($callable_arg instanceof PhpParser\Node\Scalar\String_) {
-            return [preg_replace('/^\\\/', '', $callable_arg->value)];
+            $potential_id = preg_replace('/^\\\/', '', $callable_arg->value);
+
+            if (preg_match('/^[A-Za-z0-9_]+(\\\[A-Za-z0-9_]+)*(::[A-Za-z0-9_]+)?$/', $potential_id)) {
+                return [$potential_id];
+            }
+
+            return [];
         }
 
         if (count($callable_arg->items) !== 2) {
