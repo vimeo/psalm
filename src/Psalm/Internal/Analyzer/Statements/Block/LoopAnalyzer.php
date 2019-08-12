@@ -273,8 +273,9 @@ class LoopAnalyzer
                 }
 
                 if ($inner_context->collect_references) {
-                    foreach ($inner_context->unreferenced_vars as $var_id => $_) {
+                    foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
                         if (!isset($pre_outer_context->vars_in_scope[$var_id])) {
+                            $loop_scope->unreferenced_vars[$var_id] = $locations;
                             unset($inner_context->unreferenced_vars[$var_id]);
                         }
                     }

@@ -1034,6 +1034,18 @@ class UnusedVariableTest extends TestCase
                         }
                     }'
             ],
+            'setInLoopThatsAlwaysEntered' => [
+                '<?php
+                    /**
+                     * @param non-empty-array<int> $a
+                     */
+                    function getLastNum(array $a): int {
+                        foreach ($a as $num) {
+                            $last = $num;
+                        }
+                        return $last;
+                    }'
+            ],
         ];
     }
 
@@ -1709,6 +1721,19 @@ class UnusedVariableTest extends TestCase
 
                         $gap = "asa";
                         throw new \Exception($gap);
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'setInLoopThatsAlwaysEnteredButNotReferenced' => [
+                '<?php
+                    /**
+                     * @param non-empty-array<int> $a
+                     */
+                    function getLastNum(array $a): int {
+                        foreach ($a as $num) {
+                            $last = $num;
+                        }
+                        return 4;
                     }',
                 'error_message' => 'UnusedVariable',
             ],

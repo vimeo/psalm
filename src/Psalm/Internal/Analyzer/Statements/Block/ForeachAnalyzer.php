@@ -291,6 +291,13 @@ class ForeachAnalyzer
                         );
                     }
                 } else {
+                    if ($context->collect_references
+                        && !isset($context->vars_in_scope[$var_id])
+                        && isset($inner_loop_context->unreferenced_vars[$var_id])
+                    ) {
+                        $context->unreferenced_vars[$var_id] = $inner_loop_context->unreferenced_vars[$var_id];
+                    }
+
                     $context->vars_in_scope[$var_id] = $type;
                 }
             }
