@@ -112,19 +112,23 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     if (isset($call_args[0]->value->inferredType)) {
                         $atomic_types = $call_args[0]->value->inferredType->getTypes();
 
-                        if (count($atomic_types) === 1 && isset($atomic_types['array'])) {
-                            if ($atomic_types['array'] instanceof Type\Atomic\TNonEmptyArray) {
-                                return new Type\Union([
-                                    $atomic_types['array']->count !== null
-                                        ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
-                                        : new Type\Atomic\TInt
-                                ]);
-                            } elseif ($atomic_types['array'] instanceof Type\Atomic\ObjectLike
-                                && $atomic_types['array']->sealed
-                            ) {
-                                return new Type\Union([
-                                    new Type\Atomic\TLiteralInt(count($atomic_types['array']->properties))
-                                ]);
+                        if (count($atomic_types) === 1) {
+                            if (isset($atomic_types['array'])) {
+                                if ($atomic_types['array'] instanceof Type\Atomic\TNonEmptyArray) {
+                                    return new Type\Union([
+                                        $atomic_types['array']->count !== null
+                                            ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
+                                            : new Type\Atomic\TInt
+                                    ]);
+                                } elseif ($atomic_types['array'] instanceof Type\Atomic\ObjectLike
+                                    && $atomic_types['array']->sealed
+                                ) {
+                                    return new Type\Union([
+                                        new Type\Atomic\TLiteralInt(count($atomic_types['array']->properties))
+                                    ]);
+                                }
+                            } elseif (isset($atomic_types['callable-array'])) {
+                                return Type::getInt(false, 2);
                             }
                         }
                     }

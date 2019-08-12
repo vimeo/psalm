@@ -1698,6 +1698,15 @@ class FunctionCallTest extends TestCase
                     $xml = new SimpleXMLElement("<?xml version=\"1.0\"?><a><b></b><b></b></a>");
                     echo count($xml);',
             ],
+            'countableCallableArray' => [
+                '<?php
+                    /** @param callable|false $x */
+                    function example($x) : void {
+                        if (is_array($x)) {
+                            echo "Count is: " . count($x);
+                        }
+                    }'
+            ],
             'refineWithTraitExists' => [
                 '<?php
                     function foo(string $s) : void {
@@ -2357,6 +2366,17 @@ class FunctionCallTest extends TestCase
                         return compact("a", "b", "c");
                     }',
                 'error_message' => 'UndefinedVariable',
+            ],
+            'countCallableArrayShouldBeTwo' => [
+                '<?php
+                    /** @param callable|false $x */
+                    function example($x) : void {
+                        if (is_array($x)) {
+                            $c = count($x);
+                            if ($c !== 2) {}
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

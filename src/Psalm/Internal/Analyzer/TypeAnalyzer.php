@@ -724,6 +724,8 @@ class TypeAnalyzer
         }
 
         if ($input_type_part->shallowEquals($container_type_part)
+            || ($input_type_part instanceof Type\Atomic\TCallableObjectLikeArray
+                && $container_type_part instanceof TArray)
             || (($input_type_part instanceof TNamedObject
                     || ($input_type_part instanceof TTemplateParam
                         && $input_type_part->as->hasObjectType())
