@@ -223,8 +223,20 @@ class NegatedAssertionReconciler extends Reconciler
         } elseif (strtolower($assertion) === 'array'
             && isset($existing_var_type->getTypes()['iterable'])
         ) {
+            $iterable = $existing_var_type->getTypes()['iterable'];
+
             $existing_var_type->removeType('iterable');
-            $existing_var_type->addType(new TNamedObject('Traversable'));
+
+            if ($iterable instanceof Atomic\TIterable
+                && $iterable->type_params
+                && (!$iterable->type_params[0]->isMixed() || !$iterable->type_params[1]->isMixed())
+            ) {
+                $traversable = new Atomic\TGenericObject('Traversable', $iterable->type_params);
+            } else {
+                $traversable = new TNamedObject('Traversable');
+            }
+
+            $existing_var_type->addType($traversable);
         } elseif (strtolower($assertion) === 'string'
             && isset($existing_var_type->getTypes()['array-key'])
         ) {

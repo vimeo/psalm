@@ -136,6 +136,8 @@ class TypeReconciliationTest extends TestCase
             'callableToCallableArray' => ['callable-array{0: string|object, 1: string}', 'array', 'callable'],
             'callableOrArrayToCallableArray' => ['array<array-key, mixed>|callable-array{0: string|object, 1: string}', 'array', 'callable|array'],
             'traversableToIntersection' => ['Countable&Traversable', 'Traversable', 'Countable'],
+            'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', '!array', 'iterable'],
+            'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', '!array', 'iterable<int, string>'],
         ];
     }
 
