@@ -1693,6 +1693,16 @@ class PropertyTypeTest extends TestCase
 
                     echo (new B)->bar;'
             ],
+            'staticPropertyDefaultWithStaticType' => [
+                '<?php
+                    class Test {
+                        /** @var array<int, static> */
+                        private static $t1 = [];
+
+                        /** @var array<int, static> */
+                        private $t2 = [];
+                    }'
+            ]
         ];
     }
 

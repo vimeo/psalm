@@ -101,7 +101,7 @@ class PropertyAssignmentAnalyzer
                     $codebase,
                     $class_property_type,
                     $context->self,
-                    null,
+                    $context->self,
                     $class_storage->parent_class
                 );
             }
