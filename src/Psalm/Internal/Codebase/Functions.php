@@ -337,12 +337,12 @@ class Functions
             $args
         );
 
-        if (!$function_callable->params) {
+        if (!$function_callable->params || !$args) {
             return false;
         }
 
-        foreach ($function_callable->params as $param) {
-            if ($param->by_ref) {
+        foreach ($function_callable->params as $i => $param) {
+            if ($param->by_ref && isset($args[$i])) {
                 return false;
             }
         }
