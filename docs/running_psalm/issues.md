@@ -2389,6 +2389,16 @@ function foo(callable $c) : int {
 }
 ```
 
+### UnusedFunctionCall
+
+Emitted when `--find-dead-code` is turned on and Psalm finds a function call that is not used anywhere
+
+```php
+$a = strlen("hello");
+strlen("goodbye"); // unused
+echo $a;
+```
+
 ### UnusedParam
 
 Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a particular parameter in a private method or function

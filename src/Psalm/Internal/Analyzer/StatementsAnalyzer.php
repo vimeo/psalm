@@ -512,7 +512,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     | Type\Union::TAINTED_SYSTEM_SECRET;
 
                 foreach ($stmt->exprs as $i => $expr) {
+                    $context->inside_call = true;
                     ExpressionAnalyzer::analyze($this, $expr, $context);
+                    $context->inside_call = false;
 
                     if (isset($expr->inferredType)) {
                         if (CallAnalyzer::checkFunctionArgumentType(

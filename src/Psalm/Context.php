@@ -78,6 +78,13 @@ class Context
     public $inside_call = false;
 
     /**
+     * Whether or not we're inside an assignment
+     *
+     * @var bool
+     */
+    public $inside_assignment = false;
+
+    /**
      * @var null|CodeLocation
      */
     public $include_location = null;

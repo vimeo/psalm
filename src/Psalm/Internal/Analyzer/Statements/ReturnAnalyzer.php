@@ -113,6 +113,7 @@ class ReturnAnalyzer
         }
 
         if ($stmt->expr) {
+            $context->inside_call = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }

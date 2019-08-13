@@ -44,9 +44,11 @@ class SwitchAnalyzer
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
+        $context->inside_conditional = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $context) === false) {
             return false;
         }
+        $context->inside_conditional = false;
 
         $switch_var_id = ExpressionAnalyzer::getArrayVarId(
             $stmt->cond,
@@ -255,6 +257,8 @@ class SwitchAnalyzer
         $case_equality_expr = null;
 
         if ($case->cond) {
+            $case_context->inside_conditional = true;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
                 /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
                 $case_scope->parent_context = null;
@@ -263,6 +267,8 @@ class SwitchAnalyzer
 
                 return false;
             }
+
+            $case_context->inside_conditional = false;
 
             $switch_condition = clone $stmt->cond;
 

@@ -159,7 +159,9 @@ class WhileAnalyzer
                 $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
             }
 
+            $while_context->inside_conditional = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $while_context);
+            $while_context->inside_conditional = false;
 
             if (!in_array('RedundantCondition', $suppressed_issues, true)) {
                 $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);

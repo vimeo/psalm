@@ -171,7 +171,9 @@ class DoAnalyzer
             )
         );
 
+        $inner_loop_context->inside_conditional = true;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $inner_loop_context);
+        $inner_loop_context->inside_conditional = false;
 
         if ($negated_while_types) {
             $changed_var_ids = [];

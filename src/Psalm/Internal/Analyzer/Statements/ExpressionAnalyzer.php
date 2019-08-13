@@ -630,9 +630,11 @@ class ExpressionAnalyzer
             $stmt->inferredType = Type::getBool();
         } elseif ($stmt instanceof PhpParser\Node\Expr\Exit_) {
             if ($stmt->expr) {
+                $context->inside_call = true;
                 if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                     return false;
                 }
+                $context->inside_call = false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
             IncludeAnalyzer::analyze($statements_analyzer, $stmt, $context, $global_context);
@@ -1454,15 +1456,19 @@ class ExpressionAnalyzer
         }
 
         if ($stmt->key) {
+            $context->inside_call = true;
             if (self::analyze($statements_analyzer, $stmt->key, $context) === false) {
                 return false;
             }
+            $context->inside_call = false;
         }
 
         if ($stmt->value) {
+            $context->inside_call = true;
             if (self::analyze($statements_analyzer, $stmt->value, $context) === false) {
                 return false;
             }
+            $context->inside_call = false;
 
             if ($var_comment_type) {
                 $stmt->inferredType = $var_comment_type;

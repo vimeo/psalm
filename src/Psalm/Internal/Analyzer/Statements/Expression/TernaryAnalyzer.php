@@ -41,6 +41,8 @@ class TernaryAnalyzer
     ) {
         $first_if_cond_expr = IfAnalyzer::getDefinitelyEvaluatedExpression($stmt->cond);
 
+        $was_inside_conditional = $context->inside_conditional;
+
         $context->inside_conditional = true;
 
         $pre_condition_vars_in_scope = $context->vars_in_scope;
@@ -70,7 +72,9 @@ class TernaryAnalyzer
             $first_cond_referenced_var_ids
         );
 
-        $context->inside_conditional = false;
+        if (!$was_inside_conditional) {
+            $context->inside_conditional = false;
+        }
 
         $t_if_context = clone $context;
 

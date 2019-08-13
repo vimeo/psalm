@@ -261,6 +261,95 @@ class Functions
         return isset($file_storage->functions[$function_id]) && $file_storage->functions[$function_id]->variadic;
     }
 
+    /**
+     * @param array<int, \PhpParser\Node\Arg> $args
+     */
+    public function isCallMapFunctionPure(Codebase $codebase, string $function_id, array $args) : bool
+    {
+        $impure_functions = [
+            // file io
+            'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'closedir', 'copy', 'file_put_contents',
+            'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
+            'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
+            'fputcsv',
+
+            // stream/socket io
+            'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
+            'socket_set_option', 'stream_set_write_buffer',
+
+            // meta calls
+            'call_user_func', 'call_user_func_array', 'define', 'create_function',
+
+            // http
+            'header', 'header_remove', 'http_response_code', 'setcookie',
+
+            // output buffer
+            'ob_start', 'ob_end_clean', 'readfile', 'var_dump', 'printf', 'print_r', 'phpinfo',
+
+            // internal optimisation
+            'opcache_compile_file', 'clearstatcache',
+
+            // process-related
+            'pcntl_signal', 'posix_kill', 'cli_set_process_title', 'pcntl_async_signals', 'proc_close',
+
+            // curl
+            'curl_setopt', 'curl_close', 'curl_multi_add_handle', 'curl_multi_remove_handle',
+            'curl_multi_select', 'curl_multi_close', 'curl_setopt_array',
+
+            // apc
+            'apc_store', 'apc_delete', 'apcu_store', 'apcu_delete', 'apc_clear_cache',
+
+            // newrelic
+            'newrelic_start_transaction', 'newrelic_name_transaction', 'newrelic_add_custom_parameter',
+            'newrelic_add_custom_tracer', 'newrelic_background_job', 'newrelic_end_transaction',
+            'newrelic_set_appname',
+
+            // well-known functions
+            'libxml_use_internal_errors', 'array_map', 'curl_exec', 'shell_exec',
+            'mt_srand', 'openssl_pkcs7_sign', 'mysqli_select_db',
+
+            // php environment
+            'ini_set', 'sleep', 'usleep', 'register_shutdown_function',
+            'error_reporting', 'register_tick_function', 'unregister_tick_function',
+            'set_error_handler', 'user_error', 'trigger_error', 'restore_error_handler',
+            'date_default_timezone_set',  'assert', 'assert_options', 'setlocale',
+            'set_exception_handler', 'set_time_limit', 'putenv', 'spl_autoload_register',
+
+            // logging
+            'openlog', 'syslog', 'error_log', 'define_syslog_variables',
+        ];
+
+        if (\in_array(strtolower($function_id), $impure_functions, true)) {
+            return false;
+        }
+
+        if (strpos($function_id, 'image') === 0) {
+            return false;
+        }
+
+        if ($function_id === 'var_export' && !isset($args[1])) {
+            return false;
+        }
+
+        $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
+            $codebase,
+            $function_id,
+            $args
+        );
+
+        if (!$function_callable->params) {
+            return false;
+        }
+
+        foreach ($function_callable->params as $param) {
+            if ($param->by_ref) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static function clearCache() : void
     {
         self::$stubbed_functions = [];

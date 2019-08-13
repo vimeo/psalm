@@ -340,6 +340,7 @@
             <xs:element name="UnresolvableInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnevaluatedCode" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedClosureParam" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedFunctionCall" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedProperty" type="PropertyIssueHandlerType" minOccurs="0" />

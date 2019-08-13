@@ -146,9 +146,11 @@ class ForeachAnalyzer
             }
         }
 
+        $context->inside_assignment = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
+        $context->inside_assignment = false;
 
         $key_type = null;
         $value_type = null;

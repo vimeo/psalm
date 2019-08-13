@@ -55,8 +55,16 @@ class IncludeAnalyzer
             );
         }
 
+        $was_inside_call = $context->inside_call;
+
+        $context->inside_call = true;
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
+        }
+
+        if (!$was_inside_call) {
+            $context->inside_call = false;
         }
 
         if ($stmt->expr instanceof PhpParser\Node\Scalar\String_

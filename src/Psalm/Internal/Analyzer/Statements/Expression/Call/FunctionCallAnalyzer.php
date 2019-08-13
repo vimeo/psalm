@@ -18,6 +18,7 @@ use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\PossiblyInvalidFunctionCall;
 use Psalm\Issue\PossiblyNullFunctionCall;
+use Psalm\Issue\UnusedFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
@@ -607,12 +608,39 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             );
         }
 
-        if ($context->pure) {
-            if ($function_storage && !$function_storage->pure) {
+        if ($context->pure || $codebase->find_unused_variables) {
+            $callmap_function_pure = $function_id && $in_call_map
+                ? $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args)
+                : null;
+
+            if (($function_storage
+                    && !$function_storage->pure)
+                || ($callmap_function_pure === false)
+            ) {
+                if ($context->pure) {
+                    if (IssueBuffer::accepts(
+                        new ImpureFunctionCall(
+                            'Cannot call an impure function from a pure context',
+                            new CodeLocation($statements_analyzer, $stmt->name)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            } elseif ($function_id
+                && (($function_storage && $function_storage->pure) || $callmap_function_pure === true)
+                && $codebase->find_unused_variables
+                && !$context->inside_assignment
+                && !$context->inside_conditional
+                && !$context->inside_call
+                && !$context->inside_unset
+            ) {
                 if (IssueBuffer::accepts(
-                    new ImpureFunctionCall(
-                        'Cannot call an impure function from a pure context',
-                        new CodeLocation($statements_analyzer, $stmt->name)
+                    new UnusedFunctionCall(
+                        'The call to ' . $function_id . ' is not used',
+                        new CodeLocation($statements_analyzer, $stmt->name),
+                        $function_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
@@ -758,7 +786,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                     if ($fq_const_name !== null) {
                         $second_arg = $stmt->args[1];
+                        $context->inside_call = true;
                         ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
+                        $context->inside_call = false;
 
                         $statements_analyzer->setConstType(
                             $fq_const_name,
