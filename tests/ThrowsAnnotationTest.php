@@ -8,7 +8,7 @@ class ThrowsAnnotationTest extends TestCase
 {
     public function testUndefinedClassAsThrows() : void
     {
-        $this->expectExceptionMessage('UndefinedClass');
+        $this->expectExceptionMessage('UndefinedDocblockClass');
         $this->expectException(\Psalm\Exception\CodeException::class);
 
         $this->addFile(

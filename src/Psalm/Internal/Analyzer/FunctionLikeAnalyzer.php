@@ -1026,7 +1026,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $expected_exception,
                     $storage->location,
                     $statements_analyzer->getSuppressedIssues(),
-                    false
+                    false,
+                    false,
+                    true,
+                    true
                 )
             ) {
                 $input_type = new Type\Union([new TNamedObject($expected_exception)]);
