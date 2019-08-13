@@ -1020,32 +1020,32 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         }
 
         foreach ($storage->throws as $expected_exception => $_) {
-            if ($storage->location
-                && ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+            if (isset($storage->throw_locations[$expected_exception])) {
+                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $statements_analyzer,
                     $expected_exception,
-                    $storage->location,
+                    $storage->throw_locations[$expected_exception],
                     $statements_analyzer->getSuppressedIssues(),
                     false,
                     false,
                     true,
                     true
-                )
-            ) {
-                $input_type = new Type\Union([new TNamedObject($expected_exception)]);
-                $container_type = new Type\Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
+                )) {
+                    $input_type = new Type\Union([new TNamedObject($expected_exception)]);
+                    $container_type = new Type\Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
 
-                if (!TypeAnalyzer::isContainedBy($codebase, $input_type, $container_type)) {
-                    if (IssueBuffer::accepts(
-                        new \Psalm\Issue\InvalidThrow(
-                            'Class supplied for @throws ' . $expected_exception
-                                . ' does not implement Throwable',
-                            $storage->location,
-                            $expected_exception
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if (!TypeAnalyzer::isContainedBy($codebase, $input_type, $container_type)) {
+                        if (IssueBuffer::accepts(
+                            new \Psalm\Issue\InvalidThrow(
+                                'Class supplied for @throws ' . $expected_exception
+                                    . ' does not implement Throwable',
+                                $storage->throw_locations[$expected_exception],
+                                $expected_exception
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }

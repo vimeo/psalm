@@ -111,7 +111,7 @@ class FunctionDocblockComment
     public $suppress = [];
 
     /**
-     * @var array<int, string>
+     * @var array<int, array{0: string, 1: int, 2: int}>
      */
     public $throws = [];
 

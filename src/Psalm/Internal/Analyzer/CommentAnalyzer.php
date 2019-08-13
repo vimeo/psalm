@@ -523,14 +523,18 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock['specials']['throws'])) {
-            foreach ($parsed_docblock['specials']['throws'] as $throws_entry) {
+            foreach ($parsed_docblock['specials']['throws'] as $offset => $throws_entry) {
                 $throws_class = preg_split('/[\s]+/', $throws_entry)[0];
 
                 if (!$throws_class) {
                     throw new IncorrectDocblockException('Unexpectedly empty @throws');
                 }
 
-                $info->throws[] = $throws_class;
+                $info->throws[] = [
+                    $throws_class,
+                    $offset + $comment->getFilePos(),
+                    $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset)
+                ];
             }
         }
 

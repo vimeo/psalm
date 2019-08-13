@@ -8,7 +8,7 @@ class ThrowsAnnotationTest extends TestCase
 {
     public function testUndefinedClassAsThrows() : void
     {
-        $this->expectExceptionMessage('UndefinedDocblockClass');
+        $this->expectExceptionMessage('UndefinedDocblockClass - somefile.php:3:28');
         $this->expectException(\Psalm\Exception\CodeException::class);
 
         $this->addFile(
@@ -39,6 +39,26 @@ class ThrowsAnnotationTest extends TestCase
                  * @throws Foo
                  */
                 function bar() : void {}'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    public function testInheritedThrowableClassAsThrows() : void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class MyException extends Exception {}
+
+                class Foo {
+                    /**
+                     * @throws MyException|Throwable
+                     */
+                    public function bar() : void {}
+                }'
         );
 
         $context = new Context();

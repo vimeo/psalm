@@ -152,6 +152,11 @@ class FunctionLikeStorage
     public $throws = [];
 
     /**
+     * @var array<string, CodeLocation>
+     */
+    public $throw_locations = [];
+
+    /**
      * @var bool
      */
     public $has_yield = false;
