@@ -857,8 +857,8 @@ class PropertyFetchAnalyzer
 
             $type->sources = [$method_source];
 
-            if ($codebase->taint->hasPreviousSource($method_source)) {
-                $type->tainted = 1;
+            if ($tainted_source = $codebase->taint->hasPreviousSource($method_source)) {
+                $type->tainted = $tainted_source->taint;
             }
         }
     }

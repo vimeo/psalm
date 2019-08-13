@@ -2289,7 +2289,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             foreach ($storage->params as $param_storage) {
                 if ($param_storage->name === $param_name) {
-                    $param_storage->is_sink = true;
+                    $param_storage->sink = (int) Type\Union::TAINTED_INPUT;
                 }
             }
         }

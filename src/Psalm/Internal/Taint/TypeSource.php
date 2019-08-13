@@ -12,10 +12,14 @@ class TypeSource
     /** @var ?CodeLocation */
     public $code_location;
 
-    public function __construct(string $id, ?CodeLocation $code_location)
+    /** @var int */
+    public $taint;
+
+    public function __construct(string $id, ?CodeLocation $code_location, int $taint = 0)
     {
         $this->id = $id;
         $this->code_location = $code_location;
+        $this->taint = $taint;
     }
 
     public static function getForMethodArgument(

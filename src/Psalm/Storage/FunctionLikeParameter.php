@@ -69,9 +69,9 @@ class FunctionLikeParameter
     public $is_variadic;
 
     /**
-     * @var bool
+     * @var int
      */
-    public $is_sink = false;
+    public $sink = 0;
 
     /**
      * @var bool

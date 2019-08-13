@@ -506,7 +506,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     'var',
                     false
                 );
-                $echo_param->is_sink = true;
+
+                $echo_param->sink = Type\Union::TAINTED_INPUT_HTML
+                    | Type\Union::TAINTED_USER_SECRET
+                    | Type\Union::TAINTED_SYSTEM_SECRET;
 
                 foreach ($stmt->exprs as $i => $expr) {
                     ExpressionAnalyzer::analyze($this, $expr, $context);

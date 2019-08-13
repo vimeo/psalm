@@ -162,9 +162,13 @@ class ArrayFetchAnalyzer
             );
 
             if ($array_var_id === '$_GET' || $array_var_id === '$_POST') {
-                $stmt->inferredType->tainted = Type\Union::TAINTED;
+                $stmt->inferredType->tainted = (int) Type\Union::TAINTED_INPUT;
                 $stmt->inferredType->sources = [
-                    new TypeSource('$_GET', new CodeLocation($statements_analyzer->getSource(), $stmt))
+                    new TypeSource(
+                        '$_GET',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        (int) Type\Union::TAINTED_INPUT
+                    )
                 ];
             }
 

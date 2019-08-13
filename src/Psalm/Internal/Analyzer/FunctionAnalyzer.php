@@ -53,6 +53,8 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
         $call_map = CallMap::getCallMap();
 
+        $codebase = $statements_analyzer->getCodebase();
+
         if (!isset($call_map[$call_map_key])) {
             throw new \InvalidArgumentException('Function ' . $function_id . ' was not found in callmap');
         }
@@ -85,8 +87,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     return new Type\Union([new Type\Atomic\TClassString($context->self ?: 'object')]);
 
                 case 'get_parent_class':
-                    $codebase = $statements_analyzer->getCodebase();
-
                     if ($context->self && $codebase->classExists($context->self)) {
                         $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
 
@@ -264,8 +264,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 new Type\Atomic\TFalse
                             ]);
 
-                            $codebase = $statements_analyzer->getCodebase();
-
                             if ($codebase->config->ignore_internal_falsable_issues) {
                                 $falsable_array->ignore_falsable_issues = true;
                             }
@@ -380,8 +378,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 break;
 
             default:
-                $codebase = $statements_analyzer->getCodebase();
-
                 if ($call_map_return_type->isFalsable()
                     && $codebase->config->ignore_internal_falsable_issues
                 ) {
@@ -390,5 +386,58 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
         }
 
         return $call_map_return_type;
+    }
+
+    /**
+     * @param  array<PhpParser\Node\Arg>   $call_args
+     */
+    public static function taintBuiltinFunctionReturn(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id,
+        array $call_args,
+        Type\Union $return_type
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!$codebase->taint) {
+            return;
+        }
+
+        switch ($function_id) {
+            case 'htmlspecialchars':
+                if (isset($call_args[0]->value->inferredType)
+                    && $call_args[0]->value->inferredType->tainted
+                ) {
+                    // input is now safe from tainted sql and html
+                    $return_type->tainted = $call_args[0]->value->inferredType->tainted
+                        & ~(Type\Union::TAINTED_INPUT_SQL | Type\Union::TAINTED_INPUT_HTML);
+                    $return_type->sources = $call_args[0]->value->inferredType->sources;
+                }
+                break;
+
+            case 'strtolower':
+            case 'strtoupper':
+            case 'print_r':
+                if (isset($call_args[0]->value->inferredType)
+                    && $call_args[0]->value->inferredType->tainted
+                ) {
+                    $return_type->tainted = $call_args[0]->value->inferredType->tainted;
+                    $return_type->sources = $call_args[0]->value->inferredType->sources;
+                }
+
+                break;
+
+            case 'htmlentities':
+            case 'striptags':
+                if (isset($call_args[0]->value->inferredType)
+                    && $call_args[0]->value->inferredType->tainted
+                ) {
+                    // input is now safe from tainted html
+                    $return_type->tainted = $call_args[0]->value->inferredType->tainted
+                        & ~Type\Union::TAINTED_INPUT_HTML;
+                    $return_type->sources = $call_args[0]->value->inferredType->sources;
+                }
+                break;
+        }
     }
 }

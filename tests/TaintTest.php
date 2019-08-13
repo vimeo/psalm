@@ -716,4 +716,39 @@ class TaintTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testTaintStrConversion() : void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function foo() : void {
+                    $a = strtoupper(strtolower((string) $_GET["bad"]));
+                    echo $a;
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testTaintHtmlEntities() : void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function foo() : void {
+                    $a = htmlentities((string) $_GET["bad"]);
+                    echo $a;
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }

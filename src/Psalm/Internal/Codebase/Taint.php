@@ -70,41 +70,41 @@ class Taint
     /**
      * @param ?array<string> $suffixes
      */
-    public function hasPreviousSink(TypeSource $source, ?array &$suffixes = null) : bool
+    public function hasPreviousSink(TypeSource $source, ?array &$suffixes = null) : ?TypeSource
     {
         if (isset($this->specializations[$source->id])) {
             $suffixes = $this->specializations[$source->id];
 
             foreach ($suffixes as $suffix) {
                 if (isset(self::$previous_sinks[$source->id . '-' . $suffix])) {
-                    return true;
+                    return self::$previous_sinks[$source->id . '-' . $suffix];
                 }
             }
 
-            return false;
+            return null;
         }
 
-        return isset(self::$previous_sinks[$source->id]);
+        return self::$previous_sinks[$source->id] ?? null;
     }
 
     /**
      * @param ?array<string> $suffixes
      */
-    public function hasPreviousSource(TypeSource $source, ?array &$suffixes = null) : bool
+    public function hasPreviousSource(TypeSource $source, ?array &$suffixes = null) : ?TypeSource
     {
         if (isset($this->specializations[$source->id])) {
             $suffixes = $this->specializations[$source->id];
 
             foreach ($suffixes as $suffix) {
                 if (isset(self::$previous_sources[$source->id . '-' . $suffix])) {
-                    return true;
+                    return self::$previous_sources[$source->id . '-' . $suffix];
                 }
             }
 
-            return false;
+            return null;
         }
 
-        return isset(self::$previous_sources[$source->id]);
+        return self::$previous_sources[$source->id] ?? null;
     }
 
     public function addSpecialization(string $base_id, string $suffix) : void

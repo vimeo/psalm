@@ -489,6 +489,15 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             $stmt->args,
                             $context
                         );
+
+                        if ($codebase->taint) {
+                            FunctionAnalyzer::taintBuiltinFunctionReturn(
+                                $statements_analyzer,
+                                $function_id,
+                                $stmt->args,
+                                $stmt->inferredType
+                            );
+                        }
                     }
                 }
             }

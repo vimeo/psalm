@@ -601,8 +601,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 );
                 $var_type->sources = [$type_source];
 
-                if ($codebase->taint->hasExistingSource($type_source)) {
-                    $var_type->tainted = 1;
+                if ($tainted_source = $codebase->taint->hasExistingSource($type_source)) {
+                    $var_type->tainted = $tainted_source->taint;
+                    $type_source->taint = $tainted_source->taint;
                 }
             }
 
