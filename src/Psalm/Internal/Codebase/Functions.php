@@ -305,7 +305,7 @@ class Functions
             'newrelic_set_appname',
 
             // execution
-            'shell_exec', 'exec', 'system', 'passthru',
+            'shell_exec', 'exec', 'system', 'passthru', 'pcntl_exec',
 
             // well-known functions
             'libxml_use_internal_errors', 'array_map', 'curl_exec',

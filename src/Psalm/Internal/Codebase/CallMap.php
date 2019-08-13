@@ -209,6 +209,8 @@ class CallMap
 
             $function_params = [];
 
+            $arg_offset = 0;
+
             /** @var string $arg_name - key type changed with above array_shift */
             foreach ($call_map_function_args as $arg_name => $arg_type) {
                 $by_reference = false;
@@ -245,9 +247,23 @@ class CallMap
                     $variadic
                 );
 
+                if ($arg_offset === 0
+                    && ($function_id === 'exec'
+                        || $function_id === 'shell_exec'
+                        || $function_id === 'passthru'
+                        || $function_id === 'system'
+                        || $function_id === 'pcntl_exec'
+                        || $function_id === 'file_put_contents'
+                        || $function_id === 'fopen')
+                ) {
+                    $function_param->sink = Type\Union::TAINTED_INPUT_SHELL;
+                }
+
                 $function_param->signature_type = null;
 
                 $function_params[] = $function_param;
+
+                $arg_offset++;
             }
 
             $possible_callables[] = new TCallable('callable', $function_params, $return_type);

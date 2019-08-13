@@ -957,6 +957,10 @@ class PropertyAssignmentAnalyzer
             new CodeLocation($statements_analyzer->getSource(), $stmt)
         );
 
+        if ($assignment_value_type->tainted) {
+            $method_source->taint = $assignment_value_type->tainted;
+        }
+
         if ($codebase->taint->hasPreviousSink($method_source)) {
             if ($assignment_value_type->sources) {
                 $codebase->taint->addSinks(
@@ -970,9 +974,13 @@ class PropertyAssignmentAnalyzer
 
         if ($assignment_value_type->sources) {
             foreach ($assignment_value_type->sources as $type_source) {
-                if ($codebase->taint->hasPreviousSource($type_source)
+                if (($previous_source = $codebase->taint->hasPreviousSource($type_source))
                     || $assignment_value_type->tainted
                 ) {
+                    if ($previous_source) {
+                        $method_source->taint = $previous_source->taint;
+                    }
+
                     $codebase->taint->addSources(
                         $statements_analyzer,
                         [$method_source],
