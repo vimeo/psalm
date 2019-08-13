@@ -336,12 +336,20 @@ class Methods
                 }
 
                 if ($context && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                    $was_inside_call = $context->inside_call;
+
+                    $context->inside_call = true;
+
                     foreach ($args as $arg) {
                         \Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer::analyze(
                             $source,
                             $arg->value,
                             $context
                         );
+                    }
+
+                    if (!$was_inside_call) {
+                        $context->inside_call = false;
                     }
                 }
 

@@ -417,7 +417,8 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
             case 'strtolower':
             case 'strtoupper':
-            case 'print_r':
+            case 'sprintf':
+            case 'preg_quote':
             case 'substr':
                 if (isset($call_args[0]->value->inferredType)
                     && $call_args[0]->value->inferredType->tainted

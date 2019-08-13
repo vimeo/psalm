@@ -783,6 +783,7 @@ class CallAnalyzer
             return false;
         }
 
+        $context->inside_call = true;
         if (isset($array_arg->inferredType) && $array_arg->inferredType->hasArray()) {
             /** @var TArray|ObjectLike */
             $array_type = $array_arg->inferredType->getTypes()['array'];
@@ -842,6 +843,8 @@ class CallAnalyzer
                 false
             );
         }
+
+        $context->inside_call = false;
 
         return;
     }
