@@ -190,7 +190,7 @@ When `true`, Psalm ignores possibly-null issues stemming from return values of i
 #### findUnusedVariablesAndParams
 ```xml
 <psalm
-  findUnusedVariables="[bool]"
+  findUnusedVariablesAndParams="[bool]"
 >
 ```
 When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. Defaults to `false`.
