@@ -1035,8 +1035,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 if (!TypeAnalyzer::isContainedBy($codebase, $input_type, $container_type)) {
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\InvalidThrow(
-                            'Cannot throw ' . $expected_exception
-                                . ' as it does not implement Throwable',
+                            'Class supplied for @throws ' . $expected_exception
+                                . ' does not implement Throwable',
                             $storage->location,
                             $expected_exception
                         ),
