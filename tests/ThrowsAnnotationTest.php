@@ -6,6 +6,46 @@ use Psalm\Context;
 
 class ThrowsAnnotationTest extends TestCase
 {
+    public function testUndefinedClassAsThrows() : void
+    {
+        $this->expectExceptionMessage('UndefinedClass');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @throws Foo
+                 */
+                function bar() : void {}'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    public function testNonThrowableClassAsThrows() : void
+    {
+        $this->expectExceptionMessage('InvalidThrow');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo {}
+
+                /**
+                 * @throws Foo
+                 */
+                function bar() : void {}'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
     /**
      * @return void
      */

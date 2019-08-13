@@ -1019,6 +1019,35 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
         }
 
+        foreach ($storage->throws as $expected_exception => $_) {
+            if ($storage->location
+                && ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $statements_analyzer,
+                    $expected_exception,
+                    $storage->location,
+                    $statements_analyzer->getSuppressedIssues(),
+                    false
+                )
+            ) {
+                $input_type = new Type\Union([new TNamedObject($expected_exception)]);
+                $container_type = new Type\Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
+
+                if (!TypeAnalyzer::isContainedBy($codebase, $input_type, $container_type)) {
+                    if (IssueBuffer::accepts(
+                        new \Psalm\Issue\InvalidThrow(
+                            'Cannot throw ' . $expected_exception
+                                . ' as it does not implement Throwable',
+                            $storage->location,
+                            $expected_exception
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+        }
+
         foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
             $is_expected = false;
 

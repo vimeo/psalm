@@ -123,8 +123,8 @@ class ThrowsInGlobalScopeTest extends TestCase
             '<?php
                 namespace ns;
                 /**
-                 * @throws RangeException
-                 * @throws InvalidArgumentException
+                 * @throws \RangeException
+                 * @throws \InvalidArgumentException
                  */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
@@ -273,8 +273,8 @@ class ThrowsInGlobalScopeTest extends TestCase
             '<?php
                 namespace ns;
                 /**
-                 * @throws RangeException
-                 * @throws InvalidArgumentException
+                 * @throws \RangeException
+                 * @throws \InvalidArgumentException
                  */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
