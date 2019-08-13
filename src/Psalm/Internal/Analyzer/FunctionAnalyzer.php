@@ -418,10 +418,22 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
             case 'strtolower':
             case 'strtoupper':
             case 'print_r':
+            case 'substr':
                 if (isset($call_args[0]->value->inferredType)
                     && $call_args[0]->value->inferredType->tainted
                 ) {
                     $return_type->tainted = $call_args[0]->value->inferredType->tainted;
+                    $return_type->sources = $call_args[0]->value->inferredType->sources;
+                }
+
+                break;
+
+            case 'str_replace':
+            case 'preg_replace':
+                $first_arg_taint = $call_args[0]->value->inferredType->tainted ?? 0;
+                $third_arg_taint = $call_args[2]->value->inferredType->tainted ?? 0;
+                if ($first_arg_taint || $third_arg_taint) {
+                    $return_type->tainted = $first_arg_taint | $third_arg_taint;
                     $return_type->sources = $call_args[0]->value->inferredType->sources;
                 }
 
