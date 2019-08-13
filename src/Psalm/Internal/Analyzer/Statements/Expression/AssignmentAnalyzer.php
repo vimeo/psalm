@@ -721,10 +721,6 @@ class AssignmentAnalyzer
             return false;
         }
 
-        if (!$was_in_assignment) {
-            $context->inside_assignment = false;
-        }
-
         $array_var_id = ExpressionAnalyzer::getArrayVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
@@ -829,6 +825,10 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $stmt->inferredType = clone $context->vars_in_scope[$array_var_id];
             }
+        }
+
+        if (!$was_in_assignment) {
+            $context->inside_assignment = false;
         }
 
         return null;
