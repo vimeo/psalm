@@ -187,6 +187,22 @@ When `true`, Psalm ignores possibly-false issues stemming from return values of 
 ```
 When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `true`.
 
+#### findUnusedVariablesAndParams
+```xml
+<psalm
+  findUnusedVariables="[bool]"
+>
+```
+When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. Defaults to `false`.
+
+#### findUnusedCode
+```xml
+<psalm
+  findUnusedCode="[bool]"
+>
+```
+When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `false`.
+
 ### Running Psalm
 
 #### autoloader
