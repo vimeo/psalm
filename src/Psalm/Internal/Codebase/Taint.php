@@ -189,11 +189,11 @@ class Taint
             $location_summary = $source->code_location->getQuickSummary();
         }
 
-        if (isset($visited_paths[$source->id])) {
+        if (isset($visited_paths[$source->id . ' ' . $location_summary])) {
             return '';
         }
 
-        $visited_paths[$source->id] = true;
+        $visited_paths[$source->id . ' ' . $location_summary] = true;
 
         $source_descriptor = $source->id . ($location_summary ? ' (' . $location_summary . ')' : '');
 
@@ -221,11 +221,11 @@ class Taint
             $location_summary = $sink->code_location->getQuickSummary();
         }
 
-        if (isset($visited_paths[$sink->id])) {
+        if (isset($visited_paths[$sink->id . ' ' . $location_summary])) {
             return '';
         }
 
-        $visited_paths[$sink->id] = true;
+        $visited_paths[$sink->id . ' ' . $location_summary] = true;
 
         $sink_descriptor = $sink->id . ($location_summary ? ' (' . $location_summary . ')' : '');
 

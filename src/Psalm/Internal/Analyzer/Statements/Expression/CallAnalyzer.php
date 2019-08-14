@@ -2872,11 +2872,15 @@ class CallAnalyzer
                 $code_location
             );
 
+            $existing_sink = $codebase->taint->hasExistingSink($method_sink);
+
             foreach ($input_type->sources as $input_source) {
+                $existing_source = $codebase->taint->hasExistingSource($input_source);
+
                 if (IssueBuffer::accepts(
                     new TaintedInput(
-                        'in path ' . $codebase->taint->getPredecessorPath($input_source)
-                            . ' out path ' . $codebase->taint->getSuccessorPath($method_sink),
+                        'in path ' . $codebase->taint->getPredecessorPath($existing_source ?: $input_source)
+                            . ' out path ' . $codebase->taint->getSuccessorPath($existing_sink ?: $method_sink),
                         $code_location
                     ),
                     $statements_analyzer->getSuppressedIssues()
