@@ -42,7 +42,7 @@ use function array_search;
 use function array_keys;
 use function end;
 use function array_diff;
-use Psalm\Internal\Taint\TypeSource;
+use Psalm\Internal\Taint\Source;
 
 /**
  * @internal
@@ -593,7 +593,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
 
             if ($cased_method_id && $codebase->taint) {
-                $type_source = TypeSource::getForMethodArgument(
+                $type_source = Source::getForMethodArgument(
                     $cased_method_id,
                     $offset,
                     $function_param->location,

@@ -39,7 +39,7 @@ use function array_reverse;
 use function array_keys;
 use function count;
 use function explode;
-use Psalm\Internal\Taint\TypeSource;
+use Psalm\Internal\Taint\Source;
 
 /**
  * @internal
@@ -850,7 +850,7 @@ class PropertyFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($codebase->taint) {
-            $method_source = new TypeSource(
+            $method_source = new Source(
                 $property_id,
                 new CodeLocation($statements_analyzer, $stmt->name)
             );

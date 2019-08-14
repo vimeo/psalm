@@ -4,7 +4,9 @@ namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\TypeSource;
+use Psalm\Internal\Taint\Sink;
+use Psalm\Internal\Taint\Source;
+use Psalm\Internal\Taint\Taintable;
 use Psalm\IssueBuffer;
 use Psalm\Issue\TaintedInput;
 use function array_merge;
@@ -15,32 +17,32 @@ use UnexpectedValueException;
 class Taint
 {
     /**
-     * @var array<string, ?TypeSource>
+     * @var array<string, ?Sink>
      */
     private $new_sinks = [];
 
     /**
-     * @var array<string, ?TypeSource>
+     * @var array<string, ?Source>
      */
     private $new_sources = [];
 
     /**
-     * @var array<string, ?TypeSource>
+     * @var array<string, ?Sink>
      */
     private static $previous_sinks = [];
 
     /**
-     * @var array<string, ?TypeSource>
+     * @var array<string, ?Source>
      */
     private static $previous_sources = [];
 
     /**
-     * @var array<string, ?TypeSource>
+     * @var array<string, ?Sink>
      */
     private static $archived_sinks = [];
 
     /**
-     * @var array<string, ?TypeSource>
+     * @var array<string, ?Source>
      */
     private static $archived_sources = [];
 
@@ -57,12 +59,12 @@ class Taint
         self::$archived_sources = [];
     }
 
-    public function hasExistingSink(TypeSource $source) : ?TypeSource
+    public function hasExistingSink(Taintable $sink) : ?Sink
     {
-        return self::$archived_sinks[$source->id] ?? null;
+        return self::$archived_sinks[$sink->id] ?? null;
     }
 
-    public function hasExistingSource(TypeSource $source) : ?TypeSource
+    public function hasExistingSource(Taintable $source) : ?Source
     {
         return self::$archived_sources[$source->id] ?? null;
     }
@@ -70,7 +72,7 @@ class Taint
     /**
      * @param ?array<string> $suffixes
      */
-    public function hasPreviousSink(TypeSource $source, ?array &$suffixes = null) : ?TypeSource
+    public function hasPreviousSink(Sink $source, ?array &$suffixes = null) : ?Sink
     {
         if (isset($this->specializations[$source->id])) {
             $suffixes = $this->specializations[$source->id];
@@ -90,7 +92,7 @@ class Taint
     /**
      * @param ?array<string> $suffixes
      */
-    public function hasPreviousSource(TypeSource $source, ?array &$suffixes = null) : ?TypeSource
+    public function hasPreviousSource(Source $source, ?array &$suffixes = null) : ?Source
     {
         if (isset($this->specializations[$source->id])) {
             $suffixes = $this->specializations[$source->id];
@@ -119,25 +121,23 @@ class Taint
     }
 
     /**
-     * @param array<TypeSource> $sources
+     * @param array<Source> $sources
      */
     public function addSources(
         StatementsAnalyzer $statements_analyzer,
-        array $sources,
-        \Psalm\CodeLocation $code_location,
-        ?TypeSource $previous_source
+        array $sources
     ) : void {
         foreach ($sources as $source) {
             if ($this->hasExistingSource($source)) {
                 continue;
             }
 
-            if ($this->hasExistingSink($source)) {
+            if (($existing_sink = $this->hasExistingSink($source)) && $source->code_location) {
                 if (IssueBuffer::accepts(
                     new TaintedInput(
-                        ($previous_source ? 'in path ' . $this->getPredecessorPath($previous_source) : '')
-                            . ' out path ' . $this->getSuccessorPath($source),
-                        $code_location
+                        'in path ' . $this->getPredecessorPath($source)
+                            . ' out path ' . $this->getSuccessorPath($existing_sink),
+                        $source->code_location
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
@@ -145,14 +145,43 @@ class Taint
                 }
             }
 
-            $this->new_sources[$source->id] = $previous_source;
+            $this->new_sources[$source->id] = $source;
+        }
+    }
+
+    /**
+     * @param array<Sink> $sinks
+     */
+    public function addSinks(
+        StatementsAnalyzer $statements_analyzer,
+        array $sinks
+    ) : void {
+        foreach ($sinks as $sink) {
+            if ($this->hasExistingSink($sink)) {
+                continue;
+            }
+
+            if (($existing_source = $this->hasExistingSource($sink)) && $sink->code_location) {
+                if (IssueBuffer::accepts(
+                    new TaintedInput(
+                        'in path ' . $this->getPredecessorPath($existing_source)
+                            . ' out path ' . $this->getSuccessorPath($sink),
+                        $sink->code_location
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            $this->new_sinks[$sink->id] = $sink;
         }
     }
 
     /**
      * @var array<string, bool> $visited_paths
      */
-    public function getPredecessorPath(TypeSource $source, array $visited_paths = []) : string
+    public function getPredecessorPath(Source $source, array $visited_paths = []) : string
     {
         $location_summary = '';
 
@@ -168,7 +197,9 @@ class Taint
 
         $source_descriptor = $source->id . ($location_summary ? ' (' . $location_summary . ')' : '');
 
-        if ($previous_source = $this->new_sources[$source->id] ?? self::$archived_sources[$source->id] ?? null) {
+        $previous_source = $source->parents[0] ?? null;
+
+        if ($previous_source) {
             if ($previous_source === $source) {
                 return '';
             }
@@ -182,12 +213,12 @@ class Taint
     /**
      * @var array<string, bool> $visited_paths
      */
-    public function getSuccessorPath(TypeSource $source, array $visited_paths = []) : string
+    public function getSuccessorPath(Sink $sink, array $visited_paths = []) : string
     {
         $location_summary = '';
 
-        if ($source->code_location) {
-            $location_summary = $source->code_location->getQuickSummary();
+        if ($sink->code_location) {
+            $location_summary = $sink->code_location->getQuickSummary();
 
             if (isset($visited_paths[$location_summary])) {
                 return '';
@@ -196,48 +227,19 @@ class Taint
             $visited_paths[$location_summary] = true;
         }
 
-        $source_descriptor = $source->id . ($location_summary ? ' (' . $location_summary . ')' : '');
+        $sink_descriptor = $sink->id . ($location_summary ? ' (' . $location_summary . ')' : '');
 
-        if ($next_source = $this->new_sinks[$source->id] ?? self::$archived_sinks[$source->id] ?? null) {
-            if ($next_source === $source) {
+        $next_sink = $sink->children[0] ?? null;
+
+        if ($next_sink) {
+            if ($next_sink === $sink) {
                 return '';
             }
 
-            return $source_descriptor . ' -> ' . $this->getSuccessorPath($next_source, $visited_paths);
+            return $sink_descriptor . ' -> ' . $this->getSuccessorPath($next_sink, $visited_paths);
         }
 
-        return $source_descriptor;
-    }
-
-    /**
-     * @param array<TypeSource> $sources
-     */
-    public function addSinks(
-        StatementsAnalyzer $statements_analyzer,
-        array $sources,
-        \Psalm\CodeLocation $code_location,
-        ?TypeSource $previous_source
-    ) : void {
-        foreach ($sources as $source) {
-            if ($this->hasExistingSink($source)) {
-                continue;
-            }
-
-            if ($this->hasExistingSource($source)) {
-                if (IssueBuffer::accepts(
-                    new TaintedInput(
-                        'in path ' . $this->getPredecessorPath($source)
-                            . ($previous_source ? ' out path ' . $this->getSuccessorPath($previous_source) : ''),
-                        $code_location
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
-
-            $this->new_sinks[$source->id] = $previous_source;
-        }
+        return $sink_descriptor;
     }
 
     public function hasNewSinksAndSources() : bool

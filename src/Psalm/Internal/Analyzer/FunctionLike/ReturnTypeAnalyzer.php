@@ -39,7 +39,6 @@ use function strtolower;
 use function substr;
 use function count;
 use function in_array;
-use Psalm\Internal\Taint\TypeSource;
 
 /**
  * @internal

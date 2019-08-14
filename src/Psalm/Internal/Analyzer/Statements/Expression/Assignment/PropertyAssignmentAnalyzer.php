@@ -42,7 +42,8 @@ use function count;
 use function in_array;
 use function strtolower;
 use function explode;
-use Psalm\Internal\Taint\TypeSource;
+use Psalm\Internal\Taint\Sink;
+use Psalm\Internal\Taint\Source;
 
 /**
  * @internal
@@ -940,6 +941,9 @@ class PropertyAssignmentAnalyzer
         return null;
     }
 
+    /**
+     * @psalm-suppress UnusedVariable
+     */
     private static function taintProperty(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
@@ -952,22 +956,34 @@ class PropertyAssignmentAnalyzer
             return;
         }
 
-        $method_source = new TypeSource(
+        $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $method_sink = new Sink(
             $property_id,
-            new CodeLocation($statements_analyzer->getSource(), $stmt)
+            $code_location
         );
 
         if ($assignment_value_type->tainted) {
-            $method_source->taint = $assignment_value_type->tainted;
+            $method_sink->taint = $assignment_value_type->tainted;
         }
 
-        if ($codebase->taint->hasPreviousSink($method_source)) {
+        if ($codebase->taint->hasPreviousSink($method_sink)) {
             if ($assignment_value_type->sources) {
                 $codebase->taint->addSinks(
                     $statements_analyzer,
-                    $assignment_value_type->sources,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $method_source
+                    \array_map(
+                        function (Source $assignment_source) use ($method_sink) {
+                            $new_sink = new Sink(
+                                $assignment_source->id,
+                                $assignment_source->code_location
+                            );
+
+                            $new_sink->children = [$method_sink];
+
+                            return $new_sink;
+                        },
+                        $assignment_value_type->sources
+                    )
                 );
             }
         }
@@ -977,15 +993,26 @@ class PropertyAssignmentAnalyzer
                 if (($previous_source = $codebase->taint->hasPreviousSource($type_source))
                     || $assignment_value_type->tainted
                 ) {
-                    if ($previous_source) {
-                        $method_source->taint = $previous_source->taint;
+                    if (!$previous_source) {
+                        $previous_source = new Source(
+                            $type_source->id,
+                            $type_source->code_location
+                        );
+
+                        $previous_source->taint = $assignment_value_type->tainted;
                     }
+
+                    $new_source = new Source(
+                        $property_id,
+                        $code_location
+                    );
+
+                    $new_source->parents = [$previous_source];
+                    $new_source->taint = $previous_source->taint;
 
                     $codebase->taint->addSources(
                         $statements_analyzer,
-                        [$method_source],
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $type_source
+                        [$new_source]
                     );
                 }
             }

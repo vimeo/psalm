@@ -10,7 +10,8 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
-use Psalm\Internal\Taint\TypeSource;
+use Psalm\Internal\Taint\Sink;
+use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -2785,7 +2786,7 @@ class CallAnalyzer
             return;
         }
 
-        $method_source = TypeSource::getForMethodArgument(
+        $method_sink = Sink::getForMethodArgument(
             $cased_method_id,
             $argument_offset,
             $code_location
@@ -2793,7 +2794,7 @@ class CallAnalyzer
 
         $found_sink = null;
 
-        if (($function_param->sink || ($found_sink = $codebase->taint->hasPreviousSink($method_source)))
+        if (($function_param->sink || ($found_sink = $codebase->taint->hasPreviousSink($method_sink)))
             && $input_type->sources
         ) {
             $all_possible_sinks = [];
@@ -2803,7 +2804,14 @@ class CallAnalyzer
                     continue;
                 }
 
-                $all_possible_sinks[] = $source;
+                $base_sink = new Sink(
+                    $source->id,
+                    $source->code_location
+                );
+
+                $base_sink->children = [$method_sink];
+
+                $all_possible_sinks[] = $base_sink;
 
                 if (strpos($source->id, '::') && strpos($source->id, '#')) {
                     list($fq_classlike_name, $method_name) = explode('::', $source->id);
@@ -2815,12 +2823,14 @@ class CallAnalyzer
                     $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
 
                     foreach ($class_storage->dependent_classlikes as $dependent_classlike => $_) {
-                        $new_sink = TypeSource::getForMethodArgument(
+                        $new_sink = Sink::getForMethodArgument(
                             $dependent_classlike . '::' . $method_name,
                             (int) $method_name_parts[1] - 1,
                             $code_location,
                             null
                         );
+
+                        $new_sink->children = [$method_sink];
 
                         $new_sink->taint = $found_sink ? $found_sink->taint : $function_param->sink;
 
@@ -2829,7 +2839,7 @@ class CallAnalyzer
 
                     if (isset($class_storage->overridden_method_ids[$method_name])) {
                         foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
-                            $new_sink = TypeSource::getForMethodArgument(
+                            $new_sink = Sink::getForMethodArgument(
                                 $parent_method_id,
                                 (int) $method_name_parts[1] - 1,
                                 $code_location,
@@ -2837,6 +2847,7 @@ class CallAnalyzer
                             );
 
                             $new_sink->taint = $found_sink ? $found_sink->taint : $function_param->sink;
+                            $new_sink->children = [$method_sink];
 
                             $all_possible_sinks[] = $new_sink;
                         }
@@ -2846,9 +2857,7 @@ class CallAnalyzer
 
             $codebase->taint->addSinks(
                 $statements_analyzer,
-                $all_possible_sinks,
-                $code_location,
-                $method_source
+                $all_possible_sinks
             );
         }
 
@@ -2857,11 +2866,17 @@ class CallAnalyzer
             && ($function_param->sink & $input_type->tainted)
             && $input_type->sources
         ) {
+            $method_sink = Sink::getForMethodArgument(
+                $cased_method_id,
+                $argument_offset,
+                $code_location
+            );
+
             foreach ($input_type->sources as $input_source) {
                 if (IssueBuffer::accepts(
                     new TaintedInput(
                         'in path ' . $codebase->taint->getPredecessorPath($input_source)
-                            . ' out path ' . $codebase->taint->getSuccessorPath($method_source),
+                            . ' out path ' . $codebase->taint->getSuccessorPath($method_sink),
                         $code_location
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -2875,22 +2890,30 @@ class CallAnalyzer
                     strtolower($cased_method_id . '#' . ($argument_offset + 1)),
                     $function_location->file_name . ':' . $function_location->raw_file_start
                 );
-
-                $method_source = TypeSource::getForMethodArgument(
-                    $cased_method_id,
-                    $argument_offset,
-                    $code_location,
-                    $function_location
-                );
             }
 
             foreach ($input_type->sources as $type_source) {
                 if ($codebase->taint->hasPreviousSource($type_source) || $input_type->tainted) {
+                    if ($function_is_pure) {
+                        $method_source = Source::getForMethodArgument(
+                            $cased_method_id,
+                            $argument_offset,
+                            $code_location,
+                            $function_location
+                        );
+                    } else {
+                        $method_source = Source::getForMethodArgument(
+                            $cased_method_id,
+                            $argument_offset,
+                            $code_location
+                        );
+                    }
+
+                    $method_source->parents = [$type_source];
+
                     $codebase->taint->addSources(
                         $statements_analyzer,
-                        [$method_source],
-                        $code_location,
-                        $type_source
+                        [$method_source]
                     );
                 }
             }

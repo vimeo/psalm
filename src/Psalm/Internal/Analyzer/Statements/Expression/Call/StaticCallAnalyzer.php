@@ -31,7 +31,7 @@ use function strpos;
 use function is_string;
 use function strlen;
 use function substr;
-use Psalm\Internal\Taint\TypeSource;
+use Psalm\Internal\Taint\Source;
 
 /**
  * @internal
@@ -994,7 +994,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         if ($method_storage && $method_storage->pure) {
                             $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                            $method_source = new TypeSource(
+                            $method_source = new Source(
                                 strtolower(
                                     $method_id
                                         . '-' . $code_location->file_name
@@ -1003,7 +1003,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 new CodeLocation($source, $stmt->name)
                             );
                         } else {
-                            $method_source = new TypeSource(
+                            $method_source = new Source(
                                 strtolower($method_id),
                                 new CodeLocation($source, $stmt->name)
                             );
@@ -1016,7 +1016,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 $specialized_sources = [];
 
                                 foreach ($suffixes as $suffix) {
-                                    $specialized_sources[] = new TypeSource(
+                                    $specialized_sources[] = new Source(
                                         $method_source->id . '-' . $suffix,
                                         $method_source->code_location,
                                         $tainted_source->taint

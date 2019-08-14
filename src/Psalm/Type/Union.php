@@ -163,7 +163,7 @@ class Union
     public $tainted = null;
 
     /**
-     * @var ?array<\Psalm\Internal\Taint\TypeSource>
+     * @var ?array<\Psalm\Internal\Taint\Source>
      */
     public $sources;
 
