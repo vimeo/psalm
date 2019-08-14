@@ -967,18 +967,18 @@ class PropertyAssignmentAnalyzer
             $method_sink->taint = $assignment_value_type->tainted;
         }
 
-        if ($codebase->taint->hasPreviousSink($method_sink)) {
+        if ($child_sink = $codebase->taint->hasPreviousSink($method_sink)) {
             if ($assignment_value_type->sources) {
                 $codebase->taint->addSinks(
                     $statements_analyzer,
                     \array_map(
-                        function (Source $assignment_source) use ($method_sink) {
+                        function (Source $assignment_source) use ($child_sink) {
                             $new_sink = new Sink(
                                 $assignment_source->id,
                                 $assignment_source->code_location
                             );
 
-                            $new_sink->children = [$method_sink];
+                            $new_sink->children = [$child_sink];
 
                             return $new_sink;
                         },

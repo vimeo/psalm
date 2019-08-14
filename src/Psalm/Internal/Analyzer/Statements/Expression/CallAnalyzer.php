@@ -2792,9 +2792,9 @@ class CallAnalyzer
             $code_location
         );
 
-        $found_sink = null;
+        $child_sink = null;
 
-        if (($function_param->sink || ($found_sink = $codebase->taint->hasPreviousSink($method_sink)))
+        if (($function_param->sink || ($child_sink = $codebase->taint->hasPreviousSink($method_sink)))
             && $input_type->sources
         ) {
             $all_possible_sinks = [];
@@ -2809,7 +2809,7 @@ class CallAnalyzer
                     $source->code_location
                 );
 
-                $base_sink->children = [$method_sink];
+                $base_sink->children = [$child_sink ?: $method_sink];
 
                 $all_possible_sinks[] = $base_sink;
 
@@ -2830,9 +2830,9 @@ class CallAnalyzer
                             null
                         );
 
-                        $new_sink->children = [$method_sink];
+                        $new_sink->children = [$child_sink ?: $method_sink];
 
-                        $new_sink->taint = $found_sink ? $found_sink->taint : $function_param->sink;
+                        $new_sink->taint = $child_sink ? $child_sink->taint : $function_param->sink;
 
                         $all_possible_sinks[] = $new_sink;
                     }
@@ -2846,8 +2846,8 @@ class CallAnalyzer
                                 null
                             );
 
-                            $new_sink->taint = $found_sink ? $found_sink->taint : $function_param->sink;
-                            $new_sink->children = [$method_sink];
+                            $new_sink->taint = $child_sink ? $child_sink->taint : $function_param->sink;
+                            $new_sink->children = [$child_sink ?: $method_sink];
 
                             $all_possible_sinks[] = $new_sink;
                         }
@@ -2893,7 +2893,7 @@ class CallAnalyzer
             }
 
             foreach ($input_type->sources as $type_source) {
-                if ($codebase->taint->hasPreviousSource($type_source) || $input_type->tainted) {
+                if (($previous_source = $codebase->taint->hasPreviousSource($type_source)) || $input_type->tainted) {
                     if ($function_is_pure) {
                         $method_source = Source::getForMethodArgument(
                             $cased_method_id,
@@ -2909,7 +2909,7 @@ class CallAnalyzer
                         );
                     }
 
-                    $method_source->parents = [$type_source];
+                    $method_source->parents = [$previous_source ?: $type_source];
 
                     $codebase->taint->addSources(
                         $statements_analyzer,
