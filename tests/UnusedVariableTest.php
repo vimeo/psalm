@@ -1063,6 +1063,20 @@ class UnusedVariableTest extends TestCase
                         $m->setValue([get_class($mock) => "hello"]);
                     }'
             ],
+            'SKIPPED-defineBeforeAssignmentInConditional' => [
+                '<?php
+                    $i = null;
+
+                    if (rand(0, 1) || ($i = rand(0, 1))) {
+                        echo $i;
+                    }',
+            ],
+            'SKIPPED-definedInFirstAssignmentInConditional' => [
+                '<?php
+                    if (($b = rand(0, 1)) || rand(0, 1)) {
+                        echo $b;
+                    }',
+            ],
         ];
     }
 
