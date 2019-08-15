@@ -306,7 +306,7 @@ class BinaryOpAnalyzer
 
             $context->assigned_var_ids = array_merge(
                 $context->assigned_var_ids,
-                $pre_op_context->assigned_var_ids
+                $op_context->assigned_var_ids
             );
 
             if ($context->collect_references) {
