@@ -886,6 +886,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 return;
             }
 
+            if (self::checkFunctionArguments(
+                $statements_analyzer,
+                $args,
+                null,
+                null,
+                $context
+            ) === false) {
+                return false;
+            }
+
             if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
                 $existent_method_ids = array_merge($existent_method_ids, $all_intersection_existent_method_ids);
 
