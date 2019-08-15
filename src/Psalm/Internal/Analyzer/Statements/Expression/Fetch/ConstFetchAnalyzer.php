@@ -352,7 +352,9 @@ class ConstFetchAnalyzer
                     }
                 }
 
-                if (isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
+                if (isset($class_constants[$stmt->name->name])
+                    && ($first_part_lc !== 'static' || $class_const_storage->final)
+                ) {
                     $stmt->inferredType = clone $class_constants[$stmt->name->name];
                     $context->vars_in_scope[$const_id] = $stmt->inferredType;
                 } else {
