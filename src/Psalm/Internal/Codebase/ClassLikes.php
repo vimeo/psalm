@@ -716,7 +716,8 @@ class ClassLikes
     public function getUnAliasedName(string $alias_name)
     {
         $alias_name_lc = strtolower($alias_name);
-        if (isset($this->existing_classlikes_lc[$alias_name_lc])) {
+
+        if ($this->existing_classlikes_lc[$alias_name_lc] ?? false) {
             return $alias_name;
         }
 
