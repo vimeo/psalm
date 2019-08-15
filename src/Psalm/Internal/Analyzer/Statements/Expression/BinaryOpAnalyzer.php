@@ -306,14 +306,24 @@ class BinaryOpAnalyzer
 
             $context->assigned_var_ids = array_merge(
                 $context->assigned_var_ids,
-                $op_context->assigned_var_ids
+                $pre_op_context->assigned_var_ids
             );
 
             if ($context->collect_references) {
-                $context->unreferenced_vars = array_intersect_key(
-                    $op_context->unreferenced_vars,
-                    $context->unreferenced_vars
-                );
+                foreach ($op_context->unreferenced_vars as $var_id => $locations) {
+                    if (!isset($context->unreferenced_vars[$var_id])) {
+                        $context->unreferenced_vars[$var_id] = $locations;
+                    } else {
+                        $new_locations = array_diff_key(
+                            $locations,
+                            $context->unreferenced_vars[$var_id]
+                        );
+
+                        if ($new_locations) {
+                            $context->unreferenced_vars[$var_id] += $locations;
+                        }
+                    }
+                }
             }
 
             $context->vars_possibly_in_scope = array_merge(

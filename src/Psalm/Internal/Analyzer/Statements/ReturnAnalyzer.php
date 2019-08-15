@@ -415,9 +415,6 @@ class ReturnAnalyzer
         return null;
     }
 
-    /**
-     * @psalm-suppress UnusedVariable
-     */
     private static function handleTaints(
         StatementsAnalyzer $statements_analyzer,
         \Psalm\Codebase $codebase,

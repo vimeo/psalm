@@ -941,9 +941,6 @@ class PropertyAssignmentAnalyzer
         return null;
     }
 
-    /**
-     * @psalm-suppress UnusedVariable
-     */
     private static function taintProperty(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,

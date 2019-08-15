@@ -2767,9 +2767,6 @@ class CallAnalyzer
         return null;
     }
 
-    /**
-     * @psalm-suppress UnusedVariable due to #2014
-     */
     private static function processTaintedness(
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
