@@ -1724,6 +1724,14 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'callable-string']];
             }
+        } elseif ($expr->name instanceof PhpParser\Node\Name
+            && strtolower($expr->name->parts[0]) === 'method_exists'
+            && isset($expr->args[1])
+            && $expr->args[1]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = [[$prefix . 'hasmethod-' . $expr->args[1]->value->value]];
+            }
         } elseif (self::hasInArrayCheck($expr)) {
             if ($first_var_name && isset($expr->args[1]->value->inferredType)) {
                 foreach ($expr->args[1]->value->inferredType->getTypes() as $atomic_type) {

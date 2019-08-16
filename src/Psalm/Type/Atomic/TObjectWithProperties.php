@@ -18,13 +18,20 @@ class TObjectWithProperties extends TObject
     public $properties;
 
     /**
+     * @var array<string, bool>
+     */
+    public $methods;
+
+    /**
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
+     * @param array<string, bool> $methods
      */
-    public function __construct(array $properties)
+    public function __construct(array $properties, array $methods = [])
     {
         $this->properties = $properties;
+        $this->methods = $methods;
     }
 
     public function __toString()
@@ -35,24 +42,37 @@ class TObjectWithProperties extends TObject
             $extra_types = '&' . implode('&', $this->extra_types);
         }
 
-        return 'object{' .
-                implode(
-                    ', ',
-                    array_map(
-                        /**
-                         * @param  string|int $name
-                         * @param  Union $type
-                         *
-                         * @return string
-                         */
-                        function ($name, Union $type) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type;
-                        },
-                        array_keys($this->properties),
-                        $this->properties
-                    )
-                ) .
-                '}' . $extra_types;
+        $properties_string = implode(
+            ', ',
+            array_map(
+                /**
+                 * @param  string|int $name
+                 * @param  Union $type
+                 *
+                 * @return string
+                 */
+                function ($name, Union $type) {
+                    return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type;
+                },
+                array_keys($this->properties),
+                $this->properties
+            )
+        );
+
+        $methods_string = implode(
+            ', ',
+            array_map(
+                function (string $name) {
+                    return $name . '()';
+                },
+                array_keys($this->methods)
+            )
+        );
+
+        return 'object{'
+            . $properties_string . ($methods_string && $properties_string ? ', ' : '')
+            . $methods_string
+            . '}' . $extra_types;
     }
 
     public function getId()
@@ -63,24 +83,37 @@ class TObjectWithProperties extends TObject
             $extra_types = '&' . implode('&', $this->extra_types);
         }
 
-        return 'object{' .
-                implode(
-                    ', ',
-                    array_map(
-                        /**
-                         * @param  string|int $name
-                         * @param  Union $type
-                         *
-                         * @return string
-                         */
-                        function ($name, Union $type) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId();
-                        },
-                        array_keys($this->properties),
-                        $this->properties
-                    )
-                ) .
-                '}' . $extra_types;
+        $properties_string = implode(
+            ', ',
+            array_map(
+                /**
+                 * @param  string|int $name
+                 * @param  Union $type
+                 *
+                 * @return string
+                 */
+                function ($name, Union $type) {
+                    return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId();
+                },
+                array_keys($this->properties),
+                $this->properties
+            )
+        );
+
+        $methods_string = implode(
+            ', ',
+            array_map(
+                function (string $name) {
+                    return $name . '()';
+                },
+                array_keys($this->methods)
+            )
+        );
+
+        return 'object{'
+            . $properties_string . ($methods_string && $properties_string ? ', ' : '')
+            . $methods_string
+            . '}' . $extra_types;
     }
 
     /**
@@ -182,6 +215,10 @@ class TObjectWithProperties extends TObject
         }
 
         if (count($this->properties) !== count($other_type->properties)) {
+            return false;
+        }
+
+        if ($this->methods !== $other_type->methods) {
             return false;
         }
 

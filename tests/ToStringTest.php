@@ -90,6 +90,16 @@ class ToStringTest extends TestCase
                         echo (string) $i;
                     }',
             ],
+            'allowToStringAfterMethodExistsCheck' => [
+                '<?php
+                    function getString(object $value) : ?string {
+                        if (method_exists($value, "__toString")) {
+                            return (string) $value;
+                        }
+
+                        return null;
+                    }'
+            ],
         ];
     }
 
@@ -264,6 +274,17 @@ class ToStringTest extends TestCase
                         return null;
                     }',
                 'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'allowToStringAfterMethodExistsCheckWithTypo' => [
+                '<?php
+                    function getString(object $value) : ?string {
+                        if (method_exists($value, "__toStrong")) {
+                            return (string) $value;
+                        }
+
+                        return null;
+                    }',
+                'error_message' => 'InvalidCast',
             ],
         ];
     }

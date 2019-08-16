@@ -1299,6 +1299,17 @@ class TypeAnalyzer
             }
         }
 
+        if (($container_type_part instanceof TString || $container_type_part instanceof TScalar)
+            && $input_type_part instanceof TObjectWithProperties
+            && isset($input_type_part->methods['__toString'])
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->to_string_cast = true;
+            }
+
+            return true;
+        }
+
         if ($container_type_part instanceof Type\Atomic\TFn && $input_type_part instanceof TCallable) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;

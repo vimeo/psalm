@@ -344,6 +344,18 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
+        if (substr($assertion, 0, 10) === 'hasmethod-') {
+            return self::reconcileHasMethod(
+                $codebase,
+                substr($assertion, 10),
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation
+            );
+        }
+
         if (($assertion === 'int' || $assertion === 'float')
             && $existing_var_type->from_calculation
             && $existing_var_type->hasInt()
@@ -780,6 +792,65 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileHasMethod(
+        Codebase $codebase,
+        string $method_id,
+        Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation
+    ) : Union {
+        $old_var_type_string = $existing_var_type->getId();
+        $existing_var_atomic_types = $existing_var_type->getTypes();
+
+        $object_types = [];
+        $did_remove_type = false;
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($type->value)
+                && $codebase->methodExists($type->value . '::__toString')
+            ) {
+                $object_types[] = $type;
+            } elseif ($type instanceof TObject || $type instanceof TMixed) {
+                $object_types[] = new Atomic\TObjectWithProperties([], ['__toString' => true]);
+                $did_remove_type = true;
+            } elseif ($type instanceof TTemplateParam) {
+                $object_types[] = $type;
+                $did_remove_type = true;
+            } else {
+                $did_remove_type = true;
+            }
+        }
+
+        if (!$object_types || !$did_remove_type) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    'object',
+                    !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+        }
+
+        if ($object_types) {
+            return new Type\Union($object_types);
+        }
+
+        $failed_reconciliation = 2;
+
+        return Type::getMixed();
     }
 
     /**
