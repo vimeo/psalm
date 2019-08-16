@@ -631,20 +631,22 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             } elseif ($function_id
                 && (($function_storage && $function_storage->pure) || $callmap_function_pure === true)
                 && $codebase->find_unused_variables
-                && !$context->inside_assignment
                 && !$context->inside_conditional
-                && !$context->inside_call
                 && !$context->inside_unset
             ) {
-                if (IssueBuffer::accepts(
-                    new UnusedFunctionCall(
-                        'The call to ' . $function_id . ' is not used',
-                        new CodeLocation($statements_analyzer, $stmt->name),
-                        $function_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+                if (!$context->inside_assignment && !$context->inside_call) {
+                    if (IssueBuffer::accepts(
+                        new UnusedFunctionCall(
+                            'The call to ' . $function_id . ' is not used',
+                            new CodeLocation($statements_analyzer, $stmt->name),
+                            $function_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    $stmt->pure = true;
                 }
             }
         }

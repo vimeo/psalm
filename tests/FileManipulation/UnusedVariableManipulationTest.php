@@ -30,7 +30,7 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 true,
             ],
 
-            'removeUnusedVariableFunctionCall' => [
+            'removeUnusedVariableAndFunctionCall' => [
                 '<?php
                     class A {
                         public function foo() : void {
@@ -42,7 +42,6 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 '<?php
                     class A {
                         public function foo() : void {
-                            substr("wonderful", 2);
                             $b = "hello";
                             echo $b;
                         }
@@ -87,9 +86,7 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 '<?php
                     class A {
                         public function foo() : void {
-                            substr("hello world", 4);
                             $b = "b";
-                            file_get_contents("foo.php");
                             echo $b;
                         }
                     }',
@@ -408,7 +405,6 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                     function foo() : void {
                         $a = 5;
                         $b = 6;
-                        intval("4");
                         echo "foo";
                     }',
                 '7.1',

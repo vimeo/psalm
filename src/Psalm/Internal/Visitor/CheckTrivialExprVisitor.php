@@ -38,6 +38,10 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
             || $node instanceof PhpParser\Node\Expr\YieldFrom
             || $node instanceof PhpParser\Node\Expr\New_
         ) {
+            if ($node instanceof PhpParser\Node\Expr\FuncCall && isset($node->pure)) {
+                return false;
+            }
+
             return true;
         } else {
             return false;
