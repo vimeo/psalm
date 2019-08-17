@@ -289,3 +289,11 @@ Optional.  A list of exceptions to not report for `checkForThrowsDocblock` or `c
   <class name="fully\qualified\path\Exc" onlyGlobalScope="true" />
 </ignoreExceptions>
 ```
+
+#### `<globals>`
+Optional.  If your codebase uses global variables that are accessed with the `global` keyword, you can declare their type.  e.g.
+```xml
+<globals>
+  <var name="globalVariableName" type="type" />
+</globals>
+```
