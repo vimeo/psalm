@@ -397,10 +397,8 @@ class ConstFetchAnalyzer
 
         $stmt->inferredType = Type::getMixed();
 
-        if ($stmt->class instanceof PhpParser\Node\Expr) {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
-                return;
-            }
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
+            return false;
         }
 
         return null;
