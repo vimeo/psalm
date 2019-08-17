@@ -42,7 +42,7 @@ ERROR: InvalidArgument - somefile.php:3:14 - Argument 1 of implode expects `stri
 
 There are two main inspirations for Psalm:
 
-- Etsy's [Phan](https://github.com/etsy/phan), which uses nikic's [`php-ast`](https://github.com/nikic/php-ast) extension to create an abstract syntax tree
+- Etsy's [Phan](https://github.com/etsy/phan), which uses nikic's [php-ast](https://github.com/nikic/php-ast) extension to create an abstract syntax tree
 - Facebook's [Hack](http://hacklang.org/), a PHP-like language that supports many advanced typing features natively, so docblocks aren't necessary.
 
 ## Index
