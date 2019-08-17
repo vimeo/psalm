@@ -1,6 +1,6 @@
 # Atomic types
 
-Atomic types are the basic building block of all type information used in Psalm. Multiple atomic types can be combined, either with [union types](union-types.md) or [intersection types](intersection_types.md). Psalm allows many different sorts of atomic types to be expressed in docblock syntax:
+Atomic types are the basic building block of all type information used in Psalm. Multiple atomic types can be combined, either with [union types](union_types.md) or [intersection types](intersection_types.md). Psalm allows many different sorts of atomic types to be expressed in docblock syntax:
 
 ## [Scalar types](scalar_types.md)
 
