@@ -254,6 +254,7 @@ class AssignmentAnalyzer
 
             if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch
                 && !strpos($root_var_id ?? '', '->')
+                && !$comment_type
             ) {
                 if (IssueBuffer::accepts(
                     new MixedAssignment(

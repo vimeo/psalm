@@ -51,6 +51,13 @@ class AssignmentTest extends TestCase
                         echo $foo;
                     }',
             ],
+            'explicitlyTypedMixedAssignment' => [
+                '<?php
+                    /** @var mixed */
+                    $a = 5;
+                    /** @var mixed */
+                    $b = $a;',
+            ],
         ];
     }
 

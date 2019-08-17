@@ -1162,7 +1162,8 @@ function foo(array $a, array $b) : void {
 
 ### MixedAssignment
 
-Emitted when assigning a variable to a value for which Psalm cannot infer a type
+Emitted when assigning an unannotated variable to a value for which Psalm
+cannot infer a type more specific than `mixed`.
 
 ```php
 $a = $_GET['foo'];
@@ -1173,7 +1174,7 @@ $a = $_GET['foo'];
 Emitted when calling a function on a value whose type Psalm cannot infer.
 
 ```php
-/** @psalm-suppress MixedAssignment */
+/** @var mixed */
 $a = $_GET['foo'];
 $a();
 ```
