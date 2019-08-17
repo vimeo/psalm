@@ -390,6 +390,16 @@ class ConstantTest extends TestCase
                         }
                     }'
             ],
+            'allowChecksAfterDefined' => [
+                '<?php
+                    class A {
+                        private const STRING = "x";
+
+                        public static function bar() : bool {
+                            return !defined("FOO") && strpos("x", self::STRING) === 0;
+                        }
+                    }'
+            ],
         ];
     }
 
