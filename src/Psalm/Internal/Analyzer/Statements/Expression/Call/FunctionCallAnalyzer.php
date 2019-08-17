@@ -646,6 +646,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         // fall through
                     }
                 } else {
+                    /** @psalm-suppress UndefinedPropertyAssignment */
                     $stmt->pure = true;
                 }
             }
