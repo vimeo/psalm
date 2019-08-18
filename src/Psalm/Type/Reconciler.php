@@ -184,6 +184,7 @@ class Reconciler
             $has_equality = false;
             $has_isset = false;
             $has_not_isset = false;
+            $has_falsyish = false;
             $has_count_check = false;
 
             foreach ($new_type_parts as $new_type_part_parts) {
@@ -203,6 +204,10 @@ class Reconciler
                         || $new_type_part_part === 'isset'
                         || $new_type_part_part === '=isset'
                         || $new_type_part_part === 'array-key-exists';
+
+                    $has_falsyish = $has_falsyish
+                        || $new_type_part_part === 'empty'
+                        || $new_type_part_part === 'falsy';
 
                     $has_not_isset = $has_not_isset || $new_type_part_part === '!isset';
 
@@ -289,7 +294,7 @@ class Reconciler
                     $code_location,
                     $suppressed_issues
                 );
-            } elseif (!$has_negation && !$has_isset) {
+            } elseif (!$has_negation && !$has_falsyish && !$has_isset) {
                 $changed_var_ids[] = $key;
             }
 
