@@ -252,6 +252,12 @@ class ScopeTest extends TestCase
                         return $foo;
                     }',
             ],
+            'psalmScopeThisInTemplate' => [
+                '<?php
+                    /** @psalm-scope-this Exception */
+                ?>
+                <h1><?= $this->getMessage() ?></h1>',
+            ],
         ];
     }
 

@@ -137,6 +137,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     private $removed_unref_vars = [];
 
     /**
+     * @var ?string
+     */
+    private $fake_this_class = null;
+
+    /**
      * @param SourceAnalyzer $source
      */
     public function __construct(SourceAnalyzer $source)
@@ -267,6 +272,14 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
 
                 $comments = $this->parsed_docblock;
+
+                if (isset($comments['specials']['psalm-scope-this'])) {
+                    $trimmed = trim(reset($comments['specials']['psalm-scope-this']));
+                    $this_type = Type::parseString($trimmed);
+                    $context->self = $trimmed;
+                    $context->vars_in_scope['$this'] = $this_type;
+                    $this->setFQCLN($this_type);
+                }
 
                 if (isset($comments['specials']['psalm-suppress'])) {
                     $suppressed = array_filter(
@@ -2157,5 +2170,19 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     public function getParsedDocblock() : ?array
     {
         return $this->parsed_docblock;
+    }
+
+    public function getFQCLN()
+    {
+        if ($this->fake_this_class) {
+            return $this->fake_this_class;
+        }
+
+        return parent::getFQCLN();
+    }
+
+    public function setFQCLN(string $fake_this_class) : void
+    {
+        $this->fake_this_class = $fake_this_class;
     }
 }

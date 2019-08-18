@@ -150,7 +150,7 @@ class DocComment
                         'override-method-visibility', 'seal-properties', 'seal-methods',
                         'generator-return', 'ignore-falsable-return', 'variadic', 'pure',
                         'ignore-variable-method', 'ignore-variable-property', 'internal',
-                        'taint-sink', 'taint-source', 'assert-untainted',
+                        'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
                     ],
                     true
                 )) {
@@ -272,7 +272,7 @@ class DocComment
                         'override-method-visibility', 'seal-properties', 'seal-methods',
                         'generator-return', 'ignore-falsable-return', 'variadic', 'pure',
                         'ignore-variable-method', 'ignore-variable-property', 'internal',
-                        'taint-sink', 'taint-source', 'assert-untainted',
+                        'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
                     ],
                     true
                 )) {
