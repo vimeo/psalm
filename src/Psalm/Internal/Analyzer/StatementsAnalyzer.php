@@ -278,7 +278,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $this_type = Type::parseString($trimmed);
                     $context->self = $trimmed;
                     $context->vars_in_scope['$this'] = $this_type;
-                    $this->setFQCLN($this_type);
+                    $this->setFQCLN($trimmed);
                 }
 
                 if (isset($comments['specials']['psalm-suppress'])) {
