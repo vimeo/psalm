@@ -422,6 +422,12 @@ class Config
      */
     public $after_analysis = [];
 
+    /**
+     * Static methods to be called after codebase has been populated
+     * @var class-string<Hook\BeforeAnalyzeFileInterface>[]
+     */
+    public $before_analyze_file = [];
+
     /** @var array<string, mixed> */
     private $predefined_constants;
 
