@@ -302,6 +302,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         foreach ($suppressed as $offset => $issue_type) {
                             $offset += $docblock->getFilePos();
                             $new_issues[$offset] = $issue_type;
+
+                            if ($issue_type === 'InaccessibleMethod') {
+                                continue;
+                            }
+
                             IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_type);
                         }
 
