@@ -1298,7 +1298,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $existing_var_atomic_types = $existing_var_type->getTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return new Type\Union([new Type\Atomic\TIterable]);
+            return new Type\Union([new Type\Atomic\TNamedObject('Traversable')]);
         }
 
         $traversable_types = [];
