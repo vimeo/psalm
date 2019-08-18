@@ -1023,15 +1023,17 @@ class ArrayFetchAnalyzer
                 if ($has_valid_offset && $context->inside_isset) {
                     // do nothing
                 } elseif ($has_valid_offset) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyInvalidArrayOffset(
-                            'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
-                                . ', expecting ' . $invalid_offset_type,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if (!$context->inside_unset) {
+                        if (IssueBuffer::accepts(
+                            new PossiblyInvalidArrayOffset(
+                                'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
+                                    . ', expecting ' . $invalid_offset_type,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 } else {
                     if (IssueBuffer::accepts(
