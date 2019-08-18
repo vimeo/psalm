@@ -175,7 +175,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
      * @param  PhpParser\Node|string|null $node
      *
      * @return null|PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType
-     * @psalm-suppress MoreSpecificReturnType
      * @psalm-suppress InvalidReturnType
      * @psalm-suppress InvalidReturnStatement
      */

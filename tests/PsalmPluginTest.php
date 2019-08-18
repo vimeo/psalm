@@ -142,7 +142,6 @@ class PsalmPluginTest extends TestCase
      * @return void
      * @dataProvider commands
      * @test
-     * @psalm-suppress RedundantConditionGivenDocblockType
      */
     public function showsHelpForCommand(string $command)
     {

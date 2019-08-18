@@ -122,7 +122,6 @@ trait EmitterTrait
         // The list is not sorted
         if (!$this->listeners[$eventName][0]) {
             // Sorting
-            /** @psalm-suppress MixedArgument */
             \array_multisort($this->listeners[$eventName][1], SORT_NUMERIC, $this->listeners[$eventName][2]);
 
             // Marking the listeners as sorted

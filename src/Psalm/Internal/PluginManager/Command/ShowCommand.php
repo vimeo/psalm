@@ -30,7 +30,6 @@ class ShowCommand extends Command
 
     /**
      * @return void
-     * @psalm-suppress UnusedMethod
      */
     protected function configure()
     {
@@ -42,7 +41,6 @@ class ShowCommand extends Command
 
     /**
      * @return null|int
-     * @psalm-suppress UnusedMethod
      */
     protected function execute(InputInterface $i, OutputInterface $o)
     {

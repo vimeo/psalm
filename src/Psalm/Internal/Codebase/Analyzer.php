@@ -539,10 +539,6 @@ class Analyzer
                 $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
             }
         }
-
-        if ($codebase->track_unused_suppressions) {
-            IssueBuffer::processUnusedSuppressions($codebase->file_provider);
-        }
     }
 
     /**

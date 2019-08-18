@@ -105,9 +105,7 @@ class TestCase extends BaseTestCase
             $this->project_analyzer->interpretRefactors();
         }
 
-        if ($track_unused_suppressions) {
-            $this->project_analyzer->trackUnusedSuppressions();
-        }
+        $this->project_analyzer->trackUnusedSuppressions();
 
         $file_analyzer = new FileAnalyzer(
             $this->project_analyzer,

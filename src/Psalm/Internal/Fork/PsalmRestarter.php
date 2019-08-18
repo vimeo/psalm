@@ -34,8 +34,6 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
     }
 
     /**
-     * @psalm-suppress UnusedMethod
-     *
      * @param mixed $loaded
      */
     protected function requiresRestart($loaded)
@@ -56,8 +54,6 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
     }
 
     /**
-     * @psalm-suppress UnusedMethod
-     *
      * @param mixed $command
      *
      * @return void

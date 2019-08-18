@@ -75,17 +75,8 @@ class FileFilter
      */
     protected $declare_strict_types = [];
 
-    /**
-     * @param  bool             $inclusive
-     *
-     * @psalm-suppress DocblockTypeContradiction
-     */
-    public function __construct($inclusive)
+    public function __construct(bool $inclusive)
     {
-        if (!is_bool($inclusive)) {
-            throw new \InvalidArgumentException('Filter arg must be bool');
-        }
-
         $this->inclusive = $inclusive;
     }
 
