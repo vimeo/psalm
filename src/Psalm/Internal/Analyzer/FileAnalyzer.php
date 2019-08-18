@@ -57,7 +57,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     private $parent_file_paths = [];
 
     /**
-     * @var array<int, string>
+     * @var array<string>
      */
     private $suppressed_issues = [];
 
@@ -539,7 +539,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @return array<int, string>
+     * @return array<string>
      */
     public function getSuppressedIssues()
     {
@@ -553,7 +553,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     public function addSuppressedIssues(array $new_issues)
     {
-        $this->suppressed_issues = array_merge($new_issues, $this->suppressed_issues);
+        if (isset($new_issues[0])) {
+            $new_issues = \array_combine($new_issues, $new_issues);
+        }
+
+        $this->suppressed_issues = $new_issues + $this->suppressed_issues;
     }
 
     /**
@@ -563,7 +567,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     public function removeSuppressedIssues(array $new_issues)
     {
-        $this->suppressed_issues = array_diff($this->suppressed_issues, $new_issues);
+        if (isset($new_issues[0])) {
+            $new_issues = \array_combine($new_issues, $new_issues);
+        }
+
+        $this->suppressed_issues = \array_diff_key($this->suppressed_issues, $new_issues);
     }
 
     /**

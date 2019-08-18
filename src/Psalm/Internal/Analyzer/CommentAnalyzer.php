@@ -517,8 +517,8 @@ class CommentAnalyzer
 
 
         if (isset($parsed_docblock['specials']['psalm-suppress'])) {
-            foreach ($parsed_docblock['specials']['psalm-suppress'] as $suppress_entry) {
-                $info->suppress[] = preg_split('/[\s]+/', $suppress_entry)[0];
+            foreach ($parsed_docblock['specials']['psalm-suppress'] as $offset => $suppress_entry) {
+                $info->suppressed_issues[$offset] = preg_split('/[\s]+/', $suppress_entry)[0];
             }
         }
 

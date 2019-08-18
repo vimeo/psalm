@@ -292,10 +292,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             ]);
         }
 
-        $this->suppressed_issues = array_merge(
-            $this->getSource()->getSuppressedIssues(),
-            $storage->suppressed_issues
-        );
+        $this->suppressed_issues = $this->getSource()->getSuppressedIssues() + $storage->suppressed_issues;
 
         if ($storage instanceof MethodStorage && $storage->is_static) {
             $this->is_static = true;
@@ -841,7 +838,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                             'Parameter $' . $function_param->name . ' has no provided type',
                             $function_param->location
                         ),
-                        array_merge($this->suppressed_issues, $storage->suppressed_issues)
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
                     );
                 } else {
                     IssueBuffer::accepts(
@@ -849,7 +846,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                             'Parameter $' . $function_param->name . ' has no provided type',
                             $function_param->location
                         ),
-                        array_merge($this->suppressed_issues, $storage->suppressed_issues)
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
                     );
                 }
             }
@@ -1457,7 +1454,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      */
     public function addSuppressedIssues(array $new_issues)
     {
-        $this->suppressed_issues = array_merge($new_issues, $this->suppressed_issues);
+        if (isset($new_issues[0])) {
+            $new_issues = \array_combine($new_issues, $new_issues);
+        }
+
+        $this->suppressed_issues = $new_issues + $this->suppressed_issues;
     }
 
     /**
@@ -1467,7 +1468,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      */
     public function removeSuppressedIssues(array $new_issues)
     {
-        $this->suppressed_issues = array_diff($this->suppressed_issues, $new_issues);
+        if (isset($new_issues[0])) {
+            $new_issues = \array_combine($new_issues, $new_issues);
+        }
+
+        $this->suppressed_issues = \array_diff_key($this->suppressed_issues, $new_issues);
     }
 
     /**

@@ -14,7 +14,7 @@ class IssueSuppressionTest extends TestCase
     public function providerValidCodeParse()
     {
         return [
-            'undefinedClass' => [
+            'undefinedClassSimple' => [
                 '<?php
                     class A {
                         /**

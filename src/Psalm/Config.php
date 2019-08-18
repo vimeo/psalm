@@ -1211,17 +1211,10 @@ class Config
         return $this->project_files && $this->project_files->forbids($file_path);
     }
 
-    /**
-     * @param string[] $suppressed_issues
-     */
-    public function getReportingLevelForIssue(CodeIssue $e, array $suppressed_issues = []) : string
+    public function getReportingLevelForIssue(CodeIssue $e) : string
     {
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
-
-        if (in_array($issue_type, $suppressed_issues, true)) {
-            return self::REPORT_SUPPRESS;
-        }
 
         $reporting_level = null;
 
@@ -1243,10 +1236,6 @@ class Config
 
         $parent_issue_type = self::getParentIssueType($issue_type);
 
-        if ($parent_issue_type && in_array($parent_issue_type, $suppressed_issues, true)) {
-            return self::REPORT_SUPPRESS;
-        }
-
         if ($parent_issue_type && $reporting_level === Config::REPORT_ERROR) {
             $parent_reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
 
@@ -1263,7 +1252,7 @@ class Config
      *
      * @return string|null
      */
-    private static function getParentIssueType($issue_type)
+    public static function getParentIssueType($issue_type)
     {
         if (strpos($issue_type, 'Possibly') === 0) {
             $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type);

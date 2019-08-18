@@ -2032,7 +2032,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->return_type->ignore_falsable_issues = true;
         }
 
-        $storage->suppressed_issues = $docblock_info->suppress;
+        $storage->suppressed_issues = $docblock_info->suppressed_issues;
 
         foreach ($docblock_info->throws as [$throw, $offset, $line]) {
             $throw_location = new CodeLocation\DocblockTypeLocation(

@@ -90,7 +90,23 @@ class IssueBuffer
             return true;
         }
 
-        $reporting_level = $config->getReportingLevelForIssue($e, $suppressed_issues);
+        $suppressed_issue_position = array_search($issue_type, $suppressed_issues);
+
+        if ($suppressed_issue_position !== false) {
+            return true;
+        }
+
+        $parent_issue_type = Config::getParentIssueType($issue_type);
+
+        if ($parent_issue_type) {
+            $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues);
+
+            if ($suppressed_issue_position !== false) {
+                return true;
+            }
+        }
+
+        $reporting_level = $config->getReportingLevelForIssue($e);
 
         if ($reporting_level === Config::REPORT_SUPPRESS) {
             return true;

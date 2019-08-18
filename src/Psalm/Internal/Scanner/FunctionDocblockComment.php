@@ -108,7 +108,7 @@ class FunctionDocblockComment
     /**
      * @var array<int, string>
      */
-    public $suppress = [];
+    public $suppressed_issues = [];
 
     /**
      * @var array<int, array{0: string, 1: int, 2: int}>
