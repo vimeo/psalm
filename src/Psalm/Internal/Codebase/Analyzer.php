@@ -69,7 +69,8 @@ use function usort;
  *      class_method_locations: array<string, array<int, \Psalm\CodeLocation>>,
  *      class_property_locations: array<string, array<int, \Psalm\CodeLocation>>,
  *      possible_method_param_types: array<string, array<int, \Psalm\Type\Union>>,
- *      taint_data: ?\Psalm\Internal\Codebase\Taint
+ *      taint_data: ?\Psalm\Internal\Codebase\Taint,
+ *      unused_suppressions: array<string, array<int, int>>
  * }
  */
 
@@ -408,6 +409,7 @@ class Analyzer
                         'class_property_locations' => $rerun ? [] : $file_reference_provider->getAllClassPropertyLocations(),
                         'possible_method_param_types' => $rerun ? [] : $analyzer->getPossibleMethodParamTypes(),
                         'taint_data' => $codebase->taint,
+                        'unused_suppressions' => $codebase->track_unused_suppressions ? IssueBuffer::getUnusedSuppressions() : [],
                     ];
                     // @codingStandardsIgnoreEnd
                 },
@@ -426,6 +428,10 @@ class Analyzer
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
+
+                if ($codebase->track_unused_suppressions) {
+                    IssueBuffer::addUnusedSuppressions($pool_data['unused_suppressions']);
+                }
 
                 if ($codebase->taint && $pool_data['taint_data']) {
                     $codebase->taint->addThreadData($pool_data['taint_data']);
@@ -530,6 +536,10 @@ class Analyzer
             foreach (IssueBuffer::getIssuesData() as $issue_data) {
                 $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
             }
+        }
+
+        if ($codebase->track_unused_suppressions) {
+            IssueBuffer::processUnusedSuppressions($codebase->file_provider);
         }
     }
 

@@ -2431,6 +2431,15 @@ $a = new A();
 echo $a->getFoo();
 ```
 
+### UnusedPsalmSuppress
+
+Emitted when `--find-unused-psalm-suppress` is turned on and Psalm cannot find any uses of a given `@psalm-suppress` annotation
+
+```php
+/** @psalm-suppress InvalidArgument */
+echo strpos("hello", "e");
+```
+
 ### UnusedVariable
 
 Emitted when `--find-dead-code` is turned on and Psalm cannot find any references to a variable, once instantiated

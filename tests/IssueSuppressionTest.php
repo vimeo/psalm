@@ -9,6 +9,55 @@ class IssueSuppressionTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
 
     /**
+     * @return void
+     */
+    public function testIssueSuppressedOnFunction()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+
+        $this->project_analyzer->trackUnusedSuppressions();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    /**
+                     * @psalm-suppress UndefinedClass
+                     * @psalm-suppress MixedMethodCall
+                     * @psalm-suppress MissingReturnType
+                     * @psalm-suppress UnusedVariable
+                     */
+                    public function b() {
+                        B::fooFoo()->barBar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testIssueSuppressedOnStatement()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+
+        $this->project_analyzer->trackUnusedSuppressions();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-suppress InvalidArgument */
+                echo strpos("hello", "e");'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()

@@ -14,6 +14,7 @@ class Raw extends \Psalm\CodeLocation
     public function __construct(
         string $file_contents,
         string $file_path,
+        string $file_name,
         int $file_start,
         int $file_end
     ) {
@@ -22,7 +23,7 @@ class Raw extends \Psalm\CodeLocation
         $this->raw_file_start = $this->file_start;
         $this->raw_file_end = $this->file_end;
         $this->file_path = $file_path;
-        $this->file_name = $file_path;
+        $this->file_name = $file_name;
         $this->single_line = false;
 
         $this->preview_start = $this->file_start;

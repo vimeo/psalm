@@ -1016,6 +1016,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
         }
 
+        if ($codebase->track_unused_suppressions) {
+            foreach ($storage->suppressed_issues as $offset => $issue_name) {
+                IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_name);
+            }
+        }
+
         foreach ($storage->throws as $expected_exception => $_) {
             if (isset($storage->throw_locations[$expected_exception])) {
                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(

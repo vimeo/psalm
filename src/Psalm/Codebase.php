@@ -272,7 +272,10 @@ class Codebase
      */
     public $php_minor_version = PHP_MINOR_VERSION;
 
-
+    /**
+     * @var bool
+     */
+    public $track_unused_suppressions = false;
 
     public function __construct(
         Config $config,
@@ -1032,7 +1035,13 @@ class Codebase
 
             $file_contents = $this->getFileContents($file_path);
 
-            return new CodeLocation\Raw($file_contents, $file_path, (int) $symbol_parts[0], (int) $symbol_parts[1]);
+            return new CodeLocation\Raw(
+                $file_contents,
+                $file_path,
+                $this->config->shortenFileName($file_path),
+                (int) $symbol_parts[0],
+                (int) $symbol_parts[1]
+            );
         }
 
         try {

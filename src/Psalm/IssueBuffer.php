@@ -13,6 +13,7 @@ use function microtime;
 use function number_format;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\CodeIssue;
+use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CompactReport;
 use Psalm\Report\ConsoleReport;
@@ -59,6 +60,11 @@ class IssueBuffer
     protected static $recorded_issues = [];
 
     /**
+     * @var array<string, array<int, int>>
+     */
+    protected static $unused_suppressions = [];
+
+    /**
      * @param   CodeIssue $e
      * @param   string[]  $suppressed_issues
      *
@@ -73,6 +79,15 @@ class IssueBuffer
         return self::add($e);
     }
 
+    public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
+    {
+        if (!isset(self::$unused_suppressions[$file_path])) {
+            self::$unused_suppressions[$file_path] = [];
+        }
+
+        self::$unused_suppressions[$file_path][$offset] = $offset + \strlen($issue_type) - 1;
+    }
+
     /**
      * @param   CodeIssue $e
      * @param   string[]  $suppressed_issues
@@ -85,14 +100,17 @@ class IssueBuffer
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
+        $file_path = $e->getFilePath();
 
-        if (!$config->reportIssueInFile($issue_type, $e->getFilePath())) {
+        if (!$config->reportIssueInFile($issue_type, $file_path)) {
             return true;
         }
 
         $suppressed_issue_position = array_search($issue_type, $suppressed_issues);
 
         if ($suppressed_issue_position !== false) {
+            /** @psalm-suppress MixedArrayTypeCoercion */
+            unset(self::$unused_suppressions[$file_path][$suppressed_issue_position]);
             return true;
         }
 
@@ -102,6 +120,8 @@ class IssueBuffer
             $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues);
 
             if ($suppressed_issue_position !== false) {
+                /** @psalm-suppress MixedArrayTypeCoercion */
+                unset(self::$unused_suppressions[$file_path][$suppressed_issue_position]);
                 return true;
             }
         }
@@ -188,6 +208,47 @@ class IssueBuffer
     public static function getIssuesData()
     {
         return self::$issues_data;
+    }
+
+    /**
+     * @return array<string, array<int, int>>
+     */
+    public static function getUnusedSuppressions() : array
+    {
+        return self::$unused_suppressions;
+    }
+
+    public static function addUnusedSuppressions(array $unused_suppressions) : void
+    {
+        self::$unused_suppressions += $unused_suppressions;
+    }
+
+    public static function processUnusedSuppressions(\Psalm\Internal\Provider\FileProvider $file_provider) : void
+    {
+        $config = Config::getInstance();
+
+        foreach (self::$unused_suppressions as $file_path => $offsets) {
+            if (!$offsets) {
+                continue;
+            }
+
+            $file_contents = $file_provider->getContents($file_path);
+
+            foreach ($offsets as $start => $end) {
+                self::add(
+                    new UnusedPsalmSuppress(
+                        'This suppression is never used',
+                        new CodeLocation\Raw(
+                            $file_contents,
+                            $file_path,
+                            $config->shortenFileName($file_path),
+                            $start,
+                            $end
+                        )
+                    )
+                );
+            }
+        }
     }
 
     /**
@@ -492,6 +553,7 @@ class IssueBuffer
         self::$recording_level = 0;
         self::$recorded_issues = [];
         self::$console_issues = [];
+        self::$unused_suppressions = [];
     }
 
     /**

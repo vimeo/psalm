@@ -143,6 +143,7 @@ class DocumentationTest extends TestCase
 
         if ($check_references) {
             $this->project_analyzer->getCodebase()->reportUnusedCode();
+            $this->project_analyzer->trackUnusedSuppressions();
         }
 
         foreach ($error_levels as $error_level) {

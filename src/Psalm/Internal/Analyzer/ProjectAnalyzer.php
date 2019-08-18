@@ -558,6 +558,14 @@ class ProjectAnalyzer
         $this->codebase->taint = new Taint();
     }
 
+    /**
+     * @return void
+     */
+    public function trackUnusedSuppressions()
+    {
+        $this->codebase->track_unused_suppressions = true;
+    }
+
     public function interpretRefactors() : void
     {
         if (!$this->codebase->alter_code) {

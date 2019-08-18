@@ -119,6 +119,10 @@ class TestCase extends BaseTestCase
                 $file_analyzer->analyze($context);
             }
         }
+
+        if ($codebase->track_unused_suppressions) {
+            \Psalm\IssueBuffer::processUnusedSuppressions($codebase->file_provider);
+        }
     }
 
     /**

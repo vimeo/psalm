@@ -297,8 +297,13 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     );
 
                     if ($suppressed) {
-                        $new_issues = array_diff($suppressed, $this->source->getSuppressedIssues());
-                        /** @psalm-suppress MixedTypeCoercion */
+                        $new_issues = [];
+
+                        foreach ($suppressed as $offset => $issue_type) {
+                            $new_issues[$offset + $docblock->getFilePos()] = $issue_type;
+                            IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_type);
+                        }
+
                         $this->addSuppressedIssues($new_issues);
                     }
                 }

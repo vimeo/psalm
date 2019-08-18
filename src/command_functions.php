@@ -321,6 +321,9 @@ Options:
     --find-unused-code[=auto]
         Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
 
+    --find-unused-psalm-suppress
+        Finds all @psalm-suppress annotations that aren’t used
+
     --find-references-to=[class|method|property]
         Searches the codebase for references to the given fully-qualified class or method,
         where method is in the format class::methodName

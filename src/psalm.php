@@ -62,7 +62,8 @@ $valid_long_options = [
     'shepherd::',
     'no-progress',
     'include-php-versions', // used for baseline
-    'track-tainted-input'
+    'track-tainted-input',
+    'find-unused-psalm-suppress',
 ];
 
 gc_collect_cycles();
@@ -509,6 +510,10 @@ if ($config->find_unused_variables) {
 
 if (isset($options['track-tainted-input'])) {
     $project_analyzer->trackTaintedInputs();
+}
+
+if (isset($options['find-unused-psalm-suppress'])) {
+    $project_analyzer->trackUnusedSuppressions();
 }
 
 /** @var string $plugin_path */
