@@ -684,7 +684,6 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     /**
                      * @param string|null $b
-                     * @psalm-suppress DocblockTypeContradiction
                      */
                     function foo($b = null) : void {
                         if (is_numeric($b) || is_string($b)) {
@@ -1389,7 +1388,6 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     /**
                      * @param array<int> $x
-                     * @psalm-suppress UnusedParam
                      */
                     function takesArray (array $x): void {}
 
@@ -1400,7 +1398,6 @@ class TypeReconciliationTest extends TestCase
 
                     /**
                      * @param Traversable<int> $x
-                     * @psalm-suppress UnusedParam
                      */
                     function takesTraversable (Traversable $x): void {}
 

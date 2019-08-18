@@ -392,7 +392,6 @@ class ClassTemplateTest extends TestCase
                         /**
                          * @param Closure(TValue):bool $p
                          * @return Collection<TKey,TValue>
-                         * @psalm-suppress MixedTypeCoercion
                          */
                         public function filter(Closure $p) {
                             return $this;
@@ -432,7 +431,6 @@ class ClassTemplateTest extends TestCase
                         public function __construct(array $data) {
                             $this->data = $data;
                         }
-                        /** @psalm-suppress LessSpecificImplementedReturnType */
                         public function getIterator(): \Traversable {
                             return new \ArrayIterator($this->data);
                         }

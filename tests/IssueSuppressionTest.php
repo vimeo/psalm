@@ -16,8 +16,6 @@ class IssueSuppressionTest extends TestCase
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
-        $this->project_analyzer->trackUnusedSuppressions();
-
         $this->addFile(
             'somefile.php',
             '<?php
@@ -44,8 +42,6 @@ class IssueSuppressionTest extends TestCase
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
-
-        $this->project_analyzer->trackUnusedSuppressions();
 
         $this->addFile(
             'somefile.php',
@@ -99,36 +95,6 @@ class IssueSuppressionTest extends TestCase
                     fooFoo();',
                 'assertions' => [],
                 'error_levels' => ['UndefinedFunction'],
-            ],
-            'crossClosureBoundariesOnFunction' => [
-                '<?php
-                    /**
-                     * @psalm-suppress MissingClosureParamType
-                     * @psalm-suppress MissingClosureReturnType
-                     */
-                    function foo(array $bar): array {
-                        return array_map(
-                            function ($value) {
-                                return (string)$value;
-                            },
-                            $bar
-                        );
-                    }',
-            ],
-            'crossClosureBoundariesOnReturn' => [
-                '<?php
-                    function bar(array $bar): array {
-                        /**
-                         * @psalm-suppress MissingClosureParamType
-                         * @psalm-suppress MissingClosureReturnType
-                         */
-                        return array_map(
-                            function ($value) {
-                                return (string)$value;
-                            },
-                            $bar
-                        );
-                    }',
             ],
             'suppressWithNewlineAfterComment' => [
                 '<?php

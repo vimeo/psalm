@@ -307,7 +307,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 continue;
                             }
 
-                            IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_type);
+                            if ($codebase->track_unused_suppressions) {
+                                IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_type);
+                            }
                         }
 
                         $this->addSuppressedIssues($new_issues);

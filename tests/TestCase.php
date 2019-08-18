@@ -92,7 +92,7 @@ class TestCase extends BaseTestCase
      *
      * @return void
      */
-    public function analyzeFile($file_path, \Psalm\Context $context)
+    public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true)
     {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -103,6 +103,10 @@ class TestCase extends BaseTestCase
 
         if ($codebase->alter_code) {
             $this->project_analyzer->interpretRefactors();
+        }
+
+        if ($track_unused_suppressions) {
+            $this->project_analyzer->trackUnusedSuppressions();
         }
 
         $file_analyzer = new FileAnalyzer(
@@ -120,7 +124,7 @@ class TestCase extends BaseTestCase
             }
         }
 
-        if ($codebase->track_unused_suppressions) {
+        if ($track_unused_suppressions) {
             \Psalm\IssueBuffer::processUnusedSuppressions($codebase->file_provider);
         }
     }

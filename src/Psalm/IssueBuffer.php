@@ -65,6 +65,11 @@ class IssueBuffer
     protected static $unused_suppressions = [];
 
     /**
+     * @var array<string, array<int, bool>>
+     */
+    protected static $already_used_suppressions = [];
+
+    /**
      * @param   CodeIssue $e
      * @param   string[]  $suppressed_issues
      *
@@ -81,6 +86,10 @@ class IssueBuffer
 
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
     {
+        if (isset(self::$already_used_suppressions[$file_path][$offset])) {
+            return;
+        }
+
         if (!isset(self::$unused_suppressions[$file_path])) {
             self::$unused_suppressions[$file_path] = [];
         }
@@ -109,8 +118,11 @@ class IssueBuffer
         $suppressed_issue_position = array_search($issue_type, $suppressed_issues);
 
         if ($suppressed_issue_position !== false) {
-            /** @psalm-suppress MixedArrayTypeCoercion */
-            unset(self::$unused_suppressions[$file_path][$suppressed_issue_position]);
+            if (\is_int($suppressed_issue_position)) {
+                self::$already_used_suppressions[$file_path][$suppressed_issue_position] = true;
+                unset(self::$unused_suppressions[$file_path][$suppressed_issue_position]);
+            }
+
             return true;
         }
 
@@ -120,8 +132,11 @@ class IssueBuffer
             $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues);
 
             if ($suppressed_issue_position !== false) {
-                /** @psalm-suppress MixedArrayTypeCoercion */
-                unset(self::$unused_suppressions[$file_path][$suppressed_issue_position]);
+                if (\is_int($suppressed_issue_position)) {
+                    self::$already_used_suppressions[$file_path][$suppressed_issue_position] = true;
+                    unset(self::$unused_suppressions[$file_path][$suppressed_issue_position]);
+                }
+
                 return true;
             }
         }
@@ -554,6 +569,7 @@ class IssueBuffer
         self::$recorded_issues = [];
         self::$console_issues = [];
         self::$unused_suppressions = [];
+        self::$already_used_suppressions = [];
     }
 
     /**

@@ -490,8 +490,7 @@ class Config
      * @param  string $output_format
      *
      * @return Config
-     * @psalm-suppress MixedArgument
-     *@throws ConfigException if a config path is not found
+     * @throws ConfigException if a config path is not found
      *
      */
     public static function getConfigForPath($path, $current_dir, $output_format)

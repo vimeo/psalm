@@ -61,7 +61,7 @@ class UnusedCodeTest extends TestCase
         $context = new Context();
         $context->collect_references = true;
 
-        $this->analyzeFile($file_path, $context);
+        $this->analyzeFile($file_path, $context, false);
 
         $this->project_analyzer->checkClassReferences();
     }

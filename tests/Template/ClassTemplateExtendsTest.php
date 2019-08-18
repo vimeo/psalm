@@ -1912,8 +1912,6 @@ class ClassTemplateExtendsTest extends TestCase
                          * @param K $property
                          *
                          * @return TData[K]
-                         * @psalm-suppress MixedReturnStatement due to bug
-                         * @psalm-suppress MixedInferredReturnType due to bug
                          */
                         public function __get(string $property) {
                             return $this->data[$property];
@@ -2233,7 +2231,6 @@ class ClassTemplateExtendsTest extends TestCase
                         public function __construct(array $data) {
                             $this->data = $data;
                         }
-                        /** @psalm-suppress LessSpecificImplementedReturnType */
                         public function getIterator(): \Traversable {
                             return new \ArrayIterator($this->data);
                         }

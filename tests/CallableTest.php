@@ -44,9 +44,6 @@ class CallableTest extends TestCase
                     $bar = ["foo", "bar"];
 
                     $bam = array_map(
-                        /**
-                         * @psalm-suppress MissingClosureReturnType
-                         */
                         function(string $a) {
                             return $a . "blah";
                         },
@@ -691,15 +688,6 @@ class CallableTest extends TestCase
 
                     acceptsIntToBool(Closure::fromCallable($anonInvokable));',
             ],
-            'noExceptionWhenSuppressingUndefinedClass' => [
-                '<?php
-                    class one { public function two(string $_p): void {} }
-                    /**
-                     * @psalm-suppress UndefinedClass
-                     * @psalm-suppress InvalidArgument
-                     */
-                    array_map(["two", "three"], ["one", "two"]);',
-            ],
             'callableSelfArg' => [
                 '<?php
                     class C extends B {}
@@ -871,7 +859,6 @@ class CallableTest extends TestCase
                 '<?php
                     /**
                      * @param callable|array $c
-                     * @psalm-suppress MixedArgument
                      */
                     function foo($c) : void {
                         if (is_array($c) && is_string($c[1])) {

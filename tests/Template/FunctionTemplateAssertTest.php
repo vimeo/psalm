@@ -162,7 +162,6 @@ class FunctionTemplateAssertTest extends TestCase
                     $f = getFoo();
                     /**
                      * @var mixed
-                     * @psalm-suppress MixedAssignment
                      */
                     $class = "hello";
 
@@ -470,7 +469,6 @@ class FunctionTemplateAssertTest extends TestCase
                      * @param Clazz<T2> $c
                      *
                      * @return T2
-                     * @psalm-suppress MixedAssignment
                      */
                     function example(Clazz $c) {
                         /** @var mixed */
@@ -504,7 +502,6 @@ class FunctionTemplateAssertTest extends TestCase
                      * @param Clazz<T2> $c
                      *
                      * @return T2|false
-                     * @psalm-suppress MixedAssignment
                      */
                     function example(Clazz $c) {
                         /** @var mixed */

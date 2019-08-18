@@ -203,7 +203,7 @@ class ThrowsInGlobalScopeTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile('somefile.php', $context, false);
     }
 
     /**
@@ -223,7 +223,7 @@ class ThrowsInGlobalScopeTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile('somefile.php', $context, false);
     }
 
     /**
@@ -258,7 +258,7 @@ class ThrowsInGlobalScopeTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile('somefile.php', $context, false);
     }
 
     /**
@@ -294,7 +294,7 @@ class ThrowsInGlobalScopeTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile('somefile.php', $context, false);
     }
 
     /**

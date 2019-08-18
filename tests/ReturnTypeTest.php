@@ -187,7 +187,6 @@ class ReturnTypeTest extends TestCase
                 '<?php
                     class A {
                         /**
-                         * @psalm-suppress TooManyArguments
                          * @return bool
                          */
                         public function fooFoo() {

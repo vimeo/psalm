@@ -366,7 +366,6 @@ class ArrayAccessTest extends TestCase
 
                         /**
                          * @param array<scalar|array> $array
-                         * @psalm-suppress MixedAssignment
                          * @psalm-suppress MixedTypeCoercion
                          */
                         public function __construct(array $array)
