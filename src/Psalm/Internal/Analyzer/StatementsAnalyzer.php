@@ -300,7 +300,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         $new_issues = [];
 
                         foreach ($suppressed as $offset => $issue_type) {
-                            $new_issues[$offset + $docblock->getFilePos()] = $issue_type;
+                            $offset += $docblock->getFilePos();
+                            $new_issues[$offset] = $issue_type;
                             IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_type);
                         }
 
