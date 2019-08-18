@@ -33,26 +33,12 @@ class FunctionParamsProvider
 
     /**
      * @param  class-string<FunctionParamsProviderInterface> $class
-     * @psalm-suppress PossiblyUnusedParam
      *
      * @return void
      */
     public function registerClass(string $class)
     {
-        if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /**
-             * @psalm-suppress UndefinedMethod
-             *
-             * @var \Closure
-             */
-            $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
-        } else {
-            $callable = (new \ReflectionClass($class))->getMethod('getFunctionParams')->getClosure(new $class);
-
-            if (!$callable) {
-                throw new \UnexpectedValueException('Callable must not be null');
-            }
-        }
+        $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
 
         foreach ($class::getFunctionIds() as $function_id) {
             /** @psalm-suppress MixedTypeCoercion */

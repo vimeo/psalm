@@ -9,8 +9,6 @@ use Psalm\Exception\ConfigException;
  * @param  bool   $has_explicit_root
  * @param  string $vendor_dir
  *
- * @psalm-suppress MixedInferred
- *
  * @return ?\Composer\Autoload\ClassLoader
  */
 function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
@@ -78,7 +76,6 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
     foreach ($autoload_files as $file) {
         /**
          * @psalm-suppress UnresolvableInclude
-         * @psalm-suppress MixedAssignment
          *
          * @var mixed
          */
@@ -116,7 +113,6 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
  *
  * @return string
  *
- * @psalm-suppress PossiblyFalseArgument
  * @psalm-suppress MixedArrayAccess
  * @psalm-suppress MixedAssignment
  */
@@ -418,7 +414,6 @@ function get_path_to_config(array $options): ?string
     $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 
     if ($path_to_config === false) {
-        /** @psalm-suppress InvalidCast */
         fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
         exit(1);
     }

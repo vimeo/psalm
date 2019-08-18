@@ -202,7 +202,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -248,7 +247,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -262,7 +260,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -413,8 +410,7 @@ class FileReferenceProvider
      * @param bool $force_reload
      *
      * @return bool
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
+     * @psalm-suppress MixedPropertyTypeCoercion
      */
     public function loadReferenceCache($force_reload = true)
     {
@@ -645,7 +641,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -704,7 +699,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -718,7 +712,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -732,7 +725,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, array<string, bool>>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -758,7 +750,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -769,7 +760,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -780,7 +770,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -791,7 +780,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -802,7 +790,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -813,7 +800,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, array<string, bool>>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -824,7 +810,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -844,7 +829,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */
@@ -864,7 +848,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     * @psalm-suppress MixedTypeCoercion
      *
      * @return void
      */

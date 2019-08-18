@@ -984,7 +984,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
 
                     if ($file_manipulations) {
-                        /** @psalm-suppress MixedTypeCoercion */
                         FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
                     }
                 }
@@ -1075,7 +1074,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 && !$context->collect_initializations
                 && !$context->collect_mutations
             ) {
-                /** @psalm-suppress PossiblyInvalidArgument never a string, PHP Parser bug */
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
@@ -1088,7 +1086,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 && !$context->collect_mutations
                 && isset($stmt->inferredType)
             ) {
-                /** @psalm-suppress PossiblyInvalidArgument never a string, PHP Parser bug */
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,

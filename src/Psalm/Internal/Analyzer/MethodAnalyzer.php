@@ -35,9 +35,6 @@ use function in_array;
  */
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,

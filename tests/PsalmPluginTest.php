@@ -28,7 +28,6 @@ class PsalmPluginTest extends TestCase
     {
         $this->plugin_list = $this->prophesize(PluginList::class);
         $this->plugin_list_factory = $this->prophesize(PluginListFactory::class);
-        /** @psalm-suppress TooManyArguments */
         $this->plugin_list_factory->__invoke(Argument::any(), Argument::any())->willReturn($this->plugin_list->reveal());
 
         $this->app = new Application('psalm-plugin', '0.1');
@@ -44,9 +43,7 @@ class PsalmPluginTest extends TestCase
 
         $this->app->setDefaultCommand('show');
 
-        /** @psalm-suppress TooManyArguments */
         $this->plugin_list->getEnabled()->willReturn([]);
-        /** @psalm-suppress TooManyArguments */
         $this->plugin_list->getAvailable()->willReturn([]);
     }
 
@@ -70,7 +67,6 @@ class PsalmPluginTest extends TestCase
      */
     public function showsEnabledPlugins()
     {
-        /** @psalm-suppress TooManyArguments */
         $this->plugin_list->getEnabled()->willReturn(['a\b\c' => 'vendor/package']);
 
         $show_command = new CommandTester($this->app->find('show'));
@@ -87,7 +83,6 @@ class PsalmPluginTest extends TestCase
      */
     public function showsAvailablePlugins()
     {
-        /** @psalm-suppress TooManyArguments */
         $this->plugin_list->getAvailable()->willReturn(['a\b\c' => 'vendor/package']);
 
         $show_command = new CommandTester($this->app->find('show'));
@@ -104,7 +99,6 @@ class PsalmPluginTest extends TestCase
      */
     public function passesExplicitConfigToPluginListFactory()
     {
-        /** @psalm-suppress TooManyArguments */
         $this->plugin_list_factory->__invoke(Argument::any(), '/a/b/c')->willReturn($this->plugin_list->reveal());
 
         $show_command = new CommandTester($this->app->find('show'));
@@ -119,9 +113,7 @@ class PsalmPluginTest extends TestCase
      */
     public function showsColumnHeaders()
     {
-        /** @psalm-suppress TooManyArguments */
         $this->plugin_list->getAvailable()->willReturn(['a\b\c' => 'vendor/package']);
-        /** @psalm-suppress TooManyArguments */
         $this->plugin_list->getAvailable()->willReturn(['c\d\e' => 'another-vendor/package']);
 
         $show_command = new CommandTester($this->app->find('show'));
@@ -197,8 +189,7 @@ class PsalmPluginTest extends TestCase
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
             function (array $_args, ObjectProphecy $plugin_list): string {
-                /** @psalm-suppress TooManyArguments */
-                $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(true);
+                        $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(true);
 
                 return 'Vendor\Package\PluginClass';
             }
@@ -221,10 +212,8 @@ class PsalmPluginTest extends TestCase
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
             function (array $_args, ObjectProphecy $plugin_list): string {
                 $plugin_class = 'Vendor\Package\PluginClass';
-                /** @psalm-suppress TooManyArguments */
-                $plugin_list->isEnabled($plugin_class)->willReturn(false);
-                /** @psalm-suppress TooManyArguments */
-                $plugin_list->enable($plugin_class)->shouldBeCalled();
+                        $plugin_list->isEnabled($plugin_class)->willReturn(false);
+                        $plugin_list->enable($plugin_class)->shouldBeCalled();
 
                 return $plugin_class;
             }
@@ -275,8 +264,7 @@ class PsalmPluginTest extends TestCase
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
             function (array $_args, ObjectProphecy $plugin_list): string {
-                /** @psalm-suppress TooManyArguments */
-                $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(false);
+                        $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(false);
 
                 return 'Vendor\Package\PluginClass';
             }
@@ -299,10 +287,8 @@ class PsalmPluginTest extends TestCase
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
             function (array $_args, ObjectProphecy $plugin_list): string {
                 $plugin_class = 'Vendor\Package\PluginClass';
-                /** @psalm-suppress TooManyArguments */
-                $plugin_list->isEnabled($plugin_class)->willReturn(true);
-                /** @psalm-suppress TooManyArguments */
-                $plugin_list->disable($plugin_class)->shouldBeCalled();
+                        $plugin_list->isEnabled($plugin_class)->willReturn(true);
+                        $plugin_list->disable($plugin_class)->shouldBeCalled();
 
                 return $plugin_class;
             }

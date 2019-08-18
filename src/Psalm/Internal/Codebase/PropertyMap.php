@@ -17,8 +17,6 @@ class PropertyMap
      * Gets the method/function call map
      *
      * @return array<string, array<string, string>>
-     * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
-     * @psalm-suppress MixedAssignment
      */
     public static function getPropertyMap()
     {

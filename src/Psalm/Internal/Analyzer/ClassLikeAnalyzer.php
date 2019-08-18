@@ -374,7 +374,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                 }
 
                 if ($file_manipulations) {
-                    /** @psalm-suppress MixedTypeCoercion */
                     FileManipulationBuffer::add($code_location->file_path, $file_manipulations);
                 }
             }

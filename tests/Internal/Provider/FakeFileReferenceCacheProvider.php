@@ -56,9 +56,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @return ?array
-     *
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedFileReferences()
     {
@@ -67,9 +64,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @return ?array
-     *
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedFileClassReferences()
     {
@@ -78,9 +72,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @return ?array
-     *
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedFileMemberReferences()
     {
@@ -89,9 +80,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @return ?array
-     *
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedMethodMemberReferences()
     {
@@ -100,9 +88,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @return ?array
-     *
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedFileMissingMemberReferences()
     {
@@ -111,9 +96,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @return ?array
-     *
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedMixedMemberNameReferences()
     {
@@ -122,9 +104,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @return ?array
-     *
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedMethodMissingMemberReferences()
     {
@@ -133,9 +112,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @return ?array
-     *
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedMethodParamUses()
     {
@@ -144,9 +120,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @return ?array
-     *
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedIssues()
     {

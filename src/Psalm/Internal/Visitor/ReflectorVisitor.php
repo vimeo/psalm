@@ -695,7 +695,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($string_value && class_exists($string_value)) {
-                /** @psalm-suppress ArgumentTypeCoercion - special case where the class is internal  */
                 $reflection_class = new \ReflectionClass($string_value);
 
                 if ($reflection_class->getFileName() !== $this->file_path) {
@@ -723,7 +722,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($string_value && interface_exists($string_value)) {
-                /** @psalm-suppress ArgumentTypeCoercion - special case where the class is internal  */
                 $reflection_class = new \ReflectionClass($string_value);
 
                 if ($reflection_class->getFileName() !== $this->file_path) {

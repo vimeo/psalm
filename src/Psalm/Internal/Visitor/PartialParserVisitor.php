@@ -304,7 +304,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                     /** @psalm-suppress MixedOperand */
                     $node->setAttribute('startFilePos', $attrs['startFilePos'] + $start_offset);
                 } else {
-                    /** @psalm-suppress MixedOperand */
                     $node->setAttribute('startFilePos', $stmt_start_pos + $start_offset);
                 }
             }

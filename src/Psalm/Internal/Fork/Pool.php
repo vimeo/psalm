@@ -90,7 +90,6 @@ class Pool
      * A closure to execute when a task is done
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedArgument
      */
     public function __construct(
         array $process_task_data_iterator,
@@ -275,7 +274,6 @@ class Pool
      * @return array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedOperand
      */
     private function readResultsFromChildren()
     {
@@ -399,8 +397,6 @@ class Pool
      * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
      *
      * @return  bool
-     *
-     * @psalm-suppress PossiblyUnusedMethod because we may in the future
      */
     public function didHaveError()
     {

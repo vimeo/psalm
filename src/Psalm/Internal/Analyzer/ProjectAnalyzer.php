@@ -1199,8 +1199,6 @@ class ProjectAnalyzer
 
     /**
      * @return array<string, bool>
-     *
-     * @psalm-suppress PossiblyUnusedMethod - need to fix #422
      */
     public function getIssuesToFix()
     {

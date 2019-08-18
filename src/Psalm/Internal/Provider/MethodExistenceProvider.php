@@ -31,26 +31,12 @@ class MethodExistenceProvider
 
     /**
      * @param  class-string<MethodExistenceProviderInterface> $class
-     * @psalm-suppress PossiblyUnusedParam
      *
      * @return void
      */
     public function registerClass(string $class)
     {
-        if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /**
-             * @psalm-suppress UndefinedMethod
-             *
-             * @var \Closure
-             */
-            $callable = \Closure::fromCallable([$class, 'doesMethodExist']);
-        } else {
-            $callable = (new \ReflectionClass($class))->getMethod('doesMethodExist')->getClosure(new $class);
-
-            if (!$callable) {
-                throw new \UnexpectedValueException('Callable must not be null');
-            }
-        }
+        $callable = \Closure::fromCallable([$class, 'doesMethodExist']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
             /** @psalm-suppress MixedTypeCoercion */

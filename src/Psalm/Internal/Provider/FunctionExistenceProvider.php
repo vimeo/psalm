@@ -28,26 +28,12 @@ class FunctionExistenceProvider
 
     /**
      * @param  class-string<FunctionExistenceProviderInterface> $class
-     * @psalm-suppress PossiblyUnusedParam
      *
      * @return void
      */
     public function registerClass(string $class)
     {
-        if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /**
-             * @psalm-suppress UndefinedMethod
-             *
-             * @var \Closure
-             */
-            $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
-        } else {
-            $callable = (new \ReflectionClass($class))->getMethod('doesFunctionExist')->getClosure(new $class);
-
-            if (!$callable) {
-                throw new \UnexpectedValueException('Callable must not be null');
-            }
-        }
+        $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
 
         foreach ($class::getFunctionIds() as $function_id) {
             /** @psalm-suppress MixedTypeCoercion */

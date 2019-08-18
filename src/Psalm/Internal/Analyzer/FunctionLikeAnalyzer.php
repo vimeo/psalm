@@ -620,8 +620,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
 
             /**
-             * @psalm-suppress MixedArrayAccess
-             *
              * @var PhpParser\Node\Param
              */
             $parser_param = $this->function->getParams()[$offset];

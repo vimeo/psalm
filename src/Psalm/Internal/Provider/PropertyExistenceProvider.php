@@ -34,26 +34,12 @@ class PropertyExistenceProvider
 
     /**
      * @param  class-string<PropertyExistenceProviderInterface> $class
-     * @psalm-suppress PossiblyUnusedParam
      *
      * @return void
      */
     public function registerClass(string $class)
     {
-        if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /**
-             * @psalm-suppress UndefinedMethod
-             *
-             * @var \Closure
-             */
-            $callable = \Closure::fromCallable([$class, 'doesPropertyExist']);
-        } else {
-            $callable = (new \ReflectionClass($class))->getMethod('doesPropertyExist')->getClosure(new $class);
-
-            if (!$callable) {
-                throw new \UnexpectedValueException('Callable must not be null');
-            }
-        }
+        $callable = \Closure::fromCallable([$class, 'doesPropertyExist']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
             /** @psalm-suppress MixedTypeCoercion */

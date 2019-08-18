@@ -648,7 +648,6 @@ class Config
      * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedOperand
-     * @psalm-suppress MixedPropertyAssignment
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
      *
@@ -1538,7 +1537,6 @@ class Config
 
     /**
      * @return void
-     * @psalm-suppress MixedTypeCoercion
      */
     public function collectPredefinedConstants()
     {
@@ -1555,9 +1553,6 @@ class Config
 
     /**
      * @return void
-     * @psalm-suppress InvalidPropertyAssignment
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedArrayOffset
      */
     public function collectPredefinedFunctions()
     {
@@ -1600,7 +1595,6 @@ class Config
         }
 
         if (file_exists($composer_json_path)) {
-            /** @psalm-suppress PossiblyFalseArgument */
             if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
                 throw new \UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
@@ -1625,7 +1619,6 @@ class Config
             if (file_exists($vendor_autoload_files_path)) {
                 /**
                  * @var string[]
-                 * @psalm-suppress UnresolvableInclude
                  */
                 $vendor_autoload_files = require $vendor_autoload_files_path;
 

@@ -573,8 +573,6 @@ class Scanner
      * @param  bool   $will_analyze
      *
      * @return FileScanner
-     *
-     * @psalm-suppress MixedOffset
      */
     private function scanFile(
         $file_path,
@@ -748,7 +746,6 @@ class Scanner
 
         error_reporting($old_level);
 
-        /** @psalm-suppress MixedMethodCall due to Reflection class weirdness */
         $file_path = (string)$reflected_class->getFileName();
 
         // if the file was autoloaded but exists in evaled code only, return false

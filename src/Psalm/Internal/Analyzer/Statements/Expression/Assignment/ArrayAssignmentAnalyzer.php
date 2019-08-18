@@ -32,7 +32,6 @@ class ArrayAssignmentAnalyzer
      * @param   Type\Union                          $assignment_value_type
      *
      * @return  void
-     * @psalm-suppress MixedMethodCall - some funky logic here
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

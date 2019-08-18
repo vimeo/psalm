@@ -33,26 +33,12 @@ class MethodVisibilityProvider
 
     /**
      * @param  class-string<MethodVisibilityProviderInterface> $class
-     * @psalm-suppress PossiblyUnusedParam
      *
      * @return void
      */
     public function registerClass(string $class)
     {
-        if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /**
-             * @psalm-suppress UndefinedMethod
-             *
-             * @var \Closure
-             */
-            $callable = \Closure::fromCallable([$class, 'isMethodVisible']);
-        } else {
-            $callable = (new \ReflectionClass($class))->getMethod('isMethodVisible')->getClosure(new $class);
-
-            if (!$callable) {
-                throw new \UnexpectedValueException('Callable must not be null');
-            }
-        }
+        $callable = \Closure::fromCallable([$class, 'isMethodVisible']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
             /** @psalm-suppress MixedTypeCoercion */

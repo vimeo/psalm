@@ -55,26 +55,12 @@ class FunctionReturnTypeProvider
 
     /**
      * @param  class-string<FunctionReturnTypeProviderInterface> $class
-     * @psalm-suppress PossiblyUnusedParam
      *
      * @return void
      */
     public function registerClass(string $class)
     {
-        if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /**
-             * @psalm-suppress UndefinedMethod
-             *
-             * @var \Closure
-             */
-            $callable = \Closure::fromCallable([$class, 'getFunctionReturnType']);
-        } else {
-            $callable = (new \ReflectionClass($class))->getMethod('getFunctionReturnType')->getClosure(new $class);
-
-            if (!$callable) {
-                throw new \UnexpectedValueException('Callable must not be null');
-            }
-        }
+        $callable = \Closure::fromCallable([$class, 'getFunctionReturnType']);
 
         foreach ($class::getFunctionIds() as $function_id) {
             /** @psalm-suppress MixedTypeCoercion */

@@ -49,7 +49,6 @@ class CommentAnalyzer
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
      * @return VarDocblockComment[]
-     * @psalm-suppress MixedArrayAccess
      */
     public static function getTypeFromComment(
         PhpParser\Comment\Doc $comment,
@@ -322,7 +321,6 @@ class CommentAnalyzer
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
      * @return FunctionDocblockComment
-     * @psalm-suppress MixedArrayAccess
      */
     public static function extractFunctionDocblockInfo(PhpParser\Comment\Doc $comment)
     {

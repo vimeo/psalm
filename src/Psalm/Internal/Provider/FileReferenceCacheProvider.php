@@ -72,7 +72,6 @@ class FileReferenceCacheProvider
      * @return ?array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedFileReferences()
     {
@@ -101,7 +100,6 @@ class FileReferenceCacheProvider
      * @return ?array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedFileClassReferences()
     {
@@ -130,7 +128,6 @@ class FileReferenceCacheProvider
      * @return ?array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedMethodMemberReferences()
     {
@@ -159,7 +156,6 @@ class FileReferenceCacheProvider
      * @return ?array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedMethodMissingMemberReferences()
     {
@@ -188,7 +184,6 @@ class FileReferenceCacheProvider
      * @return ?array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedFileMemberReferences()
     {
@@ -217,7 +212,6 @@ class FileReferenceCacheProvider
      * @return ?array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedFileMissingMemberReferences()
     {
@@ -247,7 +241,6 @@ class FileReferenceCacheProvider
      * @return ?array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedMixedMemberNameReferences()
     {
@@ -276,7 +269,6 @@ class FileReferenceCacheProvider
      * @return ?array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedMethodParamUses()
     {
@@ -305,7 +297,6 @@ class FileReferenceCacheProvider
      * @return ?array
      *
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function getCachedIssues()
     {

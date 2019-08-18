@@ -251,7 +251,6 @@ class TypeCombination
             $combination->array_type_params = [];
 
             /**
-             * @psalm-suppress PossiblyNullArrayOffset
              * @psalm-suppress PossiblyNullArrayAccess
              */
             unset(

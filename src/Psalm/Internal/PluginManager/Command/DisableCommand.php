@@ -28,8 +28,6 @@ class DisableCommand extends Command
     }
 
     /**
-     * @psalm-suppress UnusedMethod
-     *
      * @return void
      */
     protected function configure()
@@ -47,8 +45,6 @@ class DisableCommand extends Command
     }
 
     /**
-     * @psalm-suppress UnusedMethod
-     *
      * @return null|int
      */
     protected function execute(InputInterface $i, OutputInterface $o)
@@ -66,7 +62,6 @@ class DisableCommand extends Command
         $plugin_list = ($this->plugin_list_factory)($current_dir, $config_file_path);
 
         try {
-            /** @psalm-suppress MixedAssignment */
             $plugin_name = $i->getArgument('pluginName');
             assert(is_string($plugin_name));
 

@@ -721,7 +721,6 @@ class ExpressionAnalyzer
             }
 
             if ($file_manipulations) {
-                /** @psalm-suppress MixedTypeCoercion */
                 FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
             }
         }

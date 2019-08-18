@@ -211,8 +211,6 @@ class Analyzer
      * @param  array<string, class-string<FileAnalyzer>> $filetype_analyzers
      *
      * @return FileAnalyzer
-     *
-     * @psalm-suppress MixedOperand
      */
     private function getFileAnalyzer(ProjectAnalyzer $project_analyzer, $file_path, array $filetype_analyzers)
     {
@@ -274,6 +272,10 @@ class Analyzer
             && ($project_analyzer->full_run || $codebase->find_unused_code === 'always')
         ) {
             $project_analyzer->checkClassReferences();
+        }
+
+        if ($codebase->track_unused_suppressions) {
+            IssueBuffer::processUnusedSuppressions($codebase->file_provider);
         }
 
         $scanned_files = $codebase->scanner->getScannedFiles();
@@ -991,7 +993,6 @@ class Analyzer
      * @param array<string, array<string, bool>> $names
      *
      * @return void
-     * @psalm-suppress MixedPropertyTypeCoercion
      */
     public function addMixedMemberNames(array $names)
     {

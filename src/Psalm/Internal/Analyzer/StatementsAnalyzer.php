@@ -818,13 +818,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
 
                 if ($file_manipulations) {
-                    /** @psalm-suppress MixedTypeCoercion */
                     FileManipulationBuffer::add($this->getFilePath(), $file_manipulations);
                 }
             }
 
             if ($new_issues) {
-                /** @psalm-suppress MixedTypeCoercion */
                 $this->removeSuppressedIssues($new_issues);
             }
 

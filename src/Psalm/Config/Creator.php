@@ -88,7 +88,6 @@ class Creator
     /**
      * @return string[]
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedOperand
      * @psalm-suppress MixedArgument
      */
     private static function getPsr4Or0Paths(string $current_dir, array $composer_json) : array
@@ -138,8 +137,6 @@ class Creator
 
     /**
      * @return string[]
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedOperand
      */
     private static function guessPhpFileDirs(string $current_dir) : array
     {

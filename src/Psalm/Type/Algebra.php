@@ -440,8 +440,6 @@ class Algebra
                          * @param  string $possible_type
                          *
                          * @return bool
-                         *
-                         * @psalm-suppress MixedOperand
                          */
                         function ($possible_type) {
                             return $possible_type[0] !== '!';

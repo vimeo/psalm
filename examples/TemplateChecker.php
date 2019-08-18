@@ -44,7 +44,6 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
                     throw new \InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
-                /** @psalm-suppress MixedArgument */
                 $this_params = $this->checkMethod($matches[1], $first_stmt, $codebase);
 
                 if ($this_params === false) {

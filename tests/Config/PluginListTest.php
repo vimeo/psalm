@@ -22,15 +22,12 @@ class PluginListTest extends \Psalm\Tests\TestCase
     public function setUp() : void
     {
         $this->config = $this->prophesize(Config::class);
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->config->getPluginClasses()->willReturn([]);
 
         $this->config_file = $this->prophesize(ConfigFile::class);
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->config_file->getConfig()->willReturn($this->config->reveal());
 
         $this->composer_lock = $this->prophesize(ComposerLock::class);
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->composer_lock->getPlugins()->willReturn([]);
     }
 
@@ -40,7 +37,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
      */
     public function pluginsPresentInConfigAreEnabled()
     {
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->config->getPluginClasses()->willReturn([
             ['class' => 'a\b\c', 'config' => null],
             ['class' => 'c\d\e', 'config' => null],
@@ -60,12 +56,10 @@ class PluginListTest extends \Psalm\Tests\TestCase
      */
     public function pluginsPresentInPackageLockOnlyAreAvailable()
     {
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->config->getPluginClasses()->willReturn([
             ['class' => 'a\b\c', 'config' => null],
         ]);
 
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->composer_lock->getPlugins()->willReturn([
             'vendor/package' => 'a\b\c',
             'another-vendor/another-package' => 'c\d\e',
@@ -84,12 +78,10 @@ class PluginListTest extends \Psalm\Tests\TestCase
      */
     public function pluginsPresentInPackageLockAndConfigHavePluginPackageName()
     {
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->config->getPluginClasses()->willReturn([
             ['class' => 'a\b\c', 'config' => null],
         ]);
 
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->composer_lock->getPlugins()->willReturn([
             'vendor/package' => 'a\b\c',
         ]);
@@ -117,7 +109,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
      */
     public function canFindPluginClassByPackageName()
     {
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->composer_lock->getPlugins()->willReturn([
             'vendor/package' => 'a\b\c',
         ]);
@@ -132,7 +123,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
      */
     public function enabledPackageIsEnabled()
     {
-        /** @psalm-suppress TooManyArguments willReturn is old-school variadic, see vimeo/psalm#605 */
         $this->config->getPluginClasses()->willReturn([
             ['class' => 'a\b\c', 'config' => null],
         ]);

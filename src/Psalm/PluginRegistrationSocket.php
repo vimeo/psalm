@@ -31,7 +31,6 @@ class PluginRegistrationSocket implements RegistrationInterface
 
     /**
      * @return void
-     * @psalm-suppress TypeCoercion
      */
     public function registerHooksFromClass(string $handler)
     {
