@@ -163,6 +163,9 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         } catch (PhpParser\Error $e) {
             return;
         }
+        foreach ($codebase->config->before_analyze_file as $plugin_class) {
+            $plugin_class::beforeAnalyzeFile($this);
+        }
 
         if ($codebase->alter_code) {
             foreach ($stmts as $stmt) {
