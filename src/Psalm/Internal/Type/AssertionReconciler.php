@@ -816,9 +816,14 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TNamedObject
                 && $codebase->classOrInterfaceExists($type->value)
-                && $codebase->methodExists($type->value . '::' . $method_id)
             ) {
                 $object_types[] = $type;
+
+                if (!$codebase->methodExists($type->value . '::' . $method_id)) {
+                    $obj = new Atomic\TObjectWithProperties([], [$method_id => true]);
+                    $type->extra_types[$obj->getKey()] = $obj;
+                    $did_remove_type = true;
+                }
             } elseif ($type instanceof TObject || $type instanceof TMixed) {
                 $object_types[] = new Atomic\TObjectWithProperties([], [$method_id => true]);
                 $did_remove_type = true;
@@ -836,7 +841,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $existing_var_type,
                     $old_var_type_string,
                     $key,
-                    'object',
+                    'object with method ' . $method_id,
                     !$did_remove_type,
                     $code_location,
                     $suppressed_issues
