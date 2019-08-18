@@ -274,7 +274,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 $comments = $this->parsed_docblock;
 
                 if (isset($comments['specials']['psalm-scope-this'])) {
-                    $trimmed = trim(reset($comments['specials']['psalm-scope-this']));
+                    $trimmed = trim(\reset($comments['specials']['psalm-scope-this']));
                     $this_type = Type::parseString($trimmed);
                     $context->self = $trimmed;
                     $context->vars_in_scope['$this'] = $this_type;
