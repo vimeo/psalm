@@ -152,7 +152,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
-        if ($codebase->track_unused_suppressions) {
+        if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
             foreach ($storage->suppressed_issues as $offset => $issue_name) {
                 IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_name);
             }

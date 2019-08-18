@@ -309,7 +309,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             }
 
             if ($end_offset !== 0) {
-                /** @psalm-suppress MixedOperand */
                 $node->setAttribute('endFilePos', $stmt_end_pos + $end_offset);
             }
 
