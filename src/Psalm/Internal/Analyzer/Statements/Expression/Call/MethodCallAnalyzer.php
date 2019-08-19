@@ -495,22 +495,29 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     $has_mixed_method_call = true;
 
-                    if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                        $codebase->analyzer->addMixedMemberName(
-                            strtolower($stmt->name->name),
-                            $context->calling_method_id ?: $statements_analyzer->getFileName()
-                        );
-                    }
+                    if ($lhs_type_part instanceof Type\Atomic\TObjectWithProperties
+                        && $stmt->name instanceof PhpParser\Node\Identifier
+                        && isset($lhs_type_part->methods[$stmt->name->name])
+                    ) {
+                        $existent_method_ids[] = $lhs_type_part->methods[$stmt->name->name];
+                    } else {
+                        if ($stmt->name instanceof PhpParser\Node\Identifier) {
+                            $codebase->analyzer->addMixedMemberName(
+                                strtolower($stmt->name->name),
+                                $context->calling_method_id ?: $statements_analyzer->getFileName()
+                            );
+                        }
 
-                    if ($context->check_methods) {
-                        if (IssueBuffer::accepts(
-                            new MixedMethodCall(
-                                'Cannot determine the type of the object on the left hand side of this expression',
-                                new CodeLocation($source, $stmt->name)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
+                        if ($context->check_methods) {
+                            if (IssueBuffer::accepts(
+                                new MixedMethodCall(
+                                    'Cannot determine the type of the object on the left hand side of this expression',
+                                    new CodeLocation($source, $stmt->name)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
                         }
                     }
 

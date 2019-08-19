@@ -700,7 +700,17 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
 
             if ($function->parts === ['method_exists']) {
-                $context->check_methods = false;
+                $second_arg = isset($stmt->args[1]) ? $stmt->args[1] : null;
+
+                if ($first_arg
+                    && $first_arg->value instanceof PhpParser\Node\Expr\Variable
+                    && $second_arg
+                    && $second_arg->value instanceof PhpParser\Node\Scalar\String_
+                ) {
+                    // do nothing
+                } else {
+                    $context->check_methods = false;
+                }
             } elseif ($function->parts === ['class_exists']) {
                 if ($first_arg) {
                     if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {

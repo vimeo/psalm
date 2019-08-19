@@ -820,12 +820,18 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $object_types[] = $type;
 
                 if (!$codebase->methodExists($type->value . '::' . $method_id)) {
-                    $obj = new Atomic\TObjectWithProperties([], [$method_id => true]);
+                    $obj = new Atomic\TObjectWithProperties(
+                        [],
+                        [$method_id => $type->value . '::' . $method_id]
+                    );
                     $type->extra_types[$obj->getKey()] = $obj;
                     $did_remove_type = true;
                 }
             } elseif ($type instanceof TObject || $type instanceof TMixed) {
-                $object_types[] = new Atomic\TObjectWithProperties([], [$method_id => true]);
+                $object_types[] = new Atomic\TObjectWithProperties(
+                    [],
+                    [$method_id =>  'object::' . $method_id]
+                );
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
                 $object_types[] = $type;

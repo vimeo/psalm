@@ -18,7 +18,7 @@ class TObjectWithProperties extends TObject
     public $properties;
 
     /**
-     * @var array<string, bool>
+     * @var array<string, string>
      */
     public $methods;
 
@@ -26,7 +26,7 @@ class TObjectWithProperties extends TObject
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
-     * @param array<string, bool> $methods
+     * @param array<string, string> $methods
      */
     public function __construct(array $properties, array $methods = [])
     {

@@ -341,6 +341,31 @@ class MethodCallTest extends TestCase
                         );
                     }',
             ],
+            'callMethodAfterCheckingExistence' => [
+                '<?php
+                    class A {}
+
+                    function foo(A $a) : void {
+                        if (method_exists($a, "bar")) {
+                            /** @psalm-suppress MixedArgument */
+                            echo $a->bar();
+                        }
+                    }'
+            ],
+            'callMethodAfterCheckingExistenceInClosure' => [
+                '<?php
+                    class A {}
+
+                    function foo(A $a) : void {
+                        if (method_exists($a, "bar")) {
+                            (function() use ($a) : void {
+                                /** @psalm-suppress MixedArgument */
+                                echo $a->bar();
+                            })();
+
+                        }
+                    }'
+            ],
         ];
     }
 
