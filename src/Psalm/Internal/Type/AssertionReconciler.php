@@ -800,7 +800,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
      */
     private static function reconcileHasMethod(
         Codebase $codebase,
-        string $method_id,
+        string $method_name,
         Union $existing_var_type,
         ?string $key,
         ?CodeLocation $code_location,
@@ -819,18 +819,25 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             ) {
                 $object_types[] = $type;
 
-                if (!$codebase->methodExists($type->value . '::' . $method_id)) {
+                if (!$codebase->methodExists($type->value . '::' . $method_name)) {
                     $obj = new Atomic\TObjectWithProperties(
                         [],
-                        [$method_id => $type->value . '::' . $method_id]
+                        [$method_name => $type->value . '::' . $method_name]
                     );
                     $type->extra_types[$obj->getKey()] = $obj;
+                    $did_remove_type = true;
+                }
+            } elseif ($type instanceof Atomic\TObjectWithProperties) {
+                $object_types[] = $type;
+
+                if (!isset($type->methods[$method_name])) {
+                    $type->methods[$method_name] = 'object::' . $method_name;
                     $did_remove_type = true;
                 }
             } elseif ($type instanceof TObject || $type instanceof TMixed) {
                 $object_types[] = new Atomic\TObjectWithProperties(
                     [],
-                    [$method_id =>  'object::' . $method_id]
+                    [$method_name =>  'object::' . $method_name]
                 );
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
@@ -847,7 +854,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $existing_var_type,
                     $old_var_type_string,
                     $key,
-                    'object with method ' . $method_id,
+                    'object with method ' . $method_name,
                     !$did_remove_type,
                     $code_location,
                     $suppressed_issues
