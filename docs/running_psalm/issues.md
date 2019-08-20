@@ -1518,6 +1518,28 @@ class A {
 
 Can be emitted by plugins.
 
+### PossibleRawObjectIteration
+
+Emitted when possibly iterating over an object’s properties, the comparison to [RawObjectIteration](#rawobjectiteration).
+
+```php
+class A {
+    /** @var string|null */
+    public $foo;
+
+    /** @var string|null */
+    public $bar;
+}
+
+function takesA(A $a) {
+    if (rand(0, 1)) {
+        $a = [1, 2, 3];
+    }
+
+    foreach ($a as $property) {}
+}
+```
+
 ### PossiblyFalseArgument
 
 Emitted when a function argument is possibly `false`, but the function doesn’t expect `false`. This is distinct from a function argument is possibly `bool`, which results in `PossiblyInvalidArgument`.

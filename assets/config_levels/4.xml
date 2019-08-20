@@ -89,5 +89,6 @@
         <PossiblyUndefinedVariable errorLevel="info" />
         <PossiblyUndefinedArrayOffset errorLevel="info" />
         <PossiblyUndefinedMethod errorLevel="info" />
+        <PossibleRawObjectIteration errorLevel="info" />
     </issueHandlers>
 </psalm>

@@ -19,6 +19,7 @@ use Psalm\Issue\NullIterator;
 use Psalm\Issue\PossiblyFalseIterator;
 use Psalm\Issue\PossiblyInvalidIterator;
 use Psalm\Issue\PossiblyNullIterator;
+use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\RawObjectIteration;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\LoopScope;
@@ -383,6 +384,7 @@ class ForeachAnalyzer
 
         $has_valid_iterator = false;
         $invalid_iterator_types = [];
+        $raw_object_types = [];
 
         foreach ($iterator_type->getTypes() as $iterator_atomic_type) {
             if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam) {
@@ -539,15 +541,31 @@ class ForeachAnalyzer
                         $has_valid_iterator
                     );
                 } else {
-                    if (IssueBuffer::accepts(
-                        new RawObjectIteration(
-                            'Possibly undesired iteration over regular object ' . $iterator_atomic_type->value,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    $raw_object_types[] = $iterator_atomic_type->value;
+                }
+            }
+        }
+
+        if ($raw_object_types) {
+            if ($has_valid_iterator) {
+                if (IssueBuffer::accepts(
+                    new PossibleRawObjectIteration(
+                        'Possibly undesired iteration over regular object ' . \reset($raw_object_types),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new RawObjectIteration(
+                        'Possibly undesired iteration over regular object ' . \reset($raw_object_types),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
             }
         }

@@ -267,6 +267,7 @@
             <xs:element name="OverriddenPropertyAccess" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="ParadoxicalCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossibleRawObjectIteration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseIterator" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseOperand" type="IssueHandlerType" minOccurs="0" />

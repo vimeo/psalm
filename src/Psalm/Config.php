@@ -1270,6 +1270,10 @@ class Config
             return 'UndefinedMethod';
         }
 
+        if ($issue_type === 'PossibleRawObjectIteration') {
+            return 'RawObjectIteration';
+        }
+
         if ($issue_type === 'UninitializedProperty') {
             return 'PropertyNotSetInConstructor';
         }
