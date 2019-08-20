@@ -136,7 +136,7 @@ class Taint
                 $root_source = $source;
 
                 while ($root_source->parents) {
-                    $first_parent = reset($root_source->parents);
+                    $first_parent = \reset($root_source->parents);
                     if (!$first_parent->code_location) {
                         break;
                     }
@@ -176,7 +176,7 @@ class Taint
                 $root_source = $existing_source;
 
                 while ($root_source->parents) {
-                    $first_parent = reset($root_source->parents);
+                    $first_parent = \reset($root_source->parents);
                     if (!$first_parent->code_location) {
                         break;
                     }
