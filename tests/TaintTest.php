@@ -239,7 +239,7 @@ class TaintTest extends TestCase
     public function testTaintedInputFromParam()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('TaintedInput - somefile.php:8:48 - in path $_GET (somefile.php:4) -> a::getuserid (somefile.php:3) out path a::getuserid (somefile.php:8) -> a::getappendeduserid (somefile.php:12) -> a::deleteuser#2 (somefile.php:16) -> pdo::exec#1 (somefile.php:17)');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:4:41 - in path $_GET (somefile.php:4) -> a::getuserid (somefile.php:3) out path a::getuserid (somefile.php:8) -> a::getappendeduserid (somefile.php:12) -> a::deleteuser#2 (somefile.php:16) -> pdo::exec#1 (somefile.php:17)');
 
         $this->project_analyzer->trackTaintedInputs();
 
@@ -376,7 +376,7 @@ class TaintTest extends TestCase
     public function testTaintedInputToParamAlternatePath()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('TaintedInput - somefile.php:7:29 - in path $_GET (somefile.php:7) -> a::getappendeduserid#1 (somefile.php:7) -> a::getappendeduserid (somefile.php:11) -> a::deleteuser#3 (somefile.php:7) out path a::deleteuser#3 (somefile.php:19) -> pdo::exec#1 (somefile.php:23)');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:7:63 - in path $_GET (somefile.php:7) -> a::getappendeduserid#1 (somefile.php:7) -> a::getappendeduserid (somefile.php:11) -> a::deleteuser#3 (somefile.php:7) out path a::deleteuser#3 (somefile.php:19) -> pdo::exec#1 (somefile.php:23)');
 
         $this->project_analyzer->trackTaintedInputs();
 
@@ -419,7 +419,7 @@ class TaintTest extends TestCase
     public function testTaintedInParentLoader()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('TaintedInput - somefile.php:23:48 - in path $_GET (somefile.php:28) -> c::foo#1 (somefile.php:28) out path c::foo#1 (somefile.php:23) -> agrandchild::loadfull#1 (somefile.php:6) -> a::loadpartial#1 (somefile.php:16) -> pdo::exec#1 (somefile.php:16)');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:28:39 - in path $_GET (somefile.php:28) -> c::foo#1 (somefile.php:28) out path c::foo#1 (somefile.php:23) -> agrandchild::loadfull#1 (somefile.php:6) -> a::loadpartial#1 (somefile.php:16) -> pdo::exec#1 (somefile.php:16)');
 
         $this->project_analyzer->trackTaintedInputs();
 
