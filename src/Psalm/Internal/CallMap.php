@@ -5967,7 +5967,6 @@ return [
 'imap_utf8' => ['string', 'mime_encoded_text'=>'string'],
 'imap_utf8_to_mutf7' => ['string|false', 'in'=>'string'],
 'implode' => ['string', 'glue'=>'string', 'pieces'=>'array'],
-'implode\'1' => ['string', 'pieces'=>'array', 'glue='=>'string'],
 'import_request_variables' => ['bool', 'types'=>'string', 'prefix='=>'string'],
 'in_array' => ['bool', 'needle'=>'mixed', 'haystack'=>'array', 'strict='=>'bool'],
 'inclued_get_data' => ['array'],
