@@ -820,12 +820,34 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $object_types[] = $type;
 
                 if (!$codebase->methodExists($type->value . '::' . $method_name)) {
-                    $obj = new Atomic\TObjectWithProperties(
-                        [],
-                        [$method_name => $type->value . '::' . $method_name]
-                    );
-                    $type->extra_types[$obj->getKey()] = $obj;
-                    $did_remove_type = true;
+                    $match_found = false;
+
+                    if ($type->extra_types) {
+                        foreach ($type->extra_types as $extra_type) {
+                            if ($extra_type instanceof TNamedObject
+                                && $codebase->classOrInterfaceExists($extra_type->value)
+                                && $codebase->methodExists($extra_type->value . '::' . $method_name)
+                            ) {
+                                $match_found = true;
+                            } elseif ($extra_type instanceof Atomic\TObjectWithProperties) {
+                                $match_found = true;
+
+                                if (!isset($extra_type->methods[$method_name])) {
+                                    $extra_type->methods[$method_name] = 'object::' . $method_name;
+                                    $did_remove_type = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!$match_found) {
+                        $obj = new Atomic\TObjectWithProperties(
+                            [],
+                            [$method_name => $type->value . '::' . $method_name]
+                        );
+                        $type->extra_types[$obj->getKey()] = $obj;
+                        $did_remove_type = true;
+                    }
                 }
             } elseif ($type instanceof Atomic\TObjectWithProperties) {
                 $object_types[] = $type;
