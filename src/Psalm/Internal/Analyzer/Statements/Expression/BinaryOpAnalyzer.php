@@ -442,6 +442,23 @@ class BinaryOpAnalyzer
 
             $t_if_context->inside_isset = false;
 
+            if (isset($stmt->left->inferredType)
+                && !$stmt->left->inferredType->isMixed()
+                && !$stmt->left->inferredType->isNullable()
+            ) {
+                if (!$stmt->left->inferredType->from_docblock) {
+                    if (IssueBuffer::accepts(
+                        new \Psalm\Issue\TypeDoesNotContainType(
+                            $stmt->left->inferredType->getId() . ' is always defined and non-null',
+                            new CodeLocation($statements_analyzer, $stmt->left)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
             foreach ($t_if_context->vars_in_scope as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
