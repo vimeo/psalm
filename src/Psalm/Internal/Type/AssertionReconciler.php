@@ -848,7 +848,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        if (!$object_types || !$did_remove_type) {
+        if (!$object_types) {
             if ($key && $code_location) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,

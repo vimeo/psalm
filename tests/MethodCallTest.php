@@ -379,6 +379,15 @@ class MethodCallTest extends TestCase
                         $object->bar();
                     }'
             ],
+            'callManyMethodsAfterCheckingExistenceChained' => [
+                '<?php
+                    function foo(object $object) : void {
+                        if (method_exists($object, "foo") && method_exists($object, "bar")) {
+                            $object->foo();
+                            $object->bar();
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -650,6 +659,19 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            'alreadyHasmethod' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function foo(A $a) : void {
+                        if (method_exists($a, "foo")) {
+                            $object->foo();
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }
