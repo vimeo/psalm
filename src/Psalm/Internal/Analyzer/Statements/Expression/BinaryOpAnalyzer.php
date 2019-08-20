@@ -439,9 +439,7 @@ class BinaryOpAnalyzer
 
                 IssueBuffer::startRecording();
 
-                if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, clone $context) === false) {
-                    return false;
-                }
+                ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, clone $context);
 
                 IssueBuffer::clearRecordingLevel();
                 IssueBuffer::stopRecording();
