@@ -1237,12 +1237,12 @@ class ConfigTest extends \Psalm\Tests\TestCase
                     $glob3->func();
                 }
                 namespace {
-                    ord($glob1 ?? "str");
+                    ord($glob1 ?: "str");
                     ord($_GET["str"] ?? "str");
 
                     function example4(): void {
                         global $glob1;
-                        ord($glob1 ?? "str");
+                        ord($glob1 ?: "str");
                         ord($_GET["str"] ?? "str");
                     }
                 }'

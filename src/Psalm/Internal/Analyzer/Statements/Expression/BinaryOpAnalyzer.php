@@ -434,6 +434,52 @@ class BinaryOpAnalyzer
                 $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
             }
 
+            if (!self::hasArrayDimFetch($stmt->left)) {
+                // check first if the variable was good
+
+                IssueBuffer::startRecording();
+
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, clone $context) === false) {
+                    return false;
+                }
+
+                IssueBuffer::clearRecordingLevel();
+                IssueBuffer::stopRecording();
+
+                $naive_type = $stmt->left->inferredType ?? null;
+
+                if ($naive_type
+                    && !$naive_type->isMixed()
+                    && !$naive_type->isNullable()
+                ) {
+                    $var_id = ExpressionAnalyzer::getVarId($stmt->left, $context->self);
+
+                    if (!$var_id || !\in_array($var_id, $changed_var_ids, true)) {
+                        if ($naive_type->from_docblock) {
+                            if (IssueBuffer::accepts(
+                                new \Psalm\Issue\DocblockTypeContradiction(
+                                    $naive_type->getId() . ' does not contain null',
+                                    new CodeLocation($statements_analyzer, $stmt->left)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new \Psalm\Issue\TypeDoesNotContainType(
+                                    $naive_type->getId() . ' is always defined and non-null',
+                                    new CodeLocation($statements_analyzer, $stmt->left)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+                }
+            }
+
             $t_if_context->inside_isset = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $t_if_context) === false) {
@@ -661,6 +707,21 @@ class BinaryOpAnalyzer
         }
 
         return null;
+    }
+
+    private static function hasArrayDimFetch(PhpParser\Node\Expr $expr) : bool
+    {
+        if ($expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            return true;
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\PropertyFetch
+            || $expr instanceof PhpParser\Node\Expr\MethodCall
+        ) {
+            return self::hasArrayDimFetch($expr->var);
+        }
+
+        return false;
     }
 
     /**

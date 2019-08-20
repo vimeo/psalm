@@ -79,7 +79,7 @@ class BuildInfoCollector
                 $this->readEnv['CI_REPO_NAME'] = $slug_parts[1];
             }
 
-            $pr_slug = (string) $this->env['TRAVIS_PULL_REQUEST_SLUG'] ?? '';
+            $pr_slug = (string) ($this->env['TRAVIS_PULL_REQUEST_SLUG'] ?? '');
 
             if ($pr_slug) {
                 $slug_parts = explode('/', $pr_slug);
@@ -150,7 +150,7 @@ class BuildInfoCollector
             $this->readEnv['APPVEYOR_REPO_BRANCH'] = $this->env['APPVEYOR_REPO_BRANCH'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
 
-            $repo_slug = (string) $this->env['APPVEYOR_REPO_NAME'] ?? '';
+            $repo_slug = (string) ($this->env['APPVEYOR_REPO_NAME'] ?? '');
 
             if ($repo_slug) {
                 $slug_parts = explode('/', $repo_slug);
@@ -215,7 +215,7 @@ class BuildInfoCollector
             // backup
             $this->readEnv['CI_NAME'] = 'Scrutinizer';
 
-            $repo_slug = (string) $this->env['SCRUTINIZER_PROJECT'] ?? '';
+            $repo_slug = (string) ($this->env['SCRUTINIZER_PROJECT'] ?? '');
 
             if ($repo_slug) {
                 $slug_parts = explode('/', $repo_slug);

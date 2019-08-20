@@ -1468,6 +1468,19 @@ class TypeReconciliationTest extends TestCase
                         return null;
                     }'
             ],
+            'nullCoalesceTypedArrayValue' => [
+                '<?php
+                    /** @param string[] $arr */
+                    function foo(array $arr) : string {
+                        return $arr["b"] ?? "bar";
+                    }',
+            ],
+            'nullCoalesceTypedValue' => [
+                '<?php
+                    function foo(?string $s) : string {
+                        return $s ?? "bar";
+                    }',
+            ],
         ];
     }
 
@@ -1751,6 +1764,13 @@ class TypeReconciliationTest extends TestCase
 
                     if (false !== firstChar("sdf")) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'nullCoalesceImpossible' => [
+                '<?php
+                    function foo(?string $s) : string {
+                        return ((string) $s) ?? "bar";
+                    }',
+                'error_message' => 'TypeDoesNotContainType'
             ],
         ];
     }
