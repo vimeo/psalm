@@ -271,7 +271,7 @@ class Functions
             'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'closedir', 'copy', 'file_put_contents',
             'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
             'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
-            'fputcsv',
+            'fputcsv', 'umask',
 
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
@@ -296,8 +296,9 @@ class Functions
             'curl_setopt', 'curl_close', 'curl_multi_add_handle', 'curl_multi_remove_handle',
             'curl_multi_select', 'curl_multi_close', 'curl_setopt_array',
 
-            // apc
-            'apc_store', 'apc_delete', 'apcu_store', 'apcu_delete', 'apc_clear_cache',
+            // apc, apcu
+            'apc_store', 'apc_delete', 'apc_clear_cache', 'apc_add', 'apc_inc', 'apc_dec', 'apc_cas',
+            'apcu_store', 'apcu_delete', 'apcu_clear_cache', 'apcu_add', 'apcu_inc', 'apcu_dec', 'apcu_cas',
 
             // newrelic
             'newrelic_start_transaction', 'newrelic_name_transaction', 'newrelic_add_custom_parameter',
