@@ -51,11 +51,9 @@
         <MissingConstructor>
             <errorLevel type="suppress">
                 <file name="src/Psalm/Internal/Scanner/FunctionDocblockComment.php"/>
-                <file name="src/Psalm/Internal/Scanner/VarDocblockComment.php"/>
                 <file name="src/Psalm/Storage/FunctionLikeStorage.php"/>
                 <file name="src/Psalm/Storage/MethodStorage.php"/>
                 <file name="src/Psalm/Storage/PropertyStorage.php"/>
-                <file name="src/Psalm/Internal/Scanner/VarDocblockComment.php"/>
                 <file name="src/Psalm/Internal/Scope/CaseScope.php"/>
             </errorLevel>
         </MissingConstructor>

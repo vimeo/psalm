@@ -111,6 +111,10 @@ class AssignmentAnalyzer
             }
 
             foreach ($var_comments as $var_comment) {
+                if (!$var_comment->type) {
+                    continue;
+                }
+
                 try {
                     $var_comment_type = ExpressionAnalyzer::fleshOutType(
                         $codebase,
@@ -521,6 +525,10 @@ class AssignmentAnalyzer
                     }
 
                     foreach ($var_comments as $var_comment) {
+                        if (!$var_comment->type) {
+                            continue;
+                        }
+
                         try {
                             if ($var_comment->var_id === $list_var_id) {
                                 $var_comment_type = ExpressionAnalyzer::fleshOutType(

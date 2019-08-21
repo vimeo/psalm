@@ -33,6 +33,11 @@ class DeprecatedAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'annotationOnStatement' => [
+                '<?php
+                    /** @deprecated */
+                    $a = "A";'
+            ],
         ];
     }
 

@@ -104,7 +104,7 @@ class ForeachAnalyzer
         }
 
         foreach ($var_comments as $var_comment) {
-            if (!$var_comment->var_id) {
+            if (!$var_comment->var_id || !$var_comment->type) {
                 continue;
             }
 
@@ -250,7 +250,7 @@ class ForeachAnalyzer
         );
 
         foreach ($var_comments as $var_comment) {
-            if (!$var_comment->var_id) {
+            if (!$var_comment->var_id || !$var_comment->type) {
                 continue;
             }
 

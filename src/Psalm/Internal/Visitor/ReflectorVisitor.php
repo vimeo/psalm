@@ -457,6 +457,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 foreach ($var_comments as $var_comment) {
+                    if (!$var_comment->type) {
+                        continue;
+                    }
+
                     $var_type = $var_comment->type;
                     $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
                 }

@@ -753,7 +753,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
 
                     foreach ($var_comments as $var_comment) {
-                        if (!$var_comment->var_id) {
+                        if (!$var_comment->var_id || !$var_comment->type) {
                             continue;
                         }
 
@@ -1326,6 +1326,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
 
                 foreach ($var_comments as $var_comment) {
+                    if (!$var_comment->type) {
+                        continue;
+                    }
+
                     try {
                         $var_comment_type = ExpressionAnalyzer::fleshOutType(
                             $codebase,

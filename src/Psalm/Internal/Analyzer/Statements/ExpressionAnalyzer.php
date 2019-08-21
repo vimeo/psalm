@@ -1437,6 +1437,10 @@ class ExpressionAnalyzer
             }
 
             foreach ($var_comments as $var_comment) {
+                if (!$var_comment->type) {
+                    continue;
+                }
+
                 $comment_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
                     $var_comment->type,

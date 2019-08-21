@@ -9,12 +9,12 @@ use Psalm\Type;
 class VarDocblockComment
 {
     /**
-     * @var Type\Union
+     * @var ?Type\Union
      */
     public $type;
 
     /**
-     * @var string
+     * @var ?string
      */
     public $original_type;
 
