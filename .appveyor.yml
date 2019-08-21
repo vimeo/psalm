@@ -14,14 +14,6 @@ init:
 environment:
   SSL_CERT_FILE: "C:\\tools\\php\\cacert.pem"
   matrix:
-    - php_ver_target: 7.1
-      DEPS: 'low'
-    - php_ver_target: 7.1
-      DEPS: 'high'
-    - php_ver_target: 7.2
-      DEPS: 'low'
-    - php_ver_target: 7.2
-      DEPS: 'high'
     - php_ver_target: 7.3
       DEPS: 'low'
     - php_ver_target: 7.3
