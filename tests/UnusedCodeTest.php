@@ -246,6 +246,11 @@ class UnusedCodeTest extends TestCase
 
                     foo(4);',
             ],
+            'usedFunctionCall' => [
+                '<?php
+                    $a = strlen("goodbye");
+                    echo $a;',
+            ],
             'possiblyUnusedParamWithUnderscore' => [
                 '<?php
                     class A {
@@ -644,6 +649,11 @@ class UnusedCodeTest extends TestCase
 
                     (new C)->bar();',
                 'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedFunctionCall' => [
+                '<?php
+                    strlen("goodbye");',
+                'error_message' => 'UnusedFunctionCall',
             ],
             'propertyOverriddenDownstreamAndNotUsed' => [
                 '<?php
