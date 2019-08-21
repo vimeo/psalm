@@ -12,6 +12,7 @@ php:
   - 7.2
   - 7.3
   - 7.4snapshot
+  - nightly
 
 env:
   matrix:
@@ -35,6 +36,7 @@ before_install:
     # disable default memory limit
     - echo memory_limit = 2G >> $INI
     - if [[ "$XDEBUG" = 'false' && -f $INI_DIR/xdebug.ini ]]; then phpenv config-rm xdebug.ini; fi
+    - if [[ $TRAVIS_PHP_VERSION = nightly ]]; then export DEFAULT_COMPOSER_FLAGS="$DEFAULT_COMPOSER_FLAGS --ignore-platform-reqs"; fi
     - composer clear-cache
 
 install:
@@ -50,6 +52,7 @@ matrix:
   fast_finish: true
   allow_failures:
     - php: 7.4snapshot
+    - php: nightly
 
 # Additional stages
 jobs:
