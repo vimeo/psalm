@@ -408,6 +408,7 @@ if (isset($_SERVER['TRAVIS'])
     || isset($_SERVER['JENKINS_URL'])
     || isset($_SERVER['SCRUTINIZER'])
     || isset($_SERVER['GITLAB_CI'])
+    || isset($_SERVER['GITHUB_WORKFLOW'])
 ) {
     $options['no-progress'] = true;
 }
