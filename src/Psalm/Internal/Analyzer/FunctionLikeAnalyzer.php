@@ -375,119 +375,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
         }
 
-        $check_stmts = true;
-
         if ($codebase->alter_code) {
-            foreach ($this->function->params as $param) {
-                $param_name_node = null;
-
-                if ($param->type instanceof PhpParser\Node\Name) {
-                    $param_name_node = $param->type;
-                } elseif ($param->type instanceof PhpParser\Node\NullableType
-                    && $param->type->type instanceof PhpParser\Node\Name
-                ) {
-                    $param_name_node = $param->type->type;
-                }
-
-                if ($param_name_node) {
-                    $resolved_name = ClassLikeAnalyzer::getFQCLNFromNameObject($param_name_node, $this->getAliases());
-
-                    $parent_fqcln = $this->getParentFQCLN();
-
-                    if ($resolved_name === 'self' && $context->self) {
-                        $resolved_name = (string) $context->self;
-                    } elseif ($resolved_name === 'parent' && $parent_fqcln) {
-                        $resolved_name = $parent_fqcln;
-                    }
-
-                    $codebase->classlikes->handleClassLikeReferenceInMigration(
-                        $codebase,
-                        $this,
-                        $param_name_node,
-                        $resolved_name,
-                        $context->calling_method_id
-                    );
-                }
-            }
-
-            if ($this->function->returnType) {
-                $return_name_node = null;
-
-                if ($this->function->returnType instanceof PhpParser\Node\Name) {
-                    $return_name_node = $this->function->returnType;
-                } elseif ($this->function->returnType instanceof PhpParser\Node\NullableType
-                    && $this->function->returnType->type instanceof PhpParser\Node\Name
-                ) {
-                    $return_name_node = $this->function->returnType->type;
-                }
-
-                if ($return_name_node) {
-                    $resolved_name = ClassLikeAnalyzer::getFQCLNFromNameObject($return_name_node, $this->getAliases());
-
-                    $parent_fqcln = $this->getParentFQCLN();
-
-                    if ($resolved_name === 'self' && $context->self) {
-                        $resolved_name = (string) $context->self;
-                    } elseif ($resolved_name === 'parent' && $parent_fqcln) {
-                        $resolved_name = $parent_fqcln;
-                    }
-
-                    $codebase->classlikes->handleClassLikeReferenceInMigration(
-                        $codebase,
-                        $this,
-                        $return_name_node,
-                        $resolved_name,
-                        $context->calling_method_id
-                    );
-                }
-            }
-
-            if ($storage->return_type
-                && $storage->return_type_location
-                && $storage->return_type_location !== $storage->signature_return_type_location
-            ) {
-                $replace_type = ExpressionAnalyzer::fleshOutType(
-                    $codebase,
-                    $storage->return_type,
-                    $context->self,
-                    $context->self,
-                    $this->getParentFQCLN(),
-                    false
-                );
-
-                $codebase->classlikes->handleDocblockTypeInMigration(
-                    $codebase,
-                    $this,
-                    $replace_type,
-                    $storage->return_type_location,
-                    $context->calling_method_id
-                );
-            }
-
-            foreach ($params as $function_param) {
-                if ($function_param->type
-                    && $function_param->type_location
-                    && $function_param->type_location !== $function_param->signature_type_location
-                    && $function_param->type_location->file_path === $this->getFilePath()
-                ) {
-                    $replace_type = ExpressionAnalyzer::fleshOutType(
-                        $codebase,
-                        $function_param->type,
-                        $context->self,
-                        $context->self,
-                        $this->getParentFQCLN(),
-                        false
-                    );
-
-                    $codebase->classlikes->handleDocblockTypeInMigration(
-                        $codebase,
-                        $this,
-                        $replace_type,
-                        $function_param->type_location,
-                        $context->calling_method_id
-                    );
-                }
-            }
+            $this->alterParams($codebase, $storage, $params, $context);
         }
 
         foreach ($codebase->methods_to_rename as $original_method_id => $new_method_name) {
@@ -508,6 +397,394 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 );
             }
         }
+
+        $check_stmts = $this->processParams(
+            $statements_analyzer,
+            $storage,
+            $cased_method_id,
+            $params,
+            $context,
+            $implemented_docblock_param_types,
+            (bool) $non_null_param_types,
+            (bool) $template_types
+        );
+
+        if ($storage->pure) {
+            $context->pure = true;
+        }
+
+        if ($storage->unused_docblock_params) {
+            foreach ($storage->unused_docblock_params as $param_name => $param_location) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblockParamName(
+                        'Incorrect param name $' . $param_name . ' in docblock for ' . $cased_method_id,
+                        $param_location
+                    )
+                )) {
+                }
+            }
+        }
+
+        if (ReturnTypeAnalyzer::checkReturnType(
+            $this->function,
+            $project_analyzer,
+            $this,
+            $storage,
+            $context
+        ) === false) {
+            $check_stmts = false;
+        }
+
+        if (!$check_stmts) {
+            return false;
+        }
+
+        if ($context->collect_initializations || $context->collect_mutations) {
+            $statements_analyzer->addSuppressedIssues([
+                'DocblockTypeContradiction',
+                'InvalidReturnStatement',
+                'RedundantCondition',
+                'RedundantConditionGivenDocblockType',
+                'TypeDoesNotContainNull',
+                'TypeDoesNotContainType',
+                'LoopInvalidation',
+            ]);
+
+            if ($context->collect_initializations) {
+                $statements_analyzer->addSuppressedIssues([
+                    'UndefinedInterfaceMethod',
+                    'UndefinedMethod',
+                    'PossiblyUndefinedMethod',
+                ]);
+            }
+        }
+
+        $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
+
+        $this->examineParamTypes($statements_analyzer, $context, $codebase);
+
+        foreach ($storage->params as $offset => $function_param) {
+            // only complain if there's no type defined by a parent type
+            if (!$function_param->type
+                && $function_param->location
+                && !isset($implemented_docblock_param_types[$offset])
+            ) {
+                if ($this->function instanceof Closure) {
+                    IssueBuffer::accepts(
+                        new MissingClosureParamType(
+                            'Parameter $' . $function_param->name . ' has no provided type',
+                            $function_param->location
+                        ),
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
+                    );
+                } else {
+                    IssueBuffer::accepts(
+                        new MissingParamType(
+                            'Parameter $' . $function_param->name . ' has no provided type',
+                            $function_param->location
+                        ),
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
+                    );
+                }
+            }
+        }
+
+        if ($storage->signature_return_type && $storage->signature_return_type_location) {
+            list($start, $end) = $storage->signature_return_type_location->getSelectionBounds();
+
+            $codebase->analyzer->addOffsetReference(
+                $this->getFilePath(),
+                $start,
+                $end,
+                (string) $storage->signature_return_type
+            );
+        }
+
+        if ($this->function instanceof Closure) {
+            $this->verifyReturnType(
+                $statements_analyzer,
+                $storage->return_type,
+                $this->source->getFQCLN(),
+                $storage->return_type_location,
+                $global_context && $global_context->inside_call
+            );
+
+            $closure_yield_types = [];
+
+            $ignore_nullable_issues = false;
+            $ignore_falsable_issues = false;
+
+            $closure_return_types = ReturnTypeCollector::getReturnTypes(
+                $this->function->stmts,
+                $closure_yield_types,
+                $ignore_nullable_issues,
+                $ignore_falsable_issues,
+                true
+            );
+
+            if ($closure_return_types) {
+                $closure_return_type = new Type\Union($closure_return_types);
+
+                if (!$storage->return_type
+                    || $storage->return_type->hasMixed()
+                    || TypeAnalyzer::isContainedBy(
+                        $codebase,
+                        $closure_return_type,
+                        $storage->return_type
+                    )
+                ) {
+                    if ($this->function->inferredType) {
+                        /** @var Type\Atomic\TFn */
+                        $closure_atomic = $this->function->inferredType->getTypes()['Closure'];
+                        $closure_atomic->return_type = $closure_return_type;
+                    }
+                }
+            }
+        }
+
+        if ($context->collect_references
+            && !$context->collect_initializations
+            && $codebase->find_unused_variables
+            && $context->check_variables
+        ) {
+            $this->checkParamReferences(
+                $statements_analyzer,
+                $storage,
+                $class_storage,
+                $context
+            );
+        }
+
+        foreach ($storage->throws as $expected_exception => $_) {
+            if (isset($storage->throw_locations[$expected_exception])) {
+                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $statements_analyzer,
+                    $expected_exception,
+                    $storage->throw_locations[$expected_exception],
+                    $statements_analyzer->getSuppressedIssues(),
+                    false,
+                    false,
+                    true,
+                    true
+                )) {
+                    $input_type = new Type\Union([new TNamedObject($expected_exception)]);
+                    $container_type = new Type\Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
+
+                    if (!TypeAnalyzer::isContainedBy($codebase, $input_type, $container_type)) {
+                        if (IssueBuffer::accepts(
+                            new \Psalm\Issue\InvalidThrow(
+                                'Class supplied for @throws ' . $expected_exception
+                                    . ' does not implement Throwable',
+                                $storage->throw_locations[$expected_exception],
+                                $expected_exception
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
+            $is_expected = false;
+
+            foreach ($storage->throws as $expected_exception => $_) {
+                if ($expected_exception === $possibly_thrown_exception
+                    || $codebase->classExtends($possibly_thrown_exception, $expected_exception)
+                ) {
+                    $is_expected = true;
+                    break;
+                }
+            }
+
+            if (!$is_expected) {
+                foreach ($codelocations as $codelocation) {
+                    // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
+                    if (IssueBuffer::accepts(
+                        new MissingThrowsDocblock(
+                            $possibly_thrown_exception . ' is thrown but not caught - please either catch'
+                                . ' or add a @throws annotation',
+                            $codelocation
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+        }
+
+        if ($add_mutations) {
+            if ($this->return_vars_in_scope !== null) {
+                $context->vars_in_scope = TypeAnalyzer::combineKeyedTypes(
+                    $context->vars_in_scope,
+                    $this->return_vars_in_scope
+                );
+            }
+
+            if ($this->return_vars_possibly_in_scope !== null) {
+                $context->vars_possibly_in_scope = array_merge(
+                    $context->vars_possibly_in_scope,
+                    $this->return_vars_possibly_in_scope
+                );
+            }
+
+            foreach ($context->vars_in_scope as $var => $_) {
+                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                    unset($context->vars_in_scope[$var]);
+                }
+            }
+
+            foreach ($context->vars_possibly_in_scope as $var => $_) {
+                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                    unset($context->vars_possibly_in_scope[$var]);
+                }
+            }
+
+            if ($hash && $real_method_id && $this instanceof MethodAnalyzer) {
+                $new_hash = md5($real_method_id . '::' . $context->getScopeSummary());
+
+                if ($new_hash === $hash) {
+                    self::$no_effects_hashes[$hash] = true;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function checkParamReferences(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionLikeStorage $storage,
+        ?\Psalm\Storage\ClassLikeStorage $class_storage,
+        Context $context
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $unused_params = [];
+
+        foreach ($statements_analyzer->getUnusedVarLocations() as list($var_name, $original_location)) {
+            if (!array_key_exists(substr($var_name, 1), $storage->param_types)) {
+                continue;
+            }
+
+            if (strpos($var_name, '$_') === 0 || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused')) {
+                continue;
+            }
+
+            $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);
+
+            if ($position === false) {
+                throw new \UnexpectedValueException('$position should not be false here');
+            }
+
+            if ($storage->params[$position]->by_ref) {
+                continue;
+            }
+
+            if (!($storage instanceof MethodStorage)
+                || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            ) {
+                if ($this->function instanceof Closure) {
+                    if (IssueBuffer::accepts(
+                        new UnusedClosureParam(
+                            'Param ' . $var_name . ' is never referenced in this method',
+                            $original_location
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new UnusedParam(
+                            'Param ' . $var_name . ' is never referenced in this method',
+                            $original_location
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            } else {
+                $fq_class_name = (string)$context->self;
+
+                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                $method_name_lc = strtolower($storage->cased_name);
+
+                if ($storage->abstract || !isset($class_storage->overridden_method_ids[$method_name_lc])) {
+                    continue;
+                }
+
+                $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
+
+                if ($parent_method_id) {
+                    $parent_method_storage = $codebase->methods->getStorage($parent_method_id);
+
+                    // if the parent method has a param at that position and isn't abstract
+                    if (!$parent_method_storage->abstract
+                        && isset($parent_method_storage->params[$position])
+                    ) {
+                        continue;
+                    }
+                }
+
+                $unused_params[$position] = $original_location;
+            }
+        }
+
+        if ($storage instanceof MethodStorage
+            && $class_storage
+            && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+        ) {
+            $method_id_lc = strtolower($this->getMethodId());
+
+            foreach ($storage->params as $i => $_) {
+                if (!isset($unused_params[$i])) {
+                    $codebase->file_reference_provider->addMethodParamUse(
+                        $method_id_lc,
+                        $i,
+                        $method_id_lc
+                    );
+
+                    /** @var ClassMethod $this->function */
+                    $method_name_lc = strtolower($storage->cased_name);
+
+                    if (!isset($class_storage->overridden_method_ids[$method_name_lc])) {
+                        continue;
+                    }
+
+                    foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
+                        $codebase->file_reference_provider->addMethodParamUse(
+                            strtolower($parent_method_id),
+                            $i,
+                            $method_id_lc
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param array<int, \Psalm\Storage\FunctionLikeParameter> $params
+     * @param array<int, Type\Union> $implemented_docblock_param_types
+     */
+    private function processParams(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionLikeStorage $storage,
+        ?string $cased_method_id,
+        array $params,
+        Context $context,
+        array $implemented_docblock_param_types,
+        bool $non_null_param_types,
+        bool $has_template_types
+    ) : bool {
+        $check_stmts = true;
+        $codebase = $statements_analyzer->getCodebase();
+        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
         foreach ($params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;
@@ -660,7 +937,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         ),
                         $storage->suppressed_issues
                     )) {
-                        return false;
+                        // do nothing
                     }
 
                     if ($signature_type->check(
@@ -709,7 +986,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
             }
 
-            if ($template_types) {
+            if ($has_template_types) {
                 $substituted_type = clone $param_type;
                 if ($substituted_type->check(
                     $this->source,
@@ -776,347 +1053,128 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             );
         }
 
-        if ($storage->pure) {
-            $context->pure = true;
-        }
+        return $check_stmts;
+    }
 
-        if ($storage->unused_docblock_params) {
-            foreach ($storage->unused_docblock_params as $param_name => $param_location) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblockParamName(
-                        'Incorrect param name $' . $param_name . ' in docblock for ' . $cased_method_id,
-                        $param_location
-                    )
-                )) {
-                }
-            }
-        }
+    /**
+     * @param \Psalm\Storage\FunctionLikeParameter[] $params
+     */
+    private function alterParams(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        array $params,
+        Context $context
+    ) : void {
+        foreach ($this->function->params as $param) {
+            $param_name_node = null;
 
-        if (ReturnTypeAnalyzer::checkReturnType(
-            $this->function,
-            $project_analyzer,
-            $this,
-            $storage,
-            $context
-        ) === false) {
-            $check_stmts = false;
-        }
-
-        if (!$check_stmts) {
-            return false;
-        }
-
-        if ($context->collect_initializations || $context->collect_mutations) {
-            $statements_analyzer->addSuppressedIssues([
-                'DocblockTypeContradiction',
-                'InvalidReturnStatement',
-                'RedundantCondition',
-                'RedundantConditionGivenDocblockType',
-                'TypeDoesNotContainNull',
-                'TypeDoesNotContainType',
-                'LoopInvalidation',
-            ]);
-
-            if ($context->collect_initializations) {
-                $statements_analyzer->addSuppressedIssues([
-                    'UndefinedInterfaceMethod',
-                    'UndefinedMethod',
-                    'PossiblyUndefinedMethod',
-                ]);
-            }
-        }
-
-        $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
-
-        $this->examineParamTypes($statements_analyzer, $context, $codebase);
-
-        foreach ($storage->params as $offset => $function_param) {
-            // only complain if there's no type defined by a parent type
-            if (!$function_param->type
-                && $function_param->location
-                && !isset($implemented_docblock_param_types[$offset])
+            if ($param->type instanceof PhpParser\Node\Name) {
+                $param_name_node = $param->type;
+            } elseif ($param->type instanceof PhpParser\Node\NullableType
+                && $param->type->type instanceof PhpParser\Node\Name
             ) {
-                if ($this->function instanceof Closure) {
-                    IssueBuffer::accepts(
-                        new MissingClosureParamType(
-                            'Parameter $' . $function_param->name . ' has no provided type',
-                            $function_param->location
-                        ),
-                        $storage->suppressed_issues + $this->getSuppressedIssues()
-                    );
-                } else {
-                    IssueBuffer::accepts(
-                        new MissingParamType(
-                            'Parameter $' . $function_param->name . ' has no provided type',
-                            $function_param->location
-                        ),
-                        $storage->suppressed_issues + $this->getSuppressedIssues()
-                    );
+                $param_name_node = $param->type->type;
+            }
+
+            if ($param_name_node) {
+                $resolved_name = ClassLikeAnalyzer::getFQCLNFromNameObject($param_name_node, $this->getAliases());
+
+                $parent_fqcln = $this->getParentFQCLN();
+
+                if ($resolved_name === 'self' && $context->self) {
+                    $resolved_name = (string) $context->self;
+                } elseif ($resolved_name === 'parent' && $parent_fqcln) {
+                    $resolved_name = $parent_fqcln;
                 }
+
+                $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $codebase,
+                    $this,
+                    $param_name_node,
+                    $resolved_name,
+                    $context->calling_method_id
+                );
             }
         }
 
-        if ($storage->signature_return_type && $storage->signature_return_type_location) {
-            list($start, $end) = $storage->signature_return_type_location->getSelectionBounds();
+        if ($this->function->returnType) {
+            $return_name_node = null;
 
-            $codebase->analyzer->addOffsetReference(
-                $this->getFilePath(),
-                $start,
-                $end,
-                (string) $storage->signature_return_type
-            );
-        }
+            if ($this->function->returnType instanceof PhpParser\Node\Name) {
+                $return_name_node = $this->function->returnType;
+            } elseif ($this->function->returnType instanceof PhpParser\Node\NullableType
+                && $this->function->returnType->type instanceof PhpParser\Node\Name
+            ) {
+                $return_name_node = $this->function->returnType->type;
+            }
 
-        if ($this->function instanceof Closure) {
-            $this->verifyReturnType(
-                $statements_analyzer,
-                $storage->return_type,
-                $this->source->getFQCLN(),
-                $storage->return_type_location,
-                $global_context && $global_context->inside_call
-            );
+            if ($return_name_node) {
+                $resolved_name = ClassLikeAnalyzer::getFQCLNFromNameObject($return_name_node, $this->getAliases());
 
-            $closure_yield_types = [];
+                $parent_fqcln = $this->getParentFQCLN();
 
-            $ignore_nullable_issues = false;
-            $ignore_falsable_issues = false;
-
-            $closure_return_types = ReturnTypeCollector::getReturnTypes(
-                $this->function->stmts,
-                $closure_yield_types,
-                $ignore_nullable_issues,
-                $ignore_falsable_issues,
-                true
-            );
-
-            if ($closure_return_types) {
-                $closure_return_type = new Type\Union($closure_return_types);
-
-                if (!$storage->return_type
-                    || $storage->return_type->hasMixed()
-                    || TypeAnalyzer::isContainedBy(
-                        $codebase,
-                        $closure_return_type,
-                        $storage->return_type
-                    )
-                ) {
-                    if ($this->function->inferredType) {
-                        /** @var Type\Atomic\TFn */
-                        $closure_atomic = $this->function->inferredType->getTypes()['Closure'];
-                        $closure_atomic->return_type = $closure_return_type;
-                    }
+                if ($resolved_name === 'self' && $context->self) {
+                    $resolved_name = (string) $context->self;
+                } elseif ($resolved_name === 'parent' && $parent_fqcln) {
+                    $resolved_name = $parent_fqcln;
                 }
+
+                $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $codebase,
+                    $this,
+                    $return_name_node,
+                    $resolved_name,
+                    $context->calling_method_id
+                );
             }
         }
 
-        $unused_params = [];
-
-        if ($context->collect_references
-            && !$context->collect_initializations
-            && $codebase->find_unused_variables
-            && $context->check_variables
+        if ($storage->return_type
+            && $storage->return_type_location
+            && $storage->return_type_location !== $storage->signature_return_type_location
         ) {
-            foreach ($statements_analyzer->getUnusedVarLocations() as list($var_name, $original_location)) {
-                if (!array_key_exists(substr($var_name, 1), $storage->param_types)) {
-                    continue;
-                }
+            $replace_type = ExpressionAnalyzer::fleshOutType(
+                $codebase,
+                $storage->return_type,
+                $context->self,
+                $context->self,
+                $this->getParentFQCLN(),
+                false
+            );
 
-                if (strpos($var_name, '$_') === 0 || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused')) {
-                    continue;
-                }
+            $codebase->classlikes->handleDocblockTypeInMigration(
+                $codebase,
+                $this,
+                $replace_type,
+                $storage->return_type_location,
+                $context->calling_method_id
+            );
+        }
 
-                $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);
-
-                if ($position === false) {
-                    throw new \UnexpectedValueException('$position should not be false here');
-                }
-
-                if ($storage->params[$position]->by_ref) {
-                    continue;
-                }
-
-                if (!($storage instanceof MethodStorage)
-                    || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                ) {
-                    if ($this->function instanceof Closure) {
-                        if (IssueBuffer::accepts(
-                            new UnusedClosureParam(
-                                'Param ' . $var_name . ' is never referenced in this method',
-                                $original_location
-                            ),
-                            $this->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } else {
-                        if (IssueBuffer::accepts(
-                            new UnusedParam(
-                                'Param ' . $var_name . ' is never referenced in this method',
-                                $original_location
-                            ),
-                            $this->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                } else {
-                    $fq_class_name = (string)$context->self;
-
-                    $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-                    $method_name_lc = strtolower($storage->cased_name);
-
-                    if ($storage->abstract || !isset($class_storage->overridden_method_ids[$method_name_lc])) {
-                        continue;
-                    }
-
-                    $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
-
-                    if ($parent_method_id) {
-                        $parent_method_storage = $codebase->methods->getStorage($parent_method_id);
-
-                        // if the parent method has a param at that position and isn't abstract
-                        if (!$parent_method_storage->abstract
-                            && isset($parent_method_storage->params[$position])
-                        ) {
-                            continue;
-                        }
-                    }
-
-                    $unused_params[$position] = $original_location;
-                }
-            }
-
-            if ($storage instanceof MethodStorage
-                && $class_storage
-                && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+        foreach ($params as $function_param) {
+            if ($function_param->type
+                && $function_param->type_location
+                && $function_param->type_location !== $function_param->signature_type_location
+                && $function_param->type_location->file_path === $this->getFilePath()
             ) {
-                $method_id_lc = strtolower($this->getMethodId());
+                $replace_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $function_param->type,
+                    $context->self,
+                    $context->self,
+                    $this->getParentFQCLN(),
+                    false
+                );
 
-                foreach ($storage->params as $i => $_) {
-                    if (!isset($unused_params[$i])) {
-                        $codebase->file_reference_provider->addMethodParamUse(
-                            $method_id_lc,
-                            $i,
-                            $method_id_lc
-                        );
-
-                        /** @var ClassMethod $this->function */
-                        $method_name_lc = strtolower($storage->cased_name);
-
-                        if (!isset($class_storage->overridden_method_ids[$method_name_lc])) {
-                            continue;
-                        }
-
-                        foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
-                            $codebase->file_reference_provider->addMethodParamUse(
-                                strtolower($parent_method_id),
-                                $i,
-                                $method_id_lc
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        foreach ($storage->throws as $expected_exception => $_) {
-            if (isset($storage->throw_locations[$expected_exception])) {
-                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                    $statements_analyzer,
-                    $expected_exception,
-                    $storage->throw_locations[$expected_exception],
-                    $statements_analyzer->getSuppressedIssues(),
-                    false,
-                    false,
-                    true,
-                    true
-                )) {
-                    $input_type = new Type\Union([new TNamedObject($expected_exception)]);
-                    $container_type = new Type\Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
-
-                    if (!TypeAnalyzer::isContainedBy($codebase, $input_type, $container_type)) {
-                        if (IssueBuffer::accepts(
-                            new \Psalm\Issue\InvalidThrow(
-                                'Class supplied for @throws ' . $expected_exception
-                                    . ' does not implement Throwable',
-                                $storage->throw_locations[$expected_exception],
-                                $expected_exception
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-            }
-        }
-
-        foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
-            $is_expected = false;
-
-            foreach ($storage->throws as $expected_exception => $_) {
-                if ($expected_exception === $possibly_thrown_exception
-                    || $codebase->classExtends($possibly_thrown_exception, $expected_exception)
-                ) {
-                    $is_expected = true;
-                    break;
-                }
-            }
-
-            if (!$is_expected) {
-                foreach ($codelocations as $codelocation) {
-                    // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
-                    if (IssueBuffer::accepts(
-                        new MissingThrowsDocblock(
-                            $possibly_thrown_exception . ' is thrown but not caught - please either catch'
-                                . ' or add a @throws annotation',
-                            $codelocation
-                        )
-                    )) {
-                        // fall through
-                    }
-                }
-            }
-        }
-
-        if ($add_mutations) {
-            if ($this->return_vars_in_scope !== null) {
-                $context->vars_in_scope = TypeAnalyzer::combineKeyedTypes(
-                    $context->vars_in_scope,
-                    $this->return_vars_in_scope
+                $codebase->classlikes->handleDocblockTypeInMigration(
+                    $codebase,
+                    $this,
+                    $replace_type,
+                    $function_param->type_location,
+                    $context->calling_method_id
                 );
             }
-
-            if ($this->return_vars_possibly_in_scope !== null) {
-                $context->vars_possibly_in_scope = array_merge(
-                    $context->vars_possibly_in_scope,
-                    $this->return_vars_possibly_in_scope
-                );
-            }
-
-            foreach ($context->vars_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
-                    unset($context->vars_in_scope[$var]);
-                }
-            }
-
-            foreach ($context->vars_possibly_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
-                    unset($context->vars_possibly_in_scope[$var]);
-                }
-            }
-
-            if ($hash && $real_method_id && $this instanceof MethodAnalyzer) {
-                $new_hash = md5($real_method_id . '::' . $context->getScopeSummary());
-
-                if ($new_hash === $hash) {
-                    self::$no_effects_hashes[$hash] = true;
-                }
-            }
         }
-
-        return null;
     }
 
     /**
