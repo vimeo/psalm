@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\CodeLocation;
+use Psalm\StatementsSource;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -121,5 +123,57 @@ class TClassString extends TString implements HasClassString
         }
 
         return $this->as_type;
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @param  array<string, bool> $phantom_classes
+     * @param  bool             $inferred
+     *
+     * @return false|null
+     */
+    public function check(
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        array $phantom_classes = [],
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
+    ) {
+        if ($this->checked) {
+            return;
+        }
+
+        if ($this->as !== 'object' && $this->as !== 'mixed') {
+            if ($this->as_type) {
+                if ($this->as_type->check(
+                    $source,
+                    $code_location,
+                    $suppressed_issues,
+                    $phantom_classes,
+                    $inferred
+                ) === false) {
+                    return false;
+                }
+            } else {
+                if (\Psalm\Internal\Analyzer\ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $source,
+                    $this->as,
+                    $code_location,
+                    $suppressed_issues,
+                    $inferred,
+                    false,
+                    true,
+                    $this->from_docblock
+                ) === false
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        $this->checked = true;
     }
 }

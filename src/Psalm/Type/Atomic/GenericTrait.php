@@ -4,6 +4,14 @@ namespace Psalm\Type\Atomic;
 use function array_map;
 use function implode;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\IssueBuffer;
+use Psalm\Issue\InvalidTemplateParam;
+use Psalm\Issue\MissingTemplateParam;
+use Psalm\Issue\TooManyTemplateParams;
+use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -204,6 +212,112 @@ trait GenericTrait
 
         if ($this instanceof TGenericObject || $this instanceof TIterable) {
             $this->replaceIntersectionTemplateTypesWithArgTypes($template_types, $codebase);
+        }
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @param  array<string, bool> $phantom_classes
+     * @param  bool             $inferred
+     *
+     * @return false|null
+     */
+    public function checkGenericParams(
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        array $phantom_classes = [],
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
+    ) {
+        $codebase = $source->getCodebase();
+
+        if ($this instanceof Type\Atomic\TGenericObject) {
+            try {
+                $class_storage = $codebase->classlike_storage_provider->get($this->value);
+            } catch (\InvalidArgumentException $e) {
+                return;
+            }
+
+            $expected_type_params = $class_storage->template_types ?: [];
+        } else {
+            $expected_type_params = [
+                'TKey' => [
+                    '' => [Type::getMixed(), null],
+                ],
+                'TValue' => [
+                    '' => [Type::getMixed(), null],
+                ],
+            ];
+        }
+
+        $template_type_count = \count($expected_type_params);
+        $template_param_count = \count($this->type_params);
+
+        if ($template_type_count > $template_param_count) {
+            if (IssueBuffer::accepts(
+                new MissingTemplateParam(
+                    $this->value . ' has missing template params, expecting '
+                        . $template_type_count,
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                // fall through
+            }
+        } elseif ($template_type_count < $template_param_count) {
+            if (IssueBuffer::accepts(
+                new TooManyTemplateParams(
+                    $this->value . ' has too many template params, expecting '
+                        . $template_type_count,
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                // fall through
+            }
+        }
+
+        foreach ($this->type_params as $i => $type_param) {
+            if ($type_param->check(
+                $source,
+                $code_location,
+                $suppressed_issues,
+                $phantom_classes,
+                $inferred,
+                $prevent_template_covariance
+            ) === false) {
+                return false;
+            }
+
+            if (isset(\array_values($expected_type_params)[$i])) {
+                $expected_type_param = \reset(\array_values($expected_type_params)[$i])[0];
+                $template_name = \array_keys($expected_type_params)[$i];
+
+                $type_param = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $type_param,
+                    $source->getFQCLN(),
+                    $source->getFQCLN(),
+                    $source->getParentFQCLN()
+                );
+
+                if (!TypeAnalyzer::isContainedBy($codebase, $type_param, $expected_type_param)) {
+                    if (IssueBuffer::accepts(
+                        new InvalidTemplateParam(
+                            'Extended template param ' . $template_name . ' expects type '
+                                . $expected_type_param->getId()
+                                . ', type ' . $type_param->getId() . ' given',
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
+                }
+            }
         }
     }
 }

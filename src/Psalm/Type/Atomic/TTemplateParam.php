@@ -3,6 +3,8 @@ namespace Psalm\Type\Atomic;
 
 use function implode;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
+use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Union;
 
@@ -129,5 +131,64 @@ class TTemplateParam extends \Psalm\Type\Atomic
     public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
     {
         $this->replaceIntersectionTemplateTypesWithArgTypes($template_types, $codebase);
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @param  array<string, bool> $phantom_classes
+     * @param  bool             $inferred
+     *
+     * @return void
+     */
+    public function check(
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        array $phantom_classes = [],
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
+    ) {
+        if ($this->checked) {
+            return;
+        }
+
+        if ($prevent_template_covariance && $this->defining_class) {
+            $codebase = $source->getCodebase();
+
+            $class_storage = $codebase->classlike_storage_provider->get($this->defining_class);
+
+            $template_offset = $class_storage->template_types
+                ? \array_search($this->param_name, \array_keys($class_storage->template_types), true)
+                : false;
+
+            if ($template_offset !== false
+                && isset($class_storage->template_covariants[$template_offset])
+                && $class_storage->template_covariants[$template_offset]
+            ) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new \Psalm\Issue\InvalidTemplateParam(
+                        'Template param ' . $this->defining_class . ' is marked covariant and cannot be used'
+                            . ' as input to a function',
+                        $code_location
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+        }
+
+        $this->as->check($source, $code_location, $suppressed_issues, $phantom_classes, $inferred);
+
+        $this->checkIntersectionTypes(
+            $source,
+            $code_location,
+            $suppressed_issues,
+            $phantom_classes,
+            $inferred,
+            $prevent_template_covariance
+        );
     }
 }

@@ -4,6 +4,8 @@ namespace Psalm\Type\Atomic;
 use function count;
 use function get_class;
 use Psalm\Type\Atomic;
+use Psalm\CodeLocation;
+use Psalm\StatementsSource;
 
 /**
  * Represents an array with generic type parameters.
@@ -94,5 +96,38 @@ class TArray extends \Psalm\Type\Atomic
     public function getAssertionString()
     {
         return $this->getKey();
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @param  array<string, bool> $phantom_classes
+     * @param  bool             $inferred
+     *
+     * @return void
+     */
+    public function check(
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        array $phantom_classes = [],
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
+    ) {
+        if ($this->checked) {
+            return;
+        }
+
+        $this->checkGenericParams(
+            $source,
+            $code_location,
+            $suppressed_issues,
+            $phantom_classes,
+            $inferred,
+            $prevent_template_covariance
+        );
+
+        $this->checked = true;
     }
 }

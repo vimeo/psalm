@@ -4,6 +4,8 @@ namespace Psalm\Type\Atomic;
 use function array_map;
 use function implode;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
+use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
@@ -98,5 +100,63 @@ trait HasIntersectionTrait
         }
 
         $this->extra_types = $new_types;
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @param  array<string, bool> $phantom_classes
+     * @param  bool             $inferred
+     *
+     * @return false|null
+     */
+    public function checkIntersectionTypes(
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        array $phantom_classes = [],
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
+    ) {
+        if ($this->extra_types) {
+            $codebase = $source->getCodebase();
+
+            foreach ($this->extra_types as $extra_type) {
+                if ($extra_type instanceof TTemplateParam
+                    || $extra_type instanceof Type\Atomic\TObjectWithProperties
+                ) {
+                    continue;
+                }
+
+                if ($code_location instanceof CodeLocation\DocblockTypeLocation
+                    && $codebase->store_node_types
+                    && $extra_type->offset_start !== null
+                    && $extra_type->offset_end !== null
+                ) {
+                    $codebase->analyzer->addOffsetReference(
+                        $source->getFilePath(),
+                        $code_location->raw_file_start + $extra_type->offset_start,
+                        $code_location->raw_file_start + $extra_type->offset_end,
+                        $extra_type->value
+                    );
+                }
+
+                if (!isset($phantom_classes[\strtolower($extra_type->value)]) &&
+                    \Psalm\Internal\Analyzer\ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                        $source,
+                        $extra_type->value,
+                        $code_location,
+                        $suppressed_issues,
+                        $inferred,
+                        false,
+                        true,
+                        $this->from_docblock
+                    ) === false
+                ) {
+                    return false;
+                }
+            }
+        }
     }
 }

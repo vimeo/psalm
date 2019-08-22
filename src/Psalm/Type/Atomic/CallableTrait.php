@@ -5,6 +5,8 @@ use function array_map;
 use function count;
 use function implode;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
+use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -270,6 +272,50 @@ trait CallableTrait
 
         if ($this->return_type) {
             $this->return_type->setFromDocblock();
+        }
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @param  array<string, bool> $phantom_classes
+     * @param  bool             $inferred
+     *
+     * @return false|null
+     */
+    public function check(
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        array $phantom_classes = [],
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
+    ) {
+        if ($this->params) {
+            foreach ($this->params as $param) {
+                if ($param->type) {
+                    $param->type->check(
+                        $source,
+                        $code_location,
+                        $suppressed_issues,
+                        $phantom_classes,
+                        $inferred,
+                        $prevent_template_covariance
+                    );
+                }
+            }
+        }
+
+        if ($this->return_type) {
+            $this->return_type->check(
+                $source,
+                $code_location,
+                $suppressed_issues,
+                $phantom_classes,
+                $inferred,
+                $prevent_template_covariance
+            );
         }
     }
 }
