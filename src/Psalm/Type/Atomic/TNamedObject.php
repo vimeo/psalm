@@ -169,6 +169,23 @@ class TNamedObject extends Atomic
             return false;
         }
 
+        if ($codebase->classlike_storage_provider->has($this->value)) {
+            $class_storage = $codebase->classlike_storage_provider->get($this->value);
+
+            if ($class_storage->deprecated) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new \Psalm\Issue\DeprecatedClass(
+                        'Class ' . $this->value . ' is marked as deprecated',
+                        $code_location,
+                        $this->value
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+        }
+
         $this->checkIntersectionTypes(
             $source,
             $code_location,
