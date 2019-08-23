@@ -629,6 +629,28 @@ class ForeachAnalyzer
 
             $has_valid_iterator = true;
 
+            if ($iterator_atomic_type instanceof Type\Atomic\TNamedObject
+                && strtolower($iterator_atomic_type->value) === 'simplexmlelement'
+            ) {
+                if ($value_type) {
+                    $value_type = Type::combineUnionTypes(
+                        $value_type,
+                        new Type\Union([clone $iterator_atomic_type])
+                    );
+                } else {
+                    $value_type = new Type\Union([clone $iterator_atomic_type]);
+                }
+
+                if ($key_type) {
+                    $key_type = Type::combineUnionTypes(
+                        $key_type,
+                        Type::getString()
+                    );
+                } else {
+                    $key_type = Type::getString();
+                }
+            }
+
             if ($iterator_atomic_type instanceof Type\Atomic\TIterable
                 || (strtolower($iterator_atomic_type->value) === 'traversable'
                     || $codebase->classImplements(

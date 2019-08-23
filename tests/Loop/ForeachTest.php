@@ -961,6 +961,14 @@ class ForeachTest extends \Psalm\Tests\TestCase
                         }
                     }',
             ],
+            'simpleXmlIterator' => [
+                '<?php
+                    function f(SimpleXMLElement $elt): void {
+                        foreach ($elt as $item) {
+                            f($item);
+                        }
+                    }'
+            ],
         ];
     }
 
