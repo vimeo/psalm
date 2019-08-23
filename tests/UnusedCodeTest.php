@@ -519,6 +519,15 @@ class UnusedCodeTest extends TestCase
 
                     new A();'
             ],
+            'usedFunctionInCall' => [
+                '<?php
+                    function fooBar(): void {}
+
+                    $foo = "foo";
+                    $bar = "bar";
+
+                    ($foo . ucfirst($bar))();',
+            ],
         ];
     }
 

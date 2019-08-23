@@ -79,8 +79,15 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         $function_exists = false;
 
         if ($stmt->name instanceof PhpParser\Node\Expr) {
+            $was_in_call = $context->inside_call;
+            $context->inside_call = true;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 return;
+            }
+
+            if (!$was_in_call) {
+                $context->inside_call = false;
             }
 
             if (isset($stmt->name->inferredType)) {
