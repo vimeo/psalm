@@ -297,7 +297,7 @@ class PropertyFetchAnalyzer
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getRootFilePath());
         }
 
-        if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues && !$context->inside_isset) {
+        if ($stmt_var_type->isNullable() && !$context->inside_isset && !$stmt_var_type->ignore_nullable_issues) {
             if (IssueBuffer::accepts(
                 new PossiblyNullPropertyFetch(
                     'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
@@ -307,8 +307,6 @@ class PropertyFetchAnalyzer
             )) {
                 // fall through
             }
-
-            $stmt->inferredType = Type::getNull();
         }
 
         if (!$prop_name) {
@@ -795,6 +793,14 @@ class PropertyFetchAnalyzer
                 $stmt->inferredType = Type::combineUnionTypes($class_property_type, $stmt->inferredType);
             } else {
                 $stmt->inferredType = $class_property_type;
+            }
+        }
+
+        if ($stmt_var_type->isNullable() && !$context->inside_isset && $stmt->inferredType) {
+            $stmt->inferredType->addType(new TNull);
+
+            if ($stmt_var_type->ignore_nullable_issues) {
+                $stmt->inferredType->ignore_nullable_issues = true;
             }
         }
 

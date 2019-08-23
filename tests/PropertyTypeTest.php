@@ -1702,7 +1702,28 @@ class PropertyTypeTest extends TestCase
                         /** @var array<int, static> */
                         private $t2 = [];
                     }'
-            ]
+            ],
+            'propagateIgnoreNullableOnPropertyFetch' => [
+                '<?php
+                    class A {
+                        public string $s = "hey";
+                    }
+
+                    /**
+                     * @psalm-ignore-nullable-return
+                     */
+                    function foo() : ?A {
+                        return rand(0, 1) ? new A : null;
+                    }
+
+                    function takesString(string $_s) : void {}
+
+                    $foo = foo();
+
+                    if ($foo->s !== null) {}
+                    echo $foo->s ?? "bar";
+                    takesString($foo->s);',
+            ],
         ];
     }
 
@@ -2688,6 +2709,26 @@ class PropertyTypeTest extends TestCase
                     $a = new A();
                     $a->bar = "goodbye";',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'addNullToMixedAfterNullablePropertyFetch' => [
+                '<?php
+                    class A {
+                        /**
+                         * @var mixed
+                         */
+                        public $foo;
+                    }
+
+                    function takesString(string $s) : void {}
+
+                    function takesA(?A $a) : void {
+                        /**
+                         * @psalm-suppress PossiblyNullPropertyFetch
+                         * @psalm-suppress MixedArgument
+                         */
+                        takesString($a->foo);
+                    }',
+                'error_message' => 'PossiblyNullArgument',
             ],
         ];
     }
