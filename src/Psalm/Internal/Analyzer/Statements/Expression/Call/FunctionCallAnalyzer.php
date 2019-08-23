@@ -83,6 +83,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             $context->inside_call = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
+                if (!$was_in_call) {
+                    $context->inside_call = false;
+                }
+
                 return;
             }
 
