@@ -528,6 +528,15 @@ class UnusedCodeTest extends TestCase
 
                     ($foo . ucfirst($bar))();',
             ],
+            'usedParamInUnknownMethodConcat' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedMethodCall
+                     */
+                    function foo(string $s, object $o) : void {
+                        $o->foo("COUNT{$s}");
+                    }'
+            ],
         ];
     }
 

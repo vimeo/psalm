@@ -341,10 +341,10 @@ class CallAnalyzer
     protected static function checkFunctionArguments(
         StatementsAnalyzer $statements_analyzer,
         array $args,
-        $function_params,
-        $method_id,
+        ?array $function_params,
+        ?string $method_id,
         Context $context,
-        $generic_params = null
+        ?array $generic_params = null
     ) {
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
@@ -592,6 +592,7 @@ class CallAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+            || $arg->value instanceof PhpParser\Node\Scalar\Encapsed
         ) {
             $was_inside_call = $context->inside_call;
             $context->inside_call = true;
