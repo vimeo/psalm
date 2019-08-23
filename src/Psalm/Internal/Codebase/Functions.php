@@ -271,7 +271,7 @@ class Functions
             'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'closedir', 'copy', 'file_put_contents',
             'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
             'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
-            'fputcsv', 'umask',
+            'fputcsv', 'umask', 'finfo_close',
 
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
@@ -321,6 +321,15 @@ class Functions
 
             // logging
             'openlog', 'syslog', 'error_log', 'define_syslog_variables',
+
+            // session
+            'session_id', 'session_name', 'session_set_cookie_params',
+
+            // ldap
+            'ldap_set_option',
+
+            // iterators
+            'rewind',
         ];
 
         if (\in_array(strtolower($function_id), $impure_functions, true)) {
