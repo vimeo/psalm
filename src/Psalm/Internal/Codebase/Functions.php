@@ -328,7 +328,7 @@ class Functions
             // ldap
             'ldap_set_option',
 
-            // arrays
+            // iterators
             'rewind',
         ];
 
