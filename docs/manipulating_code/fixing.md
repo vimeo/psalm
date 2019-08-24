@@ -23,6 +23,7 @@ Updating code is inherently risky, doing so automatically is even more so. I've 
 - To see what changes Psalter will make ahead of time, you can run it with `--dry-run`.
 - You can target particular versions of PHP via `--php-version`, so that (for example) you don't add nullable typehints to PHP 7.0 code, or any typehints at all to PHP 5.6 code. `--php-version` defaults to your current version.
 - it has a `--safe-types` mode that will only update PHP 7 return typehints with information Psalm has gathered from non-docblock sources of type information (e.g. typehinted params, `instanceof` checks, other return typehints etc.)
+- using `--allow-backwards-incompatible-changes=false` you can make sure to not create backwards incompatible changes
 
 
 ## Plugins
