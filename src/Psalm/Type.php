@@ -195,7 +195,6 @@ abstract class Type
             case 'false':
             case 'null':
             case 'mixed':
-            case 'resource':
                 return $type_string_lc;
         }
 
