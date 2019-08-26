@@ -785,6 +785,16 @@ class CallAnalyzer
             return false;
         }
 
+        for ($i = 1; $i < count($args); $i++) {
+            if (ExpressionAnalyzer::analyze(
+                $statements_analyzer,
+                $args[$i]->value,
+                $context
+            ) === false) {
+                return false;
+            }
+        }
+
         $context->inside_call = true;
         if (isset($array_arg->inferredType) && $array_arg->inferredType->hasArray()) {
             /** @var TArray|ObjectLike */

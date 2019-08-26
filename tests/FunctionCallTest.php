@@ -1786,31 +1786,31 @@ class FunctionCallTest extends TestCase
             'pregMatch' => [
                 '<?php
                     function takesInt(int $i) : void {}
-                
+
                     takesInt(preg_match("{foo}", "foo"));',
             ],
             'pregMatchWithMatches' => [
                 '<?php
                     /** @param string[] $matches */
                     function takesMatches(array $matches) : void {}
-                    
+
                     preg_match("{foo}", "foo", $matches);
-                
+
                     takesMatches($matches);',
             ],
             'pregMatchWithOffset' => [
                 '<?php
                     /** @param string[] $matches */
                     function takesMatches(array $matches) : void {}
-                    
+
                     preg_match("{foo}", "foo", $matches, 0, 10);
-                
+
                     takesMatches($matches);',
             ],
             'pregMatchWithFlags' => [
                 '<?php
                     function takesInt(int $i) : void {}
-                    
+
                     if (preg_match("{foo}", "this is foo", $matches, PREG_OFFSET_CAPTURE)) {
                         /**
                          * @psalm-suppress MixedArrayAccess
@@ -2413,6 +2413,15 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'arrayShiftUndefinedVariable' => [
+                '<?php
+                    /** @psalm-suppress MissingParamType */
+                    function foo($data): void {
+                        /** @psalm-suppress MixedArgument */
+                        array_unshift($data, $a);
+                    }',
+                'error_message' => 'UndefinedVariable',
             ],
         ];
     }
