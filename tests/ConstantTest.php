@@ -400,6 +400,14 @@ class ConstantTest extends TestCase
                         }
                     }'
             ],
+            'constantDeferredConstants' => [
+                '<?php
+                    const A = 1;
+                    class B {
+                        public const C = A;
+                    }
+                    echo B::C;'
+            ],
         ];
     }
 

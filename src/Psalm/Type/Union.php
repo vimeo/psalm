@@ -850,6 +850,15 @@ class Union
     /**
      * @return bool
      */
+    public function isMixedDeferredConstant()
+    {
+        return isset($this->types['mixed'])
+            && get_class($this->types['mixed']) === Type\Atomic\TMixedDeferredConstant::class;
+    }
+
+    /**
+     * @return bool
+     */
     public function isArrayKey()
     {
         return isset($this->types['array-key']) && count($this->types) === 1;

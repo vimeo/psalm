@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TMixedDeferredConstant;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -1247,6 +1248,16 @@ abstract class Type
     public static function getMixed($from_loop_isset = false)
     {
         $type = new TMixed($from_loop_isset);
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @return Type\Union
+     */
+    public static function getMixedDeferredConstant()
+    {
+        $type = new TMixedDeferredConstant();
 
         return new Union([$type]);
     }

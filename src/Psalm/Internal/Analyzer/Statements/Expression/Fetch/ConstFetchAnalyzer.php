@@ -18,6 +18,7 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use function implode;
+use function is_null;
 use function strtolower;
 use function explode;
 
@@ -352,7 +353,18 @@ class ConstFetchAnalyzer
             if (isset($class_constants[$stmt->name->name])
                 && ($first_part_lc !== 'static' || $class_const_storage->final)
             ) {
-                $stmt->inferredType = clone $class_constants[$stmt->name->name];
+                $inferred_type = clone $class_constants[$stmt->name->name];
+                if ($inferred_type->isMixedDeferredConstant()) {
+                    $inferred_type = $statements_analyzer->getConstType(
+                        $stmt->name->name,
+                        $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
+                        $context
+                    );
+                }
+                if (is_null($inferred_type)) {
+                    $inferred_type = Type::getMixed();
+                }
+                $stmt->inferredType = $inferred_type;
                 $context->vars_in_scope[$const_id] = $stmt->inferredType;
             } else {
                 $stmt->inferredType = Type::getMixed();

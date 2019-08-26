@@ -134,7 +134,8 @@ class Populator
                         $class_storage->name
                     );
 
-                    $class_storage->public_class_constants[$const_name] = $const_type ?: Type::getMixed();
+                    $class_storage->public_class_constants[$const_name] =
+                        $const_type ?: Type::getMixedDeferredConstant();
                 }
 
                 foreach ($class_storage->protected_class_constant_nodes as $const_name => $node) {
@@ -147,7 +148,8 @@ class Populator
                         $class_storage->name
                     );
 
-                    $class_storage->protected_class_constants[$const_name] = $const_type ?: Type::getMixed();
+                    $class_storage->protected_class_constants[$const_name] =
+                        $const_type ?: Type::getMixedDeferredConstant();
                 }
 
                 foreach ($class_storage->private_class_constant_nodes as $const_name => $node) {
@@ -160,7 +162,8 @@ class Populator
                         $class_storage->name
                     );
 
-                    $class_storage->private_class_constants[$const_name] = $const_type ?: Type::getMixed();
+                    $class_storage->private_class_constants[$const_name] =
+                        $const_type ?: Type::getMixedDeferredConstant();
                 }
             }
         }
@@ -545,11 +548,11 @@ class Populator
             );
 
             foreach ($parent_storage->public_class_constant_nodes as $name => $_) {
-                $storage->public_class_constants[$name] = Type::getMixed();
+                $storage->public_class_constants[$name] = Type::getMixedDeferredConstant();
             }
 
             foreach ($parent_storage->protected_class_constant_nodes as $name => $_) {
-                $storage->protected_class_constants[$name] = Type::getMixed();
+                $storage->protected_class_constants[$name] = Type::getMixedDeferredConstant();
             }
 
             $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
@@ -598,7 +601,7 @@ class Populator
             );
 
             foreach ($parent_interface_storage->public_class_constant_nodes as $name => $_) {
-                $storage->public_class_constants[$name] = Type::getMixed();
+                $storage->public_class_constants[$name] = Type::getMixedDeferredConstant();
             }
 
             if ($parent_interface_storage->template_types) {
@@ -685,7 +688,7 @@ class Populator
             );
 
             foreach ($implemented_interface_storage->public_class_constant_nodes as $name => $_) {
-                $storage->public_class_constants[$name] = Type::getMixed();
+                $storage->public_class_constants[$name] = Type::getMixedDeferredConstant();
             }
 
             $storage->invalid_dependencies = array_merge(
