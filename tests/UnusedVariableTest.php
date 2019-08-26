@@ -1088,6 +1088,20 @@ class UnusedVariableTest extends TestCase
                         $a->bar($i);
                     }',
             ],
+            'noUnusedVariableAfterRedeclaredInCatch' => [
+                '<?php
+                    $path = "";
+
+                    echo $path;
+
+                    try {
+                        // do nothing
+                    } catch (\Exception $exception) {
+                        $path = "hello";
+                    }
+
+                    echo $path;'
+            ],
         ];
     }
 

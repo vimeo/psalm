@@ -362,6 +362,8 @@ class TryAnalyzer
                         && $old_unreferenced_vars[$var_id] !== $locations
                     ) {
                         $statements_analyzer->registerVariableUses($locations);
+                    } elseif (isset($newly_unreferenced_vars[$var_id])) {
+                        $context->unreferenced_vars[$var_id] = $newly_unreferenced_vars[$var_id];
                     }
                 }
             }
