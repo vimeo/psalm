@@ -235,9 +235,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         }
 
         if (preg_match(
-            '/(^|\\\)(int|float|bool|string|void|null|false|true|resource|object|numeric|mixed)$/i',
+            '/(^|\\\)(int|float|bool|string|void|null|false|true|object|numeric|mixed)$/i',
             $fq_class_name
-        )
+        ) || strtolower($fq_class_name) === 'resource'
         ) {
             $class_name_parts = explode('\\', $fq_class_name);
             $class_name = array_pop($class_name_parts);
