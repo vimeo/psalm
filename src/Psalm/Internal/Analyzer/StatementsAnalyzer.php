@@ -275,10 +275,23 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                 if (isset($comments['specials']['psalm-scope-this'])) {
                     $trimmed = trim(\reset($comments['specials']['psalm-scope-this']));
-                    $this_type = Type::parseString($trimmed);
-                    $context->self = $trimmed;
-                    $context->vars_in_scope['$this'] = $this_type;
-                    $this->setFQCLN($trimmed);
+
+                    if (!$codebase->classExists($trimmed)) {
+                        if (IssueBuffer::accepts(
+                            new \Psalm\Issue\UndefinedDocblockClass(
+                                'Scope class ' . $trimmed . ' does not exist',
+                                new CodeLocation($this->getSource(), $stmt, null, true),
+                                $trimmed
+                            )
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        $this_type = Type::parseString($trimmed);
+                        $context->self = $trimmed;
+                        $context->vars_in_scope['$this'] = $this_type;
+                        $this->setFQCLN($trimmed);
+                    }
                 }
 
                 if (isset($comments['specials']['psalm-suppress'])) {
