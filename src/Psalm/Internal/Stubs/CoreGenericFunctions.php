@@ -195,7 +195,7 @@ function array_chunk(array $arr, int $size, bool $preserve_keys = false)
  * @psalm-template TKey as array-key
  *
  * @param TKey $key
- * @param array<TKey, mixed>|ArrayObject<TKey, mixed> $search
+ * @param array<TKey, mixed> $search
  *
  * @return bool
  */
