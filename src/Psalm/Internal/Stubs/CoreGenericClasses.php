@@ -130,7 +130,7 @@ class Generator implements Traversable {
      */
     public function send($value) {}
 
-    public function throw(Exception $exception) {}
+    public function throw(Throwable $exception) {}
 }
 
 /**
