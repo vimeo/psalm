@@ -89,6 +89,17 @@ jobs:
           root: /home/docker/project/
           paths:
             - build/psalm.phar
+  test-with-real-projects:
+    executor: php-72
+    steps:
+      - checkout # used here just for the side effect of loading the github public ssh key so we can clone other stuff
+      - attach_workspace:
+          at: /home/docker/project/
+      - run:
+          name: Analyse PHPUnit
+          command: bin/test-with-real-projects.sh
+      - store_artifacts:
+          path: build/psalm.phar
 
 # Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
 workflows:
@@ -109,6 +120,3 @@ workflows:
           requires:
             - test
             - "Code Style Analysis"
-      - test-with-real-projects:
-          requires:
-            - phar-build
