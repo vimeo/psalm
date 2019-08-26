@@ -74,8 +74,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
+            $was_inside_call = $context->inside_call;
+            $context->inside_call = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 return false;
+            }
+            if (!$was_inside_call) {
+                $context->inside_call = false;
             }
         }
 

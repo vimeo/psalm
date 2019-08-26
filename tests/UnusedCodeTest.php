@@ -537,6 +537,21 @@ class UnusedCodeTest extends TestCase
                         $o->foo("COUNT{$s}");
                     }'
             ],
+            'usedFunctioninMethodCallName' => [
+                '<?php
+                    class Foo {
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        public function bar(): void {
+                            /** @var mixed $action */
+                            $action = "";
+                            $this->{"execute" . ucfirst($action)}($request);
+                        }
+                    }
+
+                    (new Foo)->bar();'
+            ],
         ];
     }
 
