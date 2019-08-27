@@ -765,7 +765,9 @@ class TypeCombination
                     );
                 }
 
-                unset($possibly_undefined_entries[$candidate_property_name]);
+                if (!$type->had_mixed_value) {
+                    unset($possibly_undefined_entries[$candidate_property_name]);
+                }
             }
 
             if ($combination->array_counts !== null) {

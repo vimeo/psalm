@@ -222,12 +222,12 @@ class ArrayAssignmentAnalyzer
                 $child_stmt->var->inferredType = clone $context->vars_in_scope[$parent_var_id];
             }
 
-            $parent_var_id = $array_var_id;
+            $array_type = clone $child_stmt->var->inferredType;
 
             $child_stmt->inferredType = ArrayFetchAnalyzer::getArrayAccessTypeGivenOffset(
                 $statements_analyzer,
                 $child_stmt,
-                $child_stmt->var->inferredType,
+                $array_type,
                 isset($child_stmt->dim->inferredType) ? $child_stmt->dim->inferredType : Type::getInt(),
                 true,
                 $array_var_id,
@@ -236,12 +236,27 @@ class ArrayAssignmentAnalyzer
                 $child_stmts ? null : $assignment_type
             );
 
+            $child_stmt->var->inferredType = $array_type;
+
+            if ($root_var_id) {
+                if (!$parent_var_id) {
+                    $rooted_parent_id = $root_var_id;
+                    $root_type = $array_type;
+                } else {
+                    $rooted_parent_id = $parent_var_id;
+                }
+
+                $context->vars_in_scope[$rooted_parent_id] = $array_type;
+            }
+
             if (!$child_stmts) {
                 $child_stmt->inferredType = $assignment_type;
             }
 
             $current_type = $child_stmt->inferredType;
             $current_dim = $child_stmt->dim;
+
+            $parent_var_id = $array_var_id;
 
             if ($child_stmt->var->inferredType->hasMixed()) {
                 $full_var_id = false;
