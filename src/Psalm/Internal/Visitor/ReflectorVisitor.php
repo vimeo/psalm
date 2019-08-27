@@ -1912,66 +1912,18 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->returns_by_ref = true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
-            && $stmt->name->name === '__construct'
-            && $stmt->stmts
-            && $storage->params
-            && $class_storage
-            && $this->config->infer_property_types_from_constructor
-        ) {
-            $assigned_properties = [];
-
-            foreach ($stmt->stmts as $function_stmt) {
-                if ($function_stmt instanceof PhpParser\Node\Stmt\Expression
-                    && $function_stmt->expr instanceof PhpParser\Node\Expr\Assign
-                    && $function_stmt->expr->var instanceof PhpParser\Node\Expr\PropertyFetch
-                    && $function_stmt->expr->var->var instanceof PhpParser\Node\Expr\Variable
-                    && $function_stmt->expr->var->var->name === 'this'
-                    && $function_stmt->expr->var->name instanceof PhpParser\Node\Identifier
-                    && ($property_name = $function_stmt->expr->var->name->name)
-                    && isset($class_storage->properties[$property_name])
-                    && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\Variable
-                    && is_string($function_stmt->expr->expr->name)
-                    && ($param_name = $function_stmt->expr->expr->name)
-                    && array_key_exists($param_name, $storage->param_types)
-                ) {
-                    if ($class_storage->properties[$property_name]->type
-                        || !isset($storage->param_types[$param_name])
-                    ) {
-                        continue;
-                    }
-
-                    $param_index = \array_search($param_name, \array_keys($storage->param_types), true);
-
-                    if ($param_index === false || !isset($storage->params[$param_index]->type)) {
-                        continue;
-                    }
-
-                    $param_type = $storage->params[$param_index]->type;
-
-                    $assigned_properties[$property_name] =
-                        $storage->params[$param_index]->is_variadic
-                            ? new Type\Union([
-                                new Type\Atomic\TArray([
-                                    Type::getInt(),
-                                    $param_type,
-                                ]),
-                            ])
-                            : $param_type;
-                } else {
-                    $assigned_properties = [];
-                    break;
-                }
-            }
-
-            foreach ($assigned_properties as $property_name => $property_type) {
-                $class_storage->properties[$property_name]->type = clone $property_type;
-            }
-        }
-
         $doc_comment = $stmt->getDocComment();
 
         if (!$doc_comment) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                && $stmt->name->name === '__construct'
+                && $class_storage
+                && $storage->params
+                && $this->config->infer_property_types_from_constructor
+            ) {
+                $this->inferPropertyTypeFromConstructor($stmt, $storage, $class_storage);
+            }
+
             return $storage;
         }
 
@@ -2459,7 +2411,75 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->return_type_description = $docblock_info->return_type_description;
         }
 
+        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+            && $stmt->name->name === '__construct'
+            && $class_storage
+            && $storage->params
+            && $this->config->infer_property_types_from_constructor
+        ) {
+            $this->inferPropertyTypeFromConstructor($stmt, $storage, $class_storage);
+        }
+
         return $storage;
+    }
+
+    private function inferPropertyTypeFromConstructor(
+        PhpParser\Node\Stmt\ClassMethod $stmt,
+        FunctionLikeStorage $storage,
+        ClassLikeStorage $class_storage
+    ) : void {
+        if (!$stmt->stmts) {
+            return;
+        }
+
+        $assigned_properties = [];
+
+        foreach ($stmt->stmts as $function_stmt) {
+            if ($function_stmt instanceof PhpParser\Node\Stmt\Expression
+                && $function_stmt->expr instanceof PhpParser\Node\Expr\Assign
+                && $function_stmt->expr->var instanceof PhpParser\Node\Expr\PropertyFetch
+                && $function_stmt->expr->var->var instanceof PhpParser\Node\Expr\Variable
+                && $function_stmt->expr->var->var->name === 'this'
+                && $function_stmt->expr->var->name instanceof PhpParser\Node\Identifier
+                && ($property_name = $function_stmt->expr->var->name->name)
+                && isset($class_storage->properties[$property_name])
+                && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\Variable
+                && is_string($function_stmt->expr->expr->name)
+                && ($param_name = $function_stmt->expr->expr->name)
+                && array_key_exists($param_name, $storage->param_types)
+            ) {
+                if ($class_storage->properties[$property_name]->type
+                    || !isset($storage->param_types[$param_name])
+                ) {
+                    continue;
+                }
+
+                $param_index = \array_search($param_name, \array_keys($storage->param_types), true);
+
+                if ($param_index === false || !isset($storage->params[$param_index]->type)) {
+                    continue;
+                }
+
+                $param_type = $storage->params[$param_index]->type;
+
+                $assigned_properties[$property_name] =
+                    $storage->params[$param_index]->is_variadic
+                        ? new Type\Union([
+                            new Type\Atomic\TArray([
+                                Type::getInt(),
+                                $param_type,
+                            ]),
+                        ])
+                        : $param_type;
+            } else {
+                $assigned_properties = [];
+                break;
+            }
+        }
+
+        foreach ($assigned_properties as $property_name => $property_type) {
+            $class_storage->properties[$property_name]->type = clone $property_type;
+        }
     }
 
     /**
