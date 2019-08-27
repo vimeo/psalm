@@ -452,6 +452,11 @@ class ArrayFetchAnalyzer
                     // ok, type becomes an ObjectLike
                     $array_type->removeType($type_string);
                     $type = new ObjectLike([$key_value => $from_mixed_array ? Type::getMixed() : Type::getEmpty()]);
+
+                    if ($from_mixed_array) {
+                        $type->had_mixed_value = true;
+                    }
+
                     $array_type->addType($type);
                 }
 

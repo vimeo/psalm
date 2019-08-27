@@ -777,6 +777,8 @@ class CallAnalyzer
     ) {
         $array_arg = $args[0]->value;
 
+        $context->inside_call = true;
+
         if (ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $array_arg,
@@ -795,7 +797,6 @@ class CallAnalyzer
             }
         }
 
-        $context->inside_call = true;
         if (isset($array_arg->inferredType) && $array_arg->inferredType->hasArray()) {
             /** @var TArray|ObjectLike */
             $array_type = $array_arg->inferredType->getTypes()['array'];
