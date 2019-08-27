@@ -448,6 +448,7 @@ class ArrayFetchAnalyzer
                         || ($type->type_params[1]->isMixed() && \is_string($key_value)))
                     && $key_value !== null
                 ) {
+                    $from_string_key = $type->type_params[0]->isString();
                     $from_mixed_array = $type->type_params[1]->isMixed();
                     // ok, type becomes an ObjectLike
                     $array_type->removeType($type_string);
@@ -455,6 +456,10 @@ class ArrayFetchAnalyzer
 
                     if ($from_mixed_array) {
                         $type->had_mixed_value = true;
+
+                        if ($from_string_key) {
+                            $type->had_string_key = true;
+                        }
                     }
 
                     $array_type->addType($type);
