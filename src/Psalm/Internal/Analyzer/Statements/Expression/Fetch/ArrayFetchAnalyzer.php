@@ -444,12 +444,14 @@ class ArrayFetchAnalyzer
 
                 if ($in_assignment
                     && $type instanceof TArray
-                    && $type->type_params[0]->isEmpty()
+                    && (($type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty())
+                        || ($type->type_params[1]->isMixed() && \is_string($key_value)))
                     && $key_value !== null
                 ) {
+                    $from_mixed_array = $type->type_params[1]->isMixed();
                     // ok, type becomes an ObjectLike
                     $array_type->removeType($type_string);
-                    $type = new ObjectLike([$key_value => new Type\Union([new TEmpty])]);
+                    $type = new ObjectLike([$key_value => $from_mixed_array ? Type::getMixed() : Type::getEmpty()]);
                     $array_type->addType($type);
                 }
 
@@ -616,7 +618,7 @@ class ArrayFetchAnalyzer
 
                             $array_access_type = Type::getMixed();
                         } else {
-                            if (!$context->inside_isset || $type->sealed) {
+                            if ($type->sealed) {
                                 $object_like_keys = array_keys($type->properties);
 
                                 if (count($object_like_keys) === 1) {

@@ -1072,6 +1072,20 @@ class ArrayAssignmentTest extends TestCase
                     $c = new C();
                     $c[] = "hello";',
             ],
+            'addToMixedArray' => [
+                '<?php
+                    /**
+                     * @param array{key: string} $a
+                     */
+                    function foo(array $a): void {
+                        echo $a["key"];
+                    }
+
+                    function bar(array $arr) : void {
+                        $arr["key"] = "qqq";
+                        foo($arr);
+                    }'
+            ],
         ];
     }
 
@@ -1207,9 +1221,11 @@ class ArrayAssignmentTest extends TestCase
                     ];',
                 'error_message' => 'DuplicateArrayKey',
             ],
-            'mixedArrayAssignment' => [
+            'mixedArrayAssignmentOnVariable' => [
                 '<?php
-                    $_GET["foo"][0] = "5";',
+                    function foo(array $arr) : void {
+                        $arr["foo"][0] = "5";
+                    }',
                 'error_message' => 'MixedArrayAssignment',
             ],
             'implementsArrayAccessPreventNullOffset' => [
