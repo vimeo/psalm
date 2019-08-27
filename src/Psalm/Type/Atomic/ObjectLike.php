@@ -181,7 +181,7 @@ class ObjectLike extends \Psalm\Type\Atomic
     public function getGenericKeyType()
     {
         if ($this->had_mixed_value) {
-            return Type::getArrayKey();
+            return Type::getString();
         }
 
         $key_types = [];
@@ -233,7 +233,7 @@ class ObjectLike extends \Psalm\Type\Atomic
     public function getGenericArrayType()
     {
         if ($this->had_mixed_value) {
-            return new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]);
+            return new TNonEmptyArray([Type::getString(), Type::getMixed()]);
         }
 
         $key_types = [];
