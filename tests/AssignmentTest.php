@@ -58,6 +58,27 @@ class AssignmentTest extends TestCase
                     /** @var mixed */
                     $b = $a;',
             ],
+            'referenceAssignmentArray' => [
+                '<?php
+                    $matrix = [
+                      [1, 0],
+                      [0, 1],
+                    ];
+                    $row =& $matrix[0];
+                    echo $row[0];',
+            ],
+            'referenceAssignmentLhs' => [
+                '<?php
+                    $a = 1;
+                    $b =& $a;
+                    echo $b;',
+            ],
+            'referenceAssignmentRhs' => [
+                '<?php
+                    $a = 1;
+                    $b =& $a;
+                    echo $a;',
+            ],
         ];
     }
 
