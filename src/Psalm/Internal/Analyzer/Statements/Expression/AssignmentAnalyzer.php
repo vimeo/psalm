@@ -855,14 +855,15 @@ class AssignmentAnalyzer
         PhpParser\Node\Expr\AssignRef $stmt,
         Context $context
     ) {
-        if (self::analyze(
+        $assignment_type = self::analyze(
             $statements_analyzer,
             $stmt->var,
             $stmt->expr,
             null,
             $context,
             $stmt->getDocComment()
-        ) === false) {
+        );
+        if ($assignment_type === false) {
             return false;
         }
 
@@ -879,11 +880,11 @@ class AssignmentAnalyzer
         );
 
         if ($lhs_var_id) {
-            $context->vars_in_scope[$lhs_var_id] = Type::getMixed();
+            $context->vars_in_scope[$lhs_var_id] = $assignment_type;
             $context->hasVariable($lhs_var_id, $statements_analyzer);
         }
 
-        if ($rhs_var_id) {
+        if ($rhs_var_id && !isset($context->vars_in_scope[$rhs_var_id])) {
             $context->vars_in_scope[$rhs_var_id] = Type::getMixed();
         }
     }
