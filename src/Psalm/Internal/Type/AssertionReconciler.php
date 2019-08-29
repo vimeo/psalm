@@ -862,6 +862,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     [$method_name =>  'object::' . $method_name]
                 );
                 $did_remove_type = true;
+            } elseif ($type instanceof TString) {
+                // we don’t know
+                $object_types[] = $type;
+                $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
                 $object_types[] = $type;
                 $did_remove_type = true;

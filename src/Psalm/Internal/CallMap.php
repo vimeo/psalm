@@ -7372,7 +7372,7 @@ return [
 'MessageFormatter::parseMessage' => ['array|false', 'locale'=>'string', 'pattern'=>'string', 'source'=>'string'],
 'MessageFormatter::setPattern' => ['bool', 'pattern'=>'string'],
 'metaphone' => ['string|false', 'text'=>'string', 'phones='=>'int'],
-'method_exists' => ['bool', 'object'=>'object|string', 'method'=>'string'],
+'method_exists' => ['bool', 'object'=>'object|class-string', 'method'=>'string'],
 'mhash' => ['string', 'hash'=>'int', 'data'=>'string', 'key='=>'string'],
 'mhash_count' => ['int'],
 'mhash_get_block_size' => ['int|false', 'hash'=>'int'],
