@@ -51,6 +51,25 @@ class AssertTest extends TestCase
                         return $s;
                     }',
             ],
+            'sortOfReplacementForAssert' => [
+                '<?php
+                    namespace Bar;
+
+                    /**
+                     * @param mixed $_b
+                     * @psalm-assert true $_b
+                     */
+                    function myAssert($_b) : void {
+                        if ($_b !== true) {
+                            throw new \Exception("bad");
+                        }
+                    }
+
+                    function bar(?string $s) : string {
+                        myAssert($s !== null);
+                        return $s;
+                    }',
+            ],
             'assertInstanceOfInterface' => [
                 '<?php
                     namespace Bar;
@@ -815,6 +834,26 @@ class AssertTest extends TestCase
                     $a = "";
                     assertFooBar($a);',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'sortOfReplacementForAssert' => [
+                '<?php
+                    namespace Bar;
+
+                    /**
+                     * @param mixed $_b
+                     * @psalm-assert true $_b
+                     */
+                    function myAssert($_b) : void {
+                        if ($_b !== true) {
+                            throw new \Exception("bad");
+                        }
+                    }
+
+                    function bar(?string $s) : string {
+                        myAssert($s);
+                        return $s;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

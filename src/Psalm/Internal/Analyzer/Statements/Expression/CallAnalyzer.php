@@ -3285,13 +3285,25 @@ class CallAnalyzer
                 } else {
                     $type_assertions[$assertion_var_id] = $assertion->rule;
                 }
-            } elseif ($arg_value && $assertion->rule === [['!falsy']]) {
-                $assert_clauses = \Psalm\Type\Algebra::getFormula(
-                    $arg_value,
-                    $statements_analyzer->getFQCLN(),
-                    $statements_analyzer,
-                    $statements_analyzer->getCodebase()
-                );
+            } elseif ($arg_value && ($assertion->rule === [['!falsy']] || $assertion->rule === [['true']])) {
+                if ($assertion->rule === [['true']]) {
+                    $assert_clauses = \Psalm\Type\Algebra::getFormula(
+                        new PhpParser\Node\Expr\BinaryOp\Identical(
+                            $arg_value,
+                            new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('true'))
+                        ),
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                        $statements_analyzer->getCodebase()
+                    );
+                } else {
+                    $assert_clauses = \Psalm\Type\Algebra::getFormula(
+                        $arg_value,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                        $statements_analyzer->getCodebase()
+                    );
+                }
 
                 $simplified_clauses = \Psalm\Type\Algebra::simplifyCNF(
                     array_merge($context->clauses, $assert_clauses)
