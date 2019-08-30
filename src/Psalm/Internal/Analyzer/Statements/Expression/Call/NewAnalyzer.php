@@ -415,7 +415,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         if ($declaring_method_id) {
                             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                            if (!$method_storage->pure) {
+                            if (!$method_storage->external_mutation_free) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
                                         'Cannot call an impure constructor from a pure context',

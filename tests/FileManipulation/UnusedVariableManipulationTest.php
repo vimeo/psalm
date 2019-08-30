@@ -523,13 +523,20 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                             $this->foo = $foo;
                         }
 
-                        public function setFoo(string $foo) : void {
-                            $this->foo = $foo;
+                        public function getFoo() : void {
+                            return "abular" . $this->foo;
                         }
                     }
 
+                    /**
+                     * @psalm-pure
+                     */
+                    function makeA(string $s) : A {
+                        return new A($s);
+                    }
+
                     function foo() : void {
-                        $a = (new A("hello"))->setFoo("goodbye");
+                        $a = makeA("hello")->getFoo();
                     }',
                 '<?php
                     /**
@@ -542,9 +549,16 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                             $this->foo = $foo;
                         }
 
-                        public function setFoo(string $foo) : void {
-                            $this->foo = $foo;
+                        public function getFoo() : void {
+                            return "abular" . $this->foo;
                         }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function makeA(string $s) : A {
+                        return new A($s);
                     }
 
                     function foo() : void {

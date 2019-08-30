@@ -793,6 +793,35 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedMethodCall',
             ],
+            'unusedMethodCallForGeneratingMethod' => [
+                '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     */
+                    class A {
+                        private string $foo;
+
+                        public function __construct(string $foo) {
+                            $this->foo = $foo;
+                        }
+
+                        public function getFoo() : string {
+                            return "abular" . $this->foo;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function makeA(string $s) : A {
+                        return new A($s);
+                    }
+
+                    function foo() : void {
+                        makeA("hello")->getFoo();
+                    }',
+                'error_message' => 'UnusedMethodCall',
+            ],
         ];
     }
 }
