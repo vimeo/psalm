@@ -385,8 +385,8 @@ class UnusedCodeTest extends TestCase
                 class C {
                     /** @var int */
                     protected $foo = 1;
-                    public function bar() : int {
-                        return $this->foo;
+                    public function bar() : void {
+                        $this->foo = 5;
                     }
                 }
 
@@ -687,6 +687,24 @@ class UnusedCodeTest extends TestCase
                 '<?php
                     strlen("goodbye");',
                 'error_message' => 'UnusedFunctionCall',
+            ],
+            'unusedMethodCall' => [
+                '<?php
+                    class A {
+                        private string $foo;
+
+                        public function __construct(string $foo) {
+                            $this->foo = $foo;
+                        }
+
+                        public function getFoo() : string {
+                            return $this->foo;
+                        }
+                    }
+
+                    $a = new A("hello");
+                    $a->getFoo();',
+                'error_message' => 'UnusedMethodCall',
             ],
             'propertyOverriddenDownstreamAndNotUsed' => [
                 '<?php

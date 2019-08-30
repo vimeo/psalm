@@ -69,8 +69,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     ) {
         $stmt->inferredType = null;
 
+        $was_inside_call = $context->inside_call;
+
+        $context->inside_call = true;
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             return false;
+        }
+
+        if (!$was_inside_call) {
+            $context->inside_call = false;
         }
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
@@ -1200,7 +1208,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         if ($context->pure && !$method_storage->pure) {
                             if (IssueBuffer::accepts(
                                 new ImpureMethodCall(
-                                    'Cannot call an impure method from a pure context',
+                                    'Cannot call an impure method ' . $method_id . ' from a pure context',
                                     new CodeLocation($source, $stmt->name)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
@@ -1210,12 +1218,33 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         } elseif ($context->mutation_free && !$method_storage->mutation_free) {
                             if (IssueBuffer::accepts(
                                 new ImpureMethodCall(
-                                    'Cannot call an possibly-mutating method from a mutation-free context',
+                                    'Cannot call an possibly-mutating method '
+                                        . $method_id . ' from a mutation-free context',
                                     new CodeLocation($source, $stmt->name)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
                                 // fall through
+                            }
+                        } elseif ($method_storage->mutation_free
+                            && $codebase->find_unused_variables
+                            && !$context->inside_conditional
+                            && !$context->inside_unset
+                        ) {
+                            if (!$context->inside_assignment && !$context->inside_call) {
+                                if (IssueBuffer::accepts(
+                                    new \Psalm\Issue\UnusedMethodCall(
+                                        'The call to ' . $method_id . ' is not used',
+                                        new CodeLocation($statements_analyzer, $stmt->name),
+                                        $method_id
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } else {
+                                /** @psalm-suppress UndefinedPropertyAssignment */
+                                $stmt->pure = true;
                             }
                         }
 

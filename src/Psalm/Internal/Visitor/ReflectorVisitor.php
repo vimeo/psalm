@@ -1777,71 +1777,82 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         if (($stmt instanceof PhpParser\Node\Stmt\Function_
                 || $stmt instanceof PhpParser\Node\Stmt\ClassMethod)
-            && strpos($stmt->name->name, 'assert') === 0
             && $stmt->stmts
         ) {
-            $var_assertions = [];
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                && $storage instanceof MethodStorage
+                && count($stmt->stmts) === 1
+                && !count($stmt->params)
+                && $stmt->stmts[0] instanceof PhpParser\Node\Stmt\Return_
+                && $stmt->stmts[0]->expr instanceof PhpParser\Node\Expr\PropertyFetch
+                && $stmt->stmts[0]->expr->var instanceof PhpParser\Node\Expr\Variable
+                && $stmt->stmts[0]->expr->var->name === 'this'
+            ) {
+                $storage->mutation_free = true;
+            } elseif (strpos($stmt->name->name, 'assert') === 0) {
+                $var_assertions = [];
 
-            foreach ($stmt->stmts as $function_stmt) {
-                if ($function_stmt instanceof PhpParser\Node\Stmt\If_) {
-                    $final_actions = \Psalm\Internal\Analyzer\ScopeAnalyzer::getFinalControlActions(
-                        $function_stmt->stmts,
-                        $this->config->exit_functions,
-                        false,
-                        false
-                    );
+                foreach ($stmt->stmts as $function_stmt) {
+                    if ($function_stmt instanceof PhpParser\Node\Stmt\If_) {
+                        $final_actions = \Psalm\Internal\Analyzer\ScopeAnalyzer::getFinalControlActions(
+                            $function_stmt->stmts,
+                            $this->config->exit_functions,
+                            false,
+                            false
+                        );
 
-                    if ($final_actions !== [\Psalm\Internal\Analyzer\ScopeAnalyzer::ACTION_END]) {
-                        $var_assertions = [];
-                        break;
-                    }
+                        if ($final_actions !== [\Psalm\Internal\Analyzer\ScopeAnalyzer::ACTION_END]) {
+                            $var_assertions = [];
+                            break;
+                        }
 
-                    $if_clauses = \Psalm\Type\Algebra::getFormula(
-                        $function_stmt->cond,
-                        $this->fq_classlike_names
-                            ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1]
-                            : null,
-                        $this->file_scanner,
-                        null
-                    );
+                        $if_clauses = \Psalm\Type\Algebra::getFormula(
+                            $function_stmt->cond,
+                            $this->fq_classlike_names
+                                ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1]
+                                : null,
+                            $this->file_scanner,
+                            null
+                        );
 
-                    $negated_formula = \Psalm\Type\Algebra::negateFormula($if_clauses);
+                        $negated_formula = \Psalm\Type\Algebra::negateFormula($if_clauses);
 
-                    $rules = \Psalm\Type\Algebra::getTruthsFromFormula($negated_formula);
+                        $rules = \Psalm\Type\Algebra::getTruthsFromFormula($negated_formula);
 
-                    if (!$rules) {
-                        $var_assertions = [];
-                        break;
-                    }
+                        if (!$rules) {
+                            $var_assertions = [];
+                            break;
+                        }
 
-                    foreach ($rules as $var_id => $rule) {
-                        foreach ($rule as $rule_part) {
-                            if (count($rule_part) > 1) {
-                                continue 2;
+                        foreach ($rules as $var_id => $rule) {
+                            foreach ($rule as $rule_part) {
+                                if (count($rule_part) > 1) {
+                                    continue 2;
+                                }
+                            }
+
+                            if (isset($existing_params[$var_id])) {
+                                $param_offset = $existing_params[$var_id];
+
+                                $var_assertions[] = new \Psalm\Storage\Assertion(
+                                    $param_offset,
+                                    $rule
+                                );
+                            } elseif (strpos($var_id, '$this->') === 0) {
+                                $var_assertions[] = new \Psalm\Storage\Assertion(
+                                    $var_id,
+                                    $rule
+                                );
                             }
                         }
-
-                        if (isset($existing_params[$var_id])) {
-                            $param_offset = $existing_params[$var_id];
-
-                            $var_assertions[] = new \Psalm\Storage\Assertion(
-                                $param_offset,
-                                $rule
-                            );
-                        } elseif (strpos($var_id, '$this->') === 0) {
-                            $var_assertions[] = new \Psalm\Storage\Assertion(
-                                $var_id,
-                                $rule
-                            );
-                        }
+                    } else {
+                        $var_assertions = [];
+                        break;
                     }
-                } else {
-                    $var_assertions = [];
-                    break;
                 }
-            }
 
-            $storage->assertions = $var_assertions;
+                $storage->assertions = $var_assertions;
+            }
         }
 
         if (!$this->scan_deep

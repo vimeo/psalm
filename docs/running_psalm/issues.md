@@ -2414,12 +2414,33 @@ function foo(callable $c) : int {
 
 ### UnusedFunctionCall
 
-Emitted when `--find-dead-code` is turned on and Psalm finds a function call that is not used anywhere
+Emitted when `--find-dead-code` is turned on and Psalm finds a function call whose return value is not used anywhere
 
 ```php
 $a = strlen("hello");
 strlen("goodbye"); // unused
 echo $a;
+```
+
+### UnusedMethodCall
+
+Emitted when `--find-dead-code` is turned on and Psalm finds a method call whose return value is not used anywhere
+
+```php
+class A {
+    private string $foo;
+
+    public function __construct(string $foo) {
+        $this->foo = $foo;
+    }
+
+    public function getFoo() : string {
+        return $this->foo;
+    }
+}
+
+$a = new A("hello");
+$a->getFoo();
 ```
 
 ### UnusedParam
