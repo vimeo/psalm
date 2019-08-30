@@ -311,6 +311,7 @@ class Functions
             // well-known functions
             'libxml_use_internal_errors', 'array_map', 'curl_exec',
             'mt_srand', 'openssl_pkcs7_sign', 'mysqli_select_db', 'preg_replace_callback',
+            'mt_rand', 'rand',
 
             // php environment
             'ini_set', 'sleep', 'usleep', 'register_shutdown_function',
