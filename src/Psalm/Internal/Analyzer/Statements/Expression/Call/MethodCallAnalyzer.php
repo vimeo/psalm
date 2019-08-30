@@ -1226,7 +1226,23 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             )) {
                                 // fall through
                             }
-                        } elseif ($method_storage->mutation_free
+                        } elseif ($context->external_mutation_free
+                            && !$method_storage->mutation_free
+                            && $fq_class_name !== $context->self
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new ImpureMethodCall(
+                                    'Cannot call an possibly-mutating method '
+                                        . $method_id . ' from a mutation-free context',
+                                    new CodeLocation($source, $stmt->name)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } elseif (($method_storage->mutation_free
+                                || ($method_storage->external_mutation_free
+                                    && isset($stmt->var->external_mutation_free)))
                             && $codebase->find_unused_variables
                             && !$context->inside_conditional
                             && !$context->inside_unset

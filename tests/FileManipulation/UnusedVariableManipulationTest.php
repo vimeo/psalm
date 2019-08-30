@@ -510,6 +510,49 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 ['UnusedVariable'],
                 true,
             ],
+
+            'removeLongUnusedAssignment' => [
+                '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     */
+                    class A {
+                        private string $foo;
+
+                        public function __construct(string $foo) {
+                            $this->foo = $foo;
+                        }
+
+                        public function setFoo(string $foo) : void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    function foo() : void {
+                        $a = (new A("hello"))->setFoo("goodbye");
+                    }',
+                '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     */
+                    class A {
+                        private string $foo;
+
+                        public function __construct(string $foo) {
+                            $this->foo = $foo;
+                        }
+
+                        public function setFoo(string $foo) : void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    function foo() : void {
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
         ];
     }
 }

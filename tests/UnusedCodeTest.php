@@ -552,6 +552,30 @@ class UnusedCodeTest extends TestCase
 
                     (new Foo)->bar();'
             ],
+            'usedMethodCallForExternalMutationFreeClass' => [
+                '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     */
+                    class A {
+                        private string $foo;
+
+                        public function __construct(string $foo) {
+                            $this->foo = $foo;
+                        }
+
+                        public function setFoo(string $foo) : void {
+                            $this->foo = $foo;
+                        }
+
+                        public function getFoo() : string {
+                            return $this->foo;
+                        }
+                    }
+
+                    $a = new A("hello");
+                    $a->setFoo($a->getFoo() . "cool");',
+            ],
         ];
     }
 
@@ -746,6 +770,28 @@ class UnusedCodeTest extends TestCase
                     }
                     (new A())->handle();',
                 'error_message' => 'UnusedProperty',
+            ],
+            'unusedMethodCallForExternalMutationFreeClass' => [
+                '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     */
+                    class A {
+                        private string $foo;
+
+                        public function __construct(string $foo) {
+                            $this->foo = $foo;
+                        }
+
+                        public function setFoo(string $foo) : void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    function foo() : void {
+                        (new A("hello"))->setFoo("goodbye");
+                    }',
+                'error_message' => 'UnusedMethodCall',
             ],
         ];
     }
