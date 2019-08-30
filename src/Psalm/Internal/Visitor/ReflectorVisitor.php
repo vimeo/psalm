@@ -1789,6 +1789,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 && $stmt->stmts[0]->expr->var->name === 'this'
             ) {
                 $storage->mutation_free = true;
+                $storage->external_mutation_free = true;
             } elseif (strpos($stmt->name->name, 'assert') === 0) {
                 $var_assertions = [];
 
@@ -1932,6 +1933,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && $stmt->name->name === '__construct'
                 && $class_storage
+                && $storage instanceof MethodStorage
                 && $storage->params
                 && $this->config->infer_property_types_from_constructor
             ) {
@@ -2444,6 +2446,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
             && $stmt->name->name === '__construct'
             && $class_storage
+            && $storage instanceof MethodStorage
             && $storage->params
             && $this->config->infer_property_types_from_constructor
         ) {
@@ -2455,7 +2458,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
     private function inferPropertyTypeFromConstructor(
         PhpParser\Node\Stmt\ClassMethod $stmt,
-        FunctionLikeStorage $storage,
+        MethodStorage $storage,
         ClassLikeStorage $class_storage
     ) : void {
         if (!$stmt->stmts) {
@@ -2506,6 +2509,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 break;
             }
         }
+
+        if (!$assigned_properties) {
+            return;
+        }
+
+        $storage->external_mutation_free = true;
 
         foreach ($assigned_properties as $property_name => $property_type) {
             $class_storage->properties[$property_name]->type = clone $property_type;

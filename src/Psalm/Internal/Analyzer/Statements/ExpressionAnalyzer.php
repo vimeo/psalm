@@ -325,8 +325,18 @@ class ExpressionAnalyzer
             $stmt instanceof PhpParser\Node\Expr\PreInc ||
             $stmt instanceof PhpParser\Node\Expr\PreDec
         ) {
+            $was_inside_assignment = $context->inside_assignment;
+            $context->inside_assignment = true;
+
             if (self::analyze($statements_analyzer, $stmt->var, $context) === false) {
+                if (!$was_inside_assignment) {
+                    $context->inside_assignment = false;
+                }
                 return false;
+            }
+
+            if (!$was_inside_assignment) {
+                $context->inside_assignment = false;
             }
 
             if (isset($stmt->var->inferredType)) {
