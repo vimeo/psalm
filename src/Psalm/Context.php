@@ -309,6 +309,16 @@ class Context
     public $pure = false;
 
     /**
+     * @var bool
+     */
+    public $mutation_free = false;
+
+    /**
+     * @var bool
+     */
+    public $external_mutation_free = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

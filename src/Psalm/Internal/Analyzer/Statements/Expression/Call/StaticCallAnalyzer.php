@@ -890,6 +890,16 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         )) {
                             // fall through
                         }
+                    } elseif ($context->mutation_free && !$method_storage->mutation_free) {
+                        if (IssueBuffer::accepts(
+                            new ImpureMethodCall(
+                                'Cannot call an possibly-mutating method from a mutation-free context',
+                                new CodeLocation($source, $stmt->name)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
 
                     if ($method_storage->assertions) {

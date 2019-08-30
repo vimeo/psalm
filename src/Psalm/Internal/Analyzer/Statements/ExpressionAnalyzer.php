@@ -357,10 +357,10 @@ class ExpressionAnalyzer
 
                 $var_id = self::getArrayVarId($stmt->var, null);
 
-                if ($var_id && $context->pure && strpos($var_id, '->')) {
+                if ($var_id && $context->mutation_free && strpos($var_id, '->')) {
                     if (IssueBuffer::accepts(
                         new ImpurePropertyAssignment(
-                            'Cannot assign to a property from a pure context',
+                            'Cannot assign to a property from a mutation-free context',
                             new CodeLocation($statements_analyzer, $stmt->var)
                         ),
                         $statements_analyzer->getSuppressedIssues()

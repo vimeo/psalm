@@ -413,6 +413,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $context->pure = true;
         }
 
+        if ($storage->mutation_free && $cased_method_id && !strpos($cased_method_id, '__construct')) {
+            $context->mutation_free = true;
+        }
+
+        if ($storage instanceof MethodStorage && $storage->external_mutation_free) {
+            $context->external_mutation_free = true;
+        }
+
         if ($storage->unused_docblock_params) {
             foreach ($storage->unused_docblock_params as $param_name => $param_location) {
                 if (IssueBuffer::accepts(

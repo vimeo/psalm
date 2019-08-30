@@ -619,7 +619,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             );
         }
 
-        if ($context->pure || $codebase->find_unused_variables) {
+        if ($context->mutation_free || $codebase->find_unused_variables) {
             $callmap_function_pure = $function_id && $in_call_map
                 ? $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args)
                 : null;
@@ -628,10 +628,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     && !$function_storage->pure)
                 || ($callmap_function_pure === false)
             ) {
-                if ($context->pure) {
+                if ($context->mutation_free) {
                     if (IssueBuffer::accepts(
                         new ImpureFunctionCall(
-                            'Cannot call an impure function from a pure context',
+                            'Cannot call an impure function from a mutation-free context',
                             new CodeLocation($statements_analyzer, $stmt->name)
                         ),
                         $statements_analyzer->getSuppressedIssues()

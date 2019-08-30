@@ -568,10 +568,10 @@ class AssignmentAnalyzer
                 $assign_value_type
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
-            if ($context->pure) {
+            if ($context->mutation_free) {
                 if (IssueBuffer::accepts(
                     new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a pure context',
+                        'Cannot assign to a property from a mutation-free context',
                         new CodeLocation($statements_analyzer, $assign_var)
                     ),
                     $statements_analyzer->getSuppressedIssues()

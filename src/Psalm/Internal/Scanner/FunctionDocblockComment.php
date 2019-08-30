@@ -144,4 +144,14 @@ class FunctionDocblockComment
      * @var bool
      */
     public $inheritdoc = false;
+
+    /**
+     * @var bool
+     */
+    public $mutation_free = false;
+
+    /**
+     * @var bool
+     */
+    public $external_mutation_free = false;
 }

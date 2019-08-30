@@ -1173,6 +1173,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->sealed_properties = $docblock_info->sealed_properties;
                 $storage->sealed_methods = $docblock_info->sealed_methods;
 
+                $storage->mutation_free = $docblock_info->mutation_free;
+                $storage->external_mutation_free = $docblock_info->external_mutation_free;
+
                 $storage->override_property_visibility = $docblock_info->override_property_visibility;
                 $storage->override_method_visibility = $docblock_info->override_method_visibility;
 
@@ -1958,6 +1961,18 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             return $storage;
         }
 
+        if ($docblock_info->mutation_free) {
+            $storage->mutation_free = true;
+
+            if ($storage instanceof MethodStorage) {
+                $storage->external_mutation_free = true;
+            }
+        }
+
+        if ($storage instanceof MethodStorage && $docblock_info->external_mutation_free) {
+            $storage->external_mutation_free = true;
+        }
+
         if ($docblock_info->deprecated) {
             $storage->deprecated = true;
         }
@@ -1976,6 +1991,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         if ($docblock_info->pure) {
             $storage->pure = true;
+            $storage->mutation_free = true;
+            if ($storage instanceof MethodStorage) {
+                $storage->external_mutation_free = true;
+            }
         }
 
         if ($docblock_info->ignore_nullable_return && $storage->return_type) {

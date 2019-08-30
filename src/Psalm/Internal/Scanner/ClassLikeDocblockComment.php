@@ -73,6 +73,16 @@ class ClassLikeDocblockComment
     public $override_method_visibility = false;
 
     /**
+     * @var bool
+     */
+    public $mutation_free = false;
+
+    /**
+     * @var bool
+     */
+    public $external_mutation_free = false;
+
+    /**
      * @var array<int, string>
      */
     public $suppressed_issues = [];
