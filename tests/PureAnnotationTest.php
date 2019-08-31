@@ -101,7 +101,7 @@ class PureAnnotationTest extends TestCase
             ],
             'canCreateImmutableObject' => [
                 '<?php
-                    /** @immutable */
+                    /** @psalm-immutable */
                     class A {
                         private string $s;
 

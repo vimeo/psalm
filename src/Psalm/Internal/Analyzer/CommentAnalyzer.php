@@ -864,7 +864,7 @@ class CommentAnalyzer
             $info->sealed_methods = true;
         }
 
-        if (isset($parsed_docblock['specials']['immutable'])
+        if (isset($parsed_docblock['specials']['psalm-immutable'])
             || isset($parsed_docblock['specials']['psalm-mutation-free'])
         ) {
             $info->mutation_free = true;

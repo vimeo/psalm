@@ -17,7 +17,7 @@ class ImmutableAnnotationTest extends TestCase
             'immutableClassGenerating' => [
                 '<?php
                     /**
-                     * @immutable
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var int */
@@ -39,7 +39,7 @@ class ImmutableAnnotationTest extends TestCase
             'callInternalClassMethod' => [
                 '<?php
                     /**
-                     * @immutable
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var string */
@@ -70,7 +70,7 @@ class ImmutableAnnotationTest extends TestCase
             'immutablePropertyAssignmentInternally' => [
                 '<?php
                     /**
-                     * @immutable
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var int */
@@ -93,7 +93,7 @@ class ImmutableAnnotationTest extends TestCase
             'immutablePropertyAssignmentExternally' => [
                 '<?php
                     /**
-                     * @immutable
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var int */
@@ -116,7 +116,7 @@ class ImmutableAnnotationTest extends TestCase
             'callImpureFunction' => [
                 '<?php
                     /**
-                     * @immutable
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var int */
@@ -139,7 +139,7 @@ class ImmutableAnnotationTest extends TestCase
             'callExternalClassMethod' => [
                 '<?php
                     /**
-                     * @immutable
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var string */
