@@ -46,7 +46,7 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
                 return false;
             }
 
-            if ($node instanceof PhpParser\Node\Expr\New_ && !empty($node->inferredType->external_mutation_free)) {
+            if ($node instanceof PhpParser\Node\Expr\New_ && isset($node->external_mutation_free)) {
                 return false;
             }
 

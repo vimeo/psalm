@@ -1250,7 +1250,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     // fall through
                                 }
                             } elseif (($method_storage->mutation_free
-                                    || $method_pure_compatible)
+                                    || ($method_storage->external_mutation_free
+                                        && (isset($stmt->var->external_mutation_free) || isset($stmt->var->pure))))
                                 && $codebase->find_unused_variables
                                 && !$context->inside_conditional
                                 && !$context->inside_unset

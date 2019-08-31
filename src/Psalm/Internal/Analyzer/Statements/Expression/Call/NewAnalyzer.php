@@ -475,6 +475,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 }
 
                 if ($storage->external_mutation_free) {
+                    /** @psalm-suppress UndefinedPropertyAssignment */
+                    $stmt->external_mutation_free = true;
                     $stmt->inferredType->external_mutation_free = true;
                 }
             }
