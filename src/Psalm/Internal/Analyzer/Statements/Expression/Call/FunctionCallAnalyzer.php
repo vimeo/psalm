@@ -619,7 +619,12 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             );
         }
 
-        if ($context->mutation_free || $context->external_mutation_free || $codebase->find_unused_variables) {
+        if (!$context->collect_initializations
+            && !$context->collect_mutations
+            && ($context->mutation_free
+                || $context->external_mutation_free
+                || $codebase->find_unused_variables)
+        ) {
             $callmap_function_pure = $function_id && $in_call_map
                 ? $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args)
                 : null;

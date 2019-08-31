@@ -53,6 +53,30 @@ class PureAnnotationTest extends TestCase
                         return $output;
                     }'
             ],
+            'implicitAnnotations' => [
+                '<?php
+                    abstract class Foo {
+                        private array $options;
+                        private array $defaultOptions;
+
+                        function __construct(array $options) {
+                            $this->setOptions($options);
+                            $this->setDefaultOptions($this->getOptions());
+                        }
+
+                        function getOptions(): array {
+                            return $this->options;
+                        }
+
+                        function setOptions(array $options): void {
+                            $this->options = $options;
+                        }
+
+                        function setDefaultOptions(array $defaultOptions): void {
+                            $this->defaultOptions = $defaultOptions;
+                        }
+                    }',
+            ],
         ];
     }
 
