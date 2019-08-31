@@ -830,6 +830,25 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedMethodCall',
             ],
+            'annotatedMutationFreeUnused' => [
+                '<?php
+                    class A {
+                        private string $s;
+
+                        public function __construct(string $s) {
+                            $this->s = $s;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function getShort() : string {
+                            return substr($this->s, 0, 5);
+                        }
+                    }
+
+                    $a = new A("hello");
+                    $a->getShort();',
+                'error_message' => 'UnusedMethodCall',
+            ]
         ];
     }
 }
