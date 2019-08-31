@@ -568,7 +568,7 @@ class AssignmentAnalyzer
                 $assign_value_type
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
-            if ($context->mutation_free) {
+            if ($context->mutation_free && !$context->collect_mutations && !$context->collect_initializations) {
                 if (IssueBuffer::accepts(
                     new ImpurePropertyAssignment(
                         'Cannot assign to a property from a mutation-free context',

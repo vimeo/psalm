@@ -185,7 +185,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         $codebase = $statements_analyzer->getCodebase();
-        $config = $codebase->config;
 
         $non_existent_class_method_ids = [];
         $non_existent_interface_method_ids = [];
@@ -356,10 +355,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer
             );
-        }
-
-        if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
-            $context->removeAllObjectVars();
         }
 
         // if we called a method on this nullable variable, remove the nullable status here
@@ -1271,6 +1266,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     /** @psalm-suppress UndefinedPropertyAssignment */
                                     $stmt->pure = true;
                                 }
+                            }
+
+                            if (!$config->remember_property_assignments_after_call
+                                && !$method_storage->mutation_free
+                                && !$method_pure_compatible
+                            ) {
+                                $context->removeAllObjectVars();
                             }
                         }
 

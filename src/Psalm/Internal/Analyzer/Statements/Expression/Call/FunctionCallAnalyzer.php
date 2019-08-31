@@ -567,13 +567,6 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
         }
 
-        if (!$config->remember_property_assignments_after_call
-            && !$in_call_map
-            && !$context->collect_initializations
-        ) {
-            $context->removeAllObjectVars();
-        }
-
         if ($stmt->name instanceof PhpParser\Node\Name &&
             ($stmt->name->parts === ['get_class'] || $stmt->name->parts === ['gettype']) &&
             $stmt->args
@@ -623,7 +616,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             && !$context->collect_mutations
             && ($context->mutation_free
                 || $context->external_mutation_free
-                || $codebase->find_unused_variables)
+                || $codebase->find_unused_variables
+                || !$config->remember_property_assignments_after_call)
         ) {
             $callmap_function_pure = $function_id && $in_call_map
                 ? $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args)
@@ -643,6 +637,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     )) {
                         // fall through
                     }
+                }
+
+                if (!$config->remember_property_assignments_after_call) {
+                    $context->removeAllObjectVars();
                 }
             } elseif ($function_id
                 && (($function_storage && $function_storage->pure) || $callmap_function_pure === true)
