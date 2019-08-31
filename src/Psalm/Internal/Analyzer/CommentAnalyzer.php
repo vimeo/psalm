@@ -868,6 +868,7 @@ class CommentAnalyzer
             || isset($parsed_docblock['specials']['psalm-mutation-free'])
         ) {
             $info->mutation_free = true;
+            $info->external_mutation_free = true;
         }
 
         if (isset($parsed_docblock['specials']['psalm-external-mutation-free'])) {
