@@ -154,6 +154,11 @@ class Union
      */
     public $by_ref = false;
 
+    /**
+     * @var bool
+     */
+    public $external_mutation_free = false;
+
     /** @var null|string */
     private $id;
 

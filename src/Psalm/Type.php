@@ -1463,6 +1463,10 @@ abstract class Type
                 $combined_type->had_template = true;
             }
 
+            if ($type_1->external_mutation_free && $type_2->external_mutation_free) {
+                $combined_type->external_mutation_free = true;
+            }
+
             if ($both_failed_reconciliation) {
                 $combined_type->failed_reconciliation = true;
             }

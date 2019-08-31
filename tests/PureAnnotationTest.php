@@ -77,6 +77,28 @@ class PureAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'canCreateObjectWithNoExternalMutations' => [
+                '<?php
+                    /** @psalm-external-mutation-free */
+                    class Counter {
+                        private int $count = 0;
+
+                        public function __construct(int $count) {
+                            $this->count = $count;
+                        }
+
+                        public function increment() : void {
+                            $this->count++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function makesACounter(int $i) : Counter {
+                        $c = new Counter($i);
+                        $c->increment();
+                        return $c;
+                    }',
+            ],
         ];
     }
 
@@ -172,6 +194,28 @@ class PureAnnotationTest extends TestCase
                         }
 
                         return null;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'canCreateObjectWithNoExternalMutations' => [
+                '<?php
+                    class Counter {
+                        private int $count = 0;
+
+                        public function __construct(int $count) {
+                            $this->count = $count;
+                        }
+
+                        public function increment() : void {
+                            $this->count += rand(0, 5);
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function makesACounter(int $i) : Counter {
+                        $c = new Counter($i);
+                        $c->increment();
+                        return $c;
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],

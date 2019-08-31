@@ -306,11 +306,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             ) {
                 $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                if ($storage->external_mutation_free) {
-                    /** @psalm-suppress UndefinedPropertyAssignment */
-                    $stmt->external_mutation_free = true;
-                }
-
                 // if we're not calling this constructor via new static()
                 if ($storage->abstract && !$can_extend) {
                     if (IssueBuffer::accepts(
@@ -477,6 +472,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     )) {
                         // fall through
                     }
+                }
+
+                if ($storage->external_mutation_free) {
+                    $stmt->inferredType->external_mutation_free = true;
                 }
             }
         }

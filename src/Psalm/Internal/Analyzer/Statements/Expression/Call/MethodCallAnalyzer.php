@@ -1206,7 +1206,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     if ($method_storage) {
                         if (!$context->collect_mutations && !$context->collect_initializations) {
-                            if ($context->pure && !$method_storage->pure) {
+                            $method_pure_compatible = $method_storage->external_mutation_free
+                                && (!empty($stmt->var->inferredType->external_mutation_free)
+                                    || isset($stmt->var->pure));
+
+                            if ($context->pure && !$method_storage->pure && !$method_pure_compatible) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
                                         'Cannot call an impure method ' . $method_id . ' from a pure context',
@@ -1216,7 +1220,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 )) {
                                     // fall through
                                 }
-                            } elseif ($context->mutation_free && !$method_storage->mutation_free) {
+                            } elseif ($context->mutation_free
+                                && !$method_storage->mutation_free
+                                && !$method_pure_compatible
+                            ) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
                                         'Cannot call an possibly-mutating method '
@@ -1230,6 +1237,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             } elseif ($context->external_mutation_free
                                 && !$method_storage->mutation_free
                                 && $fq_class_name !== $context->self
+                                && !$method_pure_compatible
                             ) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
@@ -1242,8 +1250,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     // fall through
                                 }
                             } elseif (($method_storage->mutation_free
-                                    || ($method_storage->external_mutation_free
-                                        && (isset($stmt->var->external_mutation_free) || isset($stmt->var->pure))))
+                                    || $method_pure_compatible)
                                 && $codebase->find_unused_variables
                                 && !$context->inside_conditional
                                 && !$context->inside_unset
