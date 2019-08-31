@@ -57,10 +57,10 @@ class PropertyTypeTest extends TestCase
                     /** @var ?int **/
                     private $x;
 
-                    public function getX(): int {
+                    public function getX(bool $b): int {
                         $this->x = 5;
 
-                        if (rand(0, 1)) {
+                        if ($b) {
                             $this->modifyX();
                             throw new \Exception("bad");
                         }
