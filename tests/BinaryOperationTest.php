@@ -213,6 +213,15 @@ class BinaryOperationTest extends TestCase
                     '$d' => 'string',
                 ],
             ],
+            'stringIncrementSuppressed' => [
+                '<?php
+                    $a = "hello";
+                    /** @psalm-suppress StringIncrement */
+                    $a++;',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -275,7 +284,7 @@ class BinaryOperationTest extends TestCase
                 '<?php
                     $a = "hello";
                     $a++;',
-                'error_message' => 'InvalidOperand',
+                'error_message' => 'StringIncrement',
             ],
             'falseIncrement' => [
                 '<?php

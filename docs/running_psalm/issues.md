@@ -2092,6 +2092,15 @@ Emitted when using a reserved word as a class name
 function foo(resource $res) : void {}
 ```
 
+### StringIncrement
+
+Emitted when attempting to increment a string - this works in PHP, but is unexpected behaviour for most people.
+
+```php
+$a = "hello";
+$a++;
+```
+
 ### TaintedInput
 
 Emitted when tainted input detection is turned on

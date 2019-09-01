@@ -1286,6 +1286,10 @@ class Config
             return 'UnusedParam';
         }
 
+        if ($issue_type === 'StringIncrement') {
+            return 'InvalidOperand';
+        }
+
         if ($issue_type === 'TraitMethodSignatureMismatch') {
             return 'MethodSignatureMismatch';
         }

@@ -17,6 +17,7 @@ use Psalm\Issue\NullOperand;
 use Psalm\Issue\PossiblyFalseOperand;
 use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
+use Psalm\Issue\StringIncrement;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -722,23 +723,14 @@ class BinaryOpAnalyzer
         return false;
     }
 
-    /**
-     * @param  StatementsSource|null $statements_source
-     * @param  PhpParser\Node\Expr   $left
-     * @param  PhpParser\Node\Expr   $right
-     * @param  PhpParser\Node        $parent
-     * @param  Type\Union|null   &$result_type
-     *
-     * @return void
-     */
     public static function analyzeNonDivArithmeticOp(
-        $statements_source,
+        ?StatementsSource $statements_source,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,
-        Type\Union &$result_type = null,
-        Context $context = null
-    ) {
+        ?Type\Union &$result_type = null,
+        ?Context $context = null
+    ) : void {
         $codebase = $statements_source ? $statements_source->getCodebase() : null;
 
         $left_type = isset($left->inferredType) ? $left->inferredType : null;
@@ -854,6 +846,7 @@ class BinaryOpAnalyzer
             $invalid_right_messages = [];
             $has_valid_left_operand = false;
             $has_valid_right_operand = false;
+            $has_string_increment = false;
 
             foreach ($left_type->getTypes() as $left_type_part) {
                 foreach ($right_type->getTypes() as $right_type_part) {
@@ -871,6 +864,7 @@ class BinaryOpAnalyzer
                         $invalid_right_messages,
                         $has_valid_left_operand,
                         $has_valid_right_operand,
+                        $has_string_increment,
                         $result_type
                     );
 
@@ -932,25 +926,32 @@ class BinaryOpAnalyzer
                     }
                 }
             }
+
+            if ($has_string_increment && $statements_source) {
+                if (IssueBuffer::accepts(
+                    new StringIncrement(
+                        'Possibly unintended string increment',
+                        new CodeLocation($statements_source, $left)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
         }
     }
 
     /**
-     * @param  StatementsSource|null $statements_source
-     * @param  \Psalm\Codebase|null  $codebase
-     * @param  Context|null $context
      * @param  string[]        &$invalid_left_messages
      * @param  string[]        &$invalid_right_messages
-     * @param  bool            &$has_valid_left_operand
-     * @param  bool            &$has_valid_right_operand
      *
      * @return Type\Union|null
      */
-    public static function analyzeNonDivOperands(
-        $statements_source,
-        $codebase,
+    private static function analyzeNonDivOperands(
+        ?StatementsSource $statements_source,
+        ?\Psalm\Codebase $codebase,
         Config $config,
-        $context,
+        ?Context $context,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,
@@ -958,8 +959,9 @@ class BinaryOpAnalyzer
         Type\Atomic $right_type_part,
         array &$invalid_left_messages,
         array &$invalid_right_messages,
-        &$has_valid_left_operand,
-        &$has_valid_right_operand,
+        bool &$has_valid_left_operand,
+        bool &$has_valid_right_operand,
+        bool &$has_string_increment,
         Type\Union &$result_type = null
     ) {
         if ($left_type_part instanceof TNull || $right_type_part instanceof TNull) {
@@ -969,6 +971,24 @@ class BinaryOpAnalyzer
 
         if ($left_type_part instanceof TFalse || $right_type_part instanceof TFalse) {
             // null case is handled above
+            return;
+        }
+
+        if ($left_type_part instanceof Type\Atomic\TString
+            && $right_type_part instanceof TInt
+            && $parent instanceof PhpParser\Node\Expr\PostInc
+        ) {
+            $has_string_increment = true;
+
+            if (!$result_type) {
+                $result_type = Type::getString();
+            } else {
+                $result_type = Type::combineUnionTypes(Type::getString(), $result_type);
+            }
+
+            $has_valid_left_operand = true;
+            $has_valid_right_operand = true;
+
             return;
         }
 
