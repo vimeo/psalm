@@ -1296,6 +1296,18 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     {
         $codebase = $this->getCodebase();
 
+        if ($context->mutation_free) {
+            if (IssueBuffer::accepts(
+                new \Psalm\Issue\ImpureStaticVariable(
+                    'Cannot use a static variable in a mutation-free context',
+                    new CodeLocation($this, $stmt)
+                ),
+                $this->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
         foreach ($stmt->vars as $var) {
             if (!is_string($var->var->name)) {
                 continue;

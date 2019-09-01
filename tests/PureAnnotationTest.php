@@ -245,6 +245,17 @@ class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'useOfStaticMakesFunctionImpure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function addCumulative(int $left) : int {
+                        /** @var int */
+                        static $i = 0;
+                        $i += $left;
+                        return $left;
+                    }',
+                'error_message' => 'ImpureStaticVariable',
+            ],
         ];
     }
 }

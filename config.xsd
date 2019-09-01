@@ -172,6 +172,7 @@
             <xs:element name="ImpureFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpurePropertyAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ImpureStaticVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InaccessibleClassConstant" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InaccessibleMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="InaccessibleProperty" type="IssueHandlerType" minOccurs="0" />
