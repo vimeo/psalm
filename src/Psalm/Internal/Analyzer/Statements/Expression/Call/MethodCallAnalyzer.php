@@ -1205,10 +1205,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 && (!empty($stmt->var->inferredType->external_mutation_free)
                                     || isset($stmt->var->pure));
 
-                            if ($context->pure && !$method_storage->pure && !$method_pure_compatible) {
+                            if ($context->pure
+                                && !$method_storage->mutation_free
+                                && !$method_pure_compatible
+                            ) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
-                                        'Cannot call an impure method ' . $method_id . ' from a pure context',
+                                        'Cannot call an mutation-free method ' . $method_id . ' from a pure context',
                                         new CodeLocation($source, $stmt->name)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
