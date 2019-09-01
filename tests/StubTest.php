@@ -929,7 +929,6 @@ class StubTest extends TestCase
      */
     public function testStubFileWithTemplatedClassDefinitionAndMagicMethodOverride()
     {
-        //$this->markTestSkipped('Currently broken');
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -972,5 +971,59 @@ class StubTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testInheritedMethodUsedInStub() : void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    findUnusedCode="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->reportUnusedCode();
+
+        $vendor_file_path = getcwd() . '/vendor/vendor_class.php';
+
+        $this->addFile(
+            $vendor_file_path,
+            '<?php
+                namespace SomeVendor;
+
+                class VendorClass {
+                    abstract public function foo() : void;
+
+                    public static function vendorFunction(VendorClass $v) : void {
+                        $v->foo();
+                    }
+                }',
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class MyClass extends \SomeVendor\VendorClass {
+                    public function foo() : void {}
+                }
+
+                \SomeVendor\VendorClass::vendorFunction(new MyClass);'
+        );
+
+        $context = new Context();
+        $context->collect_references = true;
+
+        $this->analyzeFile($file_path, $context, false);
+
+        $this->project_analyzer->checkClassReferences();
     }
 }

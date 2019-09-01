@@ -1488,6 +1488,13 @@ class ClassLikes
                 $method_id = $declaring_method_id;
             }
 
+            if ($method_storage->location
+                && !$project_analyzer->canReportIssues($method_storage->location->file_path)
+                && !$codebase->analyzer->canReportIssues($method_storage->location->file_path)
+            ) {
+                continue;
+            }
+
             $method_referenced = $this->file_reference_provider->isClassMethodReferenced(strtolower($method_id));
 
             if (!$method_referenced
@@ -1510,12 +1517,21 @@ class ClassLikes
                         foreach ($classlike_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
                             $parent_method_storage = $methods->getStorage($parent_method_id);
 
+                            if ($parent_method_storage->location
+                                && !$project_analyzer->canReportIssues($parent_method_storage->location->file_path)
+                            ) {
+                                // here we just don’t know
+                                $has_parent_references = true;
+                                break;
+                            }
+
                             $parent_method_referenced = $this->file_reference_provider->isClassMethodReferenced(
                                 strtolower($parent_method_id)
                             );
 
                             if (!$parent_method_storage->abstract || $parent_method_referenced) {
                                 $has_parent_references = true;
+                                break;
                             }
                         }
                     }
