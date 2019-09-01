@@ -210,7 +210,7 @@ class Config
     /**
      * @var bool
      */
-    public $hide_external_errors = true;
+    public $hide_external_errors = false;
 
     /** @var bool */
     public $allow_includes = true;
@@ -1147,39 +1147,39 @@ class Config
             return false;
         }
 
-        if ($this->hide_external_errors) {
-            if ($this->mustBeIgnored($file_path)) {
-                return false;
-            }
+        if ($this->mustBeIgnored($file_path)) {
+            return false;
+        }
 
-            $project_analyzer = ProjectAnalyzer::getInstance();
+        $dependent_files = [strtolower($file_path) => $file_path];
 
-            $codebase = $project_analyzer->getCodebase();
+        $project_analyzer = ProjectAnalyzer::getInstance();
 
-            $dependent_files = [strtolower($file_path) => $file_path];
+        $codebase = $project_analyzer->getCodebase();
 
+        if (!$this->hide_external_errors) {
             try {
                 $file_storage = $codebase->file_storage_provider->get($file_path);
                 $dependent_files += $file_storage->required_by_file_paths;
             } catch (\InvalidArgumentException $e) {
                 // do nothing
             }
+        }
 
-            $any_file_path_matched = false;
+        $any_file_path_matched = false;
 
-            foreach ($dependent_files as $dependent_file_path) {
-                if (($codebase->analyzer->canReportIssues($dependent_file_path)
-                        || $project_analyzer->canReportIssues($dependent_file_path))
-                    && !$this->mustBeIgnored($dependent_file_path)
-                ) {
-                    $any_file_path_matched = true;
-                    break;
-                }
+        foreach ($dependent_files as $dependent_file_path) {
+            if (((!$project_analyzer->full_run && $codebase->analyzer->canReportIssues($dependent_file_path))
+                    || $project_analyzer->canReportIssues($dependent_file_path))
+                && ($file_path === $dependent_file_path || !$this->mustBeIgnored($dependent_file_path))
+            ) {
+                $any_file_path_matched = true;
+                break;
             }
+        }
 
-            if (!$any_file_path_matched) {
-                return false;
-            }
+        if (!$any_file_path_matched) {
+            return false;
         }
 
         if ($this->getReportingLevelForFile($issue_type, $file_path) === self::REPORT_SUPPRESS) {
