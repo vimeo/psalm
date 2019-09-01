@@ -628,8 +628,12 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             $guide_method_storage_return_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $guide_method_storage->return_type,
-                $guide_classlike_storage->name,
-                $guide_classlike_storage->name,
+                $guide_classlike_storage->is_trait
+                    ? $implementer_classlike_storage->name
+                    : $guide_classlike_storage->name,
+                $guide_classlike_storage->is_trait
+                    ? $implementer_called_class_name
+                    : $guide_classlike_storage->name,
                 $guide_classlike_storage->parent_class
             );
 
