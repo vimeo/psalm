@@ -493,6 +493,7 @@ class ReturnTypeAnalyzer
             } elseif ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['LessSpecificReturnType'])
                 && !in_array('LessSpecificReturnType', $suppressed_issues)
+                && !($function_like_storage instanceof MethodStorage && $function_like_storage->inheritdoc)
             ) {
                 if (!TypeAnalyzer::isContainedBy(
                     $codebase,

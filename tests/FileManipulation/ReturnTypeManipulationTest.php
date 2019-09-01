@@ -1316,6 +1316,40 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 false,
                 true,
             ],
+            'dontAlterForLessSpecificReturnTypeWhenInheritDocPresent' => [
+                '<?php
+                    class A {
+                        /** @return A */
+                        public function getMe() {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {
+                        /** @inheritdoc */
+                        public function getMe() {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /** @return A */
+                        public function getMe() {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {
+                        /** @inheritdoc */
+                        public function getMe() {
+                            return $this;
+                        }
+                    }',
+                '7.3',
+                ['LessSpecificReturnType'],
+                false,
+                true,
+            ],
         ];
     }
 }
