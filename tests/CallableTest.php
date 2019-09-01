@@ -1438,6 +1438,22 @@ class CallableTest extends TestCase
                     );',
                 'error_message' => 'InvalidArgument',
             ],
+            'useClosureDocblockType' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+
+                    function takesA(A $_a) : void {}
+                    function takesB(B $_b) : void {}
+
+                    $getAButReallyB = /** @return A */ function() {
+                        return new B;
+                    };
+
+                    takesA($getAButReallyB());
+                    takesB($getAButReallyB());',
+                'error_message' => 'ArgumentTypeCoercion - src/somefile.php:13:28 - Argument 1 of takesB expects B, parent type A provided',
+            ],
         ];
     }
 }

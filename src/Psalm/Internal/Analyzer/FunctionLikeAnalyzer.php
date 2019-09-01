@@ -533,13 +533,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             if ($closure_return_types) {
                 $closure_return_type = new Type\Union($closure_return_types);
 
-                if (!$storage->return_type
-                    || $storage->return_type->hasMixed()
-                    || TypeAnalyzer::isContainedBy(
-                        $codebase,
-                        $closure_return_type,
-                        $storage->return_type
-                    )
+                if (($storage->return_type === $storage->signature_return_type)
+                    && (!$storage->return_type
+                        || $storage->return_type->hasMixed()
+                        || TypeAnalyzer::isContainedBy(
+                            $codebase,
+                            $closure_return_type,
+                            $storage->return_type
+                        ))
                 ) {
                     if ($this->function->inferredType) {
                         /** @var Type\Atomic\TFn */
