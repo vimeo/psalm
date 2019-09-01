@@ -437,10 +437,14 @@ class ExpressionAnalyzer
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Empty_) {
             self::analyzeEmpty($statements_analyzer, $stmt, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Closure) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Closure
+            || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
+        ) {
             $closure_analyzer = new ClosureAnalyzer($stmt, $statements_analyzer);
 
-            if (self::analyzeClosureUses($statements_analyzer, $stmt, $context) === false) {
+            if ($stmt instanceof PhpParser\Node\Expr\Closure
+                && self::analyzeClosureUses($statements_analyzer, $stmt, $context) === false
+            ) {
                 return false;
             }
 
@@ -479,29 +483,47 @@ class ExpressionAnalyzer
 
             $byref_uses = [];
 
-            foreach ($stmt->uses as $use) {
-                if (!is_string($use->var->name)) {
-                    continue;
+            if ($stmt instanceof PhpParser\Node\Expr\Closure) {
+                foreach ($stmt->uses as $use) {
+                    if (!is_string($use->var->name)) {
+                        continue;
+                    }
+
+                    $use_var_id = '$' . $use->var->name;
+
+                    if ($use->byRef) {
+                        $byref_uses[$use_var_id] = true;
+                    }
+
+                    // insert the ref into the current context if passed by ref, as whatever we're passing
+                    // the closure to could execute it straight away.
+                    if (!$context->hasVariable($use_var_id, $statements_analyzer) && $use->byRef) {
+                        $context->vars_in_scope[$use_var_id] = Type::getMixed();
+                    }
+
+                    $use_context->vars_in_scope[$use_var_id] =
+                        $context->hasVariable($use_var_id, $statements_analyzer) && !$use->byRef
+                        ? clone $context->vars_in_scope[$use_var_id]
+                        : Type::getMixed();
+
+                    $use_context->vars_possibly_in_scope[$use_var_id] = true;
                 }
+            } else {
+                $traverser = new PhpParser\NodeTraverser;
 
-                $use_var_id = '$' . $use->var->name;
+                $short_closure_visitor = new \Psalm\Internal\Visitor\ShortClosureVisitor();
 
-                if ($use->byRef) {
-                    $byref_uses[$use_var_id] = true;
+                $traverser->addVisitor($short_closure_visitor);
+                $traverser->traverse($stmt->getStmts());
+
+                foreach ($short_closure_visitor->getUsedVariables() as $use_var_id => $_) {
+                    $use_context->vars_in_scope[$use_var_id] =
+                        $context->hasVariable($use_var_id, $statements_analyzer)
+                        ? clone $context->vars_in_scope[$use_var_id]
+                        : Type::getMixed();
+
+                    $use_context->vars_possibly_in_scope[$use_var_id] = true;
                 }
-
-                // insert the ref into the current context if passed by ref, as whatever we're passing
-                // the closure to could execute it straight away.
-                if (!$context->hasVariable($use_var_id, $statements_analyzer) && $use->byRef) {
-                    $context->vars_in_scope[$use_var_id] = Type::getMixed();
-                }
-
-                $use_context->vars_in_scope[$use_var_id] =
-                    $context->hasVariable($use_var_id, $statements_analyzer) && !$use->byRef
-                    ? clone $context->vars_in_scope[$use_var_id]
-                    : Type::getMixed();
-
-                $use_context->vars_possibly_in_scope[$use_var_id] = true;
             }
 
             $use_context->calling_method_id = $context->calling_method_id;

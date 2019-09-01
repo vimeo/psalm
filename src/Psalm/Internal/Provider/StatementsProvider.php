@@ -372,7 +372,7 @@ class StatementsProvider
         ];
 
         if (!self::$lexer) {
-            self::$lexer = new PhpParser\Lexer(['usedAttributes' => $attributes]);
+            self::$lexer = new PhpParser\Lexer\Emulative(['usedAttributes' => $attributes]);
         }
 
         if (!self::$parser) {

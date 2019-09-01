@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
@@ -50,7 +51,7 @@ use Psalm\Internal\Taint\Source;
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
     /**
-     * @var Closure|Function_|ClassMethod
+     * @var Closure|Function_|ClassMethod|ArrowFunction
      */
     protected $function;
 
@@ -100,7 +101,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     protected $storage;
 
     /**
-     * @param Closure|Function_|ClassMethod $function
+     * @param Closure|Function_|ClassMethod|ArrowFunction $function
      * @param SourceAnalyzer $source
      */
     protected function __construct($function, SourceAnalyzer $source, FunctionLikeStorage $storage)
@@ -551,8 +552,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        if ($this->function instanceof Closure) {
+        if ($this->function instanceof Closure
+            || $this->function instanceof ArrowFunction
+        ) {
             $this->verifyReturnType(
+                $function_stmts,
                 $statements_analyzer,
                 $storage->return_type,
                 $this->source->getFQCLN(),
@@ -568,7 +572,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $closure_return_types = ReturnTypeCollector::getReturnTypes(
                 $codebase,
                 $type_provider,
-                $this->function->stmts,
+                $function_stmts,
                 $closure_yield_types,
                 $ignore_nullable_issues,
                 $ignore_falsable_issues,
@@ -1243,6 +1247,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @param array<PhpParser\Node\Stmt> $function_stmts
      * @param Type\Union|null     $return_type
      * @param string              $fq_class_name
      * @param CodeLocation|null   $return_type_location
@@ -1250,6 +1255,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * @return  false|null
      */
     public function verifyReturnType(
+        array $function_stmts,
         StatementsAnalyzer $statements_analyzer,
         Type\Union $return_type = null,
         $fq_class_name = null,
@@ -1258,6 +1264,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     ) {
         ReturnTypeAnalyzer::verifyReturnType(
             $this->function,
+            $function_stmts,
             $statements_analyzer,
             $statements_analyzer->node_data,
             $this,

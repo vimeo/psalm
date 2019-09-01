@@ -660,6 +660,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $return_type_location = $function_storage->return_type_location;
 
                             $this->function_analyzers[$function_id]->verifyReturnType(
+                                $stmt->getStmts(),
                                 $this,
                                 $return_type,
                                 $this->getFQCLN(),

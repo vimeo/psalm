@@ -4,6 +4,7 @@ namespace Psalm\Internal\FileManipulation;
 use function count;
 
 use function ltrim;
+use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -35,7 +36,7 @@ class FunctionDocblockManipulator
      */
     private static $ordered_manipulators = [];
 
-    /** @var Closure|Function_|ClassMethod */
+    /** @var Closure|Function_|ClassMethod|ArrowFunction */
     private $stmt;
 
     /** @var int */
@@ -89,7 +90,7 @@ class FunctionDocblockManipulator
     /**
      * @param  string $file_path
      * @param  string $function_id
-     * @param  Closure|Function_|ClassMethod $stmt
+     * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
      *
      * @return self
      */
@@ -113,7 +114,7 @@ class FunctionDocblockManipulator
 
     /**
      * @param string $file_path
-     * @param Closure|Function_|ClassMethod $stmt
+     * @param Closure|Function_|ClassMethod|ArrowFunction $stmt
      */
     private function __construct($file_path, FunctionLike $stmt, ProjectAnalyzer $project_analyzer)
     {

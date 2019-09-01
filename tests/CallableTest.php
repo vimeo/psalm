@@ -19,8 +19,6 @@ class CallableTest extends TestCase
                         $fnc();
                     }
 
-                    // here we have to make sure $data exists as a side-effect of calling `run_function`
-                    // because it could exist depending on how run_function is implemented
                     /**
                      * @return void
                      * @psalm-suppress MixedArgument
@@ -50,11 +48,29 @@ class CallableTest extends TestCase
                         $bar
                     );',
             ],
+            'inferredArgArrowFunction' => [
+                '<?php
+                    $bar = ["foo", "bar"];
+
+                    $bam = array_map(
+                        fn(string $a) => $a . "blah",
+                        $bar
+                    );',
+            ],
             'varReturnType' => [
                 '<?php
-                    $add_one = function(int $a): int {
+                    $add_one = function(int $a) : int {
                         return $a + 1;
                     };
+
+                    $a = $add_one(1);',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+            ],
+            'varReturnTypeArray' => [
+                '<?php
+                    $add_one = fn(int $a) : int => $a + 1;
 
                     $a = $add_one(1);',
                 'assertions' => [
@@ -85,6 +101,15 @@ class CallableTest extends TestCase
                         return function(string $a): string {
                             return $a . "blah";
                         };
+                    }',
+            ],
+            'callableToClosureArrow' => [
+                '<?php
+                    /**
+                     * @return callable
+                     */
+                    function foo() {
+                        return fn(string $a): string => $a . "blah";
                     }',
             ],
             'callable' => [
@@ -331,6 +356,18 @@ class CallableTest extends TestCase
                         return function (int $x) use ($f, $g) : int {
                             return $f($g($x));
                         };
+                    }',
+            ],
+            'returnsTypedClosureArrow' => [
+                '<?php
+                    /**
+                     * @param Closure(int):int $f
+                     * @param Closure(int):int $g
+                     *
+                     * @return Closure(int):int
+                     */
+                    function foo(Closure $f, Closure $g) : Closure {
+                        return fn(int $x):int => $f($g($x));
                     }',
             ],
             'returnsTypedClosureWithClasses' => [
