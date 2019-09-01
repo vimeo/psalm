@@ -1004,7 +1004,7 @@ class StubTest extends TestCase
                     public static function vendorFunction(VendorClass $v) : void {
                         $v->foo();
                     }
-                }',
+                }'
         );
 
         $file_path = getcwd() . '/src/somefile.php';
