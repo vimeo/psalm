@@ -32,7 +32,7 @@ class ImmutableAnnotationTest extends TestCase
                         }
 
                         public function setA(int $a) : self {
-                            return new self($this->a, $this->b);
+                            return new self($a, $this->b);
                         }
                     }',
             ],
