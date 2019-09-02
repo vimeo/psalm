@@ -9553,7 +9553,7 @@ return [
 'PDO::getAttribute' => ['', 'attribute'=>'int'],
 'PDO::getAvailableDrivers' => ['array'],
 'PDO::inTransaction' => ['bool'],
-'PDO::lastInsertId' => ['string', 'seqname='=>'string'],
+'PDO::lastInsertId' => ['string', 'name='=>'string|null'],
 'PDO::pgsqlCopyFromArray' => ['bool', 'table_name'=>'string', 'rows'=>'array', 'delimiter'=>'string', 'null_as'=>'string', 'fields'=>'string'],
 'PDO::pgsqlCopyFromFile' => ['bool', 'table_name'=>'string', 'filename'=>'string', 'delimiter'=>'string', 'null_as'=>'string', 'fields'=>'string'],
 'PDO::pgsqlCopyToArray' => ['array', 'table_name'=>'string', 'delimiter'=>'string', 'null_as'=>'string', 'fields'=>'string'],
