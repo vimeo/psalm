@@ -736,10 +736,10 @@ class AssignmentAnalyzer
             $statements_analyzer
         );
 
-        if ($array_var_id && $context->pure && strpos($array_var_id, '->')) {
+        if ($array_var_id && $context->mutation_free && strpos($array_var_id, '->')) {
             if (IssueBuffer::accepts(
                 new ImpurePropertyAssignment(
-                    'Cannot assign to a property from a pure context',
+                    'Cannot assign to a property from a mutation-free context',
                     new CodeLocation($statements_analyzer, $stmt->var)
                 ),
                 $statements_analyzer->getSuppressedIssues()
