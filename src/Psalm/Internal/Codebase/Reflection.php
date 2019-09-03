@@ -70,6 +70,8 @@ class Reflection
 
         $storage->potential_declaring_method_ids['__construct'][$class_name_lower . '::__construct'] = true;
 
+        $storage->mutation_free = $class_name === 'DateTimeImmutable';
+
         if ($reflected_parent_class) {
             $parent_class_name = $reflected_parent_class->getName();
             $this->registerClass($reflected_parent_class);

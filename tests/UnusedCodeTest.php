@@ -870,7 +870,14 @@ class UnusedCodeTest extends TestCase
                     $a = new A("hello");
                     $a->getShort();',
                 'error_message' => 'UnusedMethodCall',
-            ]
+            ],
+            'dateTimeImmutable' => [
+                '<?php
+                    function foo(DateTimeImmutable $dt) : void {
+                        $dt->modify("+1 day");
+                    }',
+                'error_message' => 'UnusedMethodCall',
+            ],
         ];
     }
 }
