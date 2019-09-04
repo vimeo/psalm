@@ -131,6 +131,28 @@ class MagicMethodAnnotationTest extends TestCase
         $this->assertSame('Child', (string) $context->vars_in_scope['$child']);
     }
 
+    public function testOverrideExceptionMethodReturn() : void
+    {
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method int getCode()
+                 */
+                class MyException extends Exception {}
+
+                function foo(MyException $e): int {
+                    return $e->getCode();
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
