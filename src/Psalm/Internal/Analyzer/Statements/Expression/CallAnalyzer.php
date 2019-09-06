@@ -50,10 +50,12 @@ use function count;
 use function in_array;
 use function array_reverse;
 use function array_filter;
+use function is_null;
 use function is_string;
 use function assert;
 use function preg_match;
 use function preg_replace;
+use function str_replace;
 use function is_int;
 use function substr;
 use function array_merge;
@@ -3187,6 +3189,7 @@ class CallAnalyzer
     /**
      * @param PhpParser\Node\Identifier|PhpParser\Node\Name $expr
      * @param  \Psalm\Storage\Assertion[] $assertions
+     * @param  string $thisName
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  Context           $context
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map,
@@ -3196,6 +3199,7 @@ class CallAnalyzer
      */
     protected static function applyAssertionsToContext(
         $expr,
+        ?string $thisName,
         array $assertions,
         array $args,
         array $template_type_map,
@@ -3225,6 +3229,8 @@ class CallAnalyzer
                 }
             } elseif (isset($context->vars_in_scope[$assertion->var_id])) {
                 $assertion_var_id = $assertion->var_id;
+            } elseif (strpos($assertion->var_id, '$this->') === 0 && !is_null($thisName)) {
+                $assertion_var_id = $thisName . str_replace('$this->', '->', $assertion->var_id);
             }
 
             if ($assertion_var_id) {

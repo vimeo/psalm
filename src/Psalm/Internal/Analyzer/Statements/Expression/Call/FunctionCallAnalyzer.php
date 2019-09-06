@@ -670,6 +670,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             if ($function_storage->assertions && $stmt->name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
                     $stmt->name,
+                    null,
                     $function_storage->assertions,
                     $stmt->args,
                     $generic_params ?: [],
