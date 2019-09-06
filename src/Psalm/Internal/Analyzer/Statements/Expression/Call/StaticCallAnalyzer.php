@@ -905,6 +905,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($method_storage->assertions) {
                         self::applyAssertionsToContext(
                             $stmt->name,
+                            null,
                             $method_storage->assertions,
                             $stmt->args,
                             $found_generic_params ?: [],

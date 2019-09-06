@@ -39,11 +39,13 @@ use Psalm\Type\Atomic\TNamedObject;
 use function is_string;
 use function array_values;
 use function array_shift;
+use function array_unshift;
 use function get_class;
 use function strtolower;
 use function array_map;
 use function array_merge;
 use function explode;
+use function implode;
 use function array_search;
 use function array_keys;
 use function in_array;
@@ -1306,6 +1308,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         if ($method_storage->assertions) {
                             self::applyAssertionsToContext(
                                 $stmt->name,
+                                ExpressionAnalyzer::getArrayVarId($stmt->var, null, $statements_analyzer),
                                 $method_storage->assertions,
                                 $args,
                                 $class_template_params ?: [],
