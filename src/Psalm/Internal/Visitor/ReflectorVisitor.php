@@ -465,6 +465,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
                 }
             }
+
+            if ($node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+            ) {
+                if ($node->var instanceof PhpParser\Node\Expr\PropertyFetch
+                    && $node->var->var instanceof PhpParser\Node\Expr\Variable
+                    && $node->var->var->name === 'this'
+                    && $node->var->name instanceof PhpParser\Node\Identifier
+                ) {
+                    $functionlike_storage = end($this->functionlike_storages);
+
+                    if ($functionlike_storage instanceof MethodStorage) {
+                        $functionlike_storage->this_property_mutations[$node->var->name->name] = true;
+                    }
+                }
+            }
         } elseif ($node instanceof PhpParser\Node\Stmt\Const_) {
             foreach ($node->consts as $const) {
                 $const_type = StatementsAnalyzer::getSimpleType($this->codebase, $const->value, $this->aliases)

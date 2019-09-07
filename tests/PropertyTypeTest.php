@@ -22,20 +22,63 @@ class PropertyTypeTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
+                class XCollector {
+                    /** @var X[] */
+                    private static array $xs = [];
+
+                    public static function modify() : void {
+                        foreach (self::$xs as $x) {
+                            $x->x = null;
+                        }
+                    }
+                }
+
                 class X {
                     /** @var ?int **/
-                    private $x;
+                    public $x;
 
                     public function getX(): int {
                         $this->x = 5;
 
-                        $this->modifyX();
+                        XCollector::modify();
 
                         return $this->x;
                     }
+                }'
+        );
 
-                    private function modifyX(): void {
-                        $this->x = null;
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testForgetPropertyAssignmentsPassesNormally()
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class XCollector {
+                    /** @var X[] */
+                    private static array $xs = [];
+
+                    public static function modify() : void {
+                        foreach (self::$xs as $x) {
+                            $x->x = null;
+                        }
+                    }
+                }
+
+                class X {
+                    /** @var ?int **/
+                    public $x;
+
+                    public function getX(): int {
+                        $this->x = 5;
+
+                        XCollector::modify();
+
+                        return $this->x;
                     }
                 }'
         );
@@ -53,23 +96,30 @@ class PropertyTypeTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
+                class XCollector {
+                    /** @var X[] */
+                    private static array $xs = [];
+
+                    public static function modify() : void {
+                        foreach (self::$xs as $x) {
+                            $x->x = null;
+                        }
+                    }
+                }
+
                 class X {
                     /** @var ?int **/
-                    private $x;
+                    public $x;
 
                     public function getX(bool $b): int {
                         $this->x = 5;
 
                         if ($b) {
-                            $this->modifyX();
+                            XCollector::modify();
                             throw new \Exception("bad");
                         }
 
                         return $this->x;
-                    }
-
-                    private function modifyX(): void {
-                        $this->x = null;
                     }
                 }'
         );
@@ -80,70 +130,40 @@ class PropertyTypeTest extends TestCase
     /**
      * @return void
      */
-    public function testRemovePropertyAfterReassignment()
+    public function testForgetPropertyAssignmentsInBranchWithThrowNormally()
     {
-        Config::getInstance()->remember_property_assignments_after_call = false;
-
         $this->addFile(
             'somefile.php',
             '<?php
-                class A {
-                    /** @var A|null */
-                    public $parent;
+                class XCollector {
+                    /** @var X[] */
+                    private static array $xs = [];
 
-                    public function __construct() {
-                        $this->parent = rand(0, 1) ? new A : null;
-                    }
-                }
-
-                $a = new A();
-
-                if ($a->parent === null) {
-                    throw new \Exception("bad");
-                }
-
-                $a = $a->parent;'
-        );
-
-        $context = new Context();
-
-        $this->analyzeFile('somefile.php', $context);
-
-        $this->assertSame('A', (string) $context->vars_in_scope['$a']);
-        $this->assertFalse(isset($context->vars_in_scope['$a->parent']));
-    }
-
-    /**
-     * @return void
-     */
-    public function testRemoveClauseAfterReassignment()
-    {
-        Config::getInstance()->remember_property_assignments_after_call = false;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                class Test {
-                    /** @var ?bool */
-                    private $foo;
-
-                    public function run(): void {
-                        $this->foo = false;
-                        $this->bar();
-                        if ($this->foo === true) {}
-                    }
-
-                    private function bar(): void {
-                        if (mt_rand(0, 1)) {
-                            $this->foo = true;
+                    public static function modify() : void {
+                        foreach (self::$xs as $x) {
+                            $x->x = null;
                         }
+                    }
+                }
+
+                class X {
+                    /** @var ?int **/
+                    public $x;
+
+                    public function getX(bool $b): int {
+                        $this->x = 5;
+
+                        if ($b) {
+                            XCollector::modify();
+                            throw new \Exception("bad");
+                        }
+
+                        return $this->x;
                     }
                 }'
         );
 
-        $context = new Context();
-
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     /**
@@ -1737,6 +1757,44 @@ class PropertyTypeTest extends TestCase
 
                         public function bar(): void {
                             echo $this->bar["key"];
+                        }
+                    }',
+            ],
+            'rememberThisPropertyAsssignmentsInMethod' => [
+                '<?php
+                    class A {
+                        public bool $foo = false;
+
+                        public function bar() : void {
+                            $this->foo = false;
+                            $this->maybeChange();
+
+                            if ($this->foo) {}
+                        }
+
+                        public function maybeChange() : void {
+                            if (rand(0, 1)) {
+                                $this->foo = true;
+                            }
+                        }
+                    }'
+            ],
+            'testRemoveClauseAfterReassignment' => [
+                '<?php
+                    class Test {
+                        /** @var ?bool */
+                        private $foo;
+
+                        public function run(): void {
+                            $this->foo = false;
+                            $this->bar();
+                            if ($this->foo === true) {}
+                        }
+
+                        private function bar(): void {
+                            if (mt_rand(0, 1)) {
+                                $this->foo = true;
+                            }
                         }
                     }',
             ],

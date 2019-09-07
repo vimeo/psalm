@@ -1302,6 +1302,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 && !$method_pure_compatible
                             ) {
                                 $context->removeAllObjectVars();
+                            } elseif ($method_storage->this_property_mutations) {
+                                foreach ($method_storage->this_property_mutations as $name => $_) {
+                                    $context->remove($lhs_var_id . '->' . $name);
+                                }
                             }
                         }
 
