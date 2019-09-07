@@ -284,7 +284,7 @@ class Functions
             'header', 'header_remove', 'http_response_code', 'setcookie',
 
             // output buffer
-            'ob_start', 'ob_end_clean', 'readfile', 'var_dump', 'printf', 'print_r', 'phpinfo',
+            'ob_start', 'ob_end_clean', 'readfile', 'printf', 'var_dump', 'phpinfo',
 
             // internal optimisation
             'opcache_compile_file', 'clearstatcache',
@@ -319,6 +319,7 @@ class Functions
             'set_error_handler', 'user_error', 'trigger_error', 'restore_error_handler',
             'date_default_timezone_set',  'assert', 'assert_options', 'setlocale',
             'set_exception_handler', 'set_time_limit', 'putenv', 'spl_autoload_register',
+            'microtime', 'array_rand',
 
             // logging
             'openlog', 'syslog', 'error_log', 'define_syslog_variables',
@@ -341,7 +342,7 @@ class Functions
             return false;
         }
 
-        if ($function_id === 'var_export' && !isset($args[1])) {
+        if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
             return false;
         }
 
