@@ -169,7 +169,9 @@ class TNamedObject extends Atomic
             return false;
         }
 
-        if ($codebase->classlike_storage_provider->has($this->value)) {
+        if ($codebase->classlike_storage_provider->has($this->value)
+            && $source->getFQCLN() !== $this->value
+        ) {
             $class_storage = $codebase->classlike_storage_provider->get($this->value);
 
             if ($class_storage->deprecated) {
