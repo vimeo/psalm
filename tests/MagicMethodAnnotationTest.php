@@ -641,6 +641,18 @@ class MagicMethodAnnotationTest extends TestCase
                     class B extends A {}',
                 'error_message' => 'ImplementedParamTypeMismatch - src/somefile.php:11:21',
             ],
+            'parseBadMethodAnnotation' => [
+                '<?php
+                    /**
+                     * @method aaa
+                     */
+                    class AAA {
+                        function __call() {
+                            echo $b."\n";
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

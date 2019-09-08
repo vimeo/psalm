@@ -913,9 +913,11 @@ class CommentAnalyzer
                         array_shift($doc_line_parts);
                     }
 
-                    $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
+                    if (count($doc_line_parts) > 1) {
+                        $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
 
-                    $method_entry = implode(' ', $doc_line_parts);
+                        $method_entry = implode(' ', $doc_line_parts);
+                    }
                 }
 
                 $method_entry = trim(preg_replace('/\/\/.*/', '', $method_entry));
