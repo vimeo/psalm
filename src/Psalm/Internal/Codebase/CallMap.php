@@ -77,6 +77,8 @@ class CallMap
             return $callables[0];
         }
 
+        $matching_param_count_callable = null;
+
         foreach ($callables as $possible_callable) {
             $possible_function_params = $possible_callable->params;
 
@@ -156,9 +158,17 @@ class CallMap
                 break;
             }
 
+            if (count($args) === count($possible_function_params)) {
+                $matching_param_count_callable = $possible_callable;
+            }
+
             if ($all_args_match) {
                 return $possible_callable;
             }
+        }
+
+        if ($matching_param_count_callable) {
+            return $matching_param_count_callable;
         }
 
         // if we don't succeed in finding a match, set to the first possible and wait for issues below

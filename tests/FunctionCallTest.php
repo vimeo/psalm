@@ -1602,7 +1602,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = hrtime(true);
                     $b = hrtime();
-                    /** @psalm-suppress InvalidArgument */
+                    /** @psalm-suppress InvalidScalarArgument */
                     $c = hrtime(1);
                     $d = hrtime(false);',
                 'assertions' => [
@@ -1851,6 +1851,12 @@ class FunctionCallTest extends TestCase
                             "samesite" => "Lax"
                         ]
                     );',
+            ],
+            'printrBadArg' => [
+                '<?php
+                    /** @psalm-suppress InvalidScalarArgument */
+                    $a = print_r([], 1);
+                    echo $a;',
             ],
         ];
     }
