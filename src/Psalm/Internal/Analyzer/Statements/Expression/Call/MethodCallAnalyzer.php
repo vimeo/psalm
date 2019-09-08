@@ -1304,7 +1304,17 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 $context->removeAllObjectVars();
                             } elseif ($method_storage->this_property_mutations) {
                                 foreach ($method_storage->this_property_mutations as $name => $_) {
-                                    $context->remove($lhs_var_id . '->' . $name);
+                                    $mutation_var_id = $lhs_var_id . '->' . $name;
+
+                                    $this_property_didnt_exist = $lhs_var_id === '$this'
+                                        && isset($context->vars_in_scope[$mutation_var_id])
+                                        && !isset($class_storage->declaring_property_ids[$name]);
+
+                                    $context->remove($mutation_var_id);
+
+                                    if ($this_property_didnt_exist) {
+                                        $context->vars_in_scope[$mutation_var_id] = Type::getMixed();
+                                    }
                                 }
                             }
                         }
