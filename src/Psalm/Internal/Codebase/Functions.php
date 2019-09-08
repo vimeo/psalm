@@ -361,6 +361,12 @@ class Functions
             return false;
         }
 
+        foreach ($function_callable->params as $i => $param) {
+            if ($param->by_ref && isset($args[$i])) {
+                return false;
+            }
+        }
+
         return true;
     }
 
