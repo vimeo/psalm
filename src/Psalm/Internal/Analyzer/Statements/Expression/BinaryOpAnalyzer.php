@@ -47,6 +47,7 @@ use function preg_match;
 use function preg_quote;
 use function strtolower;
 use function strlen;
+use DeepCopy\TypeMatcher\TypeMatcher;
 
 /**
  * @internal
@@ -1095,8 +1096,21 @@ class BinaryOpAnalyzer
             $has_valid_right_operand = true;
             $has_valid_left_operand = true;
 
-            if ($left_type_part instanceof ObjectLike && $right_type_part instanceof ObjectLike) {
+            if ($left_type_part instanceof ObjectLike
+                && $right_type_part instanceof ObjectLike
+            ) {
+                $definitely_existing_mixed_right_properties = array_diff_key(
+                    $right_type_part->properties,
+                    $left_type_part->properties
+                );
+
                 $properties = $left_type_part->properties + $right_type_part->properties;
+
+                if (!$left_type_part->sealed) {
+                    foreach ($definitely_existing_mixed_right_properties as $key => $type) {
+                        $properties[$key] = Type::combineUnionTypes(Type::getMixed(), $type);
+                    }
+                }
 
                 $result_type_member = new Type\Union([new ObjectLike($properties)]);
             } else {

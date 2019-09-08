@@ -450,9 +450,13 @@ class ArrayFetchAnalyzer
                 ) {
                     $from_string_key = $type->type_params[0]->isString();
                     $from_mixed_array = $type->type_params[1]->isMixed();
+                    $from_empty_array = $type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty();
+
                     // ok, type becomes an ObjectLike
                     $array_type->removeType($type_string);
                     $type = new ObjectLike([$key_value => $from_mixed_array ? Type::getMixed() : Type::getEmpty()]);
+
+                    $type->sealed = $from_empty_array;
 
                     if ($from_mixed_array) {
                         $type->had_mixed_value = true;
