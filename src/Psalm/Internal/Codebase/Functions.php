@@ -346,6 +346,11 @@ class Functions
             return false;
         }
 
+        // $matches is basically the (conditional) output of these functions
+        if ($function_id === 'preg_match' || $function_id === 'preg_match_all') {
+            return true;
+        }
+
         $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
             $codebase,
             $function_id,
@@ -354,12 +359,6 @@ class Functions
 
         if (!$function_callable->params || !$args) {
             return false;
-        }
-
-        foreach ($function_callable->params as $i => $param) {
-            if ($param->by_ref && isset($args[$i])) {
-                return false;
-            }
         }
 
         return true;
