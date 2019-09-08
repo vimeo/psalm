@@ -257,6 +257,33 @@ class E {
 
 Used to annotate a class where every property is treated by consumers as `@psalm-readonly` and every method is treated as `@psalm-mutation-free`.
 
+### `@psalm-pure`
+
+Used to annotate a [pure function](https://en.wikipedia.org/wiki/Pure_function) - one whose output is just a function of its input.
+
+```php
+class Arithmetic {
+  /** @psalm-pure */
+  public static function add(int $left, int $right) : int {
+    return $left + $right;
+  }
+
+  /** @psalm-pure - this is wrong */
+  public static function addCumulative(int $left) : int {
+    /** @var int */
+    static $i = 0; // this is a side effect, and thus a bug
+    $i += $left;
+    return $i;
+  }
+}
+
+echo Arithmetic::add(40, 2);
+echo Arithmetic::add(40, 2); // same value is emitted
+
+echo Arithmetic::addCumulative(3); // outputs 3
+echo Arithmetic::addCumulative(3); // outputs 6
+```
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
