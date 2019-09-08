@@ -59,6 +59,11 @@ class MethodStorage extends FunctionLikeStorage
     public $external_mutation_free = false;
 
     /**
+     * @var bool
+     */
+    public $mutation_free_inferred = false;
+
+    /**
      * @var ?array<string, bool>
      */
     public $this_property_mutations = null;

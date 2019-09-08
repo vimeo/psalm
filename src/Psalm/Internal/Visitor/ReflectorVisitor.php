@@ -1807,6 +1807,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             ) {
                 $storage->mutation_free = true;
                 $storage->external_mutation_free = true;
+                $storage->mutation_free_inferred = true;
             } elseif (strpos($stmt->name->name, 'assert') === 0) {
                 $var_assertions = [];
 
