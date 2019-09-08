@@ -264,8 +264,12 @@ class Functions
     /**
      * @param array<int, \PhpParser\Node\Arg> $args
      */
-    public function isCallMapFunctionPure(Codebase $codebase, string $function_id, array $args) : bool
-    {
+    public function isCallMapFunctionPure(
+        Codebase $codebase,
+        string $function_id,
+        array $args,
+        bool &$must_use
+    ) : bool {
         $impure_functions = [
             // file io
             'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'closedir', 'copy', 'file_put_contents',
@@ -309,7 +313,7 @@ class Functions
             'shell_exec', 'exec', 'system', 'passthru', 'pcntl_exec',
 
             // well-known functions
-            'libxml_use_internal_errors', 'array_map', 'curl_exec',
+            'libxml_use_internal_errors', 'curl_exec',
             'mt_srand', 'openssl_pkcs7_sign', 'mysqli_select_db', 'preg_replace_callback',
             'mt_rand', 'rand',
 
@@ -346,11 +350,6 @@ class Functions
             return false;
         }
 
-        // $matches is basically the (conditional) output of these functions
-        if ($function_id === 'preg_match' || $function_id === 'preg_match_all') {
-            return true;
-        }
-
         $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
             $codebase,
             $function_id,
@@ -361,9 +360,15 @@ class Functions
             return false;
         }
 
+        $must_use = true;
+
         foreach ($function_callable->params as $i => $param) {
-            if ($param->by_ref && isset($args[$i])) {
+            if ($param->type && $param->type->hasCallableType() && isset($args[$i])) {
                 return false;
+            }
+
+            if ($param->by_ref && isset($args[$i])) {
+                $must_use = false;
             }
         }
 
