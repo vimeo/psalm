@@ -90,12 +90,22 @@ class PureAnnotationTest extends TestCase
                         public function increment() : void {
                             $this->count++;
                         }
+
+                        public function incrementByTwo() : void {
+                            $this->count = $this->count + 2;
+                        }
+
+                        public function incrementByFive() : void {
+                            $this->count += 5;
+                        }
                     }
 
                     /** @psalm-pure */
                     function makesACounter(int $i) : Counter {
                         $c = new Counter($i);
                         $c->increment();
+                        $c->incrementByTwo();
+                        $c->incrementByFive();
                         return $c;
                     }',
             ],
