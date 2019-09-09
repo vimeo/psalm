@@ -457,7 +457,6 @@ function update_config_file(Config $config, string $config_file_path, string $ba
     }
 
     file_put_contents($configFile, $amendedConfigFileContents);
-
 }
 
 function get_path_to_config(array $options): ?string
