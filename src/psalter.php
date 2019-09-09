@@ -29,6 +29,7 @@ $valid_long_options = [
 // get options from command line
 $options = getopt(implode('', $valid_short_options), $valid_long_options);
 
+/** @psalm-suppress UnusedFunctionCall */
 array_map(
     /**
      * @param string $arg

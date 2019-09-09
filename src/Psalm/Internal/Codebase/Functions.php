@@ -262,13 +262,13 @@ class Functions
     }
 
     /**
-     * @param array<int, \PhpParser\Node\Arg> $args
+     * @param ?array<int, \PhpParser\Node\Arg> $args
      */
     public function isCallMapFunctionPure(
         Codebase $codebase,
         string $function_id,
-        array $args,
-        bool &$must_use
+        ?array $args,
+        bool &$must_use = true
     ) : bool {
         $impure_functions = [
             // file io
@@ -358,10 +358,10 @@ class Functions
         $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
             $codebase,
             $function_id,
-            $args
+            $args ?: []
         );
 
-        if (!$function_callable->params || !$args) {
+        if (!$function_callable->params || ($args !== null && \count($args) === 0)) {
             return false;
         }
 
@@ -369,7 +369,16 @@ class Functions
 
         foreach ($function_callable->params as $i => $param) {
             if ($param->type && $param->type->hasCallableType() && isset($args[$i])) {
-                return false;
+                foreach ($param->type->getTypes() as $possible_callable) {
+                    $possible_callable = \Psalm\Internal\Analyzer\TypeAnalyzer::getCallableFromAtomic(
+                        $codebase,
+                        $possible_callable
+                    );
+
+                    if ($possible_callable && !$possible_callable->is_pure) {
+                        return false;
+                    }
+                }
             }
 
             if ($param->by_ref && isset($args[$i])) {

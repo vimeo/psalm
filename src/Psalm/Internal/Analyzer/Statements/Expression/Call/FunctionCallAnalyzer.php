@@ -619,7 +619,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 || $codebase->find_unused_variables
                 || !$config->remember_property_assignments_after_call)
         ) {
-            $must_use = false;
+            $must_use = true;
 
             $callmap_function_pure = $function_id && $in_call_map
                 ? $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args, $must_use)
@@ -645,7 +645,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $context->removeAllObjectVars();
                 }
             } elseif ($function_id
-                && (($function_storage && $function_storage->pure)
+                && (($function_storage && $function_storage->pure && $must_use)
                     || ($callmap_function_pure === true && $must_use))
                 && $codebase->find_unused_variables
                 && !$context->inside_conditional

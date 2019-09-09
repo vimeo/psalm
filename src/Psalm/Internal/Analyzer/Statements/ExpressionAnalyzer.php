@@ -436,6 +436,9 @@ class ExpressionAnalyzer
 
             $use_context = new Context($context->self);
             $use_context->collect_references = $codebase->collect_references;
+            $use_context->mutation_free = $context->mutation_free;
+            $use_context->external_mutation_free = $context->external_mutation_free;
+            $use_context->pure = $context->pure;
 
             if (!$statements_analyzer->isStatic()) {
                 if ($context->collect_mutations &&

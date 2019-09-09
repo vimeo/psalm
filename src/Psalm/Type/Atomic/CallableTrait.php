@@ -25,17 +25,27 @@ trait CallableTrait
     public $return_type;
 
     /**
+     * @var bool
+     */
+    public $is_pure;
+
+    /**
      * Constructs a new instance of a generic type
      *
      * @param string                            $value
      * @param array<int, FunctionLikeParameter> $params
      * @param Union                             $return_type
      */
-    public function __construct($value = 'callable', array $params = null, Union $return_type = null)
-    {
+    public function __construct(
+        $value = 'callable',
+        array $params = null,
+        Union $return_type = null,
+        bool $is_pure = false
+    ) {
         $this->value = $value;
         $this->params = $params;
         $this->return_type = $return_type;
+        $this->is_pure = $is_pure;
     }
 
     public function __clone()

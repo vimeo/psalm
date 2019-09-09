@@ -145,6 +145,16 @@ class PureAnnotationTest extends TestCase
                         return $dateTime;
                     }'
             ],
+            'allowArrayMapClosure' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     * @param string[] $arr
+                     */
+                    function foo(array $arr) : array {
+                        return \array_map(function(string $s) { return $s;}, $arr);
+                    }'
+            ],
         ];
     }
 
@@ -275,6 +285,17 @@ class PureAnnotationTest extends TestCase
                         return $left;
                     }',
                 'error_message' => 'ImpureStaticVariable',
+            ],
+            'preventImpureArrayMapClosure' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     * @param string[] $arr
+                     */
+                    function foo(array $arr) : array {
+                        return \array_map(function(string $s) { return $s . rand(0, 1);}, $arr);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
             ],
         ];
     }

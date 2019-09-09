@@ -1543,7 +1543,8 @@ class TypeAnalyzer
                 return new TCallable(
                     'callable',
                     $function_storage->params,
-                    $function_storage->return_type
+                    $function_storage->return_type,
+                    $function_storage->pure
                 );
             } catch (\Exception $e) {
                 if (CallMap::inCallMap($input_type_part->value)) {
@@ -1561,11 +1562,22 @@ class TypeAnalyzer
                         }
                     }
 
-                    return \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
+                    $matching_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                         $codebase,
                         $input_type_part->value,
                         $args
                     );
+
+                    $must_use = false;
+
+                    $matching_callable->is_pure = $codebase->functions->isCallMapFunctionPure(
+                        $codebase,
+                        $input_type_part->value,
+                        null,
+                        $must_use
+                    );
+
+                    return $matching_callable;
                 }
             }
         } elseif ($input_type_part instanceof ObjectLike) {
