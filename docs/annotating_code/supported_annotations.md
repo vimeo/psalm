@@ -226,7 +226,7 @@ class D {
 
 ### `@psalm-external-mutation-free`
 
-Used to annotate a class method that does not mutate state, either internally or externally of the class's scope.
+Used to annotate a class method that does not mutate state externally of the class's scope.
 
 ```php
 class E {
