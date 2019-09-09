@@ -125,9 +125,6 @@ class ImmutableAnnotationTest extends TestCase
                             $this->bar = $bar;
                         }
 
-                        /**
-                         * @psalm-external-mutation-free
-                         */
                         public function withBar(string $bar): self {
                             $new = new Foo("hello");
                             /** @psalm-suppress InaccessibleProperty */
@@ -149,9 +146,6 @@ class ImmutableAnnotationTest extends TestCase
                             $this->bar = $bar;
                         }
 
-                        /**
-                         * @psalm-external-mutation-free
-                         */
                         public function withBar(string $bar): self {
                             $new = clone $this;
                             /** @psalm-suppress InaccessibleProperty */
@@ -280,9 +274,6 @@ class ImmutableAnnotationTest extends TestCase
                             $this->bar = $bar;
                         }
 
-                        /**
-                         * @psalm-external-mutation-free
-                         */
                         public function withBar(Bar $b): Bar {
                             $new = clone $b;
                             $b->a = $this->bar;

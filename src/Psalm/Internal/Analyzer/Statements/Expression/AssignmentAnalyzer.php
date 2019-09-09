@@ -627,8 +627,8 @@ class AssignmentAnalyzer
             $method_pure_compatible = !empty($assign_var->var->inferredType->external_mutation_free)
                 || isset($assign_var->var->pure);
 
-            if (($context->mutation_free
-                || ($context->external_mutation_free && !$method_pure_compatible))
+            if (($context->mutation_free || $context->external_mutation_free)
+                && !$method_pure_compatible
                 && !$context->collect_mutations
                 && !$context->collect_initializations
             ) {
