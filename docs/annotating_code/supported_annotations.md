@@ -184,7 +184,7 @@ Used to annotate a property that can only be written to in its defining class's 
 class B {
   /** @readonly */
   public string $s;
-  
+
   public function __construct(string $s) {
     $this->s = $s;
   }
@@ -202,18 +202,18 @@ Used to annotate a class method that does not mutate state, either internally or
 ```php
 class D {
   private string $s;
-  
+
   public function __construct(string $s) {
     $this->s = $s;
   }
-  
+
   /**
    * @psalm-mutation-free
    */
   public function getShort() : string {
     return substr($this->s, 0, 5);
   }
-  
+
   /**
    * @psalm-mutation-free
    */
@@ -231,11 +231,11 @@ Used to annotate a class method that does not mutate state, either internally or
 ```php
 class E {
   private string $s;
-  
+
   public function __construct(string $s) {
     $this->s = $s;
   }
-  
+
   /**
    * @psalm-external-mutation-free
    */
@@ -255,7 +255,7 @@ class E {
 
 ### `@psalm-immutable`
 
-Used to annotate a class where every property is treated by consumers as `@psalm-readonly` and every method is treated as `@psalm-mutation-free`.
+Used to annotate a class where every property is treated by consumers as `@psalm-readonly` and every instance method is treated as `@psalm-mutation-free`.
 
 ### `@psalm-pure`
 

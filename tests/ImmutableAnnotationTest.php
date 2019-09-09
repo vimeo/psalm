@@ -93,6 +93,26 @@ class ImmutableAnnotationTest extends TestCase
                         return $c->addItem(new CartItem($name, $price));
                     }',
             ],
+            'allowImpureStaticMethod' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    final class ClientId
+                    {
+                        public string $id;
+
+                        private function __construct(string $id)
+                        {
+                            $this->id = $id;
+                        }
+
+                        public static function fromString(string $id): self
+                        {
+                            return new self($id . rand(0, 1));
+                        }
+                    }'
+            ]
         ];
     }
 
