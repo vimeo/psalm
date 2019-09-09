@@ -178,6 +178,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
             } elseif ($context->self) {
                 $context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($context->self)]);
+
+                if ($storage->external_mutation_free
+                    && !$storage->mutation_free_inferred
+                ) {
+                    $context->vars_in_scope['$this']->external_mutation_free = true;
+                }
+
                 $context->vars_possibly_in_scope['$this'] = true;
             }
 

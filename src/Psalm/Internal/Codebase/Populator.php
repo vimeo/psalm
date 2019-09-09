@@ -262,7 +262,7 @@ class Populator
 
         if ($storage->mutation_free || $storage->external_mutation_free) {
             foreach ($storage->methods as $method) {
-                if (!$method->is_static) {
+                if (!$method->is_static && !$method->external_mutation_free) {
                     $method->mutation_free = $storage->mutation_free;
                     $method->external_mutation_free = $storage->external_mutation_free;
                 }

@@ -1767,6 +1767,8 @@ class ExpressionAnalyzer
         if (isset($stmt->expr->inferredType)) {
             $clone_type = $stmt->expr->inferredType;
 
+            $immutable_cloned = false;
+
             foreach ($clone_type->getTypes() as $clone_type_part) {
                 if (!$clone_type_part instanceof TNamedObject
                     && !$clone_type_part instanceof TObject
@@ -1797,9 +1799,25 @@ class ExpressionAnalyzer
 
                     return;
                 }
+
+                $codebase = $statements_analyzer->getCodebase();
+
+                if ($clone_type_part instanceof TNamedObject
+                    && $codebase->classExists($clone_type_part->value)
+                ) {
+                    $class_storage = $codebase->classlike_storage_provider->get($clone_type_part->value);
+
+                    if ($class_storage->mutation_free) {
+                        $immutable_cloned = true;
+                    }
+                }
             }
 
             $stmt->inferredType = $stmt->expr->inferredType;
+
+            if ($immutable_cloned) {
+                $stmt->inferredType->external_mutation_free = true;
+            }
         }
     }
 

@@ -568,18 +568,6 @@ class AssignmentAnalyzer
                 $assign_value_type
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
-            if ($context->mutation_free && !$context->collect_mutations && !$context->collect_initializations) {
-                if (IssueBuffer::accepts(
-                    new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $assign_var)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
-
             if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
                 // this can happen when the user actually means to type $this-><autocompleted>, but there's
                 // a variable on the next line
@@ -634,6 +622,25 @@ class AssignmentAnalyzer
 
             if ($var_id) {
                 $context->vars_possibly_in_scope[$var_id] = true;
+            }
+
+            $method_pure_compatible = !empty($assign_var->var->inferredType->external_mutation_free)
+                || isset($assign_var->var->pure);
+
+            if (($context->mutation_free
+                || ($context->external_mutation_free && !$method_pure_compatible))
+                && !$context->collect_mutations
+                && !$context->collect_initializations
+            ) {
+                if (IssueBuffer::accepts(
+                    new ImpurePropertyAssignment(
+                        'Cannot assign to a property from a mutation-free context',
+                        new CodeLocation($statements_analyzer, $assign_var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
             $assign_var->class instanceof PhpParser\Node\Name

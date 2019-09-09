@@ -112,7 +112,55 @@ class ImmutableAnnotationTest extends TestCase
                             return new self($id . rand(0, 1));
                         }
                     }'
-            ]
+            ],
+            'allowPropertySetOnNewInstance' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Foo {
+                        protected string $bar;
+
+                        public function __construct(string $bar) {
+                            $this->bar = $bar;
+                        }
+
+                        /**
+                         * @psalm-external-mutation-free
+                         */
+                        public function withBar(string $bar): self {
+                            $new = new Foo("hello");
+                            /** @psalm-suppress InaccessibleProperty */
+                            $new->bar = $bar;
+
+                            return $new;
+                        }
+                    }'
+            ],
+            'allowClone' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Foo {
+                        protected string $bar;
+
+                        public function __construct(string $bar) {
+                            $this->bar = $bar;
+                        }
+
+                        /**
+                         * @psalm-external-mutation-free
+                         */
+                        public function withBar(string $bar): self {
+                            $new = clone $this;
+                            /** @psalm-suppress InaccessibleProperty */
+                            $new->bar = $bar;
+
+                            return $new;
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -143,7 +191,7 @@ class ImmutableAnnotationTest extends TestCase
                             $this->a = $a;
                         }
                     }',
-                'error_message' => 'ImpurePropertyAssignment',
+                'error_message' => 'InaccessibleProperty',
             ],
             'immutablePropertyAssignmentExternally' => [
                 '<?php
@@ -219,6 +267,34 @@ class ImmutableAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'cloneMutatingClass' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Foo {
+                        protected string $bar;
+
+                        public function __construct(string $bar) {
+                            $this->bar = $bar;
+                        }
+
+                        /**
+                         * @psalm-external-mutation-free
+                         */
+                        public function withBar(Bar $b): Bar {
+                            $new = clone $b;
+                            $b->a = $this->bar;
+
+                            return $new;
+                        }
+                    }
+
+                    class Bar {
+                        public string $a = "hello";
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
             ],
         ];
     }
