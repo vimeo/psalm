@@ -125,6 +125,16 @@ class PureAnnotationTest extends TestCase
                         return $a;
                     }'
             ],
+            'assertIsPureInProductionn' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function toDateTime(?DateTime $dateTime) : DateTime {
+                        assert($dateTime instanceof DateTime);
+                        return $dateTime;
+                    }'
+            ],
         ];
     }
 

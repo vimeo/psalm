@@ -321,7 +321,7 @@ class Functions
             'ini_set', 'sleep', 'usleep', 'register_shutdown_function',
             'error_reporting', 'register_tick_function', 'unregister_tick_function',
             'set_error_handler', 'user_error', 'trigger_error', 'restore_error_handler',
-            'date_default_timezone_set',  'assert', 'assert_options', 'setlocale',
+            'date_default_timezone_set', 'assert_options', 'setlocale',
             'set_exception_handler', 'set_time_limit', 'putenv', 'spl_autoload_register',
             'microtime', 'array_rand',
 
@@ -348,6 +348,11 @@ class Functions
 
         if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
             return false;
+        }
+
+        if ($function_id === 'assert') {
+            $must_use = false;
+            return true;
         }
 
         $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
