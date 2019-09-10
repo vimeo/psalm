@@ -98,7 +98,7 @@ return [
     'sodium_crypto_pwhash_str_needs_rehash' => ['bool', 'password'=>'string', 'opslimit'=>'int', 'memlimit'=>'int'],
     'sodium_crypto_pwhash_str_verify' => ['bool', 'hash'=>'string', 'password'=>'string'],
     'sodium_crypto_scalarmult' => ['string', 'string_1'=>'string', 'string_2'=>'string'],
-    'sodium_crypto_scalarmult_base' => ['string', 'string_1'=>'string', 'string_2'=>'string'],
+    'sodium_crypto_scalarmult_base' => ['string', 'secretkey'=>'string'],
     'sodium_crypto_secretbox' => ['string', 'plaintext'=>'string', 'nonce'=>'string', 'key'=>'string'],
     'sodium_crypto_secretbox_keygen' => ['string'],
     'sodium_crypto_secretbox_open' => ['string|false', 'ciphertext'=>'string', 'nonce'=>'string', 'key'=>'string'],
