@@ -628,7 +628,8 @@ class PropertyAssignmentAnalyzer
                                 && ($appearing_property_class === $context->self
                                     || $codebase->classExtends($context->self, $appearing_property_class))
                                 && (!$context->calling_method_id
-                                    || \strpos($context->calling_method_id, '::__construct'))
+                                    || \strpos($context->calling_method_id, '::__construct')
+                                    || \strpos($context->calling_method_id, '::unserialize'))
                             )
                         ) {
                             if (IssueBuffer::accepts(
