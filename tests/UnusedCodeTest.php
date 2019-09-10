@@ -614,6 +614,12 @@ class UnusedCodeTest extends TestCase
                         return $arr;
                     }'
             ],
+            'allowArrayMapWithClosure' => [
+                '<?php
+                    $a = [1, 2, 3];
+
+                    array_map(function($i) { echo $i;}, $a);'
+            ],
         ];
     }
 

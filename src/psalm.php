@@ -89,7 +89,6 @@ if (isset($options['refactor'])) {
     exit;
 }
 
-/** @psalm-suppress UnusedFunctionCall */
 array_map(
     /**
      * @param string $arg

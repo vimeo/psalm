@@ -15,6 +15,7 @@ use Psalm\Storage\FunctionLikeStorage;
 use function strpos;
 use function strtolower;
 use function substr;
+use Closure;
 
 /**
  * @internal
@@ -365,7 +366,8 @@ class Functions
             return false;
         }
 
-        $must_use = true;
+        $must_use = $function_id !== 'array_map'
+            || (isset($args[0]) && !$args[0]->value instanceof \PhpParser\Node\Expr\Closure);
 
         foreach ($function_callable->params as $i => $param) {
             if ($param->type && $param->type->hasCallableType() && isset($args[$i])) {

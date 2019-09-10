@@ -38,7 +38,6 @@ if ($psalm_proxy !== false) {
     unset($args[$psalm_proxy]);
 }
 
-/** @psalm-suppress UnusedFunctionCall */
 array_map(
     /**
      * @param string $arg
