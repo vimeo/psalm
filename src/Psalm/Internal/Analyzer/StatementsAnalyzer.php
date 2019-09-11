@@ -568,6 +568,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $context,
                             $echo_param,
                             false,
+                            false,
                             true,
                             new CodeLocation($this->source, $stmt)
                         ) === false) {
@@ -620,6 +621,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 ) {
                     $function_id = strtolower($stmt->name->name);
                     $function_context = new Context($context->self);
+                    $function_context->strict_types = $context->strict_types;
                     $config = Config::getInstance();
                     $function_context->collect_references = $codebase->collect_references;
                     $function_context->collect_exceptions = $config->check_for_throws_docblock;

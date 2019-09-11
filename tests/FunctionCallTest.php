@@ -1858,6 +1858,20 @@ class FunctionCallTest extends TestCase
                     $a = print_r([], 1);
                     echo $a;',
             ],
+            'dontCoerceCallMapArgs' => [
+                '<?php
+                    function getStr() : ?string {
+                        return rand(0,1) ? "test" : null;
+                    }
+
+                    function test() : void {
+                        $g = getStr();
+                        /** @psalm-suppress PossiblyNullArgument */
+                        $x = strtoupper($g);
+                        $c = "prefix " . (strtoupper($g ?? "") === "x" ? "xa" : "ya");
+                        echo "$x, $c\n";
+                    }'
+            ],
         ];
     }
 
@@ -2428,6 +2442,23 @@ class FunctionCallTest extends TestCase
                         array_unshift($data, $a);
                     }',
                 'error_message' => 'UndefinedVariable',
+            ],
+            'coerceCallMapArgsInStrictMode' => [
+                '<?php
+                    declare(strict_types=1);
+
+                    function getStr() : ?string {
+                        return rand(0,1) ? "test" : null;
+                    }
+
+                    function test() : void {
+                        $g = getStr();
+                        /** @psalm-suppress PossiblyNullArgument */
+                        $x = strtoupper($g);
+                        $c = "prefix " . (strtoupper($g ?? "") === "x" ? "xa" : "ya");
+                        echo "$x, $c\n";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

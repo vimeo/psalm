@@ -1244,7 +1244,8 @@ class CallAnalyzer
                 $existing_generic_params,
                 $generic_params,
                 $template_types,
-                $function_storage ? $function_storage->pure : false
+                $function_storage ? $function_storage->pure : false,
+                $in_call_map
             ) === false) {
                 return false;
             }
@@ -1382,9 +1383,10 @@ class CallAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context,
         array $existing_generic_params,
-        array &$generic_params = null,
-        array $template_types = null,
-        bool $function_is_pure
+        ?array &$generic_params,
+        ?array $template_types,
+        bool $function_is_pure,
+        bool $in_call_map
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1449,7 +1451,8 @@ class CallAnalyzer
             $existing_generic_params,
             $generic_params,
             $template_types,
-            $function_is_pure
+            $function_is_pure,
+            $in_call_map
         ) === false) {
             return false;
         }
@@ -1612,7 +1615,8 @@ class CallAnalyzer
         ?array $existing_generic_params,
         ?array &$generic_params,
         ?array $template_types,
-        bool $function_is_pure
+        bool $function_is_pure,
+        bool $in_call_map
     ) {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage) {
@@ -1771,6 +1775,7 @@ class CallAnalyzer
             $function_param,
             $arg->unpack,
             $function_is_pure,
+            $in_call_map,
             $function_location
         ) === false) {
             return false;
@@ -2277,6 +2282,7 @@ class CallAnalyzer
         FunctionLikeParameter $function_param,
         bool $unpack,
         bool $function_is_pure,
+        bool $in_call_map,
         CodeLocation $function_location
     ) {
         $codebase = $statements_analyzer->getCodebase();
@@ -2353,6 +2359,7 @@ class CallAnalyzer
                 if (!$function_param->by_ref
                     && !($function_param->is_variadic xor $unpack)
                     && $cased_method_id !== 'echo'
+                    && (!$in_call_map || $context->strict_types)
                 ) {
                     self::coerceValueAfterGatekeeperArgument(
                         $statements_analyzer,
@@ -2769,6 +2776,7 @@ class CallAnalyzer
             && !$function_param->by_ref
             && !($function_param->is_variadic xor $unpack)
             && $cased_method_id !== 'echo'
+            && (!$in_call_map || $context->strict_types)
         ) {
             self::coerceValueAfterGatekeeperArgument(
                 $statements_analyzer,
