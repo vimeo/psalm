@@ -135,7 +135,7 @@ class Config
     public $throw_exception = false;
 
     /**
-     * Whether or not to load XDebug stub
+     * Whether or not to load Xdebug stub
      *
      * @var bool
      */
@@ -690,7 +690,7 @@ class Config
             'ignoreInternalFunctionFalseReturn' => 'ignore_internal_falsable_issues',
             'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
-            'loadXDebugStub' => 'load_xdebug_stub',
+            'loadXdebugStub' => 'load_xdebug_stub',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -1514,7 +1514,7 @@ class Config
         }
 
         if ($this->load_xdebug_stub) {
-            $xdebug_stub_path = __DIR__ . '/Internal/Stubs/XDebug.php';
+            $xdebug_stub_path = __DIR__ . '/Internal/Stubs/Xdebug.php';
 
             if (!file_exists($xdebug_stub_path)) {
                 throw new \UnexpectedValueException('Cannot locate XDebug stub');

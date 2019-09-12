@@ -194,7 +194,7 @@ $ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
 
 $ini_handler->disableExtension('grpc');
 
-// If XDebug is enabled, restart without it
+// If Xdebug is enabled, restart without it
 $ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');

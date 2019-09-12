@@ -313,7 +313,7 @@ if (isset($options['generate-json-map']) && is_string($options['generate-json-ma
     $type_map_location = $options['generate-json-map'];
 }
 
-// If XDebug is enabled, restart without it
+// If Xdebug is enabled, restart without it
 $ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');
