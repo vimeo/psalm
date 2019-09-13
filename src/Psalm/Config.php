@@ -137,9 +137,9 @@ class Config
     /**
      * Whether or not to load Xdebug stub
      *
-     * @var bool
+     * @var bool|null
      */
-    public $load_xdebug_stub = false;
+    public $load_xdebug_stub = null;
 
     /**
      * The directory to store PHP Parser (and other) caches

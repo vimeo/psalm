@@ -209,7 +209,9 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
   loadXdebugStub="[bool]"
 >
 ```
-When `true`, Psalm will load the Xdebug extension stub (as the extension is unloaded when Psalm runs). Defaults to `false`.
+If not present, Psalm will only load the Xdebug stub if psalm has unloaded the extension.
+When `true`, Psalm will load the Xdebug extension stub (as the extension is unloaded when Psalm runs).
+Setting to `false` prevents the stub from loading.
 
 ### Running Psalm
 
