@@ -150,7 +150,7 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position inside the text document
-     * @psalm-return Promise<Location>|Promise<Hover>
+     * @psalm-return Promise<Location>|Promise<null>
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
@@ -162,11 +162,11 @@ class TextDocument
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
-            return new Success(new Hover([]));
+            return new Success(null);
         }
 
         if ($reference_location === null) {
-            return new Success(new Hover([]));
+            return new Success(null);
         }
 
         list($reference) = $reference_location;
@@ -174,7 +174,7 @@ class TextDocument
         $code_location = $this->codebase->getSymbolLocation($file_path, $reference);
 
         if (!$code_location) {
-            return new Success(new Hover([]));
+            return new Success(null);
         }
 
         return new Success(
