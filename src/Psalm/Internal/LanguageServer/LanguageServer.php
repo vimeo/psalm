@@ -6,6 +6,7 @@ use AdvancedJsonRpc;
 use function Amp\asyncCoroutine;
 use function Amp\call;
 use Amp\Promise;
+use Amp\Success;
 use function array_combine;
 use function array_filter;
 use function array_keys;
@@ -386,7 +387,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * but to not exit (otherwise the response might not be delivered correctly to the client).
      * There is a separate exit notification that asks the server to exit.
      *
-     * @return void
+     * @psalm-return Promise<null>
      */
     public function shutdown()
     {
@@ -396,6 +397,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             $codebase,
             $scanned_files
         );
+        return new Success(null);
     }
 
     /**
