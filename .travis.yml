@@ -62,6 +62,13 @@ jobs:
       script:
         - vendor/bin/phpcs
 
+    - stage: Ensure API BC
+      php: 7.3
+      env: DEPS="high"
+      script:
+        - composer require roave/backwards-compatibility-check:^4.0.0
+        - ./vendor/bin/roave-backward-compatibility-check
+
     - stage: Phar build
       php: 7.3
       env: DEPS="high"
