@@ -69,6 +69,13 @@ jobs:
         - composer require roave/backwards-compatibility-check:^4.0.0
         - ./vendor/bin/roave-backward-compatibility-check
 
+    - stage: Ensure no transient used dependencies
+      php: 7.3
+      env: DEPS="high"
+      script:
+        - composer require maglnet/composer-require-checker:^2.0.0
+        - ./vendor/bin/composer-require-checker check ./composer.json
+
     - stage: Phar build
       php: 7.3
       env: DEPS="high"
