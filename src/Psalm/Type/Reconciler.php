@@ -414,13 +414,15 @@ class Reconciler
             if (strpos($base_key, '::')) {
                 list($fq_class_name, $const_name) = explode('::', $base_key);
 
-                $all_class_constants = $codebase->classlikes->getConstantsForClass(
+                $class_constant = $codebase->classlikes->getConstantForClass(
                     $fq_class_name,
-                    \ReflectionProperty::IS_PRIVATE
+                    $const_name,
+                    \ReflectionProperty::IS_PRIVATE,
+                    null
                 );
 
-                if (isset($all_class_constants[$const_name])) {
-                    $existing_keys[$base_key] = clone $all_class_constants[$const_name];
+                if ($class_constant) {
+                    $existing_keys[$base_key] = clone $class_constant;
                 } else {
                     return null;
                 }

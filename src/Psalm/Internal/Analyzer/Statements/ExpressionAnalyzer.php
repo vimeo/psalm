@@ -1182,18 +1182,17 @@ class ExpressionAnalyzer
                     return new Type\Atomic\TLiteralClassString($return_type->fq_classlike_name);
                 }
 
-                $class_constants = $codebase->classlikes->getConstantsForClass(
+                $class_constant = $codebase->classlikes->getConstantForClass(
                     $return_type->fq_classlike_name,
+                    $return_type->const_name,
                     \ReflectionProperty::IS_PRIVATE
                 );
 
-                if (isset($class_constants[$return_type->const_name])) {
-                    $const_type = $class_constants[$return_type->const_name];
+                if ($class_constant) {
+                    if ($class_constant->isSingle()) {
+                        $class_constant = clone $class_constant;
 
-                    if ($const_type->isSingle()) {
-                        $const_type = clone $const_type;
-
-                        return array_values($const_type->getTypes())[0];
+                        return array_values($class_constant->getTypes())[0];
                     }
                 }
             }
@@ -1209,15 +1208,14 @@ class ExpressionAnalyzer
             }
 
             if ($evaluate && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
-                $class_constants = $codebase->classlikes->getConstantsForClass(
+                $class_constant_type = $codebase->classlikes->getConstantForClass(
                     $return_type->fq_classlike_name,
+                    $return_type->const_name,
                     \ReflectionProperty::IS_PRIVATE
                 );
 
-                if (isset($class_constants[$return_type->const_name])) {
-                    $const_type = $class_constants[$return_type->const_name];
-
-                    foreach ($const_type->getTypes() as $const_type_atomic) {
+                if ($class_constant_type) {
+                    foreach ($class_constant_type->getTypes() as $const_type_atomic) {
                         if ($const_type_atomic instanceof Type\Atomic\ObjectLike
                             || $const_type_atomic instanceof Type\Atomic\TArray
                         ) {

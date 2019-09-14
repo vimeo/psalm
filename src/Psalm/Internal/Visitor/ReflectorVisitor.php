@@ -40,6 +40,8 @@ use Psalm\Internal\Codebase\CallMap;
 use Psalm\Internal\Codebase\PropertyMap;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
+use Psalm\Internal\Scanner\UnresolvedConstant;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
@@ -3205,12 +3207,30 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $const
                 );
             } else {
+                $unresolved_const_expr = self::getUnresolvedClassConstExpr(
+                    $const->value,
+                    $this->aliases,
+                    $fq_classlike_name
+                );
+
                 if ($stmt->isProtected()) {
-                    $storage->protected_class_constant_nodes[$const->name->name] = $const->value;
+                    if ($unresolved_const_expr) {
+                        $storage->protected_class_constant_nodes[$const->name->name] = $unresolved_const_expr;
+                    } else {
+                        $storage->protected_class_constants[$const->name->name] = Type::getMixed();
+                    }
                 } elseif ($stmt->isPrivate()) {
-                    $storage->private_class_constant_nodes[$const->name->name] = $const->value;
+                    if ($unresolved_const_expr) {
+                        $storage->private_class_constant_nodes[$const->name->name] = $unresolved_const_expr;
+                    } else {
+                        $storage->private_class_constants[$const->name->name] = Type::getMixed();
+                    }
                 } else {
-                    $storage->public_class_constant_nodes[$const->name->name] = $const->value;
+                    if ($unresolved_const_expr) {
+                        $storage->public_class_constant_nodes[$const->name->name] = $unresolved_const_expr;
+                    } else {
+                        $storage->public_class_constants[$const->name->name] = Type::getMixed();
+                    }
                 }
             }
 
@@ -3218,6 +3238,140 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->deprecated_constants[$const->name->name] = true;
             }
         }
+    }
+
+    public function getUnresolvedClassConstExpr(
+        PhpParser\Node\Expr $stmt,
+        Aliases $aliases,
+        string $fq_classlike_name
+    ) : ?UnresolvedConstantComponent {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
+            $left = self::getUnresolvedClassConstExpr(
+                $stmt->left,
+                $aliases,
+                $fq_classlike_name
+            );
+
+            $right = self::getUnresolvedClassConstExpr(
+                $stmt->right,
+                $aliases,
+                $fq_classlike_name
+            );
+
+            if (!$left || !$right) {
+                return null;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
+                return new UnresolvedConstant\UnresolvedAdditionOp($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
+                return new UnresolvedConstant\UnresolvedSubtractionOp($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
+                return new UnresolvedConstant\UnresolvedMultiplicationOp($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div) {
+                return new UnresolvedConstant\UnresolvedDivisionOp($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+                return new UnresolvedConstant\UnresolvedConcatOp($left, $right);
+            }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
+            if (strtolower($stmt->name->parts[0]) === 'false') {
+                return new UnresolvedConstant\ScalarValue(false);
+            } elseif (strtolower($stmt->name->parts[0]) === 'true') {
+                return new UnresolvedConstant\ScalarValue(true);
+            } elseif (strtolower($stmt->name->parts[0]) === 'null') {
+                return new UnresolvedConstant\ScalarValue(null);
+            } elseif ($stmt->name->parts[0] === '__NAMESPACE__') {
+                return new UnresolvedConstant\ScalarValue($aliases->namespace);
+            }
+
+            return new UnresolvedConstant\Constant(
+                implode('\\', $stmt->name->parts),
+                $stmt->name instanceof PhpParser\Node\Name\FullyQualified
+            );
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Namespace_) {
+            return new UnresolvedConstant\ScalarValue($aliases->namespace);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
+            if ($stmt->class instanceof PhpParser\Node\Name
+                && $stmt->name instanceof PhpParser\Node\Identifier
+                && $fq_classlike_name
+                && $stmt->class->parts !== ['static']
+                && $stmt->class->parts !== ['parent']
+            ) {
+                if ($stmt->class->parts === ['self']) {
+                    $const_fq_class_name = $fq_classlike_name;
+                } else {
+                    $const_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                        $stmt->class,
+                        $aliases
+                    );
+                }
+
+                return new UnresolvedConstant\ClassConstant($const_fq_class_name, $stmt->name->name);
+            }
+
+            return null;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\String_
+            || $stmt instanceof PhpParser\Node\Scalar\LNumber
+            || $stmt instanceof PhpParser\Node\Scalar\DNumber
+        ) {
+            return new UnresolvedConstant\ScalarValue($stmt->value);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Array_) {
+            $items = [];
+
+            foreach ($stmt->items as $item) {
+                if ($item === null) {
+                    return null;
+                }
+
+                if ($item->key) {
+                    $item_key_type = self::getUnresolvedClassConstExpr(
+                        $item->key,
+                        $aliases,
+                        $fq_classlike_name
+                    );
+
+                    if (!$item_key_type) {
+                        return null;
+                    }
+                } else {
+                    $item_key_type = null;
+                }
+
+                $item_value_type = self::getUnresolvedClassConstExpr(
+                    $item->value,
+                    $aliases,
+                    $fq_classlike_name
+                );
+
+                if (!$item_value_type) {
+                    return null;
+                }
+
+                $items[] = new UnresolvedConstant\KeyValuePair($item_key_type, $item_value_type);
+            }
+
+            return new UnresolvedConstant\ArrayValue($items);
+        }
+
+        return null;
     }
 
     /**

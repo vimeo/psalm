@@ -78,7 +78,7 @@ class Populator
     /**
      * @return void
      */
-    public function populateCodebase(\Psalm\Codebase $codebase)
+    public function populateCodebase()
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
 
@@ -121,47 +121,6 @@ class Populator
                 $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_name);
 
                 $class_storage->dependent_classlikes += $dependee_storage->dependent_classlikes;
-            }
-
-            if ($class_storage->aliases) {
-                foreach ($class_storage->public_class_constant_nodes as $const_name => $node) {
-                    $const_type = \Psalm\Internal\Analyzer\StatementsAnalyzer::getSimpleType(
-                        $codebase,
-                        $node,
-                        $class_storage->aliases,
-                        null,
-                        null,
-                        $class_storage->name
-                    );
-
-                    $class_storage->public_class_constants[$const_name] = $const_type ?: Type::getMixed();
-                }
-
-                foreach ($class_storage->protected_class_constant_nodes as $const_name => $node) {
-                    $const_type = \Psalm\Internal\Analyzer\StatementsAnalyzer::getSimpleType(
-                        $codebase,
-                        $node,
-                        $class_storage->aliases,
-                        null,
-                        null,
-                        $class_storage->name
-                    );
-
-                    $class_storage->protected_class_constants[$const_name] = $const_type ?: Type::getMixed();
-                }
-
-                foreach ($class_storage->private_class_constant_nodes as $const_name => $node) {
-                    $const_type = \Psalm\Internal\Analyzer\StatementsAnalyzer::getSimpleType(
-                        $codebase,
-                        $node,
-                        $class_storage->aliases,
-                        null,
-                        null,
-                        $class_storage->name
-                    );
-
-                    $class_storage->private_class_constants[$const_name] = $const_type ?: Type::getMixed();
-                }
             }
         }
 
@@ -614,8 +573,8 @@ class Populator
                 $parent_interface_storage->invalid_dependencies
             );
 
-            foreach ($parent_interface_storage->public_class_constant_nodes as $name => $_) {
-                $storage->public_class_constants[$name] = Type::getMixed();
+            foreach ($parent_interface_storage->public_class_constant_nodes as $name => $node) {
+                $storage->public_class_constant_nodes[$name] = $node;
             }
 
             if ($parent_interface_storage->template_types) {

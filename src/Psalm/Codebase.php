@@ -415,7 +415,7 @@ class Codebase
 
         $this->file_reference_provider->updateReferenceCache($this, $referenced_files);
 
-        $this->populator->populateCodebase($this);
+        $this->populator->populateCodebase();
     }
 
     /** @return void */
@@ -479,7 +479,7 @@ class Codebase
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         if ($has_changes) {
-            $this->populator->populateCodebase($this);
+            $this->populator->populateCodebase();
         }
     }
 

@@ -1639,15 +1639,19 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     return Type::getLiteralClassString($const_fq_class_name);
                 }
 
-                if ($existing_class_constants === null) {
+                if ($existing_class_constants === null
+                    && $file_source instanceof StatementsAnalyzer
+                ) {
                     try {
-                        $foreign_class_constants = $codebase->classlikes->getConstantsForClass(
+                        $foreign_class_constant = $codebase->classlikes->getConstantForClass(
                             $const_fq_class_name,
-                            \ReflectionProperty::IS_PRIVATE
+                            $stmt->name->name,
+                            \ReflectionProperty::IS_PRIVATE,
+                            $file_source
                         );
 
-                        if (isset($foreign_class_constants[$stmt->name->name])) {
-                            return clone $foreign_class_constants[$stmt->name->name];
+                        if ($foreign_class_constant) {
+                            return clone $foreign_class_constant;
                         }
 
                         return null;
@@ -1898,9 +1902,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @return  Type\Union|null
      */
     public function getConstType(
-        $const_name,
-        $is_fully_qualified,
-        Context $context
+        string $const_name,
+        bool $is_fully_qualified,
+        ?Context $context
     ) {
         $aliased_constants = $this->getAliases()->constants;
 
@@ -1926,7 +1930,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
         }
 
-        if ($context->hasVariable($fq_const_name, $this)) {
+        if ($context && $context->hasVariable($fq_const_name, $this)) {
             return $context->vars_in_scope[$fq_const_name];
         }
 

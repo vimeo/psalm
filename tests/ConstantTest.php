@@ -400,6 +400,35 @@ class ConstantTest extends TestCase
                         }
                     }'
             ],
+            'resolveOutOfOrderClassConstants' => [
+                '<?php
+                    const cons1 = 0;
+
+                    class Clazz {
+                        const cons2 = cons1;
+                        const cons3 = 0;
+                    }
+
+                    echo cons1;
+                    echo Clazz::cons2;
+                    echo Clazz::cons3;'
+            ],
+            'evenMoreOutOfOrderConstants' => [
+                '<?php
+                    class A {
+                        const X = self::Y;
+                        const Y = 3;
+                    }
+
+                    class C extends B {
+                    }
+
+                    const Z = C::X;
+
+                    class B extends A {
+                        const Z = self::X;
+                    }'
+            ],
         ];
     }
 

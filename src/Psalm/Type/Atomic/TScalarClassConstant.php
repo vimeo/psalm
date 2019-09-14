@@ -144,12 +144,14 @@ class TScalarClassConstant extends Scalar
             return false;
         }
 
-        $class_constants = $source->getCodebase()->classlikes->getConstantsForClass(
+        $class_constant_type = $source->getCodebase()->classlikes->getConstantForClass(
             $fq_classlike_name,
-            \ReflectionProperty::IS_PRIVATE
+            $this->const_name,
+            \ReflectionProperty::IS_PRIVATE,
+            null
         );
 
-        if (!isset($class_constants[$this->const_name])) {
+        if (!$class_constant_type) {
             if (\Psalm\IssueBuffer::accepts(
                 new \Psalm\Issue\UndefinedConstant(
                     'Constant ' . $fq_classlike_name . '::' . $this->const_name . ' is not defined',

@@ -46,21 +46,21 @@ class ClassLikeStorage
     /**
      * A lookup table for nodes of unresolvable public class constants
      *
-     * @var array<string, \PhpParser\Node\Expr>
+     * @var array<string, \Psalm\Internal\Scanner\UnresolvedConstantComponent>
      */
     public $public_class_constant_nodes = [];
 
     /**
      * A lookup table for nodes of unresolvable protected class constants
      *
-     * @var array<string, \PhpParser\Node\Expr>
+     * @var array<string, \Psalm\Internal\Scanner\UnresolvedConstantComponent>
      */
     public $protected_class_constant_nodes = [];
 
     /**
      * A lookup table for nodes of unresolvable private class constants
      *
-     * @var array<string, \PhpParser\Node\Expr>
+     * @var array<string, \Psalm\Internal\Scanner\UnresolvedConstantComponent>
      */
     public $private_class_constant_nodes = [];
 

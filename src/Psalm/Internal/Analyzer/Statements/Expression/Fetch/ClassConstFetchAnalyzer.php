@@ -189,22 +189,24 @@ class ClassConstFetchAnalyzer
                 $class_visibility = \ReflectionProperty::IS_PUBLIC;
             }
 
-            $class_constants = $codebase->classlikes->getConstantsForClass(
+            $class_constant_type = $codebase->classlikes->getConstantForClass(
                 $fq_class_name,
-                $class_visibility
+                $stmt->name->name,
+                $class_visibility,
+                $statements_analyzer
             );
 
-            if (!isset($class_constants[$stmt->name->name])) {
-                $all_class_constants = [];
-
+            if (!$class_constant_type) {
                 if ($fq_class_name !== $context->self) {
-                    $all_class_constants = $codebase->classlikes->getConstantsForClass(
+                    $class_constant_type = $codebase->classlikes->getConstantForClass(
                         $fq_class_name,
-                        \ReflectionProperty::IS_PRIVATE
+                        $stmt->name->name,
+                        \ReflectionProperty::IS_PRIVATE,
+                        $statements_analyzer
                     );
                 }
 
-                if ($all_class_constants && isset($all_class_constants[$stmt->name->name])) {
+                if ($class_constant_type) {
                     if (IssueBuffer::accepts(
                         new InaccessibleClassConstant(
                             'Constant ' . $const_id . ' is not visible in this context',
@@ -294,10 +296,8 @@ class ClassConstFetchAnalyzer
                 }
             }
 
-            if (isset($class_constants[$stmt->name->name])
-                && ($first_part_lc !== 'static' || $class_const_storage->final)
-            ) {
-                $stmt->inferredType = clone $class_constants[$stmt->name->name];
+            if ($first_part_lc !== 'static' || $class_const_storage->final) {
+                $stmt->inferredType = clone $class_constant_type;
                 $context->vars_in_scope[$const_id] = $stmt->inferredType;
             } else {
                 $stmt->inferredType = Type::getMixed();
