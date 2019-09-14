@@ -135,6 +135,13 @@ class Config
     public $throw_exception = false;
 
     /**
+     * Whether or not to load Xdebug stub
+     *
+     * @var bool|null
+     */
+    public $load_xdebug_stub = null;
+
+    /**
      * The directory to store PHP Parser (and other) caches
      *
      * @var string
@@ -683,6 +690,7 @@ class Config
             'ignoreInternalFunctionFalseReturn' => 'ignore_internal_falsable_issues',
             'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
+            'loadXdebugStub' => 'load_xdebug_stub',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -1503,6 +1511,16 @@ class Config
 
         if (file_exists($phpstorm_meta_path)) {
             $stub_files[] = $phpstorm_meta_path;
+        }
+
+        if ($this->load_xdebug_stub) {
+            $xdebug_stub_path = __DIR__ . '/Internal/Stubs/Xdebug.php';
+
+            if (!file_exists($xdebug_stub_path)) {
+                throw new \UnexpectedValueException('Cannot locate XDebug stub');
+            }
+
+            $stub_files[] = $xdebug_stub_path;
         }
 
         foreach ($stub_files as $file_path) {

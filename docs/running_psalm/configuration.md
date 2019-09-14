@@ -203,6 +203,16 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `false`.
 
+#### loadXdebugStub
+```xml
+<psalm
+  loadXdebugStub="[bool]"
+>
+```
+If not present, Psalm will only load the Xdebug stub if psalm has unloaded the extension.
+When `true`, Psalm will load the Xdebug extension stub (as the extension is unloaded when Psalm runs).
+Setting to `false` prevents the stub from loading.
+
 ### Running Psalm
 
 #### autoloader
