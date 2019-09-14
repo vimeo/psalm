@@ -66,7 +66,7 @@ jobs:
       php: 7.3
       env: DEPS="high"
       script:
-        - composer require --dev roave/backwards-compatibility-check:^4.0.0
+        - composer require --dev roave/backward-compatibility-check:^4.0.0
         - ./vendor/bin/roave-backward-compatibility-check
 
     - stage: Ensure no transient used dependencies
