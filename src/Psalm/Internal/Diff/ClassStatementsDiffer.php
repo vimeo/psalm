@@ -233,6 +233,7 @@ class ClassStatementsDiffer extends AstDiffer
             }
         }
 
+        /** @var array<int, array{0: int, 1: int, 2: int, 3: int}> $diff_map */
         return [$keep, $keep_signature, $add_or_delete, $diff_map];
     }
 }

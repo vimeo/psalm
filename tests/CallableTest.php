@@ -1454,6 +1454,19 @@ class CallableTest extends TestCase
                     takesB($getAButReallyB());',
                 'error_message' => 'ArgumentTypeCoercion - src/somefile.php:13:28 - Argument 1 of takesB expects B, parent type A provided',
             ],
+            'closureByRefUseToMixed' => [
+                '<?php
+                    function assertInt(int $int): int {
+                        $s = static function() use(&$int): void {
+                            $int = "42";
+                        };
+
+                        $s();
+
+                        return $int;
+                    }',
+                'error_message' => 'MixedReturnStatement'
+            ],
         ];
     }
 }

@@ -1396,15 +1396,9 @@ class ExpressionAnalyzer
                     continue;
                 }
             } elseif ($use->byRef) {
-                foreach ($context->vars_in_scope[$use_var_id]->getTypes() as $atomic_type) {
-                    if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                        $context->vars_in_scope[$use_var_id]->addType(new Type\Atomic\TInt);
-                    } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
-                        $context->vars_in_scope[$use_var_id]->addType(new Type\Atomic\TFloat);
-                    } elseif ($atomic_type instanceof Type\Atomic\TLiteralString) {
-                        $context->vars_in_scope[$use_var_id]->addType(new Type\Atomic\TString);
-                    }
-                }
+                $context->remove($use_var_id);
+
+                $context->vars_in_scope[$use_var_id] = Type::getMixed();
             }
         }
 
