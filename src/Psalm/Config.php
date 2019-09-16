@@ -322,6 +322,11 @@ class Config
     public $infer_property_types_from_constructor = true;
 
     /**
+     * @var bool
+     */
+    public $ensure_array_offsets_exist = false;
+
+    /**
      * @var array<string, bool>
      */
     public $forbidden_functions = [];

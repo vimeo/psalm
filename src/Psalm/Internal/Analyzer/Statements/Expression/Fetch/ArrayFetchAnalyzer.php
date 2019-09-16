@@ -509,42 +509,70 @@ class ArrayFetchAnalyzer
                                     $has_valid_offset = true;
                                 }
                             }
-                        } elseif ((!TypeAnalyzer::isContainedBy(
-                            $codebase,
-                            $offset_type,
-                            $expected_offset_type,
-                            true,
-                            $offset_type->ignore_falsable_issues,
-                            $union_comparison_results
-                        ) && !$union_comparison_results->type_coerced_from_scalar)
-                            || $union_comparison_results->to_string_cast
-                        ) {
-                            if ($union_comparison_results->type_coerced_from_mixed
-                                && !$offset_type->isMixed()
-                            ) {
-                                if (IssueBuffer::accepts(
-                                    new MixedArrayTypeCoercion(
-                                        'Coercion from array offset type \'' . $offset_type->getId() . '\' '
-                                            . 'to the expected type \'' . $expected_offset_type->getId() . '\'',
-                                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
-                            } else {
-                                $expected_offset_types[] = $expected_offset_type->getId();
-                            }
-
-                            if (TypeAnalyzer::canExpressionTypesBeIdentical(
+                        } else {
+                            $offset_type_contained_by_expected = TypeAnalyzer::isContainedBy(
                                 $codebase,
                                 $offset_type,
-                                $expected_offset_type
-                            )) {
+                                $expected_offset_type,
+                                true,
+                                $offset_type->ignore_falsable_issues,
+                                $union_comparison_results
+                            );
+
+                            var_dump($offset_type->getId() . ' ' . $expected_offset_type->getId());
+
+                            if (!$offset_type_contained_by_expected || $union_comparison_results->to_string_cast) {
+                                if (!$offset_type_contained_by_expected
+                                    && ($offset_type->hasInt() || $offset_type->hasString())
+                                ) {
+                                    if ($codebase->config->ensure_array_offsets_exist) {
+                                        if (IssueBuffer::accepts(
+                                            new PossiblyUndefinedArrayOffset(
+                                                'Possibly undefined array offset \''
+                                                    . $offset_type->getId() . '\' '
+                                                    . 'is risky given expected type \''
+                                                    . $expected_offset_type->getId() . '\'.'
+                                                    . ' Consider using isset beforehand.',
+                                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
+                                    }
+
+                                    $has_valid_offset = true;
+                                } else {
+                                    if ($union_comparison_results->type_coerced_from_mixed
+                                        && !$offset_type->isMixed()
+                                    ) {
+                                        if (IssueBuffer::accepts(
+                                            new MixedArrayTypeCoercion(
+                                                'Coercion from array offset type \''
+                                                    . $offset_type->getId() . '\' '
+                                                    . 'to the expected type \''
+                                                    . $expected_offset_type->getId() . '\'',
+                                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
+                                    } else {
+                                        $expected_offset_types[] = $expected_offset_type->getId();
+                                    }
+
+                                    if (TypeAnalyzer::canExpressionTypesBeIdentical(
+                                        $codebase,
+                                        $offset_type,
+                                        $expected_offset_type
+                                    )) {
+                                        $has_valid_offset = true;
+                                    }
+                                }
+                            } else {
                                 $has_valid_offset = true;
                             }
-                        } else {
-                            $has_valid_offset = true;
                         }
                     }
 

@@ -9,6 +9,51 @@ class ArrayAccessTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
+     * @return void
+     */
+    public function testEnsureArrayOffsetsExist()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedArrayOffset');
+
+        \Psalm\Config::getInstance()->ensure_array_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function takesString(string $s): void {}
+
+                /** @param array<int, string> $arr */
+                function takesArrayIteratorOfString(array $arr): void {
+                    echo $arr[0];
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testDontEnsureArrayOffsetsExist()
+    {
+        \Psalm\Config::getInstance()->ensure_array_offsets_exist = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function takesString(string $s): void {}
+
+                /** @param array<int, string> $arr */
+                function takesArrayIteratorOfString(array $arr): void {
+                    echo $arr[0];
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()
