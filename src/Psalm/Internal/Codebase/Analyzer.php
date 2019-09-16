@@ -70,7 +70,8 @@ use function usort;
  *      class_property_locations: array<string, array<int, \Psalm\CodeLocation>>,
  *      possible_method_param_types: array<string, array<int, \Psalm\Type\Union>>,
  *      taint_data: ?\Psalm\Internal\Codebase\Taint,
- *      unused_suppressions: array<string, array<int, int>>
+ *      unused_suppressions: array<string, array<int, int>>,
+ *      used_suppressions: array<string, array<int, bool>>
  * }
  */
 
@@ -412,6 +413,7 @@ class Analyzer
                         'possible_method_param_types' => $rerun ? [] : $analyzer->getPossibleMethodParamTypes(),
                         'taint_data' => $codebase->taint,
                         'unused_suppressions' => $codebase->track_unused_suppressions ? IssueBuffer::getUnusedSuppressions() : [],
+                        'used_suppressions' => $codebase->track_unused_suppressions ? IssueBuffer::getUsedSuppressions() : [],
                     ];
                     // @codingStandardsIgnoreEnd
                 },
@@ -433,6 +435,7 @@ class Analyzer
 
                 if ($codebase->track_unused_suppressions) {
                     IssueBuffer::addUnusedSuppressions($pool_data['unused_suppressions']);
+                    IssueBuffer::addUsedSuppressions($pool_data['used_suppressions']);
                 }
 
                 if ($codebase->taint && $pool_data['taint_data']) {
