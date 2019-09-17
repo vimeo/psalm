@@ -10,6 +10,7 @@
     checkForThrowsDocblock="false"
     throwExceptionOnError="0"
     findUnusedCode="true"
+    ensureArrayStringOffsetsExist="true"
     resolveFromConfigFile="true"
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
 >
@@ -132,5 +133,11 @@
                 <directory name="tests"/>
             </errorLevel>
         </InternalMethod>
+
+        <PossiblyUndefinedArrayOffset>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+            </errorLevel>
+        </PossiblyUndefinedArrayOffset>
     </issueHandlers>
 </psalm>

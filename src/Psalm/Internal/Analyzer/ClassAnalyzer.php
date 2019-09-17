@@ -1099,6 +1099,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         if (!$storage->abstract
             && !$constructor_analyzer
             && isset($storage->declaring_method_ids['__construct'])
+            && isset($storage->appearing_method_ids['__construct'])
             && $class->extends
         ) {
             list($constructor_declaring_fqcln) = explode('::', $storage->declaring_method_ids['__construct']);

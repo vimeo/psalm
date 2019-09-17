@@ -16,16 +16,39 @@ class ArrayAccessTest extends TestCase
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedArrayOffset');
 
-        \Psalm\Config::getInstance()->ensure_array_offsets_exist = true;
+        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
             '<?php
                 function takesString(string $s): void {}
 
-                /** @param array<int, string> $arr */
+                /** @param array<string, string> $arr */
                 function takesArrayIteratorOfString(array $arr): void {
-                    echo $arr[0];
+                    echo $arr["hello"];
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnsureArrayOffsetsExistWithIssetCheck()
+    {
+        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function takesString(string $s): void {}
+
+                /** @param array<string, string> $arr */
+                function takesArrayIteratorOfString(array $arr): void {
+                    if (isset($arr["hello"])) {
+                        echo $arr["hello"];
+                    }
                 }'
         );
 
@@ -37,16 +60,16 @@ class ArrayAccessTest extends TestCase
      */
     public function testDontEnsureArrayOffsetsExist()
     {
-        \Psalm\Config::getInstance()->ensure_array_offsets_exist = false;
+        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = false;
 
         $this->addFile(
             'somefile.php',
             '<?php
                 function takesString(string $s): void {}
 
-                /** @param array<int, string> $arr */
+                /** @param array<string, string> $arr */
                 function takesArrayIteratorOfString(array $arr): void {
-                    echo $arr[0];
+                    echo $arr["hello"];
                 }'
         );
 
