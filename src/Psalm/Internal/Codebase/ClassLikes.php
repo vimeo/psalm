@@ -38,6 +38,7 @@ use function strlen;
 use function strrpos;
 use function strtolower;
 use function substr;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @internal
@@ -1555,6 +1556,25 @@ class ClassLikes
             }
 
             return new Type\Atomic\TMixed;
+        }
+
+        if ($c instanceof UnresolvedConstant\UnresolvedTernary) {
+            $cond = $this->resolveConstantType($c->cond, $statements_analyzer);
+            $if = $c->if ? $this->resolveConstantType($c->if, $statements_analyzer) : null;
+            $else = $this->resolveConstantType($c->else, $statements_analyzer);
+
+            if ($cond instanceof Type\Atomic\TLiteralFloat
+                || $cond instanceof Type\Atomic\TLiteralInt
+                || $cond instanceof Type\Atomic\TLiteralString
+            ) {
+                if ($cond->value) {
+                    return $if ? $if : $cond;
+                }
+            } elseif ($cond instanceof Type\Atomic\TFalse || $cond instanceof Type\Atomic\TNull) {
+                return $else;
+            } elseif ($cond instanceof Type\Atomic\TTrue) {
+                return $if ? $if : $cond;
+            }
         }
 
         if ($c instanceof UnresolvedConstant\ArrayValue) {

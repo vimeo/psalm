@@ -429,6 +429,16 @@ class ConstantTest extends TestCase
                         const Z = self::X;
                     }'
             ],
+            'supportTernaries' => [
+                '<?php
+                    const cons1 = true;
+
+                    class Clazz {
+                        const cons2 = (cons1) ? 1 : 0;
+                    }
+
+                    echo Clazz::cons2;',
+            ]
         ];
     }
 

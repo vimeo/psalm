@@ -3283,6 +3283,38 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Ternary) {
+            $cond = self::getUnresolvedClassConstExpr(
+                $stmt->cond,
+                $aliases,
+                $fq_classlike_name
+            );
+
+            $if = null;
+
+            if ($stmt->if) {
+                $if = self::getUnresolvedClassConstExpr(
+                    $stmt->if,
+                    $aliases,
+                    $fq_classlike_name
+                );
+
+                if ($if === null) {
+                    $if = false;
+                }
+            }
+
+            $else = self::getUnresolvedClassConstExpr(
+                $stmt->else,
+                $aliases,
+                $fq_classlike_name
+            );
+
+            if ($cond && $else && $if !== false) {
+                return new UnresolvedConstant\UnresolvedTernary($cond, $if, $else);
+            }
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             if (strtolower($stmt->name->parts[0]) === 'false') {
                 return new UnresolvedConstant\ScalarValue(false);
