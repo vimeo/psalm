@@ -213,6 +213,14 @@ If not present, Psalm will only load the Xdebug stub if psalm has unloaded the e
 When `true`, Psalm will load the Xdebug extension stub (as the extension is unloaded when Psalm runs).
 Setting to `false` prevents the stub from loading.
 
+#### ensureArrayStringOffsetsExist
+```xml
+<psalm
+  ensureArrayStringOffsetsExist="[bool]"
+>
+```
+When `true`, Psalm will complain when referencing an explicit string offset on an array e.g. `$arr['foo']` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
+
 ### Running Psalm
 
 #### autoloader
