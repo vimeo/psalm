@@ -322,6 +322,11 @@ class Config
     public $infer_property_types_from_constructor = true;
 
     /**
+     * @var bool
+     */
+    public $ensure_array_string_offsets_exist = false;
+
+    /**
      * @var array<string, bool>
      */
     public $forbidden_functions = [];
@@ -691,6 +696,7 @@ class Config
             'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
             'loadXdebugStub' => 'load_xdebug_stub',
+            'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {

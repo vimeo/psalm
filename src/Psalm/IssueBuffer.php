@@ -354,6 +354,10 @@ class IssueBuffer
         if (self::$issues_data) {
             usort(
                 self::$issues_data,
+                /**
+                 * @param array{file_path: string, line_from: int, column_from: int} $d1
+                 * @param array{file_path: string, line_from: int, column_from: int} $d2
+                 */
                 function (array $d1, array $d2) : int {
                     if ($d1['file_path'] === $d2['file_path']) {
                         if ($d1['line_from'] === $d2['line_from']) {

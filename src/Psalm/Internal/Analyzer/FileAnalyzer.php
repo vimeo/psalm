@@ -352,6 +352,10 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             }
         }
 
+        if (!isset($this_context->vars_in_scope['$this'])) {
+            throw new \UnexpectedValueException('Should exist');
+        }
+
         $call_context->vars_in_scope['$this'] = $this_context->vars_in_scope['$this'];
 
         $class_analyzer_to_examine->getMethodMutations($method_name, $call_context);

@@ -1676,6 +1676,14 @@ class Union
     }
 
     /**
+     * @return bool
+     */
+    public function hasLiteralString()
+    {
+        return count($this->literal_string_types) > 0;
+    }
+
+    /**
      * @return bool true if this is a int literal with only one possible value
      */
     public function isSingleIntLiteral()

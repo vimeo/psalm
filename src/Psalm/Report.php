@@ -68,6 +68,9 @@ abstract class Report
         if (!$report_options->show_info) {
             $this->issues_data = array_filter(
                 $issues_data,
+                /**
+                 * @var array{severity: string}
+                 */
                 function (array $issue_data) : bool {
                     return $issue_data['severity'] !== Config::REPORT_INFO;
                 }

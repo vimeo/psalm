@@ -35,8 +35,11 @@ class ErrorBaseline
         foreach ($existingIssues as $existingIssue) {
             $totalIssues += array_reduce(
                 $existingIssue,
+                /**
+                 * @param array{o:int, s:array<int, string>} $existingIssue
+                 */
                 function (int $carry, array $existingIssue): int {
-                    return $carry + (int)$existingIssue['o'];
+                    return $carry + $existingIssue['o'];
                 },
                 0
             );
