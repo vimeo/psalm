@@ -617,7 +617,10 @@ abstract class Type
 
             $offset_defining_class = array_keys($offset_template_data)[0];
 
-            if (!$offset_defining_class && $offset_template_data[''][0]->isSingle()) {
+            if (!$offset_defining_class
+                && isset($offset_template_data[''])
+                && $offset_template_data[''][0]->isSingle()
+            ) {
                 $offset_template_type = array_values($offset_template_data[''][0]->getTypes())[0];
 
                 if ($offset_template_type instanceof Type\Atomic\TTemplateKeyOf) {

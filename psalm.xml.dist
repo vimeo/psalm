@@ -10,7 +10,7 @@
     checkForThrowsDocblock="false"
     throwExceptionOnError="0"
     findUnusedCode="true"
-    ensureArrayStringOffsetsExist="true"
+    ensureArrayStringOffsetsExist="false"
     resolveFromConfigFile="true"
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
 >
