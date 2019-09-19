@@ -195,18 +195,20 @@ class AssertionFinder
                     throw new \UnexpectedValueException('$count_equality_position value');
                 }
 
-                /** @var PhpParser\Node\Expr\FuncCall $counted_expr */
-                $var_name = ExpressionAnalyzer::getArrayVarId(
-                    $counted_expr->args[0]->value,
-                    $this_class_name,
-                    $source
-                );
+                if ($counted_expr->args) {
+                    /** @var PhpParser\Node\Expr\FuncCall $counted_expr */
+                    $var_name = ExpressionAnalyzer::getArrayVarId(
+                        $counted_expr->args[0]->value,
+                        $this_class_name,
+                        $source
+                    );
 
-                if ($var_name) {
-                    if (self::hasReconcilableNonEmptyCountEqualityCheck($conditional)) {
-                        $if_types[$var_name] = [['non-empty-countable']];
-                    } else {
-                        $if_types[$var_name] = [['=non-empty-countable']];
+                    if ($var_name) {
+                        if (self::hasReconcilableNonEmptyCountEqualityCheck($conditional)) {
+                            $if_types[$var_name] = [['non-empty-countable']];
+                        } else {
+                            $if_types[$var_name] = [['=non-empty-countable']];
+                        }
                     }
                 }
 
@@ -2075,17 +2077,21 @@ class AssertionFinder
      */
     protected static function hasGetTypeCheck(PhpParser\Node\Expr\BinaryOp $conditional)
     {
-        if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall &&
-            $conditional->right->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->right->name->parts[0]) === 'gettype' &&
-            $conditional->left instanceof PhpParser\Node\Scalar\String_) {
+        if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->right->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->right->name->parts[0]) === 'gettype'
+            && $conditional->right->args
+            && $conditional->left instanceof PhpParser\Node\Scalar\String_
+        ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall &&
-            $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[0]) === 'gettype' &&
-            $conditional->right instanceof PhpParser\Node\Scalar\String_) {
+        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->left->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->left->name->parts[0]) === 'gettype'
+            && $conditional->left->args
+            && $conditional->right instanceof PhpParser\Node\Scalar\String_
+        ) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -2173,7 +2179,8 @@ class AssertionFinder
     {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->parts[0]) === 'count';
+            && strtolower($conditional->left->name->parts[0]) === 'count'
+            && $conditional->left->args;
 
         $right_number = $conditional->right instanceof PhpParser\Node\Scalar\LNumber
             && $conditional->right->value >= (
@@ -2191,7 +2198,8 @@ class AssertionFinder
 
         $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->parts[0]) === 'count';
+            && strtolower($conditional->right->name->parts[0]) === 'count'
+            && $conditional->right->args;
 
         $left_number = $conditional->left instanceof PhpParser\Node\Scalar\LNumber
             && $conditional->left->value >= (

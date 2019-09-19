@@ -711,6 +711,13 @@ class AssertTest extends TestCase
                     $a->assertProperty();
                     echo (2 * $a->x);',
             ],
+            'dontCrashWhenGettingEmptyCountAssertions' => [
+                '<?php
+                    function foo() : bool {
+                        /** @psalm-suppress TooFewArguments */
+                        return count() > 0;
+                    }',
+            ],
         ];
     }
 
