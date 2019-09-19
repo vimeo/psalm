@@ -82,7 +82,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
             $attrs = $node->getAttributes();
 
             if ($cs = $node->getComments()) {
-                /** @var int */
                 $attrs['startFilePos'] = $cs[0]->getFilePos();
             }
 

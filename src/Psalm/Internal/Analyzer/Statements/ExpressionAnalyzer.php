@@ -43,6 +43,7 @@ use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedVariable;
+use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -1460,6 +1461,20 @@ class ExpressionAnalyzer
                     continue;
                 }
 
+                if ($codebase->find_unused_variables
+                    && isset($context->vars_in_scope[$var_comment->var_id])
+                    && $context->vars_in_scope[$var_comment->var_id]->getId() === $comment_type->getId()
+                ) {
+                    if (IssueBuffer::accepts(
+                        new UnnecessaryVarAnnotation(
+                            'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
+
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
@@ -1613,7 +1628,6 @@ class ExpressionAnalyzer
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
     ) {
-        /** @var PhpParser\Node\Expr $part */
         foreach ($stmt->parts as $part) {
             if (self::analyze($statements_analyzer, $part, $context) === false) {
                 return false;

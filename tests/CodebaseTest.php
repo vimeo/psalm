@@ -161,7 +161,6 @@ class CodebaseTest extends TestCase
                     $storage->methods['m']->custom_metadata['c'] = 'd';
                     $storage->properties['prop']->custom_metadata['e'] = 'f';
                     $storage->methods['m']->params[0]->custom_metadata['g'] = 'h';
-                    /** @var Codebase $codebase */
                     $codebase->file_storage_provider->get('somefile.php')->custom_metadata['i'] = 'j';
                 }
             }

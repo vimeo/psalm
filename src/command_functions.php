@@ -153,7 +153,6 @@ function getArguments() : array
     $filtered_input_paths = [];
 
     for ($i = 0; $i < count($argv); ++$i) {
-        /** @var string */
         $input_path = $argv[$i];
 
         if (realpath($input_path) !== false) {
@@ -232,7 +231,6 @@ function getPathsToCheck($f_paths)
             if ($stdin = fgets(STDIN)) {
                 $filtered_input_paths = preg_split('/\s+/', trim($stdin));
             }
-            /** @var bool */
             $blocked = $meta['blocked'];
             stream_set_blocking(STDIN, $blocked);
         }

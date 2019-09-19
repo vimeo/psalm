@@ -1735,7 +1735,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $existing_params = [];
         $storage->params = [];
 
-        /** @var PhpParser\Node\Param $param */
         foreach ($stmt->getParams() as $param) {
             if ($param->var instanceof PhpParser\Node\Expr\Error) {
                 if (IssueBuffer::accepts(

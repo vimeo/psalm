@@ -1114,6 +1114,17 @@ class UnusedVariableTest extends TestCase
                         return $foo;
                     }',
             ],
+            'refineForeachVarType' => [
+                '<?php
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    /** @var string $s */
+                    foreach (foo() as $s) {
+                        echo $s;
+                    }',
+            ],
         ];
     }
 
@@ -1813,6 +1824,43 @@ class UnusedVariableTest extends TestCase
                         echo $i;
                     }',
                 'error_message' => 'UnusedVariable',
+            ],
+            'knownVarType' => [
+                '<?php
+                    function foo() : string {
+                        return "hello";
+                    }
+
+                    /** @var string */
+                    $a = foo();
+
+                    echo $a;',
+                'error_message' => 'UnnecessaryVarAnnotation',
+            ],
+            'knownVarTypeWithName' => [
+                '<?php
+                    function foo() : string {
+                        return "hello";
+                    }
+
+                    /** @var string $a */
+                    $a = foo();
+
+                    echo $a;',
+                'error_message' => 'UnnecessaryVarAnnotation',
+            ],
+            'knownForeachVarType' => [
+                '<?php
+                    /** @return string[] */
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    /** @var string $s */
+                    foreach (foo() as $s) {
+                        echo $s;
+                    }',
+                'error_message' => 'UnnecessaryVarAnnotation',
             ],
         ];
     }

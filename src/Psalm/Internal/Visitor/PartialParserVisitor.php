@@ -69,7 +69,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
         $attrs = $node->getAttributes();
 
         if ($cs = $node->getComments()) {
-            /** @var int */
             $stmt_start_pos = $cs[0]->getFilePos();
         } else {
             /** @var int */
@@ -161,7 +160,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
                         $fake_class = '<?php class _ {' . $method_contents . '}';
 
-                        /** @var array<PhpParser\Node\Stmt> */
                         $replacement_stmts = $this->parser->parse(
                             $fake_class,
                             $error_handler
@@ -189,7 +187,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             $hacky_class_fix = preg_replace('/(->|::)(\n\s*if\s*\()/', '~;$2', $hacky_class_fix);
 
                             if ($hacky_class_fix !== $fake_class) {
-                                /** @var array<PhpParser\Node\Stmt> */
                                 $replacement_stmts = $this->parser->parse(
                                     $hacky_class_fix,
                                     $error_handler

@@ -22,6 +22,7 @@ use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
+use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use function is_string;
@@ -158,6 +159,20 @@ class AssignmentAnalyzer
                         continue;
                     }
 
+                    if ($codebase->find_unused_variables
+                        && isset($context->vars_in_scope[$var_comment->var_id])
+                        && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new UnnecessaryVarAnnotation(
+                                'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
+                                new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                            )
+                        )) {
+                            // fall through
+                        }
+                    }
+
                     $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
                 } catch (\UnexpectedValueException $e) {
                     if (IssueBuffer::accepts(
@@ -204,6 +219,23 @@ class AssignmentAnalyzer
         }
 
         if ($comment_type) {
+            $temp_assign_value_type = $assign_value_type ?: ($assign_value->inferredType ?? null);
+
+            if ($codebase->find_unused_variables
+                && $temp_assign_value_type
+                && $array_var_id
+                && $temp_assign_value_type->getId() === $comment_type->getId()
+            ) {
+                if (IssueBuffer::accepts(
+                    new UnnecessaryVarAnnotation(
+                        'The @var annotation for ' . $array_var_id . ' is unnecessary',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                    )
+                )) {
+                    // fall through
+                }
+            }
+
             $assign_value_type = $comment_type;
         } elseif (!$assign_value_type) {
             if (isset($assign_value->inferredType)) {
@@ -362,7 +394,6 @@ class AssignmentAnalyzer
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
             || $assign_var instanceof PhpParser\Node\Expr\Array_
         ) {
-            /** @var int $offset */
             foreach ($assign_var->items as $offset => $assign_var_item) {
                 // $assign_var_item can be null e.g. list($a, ) = ['a', 'b']
                 if (!$assign_var_item) {
@@ -386,8 +417,10 @@ class AssignmentAnalyzer
                     continue;
                 }
 
-                if (isset($assign_value_type->getTypes()['array'])
-                    && ($array_atomic_type = $assign_value_type->getTypes()['array'])
+                $assign_value_types = $assign_value_type->getTypes();
+
+                if (isset($assign_value_types['array'])
+                    && ($array_atomic_type = $assign_value_types['array'])
                     && $array_atomic_type instanceof Type\Atomic\ObjectLike
                     && !$assign_var_item->key
                     && isset($array_atomic_type->properties[$offset]) // if object-like has int offsets

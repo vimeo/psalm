@@ -55,7 +55,6 @@ class ArrayAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        /** @var int $int_offset */
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
                 continue;

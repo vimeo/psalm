@@ -228,7 +228,9 @@ class DocumentationTest extends TestCase
                 '<?php' . "\n" . $blocks[0],
                 $issue_name,
                 $ignored_issues,
-                strpos($issue_name, 'Unused') !== false || strpos($issue_name, 'Unevaluated') !== false,
+                strpos($issue_name, 'Unused') !== false
+                    || strpos($issue_name, 'Unevaluated') !== false
+                    || strpos($issue_name, 'Unnecessary') !== false,
             ];
         }
 

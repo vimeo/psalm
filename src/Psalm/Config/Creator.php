@@ -103,13 +103,11 @@ class Creator
 
         $nodes = [];
 
-        /** @var string|string[] $path */
         foreach ($psr_paths as $paths) {
             if (!is_array($paths)) {
                 $paths = [$paths];
             }
 
-            /** @var string $path */
             foreach ($paths as $path) {
                 if ($path === '') {
                     $nodes = array_merge(

@@ -295,7 +295,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 $closure_return_type = Type::getMixed();
             }
 
-            /** @var PhpParser\Node\Expr\Closure $this->function */
             $this->function->inferredType = new Type\Union([
                 new Type\Atomic\TFn(
                     'Closure',
@@ -922,9 +921,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 ];
             }
 
-            /**
-             * @var PhpParser\Node\Param
-             */
             $parser_param = $this->function->getParams()[$offset];
 
             if (!$function_param->type_location || !$function_param->location) {

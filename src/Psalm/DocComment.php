@@ -78,7 +78,6 @@ class DocComment
         if ($preserve_format) {
             foreach ($lines as $m => $line) {
                 if (preg_match('/^\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches)) {
-                    /** @var string[] $matches */
                     list($full_match, $type, $data) = $matches;
 
                     $docblock = str_replace($full_match, '', $docblock);

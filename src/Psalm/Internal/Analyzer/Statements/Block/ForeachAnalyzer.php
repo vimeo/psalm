@@ -21,6 +21,7 @@ use Psalm\Issue\PossiblyInvalidIterator;
 use Psalm\Issue\PossiblyNullIterator;
 use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\RawObjectIteration;
+use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
@@ -143,6 +144,21 @@ class ForeachAnalyzer
             if (isset($context->vars_in_scope[$var_comment->var_id])
                 || $statements_analyzer->isSuperGlobal($var_comment->var_id)
             ) {
+                if ($codebase->find_unused_variables
+                    && $doc_comment
+                    && isset($context->vars_in_scope[$var_comment->var_id])
+                    && $context->vars_in_scope[$var_comment->var_id]->getId() === $comment_type->getId()
+                ) {
+                    if (IssueBuffer::accepts(
+                        new UnnecessaryVarAnnotation(
+                            'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt, null, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
+
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }

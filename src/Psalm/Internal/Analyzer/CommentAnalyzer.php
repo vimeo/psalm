@@ -334,7 +334,6 @@ class CommentAnalyzer
         $info = new FunctionDocblockComment();
 
         if (isset($parsed_docblock['specials']['return']) || isset($parsed_docblock['specials']['psalm-return'])) {
-            /** @var array<int, string> */
             $return_specials = isset($parsed_docblock['specials']['psalm-return'])
                 ? $parsed_docblock['specials']['psalm-return']
                 : $parsed_docblock['specials']['return'];
@@ -355,7 +354,6 @@ class CommentAnalyzer
                     ? $parsed_docblock['specials']['psalm-param']
                     : []);
 
-            /** @var string $param */
             foreach ($all_params as $offset => $param) {
                 $line_parts = self::splitDocLine($param);
 
@@ -400,7 +398,6 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock['specials']['param-out'])) {
-            /** @var string $param */
             foreach ($parsed_docblock['specials']['param-out'] as $offset => $param) {
                 $line_parts = self::splitDocLine($param);
 
@@ -441,7 +438,6 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock['specials']['psalm-taint-sink'])) {
-            /** @var string $param */
             foreach ($parsed_docblock['specials']['psalm-taint-sink'] as $param) {
                 $param = trim($param);
 
@@ -450,7 +446,6 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock['specials']['psalm-assert-untainted'])) {
-            /** @var string $param */
             foreach ($parsed_docblock['specials']['psalm-assert-untainted'] as $param) {
                 $param = trim($param);
 

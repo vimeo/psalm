@@ -1341,7 +1341,6 @@ class ProjectAnalyzer
             $ret = @shell_exec('nproc');
             if (is_string($ret)) {
                 $ret = trim($ret);
-                /** @var int|false */
                 $tmp = filter_var($ret, FILTER_VALIDATE_INT);
                 if (is_int($tmp)) {
                     return $tmp;
@@ -1352,7 +1351,6 @@ class ProjectAnalyzer
         $ret = @shell_exec('sysctl -n hw.ncpu');
         if (is_string($ret)) {
             $ret = trim($ret);
-            /** @var int|false */
             $tmp = filter_var($ret, FILTER_VALIDATE_INT);
             if (is_int($tmp)) {
                 return $tmp;

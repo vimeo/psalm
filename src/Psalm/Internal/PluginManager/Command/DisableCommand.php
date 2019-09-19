@@ -53,7 +53,6 @@ class DisableCommand extends Command
 
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
 
-        /** @var string|string[]|bool|null */
         $config_file_path = $i->getOption('config');
         if ($config_file_path !== null && !is_string($config_file_path)) {
             throw new \UnexpectedValueException('Config file path should be a string');

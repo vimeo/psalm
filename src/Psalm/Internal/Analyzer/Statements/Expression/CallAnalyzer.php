@@ -1894,10 +1894,8 @@ class CallAnalyzer
             $array_arg_types[] = $array_arg_type;
         }
 
-        /** @var null|PhpParser\Node\Arg */
         $closure_arg = isset($args[$closure_index]) ? $args[$closure_index] : null;
 
-        /** @var Type\Union|null */
         $closure_arg_type = $closure_arg && isset($closure_arg->value->inferredType)
                 ? $closure_arg->value->inferredType
                 : null;
@@ -2161,7 +2159,6 @@ class CallAnalyzer
                 continue;
             }
 
-            /** @var Type\Atomic\TArray */
             $array_arg_type = $array_arg_types[$i];
 
             $input_type = $array_arg_type->type_params[1];

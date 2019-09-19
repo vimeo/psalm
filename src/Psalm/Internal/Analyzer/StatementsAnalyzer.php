@@ -1119,9 +1119,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         // Check if we have to remove assignment statemnt as expression (i.e. just "$var = ")
 
                         // Consider chain of assignments
-                        /** @var PhpParser\Node\Expr\Assign | PhpParser\Node\Expr\AssignOp |
-                        PhpParser\Node\Expr\AssignRef $assign_exp */
-                        /** @var PhpParser\Node\Expr $rhs_exp */
                         $rhs_exp = $assign_exp->expr;
                         if ($rhs_exp instanceof PhpParser\Node\Expr\Assign
                             || $rhs_exp instanceof PhpParser\Node\Expr\AssignOp

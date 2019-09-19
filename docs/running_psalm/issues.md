@@ -2375,6 +2375,19 @@ class A {
 }
 ```
 
+### UnnecessaryVarAnnotation
+
+Emitted when `--find-dead-code` is turned you're using a `@var` annotation on an assignment that Psalm has already identified a type for.
+
+```php
+function foo() : string {
+    return "hello";
+}
+
+/** @var string */
+$a = foo();
+```
+
 ### UnrecognizedExpression
 
 Emitted when Psalm encounters an expression that it doesn't know how to handle. This should never happen.
