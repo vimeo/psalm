@@ -195,20 +195,18 @@ class AssertionFinder
                     throw new \UnexpectedValueException('$count_equality_position value');
                 }
 
-                if ($counted_expr->args) {
-                    /** @var PhpParser\Node\Expr\FuncCall $counted_expr */
-                    $var_name = ExpressionAnalyzer::getArrayVarId(
-                        $counted_expr->args[0]->value,
-                        $this_class_name,
-                        $source
-                    );
+                /** @var PhpParser\Node\Expr\FuncCall $counted_expr */
+                $var_name = ExpressionAnalyzer::getArrayVarId(
+                    $counted_expr->args[0]->value,
+                    $this_class_name,
+                    $source
+                );
 
-                    if ($var_name) {
-                        if (self::hasReconcilableNonEmptyCountEqualityCheck($conditional)) {
-                            $if_types[$var_name] = [['non-empty-countable']];
-                        } else {
-                            $if_types[$var_name] = [['=non-empty-countable']];
-                        }
+                if ($var_name) {
+                    if (self::hasReconcilableNonEmptyCountEqualityCheck($conditional)) {
+                        $if_types[$var_name] = [['non-empty-countable']];
+                    } else {
+                        $if_types[$var_name] = [['=non-empty-countable']];
                     }
                 }
 
