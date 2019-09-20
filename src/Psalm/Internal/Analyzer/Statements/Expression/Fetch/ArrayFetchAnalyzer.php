@@ -1111,14 +1111,37 @@ class ArrayFetchAnalyzer
      */
     public static function replaceOffsetTypeWithInts(Type\Union $offset_type)
     {
-        $offset_string_types = $offset_type->getLiteralStrings();
+        $offset_types = $offset_type->getTypes();
 
-        $offset_type = clone $offset_type;
+        $cloned = false;
 
-        foreach ($offset_string_types as $key => $offset_string_type) {
-            if (preg_match('/^(0|[1-9][0-9]*)$/', $offset_string_type->value)) {
-                $offset_type->addType(new Type\Atomic\TLiteralInt((int) $offset_string_type->value));
-                $offset_type->removeType($key);
+        foreach ($offset_types as $key => $offset_type_part) {
+            if ($offset_type_part instanceof Type\Atomic\TLiteralString) {
+                if (preg_match('/^(0|[1-9][0-9]*)$/', $offset_type_part->value)) {
+                    if (!$cloned) {
+                        $offset_type = clone $offset_type;
+                        $cloned = true;
+                    }
+                    $offset_type->addType(new Type\Atomic\TLiteralInt((int) $offset_type_part->value));
+                    $offset_type->removeType($key);
+                }
+            } elseif ($offset_type_part instanceof Type\Atomic\TBool) {
+                if (!$cloned) {
+                    $offset_type = clone $offset_type;
+                    $cloned = true;
+                }
+
+                if ($offset_type_part instanceof Type\Atomic\TFalse) {
+                    $offset_type->addType(new Type\Atomic\TLiteralInt(0));
+                    $offset_type->removeType($key);
+                } elseif ($offset_type_part instanceof Type\Atomic\TTrue) {
+                    $offset_type->addType(new Type\Atomic\TLiteralInt(1));
+                    $offset_type->removeType($key);
+                } else {
+                    $offset_type->addType(new Type\Atomic\TLiteralInt(0));
+                    $offset_type->addType(new Type\Atomic\TLiteralInt(1));
+                    $offset_type->removeType($key);
+                }
             }
         }
 
