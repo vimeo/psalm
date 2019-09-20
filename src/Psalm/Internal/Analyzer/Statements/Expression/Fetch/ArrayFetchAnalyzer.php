@@ -1132,8 +1132,10 @@ class ArrayFetchAnalyzer
                 }
 
                 if ($offset_type_part instanceof Type\Atomic\TFalse) {
-                    $offset_type->addType(new Type\Atomic\TLiteralInt(0));
-                    $offset_type->removeType($key);
+                    if (!$offset_type->ignore_falsable_issues) {
+                        $offset_type->addType(new Type\Atomic\TLiteralInt(0));
+                        $offset_type->removeType($key);
+                    }
                 } elseif ($offset_type_part instanceof Type\Atomic\TTrue) {
                     $offset_type->addType(new Type\Atomic\TLiteralInt(1));
                     $offset_type->removeType($key);
