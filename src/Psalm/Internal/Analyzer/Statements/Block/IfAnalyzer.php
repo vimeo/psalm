@@ -1250,7 +1250,7 @@ class IfAnalyzer
                     $old_elseif_context,
                     $elseif_context,
                     false,
-                    array_keys($negated_elseif_types),
+                    array_keys(\array_intersect_key($negated_elseif_types, $pre_conditional_context->vars_in_scope)),
                     $if_scope->updated_vars
                 );
             }
