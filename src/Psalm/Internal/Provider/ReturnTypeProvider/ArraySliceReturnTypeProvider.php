@@ -26,7 +26,6 @@ class ArraySliceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         CodeLocation $code_location
     ) : Type\Union {
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
-        $preserve_keys_arg = isset($call_args[3]->value) ? $call_args[3]->value : null;
 
         $first_arg_array = $first_arg
             && isset($first_arg->inferredType)
@@ -39,24 +38,6 @@ class ArraySliceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
 
         if (!$first_arg_array) {
             return Type::getArray();
-        }
-
-        if (!$preserve_keys_arg
-            || ($preserve_keys_arg instanceof PhpParser\Node\Expr\ConstFetch
-                && strtolower($preserve_keys_arg->name->parts[0]) === 'false')
-        ) {
-            if ($first_arg_array instanceof Type\Atomic\TArray) {
-                $value_type = clone $first_arg_array->type_params[1];
-            } else {
-                $value_type = $first_arg_array->getGenericValueType();
-            }
-
-            return new Type\Union([
-                new Type\Atomic\TArray([
-                    Type::getInt(),
-                    $value_type,
-                ]),
-            ]);
         }
 
         if ($first_arg_array instanceof Type\Atomic\TArray) {
