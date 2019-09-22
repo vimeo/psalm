@@ -590,7 +590,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             if (strpos($assertion, '<') || strpos($assertion, '[')) {
                 $new_type_union = Type::parseString($assertion);
 
-                $new_type_part = array_values($new_type_union->getTypes());
+                $new_type_part = \array_values($new_type_union->getTypes());
             } else {
                 $new_type_part = Atomic::create($assertion, null, $template_type_map);
             }
