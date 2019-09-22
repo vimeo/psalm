@@ -351,6 +351,36 @@ class ImmutableAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
             ],
+            'mustBeImmutableLikeInterfaces' => [
+                '<?php
+                    /** @psalm-immutable */
+                    interface SomethingImmutable {
+                        public function someInteger() : int;
+                    }
+
+                    class MutableImplementation implements SomethingImmutable {
+                        private int $counter = 0;
+                        public function someInteger() : int {
+                            return ++$this->counter;
+                        }
+                    }',
+                'error_message' => 'MissingImmutableAnnotation',
+            ],
+            'inheritImmutabilityFromParent' => [
+                '<?php
+                    /** @psalm-immutable */
+                    abstract class SomethingImmutable {
+                        abstract public function someInteger() : int;
+                    }
+
+                    class MutableImplementation extends SomethingImmutable {
+                        private int $counter = 0;
+                        public function someInteger() : int {
+                            return ++$this->counter;
+                        }
+                    }',
+                'error_message' => 'MissingImmutableAnnotation',
+            ],
         ];
     }
 }
