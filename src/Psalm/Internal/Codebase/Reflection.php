@@ -243,6 +243,7 @@ class Reflection
 
         $storage->is_static = $method->isStatic();
         $storage->abstract = $method->isAbstract();
+        $storage->mutation_free = $storage->external_mutation_free = $method_name === '__construct';
 
         $declaring_method_id = $declaring_class->name . '::' . strtolower((string)$method->getName());
 

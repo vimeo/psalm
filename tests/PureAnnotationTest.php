@@ -155,6 +155,17 @@ class PureAnnotationTest extends TestCase
                         return \array_map(function(string $s) { return $s;}, $arr);
                     }'
             ],
+            'pureBuiltinCall' => [
+                '<?php
+                    final class Date
+                    {
+                        /** @psalm-pure */
+                        public static function timeZone(string $tzString) : DateTimeZone
+                        {
+                            return new \DateTimeZone($tzString);
+                        }
+                    }',
+            ],
         ];
     }
 
