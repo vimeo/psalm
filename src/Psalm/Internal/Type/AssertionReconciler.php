@@ -519,6 +519,12 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($existing_var_type->hasMixed()) {
+            if ($is_loose_equality
+                && $new_type->hasScalarType()
+            ) {
+                return $existing_var_type;
+            }
+
             return $new_type;
         }
 
@@ -2044,6 +2050,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $value = (int) $value;
 
             if ($existing_var_type->hasMixed() || $existing_var_type->hasScalar() || $existing_var_type->hasNumeric()) {
+                if ($is_loose_equality) {
+                    return $existing_var_type;
+                }
+
                 return new Type\Union([new Type\Atomic\TLiteralInt($value)]);
             }
 
@@ -2133,6 +2143,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             || $scalar_type === 'trait-string'
         ) {
             if ($existing_var_type->hasMixed() || $existing_var_type->hasScalar()) {
+                if ($is_loose_equality) {
+                    return $existing_var_type;
+                }
+
                 if ($scalar_type === 'class-string'
                     || $scalar_type === 'interface-string'
                     || $scalar_type === 'trait-string'
@@ -2198,6 +2212,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $value = (float) $value;
 
             if ($existing_var_type->hasMixed() || $existing_var_type->hasScalar() || $existing_var_type->hasNumeric()) {
+                if ($is_loose_equality) {
+                    return $existing_var_type;
+                }
+
                 return new Type\Union([new Type\Atomic\TLiteralFloat($value)]);
             }
 
