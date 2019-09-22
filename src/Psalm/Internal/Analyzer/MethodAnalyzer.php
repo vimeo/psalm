@@ -29,6 +29,7 @@ use function strtolower;
 use function explode;
 use function is_string;
 use function in_array;
+use Psalm\Issue\MissingImmutableAnnotation;
 
 /**
  * @internal
@@ -607,6 +608,21 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 }
 
                 return null;
+            }
+        }
+
+        if ($guide_method_storage->external_mutation_free
+            && !$implementer_method_storage->external_mutation_free
+        ) {
+            if (IssueBuffer::accepts(
+                new MissingImmutableAnnotation(
+                    $cased_guide_method_id . ' is marked immutable, but '
+                        . $implementer_method_id . ' is not marked immutable',
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                // fall through
             }
         }
 
