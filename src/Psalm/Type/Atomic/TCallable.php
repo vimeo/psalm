@@ -11,14 +11,6 @@ class TCallable extends \Psalm\Type\Atomic
     public $value;
 
     /**
-     * @return string
-     */
-    public function getKey()
-    {
-        return 'callable';
-    }
-
-    /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class

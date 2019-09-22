@@ -60,6 +60,14 @@ trait CallableTrait
     }
 
     /**
+     * @return string
+     */
+    public function getKey()
+    {
+        return $this->__toString();
+    }
+
+    /**
      * @param  array<string, string> $aliased_classes
      *
      * @return string

@@ -436,6 +436,13 @@ class TypeCombinationTest extends TestCase
                     'array{a: 1|2, b: 2|3, c: 1|3}',
                 ],
             ],
+            'combineClosures' => [
+                'Closure(A):void|Closure(B):void',
+                [
+                    'Closure(A):void',
+                    'Closure(B):void',
+                ],
+            ],
         ];
     }
 

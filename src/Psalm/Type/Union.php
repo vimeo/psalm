@@ -615,7 +615,33 @@ class Union
      */
     public function hasCallableType()
     {
-        return isset($this->types['callable']) || isset($this->types['Closure']);
+        return $this->getCallableTypes() || $this->getClosureTypes();
+    }
+
+    /**
+     * @return array<Atomic\TCallable>
+     */
+    private function getCallableTypes()
+    {
+        return array_filter(
+            $this->types,
+            function ($type) {
+                return $type instanceof Atomic\TCallable;
+            }
+        );
+    }
+
+    /**
+     * @return array<Atomic\TFn>
+     */
+    public function getClosureTypes()
+    {
+        return array_filter(
+            $this->types,
+            function ($type) {
+                return $type instanceof Atomic\TFn;
+            }
+        );
     }
 
     /**
@@ -1275,7 +1301,19 @@ class Union
                             break;
                         }
 
-                        if ($input_key === 'Closure' && $key === 'callable') {
+                        if ($atomic_input_type instanceof Atomic\TFn && $atomic_type instanceof Atomic\TFn) {
+                            $matching_atomic_type = $atomic_input_type;
+                            break;
+                        }
+
+                        if ($atomic_input_type instanceof Atomic\TCallable
+                            && $atomic_type instanceof Atomic\TCallable
+                        ) {
+                            $matching_atomic_type = $atomic_input_type;
+                            break;
+                        }
+
+                        if ($atomic_input_type instanceof Atomic\TFn && $atomic_type instanceof Atomic\TCallable) {
                             $matching_atomic_type = $atomic_input_type;
                             break;
                         }
@@ -1293,7 +1331,7 @@ class Union
                             break;
                         }
 
-                        if ($key === 'callable') {
+                        if ($atomic_type instanceof Atomic\TCallable) {
                             $matching_atomic_type = TypeAnalyzer::getCallableFromAtomic(
                                 $codebase,
                                 $atomic_input_type

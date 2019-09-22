@@ -114,9 +114,9 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
             if ($first_arg_value instanceof PhpParser\Node\Expr\Closure
                 && isset($first_arg_value->inferredType)
-                && ($closure_atomic_type = $first_arg_value->inferredType->getTypes()['Closure'])
-                && $closure_atomic_type instanceof Type\Atomic\TFn
+                && ($closure_types = $first_arg_value->inferredType->getClosureTypes())
             ) {
+                $closure_atomic_type = \reset($closure_types);
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
                 if ($closure_return_type->isVoid()) {

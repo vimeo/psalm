@@ -9,14 +9,6 @@ class TFn extends TNamedObject
     use CallableTrait;
 
     /**
-     * @return string
-     */
-    public function getKey()
-    {
-        return 'Closure';
-    }
-
-    /**
      * @return bool
      */
     public function canBeFullyExpressedInPhp()

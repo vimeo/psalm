@@ -721,7 +721,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
 
-        $this->assertCount(1, $completion_items);
+        $this->assertNotEmpty($completion_items);
 
         $this->assertSame('Exception', $completion_items[0]->label);
         $this->assertSame('Exception', $completion_items[0]->insertText);

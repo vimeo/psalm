@@ -63,12 +63,9 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             }
 
             if (isset($function_call_arg->value->inferredType)
-                && ($first_arg_atomic_types = $function_call_arg->value->inferredType->getTypes())
-                && ($closure_atomic_type = isset($first_arg_atomic_types['Closure'])
-                    ? $first_arg_atomic_types['Closure']
-                    : null)
-                && $closure_atomic_type instanceof Type\Atomic\TFn
+                && ($closure_types = $function_call_arg->value->inferredType->getClosureTypes())
             ) {
+                $closure_atomic_type = \reset($closure_types);
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
                 if ($closure_return_type->isVoid()) {

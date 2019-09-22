@@ -560,7 +560,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                          * @psalm-suppress PossiblyUndefinedArrayOffset
                          * @var Type\Atomic\TFn
                          */
-                        $closure_atomic = $this->function->inferredType->getTypes()['Closure'];
+                        $closure_atomic = \array_values($this->function->inferredType->getTypes())[0];
                         $closure_atomic->return_type = $closure_return_type;
                     }
                 }

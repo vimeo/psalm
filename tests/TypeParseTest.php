@@ -802,58 +802,6 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testCombineCallables()
-    {
-        $this->assertSame(
-            'callable(int, string=):bool',
-            (string) Type::parseString('(callable(int):bool)|(callable(int,string):bool)')
-        );
-
-        $this->assertSame(
-            'callable(int, string=):bool',
-            (string) Type::parseString('(callable(int,string):bool)|(callable(int):bool)')
-        );
-
-        $this->assertSame(
-            'callable(int, string=):bool',
-            (string) Type::parseString('(callable(int,string=):bool)|(callable(int):bool)')
-        );
-
-        $this->assertSame(
-            'callable(int, string):bool',
-            (string) Type::parseString('(callable(int,string=):bool)|(callable(int,string):bool)')
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function testCombineClosures()
-    {
-        $this->assertSame(
-            'Closure(int, string=):bool',
-            (string) Type::parseString('(Closure(int):bool)|(Closure(int,string):bool)')
-        );
-
-        $this->assertSame(
-            'Closure(int, string=):bool',
-            (string) Type::parseString('(Closure(int,string):bool)|(Closure(int):bool)')
-        );
-
-        $this->assertSame(
-            'Closure(int, string=):bool',
-            (string) Type::parseString('(Closure(int,string=):bool)|(Closure(int):bool)')
-        );
-
-        $this->assertSame(
-            'Closure(int, string):bool',
-            (string) Type::parseString('(Closure(int,string=):bool)|(Closure(int,string):bool)')
-        );
-    }
-
-    /**
-     * @return void
-     */
     public function testVeryLargeType()
     {
         $very_large_type = 'array{a: Closure():(array<mixed, mixed>|null), b?: Closure():array<mixed, mixed>, c?: Closure():array<mixed, mixed>, d?: Closure():array<mixed, mixed>, e?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), p?: Closure():(array{f: null|string, g: null|string, h: null|string, q: string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), r?: Closure():(array<mixed, mixed>|null), s: array<mixed, mixed>}|null';
