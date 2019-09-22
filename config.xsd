@@ -228,6 +228,7 @@
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDependency" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -338,7 +339,6 @@
             <xs:element name="UndefinedGlobalVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedAbstractMethod" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="UnimplementedImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedInterfaceMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UninitializedProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedExpression" type="IssueHandlerType" minOccurs="0" />
