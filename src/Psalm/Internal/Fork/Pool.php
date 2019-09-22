@@ -66,7 +66,7 @@ class Pool
     /** @var bool */
     private $did_have_error = false;
 
-    /** @var ?\Closure(): void */
+    /** @var ?\Closure(mixed): void */
     private $task_done_closure;
 
     public const MAC_PCRE_MESSAGE = 'Mac users: pcre.jit is set to 1 in your PHP config.' . PHP_EOL
