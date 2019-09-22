@@ -48,6 +48,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use function strpos;
 use function substr;
+use Psalm\Issue\InvalidDocblock;
 
 class AssertionReconciler extends \Psalm\Type\Reconciler
 {
@@ -585,7 +586,23 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        $new_type_part = Atomic::create($assertion, null, $template_type_map);
+        try {
+            $new_type_part = Atomic::create($assertion, null, $template_type_map);
+        } catch (\Psalm\Exception\TypeParseTreeException $e) {
+            $new_type_part = new TMixed();
+
+            if ($code_location) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        $assertion . ' cannot be used in an assertion',
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
+                }
+            }
+        }
 
         if ($new_type_part instanceof TNamedObject
             && ((
