@@ -516,6 +516,21 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
+                if ($interface_storage->external_mutation_free
+                    && !$storage->external_mutation_free
+                ) {
+                    if (IssueBuffer::accepts(
+                        new MissingImmutableAnnotation(
+                            $interface_name . ' is marked immutable, but '
+                                . $fq_class_name . ' is not marked immutable',
+                            $code_location
+                        ),
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
                 foreach ($interface_storage->methods as $method_name => $interface_method_storage) {
                     if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
                         $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
