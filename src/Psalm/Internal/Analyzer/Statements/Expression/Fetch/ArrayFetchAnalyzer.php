@@ -273,8 +273,8 @@ class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Type\Union $array_type,
         Type\Union $offset_type,
-        $in_assignment,
-        $array_var_id,
+        bool $in_assignment,
+        ?string $array_var_id,
         Context $context,
         PhpParser\Node\Expr $assign_value = null,
         Type\Union $replacement_type = null
@@ -326,19 +326,29 @@ class ArrayFetchAnalyzer
                 // fall through
             }
 
-            return Type::getMixed();
+            if ($in_assignment) {
+                $offset_type->removeType('null');
+                $offset_type->addType(new TLiteralInt(0));
+            }
         }
 
-        if ($offset_type->isNullable() && !$offset_type->ignore_nullable_issues && !$context->inside_isset) {
-            if (IssueBuffer::accepts(
-                new PossiblyNullArrayOffset(
-                    'Cannot access value on variable ' . $array_var_id
-                        . ' using possibly null offset ' . $offset_type,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->var)
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+        if ($offset_type->isNullable() && !$context->inside_isset) {
+            if (!$offset_type->ignore_nullable_issues) {
+                if (IssueBuffer::accepts(
+                    new PossiblyNullArrayOffset(
+                        'Cannot access value on variable ' . $array_var_id
+                            . ' using possibly null offset ' . $offset_type,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            if ($in_assignment) {
+                $offset_type->removeType('null');
+                $offset_type->addType(new TLiteralInt(0));
             }
         }
 

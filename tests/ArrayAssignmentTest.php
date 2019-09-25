@@ -1117,6 +1117,34 @@ class ArrayAssignmentTest extends TestCase
                         return $array;
                     }',
             ],
+            'coerceNullKeyToZero' => [
+                '<?php
+                    function int_or_null(): ?int {
+                      return rand(0, 1) !== 0 ? 42 : null;
+                    }
+
+                    /**
+                     * @return array<array-key, null>
+                     */
+                    function foo(): array {
+                        $array = [];
+                        /** @psalm-suppress PossiblyNullArrayOffset */
+                        $array[int_or_null()] = null;
+                        return $array;
+                    }'
+            ],
+            'coerceNullKeyToZero' => [
+                '<?php
+                    /**
+                     * @return array<int, null>
+                     */
+                    function foo(): array {
+                        $array = [];
+                        /** @psalm-suppress NullArrayOffset */
+                        $array[null] = null;
+                        return $array;
+                    }'
+            ],
         ];
     }
 
