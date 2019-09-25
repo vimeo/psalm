@@ -956,28 +956,6 @@ class AnnotationTest extends TestCase
                         foo($arr);
                     }',
             ],
-            'inheritParentReturnDocbblock' => [
-                '<?php
-                    class Foo {
-                        /**
-                         * @return int[]
-                         */
-                        public function doFoo() {
-                            return [1, 2, 3];
-                        }
-                    }
-
-                    class Bar extends Foo {
-                        public function doFoo(): array {
-                            return [4, 5, 6];
-                        }
-                    }
-
-                    $b = (new Bar)->doFoo();',
-                [
-                    '$b' => 'array<array-key, int>',
-                ],
-            ],
             'noExceptionOnIntersection' => [
                 '<?php
                     class Foo {
@@ -1023,26 +1001,6 @@ class AnnotationTest extends TestCase
                      * } $foo
                      */
                     $foo = ["foo" => "", "bar" => "", "baz" => ""];',
-            ],
-            'inheritedSelfAnnotation' => [
-                '<?php
-                    interface I {
-                        /**
-                         * @param self $i
-                         * @return self
-                         */
-                        function foo(self $i) : self;
-                    }
-
-                    class C implements I {
-                        public function foo(I $i) : I {
-                            return $i;
-                        }
-                    }
-
-                    function takeI(I $i) : I {
-                        return (new C)->foo($i);
-                    }',
             ],
         ];
     }
@@ -1516,22 +1474,6 @@ class AnnotationTest extends TestCase
                         foo($arr);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
-            ],
-            'automaticInheritDoc' => [
-                '<?php
-                    class Y {
-                        /**
-                         * @param string[] $arr
-                         */
-                        public function boo(array $arr) : void {}
-                    }
-
-                    class X extends Y {
-                        public function boo(array $arr) : void {}
-                    }
-
-                    (new X())->boo([1, 2]);',
-                'error_message' => 'InvalidScalarArgument',
             ],
             'spreadOperatorArrayAnnotationBadArg' => [
                 '<?php
