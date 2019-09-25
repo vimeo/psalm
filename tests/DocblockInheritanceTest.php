@@ -58,6 +58,52 @@ class DocblockInheritanceTest extends TestCase
                         return (new C)->foo($i);
                     }',
             ],
+            'inheritTwice' => [
+                '<?php
+                    class Foo {
+                        /**
+                         * @return string[]
+                         */
+                        public function aa() {
+                            return [];
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        public function aa() {
+                            return [];
+                        }
+                    }
+
+                    class Baz extends Bar {
+                        public function aa() {
+                            return [];
+                        }
+                    }'
+            ],
+            'inheritTwiceWithArrayType' => [
+                '<?php
+                    class Foo {
+                        /**
+                         * @return string[]
+                         */
+                        public function aa() : array {
+                            return [];
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        public function aa() : array {
+                            return [];
+                        }
+                    }
+
+                    class Baz extends Bar {
+                        public function aa() : array {
+                            return [];
+                        }
+                    }'
+            ],
         ];
     }
 

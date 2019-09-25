@@ -262,9 +262,33 @@ class Populator
     ) {
         foreach ($storage->methods as $method_name => $method_storage) {
             if (isset($storage->overridden_method_ids[$method_name])) {
-                foreach ($storage->overridden_method_ids[$method_name] as $declaring_method_id) {
+                $overridden_method_ids = $storage->overridden_method_ids[$method_name];
+
+                $candidate_overridden_ids = null;
+
+                $declaring_class_storages = [];
+
+                foreach ($overridden_method_ids as $declaring_method_id) {
                     list($declaring_class, $declaring_method_name) = explode('::', $declaring_method_id);
-                    $declaring_class_storage = $this->classlike_storage_provider->get($declaring_class);
+                    $declaring_class_storage
+                        = $declaring_class_storages[$declaring_class]
+                        = $this->classlike_storage_provider->get($declaring_class);
+
+                    if ($candidate_overridden_ids === null) {
+                        $candidate_overridden_ids = $declaring_class_storage->overridden_method_ids[$method_name]
+                            + [$declaring_method_id => $declaring_method_id];
+                    } else {
+                        $candidate_overridden_ids = \array_intersect_key(
+                            $candidate_overridden_ids,
+                            $declaring_class_storage->overridden_method_ids[$method_name]
+                                + [$declaring_method_id => $declaring_method_id]
+                        );
+                    }
+                }
+
+                foreach ($overridden_method_ids as $declaring_method_id) {
+                    list($declaring_class, $declaring_method_name) = explode('::', $declaring_method_id);
+                    $declaring_class_storage = $declaring_class_storages[$declaring_class];
 
                     $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
 
@@ -291,7 +315,8 @@ class Populator
                         $method_storage->throws += $declaring_method_storage->throws;
                     }
 
-                    if (count($storage->overridden_method_ids[$method_name]) === 1
+                    if ((count($overridden_method_ids) === 1
+                        || $candidate_overridden_ids)
                         && $method_storage->signature_return_type
                         && !$method_storage->signature_return_type->isVoid()
                         && ($method_storage->return_type === $method_storage->signature_return_type
@@ -1014,6 +1039,13 @@ class Populator
                     }
                 } else {
                     $storage->overridden_method_ids[$method_name][$declaring_method_id] = $declaring_method_id;
+                }
+
+                if (isset($parent_storage->overridden_method_ids[$method_name])
+                    && isset($storage->overridden_method_ids[$method_name])
+                ) {
+                    $storage->overridden_method_ids[$method_name]
+                        += $parent_storage->overridden_method_ids[$method_name];
                 }
             }
 
