@@ -532,13 +532,32 @@ class ArrayFetchAnalyzer
                                 $union_comparison_results
                             );
 
-                            if ($offset_type_contained_by_expected
+                            if ($codebase->config->ensure_array_string_offsets_exist
+                                && $offset_type_contained_by_expected
                                 && $offset_type->hasLiteralString()
                                 && !$expected_offset_type->hasLiteralClassString()
                                 && !$context->inside_isset
                                 && !$context->inside_unset
                             ) {
-                                if ($codebase->config->ensure_array_string_offsets_exist) {
+                                $found_match = false;
+
+                                foreach ($offset_type->getTypes() as $offset_type_part) {
+                                    if ($array_var_id
+                                        && $offset_type_part instanceof TLiteralString
+                                        && isset(
+                                            $context->vars_in_scope[
+                                                $array_var_id . '[\'' . $offset_type_part->value . '\']'
+                                            ]
+                                        )
+                                        && !$context->vars_in_scope[
+                                                $array_var_id . '[\'' . $offset_type_part->value . '\']'
+                                            ]->possibly_undefined
+                                    ) {
+                                        $found_match = true;
+                                    }
+                                }
+
+                                if (!$found_match) {
                                     if (IssueBuffer::accepts(
                                         new PossiblyUndefinedArrayOffset(
                                             'Possibly undefined array offset \''

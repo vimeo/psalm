@@ -77,6 +77,27 @@ class ArrayAccessTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testEnsureArrayOffsetsExistWithIssetCheckFollowedByIsArray()
+    {
+        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param array<string, mixed> $s */
+                function foo(array $s) : void {
+                    if (isset($s["a"]) && \is_array($s["a"])) {}
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()
