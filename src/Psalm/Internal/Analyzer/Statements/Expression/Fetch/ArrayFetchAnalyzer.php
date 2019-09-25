@@ -348,7 +348,10 @@ class ArrayFetchAnalyzer
 
             if ($in_assignment) {
                 $offset_type->removeType('null');
-                $offset_type->addType(new TLiteralInt(0));
+
+                if (!$offset_type->ignore_nullable_issues) {
+                    $offset_type->addType(new TLiteralInt(0));
+                }
             }
         }
 

@@ -269,7 +269,7 @@ class Populator
                 $declaring_class_storages = [];
 
                 foreach ($overridden_method_ids as $declaring_method_id) {
-                    list($declaring_class, $declaring_method_name) = explode('::', $declaring_method_id);
+                    list($declaring_class) = explode('::', $declaring_method_id);
                     $declaring_class_storage
                         = $declaring_class_storages[$declaring_class]
                         = $this->classlike_storage_provider->get($declaring_class);

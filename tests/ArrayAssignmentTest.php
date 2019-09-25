@@ -1117,7 +1117,7 @@ class ArrayAssignmentTest extends TestCase
                         return $array;
                     }',
             ],
-            'coerceNullKeyToZero' => [
+            'coercePossiblyNullKeyToZero' => [
                 '<?php
                     function int_or_null(): ?int {
                       return rand(0, 1) !== 0 ? 42 : null;
