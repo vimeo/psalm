@@ -337,6 +337,10 @@ class Reflection
 
             $callmap_callable = null;
 
+            if (isset(self::$builtin_functions[$function_id])) {
+                return;
+            }
+
             $storage = self::$builtin_functions[$function_id] = new FunctionLikeStorage();
 
             if (CallMap::inCallMap($function_id)) {

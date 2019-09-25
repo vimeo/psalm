@@ -67,22 +67,14 @@ class Functions
             return self::$stubbed_functions[strtolower($function_id)];
         }
 
-        if ($this->reflection->hasFunction($function_id)) {
-            return $this->reflection->getFunctionStorage($function_id);
-        }
+        $file_storage = null;
 
         if ($statements_analyzer) {
             $root_file_path = $statements_analyzer->getRootFilePath();
             $checked_file_path = $statements_analyzer->getFilePath();
-        } elseif (!$root_file_path || !$checked_file_path) {
-            throw new \UnexpectedValueException(
-                'Expecting non-empty $root_file_path and $checked_file_path'
-            );
-        }
 
-        $file_storage = $this->file_storage_provider->get($root_file_path);
+            $file_storage = $this->file_storage_provider->get($root_file_path);
 
-        if ($statements_analyzer) {
             $function_analyzers = $statements_analyzer->getFunctionAnalyzers();
 
             if (isset($function_analyzers[$function_id])) {
@@ -97,6 +89,20 @@ class Functions
             if (isset($file_storage->functions[$function_id])) {
                 return $file_storage->functions[$function_id];
             }
+        }
+
+        if (!$root_file_path || !$checked_file_path) {
+            if ($this->reflection->hasFunction($function_id)) {
+                return $this->reflection->getFunctionStorage($function_id);
+            }
+
+            throw new \UnexpectedValueException(
+                'Expecting non-empty $root_file_path and $checked_file_path'
+            );
+        }
+
+        if ($this->reflection->hasFunction($function_id)) {
+            return $this->reflection->getFunctionStorage($function_id);
         }
 
         if (!isset($file_storage->declaring_function_ids[$function_id])) {
