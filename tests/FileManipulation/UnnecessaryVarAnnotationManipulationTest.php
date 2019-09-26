@@ -35,6 +35,30 @@ class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTest
                 ['UnnecessaryVarAnnotation'],
                 true,
             ],
+            'removeSingleLineVarAnnotationFlipped' => [
+                '<?php
+                    function foo() : string {
+                        return "hello";
+                    }
+
+                    /** @var "a"|"b" */
+                    $b = foo();
+
+                    /** @var string */
+                    $a = foo();',
+                '<?php
+                    function foo() : string {
+                        return "hello";
+                    }
+
+                    /** @var "a"|"b" */
+                    $b = foo();
+
+                    $a = foo();',
+                '5.6',
+                ['UnnecessaryVarAnnotation'],
+                true,
+            ],
             'removeSingleLineVarAnnotationAndType' => [
                 '<?php
                     function foo() : string {
