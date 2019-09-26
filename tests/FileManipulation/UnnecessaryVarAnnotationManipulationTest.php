@@ -18,13 +18,43 @@ class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTest
                     }
 
                     /** @var string */
-                    $a = foo();',
+                    $a = foo();
+
+                    /** @var "a"|"b" */
+                    $b = foo();',
                 '<?php
                     function foo() : string {
                         return "hello";
                     }
 
-                    $a = foo();',
+                    $a = foo();
+
+                    /** @var "a"|"b" */
+                    $b = foo();',
+                '5.6',
+                ['UnnecessaryVarAnnotation'],
+                true,
+            ],
+            'removeSingleLineVarAnnotationAndType' => [
+                '<?php
+                    function foo() : string {
+                        return "hello";
+                    }
+
+                    /** @var string $a */
+                    $a = foo();
+
+                    /** @var "a"|"b" */
+                    $b = foo();',
+                '<?php
+                    function foo() : string {
+                        return "hello";
+                    }
+
+                    $a = foo();
+
+                    /** @var "a"|"b" */
+                    $b = foo();',
                 '5.6',
                 ['UnnecessaryVarAnnotation'],
                 true,
@@ -38,13 +68,19 @@ class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTest
                     /**
                      * @var string
                      */
-                    $a = foo();',
+                    $a = foo();
+
+                    /** @var "a"|"b" */
+                    $b = foo();',
                 '<?php
                     function foo() : string {
                         return "hello";
                     }
 
-                    $a = foo();',
+                    $a = foo();
+
+                    /** @var "a"|"b" */
+                    $b = foo();',
                 '5.6',
                 ['UnnecessaryVarAnnotation'],
                 true,
@@ -59,7 +95,10 @@ class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTest
                      * @var string
                      * this comment should stay
                      */
-                    $a = foo();',
+                    $a = foo();
+
+                    /** @var "a"|"b" */
+                    $b = foo();',
                 '<?php
                     function foo() : string {
                         return "hello";
@@ -68,7 +107,36 @@ class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTest
                     /**
                      * this comment should stay
                      */
-                    $a = foo();',
+                    $a = foo();
+
+                    /** @var "a"|"b" */
+                    $b = foo();',
+                '5.6',
+                ['UnnecessaryVarAnnotation'],
+                true,
+            ],
+            'removeMultipleLineVarAnnotationOnce' => [
+                '<?php
+                    /** @return string[] */
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    /**
+                     * @var int $k
+                     * @var string $v
+                     */
+                    foreach (foo() as $k => $v) {}',
+                '<?php
+                    /** @return string[] */
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    /**
+                     * @var int $k
+                     */
+                    foreach (foo() as $k => $v) {}',
                 '5.6',
                 ['UnnecessaryVarAnnotation'],
                 true,
