@@ -1480,6 +1480,8 @@ class ExpressionAnalyzer
                     && isset($context->vars_in_scope[$var_comment->var_id])
                     && $context->vars_in_scope[$var_comment->var_id]->getId() === $comment_type->getId()
                 ) {
+                    $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
                     if ($codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
                     ) {
