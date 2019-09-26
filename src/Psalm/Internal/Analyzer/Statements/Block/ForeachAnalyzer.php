@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -121,6 +122,8 @@ class ForeachAnalyzer
                 $statements_analyzer->getParentFQCLN()
             );
 
+            $type_location = null;
+
             if ($var_comment->type_start
                 && $var_comment->type_end
                 && $var_comment->line_number
@@ -132,13 +135,15 @@ class ForeachAnalyzer
                     $var_comment->line_number
                 );
 
-                $codebase->classlikes->handleDocblockTypeInMigration(
-                    $codebase,
-                    $statements_analyzer,
-                    $comment_type,
-                    $type_location,
-                    $context->calling_method_id
-                );
+                if ($codebase->alter_code) {
+                    $codebase->classlikes->handleDocblockTypeInMigration(
+                        $codebase,
+                        $statements_analyzer,
+                        $comment_type,
+                        $type_location,
+                        $context->calling_method_id
+                    );
+                }
             }
 
             if (isset($context->vars_in_scope[$var_comment->var_id])
@@ -146,13 +151,20 @@ class ForeachAnalyzer
             ) {
                 if ($codebase->find_unused_variables
                     && $doc_comment
+                    && $type_location
                     && isset($context->vars_in_scope[$var_comment->var_id])
                     && $context->vars_in_scope[$var_comment->var_id]->getId() === $comment_type->getId()
                 ) {
-                    if (IssueBuffer::accepts(
+                    $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+                    if ($codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
+                    ) {
+                        FileManipulationBuffer::addVarAnnotationToRemove($type_location);
+                    } elseif (IssueBuffer::accepts(
                         new UnnecessaryVarAnnotation(
                             'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt, null, true)
+                            $type_location
                         )
                     )) {
                         // fall through

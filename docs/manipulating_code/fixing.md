@@ -344,7 +344,7 @@ gives
 
 ```php
 class A {
-    
+
 }
 
 new A();
@@ -369,7 +369,7 @@ gives
 
 ```php
 class A {
-    
+
 }
 
 new A();
@@ -394,7 +394,7 @@ gives
 
 ```php
 class A {
-    
+
 }
 
 new A();
@@ -422,7 +422,7 @@ gives
 
 ```php
 class A {
-    
+
 }
 
 new A();
@@ -451,4 +451,29 @@ function foo() : void {
     $b = 6;
     echo "foo";
 }
+```
+
+### UnnecessaryVarAnnotation
+
+This removes unused `@var` annotations
+
+Running `vendor/bin/psalter --issues=UnnecessaryVarAnnotation` on
+
+```php
+function foo() : string {
+    return "hello";
+}
+
+/** @var string */
+$a = foo();
+```
+
+gives
+
+```php
+function foo() : string {
+    return "hello";
+}
+
+$a = foo();
 ```

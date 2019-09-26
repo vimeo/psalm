@@ -1456,19 +1456,38 @@ class ExpressionAnalyzer
                     $statements_analyzer->getParentFQCLN()
                 );
 
+                $type_location = null;
+
+                if ($var_comment->type_start
+                    && $var_comment->type_end
+                    && $var_comment->line_number
+                ) {
+                    $type_location = new CodeLocation\DocblockTypeLocation(
+                        $statements_analyzer,
+                        $var_comment->type_start,
+                        $var_comment->type_end,
+                        $var_comment->line_number
+                    );
+                }
+
                 if (!$var_comment->var_id) {
                     $var_comment_type = $comment_type;
                     continue;
                 }
 
                 if ($codebase->find_unused_variables
+                    && $type_location
                     && isset($context->vars_in_scope[$var_comment->var_id])
                     && $context->vars_in_scope[$var_comment->var_id]->getId() === $comment_type->getId()
                 ) {
-                    if (IssueBuffer::accepts(
+                    if ($codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
+                    ) {
+                        FileManipulationBuffer::addVarAnnotationToRemove($type_location);
+                    } elseif (IssueBuffer::accepts(
                         new UnnecessaryVarAnnotation(
                             'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            $type_location
                         )
                     )) {
                         // fall through

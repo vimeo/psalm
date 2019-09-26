@@ -25,6 +25,7 @@ use Psalm\Issue\PossiblyUndefinedGlobalVariable;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedProperty;
+use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\Issue\UnusedVariable;
@@ -208,6 +209,7 @@ class ProjectAnalyzer
         UnusedMethod::class,
         UnusedProperty::class,
         UnusedVariable::class,
+        UnnecessaryVarAnnotation::class,
     ];
 
     /**

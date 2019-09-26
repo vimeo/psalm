@@ -12,6 +12,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidDocblock;
@@ -67,6 +68,7 @@ class AssignmentAnalyzer
 
         $var_comments = [];
         $comment_type = null;
+        $comment_type_location = null;
 
         $was_in_assignment = $context->inside_assignment;
 
@@ -133,8 +135,9 @@ class AssignmentAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     );
 
-                    if ($codebase->alter_code
-                        && $var_comment->type_start
+                    $type_location = null;
+
+                    if ($var_comment->type_start
                         && $var_comment->type_end
                         && $var_comment->line_number
                     ) {
@@ -145,28 +148,38 @@ class AssignmentAnalyzer
                             $var_comment->line_number
                         );
 
-                        $codebase->classlikes->handleDocblockTypeInMigration(
-                            $codebase,
-                            $statements_analyzer,
-                            $var_comment_type,
-                            $type_location,
-                            $context->calling_method_id
-                        );
+                        if ($codebase->alter_code) {
+                            $codebase->classlikes->handleDocblockTypeInMigration(
+                                $codebase,
+                                $statements_analyzer,
+                                $var_comment_type,
+                                $type_location,
+                                $context->calling_method_id
+                            );
+                        }
                     }
 
                     if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
                         $comment_type = $var_comment_type;
+                        $comment_type_location = $type_location;
                         continue;
                     }
 
                     if ($codebase->find_unused_variables
+                        && $type_location
                         && isset($context->vars_in_scope[$var_comment->var_id])
                         && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
                     ) {
-                        if (IssueBuffer::accepts(
+                        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+                        if ($codebase->alter_code
+                            && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
+                        ) {
+                            FileManipulationBuffer::addVarAnnotationToRemove($type_location);
+                        } elseif (IssueBuffer::accepts(
                             new UnnecessaryVarAnnotation(
                                 'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
-                                new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                                $type_location
                             )
                         )) {
                             // fall through
@@ -218,7 +231,7 @@ class AssignmentAnalyzer
             }
         }
 
-        if ($comment_type) {
+        if ($comment_type && $comment_type_location) {
             $temp_assign_value_type = $assign_value_type ?: ($assign_value->inferredType ?? null);
 
             if ($codebase->find_unused_variables
@@ -226,10 +239,14 @@ class AssignmentAnalyzer
                 && $array_var_id
                 && $temp_assign_value_type->getId() === $comment_type->getId()
             ) {
-                if (IssueBuffer::accepts(
+                if ($codebase->alter_code
+                    && isset($statements_analyzer->getProjectAnalyzer()->getIssuesToFix()['UnnecessaryVarAnnotation'])
+                ) {
+                    FileManipulationBuffer::addVarAnnotationToRemove($comment_type_location);
+                } elseif (IssueBuffer::accepts(
                     new UnnecessaryVarAnnotation(
                         'The @var annotation for ' . $array_var_id . ' is unnecessary',
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                        $comment_type_location
                     )
                 )) {
                     // fall through
