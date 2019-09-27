@@ -1703,6 +1703,25 @@ class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
+            'anonymousClassMustNotBreakParentTemplate' => [
+                '<?php
+                    /** @template T */
+                    class Foo {
+                        /** @psalm-var ?T */
+                        private $value;
+
+                        /** @psalm-param T $val */
+                        public function set($val) : void {
+                            $this->value = $val;
+                            new class extends Foo {};
+                        }
+
+                        /** @psalm-return ?T */
+                        public function get() {
+                            return $this->value;
+                        }
+                    }'
+            ],
         ];
     }
 

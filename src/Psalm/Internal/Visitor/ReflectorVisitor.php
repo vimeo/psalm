@@ -632,7 +632,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->file_storage->has_docblock_issues = true;
             }
 
-            $this->class_template_types = [];
+            if ($node->name) {
+                $this->class_template_types = [];
+            }
 
             if ($this->after_classlike_check_plugins) {
                 $file_manipulations = [];
