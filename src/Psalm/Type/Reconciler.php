@@ -397,7 +397,7 @@ class Reconciler
      */
     private static function getValueForKey(
         Codebase $codebase,
-        $key,
+        string $key,
         array &$existing_keys,
         array $new_type_parts,
         CodeLocation $code_location = null

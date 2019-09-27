@@ -311,6 +311,9 @@ class Functions
             'apc_store', 'apc_delete', 'apc_clear_cache', 'apc_add', 'apc_inc', 'apc_dec', 'apc_cas',
             'apcu_store', 'apcu_delete', 'apcu_clear_cache', 'apcu_add', 'apcu_inc', 'apcu_dec', 'apcu_cas',
 
+            // gz
+            'gzwrite', 'gzrewind', 'gzseek', 'gzclose',
+
             // newrelic
             'newrelic_start_transaction', 'newrelic_name_transaction', 'newrelic_add_custom_parameter',
             'newrelic_add_custom_tracer', 'newrelic_background_job', 'newrelic_end_transaction',
