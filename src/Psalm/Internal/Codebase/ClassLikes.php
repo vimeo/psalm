@@ -1580,6 +1580,10 @@ class ClassLikes
         if ($c instanceof UnresolvedConstant\ArrayValue) {
             $properties = [];
 
+            if (!$c->entries) {
+                return new Type\Atomic\TArray([Type::getEmpty(), Type::getEmpty()]);
+            }
+
             foreach ($c->entries as $i => $entry) {
                 if ($entry->key) {
                     $key_type = $this->resolveConstantType($entry->key, $statements_analyzer);
