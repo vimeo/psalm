@@ -247,19 +247,10 @@ class ScopeAnalyzer
                 }
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\While_) {
-                $control_actions = array_merge(
-                    self::getFinalControlActions($stmt->stmts, $exit_functions),
-                    $control_actions
-                );
-            }
-
-            if ($stmt instanceof PhpParser\Node\Stmt\Do_) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Do_
+                || $stmt instanceof PhpParser\Node\Stmt\While_
+            ) {
                 $do_actions = self::getFinalControlActions($stmt->stmts, $exit_functions);
-
-                if (count($do_actions) && !in_array(self::ACTION_NONE, $do_actions, true)) {
-                    return $do_actions;
-                }
 
                 $control_actions = array_merge($control_actions, $do_actions);
             }

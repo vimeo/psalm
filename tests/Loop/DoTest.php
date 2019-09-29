@@ -293,6 +293,18 @@ class DoTest extends \Psalm\Tests\TestCase
                     do {} while (--$i > 0);
                     echo $i === 0;',
             ],
+            'doWhileNonInfinite' => [
+                '<?php
+                    function foo(): int {
+                        do {
+                            $value = mt_rand(0, 10);
+                            if ($value > 5) continue;
+                            break;
+                        } while (true);
+
+                        return $value;
+                    }',
+            ],
         ];
     }
 
