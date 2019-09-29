@@ -174,29 +174,44 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     ) {
                         $invalid_function_call_types[] = (string)$var_type_part;
                     } else {
-                        if (self::checkMethodArgs(
-                            $var_type_part->value . '::__invoke',
-                            $stmt->args,
-                            $class_template_params,
-                            $context,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $statements_analyzer
-                        ) === false) {
-                            return;
+                        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                            $stmt->name,
+                            new PhpParser\Node\Identifier('__invoke', $stmt->name->getAttributes()),
+                            $stmt->args
+                        );
+
+                        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+                        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                            $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
                         }
 
-                        $invokable_return_type = $codebase->methods->getMethodReturnType(
-                            $var_type_part->value . '::__invoke',
-                            $var_type_part->value
+                        if (!in_array('InternalMethod', $suppressed_issues, true)) {
+                            $statements_analyzer->addSuppressedIssues(['InternalMethod']);
+                        }
+
+                        \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                            $statements_analyzer,
+                            $fake_method_call,
+                            $context,
+                            false
                         );
+
+                        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                            $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
+                        }
+
+                        if (!in_array('InternalMethod', $suppressed_issues, true)) {
+                            $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
+                        }
 
                         if (isset($stmt->inferredType)) {
                             $stmt->inferredType = Type::combineUnionTypes(
-                                $invokable_return_type ?: Type::getMixed(),
+                                $fake_method_call->inferredType ?? Type::getMixed(),
                                 $stmt->inferredType
                             );
                         } else {
-                            $stmt->inferredType = $invokable_return_type ?: Type::getMixed();
+                            $stmt->inferredType = $fake_method_call->inferredType ?? Type::getMixed();
                         }
                     }
                 }
