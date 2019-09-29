@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 use function count;
+use function in_array;
 use function reset;
 use function implode;
 use function strtolower;
