@@ -571,7 +571,7 @@ class IssetTest extends TestCase
                         }
                     }',
             ],
-            'issetOnNestedObjectlikeOneLevel' => [
+            'SKIPPED-issetOnNestedObjectlikeOneLevel' => [
                 '<?php
                     /**
                      * @param array{a:array} $array
