@@ -418,9 +418,15 @@ if (isset($_SERVER['TRAVIS'])
 }
 
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
-$progress = $debug
-    ? new DebugProgress()
-    : (isset($options['no-progress']) ? new VoidProgress() : new DefaultProgress(!$config->error_baseline, $show_info));
+
+if ($debug) {
+    $progress = new DebugProgress();
+} elseif (isset($options['no-progress'])) {
+    $progress = new VoidProgress();
+} else {
+    $show_errors = !$config->error_baseline || isset($options['ignore-baseline']);
+    $progress = new DefaultProgress($show_errors, $show_info);
+}
 
 if (isset($options['no-cache'])) {
     $providers = new Provider\Providers(
