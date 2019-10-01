@@ -179,7 +179,10 @@ class ArrayFetchAnalyzer
                 && ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
                     || $stmt->var instanceof PhpParser\Node\Expr\ConstFetch)
             ) {
-                /** @var TArray|ObjectLike */
+                /**
+                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                 * @var TArray|ObjectLike
+                 */
                 $array_type = $stmt->var->inferredType->getTypes()['array'];
 
                 if ($array_type instanceof TArray) {
@@ -465,6 +468,8 @@ class ArrayFetchAnalyzer
                     $from_mixed_array = $type->type_params[1]->isMixed();
                     $from_empty_array = $type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty();
 
+                    $previous_value_type = $type->type_params[1];
+
                     // ok, type becomes an ObjectLike
                     $array_type->removeType($type_string);
                     $type = new ObjectLike([$key_value => $from_mixed_array ? Type::getMixed() : Type::getEmpty()]);
@@ -472,7 +477,7 @@ class ArrayFetchAnalyzer
                     $type->sealed = $from_empty_array;
 
                     if ($from_mixed_array) {
-                        $type->had_mixed_value = true;
+                        $type->previous_value_type = clone $previous_value_type;
 
                         if ($from_string_key) {
                             $type->had_string_key = true;
@@ -685,12 +690,12 @@ class ArrayFetchAnalyzer
                                     $type->properties[$key_value]
                                 );
                             }
-                        } elseif ($type->had_mixed_value) {
+                        } elseif ($type->previous_value_type) {
                             $has_valid_offset = true;
 
-                            $type->properties[$key_value] = new Type\Union([new TMixed]);
+                            $type->properties[$key_value] = clone $type->previous_value_type;
 
-                            $array_access_type = Type::getMixed();
+                            $array_access_type = clone $type->previous_value_type;
                         } else {
                             if ($type->sealed) {
                                 $object_like_keys = array_keys($type->properties);

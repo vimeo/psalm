@@ -687,6 +687,8 @@ class Reconciler
                     $new_base_type = clone $existing_types[$base_key];
 
                     if ($base_atomic_type instanceof Type\Atomic\TArray) {
+                        $previous_value_type = clone $base_atomic_type->type_params[1];
+
                         $base_atomic_type = new Type\Atomic\ObjectLike(
                             [
                                 $array_key_offset => clone $result_type,
@@ -694,7 +696,7 @@ class Reconciler
                             null
                         );
 
-                        $base_atomic_type->had_mixed_value = true;
+                        $base_atomic_type->previous_value_type = $previous_value_type;
                     } else {
                         $base_atomic_type = clone $base_atomic_type;
                         $base_atomic_type->properties[$array_key_offset] = clone $result_type;

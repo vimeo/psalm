@@ -45,9 +45,9 @@ class ObjectLike extends \Psalm\Type\Atomic
     /**
      * Whether or not to allow new properties to be asserted on the given array
      *
-     * @var bool
+     * @var ?Union
      */
-    public $had_mixed_value = false;
+    public $previous_value_type = null;
 
     const KEY = 'array';
 
@@ -199,7 +199,7 @@ class ObjectLike extends \Psalm\Type\Atomic
             }
         }
 
-        if ($this->had_mixed_value) {
+        if ($this->previous_value_type) {
             $key_types[] = $this->had_string_key ? new TString : new TArrayKey;
         }
 
@@ -211,10 +211,6 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function getGenericValueType()
     {
-        if ($this->had_mixed_value) {
-            return Type::getMixed();
-        }
-
         $value_type = null;
 
         foreach ($this->properties as $property) {
@@ -227,6 +223,10 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         if (!$value_type) {
             throw new \UnexpectedValueException('$value_type should not be null here');
+        }
+
+        if ($this->previous_value_type) {
+            $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
         }
 
         $value_type->possibly_undefined = false;
@@ -262,10 +262,10 @@ class ObjectLike extends \Psalm\Type\Atomic
             throw new \UnexpectedValueException('$value_type should not be null here');
         }
 
-        if ($this->had_mixed_value) {
+        if ($this->previous_value_type) {
             $key_types[] = $this->had_string_key ? new TString : new TArrayKey;
 
-            $value_type = Type::combineUnionTypes(Type::getMixed(), $value_type);
+            $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
         }
 
         $value_type->possibly_undefined = false;

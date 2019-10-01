@@ -82,8 +82,8 @@ class TypeCombination
     /** @var bool */
     private $objectlike_sealed = true;
 
-    /** @var bool */
-    private $objectlike_had_mixed_value = false;
+    /** @var ?Union */
+    private $objectlike_value_type = false;
 
     /** @var bool */
     private $has_mixed = false;
@@ -292,7 +292,9 @@ class TypeCombination
                         }
                     }
 
-                    if ($combination->objectlike_had_mixed_value) {
+                    if ($combination->objectlike_value_type
+                        && $combination->objectlike_value_type->isMixed()
+                    ) {
                         $combination->objectlike_entries = array_filter(
                             $combination->objectlike_entries,
                             function (Type\Union $type) : bool {
@@ -308,8 +310,8 @@ class TypeCombination
                             $objectlike->sealed = true;
                         }
 
-                        if ($combination->objectlike_had_mixed_value) {
-                            $objectlike->had_mixed_value = true;
+                        if ($combination->objectlike_value_type) {
+                            $objectlike->previous_value_type = $combination->objectlike_value_type;
                         }
 
                         $new_types[] = $objectlike;
@@ -677,8 +679,19 @@ class TypeCombination
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
             $possibly_undefined_entries = $combination->objectlike_entries;
             $combination->objectlike_sealed = $combination->objectlike_sealed && $type->sealed;
-            $combination->objectlike_had_mixed_value =
-                $combination->objectlike_had_mixed_value || $type->had_mixed_value;
+
+            if ($type->previous_value_type) {
+                if (!$combination->objectlike_value_type) {
+                    $combination->objectlike_value_type = $type->previous_value_type;
+                } else {
+                    $combination->objectlike_value_type = Type::combineUnionTypes(
+                        $type->previous_value_type,
+                        $combination->objectlike_value_type,
+                        $codebase,
+                        $overwrite_empty_array
+                    );
+                }
+            }
 
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = isset($combination->objectlike_entries[$candidate_property_name])
@@ -699,7 +712,7 @@ class TypeCombination
                     );
                 }
 
-                if (!$type->had_mixed_value) {
+                if (!$type->previous_value_type) {
                     unset($possibly_undefined_entries[$candidate_property_name]);
                 }
             }
