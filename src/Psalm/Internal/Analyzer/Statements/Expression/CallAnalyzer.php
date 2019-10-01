@@ -356,7 +356,8 @@ class CallAnalyzer
         if ($method_id
             && in_array($method_id, ['array_push', 'array_unshift'], true)
             && $function_params
-            && $args
+            && isset($args[0])
+            && isset($args[1])
         ) {
             if (self::handleArrayAddition($statements_analyzer, $args, $context) === false) {
                 return false;
