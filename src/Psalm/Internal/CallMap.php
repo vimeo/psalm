@@ -10203,7 +10203,7 @@ return [
 'rar_broken_is' => ['bool', 'rarfile'=>'rararchive'],
 'rar_close' => ['bool', 'rarfile'=>'rararchive'],
 'rar_comment_get' => ['string', 'rarfile'=>'rararchive'],
-'rar_entry_get' => ['RarEntry', 'entryname'=>'string', 'rarfile'=>'rararchive'],
+'rar_entry_get' => ['RarEntry', 'rarfile'=>'RarArchive', 'entryname'=>'string'],
 'rar_list' => ['RarArchive', 'rarfile'=>'rararchive'],
 'rar_open' => ['RarArchive', 'filename'=>'string', 'password='=>'string', 'volume_callback='=>'callable'],
 'rar_solid_is' => ['bool', 'rarfile'=>'rararchive'],
