@@ -327,6 +327,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         foreach ($uris as $file_path => $uri) {
             $data = array_values(array_filter(
                 $data,
+                /**
+                 * @param array{file_path: string} $issue_data
+                 */
                 function (array $issue_data) use ($file_path) : bool {
                     return $issue_data['file_path'] === $file_path;
                 }
@@ -443,10 +446,16 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     public static function uriToPath(string $uri)
     {
         $fragments = parse_url($uri);
-        if ($fragments === false || !isset($fragments['scheme']) || $fragments['scheme'] !== 'file') {
+        if ($fragments === false
+            || !isset($fragments['scheme'])
+            || $fragments['scheme'] !== 'file'
+            || !isset($fragments['path'])
+        ) {
             throw new \InvalidArgumentException("Not a valid file URI: $uri");
         }
+
         $filepath = urldecode((string) $fragments['path']);
+
         if (strpos($filepath, ':') !== false) {
             if ($filepath[0] === '/') {
                 $filepath = substr($filepath, 1);

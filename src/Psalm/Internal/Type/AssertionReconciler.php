@@ -778,6 +778,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $old_var_type_string = $existing_var_type->getId();
 
         if ($existing_var_type->hasType('array')) {
+            /** @psalm-suppress PossiblyUndefinedArrayOffset */
             $array_atomic_type = $existing_var_type->getTypes()['array'];
             $did_remove_type = false;
 
@@ -1713,6 +1714,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $did_remove_type = $existing_var_type->hasDefinitelyNumericType(false)
             || $existing_var_type->hasType('iterable');
+
 
         if ($existing_var_type->hasMixed()) {
             if ($existing_var_type->isMixed()

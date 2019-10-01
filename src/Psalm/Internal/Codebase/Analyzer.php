@@ -551,6 +551,9 @@ class Analyzer
     {
         return array_filter(
             IssueBuffer::getIssuesData(),
+            /**
+             * @param array{file_path: string} $issue
+             */
             function (array $issue) use ($file_path): bool {
                 return $issue['file_path'] === $file_path;
             }

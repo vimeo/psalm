@@ -201,7 +201,10 @@ class PhpStormMetaScanner
 
                         if (($call_arg_type = $call_args[$element_type_offset]->value->inferredType ?? null)) {
                             if ($call_arg_type->hasArray()) {
-                                /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                                /**
+                                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                                 */
                                 $array_atomic_type = $call_arg_type->getTypes()['array'];
 
                                 if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
@@ -329,7 +332,10 @@ class PhpStormMetaScanner
                     ) : Type\Union {
                         if (($call_arg_type = $call_args[$element_type_offset]->value->inferredType ?? null)) {
                             if ($call_arg_type->hasArray()) {
-                                /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                                /**
+                                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                                 */
                                 $array_atomic_type = $call_arg_type->getTypes()['array'];
 
                                 if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {

@@ -462,7 +462,7 @@ function get_path_to_config(array $options): ?string
     $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 
     if ($path_to_config === false) {
-        fwrite(STDERR, 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
+        fwrite(STDERR, 'Could not resolve path to config ' . (string) ($options['c'] ?? '') . PHP_EOL);
         exit(1);
     }
     return $path_to_config;

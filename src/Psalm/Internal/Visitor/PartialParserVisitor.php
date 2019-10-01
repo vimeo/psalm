@@ -66,16 +66,15 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
      */
     public function enterNode(PhpParser\Node $node, &$traverseChildren = true)
     {
+        /** @var array{startFilePos: int, endFilePos: int} */
         $attrs = $node->getAttributes();
 
         if ($cs = $node->getComments()) {
             $stmt_start_pos = $cs[0]->getFilePos();
         } else {
-            /** @var int */
             $stmt_start_pos = $attrs['startFilePos'];
         }
 
-        /** @var int */
         $stmt_end_pos = $attrs['endFilePos'];
 
         $start_offset = 0;
@@ -216,6 +215,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                         if ($error_handler->hasErrors()) {
                             foreach ($error_handler->getErrors() as $error) {
                                 if ($error->hasColumnInfo()) {
+                                    /** @var array{startFilePos: int, endFilePos: int} */
                                     $error_attrs = $error->getAttributes();
                                     /** @psalm-suppress MixedOperand */
                                     $error = new PhpParser\Error(

@@ -18,7 +18,9 @@ class ParseErrorLocation extends \Psalm\CodeLocation
         $file_path,
         $file_name
     ) {
+        /** @psalm-suppress PossiblyUndefinedArrayOffset */
         $this->file_start = (int)$error->getAttributes()['startFilePos'];
+        /** @psalm-suppress PossiblyUndefinedArrayOffset */
         $this->file_end = (int)$error->getAttributes()['endFilePos'];
         $this->raw_file_start = $this->file_start;
         $this->raw_file_end = $this->file_end;

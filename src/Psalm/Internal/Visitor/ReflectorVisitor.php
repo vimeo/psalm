@@ -2856,7 +2856,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
-                /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                /**
+                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                 */
                 $array_type = $new_param_type->getTypes()['array'];
 
                 if ($array_type instanceof Type\Atomic\ObjectLike) {

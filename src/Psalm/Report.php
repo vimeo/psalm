@@ -69,7 +69,7 @@ abstract class Report
             $this->issues_data = array_filter(
                 $issues_data,
                 /**
-                 * @var array{severity: string}
+                 * @param array{severity: string} $issue_data
                  */
                 function (array $issue_data) : bool {
                     return $issue_data['severity'] !== Config::REPORT_INFO;

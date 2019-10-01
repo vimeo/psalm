@@ -896,6 +896,7 @@ class FileReferenceProvider
 
     /**
      * @param string $file_path
+     * @param IssueData $issue
      *
      * @return void
      */

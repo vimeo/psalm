@@ -85,7 +85,7 @@ class ProtocolStreamReader implements ProtocolReader
                 case self::PARSE_HEADERS:
                     if ($this->buffer === "\r\n") {
                         $this->parsing_mode = self::PARSE_BODY;
-                        $this->content_length = (int)$this->headers['Content-Length'];
+                        $this->content_length = (int) ($this->headers['Content-Length'] ?? 0);
                         $this->buffer = '';
                     } elseif (substr($this->buffer, -2) === "\r\n") {
                         $parts = explode(':', $this->buffer);

@@ -732,7 +732,10 @@ class CallAnalyzer
             if (isset($arg->value->inferredType)
                 && $arg->value->inferredType->hasArray()
             ) {
-                /** @var TArray|ObjectLike */
+                /**
+                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                 * @var TArray|ObjectLike
+                 */
                 $array_type = $arg->value->inferredType->getTypes()['array'];
 
                 if ($array_type instanceof ObjectLike) {
@@ -805,7 +808,10 @@ class CallAnalyzer
         }
 
         if (isset($array_arg->inferredType) && $array_arg->inferredType->hasArray()) {
-            /** @var TArray|ObjectLike */
+            /**
+             * @psalm-suppress PossiblyUndefinedArrayOffset
+             * @var TArray|ObjectLike
+             */
             $array_type = $array_arg->inferredType->getTypes()['array'];
 
             if ($array_type instanceof ObjectLike) {
@@ -947,14 +953,20 @@ class CallAnalyzer
             && isset($replacement_arg->inferredType)
             && $replacement_arg->inferredType->hasArray()
         ) {
-            /** @var TArray|ObjectLike */
+            /**
+             * @psalm-suppress PossiblyUndefinedArrayOffset
+             * @var TArray|ObjectLike
+             */
             $array_type = $array_arg->inferredType->getTypes()['array'];
 
             if ($array_type instanceof ObjectLike) {
                 $array_type = $array_type->getGenericArrayType();
             }
 
-            /** @var TArray|ObjectLike */
+            /**
+             * @psalm-suppress PossiblyUndefinedArrayOffset
+             * @var TArray|ObjectLike
+             */
             $replacement_array_type = $replacement_arg->inferredType->getTypes()['array'];
 
             if ($replacement_array_type instanceof ObjectLike) {
@@ -1413,7 +1425,10 @@ class CallAnalyzer
                     && $param_type
                     && $param_type->hasArray()
                 ) {
-                    /** @var TArray */
+                    /**
+                     * @psalm-suppress PossiblyUndefinedArrayOffset
+                     * @var TArray
+                     */
                     $array_type = $param_type->getTypes()['array'];
 
                     $param_type = $array_type->type_params[1];
@@ -1660,7 +1675,10 @@ class CallAnalyzer
 
             if ($arg->unpack) {
                 if ($arg_type->hasArray()) {
-                    /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                    /**
+                     * @psalm-suppress PossiblyUndefinedArrayOffset
+                     * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                     */
                     $array_atomic_type = $arg_type->getTypes()['array'];
                     if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                         $array_atomic_type = $array_atomic_type->getGenericArrayType();
@@ -1736,7 +1754,10 @@ class CallAnalyzer
             }
 
             if ($arg_type->hasArray()) {
-                /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                /**
+                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                 */
                 $array_atomic_type = $arg_type->getTypes()['array'];
 
                 if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
@@ -1888,8 +1909,9 @@ class CallAnalyzer
             /** @var ObjectLike|TArray|null */
             $array_arg_type = $array_arg
                     && isset($array_arg->inferredType)
-                    && isset($array_arg->inferredType->getTypes()['array'])
-                ? $array_arg->inferredType->getTypes()['array']
+                    && ($types = $array_arg->inferredType->getTypes())
+                    && isset($types['array'])
+                ? $types['array']
                 : null;
 
             if ($array_arg_type instanceof ObjectLike) {

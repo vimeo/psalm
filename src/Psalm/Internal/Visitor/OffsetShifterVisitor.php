@@ -27,6 +27,7 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
      */
     public function enterNode(PhpParser\Node $node)
     {
+        /** @var array{startFilePos: int, endFilePos: int} */
         $attrs = $node->getAttributes();
 
         if ($cs = $node->getComments()) {
@@ -51,7 +52,9 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             $node->setAttribute('comments', $new_comments);
         }
 
-        /** @psalm-suppress MixedOperand */
+        /**
+         * @psalm-suppress MixedOperand
+         */
         $node->setAttribute('startFilePos', $attrs['startFilePos'] + $this->file_offset);
         /** @psalm-suppress MixedOperand */
         $node->setAttribute('endFilePos', $attrs['endFilePos'] + $this->file_offset);

@@ -450,6 +450,7 @@ class ExpressionAnalyzer
                         (string)$statements_analyzer->getFQCLN()
                     )
                 ) {
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
                     $use_context->vars_in_scope['$this'] = clone $context->vars_in_scope['$this'];
                 } elseif ($context->self) {
                     $use_context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($context->self)]);

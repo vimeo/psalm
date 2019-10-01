@@ -1779,7 +1779,7 @@ class AssertionFinder
                 $first_arg = $expr->args[0];
 
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    $first_var_name = '"' . $first_arg->value->value . '"';
+                    $first_var_name = '\'' . $first_arg->value->value . '\'';
                 } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
                     $first_var_name = (string) $first_arg->value->value;
                 }

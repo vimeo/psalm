@@ -133,7 +133,10 @@ class CallMap
 
                 if ($arg->unpack && !$function_param->is_variadic) {
                     if ($arg_type->hasArray()) {
-                        /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                        /**
+                         * @psalm-suppress PossiblyUndefinedArrayOffset
+                         * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                         */
                         $array_atomic_type = $arg_type->getTypes()['array'];
 
                         if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {

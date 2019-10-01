@@ -10,7 +10,7 @@
     checkForThrowsDocblock="false"
     throwExceptionOnError="0"
     findUnusedCode="true"
-    ensureArrayStringOffsetsExist="false"
+    ensureArrayStringOffsetsExist="true"
     resolveFromConfigFile="true"
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
 >
@@ -136,6 +136,9 @@
 
         <PossiblyUndefinedArrayOffset>
             <errorLevel type="suppress">
+                <directory name="src/Psalm/Internal/Provider/ReturnTypeProvider" />
+                <file name="src/Psalm/Internal/Type/AssertionReconciler.php" />
+                <file name="src/Psalm/Internal/Type/NegatedAssertionReconciler.php" />
                 <directory name="tests"/>
             </errorLevel>
         </PossiblyUndefinedArrayOffset>

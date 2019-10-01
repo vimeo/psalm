@@ -474,7 +474,10 @@ class AssignmentAnalyzer
                 if ($var instanceof PhpParser\Node\Expr\List_
                     || $var instanceof PhpParser\Node\Expr\Array_
                 ) {
-                    /** @var Type\Atomic\ObjectLike|Type\Atomic\TArray|null */
+                    /**
+                     * @psalm-suppress PossiblyUndefinedArrayOffset
+                     * @var Type\Atomic\ObjectLike|Type\Atomic\TArray|null
+                     */
                     $array_value_type = isset($assign_value_type->getTypes()['array'])
                         ? $assign_value_type->getTypes()['array']
                         : null;
@@ -533,8 +536,10 @@ class AssignmentAnalyzer
 
                     $new_assign_type = null;
 
-                    if (isset($assign_value_type->getTypes()['array'])) {
-                        $array_atomic_type = $assign_value_type->getTypes()['array'];
+                    $types = $assign_value_type->getTypes();
+
+                    if (isset($types['array'])) {
+                        $array_atomic_type = $types['array'];
 
                         if ($array_atomic_type instanceof Type\Atomic\TArray) {
                             $new_assign_type = clone $array_atomic_type->type_params[1];

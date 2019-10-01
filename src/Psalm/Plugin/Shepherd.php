@@ -53,6 +53,9 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                 'git' => $source_control_info->toArray(),
                 'issues' => array_filter(
                     $issues,
+                    /**
+                     * @param array{severity: string} $i
+                     */
                     function (array $i) : bool {
                         return $i['severity'] === 'error';
                     }
