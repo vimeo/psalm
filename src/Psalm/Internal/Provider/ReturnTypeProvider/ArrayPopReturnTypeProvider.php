@@ -54,7 +54,7 @@ class ArrayPopReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         } else {
             $value_type = $first_arg_array->getGenericValueType();
 
-            if (!$first_arg_array->sealed) {
+            if (!$first_arg_array->sealed && !$first_arg_array->previous_value_type) {
                 $nullable = true;
             }
         }

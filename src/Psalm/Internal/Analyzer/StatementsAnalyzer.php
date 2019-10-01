@@ -1240,7 +1240,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                     if ($atomic_root_type->previous_value_type) {
                                         $root_type->addType(
                                             new Type\Atomic\TArray([
-                                                new Type\Union([new Type\Atomic\TArrayKey]),
+                                                $atomic_root_type->previous_key_type
+                                                    ? clone $atomic_root_type->previous_key_type
+                                                    : new Type\Union([new Type\Atomic\TArrayKey]),
                                                 clone $atomic_root_type->previous_value_type,
                                             ])
                                         );

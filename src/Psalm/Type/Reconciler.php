@@ -169,7 +169,6 @@ class Reconciler
                     $codebase,
                     $key,
                     $existing_types,
-                    $new_type_parts,
                     $code_location
                 );
 
@@ -323,6 +322,7 @@ class Reconciler
 
         $string_char = null;
         $escape_char = false;
+        $brackets = 0;
 
         $parts = [''];
         $parts_offset = 0;
@@ -349,6 +349,13 @@ class Reconciler
                     $parts_offset++;
                     $parts[$parts_offset] = $char;
                     ++$parts_offset;
+
+                    if ($char === '[') {
+                        $brackets++;
+                    } else {
+                        $brackets--;
+                    }
+
                     continue 2;
 
                 case '\'':
@@ -362,7 +369,10 @@ class Reconciler
                     continue 2;
 
                 case '-':
-                    if ($i < $char_count - 1 && $chars[$i + 1] === '>') {
+                    if (!$brackets
+                        && $i < $char_count - 1
+                        && $chars[$i + 1] === '>'
+                    ) {
                         ++$i;
 
                         ++$parts_offset;
@@ -380,6 +390,8 @@ class Reconciler
                     $parts[$parts_offset] .= $char;
             }
         }
+
+        $parts = \array_values($parts);
 
         self::$broken_paths[$path] = $parts;
 
@@ -399,7 +411,6 @@ class Reconciler
         Codebase $codebase,
         string $key,
         array &$existing_keys,
-        array $new_type_parts,
         CodeLocation $code_location = null
     ) {
         $key_parts = self::breakUpPathIntoParts($key);
@@ -447,9 +458,7 @@ class Reconciler
                         if ($existing_key_type_part instanceof Type\Atomic\TArray) {
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
 
-                            if ($new_type_parts[0][0] === 'empty' || $new_type_parts[0][0] === '=empty') {
-                                $new_base_type_candidate->possibly_undefined = true;
-                            }
+                            $new_base_type_candidate->possibly_undefined = true;
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$') {
@@ -460,6 +469,13 @@ class Reconciler
                             $key_parts_key = str_replace('\'', '', $array_key);
 
                             if (!isset($array_properties[$key_parts_key])) {
+                                if ($existing_key_type_part->previous_value_type) {
+                                    $new_base_type_candidate = clone $existing_key_type_part->previous_value_type;
+                                    $new_base_type_candidate->possibly_undefined = true;
+
+                                    return $new_base_type_candidate;
+                                }
+
                                 return null;
                             }
 
@@ -681,12 +697,12 @@ class Reconciler
             foreach ($existing_types[$base_key]->getTypes() as $base_atomic_type) {
                 if ($base_atomic_type instanceof Type\Atomic\ObjectLike
                     || ($base_atomic_type instanceof Type\Atomic\TArray
-                        && $base_atomic_type->type_params[0]->isArrayKey()
-                        && $base_atomic_type->type_params[1]->isMixed())
+                        && !$base_atomic_type->type_params[1]->isEmpty())
                 ) {
                     $new_base_type = clone $existing_types[$base_key];
 
                     if ($base_atomic_type instanceof Type\Atomic\TArray) {
+                        $previous_key_type = clone $base_atomic_type->type_params[0];
                         $previous_value_type = clone $base_atomic_type->type_params[1];
 
                         $base_atomic_type = new Type\Atomic\ObjectLike(
@@ -696,6 +712,9 @@ class Reconciler
                             null
                         );
 
+                        if (!$previous_key_type->isArrayKey()) {
+                            $base_atomic_type->previous_key_type = $previous_key_type;
+                        }
                         $base_atomic_type->previous_value_type = $previous_value_type;
                     } else {
                         $base_atomic_type = clone $base_atomic_type;

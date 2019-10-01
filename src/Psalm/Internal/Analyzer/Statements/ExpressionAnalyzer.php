@@ -965,6 +965,12 @@ class ExpressionAnalyzer
                     $offset = '$' . $stmt->dim->name;
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ConstFetch) {
                     $offset = implode('\\', $stmt->dim->name->parts);
+                } elseif ($stmt->dim instanceof PhpParser\Node\Expr\PropertyFetch) {
+                    $object_id = self::getArrayVarId($stmt->dim->var, $this_class_name, $source);
+
+                    if ($object_id && $stmt->dim->name instanceof PhpParser\Node\Identifier) {
+                        $offset = $object_id . '->' . $stmt->dim->name;
+                    }
                 } elseif (isset($stmt->dim->inferredType)) {
                     if ($stmt->dim->inferredType->isSingleStringLiteral()) {
                         $offset = '\'' . $stmt->dim->inferredType->getSingleStringLiteral()->value . '\'';

@@ -83,7 +83,10 @@ class TypeCombination
     private $objectlike_sealed = true;
 
     /** @var ?Union */
-    private $objectlike_value_type = false;
+    private $objectlike_key_type = null;
+
+    /** @var ?Union */
+    private $objectlike_value_type = null;
 
     /** @var bool */
     private $has_mixed = false;
@@ -310,6 +313,10 @@ class TypeCombination
                             $objectlike->sealed = true;
                         }
 
+                        if ($combination->objectlike_key_type) {
+                            $objectlike->previous_key_type = $combination->objectlike_key_type;
+                        }
+
                         if ($combination->objectlike_value_type) {
                             $objectlike->previous_value_type = $combination->objectlike_value_type;
                         }
@@ -356,9 +363,27 @@ class TypeCombination
                     }
                 }
 
+                if ($combination->objectlike_value_type) {
+                    $objectlike_generic_type = Type::combineUnionTypes(
+                        $combination->objectlike_value_type,
+                        $objectlike_generic_type,
+                        $codebase,
+                        $overwrite_empty_array
+                    );
+                }
+
                 $objectlike_generic_type->possibly_undefined = false;
 
                 $objectlike_key_type = new Type\Union(array_values($objectlike_keys));
+
+                if ($combination->objectlike_key_type) {
+                    $objectlike_key_type = Type::combineUnionTypes(
+                        $combination->objectlike_key_type,
+                        $objectlike_key_type,
+                        $codebase,
+                        $overwrite_empty_array
+                    );
+                }
 
                 $generic_type_params[0] = Type::combineUnionTypes(
                     $generic_type_params[0],
@@ -687,6 +712,19 @@ class TypeCombination
                     $combination->objectlike_value_type = Type::combineUnionTypes(
                         $type->previous_value_type,
                         $combination->objectlike_value_type,
+                        $codebase,
+                        $overwrite_empty_array
+                    );
+                }
+            }
+
+            if ($type->previous_key_type) {
+                if (!$combination->objectlike_key_type) {
+                    $combination->objectlike_key_type = $type->previous_key_type;
+                } else {
+                    $combination->objectlike_key_type = Type::combineUnionTypes(
+                        $type->previous_key_type,
+                        $combination->objectlike_key_type,
                         $codebase,
                         $overwrite_empty_array
                     );

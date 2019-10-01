@@ -1906,7 +1906,10 @@ class CallAnalyzer
 
             $array_arg = isset($arg->value) ? $arg->value : null;
 
-            /** @var ObjectLike|TArray|null */
+            /**
+             * @psalm-suppress PossiblyUndefinedArrayOffset
+             * @var ObjectLike|TArray|null
+             */
             $array_arg_type = $array_arg
                     && isset($array_arg->inferredType)
                     && ($types = $array_arg->inferredType->getTypes())

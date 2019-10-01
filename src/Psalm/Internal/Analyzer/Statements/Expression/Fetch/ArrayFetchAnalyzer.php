@@ -464,10 +464,10 @@ class ArrayFetchAnalyzer
                         || ($type->type_params[1]->isMixed() && \is_string($key_value)))
                     && $key_value !== null
                 ) {
-                    $from_string_key = $type->type_params[0]->isString();
                     $from_mixed_array = $type->type_params[1]->isMixed();
                     $from_empty_array = $type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty();
 
+                    $previous_key_type = $type->type_params[0];
                     $previous_value_type = $type->type_params[1];
 
                     // ok, type becomes an ObjectLike
@@ -476,12 +476,9 @@ class ArrayFetchAnalyzer
 
                     $type->sealed = $from_empty_array;
 
-                    if ($from_mixed_array) {
+                    if (!$from_empty_array) {
                         $type->previous_value_type = clone $previous_value_type;
-
-                        if ($from_string_key) {
-                            $type->had_string_key = true;
-                        }
+                        $type->previous_key_type = clone $previous_key_type;
                     }
 
                     $array_type->addType($type);

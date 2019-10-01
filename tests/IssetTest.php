@@ -353,7 +353,17 @@ class IssetTest extends TestCase
                         echo $_GET["b"];
                     }',
             ],
-            'nestedArrayAccessInLoopAfterIsset' => [
+            'regularArrayAccessInLoopAfterIsset' => [
+                '<?php
+                    $arr = [];
+                    while (rand(0, 1)) {
+                        if (!isset($arr["a"]["b"])) {
+                            $arr["a"]["b"] = "foo";
+                        }
+                        echo $arr["a"]["b"];
+                    }',
+            ],
+            'conditionalArrayAccessInLoopAfterIssetWithAltAssignment' => [
                 '<?php
                     $arr = [];
                     while (rand(0, 1)) {
@@ -571,7 +581,7 @@ class IssetTest extends TestCase
                         }
                     }',
             ],
-            'SKIPPED-issetOnNestedObjectlikeOneLevel' => [
+            'issetOnNestedObjectlikeOneLevel' => [
                 '<?php
                     /**
                      * @param array{a:array} $array
@@ -583,6 +593,34 @@ class IssetTest extends TestCase
                             throw new \LogicException();
                         }
                         return $array;
+                    }'
+            ],
+            'issetOnStringArrayShouldInformArrayness' => [
+                '<?php
+                    /**
+                     * @param string[] $a
+                     * @return array{b: string}
+                     */
+                    function foo(array $a) {
+                        if (isset($a["b"])) {
+                            return $a;
+                        }
+
+                        throw new \Exception("bad");
+                    }'
+            ],
+            'arrayKeyExistsOnStringArrayShouldInformArrayness' => [
+                '<?php
+                    /**
+                     * @param string[] $a
+                     * @return array{b: string}
+                     */
+                    function foo(array $a) {
+                        if (array_key_exists("b", $a)) {
+                            return $a;
+                        }
+
+                        throw new \Exception("bad");
                     }'
             ],
         ];

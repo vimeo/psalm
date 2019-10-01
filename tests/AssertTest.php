@@ -163,6 +163,98 @@ class AssertTest extends TestCase
                         return count() > 0;
                     }',
             ],
+            'assertHasArrayAccess' => [
+                '<?php
+                    /**
+                     * @return array|ArrayAccess
+                     */
+                    function getBar(array $array) {
+                        if (isset($array[\'foo\'][\'bar\'])) {
+                            return $array[\'foo\'];
+                        }
+
+                        return [];
+                    }',
+            ],
+            'assertHasArrayAccessWithType' => [
+                '<?php
+                    /**
+                     * @param array<string, array<string, string>> $array
+                     * @return array<string, string>
+                     */
+                    function getBar(array $array) : array {
+                        if (isset($array[\'foo\'][\'bar\'])) {
+                            return $array[\'foo\'];
+                        }
+
+                        return [];
+                    }',
+            ],
+            'assertHasArrayAccessOnSimpleXMLElement' => [
+                '<?php
+                    function getBar(SimpleXMLElement $e, string $s) : void {
+                        if (isset($e[$s])) {
+                            echo (string) $e[$s];
+                        }
+
+                        if (isset($e[\'foo\'])) {
+                            echo (string) $e[\'foo\'];
+                        }
+
+                        if (isset($e->bar)) {}
+                    }',
+            ],
+            'assertArrayOffsetToTraversable' => [
+                '<?php
+                    function render(array $data): ?Traversable {
+                        if ($data["o"] instanceof Traversable) {
+                            return $data["o"];
+                        }
+
+                        return null;
+                    }'
+            ],
+            'assertOnArrayShouldNotChangeType' => [
+                '<?php
+                    /** @return array|string|false */
+                    function foo(string $a, string $b) {
+                        $options = getopt($a, [$b]);
+
+                        if (isset($options["config"])) {
+                            $options["c"] = $options["config"];
+                        }
+
+                        if (isset($options["root"])) {
+                            return $options["root"];
+                        }
+
+                        return false;
+                    }'
+            ],
+            'assertOnArrayInTernary' => [
+                '<?php
+                    function foo(string $a, string $b) : void {
+                        $o = getopt($a, [$b]);
+
+                        $a = isset($o["a"]) && is_string($o["a"]) ? $o["a"] : "foo";
+                        $a = isset($o["a"]) && is_string($o["a"]) ? $o["a"] : "foo";
+                        echo $a;
+                    }'
+            ],
+            'nonEmptyArrayAfterIsset' => [
+                '<?php
+                    /**
+                     * @param array<string, int> $arr
+                     * @return non-empty-array<string, int>
+                     */
+                    function foo(array $arr) : array {
+                        if (isset($arr["a"])) {
+                            return $arr;
+                        }
+
+                        return ["b" => 1];
+                    }'
+            ],
         ];
     }
 }

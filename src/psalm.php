@@ -328,11 +328,6 @@ if (isset($options['set-baseline'])) {
     }
 }
 
-
-$output_format = isset($options['output-format']) && is_string($options['output-format'])
-    ? $options['output-format']
-    : \Psalm\Report::TYPE_CONSOLE;
-
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
 $plugins = [];

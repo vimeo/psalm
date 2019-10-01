@@ -1971,7 +1971,9 @@ class TypeAnalyzer
 
         if ($container_type_part instanceof Type\Atomic\TNonEmptyArray
             && !$input_type_part instanceof Type\Atomic\TNonEmptyArray
-            && !($input_type_part instanceof ObjectLike && $input_type_part->sealed)
+            && !($input_type_part instanceof ObjectLike
+                && ($input_type_part->sealed || $input_type_part->previous_value_type)
+            )
         ) {
             if ($all_types_contain) {
                 $atomic_comparison_result->type_coerced = true;
