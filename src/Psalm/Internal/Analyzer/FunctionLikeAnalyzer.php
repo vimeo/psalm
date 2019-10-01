@@ -183,6 +183,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     && !$storage->mutation_free_inferred
                 ) {
                     $context->vars_in_scope['$this']->external_mutation_free = true;
+
+                    if ($storage->mutation_free) {
+                        $context->vars_in_scope['$this']->mutation_free = true;
+                    }
                 }
 
                 $context->vars_possibly_in_scope['$this'] = true;

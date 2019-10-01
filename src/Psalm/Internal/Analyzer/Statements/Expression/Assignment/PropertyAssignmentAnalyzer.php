@@ -623,13 +623,18 @@ class PropertyAssignmentAnalyzer
                             true
                         );
 
+                        $property_pure_compatible = isset($stmt->var->inferredType)
+                            && $stmt->var->inferredType->external_mutation_free
+                            && !$stmt->var->inferredType->mutation_free;
+
                         if ($appearing_property_class
                             && !($context->self
                                 && ($appearing_property_class === $context->self
                                     || $codebase->classExtends($context->self, $appearing_property_class))
                                 && (!$context->calling_method_id
                                     || \strpos($context->calling_method_id, '::__construct')
-                                    || \strpos($context->calling_method_id, '::unserialize'))
+                                    || \strpos($context->calling_method_id, '::unserialize')
+                                    || $property_pure_compatible)
                             )
                         ) {
                             if (IssueBuffer::accepts(

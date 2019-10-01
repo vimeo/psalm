@@ -1847,7 +1847,9 @@ class ExpressionAnalyzer
             $stmt->inferredType = $stmt->expr->inferredType;
 
             if ($immutable_cloned) {
+                $stmt->inferredType = clone $stmt->inferredType;
                 $stmt->inferredType->external_mutation_free = true;
+                $stmt->inferredType->mutation_free = false;
             }
         }
     }

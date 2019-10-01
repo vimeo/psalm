@@ -127,28 +127,6 @@ class ImmutableAnnotationTest extends TestCase
 
                         public function withBar(string $bar): self {
                             $new = new Foo("hello");
-                            /** @psalm-suppress InaccessibleProperty */
-                            $new->bar = $bar;
-
-                            return $new;
-                        }
-                    }'
-            ],
-            'allowClone' => [
-                '<?php
-                    /**
-                     * @psalm-immutable
-                     */
-                    class Foo {
-                        protected string $bar;
-
-                        public function __construct(string $bar) {
-                            $this->bar = $bar;
-                        }
-
-                        public function withBar(string $bar): self {
-                            $new = clone $this;
-                            /** @psalm-suppress InaccessibleProperty */
                             $new->bar = $bar;
 
                             return $new;
@@ -235,6 +213,44 @@ class ImmutableAnnotationTest extends TestCase
 
                     /** @method string getA() */
                     class B extends A {}',
+            ],
+            'immutableClassWithCloneAndPropertyChange' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Foo {
+                        protected string $bar;
+
+                        public function __construct(string $bar) {
+                            $this->bar = $bar;
+                        }
+
+                        public function withBar(string $bar): self {
+                            $new = clone $this;
+                            $new->bar = $bar;
+                            return $new;
+                        }
+                    }',
+            ],
+            'immutableClassWithCloneAndPropertyAppend' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Foo {
+                        protected string $bar;
+
+                        public function __construct(string $bar) {
+                            $this->bar = $bar;
+                        }
+
+                        public function withBar(string $bar): self {
+                            $new = clone $this;
+                            $new->bar .= $bar;
+                            return $new;
+                        }
+                    }',
             ],
         ];
     }

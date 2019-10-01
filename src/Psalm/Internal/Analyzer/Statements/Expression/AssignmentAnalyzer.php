@@ -793,7 +793,13 @@ class AssignmentAnalyzer
             $statements_analyzer
         );
 
-        if ($array_var_id && $context->mutation_free && strpos($array_var_id, '->')) {
+        if ($array_var_id
+            && $context->mutation_free
+            && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
+            && isset($stmt->var->var->inferredType)
+            && (!$stmt->var->var->inferredType->external_mutation_free
+                || $stmt->var->var->inferredType->mutation_free)
+        ) {
             if (IssueBuffer::accepts(
                 new ImpurePropertyAssignment(
                     'Cannot assign to a property from a mutation-free context',

@@ -159,6 +159,11 @@ class Union
      */
     public $external_mutation_free = false;
 
+    /**
+     * @var bool
+     */
+    public $mutation_free = false;
+
     /** @var null|string */
     private $id;
 
