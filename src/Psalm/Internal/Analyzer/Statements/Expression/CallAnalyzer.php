@@ -353,7 +353,8 @@ class CallAnalyzer
             : null;
 
         // if this modifies the array type based on further args
-        if ($method_id && in_array($method_id, ['array_push', 'array_unshift'], true)
+        if ($method_id
+            && in_array($method_id, ['array_push', 'array_unshift'], true)
             && $function_params
             && $args
         ) {
