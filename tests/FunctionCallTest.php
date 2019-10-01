@@ -2460,6 +2460,11 @@ class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'noCrashOnEmptyArrayPush' => [
+                '<?php
+                    array_push();',
+                'error_message' => 'TooFewArguments',
+            ],
         ];
     }
 }
