@@ -171,8 +171,6 @@ class Reconciler
             $has_count_check = false;
 
             foreach ($new_type_parts as $new_type_part_parts) {
-                $orred_type = null;
-
                 foreach ($new_type_part_parts as $new_type_part_part) {
                     switch ($new_type_part_part[0]) {
                         case '!':
