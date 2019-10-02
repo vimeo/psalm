@@ -163,22 +163,6 @@ class Reconciler
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($new_types as $key => $new_type_parts) {
-            $result_type = isset($existing_types[$key])
-                ? clone $existing_types[$key]
-                : self::getValueForKey(
-                    $codebase,
-                    $key,
-                    $existing_types,
-                    $code_location
-                );
-
-            if ($result_type && empty($result_type->getTypes())) {
-                throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
-            }
-
-            $before_adjustment = $result_type ? clone $result_type : null;
-
-            $failed_reconciliation = 0;
             $has_negation = false;
             $has_equality = false;
             $has_isset = false;
@@ -212,7 +196,32 @@ class Reconciler
 
                     $has_count_check = $has_count_check
                         || $new_type_part_part === 'non-empty-countable';
+                }
+            }
 
+
+            $result_type = isset($existing_types[$key])
+                ? clone $existing_types[$key]
+                : self::getValueForKey(
+                    $codebase,
+                    $key,
+                    $existing_types,
+                    $code_location,
+                    $has_isset
+                );
+
+            if ($result_type && empty($result_type->getTypes())) {
+                throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
+            }
+
+            $before_adjustment = $result_type ? clone $result_type : null;
+
+            $failed_reconciliation = 0;
+
+            foreach ($new_type_parts as $new_type_part_parts) {
+                $orred_type = null;
+
+                foreach ($new_type_part_parts as $new_type_part_part) {
                     $result_type_candidate = AssertionReconciler::reconcile(
                         $new_type_part_part,
                         $result_type ? clone $result_type : null,
@@ -411,7 +420,8 @@ class Reconciler
         Codebase $codebase,
         string $key,
         array &$existing_keys,
-        CodeLocation $code_location = null
+        ?CodeLocation $code_location,
+        bool $has_isset
     ) {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -458,7 +468,9 @@ class Reconciler
                         if ($existing_key_type_part instanceof Type\Atomic\TArray) {
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
 
-                            $new_base_type_candidate->possibly_undefined = true;
+                            if ($has_isset) {
+                                $new_base_type_candidate->possibly_undefined = true;
+                            }
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$') {
