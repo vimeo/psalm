@@ -271,6 +271,35 @@ class AssertTest extends TestCase
                         }
                     }',
             ],
+            'SKIPPED-bug' => [
+                '<?php
+                    class A {
+                        public int $id = 0;
+                    }
+                    class B {
+                        public function foo() : void {}
+                    }
+
+                    /** @param A[] $a_of_a */
+                    function foo(array $a_of_a): void {
+                        $arr = [];
+
+                        $a = array_pop($a_of_a);
+
+                        if (!isset($arr[$a->id])) {
+                            $arr[$a->id] = new B();
+                        }
+                        $arr[$a->id]->foo();
+
+                        /** @var A */
+                        $a = array_pop($a_of_a);
+
+                        if (!isset($arr[$a->id])) {
+                            $arr[$a->id] = new B();
+                        }
+                        $arr[$a->id]->foo();
+                    }'
+            ],
         ];
     }
 }
