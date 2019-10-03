@@ -302,6 +302,7 @@ class Functions
 
             // process-related
             'pcntl_signal', 'posix_kill', 'cli_set_process_title', 'pcntl_async_signals', 'proc_close',
+            'proc_nice', 'proc_open', 'proc_terminate',
 
             // curl
             'curl_setopt', 'curl_close', 'curl_multi_add_handle', 'curl_multi_remove_handle',
@@ -324,7 +325,7 @@ class Functions
 
             // well-known functions
             'libxml_use_internal_errors', 'curl_exec',
-            'mt_srand', 'openssl_pkcs7_sign', 'mysqli_select_db', 'preg_replace_callback',
+            'mt_srand', 'openssl_pkcs7_sign', 'preg_replace_callback',
             'mt_rand', 'rand',
 
             // php environment
@@ -346,6 +347,11 @@ class Functions
 
             // iterators
             'rewind',
+
+            // mysqli
+            'mysqli_select_db', 'mysqli_dump_debug_info', 'mysqli_kill', 'mysqli_multi_query',
+            'mysqli_next_result', 'mysqli_options', 'mysqli_ping', 'mysqli_query', 'mysqli_report',
+            'mysqli_rollback', 'mysqli_savepoint', 'mysqli_set_charset', 'mysqli_ssl_set',
         ];
 
         if (\in_array(strtolower($function_id), $impure_functions, true)) {
