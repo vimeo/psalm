@@ -199,6 +199,18 @@ class ArrayAssignmentAnalyzer
                     && is_string($child_stmt->dim->name)
                 ) {
                     $var_id_additions[] = '[$' . $child_stmt->dim->name . ']';
+                } elseif ($child_stmt->dim instanceof PhpParser\Node\Expr\PropertyFetch
+                    && $child_stmt->dim->name instanceof PhpParser\Node\Identifier
+                ) {
+                    $object_id = ExpressionAnalyzer::getArrayVarId(
+                        $child_stmt->dim->var,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer
+                    );
+
+                    if ($object_id) {
+                        $var_id_additions[] = '[' . $object_id . '->' . $child_stmt->dim->name->name . ']';
+                    }
                 } else {
                     $var_id_additions[] = '[' . $child_stmt->dim->inferredType . ']';
                     $full_var_id = false;
