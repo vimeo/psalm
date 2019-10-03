@@ -300,7 +300,27 @@ class AssertTest extends TestCase
                             foreach ($c[$k] as $d) {}
                         }
                     }',
-            ]
+            ],
+            'assertNotEmptyTwiceOnInstancePropertyArray' => [
+                '<?php
+                    class A {
+                        private array $c = [];
+
+                        public function bar(string $s, string $t): void {
+                            if (empty($this->c[$s]) && empty($this->c[$t])) {}
+                        }
+                    }'
+            ],
+            'assertNotEmptyTwiceOnStaticPropertyArray' => [
+                '<?php
+                    class A {
+                        private static array $c = [];
+
+                        public static function bar(string $s, string $t): void {
+                            if (empty(self::$c[$s]) && empty(self::$c[$t])) {}
+                        }
+                    }'
+            ],
         ];
     }
 }

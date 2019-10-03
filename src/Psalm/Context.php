@@ -731,7 +731,7 @@ class Context
 
         $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name);
 
-        if ($stripped_var[0] === '$' && ($stripped_var !== '$this' || $var_name !== $stripped_var)) {
+        if ($stripped_var !== '$this' || $var_name !== $stripped_var) {
             $this->referenced_var_ids[$var_name] = true;
 
             if (!isset($this->vars_possibly_in_scope[$var_name])
