@@ -722,7 +722,7 @@ class Reconciler
                             null
                         );
 
-                        if (!$previous_key_type->isArrayKey()) {
+                        if (!$previous_key_type->isEmpty()) {
                             $base_atomic_type->previous_key_type = $previous_key_type;
                         }
                         $base_atomic_type->previous_value_type = $previous_value_type;
