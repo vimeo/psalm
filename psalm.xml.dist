@@ -61,6 +61,12 @@
         </MissingConstructor>
         <DeprecatedProperty errorLevel="suppress"/>
 
+        <DeprecatedMethod>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </DeprecatedMethod>
+
         <UnusedParam>
             <errorLevel type="suppress">
                 <directory name="examples"/>
