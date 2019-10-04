@@ -481,7 +481,6 @@ class Reconciler
                             if (!isset($array_properties[$key_parts_key])) {
                                 if ($existing_key_type_part->previous_value_type) {
                                     $new_base_type_candidate = clone $existing_key_type_part->previous_value_type;
-                                    //$new_base_type_candidate->possibly_undefined = true;
 
                                     return $new_base_type_candidate;
                                 }

@@ -95,7 +95,26 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
+    /**
+     * @return void
+     */
+    public function testComplainAfterFirstIsset()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedArrayOffset');
 
+        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function foo(array $arr) : void {
+                        if (isset($arr["a"]) && $arr["b"]) {}
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>

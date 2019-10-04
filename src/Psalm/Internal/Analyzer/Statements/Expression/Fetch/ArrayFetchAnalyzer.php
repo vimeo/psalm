@@ -536,44 +536,15 @@ class ArrayFetchAnalyzer
 
                             if ($codebase->config->ensure_array_string_offsets_exist
                                 && $offset_type_contained_by_expected
-                                && $offset_type->hasLiteralString()
-                                && !$expected_offset_type->hasLiteralClassString()
-                                && !$context->inside_isset
-                                && !$context->inside_unset
                             ) {
-                                $found_match = false;
-
-                                foreach ($offset_type->getTypes() as $offset_type_part) {
-                                    if ($array_var_id
-                                        && $offset_type_part instanceof TLiteralString
-                                        && isset(
-                                            $context->vars_in_scope[
-                                                $array_var_id . '[\'' . $offset_type_part->value . '\']'
-                                            ]
-                                        )
-                                        && !$context->vars_in_scope[
-                                                $array_var_id . '[\'' . $offset_type_part->value . '\']'
-                                            ]->possibly_undefined
-                                    ) {
-                                        $found_match = true;
-                                    }
-                                }
-
-                                if (!$found_match) {
-                                    if (IssueBuffer::accepts(
-                                        new PossiblyUndefinedArrayOffset(
-                                            'Possibly undefined array offset \''
-                                                . $offset_type->getId() . '\' '
-                                                . 'is risky given expected type \''
-                                                . $expected_offset_type->getId() . '\'.'
-                                                . ' Consider using isset beforehand.',
-                                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                        ),
-                                        $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        // fall through
-                                    }
-                                }
+                                self::checkLiteralArrayOffset(
+                                    $offset_type,
+                                    $expected_offset_type,
+                                    $array_var_id,
+                                    $stmt,
+                                    $context,
+                                    $statements_analyzer
+                                );
                             }
 
                             if ((!$offset_type_contained_by_expected
@@ -689,6 +660,17 @@ class ArrayFetchAnalyzer
                             }
                         } elseif ($type->previous_value_type) {
                             $has_valid_offset = true;
+
+                            if ($codebase->config->ensure_array_string_offsets_exist) {
+                                self::checkLiteralArrayOffset(
+                                    $offset_type,
+                                    $type->getGenericKeyType(),
+                                    $array_var_id,
+                                    $stmt,
+                                    $context,
+                                    $statements_analyzer
+                                );
+                            }
 
                             $type->properties[$key_value] = clone $type->previous_value_type;
 
@@ -1138,6 +1120,55 @@ class ArrayFetchAnalyzer
         }
 
         return $array_access_type;
+    }
+
+    private static function checkLiteralArrayOffset(
+        Type\Union $offset_type,
+        Type\Union $expected_offset_type,
+        ?string $array_var_id,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer
+    ) : void {
+        if ($offset_type->hasLiteralString()
+            && !$expected_offset_type->hasLiteralClassString()
+            && !$context->inside_isset
+            && !$context->inside_unset
+        ) {
+            $found_match = false;
+
+            foreach ($offset_type->getTypes() as $offset_type_part) {
+                if ($array_var_id
+                    && $offset_type_part instanceof TLiteralString
+                    && isset(
+                        $context->vars_in_scope[
+                            $array_var_id . '[\'' . $offset_type_part->value . '\']'
+                        ]
+                    )
+                    && !$context->vars_in_scope[
+                            $array_var_id . '[\'' . $offset_type_part->value . '\']'
+                        ]->possibly_undefined
+                ) {
+                    $found_match = true;
+                }
+            }
+
+            if (!$found_match) {
+                if (IssueBuffer::accepts(
+                    new PossiblyUndefinedArrayOffset(
+                        'Possibly undefined array offset \''
+                            . $offset_type->getId() . '\' '
+                            . 'is risky given expected type \''
+                            . $expected_offset_type->getId() . '\'.'
+                            . ' Consider using isset beforehand.',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+        }
     }
 
     /**
