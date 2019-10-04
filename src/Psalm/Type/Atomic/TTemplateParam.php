@@ -69,7 +69,9 @@ class TTemplateParam extends \Psalm\Type\Atomic
                 . ')&' . implode('&', $this->extra_types);
         }
 
-        return $this->param_name . ' as ' . $this->as->getId();
+        return $this->param_name
+            . ($this->defining_class ? ':' . $this->defining_class : '')
+            . ' as ' . $this->as->getId();
     }
 
     /**

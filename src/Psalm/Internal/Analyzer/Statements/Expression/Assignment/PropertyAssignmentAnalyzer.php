@@ -683,6 +683,20 @@ class PropertyAssignmentAnalyzer
                         $class_storage->parent_class
                     );
 
+                    $class_property_type = \Psalm\Internal\Codebase\Methods::localizeType(
+                        $codebase,
+                        $class_property_type,
+                        $fq_class_name,
+                        $declaring_property_class
+                    );
+
+                    $assignment_value_type = \Psalm\Internal\Codebase\Methods::localizeType(
+                        $codebase,
+                        $assignment_value_type,
+                        $fq_class_name,
+                        $declaring_property_class
+                    );
+
                     if (!$class_property_type->hasMixed() && $assignment_value_type->hasMixed()) {
                         if (IssueBuffer::accepts(
                             new MixedAssignment(

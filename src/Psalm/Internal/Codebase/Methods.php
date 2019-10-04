@@ -408,7 +408,7 @@ class Methods
 
                     if ($source) {
                         $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
-                        $params[$i]->type = self::localizeParamType(
+                        $params[$i]->type = self::localizeType(
                             $source->getCodebase(),
                             $params[$i]->type,
                             $appearing_fq_class_name,
@@ -432,7 +432,7 @@ class Methods
         throw new \UnexpectedValueException('Cannot get method params for ' . $method_id);
     }
 
-    private static function localizeParamType(
+    public static function localizeType(
         Codebase $codebase,
         Type\Union $type,
         string $appearing_fq_class_name,
@@ -470,7 +470,7 @@ class Methods
                 || $atomic_type instanceof Type\Atomic\TGenericObject
             ) {
                 foreach ($atomic_type->type_params as &$type_param) {
-                    $type_param = self::localizeParamType(
+                    $type_param = self::localizeType(
                         $codebase,
                         $type_param,
                         $appearing_fq_class_name,
@@ -485,7 +485,7 @@ class Methods
                 if ($atomic_type->params) {
                     foreach ($atomic_type->params as $param) {
                         if ($param->type) {
-                            $param->type = self::localizeParamType(
+                            $param->type = self::localizeType(
                                 $codebase,
                                 $param->type,
                                 $appearing_fq_class_name,
@@ -496,7 +496,7 @@ class Methods
                 }
 
                 if ($atomic_type->return_type) {
-                    $atomic_type->return_type = self::localizeParamType(
+                    $atomic_type->return_type = self::localizeType(
                         $codebase,
                         $atomic_type->return_type,
                         $appearing_fq_class_name,
