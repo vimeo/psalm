@@ -573,11 +573,6 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
             ],
-            'mysqliRealConnectMethodAllowsNullParameters' => [
-                '<?php
-                    $mysqli = mysqli_init();
-                    $mysqli->real_connect(null, \'test\', null);',
-            ],
         ];
     }
 
