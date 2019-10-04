@@ -2,6 +2,8 @@
 namespace Psalm\Tests;
 
 use const DIRECTORY_SEPARATOR;
+use Psalm\Config;
+use Psalm\Context;
 
 class IssueSuppressionTest extends TestCase
 {
@@ -51,6 +53,131 @@ class IssueSuppressionTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMissingThrowsDocblockSuppressed()
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function example1 (): void {
+                    /** @psalm-suppress MissingThrowsDocblock */
+                    throw new Exception();
+                }
+
+                /** @psalm-suppress MissingThrowsDocblock */
+                if (rand(0, 1)) {
+                    function example2 (): void {
+                        throw new Exception();
+                    }
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testMissingThrowsDocblockSuppressedWithoutThrow()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-suppress MissingThrowsDocblock */
+                if (rand(0, 1)) {
+                    function example (): void {}
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testMissingThrowsDocblockSuppressedDuplicate()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-suppress MissingThrowsDocblock */
+                function example1 (): void {
+                    /** @psalm-suppress MissingThrowsDocblock */
+                    throw new Exception();
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testUncaughtThrowInGlobalScopeSuppressed()
+    {
+        Config::getInstance()->check_for_throws_in_global_scope = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-suppress UncaughtThrowInGlobalScope */
+                throw new Exception();
+
+                if (rand(0, 1)) {
+                    /** @psalm-suppress UncaughtThrowInGlobalScope */
+                    throw new Exception();
+                }
+
+                /** @psalm-suppress UncaughtThrowInGlobalScope */
+                if (rand(0, 1)) {
+                    throw new Exception();
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @return void
+     */
+    public function testUncaughtThrowInGlobalScopeSuppressedWithoutThrow()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+        Config::getInstance()->check_for_throws_in_global_scope = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-suppress UncaughtThrowInGlobalScope */
+                strlen("a");'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
     }
 
     /**

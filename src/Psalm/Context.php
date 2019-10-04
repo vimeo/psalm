@@ -16,6 +16,8 @@ use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Type\Union;
 use function strpos;
 use function strtolower;
+use function array_search;
+use function is_int;
 
 class Context
 {
@@ -812,7 +814,14 @@ class Context
 
         $issue_type = $this->is_global ? 'UncaughtThrowInGlobalScope' : 'MissingThrowsDocblock';
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-        if (in_array($issue_type, $suppressed_issues, true)) {
+        $suppressed_issue_position = array_search($issue_type, $suppressed_issues, true);
+        if ($suppressed_issue_position !== false) {
+            if (is_int($suppressed_issue_position)) {
+                $file = $statements_analyzer->getFileAnalyzer()->getFilePath();
+                IssueBuffer::addUsedSuppressions([
+                    $file => [$suppressed_issue_position => true],
+                ]);
+            }
             return true;
         }
 
