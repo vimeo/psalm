@@ -117,6 +117,30 @@ class ArrayAccessTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testEnsureArrayIntOffsetsExist()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedArrayOffset');
+
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function takesString(string $s): void {}
+
+                /** @param array<int, string> $arr */
+                function takesArrayIteratorOfString(array $arr): void {
+                    echo $arr[4];
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()

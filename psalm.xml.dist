@@ -11,6 +11,7 @@
     throwExceptionOnError="0"
     findUnusedCode="true"
     ensureArrayStringOffsetsExist="true"
+    ensureArrayIntOffsetsExist="false"
     resolveFromConfigFile="true"
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
 >

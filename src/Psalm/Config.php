@@ -327,6 +327,11 @@ class Config
     public $ensure_array_string_offsets_exist = false;
 
     /**
+     * @var bool
+     */
+    public $ensure_array_int_offsets_exist = false;
+
+    /**
      * @var array<string, bool>
      */
     public $forbidden_functions = [];
@@ -697,6 +702,7 @@ class Config
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
             'loadXdebugStub' => 'load_xdebug_stub',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
+            'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {

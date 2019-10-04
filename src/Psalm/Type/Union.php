@@ -1727,6 +1727,14 @@ class Union
     }
 
     /**
+     * @return bool
+     */
+    public function hasLiteralInt()
+    {
+        return count($this->literal_int_types) > 0;
+    }
+
+    /**
      * @return bool true if this is a int literal with only one possible value
      */
     public function isSingleIntLiteral()
