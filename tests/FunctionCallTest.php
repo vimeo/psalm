@@ -266,6 +266,16 @@ class FunctionCallTest extends TestCase
                     '$d' => 'array<string, int>',
                 ],
             ],
+            'arrayDiffIsVariadic' => [
+                '<?php
+                    array_diff([], [], [], [], []);',
+                'assertions' => [],
+            ],
+            'arrayDiffKeyIsVariadic' => [
+                '<?php
+                    array_diff_key([], [], [], [], []);',
+                'assertions' => [],
+            ],
             'arrayPopMixed' => [
                 '<?php
                     /** @var mixed */
@@ -1031,6 +1041,16 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$bar' => 'array<int, int>',
                 ],
+            ],
+            'arrayIntersectIsVariadic' => [
+                '<?php
+                    array_intersect([], [], [], [], []);',
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyIsVariadic' => [
+                '<?php
+                    array_intersect_key([], [], [], [], []);',
+                'assertions' => [],
             ],
             'arrayReduce' => [
                 '<?php

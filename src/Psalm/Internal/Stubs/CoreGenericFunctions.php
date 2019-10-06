@@ -45,13 +45,12 @@ function array_unique(array $arr, int $sort_flags = 0)
  *
  * @param array<TKey, TValue> $arr
  * @param array $arr2
- * @param array|null $arr3
- * @param array|null $arr4
+ * @param array ...$arr3
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_intersect(array $arr, array $arr2, array $arr3 = null, array $arr4 = null)
+function array_intersect(array $arr, array $arr2, array ...$arr3)
 {
 }
 
@@ -61,13 +60,12 @@ function array_intersect(array $arr, array $arr2, array $arr3 = null, array $arr
  *
  * @param array<TKey, TValue> $arr
  * @param array $arr2
- * @param array|null $arr3
- * @param array|null $arr4
+ * @param array ...$arr3
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_intersect_key(array $arr, array $arr2, array $arr3 = null, array $arr4 = null)
+function array_intersect_key(array $arr, array $arr2, array ...$arr3)
 {
 }
 
@@ -92,13 +90,12 @@ function array_combine(array $arr, array $arr2)
  *
  * @param array<TKey, TValue> $arr
  * @param array $arr2
- * @param array|null $arr3
- * @param array|null $arr4
+ * @param array ...$arr3
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_diff(array $arr, array $arr2, array $arr3 = null, array $arr4 = null)
+function array_diff(array $arr, array $arr2, array ...$arr3)
 {
 }
 
@@ -108,13 +105,12 @@ function array_diff(array $arr, array $arr2, array $arr3 = null, array $arr4 = n
  *
  * @param array<TKey, TValue> $arr
  * @param array $arr2
- * @param array|null $arr3
- * @param array|null $arr4
+ * @param array ...$arr3
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_diff_key(array $arr, array $arr2, array $arr3 = null, array $arr4 = null)
+function array_diff_key(array $arr, array $arr2, array ...$arr3)
 {
 }
 
