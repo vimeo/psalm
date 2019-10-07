@@ -178,6 +178,11 @@ class Union
     public $sources;
 
     /**
+     * @var bool
+     */
+    public $different = false;
+
+    /**
      * Constructs an Union instance
      *
      * @param array<int, Atomic>     $types
@@ -1892,6 +1897,10 @@ class Union
         }
 
         if (count($this->types) !== count($other_type->types)) {
+            return false;
+        }
+
+        if ($this->different || $other_type->different) {
             return false;
         }
 

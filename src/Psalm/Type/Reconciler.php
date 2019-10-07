@@ -166,7 +166,7 @@ class Reconciler
             $has_negation = false;
             $has_equality = false;
             $has_isset = false;
-            $has_not_isset = false;
+            $has_inverted_isset = false;
             $has_falsyish = false;
             $has_count_check = false;
 
@@ -190,13 +190,12 @@ class Reconciler
                         || $new_type_part_part === 'empty'
                         || $new_type_part_part === 'falsy';
 
-                    $has_not_isset = $has_not_isset || $new_type_part_part === '!isset';
+                    $has_inverted_isset = $has_inverted_isset || $new_type_part_part === '!isset';
 
                     $has_count_check = $has_count_check
                         || $new_type_part_part === 'non-empty-countable';
                 }
             }
-
 
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
@@ -257,14 +256,13 @@ class Reconciler
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[] = $key;
 
-                if (substr($key, -1) === ']') {
+                if (substr($key, -1) === ']' && !$has_inverted_isset) {
                     $key_parts = self::breakUpPathIntoParts($key);
                     self::adjustObjectLikeType(
                         $key_parts,
                         $existing_types,
                         $changed_var_ids,
-                        $result_type,
-                        $has_not_isset
+                        $result_type
                     );
                 }
             } elseif ($code_location
@@ -481,14 +479,13 @@ class Reconciler
                             if (!isset($array_properties[$key_parts_key])) {
                                 if ($existing_key_type_part->previous_value_type) {
                                     $new_base_type_candidate = clone $existing_key_type_part->previous_value_type;
-
-                                    return $new_base_type_candidate;
+                                    $new_base_type_candidate->different = true;
+                                } else {
+                                    return null;
                                 }
-
-                                return null;
+                            } else {
+                                $new_base_type_candidate = clone $array_properties[$key_parts_key];
                             }
-
-                            $new_base_type_candidate = clone $array_properties[$key_parts_key];
                         }
 
                         if (!$new_base_type) {
@@ -683,8 +680,7 @@ class Reconciler
         array $key_parts,
         array &$existing_types,
         array &$changed_var_ids,
-        Type\Union $result_type,
-        bool $has_not_isset
+        Type\Union $result_type
     ) {
         array_pop($key_parts);
         $array_key = array_pop($key_parts);
@@ -702,7 +698,7 @@ class Reconciler
 
         $base_key = implode($key_parts);
 
-        if (isset($existing_types[$base_key]) && $array_key_offset !== false && !$has_not_isset) {
+        if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
             foreach ($existing_types[$base_key]->getTypes() as $base_atomic_type) {
                 if ($base_atomic_type instanceof Type\Atomic\ObjectLike
                     || ($base_atomic_type instanceof Type\Atomic\TArray
@@ -739,8 +735,7 @@ class Reconciler
                             $key_parts,
                             $existing_types,
                             $changed_var_ids,
-                            $new_base_type,
-                            $has_not_isset
+                            $new_base_type
                         );
                     }
 
