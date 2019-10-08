@@ -273,6 +273,14 @@ class NegatedAssertionReconciler extends Reconciler
                         false
                     )) {
                         $existing_var_type->removeType($part_name);
+                    } elseif (TypeAnalyzer::isAtomicContainedBy(
+                        $codebase,
+                        $new_type_part,
+                        $existing_var_type_part,
+                        false,
+                        false
+                    )) {
+                        $existing_var_type->different = true;
                     }
                 }
             }
