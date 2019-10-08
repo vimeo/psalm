@@ -97,7 +97,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     if ($array_arg_type instanceof Type\Atomic\TNonEmptyList) {
                         return new Type\Union([
                             new Type\Atomic\TNonEmptyList(
-                                $inner_type,
+                                $inner_type
                             ),
                         ]);
                     }
