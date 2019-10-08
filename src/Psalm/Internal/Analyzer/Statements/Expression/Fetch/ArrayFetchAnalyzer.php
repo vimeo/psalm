@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
@@ -652,17 +653,19 @@ class ArrayFetchAnalyzer
                 } elseif ($type instanceof TList) {
                     // if we're assigning to an empty array with a key offset, refashion that array
                     if (!$in_assignment) {
-                        $expected_offset_type = Type::getInt();
+                        if ($key_value !== 0 || !$type instanceof TNonEmptyList) {
+                            $expected_offset_type = Type::getInt();
 
-                        if ($codebase->config->ensure_array_int_offsets_exist) {
-                            self::checkLiteralIntArrayOffset(
-                                $offset_type,
-                                $expected_offset_type,
-                                $array_var_id,
-                                $stmt,
-                                $context,
-                                $statements_analyzer
-                            );
+                            if ($codebase->config->ensure_array_int_offsets_exist) {
+                                self::checkLiteralIntArrayOffset(
+                                    $offset_type,
+                                    $expected_offset_type,
+                                    $array_var_id,
+                                    $stmt,
+                                    $context,
+                                    $statements_analyzer
+                                );
+                            }
                         }
 
                         $has_valid_offset = true;
