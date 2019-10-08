@@ -104,7 +104,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
                     return new Type\Union([
                         new Type\Atomic\TList(
-                            $inner_type,
+                            $inner_type
                         ),
                     ]);
                 }
