@@ -496,7 +496,7 @@ class Codebase
     /**
      * @param  string $file_path
      *
-     * @return array<int, PhpParser\Node\Stmt>
+     * @return list<PhpParser\Node\Stmt>
      */
     public function getStatementsForFile($file_path)
     {

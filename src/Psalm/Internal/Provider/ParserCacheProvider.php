@@ -68,7 +68,7 @@ class ParserCacheProvider
      * @param  string   $file_content_hash
      * @param  string   $file_path
      *
-     * @return array<int, PhpParser\Node\Stmt>|null
+     * @return list<PhpParser\Node\Stmt>|null
      *
      * @psalm-suppress UndefinedFunction
      */
@@ -96,10 +96,10 @@ class ParserCacheProvider
             && filemtime($cache_location) > $file_modified_time
         ) {
             if ($this->use_igbinary) {
-                /** @var array<int, \PhpParser\Node\Stmt> */
+                /** @var list<\PhpParser\Node\Stmt> */
                 $stmts = igbinary_unserialize((string)file_get_contents($cache_location));
             } else {
-                /** @var array<int, \PhpParser\Node\Stmt> */
+                /** @var list<\PhpParser\Node\Stmt> */
                 $stmts = unserialize((string)file_get_contents($cache_location));
             }
 
@@ -110,7 +110,7 @@ class ParserCacheProvider
     /**
      * @param  string   $file_path
      *
-     * @return array<int, PhpParser\Node\Stmt>|null
+     * @return list<PhpParser\Node\Stmt>|null
      *
      * @psalm-suppress UndefinedFunction
      */
@@ -132,11 +132,11 @@ class ParserCacheProvider
 
         if (is_readable($cache_location)) {
             if ($this->use_igbinary) {
-                /** @var array<int, \PhpParser\Node\Stmt> */
+                /** @var list<\PhpParser\Node\Stmt> */
                 return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
             }
 
-            /** @var array<int, \PhpParser\Node\Stmt> */
+            /** @var list<\PhpParser\Node\Stmt> */
             return unserialize((string)file_get_contents($cache_location)) ?: null;
         }
     }
@@ -211,7 +211,7 @@ class ParserCacheProvider
     /**
      * @param  string                           $file_path
      * @param  string                           $file_content_hash
-     * @param  array<int, PhpParser\Node\Stmt>  $stmts
+     * @param  list<PhpParser\Node\Stmt>        $stmts
      * @param  bool                             $touch_only
      *
      * @return void

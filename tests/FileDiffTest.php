@@ -99,7 +99,7 @@ class FileDiffTest extends TestCase
         $traverser = new PhpParser\NodeTraverser;
         $traverser->addVisitor(new \Psalm\Internal\Visitor\CloningVisitor);
         // performs a deep clone
-        /** @var array<int, PhpParser\Node\Stmt> */
+        /** @var list<PhpParser\Node\Stmt> */
         $a_stmts_copy = $traverser->traverse($a_stmts);
 
         $this->assertTreesEqual($a_stmts, $a_stmts_copy);

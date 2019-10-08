@@ -84,7 +84,7 @@ class StatementsProvider
     /**
      * @param string    $file_path
      *
-     * @return array<int, \PhpParser\Node\Stmt>
+     * @return list<\PhpParser\Node\Stmt>
      */
     public function getStatementsForFile($file_path, Progress $progress = null)
     {
@@ -153,7 +153,7 @@ class StatementsProvider
                     $traverser = new PhpParser\NodeTraverser;
                     $traverser->addVisitor(new \Psalm\Internal\Visitor\CloningVisitor);
                     // performs a deep clone
-                    /** @var array<int, PhpParser\Node\Stmt> */
+                    /** @var list<PhpParser\Node\Stmt> */
                     $existing_statements_copy = $traverser->traverse($existing_statements);
                 } else {
                     $file_changes = null;
@@ -355,10 +355,10 @@ class StatementsProvider
     /**
      * @param  string  $file_contents
      * @param  string   $file_path
-     * @param  array<int, \PhpParser\Node\Stmt> $existing_statements
+     * @param  list<\PhpParser\Node\Stmt> $existing_statements
      * @param  array<int, array{0:int, 1:int, 2: int, 3: int, 4: int, 5:string}> $file_changes
      *
-     * @return array<int, \PhpParser\Node\Stmt>
+     * @return list<\PhpParser\Node\Stmt>
      */
     public static function parseStatements(
         $file_contents,
@@ -400,7 +400,7 @@ class StatementsProvider
                 $stmts = $existing_statements;
             } else {
                 try {
-                    /** @var array<int, \PhpParser\Node\Stmt> */
+                    /** @var list<\PhpParser\Node\Stmt> */
                     $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
                 } catch (\Throwable $t) {
                     $stmts = [];
@@ -410,7 +410,7 @@ class StatementsProvider
             }
         } else {
             try {
-                /** @var array<int, \PhpParser\Node\Stmt> */
+                /** @var list<\PhpParser\Node\Stmt> */
                 $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
             } catch (\Throwable $t) {
                 $stmts = [];
