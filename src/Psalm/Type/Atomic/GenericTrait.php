@@ -167,6 +167,10 @@ trait GenericTrait
         bool $add_upper_bound = false,
         int $depth = 0
     ) {
+        if ($input_type instanceof Atomic\TList) {
+            $input_type = new Atomic\TArray([Type::getInt(), $input_type->type_param]);
+        }
+
         foreach ($this->type_params as $offset => $type_param) {
             $input_type_param = null;
 

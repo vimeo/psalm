@@ -1085,9 +1085,12 @@ class Union
 
                                     if ($keyed_template instanceof Type\Atomic\ObjectLike
                                         || $keyed_template instanceof Type\Atomic\TArray
+                                        || $keyed_template instanceof Type\Atomic\TList
                                     ) {
                                         if ($keyed_template instanceof Type\Atomic\ObjectLike) {
                                             $key_type = $keyed_template->getGenericKeyType();
+                                        } elseif ($keyed_template instanceof Type\Atomic\TList) {
+                                            $key_type = Type::getInt();
                                         } else {
                                             $key_type = $keyed_template->type_params[0];
                                         }
@@ -1281,9 +1284,12 @@ class Union
 
                             if ($template_type instanceof Type\Atomic\ObjectLike
                                 || $template_type instanceof Type\Atomic\TArray
+                                || $template_type instanceof Type\Atomic\TList
                             ) {
                                 if ($template_type instanceof Type\Atomic\ObjectLike) {
                                     $key_type = $template_type->getGenericKeyType();
+                                } elseif ($template_type instanceof Type\Atomic\TList) {
+                                    $key_type = Type::getInt();
                                 } else {
                                     $key_type = clone $template_type->type_params[0];
                                 }
@@ -1329,7 +1335,8 @@ class Union
                         }
 
                         if (($atomic_input_type instanceof Type\Atomic\TArray
-                                || $atomic_input_type instanceof Type\Atomic\ObjectLike)
+                                || $atomic_input_type instanceof Type\Atomic\ObjectLike
+                                || $atomic_input_type instanceof Type\Atomic\TList)
                             && $key === 'iterable'
                         ) {
                             $matching_atomic_type = $atomic_input_type;

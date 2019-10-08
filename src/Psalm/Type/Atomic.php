@@ -38,11 +38,13 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -160,6 +162,12 @@ abstract class Atomic
             case 'non-empty-array':
                 return new TNonEmptyArray([new Union([new TMixed]), new Union([new TMixed])]);
 
+            case 'list':
+                return new TList(Type::getMixed());
+
+            case 'non-empty-list':
+                return new TNonEmptyList(Type::getMixed());
+
             case 'resource':
                 return $php_version !== null ? new TNamedObject($value) : new TResource();
 
@@ -272,7 +280,8 @@ abstract class Atomic
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof ObjectLike;
+            || $this instanceof ObjectLike
+            || $this instanceof TList;
     }
 
     /**
@@ -282,7 +291,8 @@ abstract class Atomic
     {
         return $this->hasCountableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof ObjectLike;
+            || $this instanceof ObjectLike
+            || $this instanceof TList;
     }
 
     /**
@@ -348,6 +358,7 @@ abstract class Atomic
     {
         return $this instanceof TArray
             || $this instanceof ObjectLike
+            || $this instanceof TList
             || $this->hasArrayAccessInterface($codebase)
             || ($this instanceof TNamedObject && $this->value === 'SimpleXMLElement');
     }

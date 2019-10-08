@@ -49,6 +49,11 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public $previous_value_type = null;
 
+    /**
+     * @var bool - if this is a list of sequential elements
+     */
+    public $is_list = false;
+
     const KEY = 'array';
 
     /**
@@ -435,5 +440,14 @@ class ObjectLike extends \Psalm\Type\Atomic
         }
 
         $this->checked = true;
+    }
+
+    public function getList() : TList
+    {
+        if (!$this->is_list) {
+            throw new \UnexpectedValueException('Object-like array must be a list for conversion');
+        }
+
+        return new TNonEmptyList($this->getGenericValueType());
     }
 }
