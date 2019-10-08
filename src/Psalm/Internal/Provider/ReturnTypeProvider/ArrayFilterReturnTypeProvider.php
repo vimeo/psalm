@@ -39,8 +39,9 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             && isset($array_arg->inferredType)
             && $array_arg->inferredType->hasType('array')
             && ($array_atomic_type = $array_arg->inferredType->getTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray ||
-                $array_atomic_type instanceof Type\Atomic\ObjectLike)
+            && ($array_atomic_type instanceof Type\Atomic\TArray
+                || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                || $array_atomic_type instanceof Type\Atomic\TList)
             ? $array_atomic_type
             : null;
 
@@ -51,6 +52,9 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         if ($first_arg_array instanceof Type\Atomic\TArray) {
             $inner_type = $first_arg_array->type_params[1];
             $key_type = clone $first_arg_array->type_params[0];
+        } elseif ($first_arg_array instanceof Type\Atomic\TList) {
+            $inner_type = $first_arg_array->type_param;
+            $key_type = Type::getInt();
         } else {
             $inner_type = $first_arg_array->getGenericValueType();
             $key_type = $first_arg_array->getGenericKeyType();

@@ -443,6 +443,7 @@ class NegatedAssertionReconciler extends Reconciler
             $did_remove_type = false;
 
             if ($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
+                || $array_atomic_type instanceof Type\Atomic\TNonEmptyList
                 || ($array_atomic_type instanceof Type\Atomic\ObjectLike && $array_atomic_type->sealed)
             ) {
                 $did_remove_type = true;
@@ -923,6 +924,16 @@ class NegatedAssertionReconciler extends Reconciler
                         )
                     );
                 }
+            } elseif ($array_atomic_type instanceof Type\Atomic\TList
+                && !$array_atomic_type instanceof Type\Atomic\TNonEmptyList
+            ) {
+                $did_remove_type = true;
+
+                $existing_var_type->addType(
+                    new Type\Atomic\TNonEmptyList(
+                        $array_atomic_type->type_param
+                    )
+                );
             } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike
                 && !$array_atomic_type->sealed
             ) {

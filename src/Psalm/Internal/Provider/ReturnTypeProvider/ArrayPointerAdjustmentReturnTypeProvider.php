@@ -30,8 +30,9 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\Hook\Fun
             && isset($first_arg->inferredType)
             && $first_arg->inferredType->hasType('array')
             && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray ||
-                $array_atomic_type instanceof Type\Atomic\ObjectLike)
+            && ($array_atomic_type instanceof Type\Atomic\TArray
+                || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                || $array_atomic_type instanceof Type\Atomic\TList)
         ? $array_atomic_type
         : null;
 
@@ -41,6 +42,8 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\Hook\Fun
 
         if ($first_arg_array instanceof Type\Atomic\TArray) {
             $value_type = clone $first_arg_array->type_params[1];
+        } elseif ($first_arg_array instanceof Type\Atomic\TList) {
+            $value_type = clone $first_arg_array->type_param;
         } else {
             $value_type = $first_arg_array->getGenericValueType();
         }

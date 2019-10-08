@@ -24,14 +24,15 @@ class ArrayReverseReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRetur
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+        $first_arg = $call_args[0]->value ?? null;
 
         $first_arg_array = $first_arg
             && isset($first_arg->inferredType)
             && $first_arg->inferredType->hasType('array')
             && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray ||
-                $array_atomic_type instanceof Type\Atomic\ObjectLike)
+            && ($array_atomic_type instanceof Type\Atomic\TArray
+                || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                || $array_atomic_type instanceof Type\Atomic\TList)
         ? $array_atomic_type
         : null;
 
@@ -41,6 +42,18 @@ class ArrayReverseReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRetur
 
         if ($first_arg_array instanceof Type\Atomic\TArray) {
             return new Type\Union([clone $first_arg_array]);
+        }
+
+        if ($first_arg_array instanceof Type\Atomic\TList) {
+            $second_arg = $call_args[1]->value ?? null;
+
+            if (!$second_arg
+                || (isset($second_arg->inferredType) && $second_arg->inferredType->isFalse())
+            ) {
+                return new Type\Union([clone $first_arg_array]);
+            }
+
+            return new Type\Union([new Type\Atomic\TArray([Type::getInt(), clone $first_arg_array->type_param])]);
         }
 
         return new Type\Union([$first_arg_array->getGenericArrayType()]);

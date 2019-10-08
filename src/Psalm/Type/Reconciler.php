@@ -467,6 +467,12 @@ class Reconciler
                             if ($has_isset) {
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
+                        } elseif ($existing_key_type_part instanceof Type\Atomic\TList) {
+                            $new_base_type_candidate = clone $existing_key_type_part->type_param;
+
+                            if ($has_isset) {
+                                $new_base_type_candidate->possibly_undefined = true;
+                            }
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$') {

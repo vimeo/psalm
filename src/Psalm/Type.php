@@ -36,12 +36,14 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
@@ -103,6 +105,7 @@ abstract class Type
         'key-of' => true,
         'value-of' => true,
         'non-empty-countable' => true,
+        'list' => true,
     ];
 
     /**
@@ -274,6 +277,14 @@ abstract class Type
 
             if ($generic_type_value === 'iterable') {
                 return new TIterable($generic_params);
+            }
+
+            if ($generic_type_value === 'list') {
+                return new TList($generic_params[0]);
+            }
+
+            if ($generic_type_value === 'non-empty-list') {
+                return new TNonEmptyList($generic_params[0]);
             }
 
             if ($generic_type_value === 'class-string') {

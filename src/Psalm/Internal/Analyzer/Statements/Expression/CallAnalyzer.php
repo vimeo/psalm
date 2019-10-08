@@ -41,8 +41,10 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use function strtolower;
 use function strpos;
 use function explode;
@@ -734,12 +736,16 @@ class CallAnalyzer
             ) {
                 /**
                  * @psalm-suppress PossiblyUndefinedArrayOffset
-                 * @var TArray|ObjectLike
+                 * @var TArray|TList|ObjectLike
                  */
                 $array_type = $arg->value->inferredType->getTypes()['array'];
 
                 if ($array_type instanceof ObjectLike) {
                     $array_type = $array_type->getGenericArrayType();
+                }
+
+                if ($array_type instanceof TList) {
+                    $array_type = new TArray([Type::getInt(), $array_type->type_param]);
                 }
 
                 if (in_array($method_id, ['shuffle', 'sort', 'rsort', 'usort'], true)) {
@@ -1057,6 +1063,23 @@ class CallAnalyzer
                             }
                         } else {
                             $array_atomic_type = new TArray($array_atomic_type->type_params);
+                        }
+
+                        $array_type->addType($array_atomic_type);
+                    } elseif ($array_atomic_type instanceof TNonEmptyList) {
+                        if (!$context->inside_loop && $array_atomic_type->count !== null) {
+                            if ($array_atomic_type->count === 0) {
+                                $array_atomic_type = new TArray(
+                                    [
+                                        new Type\Union([new TEmpty]),
+                                        new Type\Union([new TEmpty]),
+                                    ]
+                                );
+                            } else {
+                                $array_atomic_type->count--;
+                            }
+                        } else {
+                            $array_atomic_type = new TList($array_atomic_type->type_param);
                         }
 
                         $array_type->addType($array_atomic_type);
@@ -1677,13 +1700,17 @@ class CallAnalyzer
                 if ($arg_type->hasArray()) {
                     /**
                      * @psalm-suppress PossiblyUndefinedArrayOffset
-                     * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                     * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
                      */
                     $array_atomic_type = $arg_type->getTypes()['array'];
+
                     if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                        $arg_type_param = $array_atomic_type->getGenericValueType();
+                    } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
+                        $arg_type_param = $array_atomic_type->type_param;
+                    } else {
+                        $arg_type_param = $array_atomic_type->type_params[1];
                     }
-                    $arg_type_param = $array_atomic_type->type_params[1];
                 } else {
                     $arg_type_param = Type::getMixed();
                 }
@@ -1756,15 +1783,17 @@ class CallAnalyzer
             if ($arg_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedArrayOffset
-                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                 * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
                  */
                 $array_atomic_type = $arg_type->getTypes()['array'];
 
                 if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                    $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                    $arg_type = $array_atomic_type->getGenericValueType();
+                } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
+                    $arg_type = $array_atomic_type->type_param;
+                } else {
+                    $arg_type = $array_atomic_type->type_params[1];
                 }
-
-                $arg_type = $array_atomic_type->type_params[1];
             } else {
                 foreach ($arg_type->getTypes() as $atomic_type) {
                     if (!$atomic_type->isIterable($codebase)) {
@@ -1908,7 +1937,7 @@ class CallAnalyzer
 
             /**
              * @psalm-suppress PossiblyUndefinedArrayOffset
-             * @var ObjectLike|TArray|null
+             * @var ObjectLike|TArray|TList|null
              */
             $array_arg_type = $array_arg
                     && isset($array_arg->inferredType)
@@ -1919,6 +1948,10 @@ class CallAnalyzer
 
             if ($array_arg_type instanceof ObjectLike) {
                 $array_arg_type = $array_arg_type->getGenericArrayType();
+            }
+
+            if ($array_arg_type instanceof TList) {
+                $array_arg_type = new TArray([Type::getInt(), $array_arg_type->type_param]);
             }
 
             $array_arg_types[] = $array_arg_type;

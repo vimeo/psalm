@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -782,7 +783,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $array_atomic_type = $existing_var_type->getTypes()['array'];
             $did_remove_type = false;
 
-            if ($array_atomic_type instanceof Type\Atomic\TArray
+            if ($array_atomic_type instanceof TArray
                 && !$array_atomic_type instanceof Type\Atomic\TNonEmptyArray
             ) {
                 $did_remove_type = true;
@@ -795,6 +796,15 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         )
                     );
                 }
+            } elseif ($array_atomic_type instanceof TList
+                && !$array_atomic_type instanceof Type\Atomic\TNonEmptyList
+            ) {
+                $did_remove_type = true;
+                $existing_var_type->addType(
+                    new Type\Atomic\TNonEmptyList(
+                        $array_atomic_type->type_param
+                    )
+                );
             } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                 foreach ($array_atomic_type->properties as $property_type) {
                     if ($property_type->possibly_undefined) {
@@ -1528,6 +1538,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             if ($type->isArrayAccessibleWithStringKey($codebase)) {
                 if (get_class($type) === TArray::class) {
                     $array_types[] = new Atomic\TNonEmptyArray($type->type_params);
+                } elseif (get_class($type) === TList::class) {
+                    $array_types[] = new Atomic\TNonEmptyList($type->type_param);
                 } else {
                     $array_types[] = $type;
                 }
@@ -1844,6 +1856,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $array_atomic_type = $existing_var_atomic_types['array'];
 
             if ($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
+                || $array_atomic_type instanceof Type\Atomic\TNonEmptyList
                 || ($array_atomic_type instanceof Type\Atomic\ObjectLike
                     && array_filter(
                         $array_atomic_type->properties,

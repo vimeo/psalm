@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -35,6 +36,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -114,6 +116,9 @@ class TypeCombination
      */
     private $extra_types;
 
+    /** @var ?bool */
+    private $all_arrays_lists;
+
     /**
      * Combines types together
      *  - so `int + string = int|string`
@@ -123,7 +128,7 @@ class TypeCombination
      *  - and `array<string> + array<empty> = array<string>`
      *  - and `array + array<string> = array<mixed>`
      *
-     * @param  array<Atomic>    $types
+     * @param  list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
      *
@@ -321,6 +326,10 @@ class TypeCombination
                             $objectlike->previous_value_type = $combination->objectlike_value_type;
                         }
 
+                        if ($combination->all_arrays_lists) {
+                            $objectlike->is_list = true;
+                        }
+
                         $new_types[] = $objectlike;
                     } else {
                         $new_types[] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
@@ -410,14 +419,25 @@ class TypeCombination
                     && $combination->objectlike_sealed
                     && $overwrite_empty_array)
             ) {
-                if ($combination->array_counts && count($combination->array_counts) === 1) {
-                    $array_type = new TNonEmptyArray($generic_type_params);
-                    $array_type->count = array_keys($combination->array_counts)[0];
+                if ($combination->all_arrays_lists) {
+                    $array_type = new TNonEmptyList($generic_type_params[1]);
+
+                    if ($combination->array_counts && count($combination->array_counts) === 1) {
+                        $array_type->count = array_keys($combination->array_counts)[0];
+                    }
                 } else {
                     $array_type = new TNonEmptyArray($generic_type_params);
+
+                    if ($combination->array_counts && count($combination->array_counts) === 1) {
+                        $array_type->count = array_keys($combination->array_counts)[0];
+                    }
                 }
             } else {
-                $array_type = new TArray($generic_type_params);
+                if ($combination->all_arrays_lists) {
+                    $array_type = new TList($generic_type_params[1]);
+                } else {
+                    $array_type = new TArray($generic_type_params);
+                }
             }
 
             $new_types[] = $array_type;
@@ -671,6 +691,41 @@ class TypeCombination
             } else {
                 $combination->array_always_filled = false;
             }
+
+            if (!$type->type_params[1]->isEmpty()) {
+                $combination->all_arrays_lists = false;
+            }
+        } elseif ($type instanceof TList) {
+            foreach ([Type::getInt(), $type->type_param] as $i => $type_param) {
+                if (isset($combination->array_type_params[$i])) {
+                    $combination->array_type_params[$i] = Type::combineUnionTypes(
+                        $combination->array_type_params[$i],
+                        $type_param,
+                        $codebase,
+                        $overwrite_empty_array
+                    );
+                } else {
+                    $combination->array_type_params[$i] = $type_param;
+                }
+            }
+
+            if ($type instanceof TNonEmptyList) {
+                if ($combination->array_counts !== null) {
+                    if ($type->count === null) {
+                        $combination->array_counts = null;
+                    } else {
+                        $combination->array_counts[$type->count] = true;
+                    }
+                }
+
+                $combination->array_sometimes_filled = true;
+            } else {
+                $combination->array_always_filled = false;
+            }
+
+            if ($combination->all_arrays_lists !== false) {
+                $combination->all_arrays_lists = true;
+            }
         } elseif (($type instanceof TGenericObject && ($type->value === 'Traversable' || $type->value === 'Generator'))
             || ($type instanceof TIterable && $type->has_docblock_params)
             || ($type instanceof TArray && $type_key === 'iterable')
@@ -759,8 +814,14 @@ class TypeCombination
                 $combination->array_counts[count($type->properties)] = true;
             }
 
-            foreach ($possibly_undefined_entries as $type) {
-                $type->possibly_undefined = true;
+            foreach ($possibly_undefined_entries as $possibly_undefined_type) {
+                $possibly_undefined_type->possibly_undefined = true;
+            }
+
+            if (!$type->is_list) {
+                $combination->all_arrays_lists = false;
+            } elseif ($combination->all_arrays_lists !== false) {
+                $combination->all_arrays_lists = true;
             }
         } else {
             if ($type instanceof TObject) {

@@ -42,7 +42,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $out[] = 4;',
                 'assertions' => [
-                    '$out' => 'non-empty-array<int, int>',
+                    '$out' => 'non-empty-list<int>',
                 ],
             ],
             'genericArrayCreationWithInt' => [
@@ -53,7 +53,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = 4;
                     }',
                 'assertions' => [
-                    '$out' => 'non-empty-array<int, int>',
+                    '$out' => 'non-empty-list<int>',
                 ],
             ],
             'generic2dArrayCreation' => [
@@ -64,7 +64,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = [4];
                     }',
                 'assertions' => [
-                    '$out' => 'non-empty-array<int, array{0: int}>',
+                    '$out' => 'non-empty-list<array{0: int}>',
                 ],
             ],
             'generic2dArrayCreationAddedInIf' => [
@@ -84,7 +84,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $out[] = $bits;',
                 'assertions' => [
-                    '$out' => 'non-empty-array<int, non-empty-array<int, int>>',
+                    '$out' => 'non-empty-list<non-empty-list<int>>',
                 ],
             ],
             'genericArrayCreationWithObjectAddedInIf' => [
@@ -97,7 +97,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = new B();
                     }',
                 'assertions' => [
-                    '$out' => 'array<int, B>',
+                    '$out' => 'list<B>',
                 ],
             ],
             'genericArrayCreationWithElementAddedInSwitch' => [
@@ -113,7 +113,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'array<int, int>',
+                    '$out' => 'list<int>',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitch' => [
@@ -130,7 +130,7 @@ class ArrayAssignmentTest extends TestCase
                             break;
                     }',
                 'assertions' => [
-                    '$out' => 'array<int, string|int>',
+                    '$out' => 'list<string|int>',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitchWithNothing' => [
@@ -150,15 +150,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'array<int, string|int>',
-                ],
-            ],
-            'implicitIntArrayCreation' => [
-                '<?php
-                    $foo = [];
-                    $foo[] = "hello";',
-                'assertions' => [
-                    '$foo' => 'non-empty-array<int, string>',
+                    '$out' => 'list<string|int>',
                 ],
             ],
             'implicit2dIntArrayCreation' => [
@@ -166,7 +158,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-array<int, array<int, string>>',
+                    '$foo' => 'non-empty-list<array<int, string>>',
                 ],
             ],
             'implicit3dIntArrayCreation' => [
@@ -174,7 +166,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-array<int, array<int, array<int, string>>>',
+                    '$foo' => 'non-empty-list<list<array<int, string>>>',
                 ],
             ],
             'implicit4dIntArrayCreation' => [
@@ -182,7 +174,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-array<int, array<int, array<int, array<int, string>>>>',
+                    '$foo' => 'non-empty-list<list<list<array<int, string>>>>',
                 ],
             ],
             'implicitIndexedIntArrayCreation' => [
@@ -296,9 +288,9 @@ class ArrayAssignmentTest extends TestCase
                     $foo["b"][] = "goodbye";
                     $bar = $foo["a"];',
                 'assertions' => [
-                    '$foo' => 'array{a: string, b: array<int, string>}',
+                    '$foo' => 'array{a: string, b: non-empty-list<string>}',
                     '$foo[\'a\']' => 'string',
-                    '$foo[\'b\']' => 'array<int, string>',
+                    '$foo[\'b\']' => 'non-empty-list<string>',
                     '$bar' => 'string',
                 ],
             ],
@@ -368,8 +360,8 @@ class ArrayAssignmentTest extends TestCase
                     $c = [];
                     $c[$b][$b][] = "bam";',
                 'assertions' => [
-                    '$a' => 'array{boop: array<int, string>}',
-                    '$c' => 'array{boop: non-empty-array<string, array<int, string>>}',
+                    '$a' => 'array{boop: non-empty-list<string>}',
+                    '$c' => 'array{boop: non-empty-array<string, non-empty-list<string>>}',
                 ],
             ],
             'assignExplicitValueToGeneric' => [
@@ -783,7 +775,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = null;
                     $a[0][] = 1;',
                 'assertions' => [
-                    '$a' => 'array{0: array<int, int>}',
+                    '$a' => 'array{0: non-empty-list<int>}',
                 ],
                 'error_levels' => ['PossiblyNullArrayAssignment'],
             ],
@@ -820,8 +812,8 @@ class ArrayAssignmentTest extends TestCase
                     $a_keys = array_keys($a);',
                 'assertions' => [
                     '$a' => 'array{0: string, 1: int}',
-                    '$a_values' => 'array<int, string|int>',
-                    '$a_keys' => 'array<int, int>',
+                    '$a_values' => 'list<string|int>',
+                    '$a_keys' => 'list<int>',
                 ],
             ],
             'changeIntOffsetKeyValuesWithDirectAssignment' => [
@@ -871,7 +863,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'non-empty-array<int, int>|null',
+                    '$a' => 'non-empty-list<int>|null',
                 ],
             ],
             'assignArrayOrSetNullInElseIf' => [
@@ -887,7 +879,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'array<int, int>|null',
+                    '$a' => 'list<int>|null',
                 ],
             ],
             'assignArrayOrSetNullInElse' => [
@@ -903,7 +895,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'non-empty-array<int, int>|null',
+                    '$a' => 'non-empty-list<int>|null',
                 ],
             ],
             'mixedMethodCallArrayAccess' => [
@@ -1145,6 +1137,93 @@ class ArrayAssignmentTest extends TestCase
                         return $array;
                     }'
             ],
+            'listUsedAsArray' => [
+                '<?php
+                    function takesArray(array $arr) : void {}
+
+                    $a = [];
+                    $a[] = 1;
+                    $a[] = 2;
+
+                    takesArray($a);',
+                'assertions' => [
+                    '$a' => 'non-empty-list<int>'
+                ],
+            ],
+            'listTakesEmptyArray' => [
+                '<?php
+                    /** @param list<int> $arr */
+                    function takesList(array $arr) : void {}
+
+                    $a = [];
+
+                    takesList($a);',
+                'assertions' => [
+                    '$a' => 'array<empty, empty>'
+                ],
+            ],
+            'listCreatedInSingleStatementUsedAsArray' => [
+                '<?php
+                    function takesArray(array $arr) : void {}
+
+                    /** @param list<int> $arr */
+                    function takesList(array $arr) : void {}
+
+                    $a = [1, 2];
+
+                    takesArray($a);
+                    takesList($a);
+
+                    $a[] = 3;
+
+                    takesArray($a);
+                    takesList($a);
+
+                    $b = $a;
+
+                    $b[] = rand(0, 10);',
+                'assertions' => [
+                    '$a' => 'array{0: int, 1: int, 2: int}',
+                    '$b' => 'array{0: int, 1: int, 2: int, 3: int}',
+                ],
+            ],
+            'listMergedWithObjectLikeList' => [
+                '<?php
+                    /** @param list<int> $arr */
+                    function takesAnotherList(array $arr) : void {}
+
+                    /** @param list<int> $arr */
+                    function takesList(array $arr) : void {
+                        if (rand(0, 1)) {
+                            $arr = [1, 2, 3];
+                        }
+
+                        takesAnotherList($arr);
+                    }',
+            ],
+            'listMergedWithObjectLikeListAfterAssertion' => [
+                '<?php
+                    /** @param list<int> $arr */
+                    function takesAnotherList(array $arr) : void {}
+
+                    /** @param list<int> $arr */
+                    function takesList(array $arr) : void {
+                        if ($arr) {
+                            $arr = [4, 5, 6];
+                        }
+
+                        takesAnotherList($arr);
+                    }',
+            ],
+            'nonEmptyAssertionOnListElement' => [
+                '<?php
+                    /** @param list<array<string, string>> $arr */
+                    function takesList(array $arr) : void {
+                        if (!empty($arr[0])) {
+                            foreach ($arr[0] as $k => $v) {}
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1312,6 +1391,30 @@ class ArrayAssignmentTest extends TestCase
                     $storage = new \SplObjectStorage();
                     $storage[$key] = "test";',
                 'error_message' => 'InvalidArgument',
+            ],
+            'listUsedAsArrayWrongType' => [
+                '<?php
+                    /** @param string[] $arr */
+                    function takesArray(array $arr) : void {}
+
+                    $a = [];
+                    $a[] = 1;
+                    $a[] = 2;
+
+                    takesArray($a);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'listUsedAsArrayWrongListType' => [
+                '<?php
+                    /** @param list<string> $arr */
+                    function takesArray(array $arr) : void {}
+
+                    $a = [];
+                    $a[] = 1;
+                    $a[] = 2;
+
+                    takesArray($a);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

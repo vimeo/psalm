@@ -437,12 +437,22 @@ class ForeachAnalyzer
 
             if ($iterator_atomic_type instanceof Type\Atomic\TArray
                 || $iterator_atomic_type instanceof Type\Atomic\ObjectLike
+                || $iterator_atomic_type instanceof Type\Atomic\TList
             ) {
                 if ($iterator_atomic_type instanceof Type\Atomic\ObjectLike) {
                     if (!$iterator_atomic_type->sealed) {
                         $always_non_empty_array = false;
                     }
                     $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType();
+                } elseif ($iterator_atomic_type instanceof Type\Atomic\TList) {
+                    if (!$iterator_atomic_type instanceof Type\Atomic\TNonEmptyList) {
+                        $always_non_empty_array = false;
+                    }
+
+                    $iterator_atomic_type = new Type\Atomic\TArray([
+                        Type::getInt(),
+                        $iterator_atomic_type->type_param
+                    ]);
                 } elseif (!$iterator_atomic_type instanceof Type\Atomic\TNonEmptyArray) {
                     $always_non_empty_array = false;
                 }

@@ -13,21 +13,23 @@ class TypeCombinationTest extends TestCase
      * @dataProvider providerTestValidTypeCombination
      *
      * @param string $expected
-     * @param array<int, string> $types
+     * @param list<string> $types
      *
      * @return void
      */
     public function testValidTypeCombination($expected, $types)
     {
-        foreach ($types as $k => $type) {
-            $types[$k] = self::getAtomic($type);
-            $types[$k]->setFromDocblock();
+        $converted_types = [];
+
+        foreach ($types as $type) {
+            $converted_type = self::getAtomic($type);
+            $converted_type->setFromDocblock();
+            $converted_types[] = $converted_type;
         }
 
-        /** @psalm-suppress InvalidArgument */
         $this->assertSame(
             $expected,
-            (string) TypeCombination::combineTypes($types)
+            (string) TypeCombination::combineTypes($converted_types)
         );
     }
 
@@ -58,7 +60,7 @@ class TypeCombinationTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,array<int,string>}>
+     * @return array<string,array{string,list<string>}>
      */
     public function providerTestValidTypeCombination()
     {

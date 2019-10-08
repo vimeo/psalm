@@ -44,6 +44,11 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                 if ($row_type->isSingle() && $row_type->hasArray()) {
                     $row_shape = $row_type->getTypes()['array'];
                 }
+            } elseif ($input_array instanceof Type\Atomic\TList) {
+                $row_type = $input_array->type_param;
+                if ($row_type->isSingle() && $row_type->hasArray()) {
+                    $row_shape = $row_type->getTypes()['array'];
+                }
             }
         }
 

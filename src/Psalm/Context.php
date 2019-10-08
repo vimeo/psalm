@@ -143,7 +143,7 @@ class Context
     /**
      * A list of clauses in Conjunctive Normal Form
      *
-     * @var array<int, Clause>
+     * @var list<Clause>
      */
     public $clauses = [];
 
@@ -488,22 +488,24 @@ class Context
      */
     public function removeReconciledClauses(array $changed_var_ids)
     {
-        $this->clauses = array_filter(
-            $this->clauses,
-            /** @return bool */
-            function (Clause $c) use ($changed_var_ids) {
-                if ($c->wedge) {
+        $this->clauses = \array_values(
+            array_filter(
+                $this->clauses,
+                /** @return bool */
+                function (Clause $c) use ($changed_var_ids) {
+                    if ($c->wedge) {
+                        return true;
+                    }
+
+                    foreach ($c->possibilities as $key => $_) {
+                        if (in_array($key, $changed_var_ids, true)) {
+                            return false;
+                        }
+                    }
+
                     return true;
                 }
-
-                foreach ($c->possibilities as $key => $_) {
-                    if (in_array($key, $changed_var_ids, true)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
+            )
         );
     }
 
@@ -513,7 +515,7 @@ class Context
      * @param  Union|null             $new_type
      * @param  StatementsAnalyzer|null $statements_analyzer
      *
-     * @return array<int, Clause>
+     * @return list<Clause>
      */
     public static function filterClauses(
         $remove_var_id,

@@ -53,12 +53,15 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
         if (isset($array_arg_types['array'])
             && ($array_arg_types['array'] instanceof Type\Atomic\TArray
-                || $array_arg_types['array'] instanceof Type\Atomic\ObjectLike)
+                || $array_arg_types['array'] instanceof Type\Atomic\ObjectLike
+                || $array_arg_types['array'] instanceof Type\Atomic\TList)
         ) {
             $array_arg_type = $array_arg_types['array'];
 
             if ($array_arg_type instanceof Type\Atomic\ObjectLike) {
                 $array_arg_type = $array_arg_type->getGenericArrayType();
+            } elseif ($array_arg_type instanceof Type\Atomic\TList) {
+                $array_arg_type = new Type\Atomic\TArray([Type::getInt(), clone $array_arg_type->type_param]);
             }
         }
 

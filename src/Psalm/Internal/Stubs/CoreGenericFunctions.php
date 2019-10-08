@@ -6,7 +6,7 @@
  * @param mixed           $search_value
  * @param bool            $strict
  *
- * @return array<int, T>
+ * @return list<T>
  * @psalm-pure
  */
 function array_keys(array $arr, $search_value = null, bool $strict = false)
@@ -18,7 +18,7 @@ function array_keys(array $arr, $search_value = null, bool $strict = false)
  *
  * @param array<mixed, T> $arr
  *
- * @return array<int, T>
+ * @return list<T>
  * @psalm-pure
  */
 function array_values(array $arr)

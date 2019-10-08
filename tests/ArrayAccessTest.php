@@ -659,6 +659,13 @@ class ArrayAccessTest extends TestCase
                     /** @psalm-suppress MixedPropertyFetch */
                     print_r([&$a->foo->bar]);',
             ],
+            'accessOffsetOnList' => [
+                '<?php
+                    /** @param list<int> $arr */
+                    function foo(array $arr) : void {
+                        echo $arr[3] ?? null;
+                    }',
+            ],
         ];
     }
 

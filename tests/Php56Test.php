@@ -94,7 +94,7 @@ class Php56Test extends TestCase
 
                     array_push($a, ...$b);',
                 'assertions' => [
-                    '$a' => 'non-empty-array<int, string>',
+                    '$a' => 'non-empty-list<string>',
                 ],
             ],
             'arrayMergeArgumentUnpacking' => [

@@ -31,8 +31,9 @@ class ArraySliceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
             && isset($first_arg->inferredType)
             && $first_arg->inferredType->hasType('array')
             && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray ||
-                $array_atomic_type instanceof Type\Atomic\ObjectLike)
+            && ($array_atomic_type instanceof Type\Atomic\TArray
+                || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                || $array_atomic_type instanceof Type\Atomic\TList)
         ? $array_atomic_type
         : null;
 
@@ -42,6 +43,10 @@ class ArraySliceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
 
         if ($first_arg_array instanceof Type\Atomic\TArray) {
             return new Type\Union([clone $first_arg_array]);
+        }
+
+        if ($first_arg_array instanceof Type\Atomic\TList) {
+            return new Type\Union([new Type\Atomic\TArray([Type::getInt(), clone $first_arg_array->type_param])]);
         }
 
         return new Type\Union([$first_arg_array->getGenericArrayType()]);

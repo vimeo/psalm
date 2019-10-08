@@ -197,7 +197,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = array_keys(["a" => 1, "b" => 2]);',
                 'assertions' => [
-                    '$a' => 'array<int, string>',
+                    '$a' => 'list<string>',
                 ],
             ],
             'arrayKeysMixed' => [
@@ -206,15 +206,17 @@ class FunctionCallTest extends TestCase
                     $b = ["a" => 5];
                     $a = array_keys($b);',
                 'assertions' => [
-                    '$a' => 'array<int, array-key>',
+                    '$a' => 'list<array-key>',
                 ],
                 'error_levels' => ['MixedArgument'],
             ],
             'arrayValues' => [
                 '<?php
-                    $b = array_values(["a" => 1, "b" => 2]);',
+                    $b = array_values(["a" => 1, "b" => 2]);
+                    $c = array_values(["a" => "hello", "b" => "jello"]);',
                 'assertions' => [
-                    '$b' => 'array<int, int>',
+                    '$b' => 'list<int>',
+                    '$c' => 'list<string>',
                 ],
             ],
             'arrayCombine' => [

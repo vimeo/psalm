@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -455,36 +456,50 @@ class ArrayFetchAnalyzer
                 continue;
             }
 
-            if ($type instanceof TArray || $type instanceof ObjectLike) {
+            if ($type instanceof TArray || $type instanceof ObjectLike || $type instanceof TList) {
                 $has_array_access = true;
 
                 if ($in_assignment
                     && $type instanceof TArray
                     && (($type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty())
                         || ($type->type_params[1]->isMixed() && \is_string($key_value)))
-                    && $key_value !== null
                 ) {
-                    $from_mixed_array = $type->type_params[1]->isMixed();
                     $from_empty_array = $type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty();
 
-                    $previous_key_type = $type->type_params[0];
-                    $previous_value_type = $type->type_params[1];
+                    if ($key_value !== null) {
+                        $from_mixed_array = $type->type_params[1]->isMixed();
 
-                    // ok, type becomes an ObjectLike
-                    $array_type->removeType($type_string);
-                    $type = new ObjectLike([$key_value => $from_mixed_array ? Type::getMixed() : Type::getEmpty()]);
+                        $previous_key_type = $type->type_params[0];
+                        $previous_value_type = $type->type_params[1];
 
-                    $type->sealed = $from_empty_array;
+                        // ok, type becomes an ObjectLike
+                        $array_type->removeType($type_string);
+                        $type = new ObjectLike([$key_value => $from_mixed_array ? Type::getMixed() : Type::getEmpty()]);
 
-                    if (!$from_empty_array) {
-                        $type->previous_value_type = clone $previous_value_type;
-                        $type->previous_key_type = clone $previous_key_type;
+                        $type->sealed = $from_empty_array;
+
+                        if (!$from_empty_array) {
+                            $type->previous_value_type = clone $previous_value_type;
+                            $type->previous_key_type = clone $previous_key_type;
+                        }
+
+                        $array_type->addType($type);
+                    } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
+                        $array_type->removeType($type_string);
+                        $array_type->addType(new Type\Atomic\TNonEmptyList($replacement_type));
+                        continue;
                     }
-
-                    $array_type->addType($type);
                 }
 
                 $offset_type = self::replaceOffsetTypeWithInts($offset_type);
+
+                if ($type instanceof TList
+                    && (($in_assignment && $stmt->dim)
+                        || $original_type instanceof TTemplateParam
+                        || !$offset_type->isInt())
+                ) {
+                    $type = new TArray([Type::getInt(), $type->type_param]);
+                }
 
                 if ($type instanceof TArray) {
                     // if we're assigning to an empty array with a key offset, refashion that array
@@ -634,8 +649,51 @@ class ArrayFetchAnalyzer
                             $array_access_type = Type::getMixed(true);
                         }
                     }
+                } elseif ($type instanceof TList) {
+                    // if we're assigning to an empty array with a key offset, refashion that array
+                    if (!$in_assignment) {
+                        $expected_offset_type = Type::getInt();
+
+                        if ($codebase->config->ensure_array_int_offsets_exist) {
+                            self::checkLiteralIntArrayOffset(
+                                $offset_type,
+                                $expected_offset_type,
+                                $array_var_id,
+                                $stmt,
+                                $context,
+                                $statements_analyzer
+                            );
+                        }
+
+                        $has_valid_offset = true;
+                    }
+
+                    if ($in_assignment && $type instanceof Type\Atomic\TNonEmptyList && $type->count !== null) {
+                        $type->count++;
+                    }
+
+                    if ($in_assignment && $replacement_type) {
+                        $type->type_param = Type::combineUnionTypes(
+                            $type->type_param,
+                            $replacement_type,
+                            $codebase
+                        );
+                    }
+
+                    if (!$array_access_type) {
+                        $array_access_type = $type->type_param;
+                    } else {
+                        $array_access_type = Type::combineUnionTypes(
+                            $array_access_type,
+                            $type->type_param
+                        );
+                    }
                 } else {
                     $generic_key_type = $type->getGenericKeyType();
+
+                    if (!$stmt->dim && $type->sealed && $type->is_list) {
+                        $key_value = count($type->properties);
+                    }
 
                     if ($key_value !== null) {
                         if (isset($type->properties[$key_value]) || $replacement_type) {

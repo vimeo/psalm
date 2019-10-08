@@ -9,7 +9,9 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use function array_reverse;
 use function array_shift;
 use function count;
@@ -340,12 +342,18 @@ class ArrayAssignmentAnalyzer
                     $new_child_type = $child_stmt->inferredType; // noop
                 }
             } else {
-                $array_assignment_type = new Type\Union([
-                    new TArray([
-                        isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),
-                        $current_type,
-                    ]),
-                ]);
+                if (!$current_dim) {
+                    $array_assignment_type = new Type\Union([
+                        new TList($current_type),
+                    ]);
+                } else {
+                    $array_assignment_type = new Type\Union([
+                        new TArray([
+                            $current_dim->inferredType ?? Type::getMixed(),
+                            $current_type,
+                        ]),
+                    ]);
+                }
 
                 $new_child_type = Type::combineUnionTypes(
                     $child_stmt->inferredType,
@@ -436,29 +444,44 @@ class ArrayAssignmentAnalyzer
                 } else {
                     $array_atomic_key_type = Type::getMixed();
                 }
+
+                $array_atomic_type = new TNonEmptyArray([
+                    $array_atomic_key_type,
+                    $current_type,
+                ]);
             } else {
-                // todo: this can be improved I think
-                $array_atomic_key_type = Type::getInt();
+                $array_atomic_type = new TNonEmptyList($current_type);
             }
 
-            $array_atomic_type = new TNonEmptyArray([
-                $array_atomic_key_type,
-                $current_type,
-            ]);
-
             $from_countable_object_like = false;
+
+            $new_child_type = null;
 
             if (!$current_dim && !$context->inside_loop) {
                 $atomic_root_types = $root_type->getTypes();
 
                 if (isset($atomic_root_types['array'])) {
-                    if ($atomic_root_types['array'] instanceof TNonEmptyArray) {
+                    if ($atomic_root_types['array'] instanceof TNonEmptyArray
+                        || $atomic_root_types['array'] instanceof TNonEmptyList
+                    ) {
                         $array_atomic_type->count = $atomic_root_types['array']->count;
                     } elseif ($atomic_root_types['array'] instanceof ObjectLike
                         && $atomic_root_types['array']->sealed
                     ) {
                         $array_atomic_type->count = count($atomic_root_types['array']->properties);
                         $from_countable_object_like = true;
+
+                        if ($atomic_root_types['array']->is_list
+                            && $array_atomic_type instanceof TList
+                        ) {
+                            $array_atomic_type = clone $atomic_root_types['array'];
+
+                            $new_child_type = new Type\Union([$array_atomic_type]);
+                        }
+                    } elseif ($array_atomic_type instanceof TList) {
+                        $array_atomic_type = new TNonEmptyList(
+                            $array_atomic_type->type_param
+                        );
                     } else {
                         $array_atomic_type = new TNonEmptyArray(
                             $array_atomic_type->type_params
@@ -471,13 +494,15 @@ class ArrayAssignmentAnalyzer
                 $array_atomic_type,
             ]);
 
-            $new_child_type = Type::combineUnionTypes(
-                $root_type,
-                $array_assignment_type,
-                $codebase,
-                true,
-                false
-            );
+            if (!$new_child_type) {
+                $new_child_type = Type::combineUnionTypes(
+                    $root_type,
+                    $array_assignment_type,
+                    $codebase,
+                    true,
+                    false
+                );
+            }
 
             if ($from_countable_object_like) {
                 $atomic_root_types = $new_child_type->getTypes();

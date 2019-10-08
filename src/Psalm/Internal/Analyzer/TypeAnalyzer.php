@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\GetClassT;
 use Psalm\Type\Atomic\GetTypeT;
@@ -31,6 +32,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -1029,9 +1031,14 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof TIterable) {
-            if ($input_type_part instanceof TArray || $input_type_part instanceof ObjectLike) {
+            if ($input_type_part instanceof TArray
+                || $input_type_part instanceof ObjectLike
+                || $input_type_part instanceof TList
+            ) {
                 if ($input_type_part instanceof ObjectLike) {
                     $input_type_part = $input_type_part->getGenericArrayType();
+                } elseif ($input_type_part instanceof TList) {
+                    $input_type_part = new TArray([Type::getInt(), $input_type_part->type_param]);
                 }
 
                 $all_types_contain = true;
@@ -1867,8 +1874,45 @@ class TypeAnalyzer
             }
         }
 
-        if (($input_type_part instanceof TArray || $input_type_part instanceof ObjectLike)
-            && ($container_type_part instanceof TArray || $container_type_part instanceof ObjectLike)
+        if ($container_type_part instanceof TList
+            && $input_type_part instanceof ObjectLike
+            && $input_type_part->is_list
+        ) {
+            $input_type_part = $input_type_part->getList();
+        }
+
+        if ($container_type_part instanceof TList
+            && $input_type_part instanceof TArray
+            && $input_type_part->type_params[1]->isEmpty()
+        ) {
+            return !$container_type_part instanceof TNonEmptyList;
+        }
+
+        if ($input_type_part instanceof TList
+            && $container_type_part instanceof TList
+        ) {
+            if (!self::isContainedBy(
+                $codebase,
+                $input_type_part->type_param,
+                $container_type_part->type_param,
+                $input_type_part->type_param->ignore_nullable_issues,
+                $input_type_part->type_param->ignore_falsable_issues,
+                $atomic_comparison_result,
+                $allow_interface_equality
+            )) {
+                return false;
+            }
+
+            return $input_type_part instanceof TNonEmptyList
+                || !$container_type_part instanceof TNonEmptyList;
+        }
+
+        if (($input_type_part instanceof TArray
+                || $input_type_part instanceof ObjectLike
+                || $input_type_part instanceof TList)
+            && ($container_type_part instanceof TArray
+                || $container_type_part instanceof ObjectLike
+                || $container_type_part instanceof TList)
         ) {
             if ($container_type_part instanceof ObjectLike) {
                 $generic_container_type_part = $container_type_part->getGenericArrayType();
@@ -1887,6 +1931,7 @@ class TypeAnalyzer
                 );
 
                 if (!$input_type_part instanceof ObjectLike
+                    && !$input_type_part instanceof TList
                     && !$input_type_part->type_params[0]->hasMixed()
                     && !($input_type_part->type_params[1]->isEmpty()
                         && $container_params_can_be_undefined)
@@ -1900,6 +1945,17 @@ class TypeAnalyzer
 
             if ($input_type_part instanceof ObjectLike) {
                 $input_type_part = $input_type_part->getGenericArrayType();
+            }
+
+            if ($container_type_part instanceof TList) {
+                $all_types_contain = false;
+                $atomic_comparison_result->type_coerced = true;
+
+                $container_type_part = new TArray([Type::getInt(), clone $container_type_part->type_param]);
+            }
+
+            if ($input_type_part instanceof TList) {
+                $input_type_part = new TArray([Type::getInt(), clone $input_type_part->type_param]);
             }
 
             $any_scalar_param_match = false;

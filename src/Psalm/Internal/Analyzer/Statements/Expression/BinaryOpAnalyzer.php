@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
@@ -1072,19 +1073,34 @@ class BinaryOpAnalyzer
             || $right_type_part instanceof TArray
             || $left_type_part instanceof ObjectLike
             || $right_type_part instanceof ObjectLike
+            || $left_type_part instanceof TList
+            || $right_type_part instanceof TList
         ) {
-            if ((!$right_type_part instanceof TArray && !$right_type_part instanceof ObjectLike)
-                || (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike)
+            if ((!$right_type_part instanceof TArray
+                    && !$right_type_part instanceof ObjectLike
+                    && !$right_type_part instanceof TList)
+                || (!$left_type_part instanceof TArray
+                    && !$left_type_part instanceof ObjectLike
+                    && !$left_type_part instanceof TList)
             ) {
-                if (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike) {
+                if (!$left_type_part instanceof TArray
+                    && !$left_type_part instanceof ObjectLike
+                    && !$left_type_part instanceof TList
+                ) {
                     $invalid_left_messages[] = 'Cannot add an array to a non-array ' . $left_type_part;
                 } else {
                     $invalid_right_messages[] = 'Cannot add an array to a non-array ' . $right_type_part;
                 }
 
-                if ($left_type_part instanceof TArray || $left_type_part instanceof ObjectLike) {
+                if ($left_type_part instanceof TArray
+                    || $left_type_part instanceof ObjectLike
+                    || $left_type_part instanceof TList
+                ) {
                     $has_valid_left_operand = true;
-                } elseif ($right_type_part instanceof TArray || $right_type_part instanceof ObjectLike) {
+                } elseif ($right_type_part instanceof TArray
+                    || $right_type_part instanceof ObjectLike
+                    || $right_type_part instanceof TList
+                ) {
                     $has_valid_right_operand = true;
                 }
 

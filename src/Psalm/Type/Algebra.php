@@ -297,7 +297,7 @@ class Algebra
      *
      * @param  array<int, Clause>  $clauses
      *
-     * @return array<int, Clause>
+     * @return list<Clause>
      */
     public static function simplifyCNF(array $clauses)
     {
@@ -404,7 +404,7 @@ class Algebra
     /**
      * Look for clauses with only one possible value
      *
-     * @param  array<int, Clause>  $clauses
+     * @param  list<Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids
      *
      * @return array<string, array<int, array<int, string>>>
@@ -628,7 +628,7 @@ class Algebra
      *
      * @param  array<int, Clause>  $clauses
      *
-     * @return array<int, Clause>
+     * @return list<Clause>
      */
     public static function negateFormula(array $clauses, int $complexity = null)
     {

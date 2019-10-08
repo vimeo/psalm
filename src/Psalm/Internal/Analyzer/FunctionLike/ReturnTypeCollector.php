@@ -17,12 +17,12 @@ class ReturnTypeCollector
      * Gets the return types from a list of statements
      *
      * @param  array<PhpParser\Node>     $stmts
-     * @param  array<int,Type\Atomic>    $yield_types
+     * @param  list<Type\Atomic>         $yield_types
      * @param  bool                      $ignore_nullable_issues
      * @param  bool                      $ignore_falsable_issues
      * @param  bool                      $collapse_types
      *
-     * @return array<int,Type\Atomic>    a list of return types
+     * @return list<Type\Atomic>    a list of return types
      */
     public static function getReturnTypes(
         array $stmts,
@@ -272,6 +272,8 @@ class ReturnTypeCollector
                         ]
                     ),
                 ];
+            } else {
+                $yield_types = $yield_types;
             }
         }
 
@@ -281,7 +283,7 @@ class ReturnTypeCollector
     /**
      * @param   PhpParser\Node\Expr $stmt
      *
-     * @return  array<int, Atomic>
+     * @return  list<Atomic>
      */
     protected static function getYieldTypeFromExpression(PhpParser\Node\Expr $stmt)
     {

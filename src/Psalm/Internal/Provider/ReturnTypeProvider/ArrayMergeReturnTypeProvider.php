@@ -33,6 +33,8 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         $codebase = $statements_source->getCodebase();
 
         $generic_properties = [];
+        $all_lists = true;
+        $all_nonempty_lists = true;
 
         foreach ($call_args as $call_arg) {
             if (!isset($call_arg->value->inferredType)) {
@@ -44,6 +46,8 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                     if (!$type_part instanceof Type\Atomic\TArray) {
                         if ($type_part instanceof Type\Atomic\ObjectLike) {
                             $type_part_value_type = $type_part->getGenericValueType();
+                        } elseif ($type_part instanceof Type\Atomic\TList) {
+                            $type_part_value_type = $type_part->type_param;
                         } else {
                             return Type::getArray();
                         }
@@ -71,6 +75,12 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                             }
 
                             $unpacked_type_part = $unpacked_type_part->getGenericArrayType();
+                        } elseif ($unpacked_type_part instanceof Type\Atomic\TList) {
+                            $generic_properties = null;
+
+                            if (!$unpacked_type_part instanceof Type\Atomic\TNonEmptyList) {
+                                $all_nonempty_lists = false;
+                            }
                         } else {
                             if ($unpacked_type_part instanceof Type\Atomic\TMixed
                                 && $unpacked_type_part->from_loop_isset
@@ -87,17 +97,25 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                         $generic_properties = null;
                     }
 
-                    if ($unpacked_type_part->type_params[1]->isEmpty()) {
-                        continue;
+                    if ($unpacked_type_part instanceof Type\Atomic\TArray) {
+                        if ($unpacked_type_part->type_params[1]->isEmpty()) {
+                            continue;
+                        }
+
+                        $all_lists = false;
                     }
 
                     $inner_key_types = array_merge(
                         $inner_key_types,
-                        array_values($unpacked_type_part->type_params[0]->getTypes())
+                        $unpacked_type_part instanceof Type\Atomic\TList
+                            ? [new Type\Atomic\TInt()]
+                            : array_values($unpacked_type_part->type_params[0]->getTypes())
                     );
                     $inner_value_types = array_merge(
                         $inner_value_types,
-                        array_values($unpacked_type_part->type_params[1]->getTypes())
+                        $unpacked_type_part instanceof Type\Atomic\TList
+                            ? array_values($unpacked_type_part->type_param->getTypes())
+                            : array_values($unpacked_type_part->type_params[1]->getTypes())
                     );
                 }
             }
@@ -110,10 +128,26 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         }
 
         if ($inner_value_types) {
+            $inner_value_type = TypeCombination::combineTypes($inner_value_types, $codebase, true);
+
+            if ($all_lists) {
+                if ($all_nonempty_lists) {
+                    return new Type\Union([
+                        new Type\Atomic\TNonEmptyList($inner_value_type),
+                    ]);
+                }
+
+                return new Type\Union([
+                    new Type\Atomic\TList($inner_value_type),
+                ]);
+            }
+
+            $inner_key_type = TypeCombination::combineTypes($inner_key_types, $codebase, true);
+
             return new Type\Union([
                 new Type\Atomic\TArray([
-                    TypeCombination::combineTypes($inner_key_types, $codebase, true),
-                    TypeCombination::combineTypes($inner_value_types, $codebase, true),
+                    $inner_key_type,
+                    $inner_value_type,
                 ]),
             ]);
         }

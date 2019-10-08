@@ -476,7 +476,7 @@ class AssignmentAnalyzer
                 ) {
                     /**
                      * @psalm-suppress PossiblyUndefinedArrayOffset
-                     * @var Type\Atomic\ObjectLike|Type\Atomic\TArray|null
+                     * @var Type\Atomic\ObjectLike|Type\Atomic\TList|Type\Atomic\TArray|null
                      */
                     $array_value_type = isset($assign_value_type->getTypes()['array'])
                         ? $assign_value_type->getTypes()['array']
@@ -484,6 +484,13 @@ class AssignmentAnalyzer
 
                     if ($array_value_type instanceof Type\Atomic\ObjectLike) {
                         $array_value_type = $array_value_type->getGenericArrayType();
+                    }
+
+                    if ($array_value_type instanceof Type\Atomic\TList) {
+                        $array_value_type = new Type\Atomic\TArray([
+                            Type::getInt(),
+                            $array_value_type->type_param
+                        ]);
                     }
 
                     self::analyze(
@@ -543,6 +550,8 @@ class AssignmentAnalyzer
 
                         if ($array_atomic_type instanceof Type\Atomic\TArray) {
                             $new_assign_type = clone $array_atomic_type->type_params[1];
+                        } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
+                            $new_assign_type = clone $array_atomic_type->type_param;
                         } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                             if ($assign_var_item->key
                                 && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_

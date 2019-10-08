@@ -55,6 +55,8 @@ class ArrayAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $all_list = true;
+
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
                 continue;
@@ -63,6 +65,8 @@ class ArrayAnalyzer
             $item_key_value = null;
 
             if ($item->key) {
+                $all_list = false;
+
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $item->key, $context) === false) {
                     return false;
                 }
@@ -190,6 +194,7 @@ class ArrayAnalyzer
         } else {
             $item_value_type = null;
         }
+
         // if this array looks like an object-like array, let's return that instead
         if ($item_value_type
             && $item_key_type
@@ -198,8 +203,20 @@ class ArrayAnalyzer
         ) {
             $object_like = new Type\Atomic\ObjectLike($property_types, $class_strings);
             $object_like->sealed = true;
+            $object_like->is_list = $all_list;
 
             $stmt->inferredType = new Type\Union([$object_like]);
+
+            return null;
+        }
+
+        if ($all_list) {
+            $array_type = new Type\Atomic\TNonEmptyList($item_value_type ?: Type::getMixed());
+            $array_type->count = count($stmt->items);
+
+            $stmt->inferredType = new Type\Union([
+                $array_type,
+            ]);
 
             return null;
         }
