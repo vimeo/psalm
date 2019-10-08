@@ -834,7 +834,8 @@ class IfAnalyzer
                     if (isset($if_context->vars_in_scope[$var_id])) {
                         $if_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $if_context->vars_in_scope[$var_id],
-                            $type
+                            $type,
+                            $codebase
                         );
                     }
                 }
@@ -1145,7 +1146,8 @@ class IfAnalyzer
                     } else {
                         $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
                             $type,
-                            $elseif_context->vars_in_scope[$new_var]
+                            $elseif_context->vars_in_scope[$new_var],
+                            $codebase
                         );
                     }
                 }
@@ -1179,7 +1181,8 @@ class IfAnalyzer
                     } else {
                         $if_scope->redefined_vars[$redefined_var] = Type::combineUnionTypes(
                             $elseif_redefined_vars[$redefined_var],
-                            $type
+                            $type,
+                            $codebase
                         );
 
                         if (isset($outer_context->vars_in_scope[$redefined_var])
@@ -1198,7 +1201,8 @@ class IfAnalyzer
                     } elseif (isset($if_scope->possibly_redefined_vars[$var])) {
                         $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
                             $type,
-                            $if_scope->possibly_redefined_vars[$var]
+                            $if_scope->possibly_redefined_vars[$var],
+                            $codebase
                         );
                     } else {
                         $if_scope->possibly_redefined_vars[$var] = $type;
@@ -1499,7 +1503,8 @@ class IfAnalyzer
                     } else {
                         $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
                             $type,
-                            $else_context->vars_in_scope[$new_var]
+                            $else_context->vars_in_scope[$new_var],
+                            $codebase
                         );
                     }
                 }
@@ -1521,7 +1526,8 @@ class IfAnalyzer
                     } else {
                         $if_scope->redefined_vars[$redefined_var] = Type::combineUnionTypes(
                             $else_redefined_vars[$redefined_var],
-                            $type
+                            $type,
+                            $codebase
                         );
                     }
                 }
@@ -1532,7 +1538,8 @@ class IfAnalyzer
                     } elseif (isset($if_scope->possibly_redefined_vars[$var])) {
                         $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
                             $type,
-                            $if_scope->possibly_redefined_vars[$var]
+                            $if_scope->possibly_redefined_vars[$var],
+                            $codebase
                         );
                     } else {
                         $if_scope->possibly_redefined_vars[$var] = $type;
