@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -1958,7 +1959,11 @@ class TypeAnalyzer
             }
 
             if ($input_type_part instanceof TList) {
-                $input_type_part = new TArray([Type::getInt(), clone $input_type_part->type_param]);
+                if ($input_type_part instanceof TNonEmptyList) {
+                    $input_type_part = new TNonEmptyArray([Type::getInt(), clone $input_type_part->type_param]);
+                } else {
+                    $input_type_part = new TArray([Type::getInt(), clone $input_type_part->type_param]);
+                }
             }
 
             $any_scalar_param_match = false;

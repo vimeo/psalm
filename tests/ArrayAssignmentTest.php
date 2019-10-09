@@ -812,7 +812,7 @@ class ArrayAssignmentTest extends TestCase
                     $a_keys = array_keys($a);',
                 'assertions' => [
                     '$a' => 'array{0: string, 1: int}',
-                    '$a_values' => 'list<string|int>',
+                    '$a_values' => 'non-empty-list<string|int>',
                     '$a_keys' => 'list<int>',
                 ],
             ],

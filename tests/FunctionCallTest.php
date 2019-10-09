@@ -215,8 +215,8 @@ class FunctionCallTest extends TestCase
                     $b = array_values(["a" => 1, "b" => 2]);
                     $c = array_values(["a" => "hello", "b" => "jello"]);',
                 'assertions' => [
-                    '$b' => 'list<int>',
-                    '$c' => 'list<string>',
+                    '$b' => 'non-empty-list<int>',
+                    '$c' => 'non-empty-list<string>',
                 ],
             ],
             'arrayCombine' => [
