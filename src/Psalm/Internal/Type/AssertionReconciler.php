@@ -1459,7 +1459,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $did_remove_type = false;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TArray || $type instanceof ObjectLike) {
+            if ($type instanceof TArray || $type instanceof ObjectLike || $type instanceof TList) {
                 $array_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableObjectLikeArray([

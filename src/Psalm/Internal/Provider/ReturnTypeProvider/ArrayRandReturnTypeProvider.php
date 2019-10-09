@@ -44,7 +44,7 @@ class ArrayRandReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
         if ($first_arg_array instanceof Type\Atomic\TArray) {
             $key_type = clone $first_arg_array->type_params[0];
         } elseif ($first_arg_array instanceof Type\Atomic\TList) {
-            $key_type = clone $first_arg_array->type_param;
+            $key_type = Type::getInt();
         } else {
             $key_type = $first_arg_array->getGenericKeyType();
         }
@@ -56,10 +56,9 @@ class ArrayRandReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
         }
 
         $arr_type = new Type\Union([
-            new Type\Atomic\TArray([
-                Type::getInt(),
-                $key_type,
-            ]),
+            new Type\Atomic\TList(
+                $key_type
+            ),
         ]);
 
         if ($second_arg instanceof PhpParser\Node\Scalar\LNumber) {
