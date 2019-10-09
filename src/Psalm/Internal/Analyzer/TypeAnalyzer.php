@@ -1558,7 +1558,7 @@ class TypeAnalyzer
                     $function_storage->return_type,
                     $function_storage->pure
                 );
-            } catch (\Exception $e) {
+            } catch (\UnexpectedValueException $e) {
                 if (CallMap::inCallMap($input_type_part->value)) {
                     $args = [];
 
@@ -1596,13 +1596,26 @@ class TypeAnalyzer
             if ($method_id = self::getCallableMethodIdFromObjectLike($input_type_part)) {
                 try {
                     $method_storage = $codebase->methods->getStorage($method_id);
+                    list($method_fqcln) = explode('::', $method_id);
+
+                    $converted_return_type = null;
+
+                    if ($method_storage->return_type) {
+                        $converted_return_type = ExpressionAnalyzer::fleshOutType(
+                            $codebase,
+                            $method_storage->return_type,
+                            $method_fqcln,
+                            $method_fqcln,
+                            null
+                        );
+                    }
 
                     return new TCallable(
                         'callable',
                         $method_storage->params,
-                        $method_storage->return_type
+                        $converted_return_type
                     );
-                } catch (\Exception $e) {
+                } catch (\UnexpectedValueException $e) {
                     // do nothing
                 }
             }
