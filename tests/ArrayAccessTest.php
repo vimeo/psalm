@@ -141,6 +141,25 @@ class ArrayAccessTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testNoIssueWhenUsingArrayValuesOnNonEmptyArray()
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param string[][] $arr */
+                function foo(array $arr) : void {
+                    if (count($arr) === 1 && count(array_values($arr)[0]) === 1) {}
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()

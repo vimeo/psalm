@@ -14,32 +14,6 @@ function array_keys(array $arr, $search_value = null, bool $strict = false)
 }
 
 /**
- * @psalm-template T
- *
- * @param array<mixed, T> $arr
- *
- * @return list<T>
- * @psalm-pure
- */
-function array_values(array $arr)
-{
-}
-
-/**
- * @psalm-template TKey as array-key
- * @psalm-template TValue
- *
- * @param array<TKey, TValue> $arr
- * @param int $sort_flags
- *
- * @return array<TKey, TValue>
- * @psalm-pure
- */
-function array_unique(array $arr, int $sort_flags = 0)
-{
-}
-
-/**
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
