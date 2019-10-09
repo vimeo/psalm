@@ -1876,9 +1876,12 @@ class TypeAnalyzer
 
         if ($container_type_part instanceof TList
             && $input_type_part instanceof ObjectLike
-            && $input_type_part->is_list
         ) {
-            $input_type_part = $input_type_part->getList();
+            if ($input_type_part->is_list) {
+                $input_type_part = $input_type_part->getList();
+            } else {
+                return false;
+            }
         }
 
         if ($container_type_part instanceof TList
