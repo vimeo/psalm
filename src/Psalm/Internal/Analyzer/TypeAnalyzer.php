@@ -1596,7 +1596,7 @@ class TypeAnalyzer
             if ($method_id = self::getCallableMethodIdFromObjectLike($input_type_part)) {
                 try {
                     $method_storage = $codebase->methods->getStorage($method_id);
-                    list($method_fqcln) = explode('::', $method_id);
+                    list($method_fqcln) = \explode('::', $method_id);
 
                     $converted_return_type = null;
 
