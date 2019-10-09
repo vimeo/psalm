@@ -1544,7 +1544,7 @@ class AssertionFinder
      * @param  FileSource                   $source
      * @param  bool                         $negate
      *
-     * @return array<string, array<int, array<int, string>>>
+     * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     public static function processFunctionCall(
         PhpParser\Node\Expr\FuncCall $expr,
@@ -1748,7 +1748,9 @@ class AssertionFinder
                             $atomic_type->type_params[1]->getLiteralFloats()
                         );
 
-                        if (count($atomic_type->type_params[1]->getTypes()) === count($array_literal_types)) {
+                        if ($array_literal_types
+                            && count($atomic_type->type_params[1]->getTypes())
+                        ) {
                             $literal_assertions = [];
 
                             foreach ($array_literal_types as $array_literal_type) {
@@ -1809,7 +1811,7 @@ class AssertionFinder
      * @param  FileSource   $source
      * @param  bool         $negate
      *
-     * @return array<string, array<int, array<int, string>>>
+     * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     protected static function processCustomAssertion(
         $expr,
@@ -1939,7 +1941,7 @@ class AssertionFinder
      * @param  string|null                     $this_class_name
      * @param  FileSource                $source
      *
-     * @return array<int, string>
+     * @return list<string>
      */
     protected static function getInstanceOfTypes(
         PhpParser\Node\Expr\Instanceof_ $stmt,

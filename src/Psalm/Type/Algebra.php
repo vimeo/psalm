@@ -24,42 +24,44 @@ use function substr;
 class Algebra
 {
     /**
-     * @param  array<string, array<int, array<int, string>>>  $all_types
+     * @param  array<string, non-empty-list<non-empty-list<string>>>  $all_types
      *
-     * @return array<string, array<int, array<int, string>>>
+     * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     public static function negateTypes(array $all_types)
     {
-        return array_map(
-            /**
-             * @param  array<int, array<int, string>> $anded_types
-             *
-             * @return  array<int, array<int, string>>
-             */
-            function (array $anded_types) {
-                if (count($anded_types) > 1) {
-                    $new_anded_types = [];
+        return array_filter(
+            array_map(
+                /**
+                 * @param  non-empty-list<non-empty-list<string>> $anded_types
+                 *
+                 * @return list<non-empty-list<string>>
+                 */
+                function (array $anded_types) {
+                    if (count($anded_types) > 1) {
+                        $new_anded_types = [];
 
-                    foreach ($anded_types as $orred_types) {
-                        if (count($orred_types) > 1) {
-                            return [];
+                        foreach ($anded_types as $orred_types) {
+                            if (count($orred_types) > 1) {
+                                return [];
+                            }
+
+                            $new_anded_types[] = self::negateType($orred_types[0]);
                         }
 
-                        $new_anded_types[] = self::negateType($orred_types[0]);
+                        return [$new_anded_types];
                     }
 
-                    return [$new_anded_types];
-                }
+                    $new_orred_types = [];
 
-                $new_orred_types = [];
+                    foreach ($anded_types[0] as $orred_type) {
+                        $new_orred_types[] = [self::negateType($orred_type)];
+                    }
 
-                foreach ($anded_types[0] as $orred_type) {
-                    $new_orred_types[] = [self::negateType($orred_type)];
-                }
-
-                return $new_orred_types;
-            },
-            $all_types
+                    return $new_orred_types;
+                },
+                $all_types
+            )
         );
     }
 
@@ -307,9 +309,7 @@ class Algebra
         foreach ($clauses as $clause) {
             $unique_clause = clone $clause;
             foreach ($unique_clause->possibilities as $var_id => $possibilities) {
-                if (count($possibilities)) {
-                    $unique_clause->possibilities[$var_id] = array_unique($possibilities);
-                }
+                $unique_clause->possibilities[$var_id] = array_values(array_unique($possibilities));
             }
             $cloned_clauses[$clause->getHash()] = $unique_clause;
         }
@@ -336,21 +336,25 @@ class Algebra
                 if (isset($clause_b->possibilities[$clause_var]) &&
                     in_array($negated_clause_type, $clause_b->possibilities[$clause_var], true)
                 ) {
-                    $clause_b->possibilities[$clause_var] = array_filter(
-                        $clause_b->possibilities[$clause_var],
-                        /**
-                         * @param string $possible_type
-                         *
-                         * @return bool
-                         */
-                        function ($possible_type) use ($negated_clause_type) {
-                            return $possible_type !== $negated_clause_type;
-                        }
+                    $clause_var_possibilities = array_values(
+                        array_filter(
+                            $clause_b->possibilities[$clause_var],
+                            /**
+                             * @param string $possible_type
+                             *
+                             * @return bool
+                             */
+                            function ($possible_type) use ($negated_clause_type) {
+                                return $possible_type !== $negated_clause_type;
+                            }
+                        )
                     );
 
-                    if (count($clause_b->possibilities[$clause_var]) === 0) {
+                    if (!$clause_var_possibilities) {
                         unset($clause_b->possibilities[$clause_var]);
                         $clause_b->impossibilities = null;
+                    } else {
+                        $clause_b->possibilities[$clause_var] = $clause_var_possibilities;
                     }
                 }
             }
@@ -558,6 +562,7 @@ class Algebra
                     continue;
                 }
 
+                /** @var  array<string, non-empty-list<string>> */
                 $possibilities = [];
 
                 $can_reconcile = true;
@@ -588,7 +593,7 @@ class Algebra
 
                 if (count($left_clauses) > 1 || count($right_clauses) > 1) {
                     foreach ($possibilities as $var => $p) {
-                        $possibilities[$var] = array_unique($p);
+                        $possibilities[$var] = array_values(array_unique($p));
                     }
                 }
 

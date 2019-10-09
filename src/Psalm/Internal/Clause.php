@@ -31,7 +31,7 @@ class Clause
      *
      * !$a || $b || $c !== null || is_string($d) || is_int($d)
      *
-     * @var array<string, array<string>>
+     * @var array<string, non-empty-list<string>>
      */
     public $possibilities;
 
@@ -47,7 +47,7 @@ class Clause
      *
      * $a && !$b && $c === null && !is_string($d) && !is_int($d)
      *
-     * @var array<string, array<string>>|null
+     * @var array<string, non-empty-list<string>>|null
      */
     public $impossibilities;
 
@@ -61,7 +61,7 @@ class Clause
     public $generated = false;
 
     /**
-     * @param array<string, array<string>>  $possibilities
+     * @param array<string, non-empty-list<string>>  $possibilities
      * @param bool                          $wedge
      * @param bool                          $reconcilable
      * @param bool                          $generated

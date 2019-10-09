@@ -400,7 +400,7 @@ return [
     ],
     'phpparser\\node\\expr' => [
         'inferredType' => 'Psalm\\Type\\Union|null',
-        'assertions' => 'array<string, array<int, array<int, string>>>|null',
+        'assertions' => 'array<string, non-empty-list<non-empty-list<string>>>|null',
     ],
     'phpparser\\node\\name' => [
         'inferredType' => 'Psalm\\Type\\Union|null',
