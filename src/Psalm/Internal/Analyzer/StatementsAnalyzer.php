@@ -1270,6 +1270,13 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $root_type->addType(
                                 new Type\Atomic\TMixed()
                             );
+                        } elseif ($atomic_root_type instanceof Type\Atomic\TList) {
+                            $root_type->addType(
+                                new Type\Atomic\TArray([
+                                    Type::getInt(),
+                                    $atomic_root_type->type_param
+                                ])
+                            );
                         }
                     }
 

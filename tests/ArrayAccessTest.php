@@ -953,6 +953,19 @@ class ArrayAccessTest extends TestCase
                     $array[$a] = "b";',
                 'error_message' => 'UndefinedGlobalVariable',
             ],
+            'unsetListElementShouldChangeToArray' => [
+                '<?php
+                    /**
+                     * @param list<string> $arr
+                     * @return list<string>
+                     */
+                    function takesList(array $arr) : array {
+                        unset($arr[0]);
+
+                        return $arr;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
         ];
     }
 }
