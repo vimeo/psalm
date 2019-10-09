@@ -168,6 +168,7 @@ class Reconciler
             $has_isset = false;
             $has_inverted_isset = false;
             $has_falsyish = false;
+            $has_empty = false;
             $has_count_check = false;
 
             foreach ($new_type_parts as $new_type_part_parts) {
@@ -185,6 +186,8 @@ class Reconciler
                         || $new_type_part_part === 'isset'
                         || $new_type_part_part === '=isset'
                         || $new_type_part_part === 'array-key-exists';
+
+                    $has_empty = $has_empty || $new_type_part_part === 'empty';
 
                     $has_falsyish = $has_falsyish
                         || $new_type_part_part === 'empty'
@@ -204,7 +207,8 @@ class Reconciler
                     $key,
                     $existing_types,
                     $code_location,
-                    $has_isset
+                    $has_isset,
+                    $has_empty
                 );
 
             if ($result_type && empty($result_type->getTypes())) {
@@ -417,7 +421,8 @@ class Reconciler
         string $key,
         array &$existing_keys,
         ?CodeLocation $code_location,
-        bool $has_isset
+        bool $has_isset,
+        bool $has_empty
     ) {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -462,12 +467,20 @@ class Reconciler
 
                     foreach ($existing_keys[$base_key]->getTypes() as $existing_key_type_part) {
                         if ($existing_key_type_part instanceof Type\Atomic\TArray) {
+                            if ($has_empty) {
+                                return null;
+                            }
+
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
 
                             if ($has_isset) {
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
                         } elseif ($existing_key_type_part instanceof Type\Atomic\TList) {
+                            if ($has_empty) {
+                                return null;
+                            }
+
                             $new_base_type_candidate = clone $existing_key_type_part->type_param;
 
                             if ($has_isset) {
@@ -476,6 +489,10 @@ class Reconciler
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$') {
+                            if ($has_empty) {
+                                return null;
+                            }
+
                             $new_base_type_candidate = $existing_key_type_part->getGenericValueType();
                         } else {
                             $array_properties = $existing_key_type_part->properties;

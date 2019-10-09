@@ -338,6 +338,26 @@ class AssertTest extends TestCase
                         }
                     }'
             ],
+            'assertNotEmptyOnArray' => [
+                '<?php
+                    function foo(bool $c, array $arr) : void {
+                        if ($c && !empty($arr["b"])) {
+                            return;
+                        }
+
+                        if ($c && rand(0, 1)) {}
+                    }'
+            ],
+            'assertIssetOnArray' => [
+                '<?php
+                    function foo(bool $c, array $arr) : void {
+                        if ($c && $arr && isset($arr["b"]) && $arr["b"]) {
+                            return;
+                        }
+
+                        if ($c && rand(0, 1)) {}
+                    }'
+            ],
         ];
     }
 }
