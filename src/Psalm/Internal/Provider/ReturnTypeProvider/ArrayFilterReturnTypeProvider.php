@@ -8,6 +8,7 @@ use function is_string;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Issue\InvalidReturnType;
@@ -61,8 +62,18 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         }
 
         if (!isset($call_args[1])) {
-            $inner_type->removeType('null');
-            $inner_type->removeType('false');
+            if ($statements_source instanceof StatementsAnalyzer) {
+                $inner_type = \Psalm\Internal\Type\AssertionReconciler::reconcile(
+                    '!falsy',
+                    clone $inner_type,
+                    '',
+                    $statements_source,
+                    $context->inside_loop,
+                    [],
+                    null,
+                    $statements_source->getSuppressedIssues()
+                );
+            }
         } elseif (!isset($call_args[2])) {
             $function_call_arg = $call_args[1];
 

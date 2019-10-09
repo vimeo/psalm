@@ -106,6 +106,7 @@ abstract class Type
         'value-of' => true,
         'non-empty-countable' => true,
         'list' => true,
+        'non-empty-list' => true,
     ];
 
     /**
