@@ -272,8 +272,6 @@ class ReturnTypeCollector
                         ]
                     ),
                 ];
-            } else {
-                $yield_types = $yield_types;
             }
         }
 
