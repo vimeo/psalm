@@ -160,6 +160,53 @@ class ArrayAccessTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testEnsureListOffsetExistsNotEmpty()
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param list<string> $arr */
+                function takesList(array $arr) : void {
+                    if ($arr) {
+                        echo $arr[0];
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnsureListOffsetExistsAfterArrayPop()
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedArrayOffset');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param list<string> $arr */
+                function takesList(array $arr) : void {
+                    if ($arr) {
+                        echo $arr[0];
+                        array_pop($arr);
+                        echo $arr[0];
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()

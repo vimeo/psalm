@@ -1029,27 +1029,10 @@ class CallAnalyzer
 
                 foreach ($array_atomic_types as $array_atomic_type) {
                     if ($array_atomic_type instanceof ObjectLike) {
-                        $generic_array_type = $array_atomic_type->getGenericArrayType();
+                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                    }
 
-                        if ($generic_array_type instanceof TNonEmptyArray) {
-                            if (!$context->inside_loop && $generic_array_type->count !== null) {
-                                if ($generic_array_type->count === 0) {
-                                    $generic_array_type = new TArray(
-                                        [
-                                            new Type\Union([new TEmpty]),
-                                            new Type\Union([new TEmpty]),
-                                        ]
-                                    );
-                                } else {
-                                    $generic_array_type->count--;
-                                }
-                            } else {
-                                $generic_array_type = new TArray($generic_array_type->type_params);
-                            }
-                        }
-
-                        $array_type->addType($generic_array_type);
-                    } elseif ($array_atomic_type instanceof TNonEmptyArray) {
+                    if ($array_atomic_type instanceof TNonEmptyArray) {
                         if (!$context->inside_loop && $array_atomic_type->count !== null) {
                             if ($array_atomic_type->count === 0) {
                                 $array_atomic_type = new TArray(
@@ -1066,6 +1049,7 @@ class CallAnalyzer
                         }
 
                         $array_type->addType($array_atomic_type);
+                        $context->removeDescendents($var_id, $array_type);
                     } elseif ($array_atomic_type instanceof TNonEmptyList) {
                         if (!$context->inside_loop && $array_atomic_type->count !== null) {
                             if ($array_atomic_type->count === 0) {
@@ -1083,6 +1067,7 @@ class CallAnalyzer
                         }
 
                         $array_type->addType($array_atomic_type);
+                        $context->removeDescendents($var_id, $array_type);
                     }
                 }
 
