@@ -45,7 +45,7 @@ class ArrayUniqueReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         }
 
         if ($first_arg_array instanceof Type\Atomic\TList) {
-            if ($first_arg_array instanceof Type\ATomic\TNonEmptyList) {
+            if ($first_arg_array instanceof Type\Atomic\TNonEmptyList) {
                 return new Type\Union([
                     new Type\Atomic\TNonEmptyArray([
                         Type::getInt(),
