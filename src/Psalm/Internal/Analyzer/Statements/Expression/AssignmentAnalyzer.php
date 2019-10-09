@@ -789,6 +789,8 @@ class AssignmentAnalyzer
         PhpParser\Node\Expr\AssignOp $stmt,
         Context $context
     ) {
+        $codebase = $statements_analyzer->getCodebase();
+
         $was_in_assignment = $context->inside_assignment;
 
         $context->inside_assignment = true;
@@ -876,6 +878,38 @@ class AssignmentAnalyzer
             $context->vars_in_scope[$array_var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
             $stmt->inferredType = clone $context->vars_in_scope[$array_var_id];
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
+            $stmt->inferredType = Type::getString();
+
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
+                return false;
+            }
+
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
+                return false;
+            }
+
+            if ($codebase->taint) {
+                $sources = [];
+                $either_tainted = 0;
+
+                if (isset($stmt->var->inferredType)) {
+                    $sources = $stmt->var->inferredType->sources ?: [];
+                    $either_tainted = $stmt->var->inferredType->tainted;
+                }
+
+                if (isset($stmt->expr->inferredType)) {
+                    $sources = array_merge($sources, $stmt->expr->inferredType->sources ?: []);
+                    $either_tainted = $either_tainted | $stmt->expr->inferredType->tainted;
+                }
+
+                if ($sources) {
+                    $stmt->inferredType->sources = $sources;
+                }
+
+                if ($either_tainted) {
+                    $stmt->inferredType->tainted = $either_tainted;
+                }
+            }
             BinaryOpAnalyzer::analyzeConcatOp(
                 $statements_analyzer,
                 $stmt->var,
@@ -883,11 +917,6 @@ class AssignmentAnalyzer
                 $context,
                 $result_type
             );
-
-            if ($result_type && $array_var_id) {
-                $context->vars_in_scope[$array_var_id] = $result_type;
-                $stmt->inferredType = clone $context->vars_in_scope[$array_var_id];
-            }
         } elseif (isset($stmt->var->inferredType)
             && isset($stmt->expr->inferredType)
             && ($stmt->var->inferredType->hasInt() || $stmt->expr->inferredType->hasInt())
