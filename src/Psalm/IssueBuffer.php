@@ -178,6 +178,10 @@ class IssueBuffer
             return false;
         }
 
+        if ($project_analyzer->getCodebase()->taint && $issue_type !== 'TaintedInput') {
+            return false;
+        }
+
         $reporting_level = $config->getReportingLevelForIssue($e);
 
         if ($reporting_level === Config::REPORT_SUPPRESS) {
