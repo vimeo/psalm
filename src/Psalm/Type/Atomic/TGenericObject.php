@@ -12,16 +12,12 @@ class TGenericObject extends TNamedObject
 
     /**
      * @param string                            $value the name of the object
-     * @param array<int, \Psalm\Type\Union>     $type_params
+     * @param non-empty-list<\Psalm\Type\Union>     $type_params
      */
     public function __construct($value, array $type_params)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
-        }
-
-        if (!$type_params) {
-            throw new \UnexpectedValueException('Empty type params');
         }
 
         $this->value = $value;

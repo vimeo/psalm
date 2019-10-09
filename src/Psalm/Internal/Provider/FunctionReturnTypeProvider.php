@@ -43,6 +43,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\ArrayReverseReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayUniqueReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayValuesReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayFillReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\FilterVarReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ParseUrlReturnTypeProvider::class);

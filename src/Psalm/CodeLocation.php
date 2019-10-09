@@ -378,7 +378,7 @@ class CodeLocation
     }
 
     /**
-     * @return array<int, int>
+     * @return array{0: int, 1: int}
      */
     public function getSelectionBounds()
     {
@@ -388,7 +388,7 @@ class CodeLocation
     }
 
     /**
-     * @return array<int, int>
+     * @return array{0: int, 1: int}
      */
     public function getSnippetBounds()
     {

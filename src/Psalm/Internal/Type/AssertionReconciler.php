@@ -2005,6 +2005,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         if ($has_param_match
                             && $existing_type_part->type_params[$i]->getId() !== $new_param->getId()
                         ) {
+                            /** @psalm-suppress PropertyTypeCoercion */
                             $existing_type_part->type_params[$i] = $new_param;
 
                             if (!$has_local_match) {

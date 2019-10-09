@@ -1720,6 +1720,10 @@ class TypeAnalyzer
                             }
                         }
 
+                        if (!$generic_params) {
+                            throw new \UnexpectedValueException('$generic_params should not be empty');
+                        }
+
                         $input_type_part = new TGenericObject(
                             $input_type_part->value,
                             $generic_params
@@ -1836,6 +1840,7 @@ class TypeAnalyzer
                         }
 
                         if ($atomic_comparison_result->replacement_atomic_type instanceof TGenericObject) {
+                            /** @psalm-suppress PropertyTypeCoercion */
                             $atomic_comparison_result->replacement_atomic_type->type_params[$i]
                                 = clone $container_param;
                         }

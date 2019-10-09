@@ -1224,6 +1224,18 @@ class ArrayAssignmentTest extends TestCase
                         }
                     }',
             ],
+            'nonEmptyAssignmentToListElement' => [
+                '<?php
+                    /**
+                     * @param non-empty-list<string> $arr
+                     * @return non-empty-list<string>
+                     */
+                    function takesList(array $arr) : array {
+                        $arr[0] = "food";
+
+                        return $arr;
+                    }',
+            ],
         ];
     }
 
@@ -1415,6 +1427,19 @@ class ArrayAssignmentTest extends TestCase
 
                     takesArray($a);',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'nonEmptyAssignmentToListElementChangeType' => [
+                '<?php
+                    /**
+                     * @param non-empty-list<string> $arr
+                     * @return non-empty-list<string>
+                     */
+                    function takesList(array $arr) : array {
+                        $arr[0] = 5;
+
+                        return $arr;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

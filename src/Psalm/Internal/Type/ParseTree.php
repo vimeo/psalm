@@ -15,7 +15,7 @@ use function strtolower;
 class ParseTree
 {
     /**
-     * @var array<int, ParseTree>
+     * @var list<ParseTree>
      */
     public $children = [];
 

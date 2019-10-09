@@ -414,6 +414,16 @@ class ArrayAssignmentAnalyzer
 
                         $type->properties[$key_value] = clone $current_type;
                     }
+                } elseif ($type instanceof TNonEmptyList && $key_value === 0) {
+                    $has_matching_objectlike_property = true;
+
+                    $type->type_param = Type::combineUnionTypes(
+                        clone $current_type,
+                        $type->type_param,
+                        $codebase,
+                        true,
+                        false
+                    );
                 }
             }
 

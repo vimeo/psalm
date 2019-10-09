@@ -24,7 +24,7 @@ class TIterable extends Atomic
     public $has_docblock_params = false;
 
     /**
-     * @param array<int, \Psalm\Type\Union>     $type_params
+     * @param list<\Psalm\Type\Union>     $type_params
      */
     public function __construct(array $type_params = [])
     {

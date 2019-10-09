@@ -1382,6 +1382,10 @@ class Union
                                         }
                                     }
 
+                                    if (!$new_generic_params) {
+                                        throw new \UnexpectedValueException('$new_generic_params should not be empty');
+                                    }
+
                                     $matching_atomic_type = new TGenericObject(
                                         $atomic_input_type->value,
                                         $new_generic_params

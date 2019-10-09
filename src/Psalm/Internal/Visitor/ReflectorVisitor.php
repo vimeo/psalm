@@ -1323,9 +1323,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $extended_type_parameters[] = $type_param;
             }
 
-            if ($extended_type_parameters) {
-                $storage->template_type_extends[$atomic_type->value] = $extended_type_parameters;
-            }
+            $storage->template_type_extends[$atomic_type->value] = $extended_type_parameters;
         }
     }
 
@@ -1422,9 +1420,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $implemented_type_parameters[] = $type_param;
             }
 
-            if ($implemented_type_parameters) {
-                $storage->template_type_extends[$atomic_type->value] = $implemented_type_parameters;
-            }
+            $storage->template_type_extends[$atomic_type->value] = $implemented_type_parameters;
         }
     }
 
@@ -1521,9 +1517,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $used_type_parameters[] = $type_param;
             }
 
-            if ($used_type_parameters) {
-                $storage->template_type_extends[$atomic_type->value] = $used_type_parameters;
-            }
+            $storage->template_type_extends[$atomic_type->value] = $used_type_parameters;
         }
     }
 

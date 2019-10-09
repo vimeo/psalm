@@ -115,18 +115,6 @@ function key($arr)
 }
 
 /**
- * @psalm-template TValue
- *
- * @param TValue $value
- *
- * @return array<int, TValue>
- * @psalm-pure
- */
-function array_fill(int $start_index, int $num, $value) : array
-{
-}
-
-/**
  * @psalm-template T
  *
  * @param mixed           $needle

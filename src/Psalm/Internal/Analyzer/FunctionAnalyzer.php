@@ -248,19 +248,13 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             }
 
                             return new Type\Union([
-                                new Type\Atomic\TNonEmptyArray([
-                                    Type::getInt(),
-                                    Type::getString()
-                                ])
+                                new Type\Atomic\TNonEmptyList(Type::getString())
                             ]);
                         } elseif (isset($call_args[0]->value->inferredType)
                             && $call_args[0]->value->inferredType->hasString()
                         ) {
                             $falsable_array = new Type\Union([
-                                new Type\Atomic\TNonEmptyArray([
-                                    Type::getInt(),
-                                    Type::getString()
-                                ]),
+                                new Type\Atomic\TNonEmptyList(Type::getString()),
                                 new Type\Atomic\TFalse
                             ]);
 

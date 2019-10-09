@@ -22,7 +22,7 @@ class TArray extends \Psalm\Type\Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param array<int, \Psalm\Type\Union> $type_params
+     * @param non-empty-list<\Psalm\Type\Union> $type_params
      */
     public function __construct(array $type_params)
     {

@@ -62,7 +62,9 @@ class ClassStatementsDiffer extends AstDiffer
                 $a_comments_end = $a_start;
                 $b_comments_end = $b_start;
 
+                /** @var list<PhpParser\Comment> */
                 $a_comments = $a->getComments();
+                /** @var list<PhpParser\Comment> */
                 $b_comments = $b->getComments();
 
                 $signature_change = false;

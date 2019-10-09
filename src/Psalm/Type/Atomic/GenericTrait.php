@@ -20,7 +20,7 @@ use function substr;
 trait GenericTrait
 {
     /**
-     * @var array<int, Union>
+     * @var non-empty-list<Union>
      */
     public $type_params;
 
