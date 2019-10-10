@@ -127,7 +127,9 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                         new Type\Atomic\TLiteralInt(count($atomic_types['array']->properties))
                                     ]);
                                 }
-                            } elseif (isset($atomic_types['callable-array'])) {
+                            } elseif (isset($atomic_types['callable-array'])
+                                || isset($atomic_types['callable-list'])
+                            ) {
                                 return Type::getInt(false, 2);
                             }
                         }

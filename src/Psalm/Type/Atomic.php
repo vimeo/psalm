@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableObjectLikeArray;
 use Psalm\Type\Atomic\TCallableString;
@@ -269,6 +270,7 @@ abstract class Atomic
             || $this instanceof TCallableObject
             || $this instanceof TCallableString
             || $this instanceof TCallableArray
+            || $this instanceof TCallableList
             || $this instanceof TCallableObjectLikeArray;
     }
 

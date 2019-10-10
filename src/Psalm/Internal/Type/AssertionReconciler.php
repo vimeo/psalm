@@ -30,6 +30,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObjectLikeArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
@@ -1670,6 +1671,11 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             } elseif ($type instanceof TArray) {
                 $type = clone $type;
                 $type = new TCallableArray($type->type_params);
+                $callable_types[] = $type;
+                $did_remove_type = true;
+            } elseif ($type instanceof TList) {
+                $type = clone $type;
+                $type = new TCallableList($type->type_param);
                 $callable_types[] = $type;
                 $did_remove_type = true;
             } elseif ($type instanceof ObjectLike) {

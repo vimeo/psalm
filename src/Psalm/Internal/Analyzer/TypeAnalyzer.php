@@ -1359,7 +1359,7 @@ class TypeAnalyzer
                     return false;
                 }
 
-                if (!$input_type_part instanceof Type\Atomic\TCallableArray) {
+                if (!$input_type_part instanceof Type\Atomic\TCallableList) {
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->type_coerced_from_mixed = true;
                         $atomic_comparison_result->type_coerced = true;
