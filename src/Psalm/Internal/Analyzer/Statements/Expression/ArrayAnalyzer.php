@@ -150,7 +150,7 @@ class ArrayAnalyzer
             }
 
             if (isset($item->value->inferredType)) {
-                if ($item_key_value !== null && count($property_types) <= 50) {
+                if ($item_key_value !== null && count($property_types) <= 100) {
                     $property_types[$item_key_value] = $item->value->inferredType;
                 } else {
                     $can_create_objectlike = false;
@@ -163,7 +163,7 @@ class ArrayAnalyzer
             } else {
                 $item_value_atomic_types[] = new Type\Atomic\TMixed();
 
-                if ($item_key_value !== null && count($property_types) <= 50) {
+                if ($item_key_value !== null && count($property_types) <= 100) {
                     $property_types[$item_key_value] = Type::getMixed();
                 } else {
                     $can_create_objectlike = false;
