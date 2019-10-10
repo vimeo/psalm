@@ -598,6 +598,40 @@ class AssertAnnotationTest extends TestCase
                      */
                     function isInts($value): void {}',
             ],
+            'simpleArrayAssertion' => [
+                '<?php
+                    /**
+                     * @psalm-assert array $data
+                     * @param mixed $data
+                     */
+                    function isArray($data): void {}
+
+                    /**
+                     * @param iterable<string> $arr
+                     * @return array<string>
+                     */
+                    function foo(iterable $arr) : array {
+                        isArray($arr);
+                        return $arr;
+                    }'
+            ],
+            'listAssertion' => [
+                '<?php
+                    /**
+                     * @psalm-assert list $data
+                     * @param mixed $data
+                     */
+                    function isList($data): void {}
+
+                    /**
+                     * @param array<string> $arr
+                     * @return list<string>
+                     */
+                    function foo(array $arr) : array {
+                        isList($arr);
+                        return $arr;
+                    }'
+            ],
         ];
     }
 

@@ -39,6 +39,8 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -237,6 +239,17 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($assertion === 'array') {
             return self::reconcileArray(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality
+            );
+        }
+
+        if ($assertion === 'list') {
+            return self::reconcileList(
                 $existing_var_type,
                 $key,
                 $code_location,
@@ -1475,6 +1488,96 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $array_types[] = new TArray($clone_type->type_params);
                 } else {
                     $array_types[] = new TArray([Type::getArrayKey(), Type::getMixed()]);
+                }
+
+                $did_remove_type = true;
+            } else {
+                $did_remove_type = true;
+            }
+        }
+
+        if ((!$array_types || !$did_remove_type) && !$is_equality) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    'array',
+                    !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+
+                if (!$did_remove_type) {
+                    $failed_reconciliation = 1;
+                }
+            }
+        }
+
+        if ($array_types) {
+            return new Type\Union($array_types);
+        }
+
+        $failed_reconciliation = 2;
+
+        return Type::getMixed();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileList(
+        Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ) : Union {
+        $old_var_type_string = $existing_var_type->getId();
+
+        $existing_var_atomic_types = $existing_var_type->getTypes();
+
+        if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
+            return Type::getList();
+        }
+
+        $array_types = [];
+        $did_remove_type = false;
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type instanceof TList || ($type instanceof ObjectLike && $type->is_list)) {
+                $array_types[] = $type;
+            } elseif ($type instanceof TArray || $type instanceof ObjectLike) {
+                if ($type instanceof ObjectLike) {
+                    $type = $type->getGenericArrayType();
+                }
+
+                if ($type->type_params[0]->hasArrayKey()
+                    || $type->type_params[0]->hasInt()
+                ) {
+                    if ($type instanceof TNonEmptyArray) {
+                        $array_types[] = new TNonEmptyList($type->type_params[1]);
+                    } else {
+                        $array_types[] = new TList($type->type_params[1]);
+                    }
+                }
+
+                $did_remove_type = true;
+            } elseif ($type instanceof TCallable) {
+                $array_types[] = new TCallableObjectLikeArray([
+                    new Union([new TString, new TObject]),
+                    Type::getString()
+                ]);
+
+                $did_remove_type = true;
+            } elseif ($type instanceof Atomic\TIterable) {
+                if ($type->type_params) {
+                    $clone_type = clone $type;
+                    $array_types[] = new TList($clone_type->type_params[1]);
+                } else {
+                    $array_types[] = new TList(Type::getMixed());
                 }
 
                 $did_remove_type = true;

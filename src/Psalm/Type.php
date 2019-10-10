@@ -1367,6 +1367,16 @@ abstract class Type
     /**
      * @return Type\Union
      */
+    public static function getList()
+    {
+        $type = new TList(new Type\Union([new TMixed]));
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @return Type\Union
+     */
     public static function getVoid()
     {
         $type = new TVoid;
