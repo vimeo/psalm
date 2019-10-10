@@ -894,10 +894,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
             if ($function_param->is_variadic) {
                 $var_type = new Type\Union([
-                    new Type\Atomic\TArray([
-                        Type::getInt(),
-                        $param_type,
-                    ]),
+                    new Type\Atomic\TList($param_type),
                 ]);
             }
 

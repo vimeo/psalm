@@ -1236,6 +1236,20 @@ class ArrayAssignmentTest extends TestCase
                         return $arr;
                     }',
             ],
+            'unpackedArgIsList' => [
+                '<?php
+                    final class Values
+                    {
+                        /**
+                         * @psalm-var list<int>
+                         */
+                        private $ints = [];
+
+                        public function set(int ...$ints): void {
+                            $this->ints = $ints;
+                        }
+                    }'
+            ],
         ];
     }
 
