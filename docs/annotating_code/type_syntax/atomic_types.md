@@ -24,8 +24,10 @@ Atomic types are the basic building block of all type information used in Psalm.
 ## [Array types](array_types.md)
 
 - [array & non-empty-array](array_types.md)
-- [string[]](array_types.md#phpdoc-syntax)
-- [array<int, string>](array_types.md#generic-arrays)
+- [array\<int, string\>](array_types.md#generic-arrays)
+- [string\[\]](array_types.md#phpdoc-syntax)
+- [list & non-empty-list](array_types.md#lists)
+- [list\<string\>](array_types.md#lists)
 - [array{foo: int, bar: string}](array_types.md#object-like-arrays)
 
 ## [Callable types](callable_types.md)
