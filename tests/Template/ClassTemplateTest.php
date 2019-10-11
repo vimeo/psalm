@@ -1764,7 +1764,7 @@ class ClassTemplateTest extends TestCase
                         return $bar->get();
                     }'
             ],
-            'templatedThing' => [
+            'templatedLiteralStringReplacement' => [
                 '<?php
                     /**
                      * @template T

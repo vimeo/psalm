@@ -217,7 +217,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $codebase,
                 $context,
                 $lhs_type_part,
-                $lhs_type_part instanceof Type\Atomic\TNamedObject ? $lhs_type_part : null,
+                $lhs_type_part instanceof Type\Atomic\TNamedObject
+                    || $lhs_type_part instanceof Type\Atomic\TTemplateParam
+                    ? $lhs_type_part
+                    : null,
                 $lhs_var_id,
                 $return_type,
                 $returns_by_ref,
@@ -400,7 +403,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
      * @param  PhpParser\Node\Expr\MethodCall $stmt
      * @param  Codebase                       $codebase
      * @param  Context                        $context
-     * @param  Type\Atomic                    $lhs_type_part
+     * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
      * @param  ?string                        $lhs_var_id
      * @param  ?Type\Union                    &$return_type
      * @param  bool                           &$returns_by_ref
@@ -419,7 +422,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         Codebase $codebase,
         Context $context,
         Type\Atomic $lhs_type_part,
-        ?Type\Atomic\TNamedObject $static_type,
+        ?Type\Atomic $static_type,
         $lhs_var_id,
         &$return_type,
         &$returns_by_ref,

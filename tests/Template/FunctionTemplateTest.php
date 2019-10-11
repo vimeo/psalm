@@ -781,6 +781,24 @@ class FunctionTemplateTest extends TestCase
                     $staticIdGenerator = idGenerator([Id::class, "fromString"]);
                     client($staticIdGenerator());'
             ],
+            'noCrashWhenTemplatedClassIsStatic' => [
+                '<?php
+                    abstract class Model {
+                        /** @return static */
+                        public function newInstance() {
+                            return new static();
+                        }
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @param T $m
+                     * @return T
+                     */
+                    function foo(Model $m) : Model {
+                        return $m->newInstance();
+                    }'
+            ],
         ];
     }
 
