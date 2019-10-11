@@ -991,6 +991,21 @@ class FunctionCallTest extends TestCase
                     '$a' => 'array<int, string>',
                 ],
             ],
+            'iteratorToArrayWithGetIteratorReturningList' => [
+                '<?php
+                    class C implements IteratorAggregate {
+                        /**
+                         * @return Traversable<int,string>
+                         */
+                        public function getIterator() {
+                            yield 1 => "1";
+                        }
+                    }
+                    $a = iterator_to_array(new C, false);',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                ],
+            ],
             'arrayColumnInference' => [
                 '<?php
                     function makeMixedArray(): array { return []; }

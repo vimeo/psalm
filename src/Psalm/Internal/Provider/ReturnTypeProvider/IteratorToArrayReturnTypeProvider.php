@@ -63,6 +63,14 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
             }
 
             if ($value_type) {
+                if (isset($call_args[1]->value->inferredType)
+                    && ((string) $call_args[1]->value->inferredType === 'false')
+                ) {
+                    return new Type\Union([
+                        new Type\Atomic\TList($value_type),
+                    ]);
+                }
+
                 return new Type\Union([
                     new Type\Atomic\TArray([
                         $key_type
