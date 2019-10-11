@@ -325,7 +325,7 @@ class Functions
 
             // well-known functions
             'libxml_use_internal_errors', 'curl_exec',
-            'mt_srand', 'openssl_pkcs7_sign', 'preg_replace_callback',
+            'mt_srand', 'openssl_pkcs7_sign',
             'mt_rand', 'rand',
 
             // php environment
