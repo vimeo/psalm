@@ -1593,6 +1593,16 @@ class Union
             unset($this->types[$key]);
         }
 
+        foreach ($new_types as $type) {
+            if ($type instanceof TLiteralString) {
+                $this->literal_string_types[$type->getKey()] = $type;
+            } elseif ($type instanceof TLiteralInt) {
+                $this->literal_int_types[$type->getKey()] = $type;
+            } elseif ($type instanceof TLiteralFloat) {
+                $this->literal_float_types[$type->getKey()] = $type;
+            }
+        }
+
         $this->types = array_merge($this->types, $new_types);
     }
 
