@@ -135,15 +135,17 @@ class CallMap
                     if ($arg_type->hasArray()) {
                         /**
                          * @psalm-suppress PossiblyUndefinedArrayOffset
-                         * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                         * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
                          */
                         $array_atomic_type = $arg_type->getTypes()['array'];
 
                         if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                            $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                            $arg_type = $array_atomic_type->getGenericValueType();
+                        } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
+                            $arg_type = $array_atomic_type->type_param;
+                        } else {
+                            $arg_type = $array_atomic_type->type_params[1];
                         }
-
-                        $arg_type = $array_atomic_type->type_params[1];
                     }
                 }
 

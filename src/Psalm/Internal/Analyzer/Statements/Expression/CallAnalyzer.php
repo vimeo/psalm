@@ -816,7 +816,7 @@ class CallAnalyzer
         if (isset($array_arg->inferredType) && $array_arg->inferredType->hasArray()) {
             /**
              * @psalm-suppress PossiblyUndefinedArrayOffset
-             * @var TArray|ObjectLike
+             * @var TArray|ObjectLike|TList
              */
             $array_type = $array_arg->inferredType->getTypes()['array'];
 
@@ -961,7 +961,7 @@ class CallAnalyzer
         ) {
             /**
              * @psalm-suppress PossiblyUndefinedArrayOffset
-             * @var TArray|ObjectLike
+             * @var TArray|ObjectLike|TList
              */
             $array_type = $array_arg->inferredType->getTypes()['array'];
 
@@ -971,7 +971,7 @@ class CallAnalyzer
 
             /**
              * @psalm-suppress PossiblyUndefinedArrayOffset
-             * @var TArray|ObjectLike
+             * @var TArray|ObjectLike|TList
              */
             $replacement_array_type = $replacement_arg->inferredType->getTypes()['array'];
 
@@ -1435,11 +1435,11 @@ class CallAnalyzer
                 ) {
                     /**
                      * @psalm-suppress PossiblyUndefinedArrayOffset
-                     * @var TArray
+                     * @var TList
                      */
                     $array_type = $param_type->getTypes()['array'];
 
-                    $param_type = $array_type->type_params[1];
+                    $param_type = $array_type->type_param;
                 }
 
                 if ($param_type && !$param_type->hasMixed()) {

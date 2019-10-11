@@ -183,12 +183,14 @@ class ArrayFetchAnalyzer
             ) {
                 /**
                  * @psalm-suppress PossiblyUndefinedArrayOffset
-                 * @var TArray|ObjectLike
+                 * @var TArray|ObjectLike|TList
                  */
                 $array_type = $stmt->var->inferredType->getTypes()['array'];
 
                 if ($array_type instanceof TArray) {
                     $const_array_key_type = $array_type->type_params[0];
+                } elseif ($array_type instanceof TList) {
+                    $const_array_key_type = $array_type->type_param;
                 } else {
                     $const_array_key_type = $array_type->getGenericKeyType();
                 }

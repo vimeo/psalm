@@ -518,7 +518,8 @@ class ArrayAssignmentAnalyzer
                 $atomic_root_types = $new_child_type->getTypes();
 
                 if (isset($atomic_root_types['array'])
-                    && $atomic_root_types['array'] instanceof TNonEmptyArray
+                    && ($atomic_root_types['array'] instanceof TNonEmptyArray
+                        || $atomic_root_types['array'] instanceof TNonEmptyList)
                     && $atomic_root_types['array']->count !== null
                 ) {
                     $atomic_root_types['array']->count++;

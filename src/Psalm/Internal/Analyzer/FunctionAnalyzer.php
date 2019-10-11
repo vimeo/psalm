@@ -120,6 +120,12 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                             ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
                                             : new Type\Atomic\TInt
                                     ]);
+                                } elseif ($atomic_types['array'] instanceof Type\Atomic\TNonEmptyList) {
+                                    return new Type\Union([
+                                        $atomic_types['array']->count !== null
+                                            ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
+                                            : new Type\Atomic\TInt
+                                    ]);
                                 } elseif ($atomic_types['array'] instanceof Type\Atomic\ObjectLike
                                     && $atomic_types['array']->sealed
                                 ) {
@@ -306,6 +312,10 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                                 if ($array_type instanceof Type\Atomic\TArray) {
                                     return clone $array_type->type_params[1];
+                                }
+
+                                if ($array_type instanceof Type\Atomic\TList) {
+                                    return clone $array_type->type_param;
                                 }
                             } elseif ($first_arg->inferredType->hasScalarType() &&
                                 isset($call_args[1]) &&

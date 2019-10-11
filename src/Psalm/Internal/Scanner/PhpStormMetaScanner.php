@@ -203,12 +203,16 @@ class PhpStormMetaScanner
                             if ($call_arg_type->hasArray()) {
                                 /**
                                  * @psalm-suppress PossiblyUndefinedArrayOffset
-                                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
                                  */
                                 $array_atomic_type = $call_arg_type->getTypes()['array'];
 
                                 if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                                     return $array_atomic_type->getGenericValueType();
+                                }
+
+                                if ($array_atomic_type instanceof Type\Atomic\TList) {
+                                    return $array_atomic_type->type_param;
                                 }
 
                                 return clone $array_atomic_type->type_params[1];
@@ -334,12 +338,16 @@ class PhpStormMetaScanner
                             if ($call_arg_type->hasArray()) {
                                 /**
                                  * @psalm-suppress PossiblyUndefinedArrayOffset
-                                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike
+                                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
                                  */
                                 $array_atomic_type = $call_arg_type->getTypes()['array'];
 
                                 if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                                     return $array_atomic_type->getGenericValueType();
+                                }
+
+                                if ($array_atomic_type instanceof Type\Atomic\TList) {
+                                    return $array_atomic_type->type_param;
                                 }
 
                                 return clone $array_atomic_type->type_params[1];
