@@ -162,6 +162,33 @@ class ThrowsAnnotationTest extends TestCase
     /**
      * @return void
      */
+    public function testThrowableInherited()
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @throws Throwable
+                 */
+                function foo(int $x, int $y) : int {
+                    if ($y < 0) {
+                        throw new \InvalidArgumentException("This is also bad");
+                    }
+
+                    return intdiv($x, $y);
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @return void
+     */
     public function testUndocumentedThrowInFunctionCall()
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
