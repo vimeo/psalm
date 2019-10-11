@@ -62,6 +62,7 @@ use function is_int;
 use function substr;
 use function array_merge;
 use Psalm\Issue\TaintedInput;
+use Doctrine\Instantiator\Exception\UnexpectedValueException;
 
 /**
  * @internal
@@ -1435,11 +1436,15 @@ class CallAnalyzer
                 ) {
                     /**
                      * @psalm-suppress PossiblyUndefinedArrayOffset
-                     * @var TList
+                     * @var TList|TArray
                      */
                     $array_type = $param_type->getTypes()['array'];
 
-                    $param_type = $array_type->type_param;
+                    if ($array_type instanceof TList) {
+                        $param_type = $array_type->type_param;
+                    } else {
+                        $param_type = $array_type->type_params[1];
+                    }
                 }
 
                 if ($param_type && !$param_type->hasMixed()) {
