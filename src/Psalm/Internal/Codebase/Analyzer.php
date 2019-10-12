@@ -4,7 +4,6 @@ namespace Psalm\Internal\Codebase;
 use function array_filter;
 use function array_intersect_key;
 use function array_merge;
-use function array_merge_recursive;
 use function count;
 use function explode;
 use function number_format;
@@ -998,7 +997,16 @@ class Analyzer
      */
     public function addMixedMemberNames(array $names)
     {
-        $this->mixed_member_names = array_merge_recursive($this->mixed_member_names, $names);
+        foreach ($names as $key => $name) {
+            if (isset($this->mixed_member_names[$key])) {
+                $this->mixed_member_names[$key] = array_merge(
+                    $this->mixed_member_names[$key],
+                    $name
+                );
+            } else {
+                $this->mixed_member_names[$key] = $name;
+            }
+        }
     }
 
     /**

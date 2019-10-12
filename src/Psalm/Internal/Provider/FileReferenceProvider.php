@@ -4,7 +4,6 @@ namespace Psalm\Internal\Provider;
 use function array_filter;
 use function array_keys;
 use function array_merge;
-use function array_merge_recursive;
 use function array_unique;
 use function file_exists;
 use Psalm\Codebase;
@@ -207,10 +206,16 @@ class FileReferenceProvider
      */
     public function addFileReferencesToClasses(array $references)
     {
-        self::$file_references_to_classes = array_merge_recursive(
-            $references,
-            self::$file_references_to_classes
-        );
+        foreach ($references as $key => $reference) {
+            if (isset(self::$file_references_to_classes[$key])) {
+                self::$file_references_to_classes[$key] = array_merge(
+                    $reference,
+                    self::$file_references_to_classes[$key]
+                );
+            } else {
+                self::$file_references_to_classes[$key] = $reference;
+            }
+        }
     }
 
     /**
@@ -252,10 +257,16 @@ class FileReferenceProvider
      */
     public function addFileReferencesToClassMembers(array $references)
     {
-        self::$file_references_to_class_members = array_merge_recursive(
-            $references,
-            self::$file_references_to_class_members
-        );
+        foreach ($references as $key => $reference) {
+            if (isset(self::$file_references_to_class_members[$key])) {
+                self::$file_references_to_class_members[$key] = array_merge(
+                    $reference,
+                    self::$file_references_to_class_members[$key]
+                );
+            } else {
+                self::$file_references_to_class_members[$key] = $reference;
+            }
+        }
     }
 
     /**
@@ -265,10 +276,16 @@ class FileReferenceProvider
      */
     public function addFileReferencesToMissingClassMembers(array $references)
     {
-        self::$file_references_to_missing_class_members = array_merge_recursive(
-            $references,
-            self::$file_references_to_missing_class_members
-        );
+        foreach ($references as $key => $reference) {
+            if (isset(self::$file_references_to_missing_class_members[$key])) {
+                self::$file_references_to_missing_class_members[$key] = array_merge(
+                    $reference,
+                    self::$file_references_to_missing_class_members[$key]
+                );
+            } else {
+                self::$file_references_to_missing_class_members[$key] = $reference;
+            }
+        }
     }
 
     /**
@@ -704,10 +721,16 @@ class FileReferenceProvider
      */
     public function addMethodReferencesToClassMembers(array $references)
     {
-        self::$method_references_to_class_members = array_merge_recursive(
-            $references,
-            self::$method_references_to_class_members
-        );
+        foreach ($references as $key => $reference) {
+            if (isset(self::$method_references_to_class_members[$key])) {
+                self::$method_references_to_class_members[$key] = array_merge(
+                    $reference,
+                    self::$method_references_to_class_members[$key]
+                );
+            } else {
+                self::$method_references_to_class_members[$key] = $reference;
+            }
+        }
     }
 
     /**
@@ -717,10 +740,16 @@ class FileReferenceProvider
      */
     public function addMethodReferencesToMissingClassMembers(array $references)
     {
-        self::$method_references_to_missing_class_members = array_merge_recursive(
-            $references,
-            self::$method_references_to_missing_class_members
-        );
+        foreach ($references as $key => $reference) {
+            if (isset(self::$method_references_to_missing_class_members[$key])) {
+                self::$method_references_to_missing_class_members[$key] = array_merge(
+                    $reference,
+                    self::$method_references_to_missing_class_members[$key]
+                );
+            } else {
+                self::$method_references_to_missing_class_members[$key] = $reference;
+            }
+        }
     }
 
     /**
