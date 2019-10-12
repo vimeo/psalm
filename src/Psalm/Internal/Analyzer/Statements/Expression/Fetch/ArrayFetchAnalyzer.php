@@ -264,6 +264,24 @@ class ArrayFetchAnalyzer
             $context->hasVariable($keyed_array_var_id, $statements_analyzer);
         }
 
+        if ($codebase->taint && isset($stmt->var->inferredType)) {
+            $sources = [];
+            $either_tainted = 0;
+
+            if (isset($stmt->var->inferredType)) {
+                $sources = array_merge($sources, $stmt->var->inferredType->sources ?: []);
+                $either_tainted = $either_tainted | $stmt->var->inferredType->tainted;
+            }
+
+            if ($sources) {
+                $stmt->inferredType->sources = $sources;
+            }
+
+            if ($either_tainted) {
+                $stmt->inferredType->tainted = $either_tainted;
+            }
+        }
+
         return null;
     }
 

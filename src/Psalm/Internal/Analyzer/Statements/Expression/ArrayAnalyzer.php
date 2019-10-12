@@ -57,6 +57,9 @@ class ArrayAnalyzer
 
         $all_list = true;
 
+        $taint_sources = [];
+        $either_tainted = 0;
+
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
                 continue;
@@ -124,6 +127,18 @@ class ArrayAnalyzer
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
                 return false;
+            }
+
+            if ($codebase->taint) {
+                if (isset($item->value->inferredType)) {
+                    $taint_sources = array_merge($taint_sources, $item->value->inferredType->sources ?: []);
+                    $either_tainted = $either_tainted | $item->value->inferredType->tainted;
+                }
+
+                if (isset($item->key->inferredType)) {
+                    $taint_sources = array_merge($taint_sources, $item->key->inferredType->sources ?: []);
+                    $either_tainted = $either_tainted | $item->key->inferredType->tainted;
+                }
             }
 
             if ($item->byRef) {
@@ -207,6 +222,14 @@ class ArrayAnalyzer
 
             $stmt->inferredType = new Type\Union([$object_like]);
 
+            if ($taint_sources) {
+                $stmt->inferredType->sources = $taint_sources;
+            }
+
+            if ($either_tainted) {
+                $stmt->inferredType->tainted = $either_tainted;
+            }
+
             return null;
         }
 
@@ -217,6 +240,14 @@ class ArrayAnalyzer
             $stmt->inferredType = new Type\Union([
                 $array_type,
             ]);
+
+            if ($taint_sources) {
+                $stmt->inferredType->sources = $taint_sources;
+            }
+
+            if ($either_tainted) {
+                $stmt->inferredType->tainted = $either_tainted;
+            }
 
             return null;
         }
@@ -231,6 +262,14 @@ class ArrayAnalyzer
         $stmt->inferredType = new Type\Union([
             $array_type,
         ]);
+
+        if ($taint_sources) {
+            $stmt->inferredType->sources = $taint_sources;
+        }
+
+        if ($either_tainted) {
+            $stmt->inferredType->tainted = $either_tainted;
+        }
 
         return null;
     }
