@@ -269,7 +269,7 @@ class ArrayFetchAnalyzer
             $either_tainted = 0;
 
             if (isset($stmt->var->inferredType)) {
-                $sources = array_merge($sources, $stmt->var->inferredType->sources ?: []);
+                $sources = \array_merge($sources, $stmt->var->inferredType->sources ?: []);
                 $either_tainted = $either_tainted | $stmt->var->inferredType->tainted;
             }
 
