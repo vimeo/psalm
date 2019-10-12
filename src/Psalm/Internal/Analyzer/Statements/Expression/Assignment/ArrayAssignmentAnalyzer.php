@@ -64,18 +64,13 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer                 $statements_analyzer
-     * @param  PhpParser\Node\Expr\ArrayDimFetch $stmt
-     * @param  Type\Union                        $assignment_type
-     * @param  PhpParser\Node\Expr|null          $assign_value
-     * @param  Context                           $context
      *
      * @return false|null
      */
     public static function updateArrayType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        $assign_value,
+        ?PhpParser\Node\Expr $assign_value,
         Type\Union $assignment_type,
         Context $context
     ) {
@@ -149,6 +144,14 @@ class ArrayAssignmentAnalyzer
         $full_var_id = true;
 
         $child_stmt = null;
+
+        $taint_sources = [];
+        $taint_type = 0;
+
+        if ($codebase->taint && isset($assign_value->inferredType)) {
+            $taint_sources = $assign_value->inferredType->sources;
+            $taint_type = $assign_value->inferredType->tainted ?: 0;
+        }
 
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
@@ -533,6 +536,11 @@ class ArrayAssignmentAnalyzer
 
         if (!$root_type->hasObjectType()) {
             $root_type = $new_child_type;
+        }
+
+        if ($codebase->taint && $taint_sources) {
+            $root_type->sources = \array_merge($taint_sources, $root_type->sources ?: []);
+            $root_type->tainted = $taint_type | $root_type->tainted;
         }
 
         $root_array_expr->inferredType = $root_type;
