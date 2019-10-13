@@ -372,7 +372,7 @@ class Analyzer
 
             foreach ($process_file_paths as $pool_key => $file_paths) {
                 $count = count($file_paths);
-                $middle = intdiv($count, 4);
+                $middle = \intdiv($count, 4);
                 $remainder = $count % 4;
 
                 $new_file_paths = [];

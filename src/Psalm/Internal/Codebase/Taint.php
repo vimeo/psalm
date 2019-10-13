@@ -307,8 +307,7 @@ class Taint
         FileStorageProvider $file_storage_provider,
         ClassLikeStorageProvider $classlike_storage_provider,
         \Psalm\Config $config
-    ) : array
-    {
+    ) : array {
         $files = [];
 
         foreach (array_merge(self::$archived_sinks, $this->new_sinks) as $new_sink) {
@@ -333,16 +332,16 @@ class Taint
             }
         }
 
-        $files = array_filter(
+        $files = \array_filter(
             $files,
-            function($file) use ($config) {
+            function ($file) use ($config) {
                 return $config->isInProjectDirs($file);
             }
         );
 
-        $arr = array_values($files);
+        $arr = \array_values($files);
 
-        return array_combine($arr, $arr);
+        return \array_combine($arr, $arr);
     }
 
     public function clearNewSinksAndSources() : void
