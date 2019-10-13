@@ -296,6 +296,10 @@ class Functions
 
             // output buffer
             'ob_start', 'ob_end_clean', 'readfile', 'printf', 'var_dump', 'phpinfo',
+            'ob_implicit_flush',
+
+            // mcrypt
+            'mcrypt_generic_init', 'mcrypt_generic_deinit', 'mcrypt_module_close',
 
             // internal optimisation
             'opcache_compile_file', 'clearstatcache',
@@ -346,7 +350,7 @@ class Functions
             'ldap_set_option',
 
             // iterators
-            'rewind',
+            'rewind', 'iterator_apply',
 
             // mysqli
             'mysqli_select_db', 'mysqli_dump_debug_info', 'mysqli_kill', 'mysqli_multi_query',
