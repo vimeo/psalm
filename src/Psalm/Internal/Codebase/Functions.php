@@ -381,7 +381,10 @@ class Functions
             $args ?: []
         );
 
-        if (!$function_callable->params || ($args !== null && \count($args) === 0)) {
+        if (!$function_callable->params
+            || ($args !== null && \count($args) === 0)
+            || ($function_callable->return_type && $function_callable->return_type->isVoid())
+        ) {
             return false;
         }
 
