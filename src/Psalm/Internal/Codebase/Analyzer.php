@@ -260,6 +260,13 @@ class Analyzer
             while ($codebase->taint->hasNewSinksAndSources() && ++$i <= 4) {
                 $project_analyzer->progress->write("\n\n" . 'Found tainted inputs, reanalysing' . "\n\n");
 
+                $this->files_to_analyze = $codebase->taint->getFilesToAnalyze(
+                    $codebase->file_reference_provider,
+                    $codebase->file_storage_provider,
+                    $codebase->classlike_storage_provider,
+                    $codebase->config
+                );
+
                 $codebase->taint->clearNewSinksAndSources();
 
                 $this->doAnalysis($project_analyzer, $pool_size, true);

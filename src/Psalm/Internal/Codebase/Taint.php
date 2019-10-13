@@ -4,6 +4,9 @@ namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Taint\Sink;
 use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Taint\Taintable;
@@ -266,6 +269,10 @@ class Taint
 
     public function hasNewSinksAndSources() : bool
     {
+        if (!self::$archived_sources && !$this->new_sources) {
+            return false;
+        }
+
         return $this->new_sinks || $this->new_sources;
     }
 
@@ -290,6 +297,52 @@ class Taint
                 );
             }
         }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getFilesToAnalyze(
+        FileReferenceProvider $reference_provider,
+        FileStorageProvider $file_storage_provider,
+        ClassLikeStorageProvider $classlike_storage_provider,
+        \Psalm\Config $config
+    ) : array
+    {
+        $files = [];
+
+        foreach (array_merge(self::$archived_sinks, $this->new_sinks) as $new_sink) {
+            if ($new_sink && $new_sink->code_location) {
+                $files = array_merge(
+                    $reference_provider->getFilesReferencingFile($new_sink->code_location->file_path),
+                    $files
+                );
+            }
+        }
+
+        foreach (array_merge(self::$archived_sources, $this->new_sources) as $new_source) {
+            if ($new_source && $new_source->code_location) {
+                $classlikes = $file_storage_provider->get($new_source->code_location->file_path)->classlikes_in_file;
+                foreach ($classlikes as $classlike) {
+                    $class_storage = $classlike_storage_provider->get($classlike);
+
+                    if ($class_storage->location) {
+                        $files[] = $class_storage->location->file_path;
+                    }
+                }
+            }
+        }
+
+        $files = array_filter(
+            $files,
+            function($file) use ($config) {
+                return $config->isInProjectDirs($file);
+            }
+        );
+
+        $arr = array_values($files);
+
+        return array_combine($arr, $arr);
     }
 
     public function clearNewSinksAndSources() : void
