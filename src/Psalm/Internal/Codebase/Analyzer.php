@@ -363,6 +363,29 @@ class Analyzer
                 ++$i;
             }
 
+            foreach ($process_file_paths as $pool_key => $file_paths) {
+                $count = count($file_paths);
+                $middle = intdiv($count, 4);
+                $remainder = $count % 4;
+
+                $new_file_paths = [];
+
+                for ($i = 0; $i < 4; $i++) {
+                    for ($j = 0; $j < $middle; $j++) {
+                        if ($j * 4 + $i < $count) {
+                            $new_file_paths[] = $file_paths[$j * 4 + $i];
+                        }
+                    }
+
+                    if ($remainder) {
+                        $new_file_paths[] = $file_paths[$middle * 4 + $remainder - 1];
+                        $remainder--;
+                    }
+                }
+
+                $process_file_paths[$pool_key] = $new_file_paths;
+            }
+
             // Run analysis one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new \Psalm\Internal\Fork\Pool(
