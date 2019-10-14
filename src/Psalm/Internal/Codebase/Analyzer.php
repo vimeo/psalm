@@ -361,36 +361,36 @@ class Analyzer
             };
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
+            $shuffle_count = $pool_size + 1;
+
+            $file_paths = \array_values($this->files_to_analyze);
+
+            $count = count($file_paths);
+            $middle = \intdiv($count, $shuffle_count);
+            $remainder = $count % $shuffle_count;
+
+            $new_file_paths = [];
+
+            for ($i = 0; $i < $shuffle_count; $i++) {
+                for ($j = 0; $j < $middle; $j++) {
+                    if ($j * $shuffle_count + $i < $count) {
+                        $new_file_paths[] = $file_paths[$j * $shuffle_count + $i];
+                    }
+                }
+
+                if ($remainder) {
+                    $new_file_paths[] = $file_paths[$middle * $shuffle_count + $remainder - 1];
+                    $remainder--;
+                }
+            }
+
             $process_file_paths = [];
 
             $i = 0;
 
-            foreach ($this->files_to_analyze as $file_path) {
+            foreach ($file_paths as $file_path) {
                 $process_file_paths[$i % $pool_size][] = $file_path;
                 ++$i;
-            }
-
-            foreach ($process_file_paths as $pool_key => $file_paths) {
-                $count = count($file_paths);
-                $middle = \intdiv($count, 4);
-                $remainder = $count % 4;
-
-                $new_file_paths = [];
-
-                for ($i = 0; $i < 4; $i++) {
-                    for ($j = 0; $j < $middle; $j++) {
-                        if ($j * 4 + $i < $count) {
-                            $new_file_paths[] = $file_paths[$j * 4 + $i];
-                        }
-                    }
-
-                    if ($remainder) {
-                        $new_file_paths[] = $file_paths[$middle * 4 + $remainder - 1];
-                        $remainder--;
-                    }
-                }
-
-                $process_file_paths[$pool_key] = $new_file_paths;
             }
 
             // Run analysis one file at a time, splitting the set of
