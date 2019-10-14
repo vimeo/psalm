@@ -255,6 +255,9 @@ class Analyzer
 
         $this->doAnalysis($project_analyzer, $pool_size);
 
+        $scanned_files = $codebase->scanner->getScannedFiles();
+        $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
+
         if ($codebase->taint) {
             $i = 0;
             while ($codebase->taint->hasNewSinksAndSources() && ++$i <= 4) {
@@ -285,11 +288,9 @@ class Analyzer
             IssueBuffer::processUnusedSuppressions($codebase->file_provider);
         }
 
-        $scanned_files = $codebase->scanner->getScannedFiles();
         $codebase->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
         $codebase->file_reference_provider->setFileMaps($this->getFileMaps());
         $codebase->file_reference_provider->setTypeCoverage($this->mixed_counts);
-        $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
         if ($codebase->diff_methods) {
             $codebase->statements_provider->resetDiffs();
