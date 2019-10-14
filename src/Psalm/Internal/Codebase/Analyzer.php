@@ -291,6 +291,7 @@ class Analyzer
         $codebase->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
         $codebase->file_reference_provider->setFileMaps($this->getFileMaps());
         $codebase->file_reference_provider->setTypeCoverage($this->mixed_counts);
+        $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
         if ($codebase->diff_methods) {
             $codebase->statements_provider->resetDiffs();
