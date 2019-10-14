@@ -108,10 +108,11 @@ class Taint
     public function hasPreviousSource(Source $source, ?array &$suffixes = null) : ?Source
     {
         if (isset($this->specializations[$source->id])) {
-            $suffixes = $this->specializations[$source->id];
+            $candidate_suffixes = $this->specializations[$source->id];
 
-            foreach ($suffixes as $suffix) {
+            foreach ($candidate_suffixes as $suffix) {
                 if (isset(self::$previous_sources[$source->id . '-' . $suffix])) {
+                    $suffixes = [$suffix];
                     return self::$previous_sources[$source->id . '-' . $suffix];
                 }
             }
@@ -125,7 +126,7 @@ class Taint
     public function addSpecialization(string $base_id, string $suffix) : void
     {
         if (isset($this->specializations[$base_id])) {
-            if (!\in_array($suffix, $this->specializations)) {
+            if (!\in_array($suffix, $this->specializations[$base_id])) {
                 $this->specializations[$base_id][] = $suffix;
             }
         } else {

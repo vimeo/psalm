@@ -1019,26 +1019,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         }
 
-                        if ($tainted_source = $codebase->taint->hasPreviousSource($method_source, $suffixes)) {
-                            $return_type_candidate->tainted = $tainted_source->taint;
-
-                            if ($suffixes !== null) {
-                                $specialized_sources = [];
-
-                                foreach ($suffixes as $suffix) {
-                                    $specialized_sources[] = new Source(
-                                        $method_source->id . '-' . $suffix,
-                                        $method_source->code_location,
-                                        $tainted_source->taint
-                                    );
-                                }
-
-                                $return_type_candidate->sources = $specialized_sources;
-                            } else {
-                                $return_type_candidate->sources = [$method_source];
-                                $method_source->taint = $tainted_source->taint;
-                            }
-                        }
+                        $return_type_candidate->sources = [$method_source];
                     }
 
                     if (isset($stmt->inferredType)) {

@@ -1352,32 +1352,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         }
                     }
-
-                    if ($return_type_candidate && $codebase->taint && $method_id) {
-                        if ($method_storage && $method_storage->pure) {
-                            $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                            $method_source = new Source(
-                                strtolower(
-                                    $method_id
-                                        . '-' . $code_location->file_name
-                                        . ':' . $code_location->raw_file_start
-                                ),
-                                new CodeLocation($source, $stmt->name)
-                            );
-                        } else {
-                            $method_source = new Source(
-                                strtolower($method_id),
-                                new CodeLocation($source, $stmt->name)
-                            );
-                        }
-
-                        if ($tainted_source = $codebase->taint->hasPreviousSource($method_source)) {
-                            $return_type_candidate->tainted = $tainted_source->taint;
-                            $return_type_candidate->sources = [$method_source];
-                            $method_source->taint = $tainted_source->taint;
-                        }
-                    }
                 }
             }
         }

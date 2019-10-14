@@ -888,6 +888,30 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
         }
 
+        if ($codebase->taint
+            && $function_id
+            && $in_call_map
+            && $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args)
+            && isset($stmt->inferredType)
+        ) {
+            if ($function_id === 'substr' && isset($stmt->args[0])) {
+                $stmt->inferredType->sources = $stmt->args[0]->value->inferredType->sources ?? null;
+                $stmt->inferredType->tainted = $stmt->args[0]->value->inferredType->tainted ?? null;
+            }
+
+            if (($function_id === 'str_replace' || $function_id === 'preg_replace')
+                && count($stmt->args) >= 3
+            ) {
+                $stmt->inferredType->sources = array_merge(
+                    $stmt->args[1]->value->inferredType->sources ?? [],
+                    $stmt->args[2]->value->inferredType->sources ?? []
+                );
+
+                $stmt->inferredType->tainted = ($stmt->args[1]->value->inferredType->tainted ?? 0)
+                    | ($stmt->args[2]->value->inferredType->tainted ?? 0);
+            }
+        }
+
         return null;
     }
 }
