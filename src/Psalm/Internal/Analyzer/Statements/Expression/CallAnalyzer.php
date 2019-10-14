@@ -2868,6 +2868,7 @@ class CallAnalyzer
         $child_sink = null;
 
         if (($function_param->sink || ($child_sink = $codebase->taint->hasPreviousSink($method_sink)))
+            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             && $input_type->sources
         ) {
             $all_possible_sinks = [];
@@ -2929,7 +2930,6 @@ class CallAnalyzer
             }
 
             $codebase->taint->addSinks(
-                $statements_analyzer,
                 $all_possible_sinks
             );
         }
@@ -2989,7 +2989,6 @@ class CallAnalyzer
                     $method_source->parents = [$previous_source ?: $type_source];
 
                     $codebase->taint->addSources(
-                        $statements_analyzer,
                         [$method_source]
                     );
                 }

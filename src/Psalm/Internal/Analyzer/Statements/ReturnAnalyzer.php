@@ -471,7 +471,6 @@ class ReturnAnalyzer
                 }
 
                 $codebase->taint->addSinks(
-                    $statements_analyzer,
                     $new_sinks
                 );
             }
@@ -509,7 +508,6 @@ class ReturnAnalyzer
                     }
 
                     $codebase->taint->addSources(
-                        $statements_analyzer,
                         $new_sources
                     );
                 }

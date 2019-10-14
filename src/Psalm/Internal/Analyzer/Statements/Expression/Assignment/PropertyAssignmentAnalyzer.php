@@ -987,7 +987,6 @@ class PropertyAssignmentAnalyzer
         if ($child_sink = $codebase->taint->hasPreviousSink($method_sink)) {
             if ($assignment_value_type->sources) {
                 $codebase->taint->addSinks(
-                    $statements_analyzer,
                     \array_map(
                         function (Source $assignment_source) use ($child_sink) {
                             $new_sink = new Sink(
@@ -1028,7 +1027,6 @@ class PropertyAssignmentAnalyzer
                     $new_source->taint = $previous_source->taint;
 
                     $codebase->taint->addSources(
-                        $statements_analyzer,
                         [$new_source]
                     );
                 }

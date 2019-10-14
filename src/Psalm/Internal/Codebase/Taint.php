@@ -72,6 +72,16 @@ class Taint
         return self::$archived_sources[$source->id] ?? null;
     }
 
+    public function hasNewOrExistingSink(Taintable $sink) : ?Sink
+    {
+        return $this->new_sinks[$sink->id] ?? self::$archived_sinks[$sink->id] ?? null;
+    }
+
+    public function hasNewOrExistingSource(Taintable $source) : ?Source
+    {
+        return $this->new_sources[$source->id] ?? self::$archived_sources[$source->id] ?? null;
+    }
+
     /**
      * @param ?array<string> $suffixes
      */
@@ -127,7 +137,6 @@ class Taint
      * @param array<Source> $sources
      */
     public function addSources(
-        StatementsAnalyzer $statements_analyzer,
         array $sources
     ) : void {
         foreach ($sources as $source) {
@@ -135,28 +144,8 @@ class Taint
                 continue;
             }
 
-            if (($existing_sink = $this->hasExistingSink($source)) && $source->code_location) {
-                $last_location = $existing_sink;
-
-                while ($last_location->children) {
-                    $first_child = \reset($last_location->children);
-                    if (!$first_child->code_location) {
-                        break;
-                    }
-
-                    $last_location = $first_child;
-                }
-
-                if (IssueBuffer::accepts(
-                    new TaintedInput(
-                        'in path ' . $this->getPredecessorPath($source)
-                            . ' out path ' . $this->getSuccessorPath($existing_sink),
-                        $last_location->code_location ?: $source->code_location
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+            if ($this->hasExistingSink($source) && $source->code_location) {
+                // do nothing
             }
 
             $this->new_sources[$source->id] = $source;
@@ -167,7 +156,6 @@ class Taint
      * @param array<Sink> $sinks
      */
     public function addSinks(
-        StatementsAnalyzer $statements_analyzer,
         array $sinks
     ) : void {
         foreach ($sinks as $sink) {
@@ -175,28 +163,8 @@ class Taint
                 continue;
             }
 
-            if (($existing_source = $this->hasExistingSource($sink)) && $sink->code_location) {
-                $last_location = $sink;
-
-                while ($last_location->children) {
-                    $first_child = \reset($last_location->children);
-                    if (!$first_child->code_location) {
-                        break;
-                    }
-
-                    $last_location = $first_child;
-                }
-
-                if (IssueBuffer::accepts(
-                    new TaintedInput(
-                        'in path ' . $this->getPredecessorPath($existing_source)
-                            . ' out path ' . $this->getSuccessorPath($sink),
-                        $last_location->code_location ?: $sink->code_location
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+            if ($this->hasExistingSource($sink) && $sink->code_location) {
+                // do nothing
             }
 
             $this->new_sinks[$sink->id] = $sink;
@@ -269,6 +237,56 @@ class Taint
 
     public function hasNewSinksAndSources() : bool
     {
+        foreach ($this->new_sinks as $sink) {
+            if ($sink && ($existing_source = $this->hasNewOrExistingSource($sink)) && $sink->code_location) {
+                $last_location = $sink;
+
+                while ($last_location->children) {
+                    $first_child = \reset($last_location->children);
+                    if (!$first_child->code_location) {
+                        break;
+                    }
+
+                    $last_location = $first_child;
+                }
+
+                if (IssueBuffer::accepts(
+                    new TaintedInput(
+                        'in path ' . $this->getPredecessorPath($existing_source)
+                            . ' out path ' . $this->getSuccessorPath($sink),
+                        $last_location->code_location ?: $sink->code_location
+                    )
+                )) {
+                    // fall through
+                }
+            }
+        }
+
+        foreach ($this->new_sources as $source) {
+            if ($source && ($existing_sink = $this->hasNewOrExistingSink($source)) && $source->code_location) {
+                $last_location = $existing_sink;
+
+                while ($last_location->children) {
+                    $first_child = \reset($last_location->children);
+                    if (!$first_child->code_location) {
+                        break;
+                    }
+
+                    $last_location = $first_child;
+                }
+
+                if (IssueBuffer::accepts(
+                    new TaintedInput(
+                        'in path ' . $this->getPredecessorPath($source)
+                            . ' out path ' . $this->getSuccessorPath($existing_sink),
+                        $last_location->code_location ?: $source->code_location
+                    )
+                )) {
+                    // fall through
+                }
+            }
+        }
+
         if (!self::$archived_sources && !$this->new_sources) {
             return false;
         }
@@ -310,7 +328,7 @@ class Taint
     ) : array {
         $files = [];
 
-        foreach (array_merge(self::$archived_sinks, $this->new_sinks) as $new_sink) {
+        foreach ($this->new_sinks as $new_sink) {
             if ($new_sink && $new_sink->code_location) {
                 $files = array_merge(
                     $reference_provider->getFilesReferencingFile($new_sink->code_location->file_path),
@@ -319,7 +337,7 @@ class Taint
             }
         }
 
-        foreach (array_merge(self::$archived_sources, $this->new_sources) as $new_source) {
+        foreach ($this->new_sources as $new_source) {
             if ($new_source && $new_source->code_location) {
                 $classlikes = $file_storage_provider->get($new_source->code_location->file_path)->classlikes_in_file;
                 foreach ($classlikes as $classlike) {
