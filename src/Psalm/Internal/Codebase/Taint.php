@@ -328,24 +328,36 @@ class Taint
     ) : array {
         $files = [];
 
+        $new_sink_file_paths = [];
+
         foreach ($this->new_sinks as $new_sink) {
             if ($new_sink && $new_sink->code_location) {
-                $files = array_merge(
-                    $reference_provider->getFilesReferencingFile($new_sink->code_location->file_path),
-                    $files
-                );
+                $new_sink_file_paths[$new_sink->code_location->file_path] = $new_sink->code_location->file_path;
             }
         }
 
+        foreach ($new_sink_file_paths as $file_path) {
+            $files_referencing_file = $reference_provider->getFilesReferencingFile($file_path);
+
+            $files = array_merge($files_referencing_file, $files);
+        }
+
+        $new_source_file_paths = [];
+
         foreach ($this->new_sources as $new_source) {
             if ($new_source && $new_source->code_location) {
-                $classlikes = $file_storage_provider->get($new_source->code_location->file_path)->classlikes_in_file;
-                foreach ($classlikes as $classlike) {
-                    $class_storage = $classlike_storage_provider->get($classlike);
+                $new_source_file_paths[$new_source->code_location->file_path] = $new_source->code_location->file_path;
+            }
+        }
 
-                    if ($class_storage->location) {
-                        $files[] = $class_storage->location->file_path;
-                    }
+        foreach ($new_source_file_paths as $file_path) {
+            $classlikes = $file_storage_provider->get($file_path)->classlikes_in_file;
+
+            foreach ($classlikes as $classlike) {
+                $class_storage = $classlike_storage_provider->get($classlike);
+
+                if ($class_storage->location) {
+                    $files[] = $class_storage->location->file_path;
                 }
             }
         }
