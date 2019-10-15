@@ -15,6 +15,7 @@ use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpurePropertyAssignment;
+use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\LoopInvalidation;
@@ -411,6 +412,18 @@ class AssignmentAnalyzer
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
             || $assign_var instanceof PhpParser\Node\Expr\Array_
         ) {
+            if (!$assign_value_type->hasArray() && !$assign_value_type->isMixed()) {
+                if (IssueBuffer::accepts(
+                    new InvalidArrayOffset(
+                        'Cannot destructure non-array of type ' . $assign_value_type->getId(),
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
             foreach ($assign_var->items as $offset => $assign_var_item) {
                 // $assign_var_item can be null e.g. list($a, ) = ['a', 'b']
                 if (!$assign_var_item) {
@@ -436,9 +449,12 @@ class AssignmentAnalyzer
 
                 $assign_value_types = $assign_value_type->getTypes();
 
-                if (isset($assign_value_types['array'])
-                    && ($array_atomic_type = $assign_value_types['array'])
-                    && $array_atomic_type instanceof Type\Atomic\ObjectLike
+                /**
+                 * @var Type\Atomic\ObjectLike|Type\Atomic\TList|Type\Atomic\TArray|null
+                 */
+                $array_atomic_type = $assign_value_types['array'] ?? null;
+
+                if ($array_atomic_type instanceof Type\Atomic\ObjectLike
                     && !$assign_var_item->key
                     && isset($array_atomic_type->properties[$offset]) // if object-like has int offsets
                 ) {
@@ -474,22 +490,14 @@ class AssignmentAnalyzer
                 if ($var instanceof PhpParser\Node\Expr\List_
                     || $var instanceof PhpParser\Node\Expr\Array_
                 ) {
-                    /**
-                     * @psalm-suppress PossiblyUndefinedArrayOffset
-                     * @var Type\Atomic\ObjectLike|Type\Atomic\TList|Type\Atomic\TArray|null
-                     */
-                    $array_value_type = isset($assign_value_type->getTypes()['array'])
-                        ? $assign_value_type->getTypes()['array']
-                        : null;
-
-                    if ($array_value_type instanceof Type\Atomic\ObjectLike) {
-                        $array_value_type = $array_value_type->getGenericArrayType();
+                    if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
                     }
 
-                    if ($array_value_type instanceof Type\Atomic\TList) {
-                        $array_value_type = new Type\Atomic\TArray([
+                    if ($array_atomic_type instanceof Type\Atomic\TList) {
+                        $array_atomic_type = new Type\Atomic\TArray([
                             Type::getInt(),
-                            $array_value_type->type_param
+                            $array_atomic_type->type_param
                         ]);
                     }
 
@@ -497,7 +505,7 @@ class AssignmentAnalyzer
                         $statements_analyzer,
                         $var,
                         null,
-                        $array_value_type ? clone $array_value_type->type_params[1] : Type::getMixed(),
+                        $array_atomic_type ? clone $array_atomic_type->type_params[1] : Type::getMixed(),
                         $context,
                         $doc_comment
                     );
@@ -543,37 +551,31 @@ class AssignmentAnalyzer
 
                     $new_assign_type = null;
 
-                    $types = $assign_value_type->getTypes();
+                    if ($array_atomic_type instanceof Type\Atomic\TArray) {
+                        $new_assign_type = clone $array_atomic_type->type_params[1];
+                    } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
+                        $new_assign_type = clone $array_atomic_type->type_param;
+                    } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        if ($assign_var_item->key
+                            && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
+                                || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
+                            && isset($array_atomic_type->properties[$assign_var_item->key->value])
+                        ) {
+                            $new_assign_type =
+                                clone $array_atomic_type->properties[$assign_var_item->key->value];
 
-                    if (isset($types['array'])) {
-                        $array_atomic_type = $types['array'];
-
-                        if ($array_atomic_type instanceof Type\Atomic\TArray) {
-                            $new_assign_type = clone $array_atomic_type->type_params[1];
-                        } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
-                            $new_assign_type = clone $array_atomic_type->type_param;
-                        } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                            if ($assign_var_item->key
-                                && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
-                                    || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
-                                && isset($array_atomic_type->properties[$assign_var_item->key->value])
-                            ) {
-                                $new_assign_type =
-                                    clone $array_atomic_type->properties[$assign_var_item->key->value];
-
-                                if ($new_assign_type->possibly_undefined) {
-                                    if (IssueBuffer::accepts(
-                                        new PossiblyUndefinedArrayOffset(
-                                            'Possibly undefined array key',
-                                            new CodeLocation($statements_analyzer->getSource(), $var)
-                                        ),
-                                        $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        // fall through
-                                    }
-
-                                    $new_assign_type->possibly_undefined = false;
+                            if ($new_assign_type->possibly_undefined) {
+                                if (IssueBuffer::accepts(
+                                    new PossiblyUndefinedArrayOffset(
+                                        'Possibly undefined array key',
+                                        new CodeLocation($statements_analyzer->getSource(), $var)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
                                 }
+
+                                $new_assign_type->possibly_undefined = false;
                             }
                         }
                     }

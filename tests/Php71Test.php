@@ -326,6 +326,20 @@ class Php71Test extends TestCase
                 false,
                 '7.0',
             ],
+            'arrayDestructuringInvalidList' => [
+                '<?php
+                    $a = 42;
+
+                    list($id1, $name1) = $a;',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayDestructuringInvalidArray' => [
+                '<?php
+                    $a = 42;
+
+                    [$id2, $name2] = $a;',
+                'error_message' => 'InvalidArrayOffset',
+            ],
         ];
     }
 }
