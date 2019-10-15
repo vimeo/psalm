@@ -154,4 +154,9 @@ class FunctionDocblockComment
      * @var bool
      */
     public $external_mutation_free = false;
+
+    /**
+     * @var bool
+     */
+    public $remove_taint = false;
 }

@@ -2025,6 +2025,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
+        if ($docblock_info->remove_taint) {
+            $storage->remove_taint = true;
+        }
+
         if ($docblock_info->ignore_nullable_return && $storage->return_type) {
             $storage->return_type->ignore_nullable_issues = true;
         }

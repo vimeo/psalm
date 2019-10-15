@@ -181,6 +181,8 @@ class CommentAnalyzer
                 $var_comment->internal = isset($parsed_docblock['specials']['internal']);
                 $var_comment->readonly = isset($parsed_docblock['specials']['readonly'])
                     || isset($parsed_docblock['specials']['psalm-readonly']);
+                $var_comment->remove_taint = isset($parsed_docblock['specials']['psalm-remove-taint']);
+
                 if (isset($parsed_docblock['specials']['psalm-internal'])) {
                     $psalm_internal = reset($parsed_docblock['specials']['psalm-internal']);
                     if ($psalm_internal) {
@@ -203,13 +205,15 @@ class CommentAnalyzer
             && (isset($parsed_docblock['specials']['deprecated'])
                 || isset($parsed_docblock['specials']['internal'])
                 || isset($parsed_docblock['specials']['readonly'])
-                || isset($parsed_docblock['specials']['psalm-readonly']))
+                || isset($parsed_docblock['specials']['psalm-readonly'])
+                || isset($parsed_docblock['specials']['psalm-remove-taint']))
         ) {
             $var_comment = new VarDocblockComment();
             $var_comment->deprecated = isset($parsed_docblock['specials']['deprecated']);
             $var_comment->internal = isset($parsed_docblock['specials']['internal']);
             $var_comment->readonly = isset($parsed_docblock['specials']['readonly'])
                 || isset($parsed_docblock['specials']['psalm-readonly']);
+            $var_comment->remove_taint = isset($parsed_docblock['specials']['psalm-remove-taint']);
 
             $var_comments[] = $var_comment;
         }
@@ -510,7 +514,9 @@ class CommentAnalyzer
             }
         }
 
-
+        if (isset($parsed_docblock['specials']['psalm-remove-taint'])) {
+            $info->remove_taint = true;
+        }
 
         if (isset($parsed_docblock['specials']['psalm-suppress'])) {
             foreach ($parsed_docblock['specials']['psalm-suppress'] as $offset => $suppress_entry) {

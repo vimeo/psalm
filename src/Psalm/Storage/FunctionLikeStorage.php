@@ -181,6 +181,11 @@ class FunctionLikeStorage
      */
     public $pure = false;
 
+    /**
+     * @var bool
+     */
+    public $remove_taint = false;
+
     public function __toString()
     {
         return $this->getSignature(false);

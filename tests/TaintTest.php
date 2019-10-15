@@ -934,6 +934,74 @@ class TaintTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testTaintOnStrReplaceCallRemoved() : void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class U {
+                    /**
+                     * @psalm-pure
+                     * @psalm-remove-taint
+                     */
+                    public static function shorten(string $s) : string {
+                        return str_replace("foo", "bar", $s);
+                    }
+                }
+
+                class V {}
+
+                class O1 {
+                    public string $s;
+
+                    public function __construct() {
+                        $this->s = (string) $_GET["FOO"];
+                    }
+                }
+
+                class V1 extends V {
+                    public function foo(O1 $o) : void {
+                        echo U::shorten($o->s);
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testTaintOnStrReplaceCallRemovedInline() : void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class V {}
+
+                class O1 {
+                    public string $s;
+
+                    public function __construct() {
+                        $this->s = (string) $_GET["FOO"];
+                    }
+                }
+
+                class V1 extends V {
+                    public function foo(O1 $o) : void {
+                        /**
+                         * @psalm-remove-taint
+                         */
+                        $a = str_replace("foo", "bar", $o->s);
+                        echo $a;
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testTaintOnPregReplaceCall() : void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);

@@ -77,6 +77,8 @@ class AssignmentAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $remove_taint = false;
+
         if ($doc_comment) {
             $file_path = $statements_analyzer->getRootFilePath();
 
@@ -115,6 +117,10 @@ class AssignmentAnalyzer
             }
 
             foreach ($var_comments as $var_comment) {
+                if ($var_comment->remove_taint) {
+                    $remove_taint = true;
+                }
+
                 if (!$var_comment->type) {
                     continue;
                 }
@@ -769,6 +775,12 @@ class AssignmentAnalyzer
                 }
 
                 return $context->vars_in_scope[$var_id];
+            }
+
+            if ($remove_taint && $context->vars_in_scope[$var_id]->sources) {
+                $context->vars_in_scope[$var_id]->sources = null;
+
+                $context->vars_in_scope[$var_id]->tainted = null;
             }
         }
 

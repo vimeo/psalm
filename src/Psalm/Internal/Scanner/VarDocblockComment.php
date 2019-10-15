@@ -65,4 +65,9 @@ class VarDocblockComment
      * @var bool
      */
     public $readonly = false;
+
+    /**
+     * @var bool
+     */
+    public $remove_taint = false;
 }

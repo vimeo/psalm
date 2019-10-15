@@ -178,7 +178,7 @@ class ReturnAnalyzer
                     $stmt,
                     $cased_method_id,
                     $inferred_type,
-                    $storage->location
+                    $storage
                 );
 
                 if ($storage->return_type && !$storage->return_type->hasMixed()) {
@@ -425,15 +425,15 @@ class ReturnAnalyzer
         PhpParser\Node\Stmt\Return_ $stmt,
         string $cased_method_id,
         Type\Union $inferred_type,
-        CodeLocation $function_location
+        \Psalm\Storage\FunctionLikeStorage $storage
     ) : void {
-        if (!$codebase->taint || !$stmt->expr) {
+        if (!$codebase->taint || !$stmt->expr || !$storage->location || $storage->remove_taint) {
             return;
         }
 
         $method_sink = new Sink(
             strtolower($cased_method_id),
-            $function_location
+            $storage->location
         );
 
         if ($previous_sink = $codebase->taint->hasPreviousSink($method_sink, $suffixes)) {
@@ -489,7 +489,7 @@ class ReturnAnalyzer
 
                             $new_source = new Source(
                                 strtolower($cased_method_id . '-' . $suffix),
-                                $function_location
+                                $storage->location
                             );
 
                             $new_source->parents = [$previous_source ?: $type_source];
@@ -499,7 +499,7 @@ class ReturnAnalyzer
                     } else {
                         $new_source = new Source(
                             strtolower($cased_method_id),
-                            $function_location
+                            $storage->location
                         );
 
                         $new_source->parents = [$previous_source ?: $type_source];
