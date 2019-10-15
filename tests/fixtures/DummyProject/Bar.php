@@ -3,6 +3,8 @@ namespace Vimeo\Test\DummyProject;
 
 class Bar
 {
+    use SomeTrait;
+
     /** @var string */
     public $x;
 

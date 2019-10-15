@@ -99,7 +99,7 @@ class ProjectCheckerTest extends TestCase
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $this->assertSame([0, 4], $codebase->analyzer->getTotalTypeCoverage($codebase));
+        $this->assertSame([0, 5], $codebase->analyzer->getTotalTypeCoverage($codebase));
 
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
@@ -314,7 +314,10 @@ class Bat
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
-        $this->project_analyzer->checkPaths(['tests/fixtures/DummyProject/Bar.php']);
+        $this->project_analyzer->checkPaths([
+            'tests/fixtures/DummyProject/Bar.php',
+            'tests/fixtures/DummyProject/SomeTrait.php'
+        ]);
         $output = ob_get_clean();
 
         $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
@@ -349,7 +352,10 @@ class Bat
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
-        $this->project_analyzer->checkFile('tests/fixtures/DummyProject/Bar.php');
+        $this->project_analyzer->checkPaths([
+            'tests/fixtures/DummyProject/Bar.php',
+            'tests/fixtures/DummyProject/SomeTrait.php'
+        ]);
         $output = ob_get_clean();
 
         $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);

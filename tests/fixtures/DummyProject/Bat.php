@@ -8,5 +8,6 @@ class Bat
         $a = new Bar();
 
         someFunction();
+        someOtherFunction();
     }
 }

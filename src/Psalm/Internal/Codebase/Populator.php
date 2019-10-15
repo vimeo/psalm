@@ -873,6 +873,31 @@ class Populator
                 continue;
             }
 
+            foreach ($classlike_storage->used_traits as $used_trait) {
+                try {
+                    $trait_storage = $this->classlike_storage_provider->get($used_trait);
+                } catch (\InvalidArgumentException $e) {
+                    continue;
+                }
+
+                if (!$trait_storage->location) {
+                    continue;
+                }
+
+                try {
+                    $included_trait_file_storage = $this->file_storage_provider->get(
+                        $trait_storage->location->file_path
+                    );
+                } catch (\InvalidArgumentException $e) {
+                    continue;
+                }
+
+                $storage->declaring_function_ids = array_merge(
+                    $included_trait_file_storage->declaring_function_ids,
+                    $storage->declaring_function_ids
+                );
+            }
+
             $storage->declaring_function_ids = array_merge(
                 $included_file_storage->declaring_function_ids,
                 $storage->declaring_function_ids
