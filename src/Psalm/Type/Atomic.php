@@ -394,6 +394,7 @@ abstract class Atomic
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
+                        /** @param Atomic $a */
                         function (Atomic $a) use ($codebase) : bool {
                             return $a->hasArrayAccessInterface($codebase);
                         }
