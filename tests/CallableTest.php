@@ -933,6 +933,30 @@ class CallableTest extends TestCase
                         if (is_callable($setter)) {}
                     }'
             ],
+            'refineCallableTypeWithTypehint' => [
+                '<?php
+                    /** @param string[][] $arr */
+                    function foo(array $arr) : void {
+                        array_map(
+                            function(array $a) {
+                                return reset($a);
+                            },
+                            $arr
+                        );
+                    }'
+            ],
+            'refineCallableTypeWithoutTypehint' => [
+                '<?php
+                    /** @param string[][] $arr */
+                    function foo(array $arr) : void {
+                        array_map(
+                            function($a) {
+                                return reset($a);
+                            },
+                            $arr
+                        );
+                    }'
+            ],
         ];
     }
 

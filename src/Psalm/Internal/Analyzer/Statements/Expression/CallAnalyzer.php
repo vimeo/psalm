@@ -437,12 +437,6 @@ class CallAnalyzer
                     && $param
                     && $param->type
                     && !$arg->value->getDocComment()
-                    && !array_filter(
-                        $arg->value->params,
-                        function (PhpParser\Node\Param $closure_param) : bool {
-                            return !!$closure_param->type;
-                        }
-                    )
                 ) {
                     if (count($args) === 2
                         && (($argument_offset === 1 && $method_id === 'array_filter')
@@ -497,6 +491,22 @@ class CallAnalyzer
                                 if (isset($replaced_type_part->params[$closure_param_offset]->type)
                                     && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
                                 ) {
+                                    if ($param_storage->type) {
+                                        if ($param_storage->type !== $param_storage->signature_type) {
+                                            continue;
+                                        }
+
+                                        $type_match_found = TypeAnalyzer::isContainedBy(
+                                            $codebase,
+                                            $replaced_type_part->params[$closure_param_offset]->type,
+                                            $param_storage->type
+                                        );
+
+                                        if (!$type_match_found) {
+                                            continue;
+                                        }
+                                    }
+
                                     $param_storage->type = $replaced_type_part->params[$closure_param_offset]->type;
                                 }
                             }
