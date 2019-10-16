@@ -768,13 +768,6 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        if ($existing_var_type->hasType($assertion)) {
-            $atomic_type = clone $existing_var_type->getTypes()[$assertion];
-            $atomic_type->from_docblock = false;
-
-            return new Type\Union([$atomic_type]);
-        }
-
         return $new_type;
     }
 
@@ -2052,7 +2045,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         foreach ($new_type->getTypes() as $new_type_part) {
             $has_local_match = false;
 
-            foreach ($existing_type->getTypes() as $existing_type_part) {
+            foreach ($existing_type->getTypes() as $key => $existing_type_part) {
                 // special workaround because PHP allows floats to contain ints, but we don’t want this
                 // behaviour here
                 if ($existing_type_part instanceof Type\Atomic\TFloat
@@ -2131,6 +2124,24 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 }
 
                 if ($atomic_contained_by || $atomic_comparison_results->type_coerced) {
+                    if ($atomic_contained_by
+                        && $existing_type_part instanceof TNamedObject
+                        && $new_type_part instanceof TNamedObject
+                        && $existing_type_part->extra_types
+                        && !$codebase->classExists($existing_type_part->value)
+                        && !array_filter(
+                            $existing_type_part->extra_types,
+                            function ($extra_type) use ($codebase) {
+                                return $extra_type instanceof TNamedObject
+                                    && $codebase->classExists($extra_type->value);
+                            }
+                        )
+                    ) {
+                        $new_type->removeType($key);
+                        $new_type->addType($existing_type_part);
+                        $new_type->from_docblock = $existing_type_part->from_docblock;
+                    }
+
                     continue;
                 }
 

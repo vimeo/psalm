@@ -627,6 +627,39 @@ class RedundantConditionTest extends TestCase
                         if (count($dict)) {}
                     }',
             ],
+            'noRedundantConditionWhenAssertingOnIntersection' => [
+                '<?php
+                    class A {}
+                    interface I {}
+                    class AChild extends A implements I {}
+
+                    function isAChild(A $value): ?AChild {
+                        if (!$value instanceof I) {
+                            return null;
+                        }
+
+                        if (!$value instanceof AChild) {
+                            return null;
+                        }
+
+                        return $value;
+                    }',
+            ],
+            'noRedundantConditionWhenAssertingOnIntersectionFlipped' => [
+                '<?php
+                    class A {}
+                    interface I {}
+                    class AChild extends A implements I {}
+
+                    /** @param I&A $value */
+                    function isAChild(I $value): ?AChild {
+                        if (!$value instanceof AChild) {
+                            return null;
+                        }
+
+                        return $value;
+                    }',
+            ],
         ];
     }
 
@@ -1020,6 +1053,21 @@ class RedundantConditionTest extends TestCase
                         if ([] === $a) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'secondInterfaceAssertionIsRedundant' => [
+                '<?php
+                    interface One {}
+                    interface Two {}
+
+                    /**
+                     * @param One|Two $value
+                     */
+                    function isOne($value): void {
+                        if ($value instanceof One) {
+                            if ($value instanceof One) {}
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
         ];
     }
