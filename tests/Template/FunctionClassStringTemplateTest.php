@@ -52,7 +52,7 @@ class FunctionClassStringTemplateTest extends TestCase
 
                     $a = (new I)->loader(FooChild::class);',
                 'assertions' => [
-                    '$a' => 'null|FooChild',
+                    '$a' => 'FooChild|null',
                 ],
             ],
             'upcastIterableToTraversable' => [

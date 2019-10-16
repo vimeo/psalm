@@ -101,7 +101,7 @@ class MethodCallTest extends TestCase
 
                     $b = (new DateTimeImmutable())->modify("+3 hours");',
                 'assertions' => [
-                    '$yesterday' => 'false|MyDate',
+                    '$yesterday' => 'MyDate|false',
                     '$b' => 'DateTimeImmutable',
                 ],
             ],
@@ -182,7 +182,7 @@ class MethodCallTest extends TestCase
                     $a = $xml->asXML();
                     $b = $xml->asXML("foo.xml");',
                 'assertions' => [
-                    '$a' => 'string|false',
+                    '$a' => 'false|string',
                     '$b' => 'bool',
                 ],
             ],

@@ -60,7 +60,7 @@ class IssetTest extends TestCase
                     $b = rand(0, 10) > 5 ? "hello" : null;
                     $a = $b ?? null;',
                 'assertions' => [
-                    '$a' => 'string|null',
+                    '$a' => 'null|string',
                 ],
             ],
             'issetKeyedOffset' => [
@@ -75,7 +75,7 @@ class IssetTest extends TestCase
                         $foo["a"] = "hello";
                     }',
                 'assertions' => [
-                    '$foo[\'a\']' => 'string|mixed',
+                    '$foo[\'a\']' => 'mixed|string',
                 ],
                 'error_levels' => [],
             ],
@@ -102,7 +102,7 @@ class IssetTest extends TestCase
 
                     $foo["a"] = $foo["a"] ?? "hello";',
                 'assertions' => [
-                    '$foo[\'a\']' => 'string|mixed',
+                    '$foo[\'a\']' => 'mixed|string',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],

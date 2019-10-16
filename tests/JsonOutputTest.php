@@ -136,7 +136,7 @@ echo $a;';
                     'line_from' => 2,
                     'line_to' => 2,
                     'type' => 'MixedInferredReturnType',
-                    'message' => 'Could not verify return type \'string|null\' for psalmCanVerify',
+                    'message' => 'Could not verify return type \'null|string\' for psalmCanVerify',
                     'file_name' => 'somefile.php',
                     'file_path' => 'somefile.php',
                     'snippet' => 'function psalmCanVerify(int $your_code): ?string {',

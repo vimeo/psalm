@@ -125,7 +125,7 @@ echo $a;';
                 'line_from' => 2,
                 'line_to' => 2,
                 'type' => 'MixedInferredReturnType',
-                'message' => 'Could not verify return type \'string|null\' for psalmCanVerify',
+                'message' => 'Could not verify return type \'null|string\' for psalmCanVerify',
                 'file_name' => 'somefile.php',
                 'file_path' => 'somefile.php',
                 'snippet' => 'function psalmCanVerify(int $your_code): ?string {',
@@ -210,7 +210,7 @@ echo $a;';
                     'engineId' => 'Psalm',
                     'ruleId' => 'MixedInferredReturnType',
                     'primaryLocation' => [
-                        'message' => 'Could not verify return type \'string|null\' for psalmCanVerify',
+                        'message' => 'Could not verify return type \'null|string\' for psalmCanVerify',
                         'filePath' => 'somefile.php',
                         'textRange' => [
                             'startLine' => 2,
@@ -277,7 +277,7 @@ echo $a;';
 
         $this->assertSame(
             'somefile.php:3:10:error - Cannot find referenced variable $as_you
-somefile.php:2:42:error - Could not verify return type \'string|null\' for psalmCanVerify
+somefile.php:2:42:error - Could not verify return type \'null|string\' for psalmCanVerify
 somefile.php:7:6:error - Const CHANGE_ME is not defined
 somefile.php:15:6:warning - Possibly undefined global variable $a, first seen on line 10
 ',
@@ -296,7 +296,7 @@ somefile.php:15:6:warning - Possibly undefined global variable $a, first seen on
 
         $this->assertSame(
             'somefile.php:3: [E0001] UndefinedVariable: Cannot find referenced variable $as_you (column 10)
-somefile.php:2: [E0001] MixedInferredReturnType: Could not verify return type \'string|null\' for psalmCanVerify (column 42)
+somefile.php:2: [E0001] MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify (column 42)
 somefile.php:7: [E0001] UndefinedConstant: Const CHANGE_ME is not defined (column 6)
 somefile.php:15: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10 (column 6)
 ',
@@ -318,7 +318,7 @@ somefile.php:15: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined glo
             'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
   return $as_you . "type";
 
-ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'string|null\' for psalmCanVerify
+ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify
 function psalmCanVerify(int $your_code): ?string {
 
 ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined
@@ -347,7 +347,7 @@ echo $a
             'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
   return $as_you . "type";
 
-ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'string|null\' for psalmCanVerify
+ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify
 function psalmCanVerify(int $your_code): ?string {
 
 ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined
@@ -373,7 +373,7 @@ echo CHANGE_ME;
             'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
 
 
-ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'string|null\' for psalmCanVerify
+ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify
 
 
 ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined
@@ -405,7 +405,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
             '| SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                   |' . "\n" .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n" .
             '| ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you                       |' . "\n" .
-            '| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'string|null\' for psalmCanVerify |' . "\n" .
+            '| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'null|string\' for psalmCanVerify |' . "\n" .
             '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . "\n" .
             '| INFO     | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . "\n" .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n",
@@ -428,7 +428,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
  <error line="3" column="10" severity="error" message="UndefinedVariable: Cannot find referenced variable $as_you"/>
 </file>
 <file name="somefile.php">
- <error line="2" column="42" severity="error" message="MixedInferredReturnType: Could not verify return type \'string|null\' for psalmCanVerify"/>
+ <error line="2" column="42" severity="error" message="MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify"/>
 </file>
 <file name="somefile.php">
  <error line="7" column="6" severity="error" message="UndefinedConstant: Const CHANGE_ME is not defined"/>

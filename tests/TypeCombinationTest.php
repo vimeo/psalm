@@ -129,7 +129,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'intOrTrueOrFalseToBool' => [
-                'int|bool',
+                'bool|int',
                 [
                     'int',
                     'false',
@@ -137,7 +137,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'intOrBoolOrTrueToBool' => [
-                'int|bool',
+                'bool|int',
                 [
                     'int',
                     'bool',
@@ -145,7 +145,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'intOrTrueOrBoolToBool' => [
-                'int|bool',
+                'bool|int',
                 [
                     'int',
                     'true',
@@ -188,7 +188,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayMixedOrStringKeys' => [
-                'array<int|string|mixed, string>',
+                'array<int|mixed|string, string>',
                 [
                     'array<int|string,string>',
                     'array<mixed,string>',
@@ -202,7 +202,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayBigCombination' => [
-                'array<array-key, int|float|string>',
+                'array<array-key, float|int|string>',
                 [
                     'array<int|float>',
                     'array<string>',
@@ -244,49 +244,49 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayTraversableToIterableWithParams' => [
-                'iterable<int, string|bool>',
+                'iterable<int, bool|string>',
                 [
                     'array<int, string>',
                     'Traversable<int, bool>',
                 ],
             ],
             'arrayIterableToIterableWithParams' => [
-                'iterable<int, string|bool>',
+                'iterable<int, bool|string>',
                 [
                     'array<int, string>',
                     'iterable<int, bool>',
                 ],
             ],
             'iterableArrayToIterableWithParams' => [
-                'iterable<int, string|bool>',
+                'iterable<int, bool|string>',
                 [
                     'iterable<int, string>',
                     'array<int, bool>',
                 ],
             ],
             'traversableIterableToIterableWithParams' => [
-                'iterable<int, string|bool>',
+                'iterable<int, bool|string>',
                 [
                     'Traversable<int, string>',
                     'iterable<int, bool>',
                 ],
             ],
             'iterableTraversableToIterableWithParams' => [
-                'iterable<int, string|bool>',
+                'iterable<int, bool|string>',
                 [
                     'iterable<int, string>',
                     'Traversable<int, bool>',
                 ],
             ],
             'arrayObjectAndParamsWithEmptyArray' => [
-                'array<empty, empty>|ArrayObject<int, string>',
+                'ArrayObject<int, string>|array<empty, empty>',
                 [
                     'ArrayObject<int, string>',
                     'array<empty, empty>',
                 ],
             ],
             'emptyArrayWithArrayObjectAndParams' => [
-                'array<empty, empty>|ArrayObject<int, string>',
+                'ArrayObject<int, string>|array<empty, empty>',
                 [
                     'array<empty, empty>',
                     'ArrayObject<int, string>',
@@ -319,7 +319,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'aAndAOfB' => [
-                'A<B>|A',
+                'A|A<B>',
                 [
                     'A',
                     'A<B>',
@@ -340,28 +340,28 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineObjectTypeWithIntKeyedArray' => [
-                'array<int|string, string|int>',
+                'array<int|string, int|string>',
                 [
                     'array{a: int}',
                     'array<int, string>',
                 ],
             ],
             'combineNestedObjectTypeWithObjectLikeIntKeyedArray' => [
-                'array{a: array<int|string, string|int>}',
+                'array{a: array<int|string, int|string>}',
                 [
                     'array{a: array{a: int}}',
                     'array{a: array<int, string>}',
                 ],
             ],
             'combineIntKeyedObjectTypeWithNestedIntKeyedArray' => [
-                'array<int, array<int|string, string|int>>',
+                'array<int, array<int|string, int|string>>',
                 [
                     'array<int, array{a:int}>',
                     'array<int, array<int, string>>',
                 ],
             ],
             'combineNestedObjectTypeWithNestedIntKeyedArray' => [
-                'array<int|string, array<int|string, string|int>>',
+                'array<int|string, array<int|string, int|string>>',
                 [
                     'array{a: array{a: int}}',
                     'array<int, array<int, string>>',

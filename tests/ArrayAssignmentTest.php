@@ -130,7 +130,7 @@ class ArrayAssignmentTest extends TestCase
                             break;
                     }',
                 'assertions' => [
-                    '$out' => 'list<string|int>',
+                    '$out' => 'list<int|string>',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitchWithNothing' => [
@@ -150,7 +150,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'list<string|int>',
+                    '$out' => 'list<int|string>',
                 ],
             ],
             'implicit2dIntArrayCreation' => [
@@ -455,7 +455,7 @@ class ArrayAssignmentTest extends TestCase
                     $a["a"] = 5;
                     $a[0] = 3;',
                 'assertions' => [
-                    '$a' => 'array{a: int, 0: int}',
+                    '$a' => 'array{0: int, a: int}',
                 ],
             ],
             'updateStringIntKey2' => [
@@ -467,7 +467,7 @@ class ArrayAssignmentTest extends TestCase
                     $b[$string] = 5;
                     $b[0] = 3;',
                 'assertions' => [
-                    '$b' => 'array{c: int, 0: int}',
+                    '$b' => 'array{0: int, c: int}',
                 ],
             ],
             'updateStringIntKey3' => [
@@ -504,7 +504,7 @@ class ArrayAssignmentTest extends TestCase
                     $e[$int] = 3;
                     $e[$string] = 5;',
                 'assertions' => [
-                    '$e' => 'non-empty-array<string|int, int>',
+                    '$e' => 'non-empty-array<int|string, int>',
                 ],
             ],
             'updateStringIntKeyWithIntRootAndNumberOffset' => [
@@ -517,7 +517,7 @@ class ArrayAssignmentTest extends TestCase
                     $a[0]["a"] = 5;
                     $a[0][0] = 3;',
                 'assertions' => [
-                    '$a' => 'array{0: array{a: int, 0: int}}',
+                    '$a' => 'array{0: array{0: int, a: int}}',
                 ],
             ],
             'updateStringIntKeyWithIntRoot' => [
@@ -545,10 +545,10 @@ class ArrayAssignmentTest extends TestCase
                     $e[0][$int] = 3;
                     $e[0][$string] = 5;',
                 'assertions' => [
-                    '$b' => 'array{0: non-empty-array<string|int, int>}',
+                    '$b' => 'array{0: non-empty-array<int|string, int>}',
                     '$c' => 'array{0: non-empty-array<int|string, int>}',
                     '$d' => 'array{0: non-empty-array<int|string, int>}',
-                    '$e' => 'array{0: non-empty-array<string|int, int>}',
+                    '$e' => 'array{0: non-empty-array<int|string, int>}',
                 ],
             ],
             'updateStringIntKeyWithObjectLikeRootAndNumberOffset' => [
@@ -561,7 +561,7 @@ class ArrayAssignmentTest extends TestCase
                     $a["root"]["a"] = 5;
                     $a["root"][0] = 3;',
                 'assertions' => [
-                    '$a' => 'array{root: array{a: int, 0: int}}',
+                    '$a' => 'array{root: array{0: int, a: int}}',
                 ],
             ],
             'updateStringIntKeyWithObjectLikeRoot' => [
@@ -589,10 +589,10 @@ class ArrayAssignmentTest extends TestCase
                     $e["root"][$int] = 3;
                     $e["root"][$string] = 5;',
                 'assertions' => [
-                    '$b' => 'array{root: non-empty-array<string|int, int>}',
+                    '$b' => 'array{root: non-empty-array<int|string, int>}',
                     '$c' => 'array{root: non-empty-array<int|string, int>}',
                     '$d' => 'array{root: non-empty-array<int|string, int>}',
-                    '$e' => 'array{root: non-empty-array<string|int, int>}',
+                    '$e' => 'array{root: non-empty-array<int|string, int>}',
                 ],
             ],
             'mixedArrayAssignmentWithStringKeys' => [
@@ -812,7 +812,7 @@ class ArrayAssignmentTest extends TestCase
                     $a_keys = array_keys($a);',
                 'assertions' => [
                     '$a' => 'array{0: string, 1: int}',
-                    '$a_values' => 'non-empty-list<string|int>',
+                    '$a_values' => 'non-empty-list<int|string>',
                     '$a_keys' => 'list<int>',
                 ],
             ],
@@ -1019,7 +1019,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = (array) (rand(0, 1) ? [1 => "one"] : 0);
                     $b = (array) null;',
                 'assertions' => [
-                    '$a' => 'array{1?: string, 0?: int}',
+                    '$a' => 'array{0?: int, 1?: string}',
                     '$b' => 'array<empty, empty>',
                 ],
             ],

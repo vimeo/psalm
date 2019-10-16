@@ -291,7 +291,7 @@ class ReturnTypeTest extends TestCase
 
                     $blah = (new B())->blah();',
                 'assertions' => [
-                    '$blah' => 'string|null',
+                    '$blah' => 'null|string',
                 ],
             ],
             'overrideReturnTypeInGrandparent' => [
@@ -313,7 +313,7 @@ class ReturnTypeTest extends TestCase
 
                     $blah = (new C())->blah();',
                 'assertions' => [
-                    '$blah' => 'string|null',
+                    '$blah' => 'null|string',
                 ],
             ],
             'backwardsReturnType' => [

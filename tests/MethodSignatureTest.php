@@ -641,7 +641,7 @@ class MethodSignatureTest extends TestCase
                             return $s;
                         }
                     }',
-                'error_message' => 'Argument 1 of B::foo has wrong type \'string\', expecting \'string|null\' as',
+                'error_message' => 'Argument 1 of B::foo has wrong type \'string\', expecting \'null|string\' as',
             ],
             'mismatchingCovariantReturn' => [
                 '<?php

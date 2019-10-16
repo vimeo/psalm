@@ -190,7 +190,7 @@ class FunctionTemplateTest extends TestCase
                     $b = ["a" => 5, "c" => 6];
                     $a = my_array_pop($b);',
                 'assertions' => [
-                    '$a' => 'null|int',
+                    '$a' => 'int|null',
                     '$b' => 'array<string, int>',
                 ],
             ],

@@ -361,7 +361,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                       }
                     }',
                 'assignments' => [
-                    '$tag' => 'string|null',
+                    '$tag' => 'null|string',
                 ],
             ],
             'bleedVarIntoOuterContextWithBreakInIf' => [
@@ -375,7 +375,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                       }
                     }',
                 'assignments' => [
-                    '$tag' => 'string|null',
+                    '$tag' => 'null|string',
                 ],
             ],
             'bleedVarIntoOuterContextWithBreakInElseAndIntSet' => [
@@ -389,7 +389,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                       }
                     }',
                 'assignments' => [
-                    '$tag' => 'string|int|null',
+                    '$tag' => 'int|null|string',
                 ],
             ],
             'bleedVarIntoOuterContextWithRedefineAndBreak' => [

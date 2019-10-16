@@ -150,7 +150,7 @@ class ClassTest extends TestCase
                     $class = mt_rand(0, 1) === 1 ? Foo::class : Bar::class;
                     $object = new $class();',
                 'assertions' => [
-                    '$object' => 'Foo|Bar',
+                    '$object' => 'Bar|Foo',
                 ],
             ],
             'instantiateClassAndIsA' => [

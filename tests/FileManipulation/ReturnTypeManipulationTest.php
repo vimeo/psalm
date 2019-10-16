@@ -94,7 +94,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     /**
-                     * @return string|null
+                     * @return null|string
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
@@ -110,7 +110,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     /**
-                     * @return string|null
+                     * @return null|string
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
@@ -265,7 +265,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     /**
-                     * @return ((int[]|int)[]|int)[]
+                     * @return ((int|int[])[]|int)[]
                      *
                      * @psalm-return array{a: int, b: int, c: array{a: int, b: int, c: array{a: int, b: int, c: int}}}
                      */
@@ -544,7 +544,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     /**
-                     * @return string|null
+                     * @return null|string
                      */
                     function foo() {
                       if (rand(0, 1)) {
@@ -555,7 +555,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }
 
                     /**
-                     * @return string|null
+                     * @return null|string
                      */
                     function bar() {
                       if (rand(0, 1)) {
@@ -793,7 +793,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     /**
-                     * @return string|false
+                     * @return false|string
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : false;
@@ -809,7 +809,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     /**
-                     * @return string|null
+                     * @return null|string
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : null;

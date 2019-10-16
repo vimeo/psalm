@@ -7,6 +7,7 @@ use function count;
 use function get_class;
 use function implode;
 use function is_int;
+use function sort;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
@@ -70,47 +71,43 @@ class ObjectLike extends \Psalm\Type\Atomic
 
     public function __toString()
     {
+        $union_type_parts = array_map(
+            /**
+             * @param  string|int $name
+             * @param  Union $type
+             *
+             * @return string
+             */
+            function ($name, Union $type) {
+                return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
+            },
+            array_keys($this->properties),
+            $this->properties
+        );
+        sort($union_type_parts);
         /** @psalm-suppress MixedOperand */
-        return static::KEY . '{' .
-                implode(
-                    ', ',
-                    array_map(
-                        /**
-                         * @param  string|int $name
-                         * @param  Union $type
-                         *
-                         * @return string
-                         */
-                        function ($name, Union $type) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
-                        },
-                        array_keys($this->properties),
-                        $this->properties
-                    )
-                ) .
-                '}';
+        return static::KEY . '{' . implode(', ', $union_type_parts) . '}';
     }
 
     public function getId()
     {
+        $union_type_parts = array_map(
+            /**
+             * @param  string|int $name
+             * @param  Union $type
+             *
+             * @return string
+             */
+            function ($name, Union $type) {
+                return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
+            },
+            array_keys($this->properties),
+            $this->properties
+        );
+        sort($union_type_parts);
         /** @psalm-suppress MixedOperand */
         return static::KEY . '{' .
-                implode(
-                    ', ',
-                    array_map(
-                        /**
-                         * @param  string|int $name
-                         * @param  Union $type
-                         *
-                         * @return string
-                         */
-                        function ($name, Union $type) {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
-                        },
-                        array_keys($this->properties),
-                        $this->properties
-                    )
-                ) .
+                implode(', ', $union_type_parts) .
                 '}'
                 . ($this->previous_value_type
                     ? '<' . ($this->previous_key_type ? $this->previous_key_type->getId() . ', ' : '')

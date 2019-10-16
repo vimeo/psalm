@@ -35,7 +35,7 @@ class Php55Test extends TestCase
                         $a = $number;
                     }',
                 'assertions' => [
-                    '$a' => 'null|int',
+                    '$a' => 'int|null',
                 ],
             ],
             'finally' => [
