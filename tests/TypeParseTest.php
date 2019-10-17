@@ -41,7 +41,7 @@ class TypeParseTest extends TestCase
      */
     public function testThisToStaticUnion()
     {
-        $this->assertSame('static|A', (string) Type::parseString('$this|A'));
+        $this->assertSame('A|static', (string) Type::parseString('$this|A'));
     }
 
     /**
@@ -81,7 +81,7 @@ class TypeParseTest extends TestCase
      */
     public function testNullableUnion()
     {
-        $this->assertSame('string|int|null', (string) Type::parseString('?(string|int)'));
+        $this->assertSame('int|null|string', (string) Type::parseString('?(string|int)'));
     }
 
     /**
@@ -97,7 +97,7 @@ class TypeParseTest extends TestCase
      */
     public function testNullableOrNullable()
     {
-        $this->assertSame('string|int|null', (string) Type::parseString('?string|?int'));
+        $this->assertSame('int|null|string', (string) Type::parseString('?string|?int'));
     }
 
     /**
@@ -170,7 +170,7 @@ class TypeParseTest extends TestCase
      */
     public function testIntersectionOrNull()
     {
-        $this->assertSame('null|I1&I2', (string) Type::parseString('I1&I2|null'));
+        $this->assertSame('I1&I2|null', (string) Type::parseString('I1&I2|null'));
     }
 
     /**
@@ -178,7 +178,7 @@ class TypeParseTest extends TestCase
      */
     public function testNullOrIntersection()
     {
-        $this->assertSame('null|I1&I2', (string) Type::parseString('null|I1&I2'));
+        $this->assertSame('I1&I2|null', (string) Type::parseString('null|I1&I2'));
     }
 
     /**
@@ -195,7 +195,7 @@ class TypeParseTest extends TestCase
     public function testTraversableAndIteratorOrNull()
     {
         $this->assertSame(
-            'null|Traversable&Iterator<int>',
+            'Traversable&Iterator<int>|null',
             (string) Type::parseString('Traversable&Iterator<int>|null')
         );
     }
@@ -277,7 +277,7 @@ class TypeParseTest extends TestCase
      */
     public function testPhpDocUnionOfArraysOrObject()
     {
-        $this->assertSame('array<array-key, A|B>|C', (string) Type::parseString('A[]|B[]|C'));
+        $this->assertSame('C|array<array-key, A|B>', (string) Type::parseString('A[]|B[]|C'));
     }
 
     /**
@@ -380,7 +380,7 @@ class TypeParseTest extends TestCase
     public function testObjectLikeWithGenericArgs()
     {
         $this->assertSame(
-            'array{a: array<int, string|int>, b: string}',
+            'array{a: array<int, int|string>, b: string}',
             (string) Type::parseString('array{a: array<int, string|int>, b: string}')
         );
     }
@@ -804,7 +804,7 @@ class TypeParseTest extends TestCase
      */
     public function testVeryLargeType()
     {
-        $very_large_type = 'array{a: Closure():(array<mixed, mixed>|null), b?: Closure():array<mixed, mixed>, c?: Closure():array<mixed, mixed>, d?: Closure():array<mixed, mixed>, e?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), p?: Closure():(array{f: null|string, g: null|string, h: null|string, q: string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), r?: Closure():(array<mixed, mixed>|null), s: array<mixed, mixed>}|null';
+        $very_large_type = 'array{a: Closure():(array<mixed, mixed>|null), b?: Closure():array<mixed, mixed>, c?: Closure():array<mixed, mixed>, d?: Closure():array<mixed, mixed>, e?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), p?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), q: string, r?: Closure():(array<mixed, mixed>|null), s: array<mixed, mixed>}|null';
 
         $this->assertSame(
             $very_large_type,

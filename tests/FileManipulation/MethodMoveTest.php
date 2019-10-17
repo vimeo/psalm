@@ -346,7 +346,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                         /**
                          * @param A $a1
                          * Some description
-                         * @param null|A
+                         * @param A|null
                          *        $a2
                          * @param array<int, A> $a3
                          * @return A
@@ -424,7 +424,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                         /**
                          * @param A $a1
                          * Some description
-                         * @param null|A
+                         * @param A|null
                          *        $a2
                          * @param array<int, A> $a3
                          * @return A
@@ -505,7 +505,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                         /**
                          * @param A $a1
                          * Some description
-                         * @param null|A
+                         * @param A|null
                          *        $a2
                          * @param array<int, A> $a3
                          * @return A

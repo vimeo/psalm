@@ -42,6 +42,7 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
+use function sort;
 use function str_replace;
 use function str_split;
 use function strpos;
@@ -279,18 +280,15 @@ class Reconciler
                 && (!$has_isset || substr($key, -1, 1) !== ']')
                 && !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
             ) {
-                $reconcile_key = implode(
-                    '&',
-                    array_map(
-                        /**
-                         * @return string
-                         */
-                        function (array $new_type_part_parts) {
-                            return implode('|', $new_type_part_parts);
-                        },
-                        $new_type_parts
-                    )
+                $reconciled_parts = array_map(
+                    function (array $new_type_part_parts): string {
+                        sort($new_type_part_parts);
+                        return implode('|', $new_type_part_parts);
+                    },
+                    $new_type_parts
                 );
+                sort($reconciled_parts);
+                $reconcile_key = implode('&', $reconciled_parts);
 
                 self::triggerIssueForImpossible(
                     $result_type,

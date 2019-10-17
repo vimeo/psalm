@@ -156,10 +156,10 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     class B {}
 
                     /**
-                     * @param null|B $a
+                     * @param B|null $a
                      * @param string | null $b
                      * @param callable():B $c
-                     * @return null|B
+                     * @return B|null
                      */
                     function foo(?B $a, $b, $c) : ?B {
                         return $a;
@@ -338,7 +338,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     use Exception;
 
                     class B {
-                        /** @var null|Exception */
+                        /** @var Exception|null */
                         public $x;
 
                         /**
@@ -403,12 +403,12 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                         /**
                          * @param  Bahh $b
-                         * @param  Bahh::FOO|Bahh::FAR $c
+                         * @param  Bahh::FAR|Bahh::FOO $c
                          */
                         function doSomething(Bahh $b, int $c) : void {}
 
                         class A {
-                            /** @var null|Bahh */
+                            /** @var Bahh|null */
                             public $x = null;
                         }
                     }
@@ -455,29 +455,29 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                             public $x = null;
                             /** @var ?B */
                             public $y = null;
-                            /** @var null|A|B */
+                            /** @var A|B|null */
                             public $z = null;
                         }
                     }',
                 '<?php
                     namespace Bar\Baz {
                         class A {
-                            /** @var null|B */
+                            /** @var B|null */
                             public $x = null;
                             /** @var null|self */
                             public $y = null;
-                            /** @var null|self|B|\Foo\C */
+                            /** @var B|\Foo\C|null|self */
                             public $z = null;
                         }
                     }
 
                     namespace Bar\Baz {
                         class B {
-                            /** @var null|A */
+                            /** @var A|null */
                             public $x = null;
                             /** @var null|self */
                             public $y = null;
-                            /** @var null|A|self|\Foo\C */
+                            /** @var A|\Foo\C|null|self */
                             public $z = null;
                         }
                     }
@@ -487,11 +487,11 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         use Bar\Baz\B;
 
                         class C {
-                            /** @var null|A */
+                            /** @var A|null */
                             public $x = null;
-                            /** @var null|B */
+                            /** @var B|null */
                             public $y = null;
-                            /** @var null|A|B */
+                            /** @var A|B|null */
                             public $z = null;
                         }
                     }',
@@ -534,12 +534,12 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                         /**
                          * @param  Kappa $b
-                         * @param  Kappa::FOO|Kappa::FAR $c
+                         * @param  Kappa::FAR|Kappa::FOO $c
                          */
                         function doSomething(Kappa $b, int $c) : void {}
 
                         class A {
-                            /** @var null|Kappa */
+                            /** @var Kappa|null */
                             public $x = null;
                         }
                     }

@@ -167,7 +167,7 @@ class ScopeTest extends TestCase
                         throw new \Exception("bad");
                     }',
                 'assertions' => [
-                    '$a' => 'string|null',
+                    '$a' => 'null|string',
                 ],
             ],
             'repeatAssertionWithOther' => [
@@ -180,7 +180,7 @@ class ScopeTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    '$a' => 'string|null',
+                    '$a' => 'null|string',
                 ],
                 'error_levels' => ['PossiblyFalseArgument'],
             ],

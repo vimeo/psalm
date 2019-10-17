@@ -373,7 +373,7 @@ class ArrayAccessTest extends TestCase
                     $doc->loadXML("<node key=\"value\"/>");
                     $e = $doc->getElementsByTagName("node")[0];',
                 [
-                    '$e' => 'null|DOMElement',
+                    '$e' => 'DOMElement|null',
                 ],
             ],
             'getOnArrayAcccess' => [

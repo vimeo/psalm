@@ -120,22 +120,22 @@ class NamespaceMoveTest extends \Psalm\Tests\TestCase
                 '<?php
                     namespace Bar\Baz {
                         class A {
-                            /** @var null|B */
+                            /** @var B|null */
                             public $x = null;
                             /** @var null|self */
                             public $y = null;
-                            /** @var null|self|B|\Foo\C */
+                            /** @var B|\Foo\C|null|self */
                             public $z = null;
                         }
                     }
 
                     namespace Bar\Baz {
                         class B {
-                            /** @var null|A */
+                            /** @var A|null */
                             public $x = null;
                             /** @var null|self */
                             public $y = null;
-                            /** @var null|A|self|\Foo\C */
+                            /** @var A|\Foo\C|null|self */
                             public $z = null;
                         }
                     }
@@ -145,11 +145,11 @@ class NamespaceMoveTest extends \Psalm\Tests\TestCase
                         use Bar\Baz\B;
 
                         class C {
-                            /** @var null|A */
+                            /** @var A|null */
                             public $x = null;
-                            /** @var null|B */
+                            /** @var B|null */
                             public $y = null;
-                            /** @var null|A|B */
+                            /** @var A|B|null */
                             public $z = null;
                         }
                     }',

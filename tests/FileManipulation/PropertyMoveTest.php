@@ -202,7 +202,7 @@ class PropertyMoveTest extends \Psalm\Tests\TestCase
                     class B {
 
 
-                        /** @var null|int */
+                        /** @var int|null */
                         public static $fooBar;
                     }
 

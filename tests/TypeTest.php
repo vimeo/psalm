@@ -731,7 +731,7 @@ class TypeTest extends TestCase
 
                     echo $var;',
                 'assertions' => [
-                    '$var' => 'string|int',
+                    '$var' => 'int|string',
                 ],
             ],
             'typeMixedAdjustment' => [
@@ -746,7 +746,7 @@ class TypeTest extends TestCase
 
                     echo $var;',
                 'assertions' => [
-                    '$var' => 'string|int',
+                    '$var' => 'int|string',
                 ],
             ],
             'typeAdjustmentIfNull' => [

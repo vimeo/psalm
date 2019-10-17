@@ -91,7 +91,7 @@ class TypeReconciliationTest extends TestCase
         return [
             'notNullWithObject' => ['MyObject', '!null', 'MyObject'],
             'notNullWithObjectPipeNull' => ['MyObject', '!null', 'MyObject|null'],
-            'notNullWithMyObjectPipeFalse' => ['false|MyObject', '!null', 'MyObject|false'],
+            'notNullWithMyObjectPipeFalse' => ['MyObject|false', '!null', 'MyObject|false'],
             'notNullWithMixed' => ['mixed', '!null', 'mixed'],
 
             'notEmptyWithMyObject' => ['MyObject', '!falsy', 'MyObject'],
@@ -127,14 +127,14 @@ class TypeReconciliationTest extends TestCase
 
             'nullableClassString' => ['null', 'falsy', '?class-string'],
             'mixedOrNullNotFalsy' => ['non-empty-mixed', '!falsy', 'mixed|null'],
-            'mixedOrNullFalsy' => ['null|empty-mixed', 'falsy', 'mixed|null'],
+            'mixedOrNullFalsy' => ['empty-mixed|null', 'falsy', 'mixed|null'],
             'nullableClassStringFalsy' => ['null', 'falsy', 'class-string<A>|null'],
             'nullableClassStringEqualsNull' => ['null', '=null', 'class-string<A>|null'],
             'nullableClassStringTruthy' => ['class-string<A>', '!falsy', 'class-string<A>|null'],
             'iterableToArray' => ['array<int, int>', 'array', 'iterable<int, int>'],
             'iterableToTraversable' => ['Traversable<int, int>', 'Traversable', 'iterable<int, int>'],
-            'callableToCallableArray' => ['callable-array{0: string|object, 1: string}', 'array', 'callable'],
-            'callableOrArrayToCallableArray' => ['array<array-key, mixed>|callable-array{0: string|object, 1: string}', 'array', 'callable|array'],
+            'callableToCallableArray' => ['callable-array{0: object|string, 1: string}', 'array', 'callable'],
+            'callableOrArrayToCallableArray' => ['array<array-key, mixed>|callable-array{0: object|string, 1: string}', 'array', 'callable|array'],
             'traversableToIntersection' => ['Countable&Traversable', 'Traversable', 'Countable'],
             'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', '!array', 'iterable'],
             'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', '!array', 'iterable<int, string>'],
@@ -239,7 +239,7 @@ class TypeReconciliationTest extends TestCase
                         $out = $a;
                     }',
                 'assertions' => [
-                    '$out' => 'null|A',
+                    '$out' => 'A|null',
                 ],
             ],
             'notInstanceOfProperty' => [
@@ -268,7 +268,7 @@ class TypeReconciliationTest extends TestCase
                         $out = $a->foo;
                     }',
                 'assertions' => [
-                    '$out' => 'null|B',
+                    '$out' => 'B|null',
                 ],
                 'error_levels' => [],
             ],
@@ -297,7 +297,7 @@ class TypeReconciliationTest extends TestCase
                         $out = $a->foo;
                     }',
                 'assertions' => [
-                    '$out' => 'null|B',
+                    '$out' => 'B|null',
                 ],
                 'error_levels' => [],
             ],

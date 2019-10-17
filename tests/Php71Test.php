@@ -21,7 +21,7 @@ class Php71Test extends TestCase
 
                     $a = a();',
                 'assertions' => [
-                    '$a' => 'string|null',
+                    '$a' => 'null|string',
                 ],
             ],
             'nullableReturnTypeInDocblock' => [

@@ -536,7 +536,7 @@ class ClassTemplateExtendsTest extends TestCase
                     $b = $a->findOne();',
                 [
                     '$a' => 'AnotherRepo',
-                    '$b' => 'null|SpecificEntity',
+                    '$b' => 'SpecificEntity|null',
                 ],
             ],
             'templateExtendsTwiceAndBound' => [
@@ -562,7 +562,7 @@ class ClassTemplateExtendsTest extends TestCase
                     $b = $a->findOne();',
                 [
                     '$a' => 'SpecificRepo',
-                    '$b' => 'null|SpecificEntity',
+                    '$b' => 'SpecificEntity|null',
                 ],
             ],
             'multipleArgConstraints' => [
@@ -1071,7 +1071,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                     $a = (new Service)->first();',
                 [
-                    '$a' => 'null|int',
+                    '$a' => 'int|null',
                 ],
             ],
             'splObjectStorage' => [

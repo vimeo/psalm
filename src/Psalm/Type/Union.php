@@ -7,6 +7,7 @@ use function array_shift;
 use function array_values;
 use function count;
 use function get_class;
+use function implode;
 use function is_string;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
@@ -26,7 +27,9 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use function reset;
+use function sort;
 use function strpos;
+use function strval;
 use function substr;
 
 class Union
@@ -284,10 +287,7 @@ class Union
 
     public function __toString()
     {
-        if (empty($this->types)) {
-            return '';
-        }
-        $s = '';
+        $types = [];
 
         $printed_int = false;
         $printed_float = false;
@@ -314,18 +314,16 @@ class Union
                 $printed_int = true;
             }
 
-            $s .= $type . '|';
+            $types[] = strval($type);
         }
 
-        return substr($s, 0, -1) ?: '';
+        sort($types);
+        return implode('|', $types);
     }
 
     public function getKey() : string
     {
-        if (empty($this->types)) {
-            return '';
-        }
-        $s = '';
+        $types = [];
 
         $printed_int = false;
         $printed_float = false;
@@ -337,28 +335,29 @@ class Union
                     continue;
                 }
 
-                $s .= 'float|';
+                $types[] = 'float';
                 $printed_float = true;
             } elseif ($type instanceof TLiteralString) {
                 if ($printed_string) {
                     continue;
                 }
 
-                $s .= 'string|';
+                $types[] = 'string';
                 $printed_string = true;
             } elseif ($type instanceof TLiteralInt) {
                 if ($printed_int) {
                     continue;
                 }
 
-                $s .= 'int|';
+                $types[] = 'int';
                 $printed_int = true;
             } else {
-                $s .= $type->getKey() . '|';
+                $types[] = strval($type->getKey());
             }
         }
 
-        return substr($s, 0, -1) ?: '';
+        sort($types);
+        return implode('|', $types);
     }
 
     /**
@@ -370,12 +369,12 @@ class Union
             return $this->id;
         }
 
-        $s = '';
+        $types = [];
         foreach ($this->types as $type) {
-            $s .= $type->getId() . '|';
+            $types[] = strval($type->getId());
         }
-
-        $id = substr($s, 0, -1);
+        sort($types);
+        $id = implode('|', $types);
 
         $this->id = $id;
 
@@ -409,7 +408,7 @@ class Union
         $printed_float = false;
         $printed_string = false;
 
-        $s = '';
+        $types = [];
 
         foreach ($this->types as $type) {
             $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
@@ -434,10 +433,11 @@ class Union
                 $printed_int = true;
             }
 
-            $s .= $type_string . '|';
+            $types[] = $type_string;
         }
 
-        return substr($s, 0, -1) ?: '';
+        sort($types);
+        return implode('|', $types);
     }
 
     /**

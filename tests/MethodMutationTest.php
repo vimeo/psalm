@@ -147,7 +147,7 @@ class MethodMutationTest extends TestCase
             'somefile.php'
         );
 
-        $this->assertSame('null|User', (string)$method_context->vars_in_scope['$this->user']);
+        $this->assertSame('User|null', (string)$method_context->vars_in_scope['$this->user']);
     }
 
     /**

@@ -125,7 +125,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'float',
-                    '$c' => 'numeric|null',
+                    '$c' => 'null|numeric',
                 ],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
@@ -244,21 +244,21 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4]);',
                 'assertions' => [
-                    '$d' => 'non-empty-array<string|int, string|int>',
+                    '$d' => 'non-empty-array<int|string, int|string>',
                 ],
             ],
             'arrayReverseDontPreserveKeyExplicitArg' => [
                 '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4], false);',
                 'assertions' => [
-                    '$d' => 'non-empty-array<string|int, string|int>',
+                    '$d' => 'non-empty-array<int|string, int|string>',
                 ],
             ],
             'arrayReversePreserveKey' => [
                 '<?php
                     $d = array_reverse(["a", "b", 1], true);',
                 'assertions' => [
-                    '$d' => 'non-empty-array<int, string|int>',
+                    '$d' => 'non-empty-array<int, int|string>',
                 ],
             ],
             'arrayDiff' => [
@@ -498,7 +498,7 @@ class FunctionCallTest extends TestCase
                     $a[] = "hello";
                     $b = array_pop($a);',
                 'assertions' => [
-                    '$b' => 'string|mixed',
+                    '$b' => 'mixed|string',
                 ],
                 'error_levels' => [
                     'MixedAssignment',
@@ -603,7 +603,7 @@ class FunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{hi: int, bye: int}',
+                    '$a3' => 'array{bye: int, hi: int}',
                 ],
             ],
             'arrayRand' => [
@@ -688,7 +688,7 @@ class FunctionCallTest extends TestCase
                     $b = getenv("some_key");',
                 'assertions' => [
                     '$a' => 'array<array-key, string>',
-                    '$b' => 'string|false',
+                    '$b' => 'false|string',
                 ],
             ],
             'arrayPopNotNullable' => [
@@ -758,7 +758,7 @@ class FunctionCallTest extends TestCase
                     }
                     /**
                      * @param string[] $arr
-                     * @return string|false
+                     * @return false|string
                      */
                     function bat(array $arr) {
                         return current($arr);
@@ -777,7 +777,7 @@ class FunctionCallTest extends TestCase
                         return $a;
                     }
                     /**
-                     * @return string|false
+                     * @return false|string
                      */
                     function bat(string $s) {
                         return file_get_contents($s);
@@ -959,7 +959,7 @@ class FunctionCallTest extends TestCase
                     $arr = ["one", "two", "three"];
                     $n = next($arr);',
                 'assertions' => [
-                    '$n' => 'string|false',
+                    '$n' => 'false|string',
                 ],
             ],
             'iteratorToArray' => [
@@ -1038,7 +1038,7 @@ class FunctionCallTest extends TestCase
             'strtrWithPossiblyFalseFirstArg' => [
                 '<?php
                     /**
-                     * @param string|false $str
+                     * @param false|string $str
                      * @param array<string, string> $replace_pairs
                      * @return string
                      */
@@ -1270,7 +1270,7 @@ class FunctionCallTest extends TestCase
                     $d = [1, 2, 3];
                     array_splice($d, -1, 1);',
                 'assertions' => [
-                    '$a' => 'non-empty-array<int, string|int>',
+                    '$a' => 'non-empty-array<int, int|string>',
                     '$b' => 'array{0: string, 1: string, 2: string}',
                     '$c' => 'array{0: int, 1: int, 2: int}',
                 ],
@@ -1298,7 +1298,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = @file_get_contents("foo");',
                 'assertions' => [
-                    '$a' => 'string|false',
+                    '$a' => 'false|string',
                 ],
             ],
             'arraySlicePreserveKeys' => [
@@ -1512,7 +1512,7 @@ class FunctionCallTest extends TestCase
                     '$b' => 'int',
                     '$c' => 'float',
                     '$d' => 'float',
-                    '$e' => 'int|float',
+                    '$e' => 'float|int',
                 ],
             ],
             'hashInit70' => [
@@ -1630,8 +1630,8 @@ class FunctionCallTest extends TestCase
                     $b = mktime($_GET["foo"]);
                     $c = mktime(1, 2, 3);',
                 'assertions' => [
-                    '$a' => 'int|false',
-                    '$b' => 'int|false',
+                    '$a' => 'false|int',
+                    '$b' => 'false|int',
                     '$c' => 'int',
                 ],
             ],
@@ -1684,9 +1684,9 @@ class FunctionCallTest extends TestCase
                 '<?php
                     sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);',
                 'assertions' => [
-                    '$hours' => 'string|int|float',
-                    '$minutes' => 'string|int|float',
-                    '$seconds' => 'string|int|float',
+                    '$hours' => 'float|int|string',
+                    '$minutes' => 'float|int|string',
+                    '$seconds' => 'float|int|string',
                 ],
             ],
             'inferArrayMapReturnType' => [
