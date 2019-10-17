@@ -97,6 +97,15 @@ class IfAnalyzer
 
         foreach ($if_context->vars_in_scope as $var_id => $type) {
             if ($type->hasMixed()) {
+                foreach ($if_context->vars_in_scope as $alt_var_id => $alt_type) {
+                    if ($alt_var_id !== $alt_type
+                        && preg_match('/^' . preg_quote($alt_var_id, '/') . '(\[|-)/', $var_id)
+                        && !$alt_type->hasMixed()
+                    ) {
+                        continue 2;
+                    }
+                }
+
                 $mixed_var_ids[] = $var_id;
             }
         }

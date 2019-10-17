@@ -159,6 +159,29 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
+    public function testNoIssueAfterManyIssets() : void
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @return mixed
+                 */
+                function f(array $a) {
+                    if (isset($a[1])
+                        && is_array($a[1])
+                        && isset($a[1][2])
+                    ) {
+                        return $a[1][2];
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
     /**
      * @return void
      */
