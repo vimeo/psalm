@@ -61,7 +61,7 @@ class IfScope
     public $negatable_if_types = null;
 
     /**
-     * @var array<int, Clause>
+     * @var list<Clause>
      */
     public $negated_clauses = [];
 

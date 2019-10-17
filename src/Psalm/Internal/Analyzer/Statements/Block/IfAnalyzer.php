@@ -166,6 +166,18 @@ class IfAnalyzer
             $cond_referenced_var_ids
         );
 
+        if (array_filter(
+            $context->clauses,
+            function ($clause) {
+                return !!$clause->possibilities;
+            }
+        )) {
+            $cond_referenced_var_ids = array_intersect_key(
+                $cond_referenced_var_ids,
+                Algebra::getTruthsFromFormula($context->clauses)
+            );
+        }
+
         // if the if has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_if_types) {
             $changed_var_ids = [];
@@ -478,14 +490,16 @@ class IfAnalyzer
                     $context = clone $context;
                     $context->vars_in_scope = $vars_reconciled;
 
-                    $entry_clauses = array_filter(
-                        $entry_clauses,
-                        /** @return bool */
-                        function (Clause $c) use ($changed_var_ids) {
-                            return count($c->possibilities) > 1
-                                || $c->wedge
-                                || !in_array(array_keys($c->possibilities)[0], $changed_var_ids, true);
-                        }
+                    $entry_clauses = array_values(
+                        array_filter(
+                            $entry_clauses,
+                            /** @return bool */
+                            function (Clause $c) use ($changed_var_ids) {
+                                return count($c->possibilities) > 1
+                                    || $c->wedge
+                                    || !in_array(array_keys($c->possibilities)[0], $changed_var_ids, true);
+                            }
+                        )
                     );
                 }
             }
@@ -1011,6 +1025,17 @@ class IfAnalyzer
         );
 
         try {
+            if (array_filter(
+                $entry_clauses,
+                function ($clause) {
+                    return !!$clause->possibilities;
+                }
+            )) {
+                $cond_referenced_var_ids = array_intersect_key(
+                    $cond_referenced_var_ids,
+                    Algebra::getTruthsFromFormula($entry_clauses)
+                );
+            }
             $reconcilable_elseif_types = Algebra::getTruthsFromFormula($elseif_context->clauses);
             $negated_elseif_types = Algebra::getTruthsFromFormula(Algebra::negateFormula($elseif_clauses));
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {

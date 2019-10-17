@@ -22,13 +22,13 @@ class IfConditionalScope
      */
     public $cond_assigned_var_ids;
 
-    /** @var array<int, \Psalm\Internal\Clause> */
+    /** @var list<\Psalm\Internal\Clause> */
     public $entry_clauses;
 
     /**
      * @param array<string, bool>   $cond_referenced_var_ids
      * @param array<string, bool>   $cond_assigned_var_ids
-     * @param array<int, \Psalm\Internal\Clause> $entry_clauses
+     * @param list<\Psalm\Internal\Clause> $entry_clauses
      */
     public function __construct(
         Context $if_context,

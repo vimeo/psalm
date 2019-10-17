@@ -660,6 +660,50 @@ class RedundantConditionTest extends TestCase
                         return $value;
                     }',
             ],
+            'noRedundantConditionWhenAssertingOnIntersectionOfInterfaces' => [
+                '<?php
+                    interface A {}
+                    interface I {}
+                    class AChild implements I, A {}
+
+                    function isAChild(A $value): ?AChild {
+                        if (!$value instanceof I) {
+                            return null;
+                        }
+
+                        if (!$value instanceof AChild) {
+                            return null;
+                        }
+
+                        return $value;
+                    }',
+            ],
+            'noRedundantConditionWithUnionOfInterfaces' => [
+                '<?php
+                    interface One {}
+                    interface Two {}
+
+
+                    /**
+                     * @param One|Two $impl
+                     */
+                    function a($impl) : void {
+                        if ($impl instanceof One && $impl instanceof Two) {
+                            throw new \Exception();
+                        } elseif ($impl instanceof One) {}
+                    }
+
+                    /**
+                     * @param One|Two $impl
+                     */
+                    function b($impl) : void {
+                        if ($impl instanceof One && $impl instanceof Two) {
+                            throw new \Exception();
+                        } else {
+                            if ($impl instanceof One) {}
+                        }
+                    }'
+            ],
         ];
     }
 
