@@ -261,7 +261,7 @@ class ReturnTypeCollector
                         switch (count($type->type_params)) {
                             case 1:
                                 $key_type_param = Type::getMixed();
-                                $value_type_param = $type->type_params[1];
+                                $value_type_param = $type->type_params[0];
                                 break;
 
                             default:

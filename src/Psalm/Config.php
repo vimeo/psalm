@@ -1517,7 +1517,19 @@ class Config
             throw new \UnexpectedValueException('Cannot locate core generic classes');
         }
 
-        $stub_files = array_merge([$generic_stubs_path, $generic_classes_path], $this->stub_files);
+        $core_generic_files = [$generic_stubs_path, $generic_classes_path];
+
+        if (\extension_loaded('ds')) {
+            $ext_ds_path = __DIR__ . '/Internal/Stubs/ext-ds.php';
+
+            if (!file_exists($ext_ds_path)) {
+                throw new \UnexpectedValueException('Cannot locate core generic classes');
+            }
+
+            $core_generic_files[] = $ext_ds_path;
+        }
+
+        $stub_files = array_merge($core_generic_files, $this->stub_files);
 
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
 
