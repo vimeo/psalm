@@ -25,6 +25,7 @@ class ReturnTypeCollector
      * @return list<Type\Atomic>    a list of return types
      */
     public static function getReturnTypes(
+        \Psalm\Codebase $codebase,
         array $stmts,
         array &$yield_types,
         bool &$ignore_nullable_issues = false,
@@ -81,6 +82,7 @@ class ReturnTypeCollector
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
+                        $codebase,
                         [$stmt->expr->expr],
                         $yield_types,
                         $ignore_nullable_issues,
@@ -100,6 +102,7 @@ class ReturnTypeCollector
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
+                        $codebase,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -111,6 +114,7 @@ class ReturnTypeCollector
                     $return_types = array_merge(
                         $return_types,
                         self::getReturnTypes(
+                            $codebase,
                             $elseif->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -123,6 +127,7 @@ class ReturnTypeCollector
                     $return_types = array_merge(
                         $return_types,
                         self::getReturnTypes(
+                            $codebase,
                             $stmt->else->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -134,6 +139,7 @@ class ReturnTypeCollector
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
+                        $codebase,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -145,6 +151,7 @@ class ReturnTypeCollector
                     $return_types = array_merge(
                         $return_types,
                         self::getReturnTypes(
+                            $codebase,
                             $catch->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -157,6 +164,7 @@ class ReturnTypeCollector
                     $return_types = array_merge(
                         $return_types,
                         self::getReturnTypes(
+                            $codebase,
                             $stmt->finally->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -168,6 +176,7 @@ class ReturnTypeCollector
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
+                        $codebase,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -178,6 +187,7 @@ class ReturnTypeCollector
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
+                        $codebase,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -189,6 +199,7 @@ class ReturnTypeCollector
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
+                        $codebase,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -199,6 +210,7 @@ class ReturnTypeCollector
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
+                        $codebase,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -210,6 +222,7 @@ class ReturnTypeCollector
                     $return_types = array_merge(
                         $return_types,
                         self::getReturnTypes(
+                            $codebase,
                             $case->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -234,7 +247,16 @@ class ReturnTypeCollector
 
                     if ($type instanceof Type\Atomic\TArray
                         || $type instanceof Type\Atomic\TIterable
-                        || $type instanceof Type\Atomic\TGenericObject
+                        || ($type instanceof Type\Atomic\TGenericObject
+                            && ($codebase->classImplements(
+                                $type->value,
+                                'Iterator'
+                            )
+                                || $codebase->classImplements(
+                                    $type->value,
+                                    'IteratorAggregate'
+                                )
+                                || $type->value === 'Generator'))
                     ) {
                         switch (count($type->type_params)) {
                             case 1:

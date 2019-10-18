@@ -1805,6 +1805,31 @@ class ClassTemplateTest extends TestCase
                     function client($value): void {}
                     client(value("awdawd"));'
             ],
+            'yieldFromGenericObjectNotExtendingIterator' => [
+                '<?php
+                    class Foo{}
+
+                    class A {
+                        /**
+                         * @var Foo<string>
+                         */
+                        public Foo $vector;
+
+                        /**
+                         * @param Foo<string> $v
+                         */
+                        public function __construct(Foo $v) {
+                            $this->vector = $v;
+                        }
+
+                        public function getIterator(): Iterator
+                        {
+                            yield from $this->vector;
+                        }
+                    }',
+                [],
+                ['TooManyTemplateParams']
+            ],
         ];
     }
 

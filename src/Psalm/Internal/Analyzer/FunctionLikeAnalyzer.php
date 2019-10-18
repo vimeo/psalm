@@ -540,6 +540,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $ignore_falsable_issues = false;
 
             $closure_return_types = ReturnTypeCollector::getReturnTypes(
+                $codebase,
                 $this->function->stmts,
                 $closure_yield_types,
                 $ignore_nullable_issues,

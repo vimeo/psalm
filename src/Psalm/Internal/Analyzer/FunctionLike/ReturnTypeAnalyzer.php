@@ -126,6 +126,7 @@ class ReturnTypeAnalyzer
         $ignore_falsable_issues = false;
 
         $inferred_return_type_parts = ReturnTypeCollector::getReturnTypes(
+            $codebase,
             $function_stmts,
             $inferred_yield_types,
             $ignore_nullable_issues,
