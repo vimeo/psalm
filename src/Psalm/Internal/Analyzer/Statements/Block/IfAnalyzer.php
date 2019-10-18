@@ -24,6 +24,8 @@ use function array_filter;
 use const ARRAY_FILTER_USE_KEY;
 use function array_values;
 use function array_keys;
+use function array_reduce;
+use function array_combine;
 use function preg_match;
 use function preg_quote;
 use function array_unique;
@@ -172,9 +174,24 @@ class IfAnalyzer
                 return !!$clause->possibilities;
             }
         )) {
-            $cond_referenced_var_ids = array_intersect_key(
+            $omit_keys = array_reduce(
+                $context->clauses,
+                /**
+                 * @param array<string> $carry
+                 * @return array<string>
+                 */
+                function ($carry, Clause $clause) {
+                    return array_merge($carry, array_keys($clause->possibilities));
+                },
+                []
+            );
+
+            $omit_keys = array_combine($omit_keys, $omit_keys);
+            $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($context->clauses));
+
+            $cond_referenced_var_ids = array_diff_key(
                 $cond_referenced_var_ids,
-                Algebra::getTruthsFromFormula($context->clauses)
+                $omit_keys
             );
         }
 
@@ -1031,9 +1048,24 @@ class IfAnalyzer
                     return !!$clause->possibilities;
                 }
             )) {
-                $cond_referenced_var_ids = array_intersect_key(
+                $omit_keys = array_reduce(
+                    $entry_clauses,
+                    /**
+                     * @param array<string> $carry
+                     * @return array<string>
+                     */
+                    function ($carry, Clause $clause) {
+                        return array_merge($carry, array_keys($clause->possibilities));
+                    },
+                    []
+                );
+
+                $omit_keys = array_combine($omit_keys, $omit_keys);
+                $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($entry_clauses));
+
+                $cond_referenced_var_ids = array_diff_key(
                     $cond_referenced_var_ids,
-                    Algebra::getTruthsFromFormula($entry_clauses)
+                    $omit_keys
                 );
             }
             $reconcilable_elseif_types = Algebra::getTruthsFromFormula($elseif_context->clauses);
