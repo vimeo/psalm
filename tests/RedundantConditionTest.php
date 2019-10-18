@@ -1126,6 +1126,17 @@ class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'SKIPPED-noLongerWarnsAboutRedundancyHere' => [
+                '<?php
+                    function a(bool $a, bool $b) : void {
+                        if ($a || $b) {
+                            if ($a) {
+                            } elseif ($b) {
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ]
         ];
     }
 }
