@@ -274,6 +274,12 @@ class CallMap
                     $function_param->sink = Type\Union::TAINTED_INPUT_SHELL;
                 }
 
+                if ($arg_offset === 0
+                    && ($function_id === 'print_r')
+                ) {
+                    $function_param->sink = Type\Union::TAINTED_INPUT_HTML;
+                }
+
                 $function_param->signature_type = null;
 
                 $function_params[] = $function_param;
