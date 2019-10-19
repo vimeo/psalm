@@ -180,7 +180,7 @@ class Taint
         $location_summary = '';
 
         if ($source->code_location) {
-            $location_summary = $source->code_location->getQuickSummary();
+            $location_summary = $source->code_location->getShortSummary();
         }
 
         if (isset($visited_paths[$source->id . ' ' . $location_summary])) {
@@ -189,7 +189,7 @@ class Taint
 
         $visited_paths[$source->id . ' ' . $location_summary] = true;
 
-        $source_descriptor = $source->id . ($location_summary ? ' (' . $location_summary . ')' : '');
+        $source_descriptor = $source->label . ($location_summary ? ' (' . $location_summary . ')' : '');
 
         $previous_source = $source->parents[0] ?? null;
 
@@ -212,7 +212,7 @@ class Taint
         $location_summary = '';
 
         if ($sink->code_location) {
-            $location_summary = $sink->code_location->getQuickSummary();
+            $location_summary = $sink->code_location->getShortSummary();
         }
 
         if (isset($visited_paths[$sink->id . ' ' . $location_summary])) {
@@ -221,7 +221,7 @@ class Taint
 
         $visited_paths[$sink->id . ' ' . $location_summary] = true;
 
-        $sink_descriptor = $sink->id . ($location_summary ? ' (' . $location_summary . ')' : '');
+        $sink_descriptor = $sink->label . ($location_summary ? ' (' . $location_summary . ')' : '');
 
         $next_sink = $sink->children[0] ?? null;
 
@@ -253,8 +253,8 @@ class Taint
 
                 if (IssueBuffer::accepts(
                     new TaintedInput(
-                        'in path ' . $this->getPredecessorPath($existing_source)
-                            . ' out path ' . $this->getSuccessorPath($sink),
+                        'path: ' . $this->getPredecessorPath($existing_source)
+                            . ' -> ' . $this->getSuccessorPath($sink),
                         $last_location->code_location ?: $sink->code_location
                     )
                 )) {
@@ -278,8 +278,8 @@ class Taint
 
                 if (IssueBuffer::accepts(
                     new TaintedInput(
-                        'in path ' . $this->getPredecessorPath($source)
-                            . ' out path ' . $this->getSuccessorPath($existing_sink),
+                        'path: ' . $this->getPredecessorPath($source)
+                            . ' -> ' . $this->getSuccessorPath($existing_sink),
                         $last_location->code_location ?: $source->code_location
                     )
                 )) {

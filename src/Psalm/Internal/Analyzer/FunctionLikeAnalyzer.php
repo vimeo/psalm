@@ -902,6 +902,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             if ($cased_method_id && $codebase->taint) {
                 $type_source = Source::getForMethodArgument(
                     $cased_method_id,
+                    $cased_method_id,
                     $offset,
                     $function_param->location,
                     null

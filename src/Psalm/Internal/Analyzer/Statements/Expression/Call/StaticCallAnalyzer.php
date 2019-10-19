@@ -51,6 +51,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         Context $context
     ) {
         $method_id = null;
+        $cased_method_id = null;
 
         $lhs_type = null;
 
@@ -346,6 +347,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if ($stmt->name instanceof PhpParser\Node\Identifier && !$is_mock) {
                 $method_name_lc = strtolower($stmt->name->name);
                 $method_id = $fq_class_name . '::' . $method_name_lc;
+                $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
                 if (!$context->collect_initializations
                     && !$context->collect_mutations
@@ -372,6 +374,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                         if ($codebase->methods->methodExists($intersection_method_id)) {
                             $method_id = $intersection_method_id;
+                            $cased_method_id = $intersection_type->value . '::' . $stmt->name->name;
                             $fq_class_name = $intersection_type->value;
                             break;
                         }
@@ -1010,11 +1013,13 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                         . '-' . $code_location->file_name
                                         . ':' . $code_location->raw_file_start
                                 ),
+                                $cased_method_id,
                                 new CodeLocation($source, $stmt->name)
                             );
                         } else {
                             $method_source = new Source(
                                 strtolower($method_id),
+                                $cased_method_id,
                                 new CodeLocation($source, $stmt->name)
                             );
                         }

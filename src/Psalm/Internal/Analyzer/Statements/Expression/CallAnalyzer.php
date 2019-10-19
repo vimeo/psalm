@@ -1135,7 +1135,7 @@ class CallAnalyzer
         }
 
         if ($method_id && strpos($method_id, '::')) {
-            $codebase->methods->getCasedMethodId($method_id);
+            $cased_method_id = $codebase->methods->getCasedMethodId($method_id);
         } elseif ($function_storage) {
             $cased_method_id = $function_storage->cased_name;
         }
@@ -2871,6 +2871,7 @@ class CallAnalyzer
 
         $method_sink = Sink::getForMethodArgument(
             $cased_method_id,
+            $cased_method_id,
             $argument_offset,
             $code_location
         );
@@ -2890,6 +2891,7 @@ class CallAnalyzer
 
                 $base_sink = new Sink(
                     $source->id,
+                    $source->label,
                     $source->code_location
                 );
 
@@ -2899,16 +2901,20 @@ class CallAnalyzer
 
                 if (strpos($source->id, '::') && strpos($source->id, '#')) {
                     list($fq_classlike_name, $method_name) = explode('::', $source->id);
+                    list(, $cased_method_name) = explode('::', $source->label);
 
                     $method_name_parts = explode('#', $method_name);
+                    list($cased_method_name) = explode('#', $cased_method_name);
 
                     $method_name = strtolower($method_name_parts[0]);
 
                     $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
 
                     foreach ($class_storage->dependent_classlikes as $dependent_classlike => $_) {
+                        $dependent_classlike_storage = $codebase->classlike_storage_provider->get($dependent_classlike);
                         $new_sink = Sink::getForMethodArgument(
                             $dependent_classlike . '::' . $method_name,
+                            $dependent_classlike_storage->name . '::' . $cased_method_name,
                             (int) $method_name_parts[1] - 1,
                             $code_location,
                             null
@@ -2925,6 +2931,7 @@ class CallAnalyzer
                         foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
                             $new_sink = Sink::getForMethodArgument(
                                 $parent_method_id,
+                                $codebase->getCasedMethodId($parent_method_id),
                                 (int) $method_name_parts[1] - 1,
                                 $code_location,
                                 null
@@ -2950,6 +2957,7 @@ class CallAnalyzer
             && $input_type->sources
         ) {
             $method_sink = Sink::getForMethodArgument(
+                $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
                 $code_location
@@ -2984,12 +2992,14 @@ class CallAnalyzer
                     if ($function_is_pure) {
                         $method_source = Source::getForMethodArgument(
                             $cased_method_id,
+                            $cased_method_id,
                             $argument_offset,
                             $code_location,
                             $function_location
                         );
                     } else {
                         $method_source = Source::getForMethodArgument(
+                            $cased_method_id,
                             $cased_method_id,
                             $argument_offset,
                             $code_location

@@ -835,7 +835,14 @@ class Methods
 
         $storage = $this->getStorage($method_id);
 
-        list($fq_class_name) = explode('::', $method_id);
+        list($old_fq_class_name, $old_method_name) = explode('::', $original_method_id);
+        list($fq_class_name, $new_method_name) = explode('::', $method_id);
+
+        if (strtolower($old_method_name) === strtolower($new_method_name)
+            && strtolower($old_fq_class_name) !== $old_fq_class_name
+        ) {
+            return $old_fq_class_name . '::' . $storage->cased_name;
+        }
 
         return $fq_class_name . '::' . $storage->cased_name;
     }

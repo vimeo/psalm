@@ -167,7 +167,8 @@ class ArrayFetchAnalyzer
                 $stmt->inferredType->tainted = (int) Type\Union::TAINTED_INPUT;
                 $stmt->inferredType->sources = [
                     new Source(
-                        '$_GET',
+                        $array_var_id,
+                        $array_var_id,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         (int) Type\Union::TAINTED_INPUT
                     )

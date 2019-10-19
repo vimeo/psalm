@@ -409,9 +409,4 @@ class CodeLocation
     {
         return $this->file_name . ':' . $this->getLineNumber() . ':' . $this->getColumn();
     }
-
-    public function getQuickSummary() : string
-    {
-        return $this->file_name . ':' . $this->raw_line_number;
-    }
 }

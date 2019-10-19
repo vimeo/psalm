@@ -675,6 +675,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $method_name_lc = strtolower($stmt->name->name);
 
         $method_id = $fq_class_name . '::' . $method_name_lc;
+        $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
         $intersection_method_id = $intersection_types
             ? '(' . $lhs_type_part . ')'  . '::' . $stmt->name->name
@@ -828,6 +829,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && $codebase->methodExists($context->self . '::' . $method_name_lc)
         ) {
             $method_id = $context->self . '::' . $method_name_lc;
+            $cased_method_id = $context->self . '::' . $stmt->name->name;
             $fq_class_name = $context->self;
         }
 
@@ -1121,7 +1123,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         if (!$context->inside_assignment && !$context->inside_call) {
                             if (IssueBuffer::accepts(
                                 new \Psalm\Issue\UnusedMethodCall(
-                                    'The call to ' . $method_id . ' is not used',
+                                    'The call to ' . $cased_method_id . ' is not used',
                                     new CodeLocation($statements_analyzer, $stmt->name),
                                     $method_id
                                 ),
@@ -1199,7 +1201,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         );
 
                         $return_type_candidate->sources = [
-                            new Source(strtolower($method_id), new CodeLocation($source, $stmt->name))
+                            new Source(
+                                strtolower($method_id),
+                                $cased_method_id,
+                                new CodeLocation($source, $stmt->name)
+                            )
                         ];
 
                         $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
@@ -1240,7 +1246,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             ) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
-                                        'Cannot call an mutation-free method ' . $method_id . ' from a pure context',
+                                        'Cannot call an mutation-free method '
+                                            . $cased_method_id . ' from a pure context',
                                         new CodeLocation($source, $stmt->name)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
@@ -1254,7 +1261,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
                                         'Cannot call an possibly-mutating method '
-                                            . $method_id . ' from a mutation-free context',
+                                            . $cased_method_id . ' from a mutation-free context',
                                         new CodeLocation($source, $stmt->name)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
@@ -1269,7 +1276,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
                                         'Cannot call an possibly-mutating method '
-                                            . $method_id . ' from a mutation-free context',
+                                            . $cased_method_id . ' from a mutation-free context',
                                         new CodeLocation($source, $stmt->name)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
@@ -1286,7 +1293,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 if (!$context->inside_assignment && !$context->inside_call) {
                                     if (IssueBuffer::accepts(
                                         new \Psalm\Issue\UnusedMethodCall(
-                                            'The call to ' . $method_id . ' is not used',
+                                            'The call to ' . $cased_method_id . ' is not used',
                                             new CodeLocation($statements_analyzer, $stmt->name),
                                             $method_id
                                         ),

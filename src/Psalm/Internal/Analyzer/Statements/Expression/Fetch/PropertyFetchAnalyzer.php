@@ -858,6 +858,7 @@ class PropertyFetchAnalyzer
         if ($codebase->taint) {
             $method_source = new Source(
                 $property_id,
+                $property_id,
                 new CodeLocation($statements_analyzer, $stmt->name)
             );
 

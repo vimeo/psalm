@@ -977,6 +977,7 @@ class PropertyAssignmentAnalyzer
 
         $method_sink = new Sink(
             $property_id,
+            $property_id,
             $code_location
         );
 
@@ -991,6 +992,7 @@ class PropertyAssignmentAnalyzer
                         function (Source $assignment_source) use ($child_sink) {
                             $new_sink = new Sink(
                                 $assignment_source->id,
+                                $assignment_source->label,
                                 $assignment_source->code_location
                             );
 
@@ -1012,6 +1014,7 @@ class PropertyAssignmentAnalyzer
                     if (!$previous_source) {
                         $previous_source = new Source(
                             $type_source->id,
+                            $type_source->label,
                             $type_source->code_location
                         );
 
@@ -1019,6 +1022,7 @@ class PropertyAssignmentAnalyzer
                     }
 
                     $new_source = new Source(
+                        $property_id,
                         $property_id,
                         $code_location
                     );
