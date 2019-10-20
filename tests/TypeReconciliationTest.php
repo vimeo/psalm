@@ -1497,6 +1497,16 @@ class TypeReconciliationTest extends TestCase
                         return $a;
                     }'
             ],
+            'nullCoalescePossibleMixed' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedReturnStatement
+                     * @psalm-suppress MixedInferredReturnType
+                     */
+                    function foo() : array {
+                        return filter_input_array(INPUT_POST) ?? [];
+                    }',
+            ],
         ];
     }
 
