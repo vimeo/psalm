@@ -245,6 +245,10 @@ class ReturnTypeCollector
                         $type = $type->getGenericArrayType();
                     }
 
+                    if ($type instanceof Type\Atomic\TList) {
+                        $type = new Type\Atomic\TArray([Type::getInt(), $type->type_param]);
+                    }
+
                     if ($type instanceof Type\Atomic\TArray
                         || $type instanceof Type\Atomic\TIterable
                         || ($type instanceof Type\Atomic\TGenericObject
