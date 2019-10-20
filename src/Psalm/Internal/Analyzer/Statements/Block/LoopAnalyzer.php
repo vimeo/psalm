@@ -110,16 +110,15 @@ class LoopAnalyzer
             $old_referenced_var_ids = $inner_context->referenced_var_ids;
             $inner_context->referenced_var_ids = [];
 
-            if (!$is_do) {
-                foreach ($pre_conditions as $pre_condition) {
-                    self::applyPreConditionToLoopContext(
-                        $statements_analyzer,
-                        $pre_condition,
-                        $pre_condition_clauses,
-                        $inner_context,
-                        $loop_scope->loop_parent_context
-                    );
-                }
+            foreach ($pre_conditions as $pre_condition) {
+                self::applyPreConditionToLoopContext(
+                    $statements_analyzer,
+                    $pre_condition,
+                    $pre_condition_clauses,
+                    $inner_context,
+                    $loop_scope->loop_parent_context,
+                    $is_do
+                );
             }
 
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
@@ -154,19 +153,18 @@ class LoopAnalyzer
 
             IssueBuffer::startRecording();
 
-            if (!$is_do) {
-                foreach ($pre_conditions as $pre_condition) {
-                    $asserted_var_ids = array_merge(
-                        self::applyPreConditionToLoopContext(
-                            $statements_analyzer,
-                            $pre_condition,
-                            $pre_condition_clauses,
-                            $loop_scope->loop_context,
-                            $loop_scope->loop_parent_context
-                        ),
-                        $asserted_var_ids
-                    );
-                }
+            foreach ($pre_conditions as $pre_condition) {
+                $asserted_var_ids = array_merge(
+                    self::applyPreConditionToLoopContext(
+                        $statements_analyzer,
+                        $pre_condition,
+                        $pre_condition_clauses,
+                        $loop_scope->loop_context,
+                        $loop_scope->loop_parent_context,
+                        $is_do
+                    ),
+                    $asserted_var_ids
+                );
             }
 
             // record all the vars that existed before we did the first pass through the loop
@@ -315,7 +313,8 @@ class LoopAnalyzer
                         $pre_condition,
                         $pre_condition_clauses,
                         $inner_context,
-                        $loop_scope->loop_parent_context
+                        $loop_scope->loop_parent_context,
+                        false
                     );
                 }
 
@@ -547,12 +546,27 @@ class LoopAnalyzer
         PhpParser\Node\Expr $pre_condition,
         array $pre_condition_clauses,
         Context $loop_context,
-        Context $outer_context
+        Context $outer_context,
+        bool $is_do
     ) {
         $pre_referenced_var_ids = $loop_context->referenced_var_ids;
         $loop_context->referenced_var_ids = [];
 
         $loop_context->inside_conditional = true;
+
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+        if ($is_do) {
+            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
+            }
+            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            }
+            if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
+            }
+        }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $pre_condition, $loop_context) === false) {
             return [];
@@ -589,6 +603,22 @@ class LoopAnalyzer
             );
 
             $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
+        }
+
+        if ($is_do) {
+            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
+            }
+            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            }
+            if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
+            }
+        }
+
+        if ($is_do) {
+            return [];
         }
 
         foreach ($asserted_var_ids as $var_id) {
