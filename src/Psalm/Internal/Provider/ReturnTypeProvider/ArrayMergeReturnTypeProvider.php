@@ -33,7 +33,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         $codebase = $statements_source->getCodebase();
 
         $generic_properties = [];
-        $all_lists = true;
+        $all_int_offsets = true;
         $all_nonempty_lists = true;
 
         foreach ($call_args as $call_arg) {
@@ -102,7 +102,9 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                             continue;
                         }
 
-                        $all_lists = false;
+                        if (!$unpacked_type_part->type_params[0]->isInt()) {
+                            $all_int_offsets = false;
+                        }
                     }
 
                     $inner_key_types = array_merge(
@@ -130,7 +132,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         if ($inner_value_types) {
             $inner_value_type = TypeCombination::combineTypes($inner_value_types, $codebase, true);
 
-            if ($all_lists) {
+            if ($all_int_offsets) {
                 if ($all_nonempty_lists) {
                     return new Type\Union([
                         new Type\Atomic\TNonEmptyList($inner_value_type),

@@ -240,6 +240,24 @@ class FunctionCallTest extends TestCase
                     '$d' => 'array{0: string, 1: string, 2: string, 3: int, 4: int, 5: int}',
                 ],
             ],
+            'arrayMergeListResult' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function foo(array $list) : array {
+                        return array_merge($list, ["test"]);
+                    }
+
+                    /**
+                     * @param array<int, string> $list
+                     * @return list<string>
+                     */
+                    function bar(array $list) : array {
+                        return array_merge($list, ["test"]);
+                    }',
+            ],
             'arrayReverseDontPreserveKey' => [
                 '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4]);',
