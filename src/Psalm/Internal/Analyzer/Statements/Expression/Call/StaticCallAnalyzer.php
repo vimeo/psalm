@@ -349,7 +349,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $method_id = $fq_class_name . '::' . $method_name_lc;
                 $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
-                if (!$context->collect_initializations
+                if ($codebase->store_node_types
+                    && !$context->collect_initializations
                     && !$context->collect_mutations
                 ) {
                     ArgumentMapPopulator::recordArgumentPositions(

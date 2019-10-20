@@ -283,6 +283,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
 
             if ($function_exists
+                && $codebase->store_node_types
                 && !$context->collect_initializations
                 && !$context->collect_mutations
             ) {

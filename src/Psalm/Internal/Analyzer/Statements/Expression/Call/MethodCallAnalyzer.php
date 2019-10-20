@@ -1008,7 +1008,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         }
 
-        if (!$context->collect_initializations
+        if ($codebase->store_node_types
+            && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(

@@ -372,7 +372,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 )) {
                     $method_id = $fq_class_name . '::__construct';
 
-                    if (!$context->collect_initializations
+                    if ($codebase->store_node_types
+                        && !$context->collect_initializations
                         && !$context->collect_mutations
                     ) {
                         ArgumentMapPopulator::recordArgumentPositions(

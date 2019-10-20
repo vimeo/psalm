@@ -92,19 +92,23 @@ class ArgumentMapPopulator
         foreach ($ranges as $range) {
             $position = $range[0];
             $length = $range[1] - $position;
-            $range_source_code = substr($file_content, $position, $length);
-            $range_tokens = token_get_all('<?php ' . $range_source_code);
-            array_shift($range_tokens);
 
-            $current_position = $position;
-            foreach ($range_tokens as $token) {
-                $token = is_string($token) ? $token : $token[1];
+            if ($length > 0) {
+                $range_source_code = substr($file_content, $position, $length);
+                $range_tokens = token_get_all('<?php ' . $range_source_code);
 
-                if ($token === ',') {
-                    $commas[] = $current_position;
+                array_shift($range_tokens);
+
+                $current_position = $position;
+                foreach ($range_tokens as $token) {
+                    $token = is_string($token) ? $token : $token[1];
+
+                    if ($token === ',') {
+                        $commas[] = $current_position;
+                    }
+
+                    $current_position += strlen($token);
                 }
-
-                $current_position += strlen($token);
             }
         }
 
