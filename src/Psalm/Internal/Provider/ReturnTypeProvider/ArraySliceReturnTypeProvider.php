@@ -41,14 +41,30 @@ class ArraySliceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
             return Type::getArray();
         }
 
+        $dont_preserve_int_keys = !isset($call_args[3]->value)
+            || (isset($call_args[3]->value->inferredType)
+                && ((string) $call_args[3]->value->inferredType === 'false'));
+
+        $already_cloned = false;
+
+        if ($first_arg_array instanceof Type\Atomic\ObjectLike) {
+            $already_cloned = true;
+            $first_arg_array = $first_arg_array->getGenericArrayType();
+        }
+
         if ($first_arg_array instanceof Type\Atomic\TArray) {
-            return new Type\Union([clone $first_arg_array]);
+            if (!$already_cloned) {
+                $first_arg_array = clone $first_arg_array;
+            }
+            $array_type = new Type\Atomic\TArray($first_arg_array->type_params);
+        } else {
+            $array_type = new Type\Atomic\TArray([Type::getInt(), clone $first_arg_array->type_param]);
         }
 
-        if ($first_arg_array instanceof Type\Atomic\TList) {
-            return new Type\Union([new Type\Atomic\TArray([Type::getInt(), clone $first_arg_array->type_param])]);
+        if ($dont_preserve_int_keys && $array_type->type_params[0]->isInt()) {
+            $array_type = new Type\Atomic\TList($array_type->type_params[1]);
         }
 
-        return new Type\Union([$first_arg_array->getGenericArrayType()]);
+        return new Type\Union([$array_type]);
     }
 }

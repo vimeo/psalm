@@ -1326,9 +1326,21 @@ class FunctionCallTest extends TestCase
                     $c = array_slice($a, 1, 2, false);
                     $d = array_slice($a, 1, 2);',
                 'assertions' => [
-                    '$b' => 'non-empty-array<string, int>',
-                    '$c' => 'non-empty-array<string, int>',
-                    '$d' => 'non-empty-array<string, int>',
+                    '$b' => 'array<string, int>',
+                    '$c' => 'array<string, int>',
+                    '$d' => 'array<string, int>',
+                ],
+            ],
+            'arraySliceDontPreserveIntKeys' => [
+                '<?php
+                    $a = [1 => "a", 4 => "b", 3 => "c"];
+                    $b = array_slice($a, 1, 2, true);
+                    $c = array_slice($a, 1, 2, false);
+                    $d = array_slice($a, 1, 2);',
+                'assertions' => [
+                    '$b' => 'array<int, string>',
+                    '$c' => 'list<string>',
+                    '$d' => 'list<string>',
                 ],
             ],
             'printrOutput' => [
