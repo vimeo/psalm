@@ -522,9 +522,20 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
 
                         if ($context->check_methods) {
+                            $message = 'Cannot determine the type of the object'
+                                . ' on the left hand side of this expression';
+
+                            if ($lhs_var_id) {
+                                $message = 'Cannot determine the type of ' . $lhs_var_id;
+
+                                if ($stmt->name instanceof PhpParser\Node\Identifier) {
+                                    $message .= ' when calling method ' . $stmt->name->name;
+                                }
+                            }
+
                             if (IssueBuffer::accepts(
                                 new MixedMethodCall(
-                                    'Cannot determine the type of the object on the left hand side of this expression',
+                                    $message,
                                     new CodeLocation($source, $stmt->name)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
