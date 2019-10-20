@@ -48,7 +48,6 @@ use function preg_match;
 use function preg_quote;
 use function strtolower;
 use function strlen;
-use DeepCopy\TypeMatcher\TypeMatcher;
 
 /**
  * @internal
@@ -450,7 +449,7 @@ class BinaryOpAnalyzer
                 $naive_type = $stmt->left->inferredType ?? null;
 
                 if ($naive_type
-                    && !$naive_type->isMixed()
+                    && !$naive_type->hasMixed()
                     && !$naive_type->isNullable()
                 ) {
                     $var_id = ExpressionAnalyzer::getVarId($stmt->left, $context->self);
