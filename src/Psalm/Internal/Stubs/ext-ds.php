@@ -1328,7 +1328,7 @@ interface Sequence extends Collection
     /**
      * Returns the result of adding all given values to the sequence.
      *
-     * @param array<TValue>|Traversable<TValue $values
+     * @param array<TValue>|Traversable<TValue> $values
      *
      * @return Sequence<TValue>
      */
