@@ -997,7 +997,7 @@ class ForeachAnalyzer
             if (isset($class_template_types[$template_name]) && $calling_type_params) {
                 $offset = array_search($template_name, array_keys($class_template_types));
 
-                if ($offset !== false) {
+                if ($offset !== false && isset($calling_type_params[$offset])) {
                     return $calling_type_params[$offset];
                 }
             }

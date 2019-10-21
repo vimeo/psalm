@@ -969,6 +969,17 @@ class ForeachTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'loopOverIteratorWithTooFewParams' => [
+                '<?php
+                    /**
+                     * @param Iterator<string> $arr
+                     * @psalm-suppress MissingTemplateParam
+                     * @psalm-suppress MixedAssignment
+                     */
+                    function foo(Iterator $arr) : void {
+                        foreach ($arr as $a) {}
+                    }'
+            ],
         ];
     }
 
