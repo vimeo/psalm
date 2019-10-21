@@ -597,7 +597,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * User defined sort
      * @link http://php.net/manual/en/arrayiterator.uasort.php
-     * @param string $cmp_function <p>
+     * @param callable $cmp_function <p>
      * The compare function used for the sort.
      * </p>
      * @return void
@@ -607,7 +607,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * User defined sort
      * @link http://php.net/manual/en/arrayiterator.uksort.php
-     * @param string $cmp_function <p>
+     * @param callable $cmp_function <p>
      * The compare function used for the sort.
      * </p>
      * @return void
