@@ -1867,3 +1867,205 @@ final class Vector implements IteratorAggregate, ArrayAccess, Sequence
     }
     // END Capacity Trait
 }
+
+/**
+ * A Set is a sequence of unique values. This implementation uses
+ * the same hash table as Ds\Map, where values are used as keys and
+ * the mapped value is ignored.
+ *
+ * @package Ds
+ * @template TValue
+ * @implements Collection<TValue>
+ */
+final class Set implements Collection {
+    /**
+     * Adds all given values to the set that haven't already been added.
+     *
+     * @param TValue ...$values
+     */
+    public function add(...$values): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     */
+    public function __construct(...$values)
+    {
+    }
+
+    /**
+     * Determines if the set contains all values.
+     *
+     * @param TValue ...$values
+     */
+    public function contains(...$values): bool
+    {
+    }
+
+    /**
+     * Returns a shallow copy of the set.
+     *
+     * @return Set<TValue>
+     */
+    public function copy(): Set
+    {
+    }
+
+    /**
+     * Creates a new set using values that aren't in another set.
+     *
+     * @param Set<TValue> $set
+     *
+     * @return Set<TValue>
+     */
+    public function diff(Set $set): Set
+    {
+    }
+
+    /**
+     * Creates a new set using a callable to determine which values to include.
+     *
+     * @param callable(TValue):bool|null $callback
+     *
+     * @return Set<TValue> A new set containing all the values for which either
+     *      the callback returned TRUE, or all values that convert to TRUE if a
+     *      callback was not provided.
+     */
+    public function filter(callable $callback = null): Set
+    {
+    }
+
+    /**
+     * Returns the first value in the set.
+     *
+     * @return TValue
+     */
+    public function first()
+    {
+    }
+
+    /**
+     * Returns the value at a given index.
+     *
+     * @return TValue
+     */
+    public function get(int $index)
+    {
+    }
+
+    /**
+     * Creates a new set using values common to both the current instance and
+     * another set. In other words, returns a copy of the current instance with
+     * all values removed that are not in the other set.
+     *
+     * @param Set<TValue>
+     *
+     * @return Set<TValue>
+     */
+    public function intersect(Set $set): Set
+    {
+    }
+
+    /**
+     * Returns the last value in the set.
+     *
+     * @return TValue
+     */
+    public function last()
+    {
+    }
+
+    /**
+     * Returns the result of adding all given values to the set.
+     *
+     * @param array<TValue>|Traversable<TValue> $values
+     *
+     * @return Set<TValue>
+     */
+    public function merge($values): Set
+    {
+    }
+
+    /**
+     * Removes all given values from the set, ignoring any that are not in the set.
+     *
+     * @param TValue ...$values
+     */
+    public function remove(...$values): void
+    {
+    }
+
+    /**
+     * Returns a reversed copy of the set.
+     *
+     * @return Set<TValue>
+     */
+    public function reversed(): Set
+    {
+    }
+
+    /**
+     * Creates a sub-set of a given range.
+     *
+     * @return Set<TValue>
+     */
+    public function slice(int $index, int $length = null): Set
+    {
+    }
+
+    /**
+     * Sorts the set in-place, based on an optional comparator function.
+     *
+     * @param callable(TValue, TValue):int|null $comparator Accepts two values to be compared.
+     *                                  Should return the result of a <=> b.
+     */
+    public function sort(callable $comparator = null): void
+    {
+    }
+
+    /**
+     * Returns a sorted copy, using an optional comparator function.
+     *
+     * @param callable(TValue, TValue):int|null $comparator Accepts two values to be compared.
+     *                                  Should return the result of a <=> b.
+     *
+     * @return Set<TValue>
+     */
+    public function sorted(callable $comparator = null): Set
+    {
+    }
+
+    /**
+     * Converts the set to an array.
+     *
+     * @return array<TValue> An array containing all the values in the same order as the set.
+     */
+    public function toArray(): array
+    {
+    }
+
+    /**
+     * Creates a new set that contains the values of the current instance as
+     * well as the values of another set.
+     *
+     * @param Set<TValue> $set
+     *
+     * @return Set<TValue>
+     */
+    public function union(Set $set): Set
+    {
+    }
+
+    /**
+     * Creates a new set containing values in the current instance as well as
+     * another set, but not in both.
+     *
+     * @param Set<TValue> $set
+     *
+     * @return Set<TValue>
+     */
+    public function xor(Set $set): Set
+    {
+    }
+}
