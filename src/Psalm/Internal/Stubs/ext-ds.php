@@ -79,7 +79,7 @@ interface Collection extends Traversable, Countable, JsonSerializable
  * @package Ds
  * @template TValue
  *
- * @psalm-extends Sequence<TValue>
+ * @implements Sequence<TValue>
  */
 final class Deque implements IteratorAggregate, ArrayAccess, Sequence
 {
