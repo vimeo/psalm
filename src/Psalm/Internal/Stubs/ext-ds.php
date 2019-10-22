@@ -1962,7 +1962,7 @@ final class Set implements Collection {
      * another set. In other words, returns a copy of the current instance with
      * all values removed that are not in the other set.
      *
-     * @param Set<TValue>
+     * @param Set<TValue> $set
      *
      * @return Set<TValue>
      */
