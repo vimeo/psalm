@@ -23,7 +23,7 @@ use UnderflowException;
  * @package Ds
  * @template TValue
  *
- * @psalm-extends Traversable<mixed, TValue>
+ * @extends Traversable<mixed, TValue>
  */
 interface Collection extends Traversable, Countable, JsonSerializable
 {
@@ -79,7 +79,7 @@ interface Collection extends Traversable, Countable, JsonSerializable
  * @package Ds
  * @template TValue
  *
- * @psalm-extends Sequence<TValue>
+ * @implements Sequence<TValue>
  */
 final class Deque implements IteratorAggregate, ArrayAccess, Sequence
 {
@@ -500,9 +500,9 @@ interface Hashable
  * @template TKey
  * @template TValue
  *
- * @psalm-implements Collection<TValue>
- * @psalm-implements ArrayAccess<TKey, TValue>
- * @psalm-implements IteratorAggregate<TKey, TValue>
+ * @implements Collection<TValue>
+ * @implements ArrayAccess<TKey, TValue>
+ * @implements IteratorAggregate<TKey, TValue>
  */
 final class Map implements IteratorAggregate, ArrayAccess, Collection
 {
