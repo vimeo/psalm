@@ -380,7 +380,7 @@ abstract class Atomic
     /**
      * @return bool
      */
-    private function hasArrayAccessInterface(Codebase $codebase)
+    public function hasArrayAccessInterface(Codebase $codebase)
     {
         return $this instanceof TNamedObject
             && (

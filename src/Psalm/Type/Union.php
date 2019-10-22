@@ -620,6 +620,16 @@ class Union
             && $this->types['array']->type_params[1]->isEmpty();
     }
 
+    public function hasArrayAccessInterface(Codebase $codebase) : bool
+    {
+        return !!array_filter(
+            $this->types,
+            function ($type) use ($codebase) {
+                return $type->hasArrayAccessInterface($codebase);
+            }
+        );
+    }
+
     /**
      * @return bool
      */

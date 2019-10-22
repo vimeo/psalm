@@ -90,7 +90,7 @@ class Php71Test extends TestCase
                     echo A::IS_PUBLIC;
                     echo A::IS_ALSO_PUBLIC;',
             ],
-            'arrayDestructuring' => [
+            'arrayDestructuringList' => [
                 '<?php
                     $data = [
                         [1, "Tom"],
@@ -243,6 +243,13 @@ class Php71Test extends TestCase
                     function create_resource($op) {
                         return $op();
                     }',
+            ],
+            'arrayDestructuringOnArrayObject' => [
+                '<?php
+                    $var = new ArrayObject([0 => "first", "dos" => "second"]);
+                    [0 => $first, "dos" => $second] = $var;
+                    echo $first;
+                    echo $second;',
             ],
         ];
     }
