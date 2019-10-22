@@ -666,9 +666,11 @@ class ExpressionAnalyzer
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ErrorSuppress) {
+            $context->error_suppressing = true;
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
+            $context->error_suppressing = false;
             $stmt->inferredType = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             if (IssueBuffer::accepts(

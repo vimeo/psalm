@@ -321,6 +321,11 @@ class Context
     public $external_mutation_free = false;
 
     /**
+     * @var bool
+     */
+    public $error_suppressing = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

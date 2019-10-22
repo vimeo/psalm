@@ -629,6 +629,10 @@ class AssignmentAnalyzer
                     }
 
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
+
+                    if ($context->error_suppressing) {
+                        $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
+                    }
                 }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
