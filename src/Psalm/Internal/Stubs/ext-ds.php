@@ -1876,8 +1876,10 @@ final class Vector implements IteratorAggregate, ArrayAccess, Sequence
  * @package Ds
  * @template TValue
  * @implements Collection<TValue>
+ * @implements ArrayAccess<int, TValue>
+ * @implements Traversable<int, TValue>
  */
-final class Set implements Collection {
+final class Set implements ArrayAccess, Collection, Traversable {
     /**
      * Adds all given values to the set that haven't already been added.
      *
