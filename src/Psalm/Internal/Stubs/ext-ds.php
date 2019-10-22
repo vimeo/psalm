@@ -1876,8 +1876,10 @@ final class Vector implements IteratorAggregate, ArrayAccess, Sequence
  * @package Ds
  * @template TValue
  * @implements Collection<TValue>
+ * @implements ArrayAccess<int, TValue>
+ * @implements Traversable<int, TValue>
  */
-final class Set implements Collection {
+final class Set implements ArrayAccess, Collection, Traversable {
     /**
      * Adds all given values to the set that haven't already been added.
      *
@@ -1888,9 +1890,12 @@ final class Set implements Collection {
     }
 
     /**
-     * @param TValue ...$values
+     * Creates a new instance.
+     *
+     * @param array<TValue>|Traversable<TValue> $values A traversable object
+     *      or an array to use for the initial values.
      */
-    public function __construct(...$values)
+    public function __construct($values = null)
     {
     }
 
@@ -1959,7 +1964,7 @@ final class Set implements Collection {
      * another set. In other words, returns a copy of the current instance with
      * all values removed that are not in the other set.
      *
-     * @param Set<TValue>
+     * @param Set<TValue> $set
      *
      * @return Set<TValue>
      */
