@@ -1888,9 +1888,12 @@ final class Set implements Collection {
     }
 
     /**
-     * @param TValue ...$values
+     * Creates a new instance.
+     *
+     * @param array<TValue>|Traversable<TValue> $values A traversable object
+     *      or an array to use for the initial values.
      */
-    public function __construct(...$values)
+    public function __construct($values = null)
     {
     }
 
