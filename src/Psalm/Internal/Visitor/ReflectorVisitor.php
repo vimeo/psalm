@@ -2609,6 +2609,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )
                 );
 
+                $namespaced_type->queueClassLikesForScanning(
+                    $this->codebase,
+                    $this->file_storage,
+                    $this->function_template_types + $this->class_template_types
+                );
+
                 $assertion_type_parts[$i] = $prefix . $namespaced_type->getId();
             } else {
                 $assertion_type_parts[$i] = $prefix . $assertion_type_part;
