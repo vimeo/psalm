@@ -21,42 +21,49 @@
             <xs:element name="globals" type="GlobalsType" minOccurs="0" maxOccurs="1" />
         </xs:choice>
 
-        <xs:attribute name="name" type="xs:string" />
-        <xs:attribute name="useDocblockTypes" type="xs:string" />
-        <xs:attribute name="useDocblockPropertyTypes" type="xs:string" />
-        <xs:attribute name="throwExceptionOnError" type="xs:string" />
-        <xs:attribute name="hideExternalErrors" type="xs:string" />
         <xs:attribute name="autoloader" type="xs:string" />
         <xs:attribute name="cacheDirectory" type="xs:string" />
-        <xs:attribute name="allowFileIncludes" type="xs:string" />
-        <xs:attribute name="totallyTyped" type="xs:string" />
-        <xs:attribute name="strictBinaryOperands" type="xs:string" />
-        <xs:attribute name="requireVoidReturnType" type="xs:string" />
-        <xs:attribute name="useAssertForType" type="xs:string" />
-        <xs:attribute name="rememberPropertyAssignmentsAfterCall" type="xs:string" />
-        <xs:attribute name="serializer" type="xs:string" />
-        <xs:attribute name="allowPhpStormGenerics" type="xs:string" />
-        <xs:attribute name="allowCoercionFromStringToClassConst" type="xs:string" />
-        <xs:attribute name="allowStringToStandInForClass" type="xs:string" />
-        <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:string" />
-        <xs:attribute name="ignoreInternalFunctionNullReturn" type="xs:string" />
-        <xs:attribute name="usePhpDocMethodsWithoutMagicCall" type="xs:string" />
-        <xs:attribute name="memoizeMethodCallResults" type="xs:string" />
-        <xs:attribute name="hoistConstants" type="xs:string" />
-        <xs:attribute name="addParamDefaultToDocblockType" type="xs:string" />
-        <xs:attribute name="checkForThrowsDocblock" type="xs:string" />
-        <xs:attribute name="checkForThrowsInGlobalScope" type="xs:string" />
-        <xs:attribute name="forbidEcho" type="xs:string" />
         <xs:attribute name="errorBaseline" type="xs:string" />
-        <xs:attribute name="findUnusedCode" type="xs:string" />
-        <xs:attribute name="findUnusedVariablesAndParams" type="xs:string" />
-        <xs:attribute name="parseSql" type="xs:string" />
         <xs:attribute name="maxStringLength" type="xs:string" />
-        <xs:attribute name="resolveFromConfigFile" type="xs:string" />
-        <xs:attribute name="includePhpVersionsInErrorBaseline" type="xs:string" />
-        <xs:attribute name="loadXdebugStub" type="xs:string" />
-        <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:string" />
-        <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:string" />
+        <xs:attribute name="name" type="xs:string" />
+        <xs:attribute name="serializer" type="xs:string" />
+
+        <xs:attribute name="addParamDefaultToDocblockType" type="xs:boolean" default="false" />
+        <xs:attribute name="allowCoercionFromStringToClassConst" type="xs:boolean" default="false" />
+        <xs:attribute name="allowFileIncludes" type="xs:boolean" default="true" />
+        <xs:attribute name="allowPhpStormGenerics" type="xs:boolean" default="false" />
+        <xs:attribute name="allowStringToStandInForClass" type="xs:boolean" default="false" />
+        <xs:attribute name="checkForThrowsDocblock" type="xs:boolean" default="false" />
+        <xs:attribute name="checkForThrowsInGlobalScope" type="xs:boolean" default="false" />
+        <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />
+        <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedCode" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
+        <xs:attribute name="forbidEcho" type="xs:boolean" default="false" />
+        <xs:attribute name="hideExternalErrors" type="xs:boolean" default="false" />
+        <xs:attribute name="hoistConstants" type="xs:boolean" default="false" />
+        <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:boolean" default="false" />
+        <xs:attribute name="ignoreInternalFunctionNullReturn" type="xs:boolean" default="true" />
+        <xs:attribute name="includePhpVersionsInErrorBaseline" type="xs:boolean" default="false" />
+        <xs:attribute name="loadXdebugStub" type="xs:boolean">
+            <xs:annotation>
+                <xs:documentation xml:lang="en">
+                    Default is runtime-specific: if not present, Psalm will only load the Xdebug stub if psalm has unloaded the extension.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="memoizeMethodCallResults" type="xs:boolean" default="false" />
+        <xs:attribute name="parseSql" type="xs:boolean" default="false" />
+        <xs:attribute name="rememberPropertyAssignmentsAfterCall" type="xs:boolean" default="true" />
+        <xs:attribute name="requireVoidReturnType" type="xs:boolean" default="true" />
+        <xs:attribute name="resolveFromConfigFile" type="xs:boolean" default="false" />
+        <xs:attribute name="strictBinaryOperands" type="xs:boolean" default="false" />
+        <xs:attribute name="throwExceptionOnError" type="xs:boolean" default="false" />
+        <xs:attribute name="totallyTyped" type="xs:boolean" default="false" />
+        <xs:attribute name="useAssertForType" type="xs:boolean" default="true" />
+        <xs:attribute name="useDocblockTypes" type="xs:boolean" default="true" />
+        <xs:attribute name="useDocblockPropertyTypes" type="xs:boolean" default="false" />
+        <xs:attribute name="usePhpDocMethodsWithoutMagicCall" type="xs:boolean" default="false" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
