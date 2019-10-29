@@ -2325,6 +2325,17 @@ class ClassTemplateExtendsTest extends TestCase
                     interface Either{}
 
                     /**
+                     * @template L
+                     * @template-implements Either<L, mixed>
+                     */
+                    final class Left implements Either {
+                        /**
+                         * @param L $value
+                         */
+                        public function __construct($value) {}
+                    }
+
+                    /**
                      * @template R
                      * @template-implements Either<mixed,R>
                      */
@@ -2335,12 +2346,17 @@ class ClassTemplateExtendsTest extends TestCase
                         public function __construct($value) {}
                     }
 
+                    class A {}
                     class B {}
 
                     /**
-                     * @return Either<B,B>
+                     * @return Either<A,B>
                      */
-                    function result(bool $a = true): Either {
+                    function result() {
+                        if (rand(0, 1)) {
+                            return new Left(new A());
+                        }
+
                         return new Right(new B());
                     }'
             ],
@@ -3162,6 +3178,32 @@ class ClassTemplateExtendsTest extends TestCase
                     */
                     class Foo extends DateTimeImmutable {}',
                 'error_message' => 'InvalidDocblock'
+            ],
+            'invalidReturnParamType' => [
+                '<?php
+                    /**
+                     * @template L
+                     * @template R
+                     */
+                    interface Either {}
+
+                    /**
+                     * @template L
+                     * @template-implements Either<L,mixed>
+                     */
+                    class Left implements Either {
+                        /** @param L $value */
+                        public function __construct($value) { }
+                    }
+
+                    class A {}
+                    class B {}
+
+                    /** @return Either<A,B> */
+                    function result(): Either {
+                        return new Left(new B());
+                    }',
+                'error_message' => 'InvalidReturnStatement'
             ],
         ];
     }

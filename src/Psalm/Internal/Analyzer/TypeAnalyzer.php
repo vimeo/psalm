@@ -130,9 +130,6 @@ class TypeAnalyzer
 
                 if ($union_comparison_result) {
                     $atomic_comparison_result = new TypeComparisonResult();
-                    $atomic_comparison_result->to_string_cast = false;
-                    $atomic_comparison_result->type_coerced = false;
-                    $atomic_comparison_result->type_coerced_from_mixed = false;
                 } else {
                     $atomic_comparison_result = null;
                 }
@@ -1873,16 +1870,44 @@ class TypeAnalyzer
                     continue;
                 }
 
+                $param_comparison_result = new TypeComparisonResult();
+
                 if (!self::isContainedBy(
                     $codebase,
                     $input_param,
                     $container_param,
                     $input_param->ignore_nullable_issues,
                     $input_param->ignore_falsable_issues,
-                    $atomic_comparison_result,
+                    $param_comparison_result,
                     $allow_interface_equality
                 )) {
-                    $all_types_contain = false;
+                    $atomic_comparison_result->type_coerced
+                        = $param_comparison_result->type_coerced === true
+                            && $atomic_comparison_result->type_coerced !== false;
+
+                    $atomic_comparison_result->type_coerced_from_mixed
+                        = $param_comparison_result->type_coerced_from_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
+
+                    $atomic_comparison_result->type_coerced_from_as_mixed
+                        = $param_comparison_result->type_coerced_from_as_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
+
+                    $atomic_comparison_result->to_string_cast
+                        = $param_comparison_result->to_string_cast === true
+                            && $atomic_comparison_result->to_string_cast !== false;
+
+                    $atomic_comparison_result->type_coerced_from_scalar
+                        = $param_comparison_result->type_coerced_from_scalar === true
+                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
+
+                    $atomic_comparison_result->scalar_type_match_found
+                        = $param_comparison_result->scalar_type_match_found === true
+                            && $atomic_comparison_result->scalar_type_match_found !== false;
+
+                    if (!$param_comparison_result->type_coerced_from_as_mixed) {
+                        $all_types_contain = false;
+                    }
                 } elseif (!$input_type_part instanceof TIterable
                     && !$container_param->hasTemplate()
                     && !$input_param->hasTemplate()
@@ -1911,7 +1936,7 @@ class TypeAnalyzer
                                 $input_param,
                                 $container_param->ignore_nullable_issues,
                                 $container_param->ignore_falsable_issues,
-                                $atomic_comparison_result,
+                                $param_comparison_result,
                                 $allow_interface_equality
                             ) || $atomic_comparison_result->type_coerced
                             ) {
@@ -2040,8 +2065,6 @@ class TypeAnalyzer
                 }
             }
 
-            $any_scalar_param_match = false;
-
             foreach ($input_type_part->type_params as $i => $input_param) {
                 if ($i > 1) {
                     break;
@@ -2076,34 +2099,34 @@ class TypeAnalyzer
                         $allow_interface_equality
                     )
                 ) {
-                    if ($param_comparison_result->type_coerced !== null) {
-                        $atomic_comparison_result->type_coerced = $param_comparison_result->type_coerced;
-                    }
+                    $atomic_comparison_result->type_coerced
+                        = $param_comparison_result->type_coerced === true
+                            && $atomic_comparison_result->type_coerced !== false;
 
-                    if ($param_comparison_result->type_coerced_from_mixed !== null) {
-                        $atomic_comparison_result->type_coerced_from_mixed
-                            = $param_comparison_result->type_coerced_from_mixed;
-                    }
+                    $atomic_comparison_result->type_coerced_from_mixed
+                        = $param_comparison_result->type_coerced_from_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
 
-                    if ($param_comparison_result->to_string_cast !== null) {
-                        $atomic_comparison_result->to_string_cast = $param_comparison_result->to_string_cast;
-                    }
+                    $atomic_comparison_result->type_coerced_from_as_mixed
+                        = $param_comparison_result->type_coerced_from_as_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
 
-                    if ($param_comparison_result->type_coerced_from_scalar !== null) {
-                        $atomic_comparison_result->type_coerced_from_scalar
-                            = $param_comparison_result->type_coerced_from_scalar;
-                    }
+                    $atomic_comparison_result->to_string_cast
+                        = $param_comparison_result->to_string_cast === true
+                            && $atomic_comparison_result->to_string_cast !== false;
 
-                    $all_types_contain = false;
+                    $atomic_comparison_result->type_coerced_from_scalar
+                        = $param_comparison_result->type_coerced_from_scalar === true
+                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
 
-                    if ($param_comparison_result->scalar_type_match_found) {
-                        $any_scalar_param_match = true;
+                    $atomic_comparison_result->scalar_type_match_found
+                        = $param_comparison_result->scalar_type_match_found === true
+                            && $atomic_comparison_result->scalar_type_match_found !== false;
+
+                    if (!$param_comparison_result->type_coerced_from_as_mixed) {
+                        $all_types_contain = false;
                     }
                 }
-            }
-
-            if ($any_scalar_param_match) {
-                $atomic_comparison_result->scalar_type_match_found = true;
             }
         }
 

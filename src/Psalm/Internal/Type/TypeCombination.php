@@ -444,9 +444,10 @@ class TypeCombination
         }
 
         if ($combination->extra_types) {
-            $combination->extra_types = array_values(
-                self::combineTypes(array_values($combination->extra_types), $codebase)->getTypes()
-            );
+            $combination->extra_types = self::combineTypes(
+                array_values($combination->extra_types),
+                $codebase
+            )->getTypes();
         }
 
         foreach ($combination->builtin_type_params as $generic_type => $generic_type_params) {
