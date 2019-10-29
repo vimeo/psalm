@@ -14,6 +14,9 @@ class TypeComparisonResult
     public $type_coerced_from_mixed = null;
 
     /** @var ?bool */
+    public $type_coerced_from_as_mixed = null;
+
+    /** @var ?bool */
     public $to_string_cast = null;
 
     /** @var ?bool */

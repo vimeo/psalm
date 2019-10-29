@@ -285,16 +285,18 @@ class ReturnAnalyzer
                         // is the declared return type more specific than the inferred one?
                         if ($union_comparison_results->type_coerced) {
                             if ($union_comparison_results->type_coerced_from_mixed) {
-                                if (IssueBuffer::accepts(
-                                    new MixedReturnTypeCoercion(
-                                        'The type \'' . $stmt->inferredType->getId() . '\' is more general than the'
-                                            . ' declared return type \'' . $local_return_type->getId() . '\''
-                                            . ' for ' . $cased_method_id,
-                                        new CodeLocation($source, $stmt->expr)
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    return false;
+                                if (!$union_comparison_results->type_coerced_from_as_mixed) {
+                                    if (IssueBuffer::accepts(
+                                        new MixedReturnTypeCoercion(
+                                            'The type \'' . $stmt->inferredType->getId() . '\' is more general than the'
+                                                . ' declared return type \'' . $local_return_type->getId() . '\''
+                                                . ' for ' . $cased_method_id,
+                                            new CodeLocation($source, $stmt->expr)
+                                        ),
+                                        $statements_analyzer->getSuppressedIssues()
+                                    )) {
+                                        return false;
+                                    }
                                 }
                             } else {
                                 if (IssueBuffer::accepts(

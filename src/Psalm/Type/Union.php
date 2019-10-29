@@ -131,6 +131,13 @@ class Union
     public $had_template = false;
 
     /**
+     * Whether or not this union comes from a template "as" default
+     *
+     * @var bool
+     */
+    public $from_template_default = false;
+
+    /**
      * @var array<string, TLiteralString>
      */
     private $literal_string_types = [];

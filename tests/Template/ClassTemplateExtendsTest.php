@@ -2316,6 +2316,34 @@ class ClassTemplateExtendsTest extends TestCase
                      */
                     class Test extends C {}'
             ],
+            'eitherType' => [
+                '<?php
+                    /**
+                     * @template L
+                     * @template R
+                     */
+                    interface Either{}
+
+                    /**
+                     * @template R
+                     * @template-implements Either<mixed,R>
+                     */
+                    final class Right implements Either {
+                        /**
+                         * @param R $value
+                         */
+                        public function __construct($value) {}
+                    }
+
+                    class B {}
+
+                    /**
+                     * @return Either<B,B>
+                     */
+                    function result(bool $a = true): Either {
+                        return new Right(new B());
+                    }'
+            ],
         ];
     }
 
