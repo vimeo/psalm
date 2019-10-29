@@ -779,7 +779,7 @@ class PropertyTypeTest extends TestCase
                         /**
                          * Constructs a finally node.
                          *
-                         * @param Node[] $stmts      Statements
+                         * @param array<int, Node\Stmt> $stmts      Statements
                          * @param array  $attributes Additional attributes
                          */
                         public function __construct(array $stmts = array(), array $attributes = array()) {
@@ -796,10 +796,6 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [
-                    'MixedTypeCoercion',
-                    'MissingReturnType',
-                ],
             ],
             'privatePropertyAccessible' => [
                 '<?php
