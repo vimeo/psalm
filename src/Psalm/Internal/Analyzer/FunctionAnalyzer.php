@@ -249,20 +249,30 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     break;
 
                 case 'explode':
-                    if (count($call_args) === 2) {
+                    if (count($call_args) >= 2) {
+                        $can_return_empty = isset($call_args[2])
+                            && (
+                                !$call_args[2]->value instanceof PhpParser\Node\Scalar\LNumber
+                                || $call_args[2]->value->value < 0
+                            );
+
                         if ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {
                             if ($call_args[0]->value->value === '') {
                                 return Type::getFalse();
                             }
 
                             return new Type\Union([
-                                new Type\Atomic\TNonEmptyList(Type::getString())
+                                $can_return_empty
+                                    ? new Type\Atomic\TList(Type::getString())
+                                    : new Type\Atomic\TNonEmptyList(Type::getString())
                             ]);
                         } elseif (isset($call_args[0]->value->inferredType)
                             && $call_args[0]->value->inferredType->hasString()
                         ) {
                             $falsable_array = new Type\Union([
-                                new Type\Atomic\TNonEmptyList(Type::getString()),
+                                $can_return_empty
+                                    ? new Type\Atomic\TList(Type::getString())
+                                    : new Type\Atomic\TNonEmptyList(Type::getString()),
                                 new Type\Atomic\TFalse
                             ]);
 

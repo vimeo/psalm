@@ -945,18 +945,92 @@ class FunctionCallTest extends TestCase
                     '$c' => 'int',
                 ],
             ],
+            'explode' => [
+                '<?php
+                    /** @var string $string */
+                    $elements = explode(" ", $string);',
+                'assertions' => [
+                    '$elements' => 'non-empty-list<string>',
+                ],
+            ],
+            'explodeWithPositiveLimit' => [
+                '<?php
+                    /** @var string $string */
+                    $elements = explode(" ", $string, 5);',
+                'assertions' => [
+                    '$elements' => 'non-empty-list<string>',
+                ],
+            ],
+            'explodeWithNegativeLimit' => [
+                '<?php
+                    /** @var string $string */
+                    $elements = explode(" ", $string, -5);',
+                'assertions' => [
+                    '$elements' => 'list<string>',
+                ],
+            ],
+            'explodeWithDynamicLimit' => [
+                '<?php
+                    /**
+                     * @var string $string
+                     * @var int $limit
+                     */
+                    $elements = explode(" ", $string, $limit);',
+                'assertions' => [
+                    '$elements' => 'list<string>',
+                ],
+            ],
+            'explodeWithDynamicDelimiter' => [
+                '<?php
+                    /**
+                     * @var string $delim
+                     * @var string $string
+                     */
+                    $elements = explode($delim, $string);',
+                'assertions' => [
+                    '$elements' => 'false|non-empty-list<string>',
+                ],
+            ],
+            'explodeWithDynamicDelimiterAndPositiveLimit' => [
+                '<?php
+                    /**
+                     * @var string $delim
+                     * @var string $string
+                     */
+                    $elements = explode($delim, $string, 5);',
+                'assertions' => [
+                    '$elements' => 'false|non-empty-list<string>',
+                ],
+            ],
+            'explodeWithDynamicDelimiterAndNegativeLimit' => [
+                '<?php
+                    /**
+                     * @var string $delim
+                     * @var string $string
+                     */
+                    $elements = explode($delim, $string, -5);',
+                'assertions' => [
+                    '$elements' => 'false|list<string>',
+                ],
+            ],
+            'explodeWithDynamicDelimiterAndLimit' => [
+                '<?php
+                    /**
+                     * @var string $delim
+                     * @var string $string
+                     * @var int $limit
+                     */
+                    $elements = explode($delim, $string, $limit);',
+                'assertions' => [
+                    '$elements' => 'false|list<string>',
+                ],
+            ],
             'explodeWithPossiblyFalse' => [
                 '<?php
-                    /** @return array<int, string> */
-                    function exploder(string $s) : array {
-                        return explode(" ", $s);
+                    /** @return non-empty-list<string> */
+                    function exploder(string $d, string $s) : array {
+                        return explode($d, $s);
                     }',
-            ],
-            'explodeWithThirdArg' => [
-                '<?php
-                    $elements = explode("_", "", -1);
-                    $element = array_shift($elements);
-                    assert(null !== $element);'
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 '<?php
