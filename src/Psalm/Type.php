@@ -251,7 +251,7 @@ abstract class Type
                 && count($generic_params) === 1
             ) {
                 array_unshift($generic_params, new Union([new TArrayKey]));
-            } elseif (($generic_type_value === 'iterable' || $generic_type_value === 'Traversable')
+            } elseif (in_array($generic_type_value, ['iterable', 'Traversable', 'Iterator', 'IteratorAggregate'], true)
                 && count($generic_params) === 1
             ) {
                 array_unshift($generic_params, new Union([new TMixed]));
