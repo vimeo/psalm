@@ -1106,12 +1106,22 @@ extending all its template params.
 
 ```php
 /**
- * @template-implements IteratorAggregate<int>
+ * @template-implements ArrayAccess<int>
  */
-class SomeIterator implements IteratorAggregate
+class SomeIterator implements ArrayAccess
 {
-    public function getIterator() {
-        yield 5;
+    public function offsetSet($offset, $value) {
+    }
+
+    public function offsetExists($offset) {
+        return false;
+    }
+
+    public function offsetUnset($offset) {
+    }
+
+    public function offsetGet($offset) {
+        return null;
     }
 }
 ```
