@@ -487,6 +487,10 @@ class Populator
                         if ($mapped_name) {
                             $storage->template_type_extends[$parent_storage->name][$mapped_name] = $type;
                         }
+
+                        if (is_int($i) && ($parent_storage->template_covariants[$i] ?? false)) {
+                            $storage->template_covariants[$i] = true;
+                        }
                     }
 
                     if ($parent_storage->template_type_extends) {
@@ -618,6 +622,10 @@ class Populator
                         if ($mapped_name) {
                             $storage->template_type_extends[$parent_interface_storage->name][$mapped_name] = $type;
                         }
+
+                        if (is_int($i) && ($parent_interface_storage->template_covariants[$i] ?? false)) {
+                            $storage->template_covariants[$i] = true;
+                        }
                     }
 
                     if ($parent_interface_storage->template_type_extends) {
@@ -709,6 +717,10 @@ class Populator
 
                         if ($mapped_name) {
                             $storage->template_type_extends[$implemented_interface_storage->name][$mapped_name] = $type;
+                        }
+
+                        if (is_int($i) && ($implemented_interface_storage->template_covariants[$i] ?? false)) {
+                            $storage->template_covariants[$i] = true;
                         }
                     }
 

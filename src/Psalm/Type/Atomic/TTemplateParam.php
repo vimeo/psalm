@@ -171,7 +171,8 @@ class TTemplateParam extends \Psalm\Type\Atomic
             ) {
                 if (\Psalm\IssueBuffer::accepts(
                     new \Psalm\Issue\InvalidTemplateParam(
-                        'Template param ' . $this->defining_class . ' is marked covariant and cannot be used'
+                        'Template param ' . $this->param_name . ' of '
+                            . $this->defining_class . ' is marked covariant and cannot be used'
                             . ' as input to a function',
                         $code_location
                     ),

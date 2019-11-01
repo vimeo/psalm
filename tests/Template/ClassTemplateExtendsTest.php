@@ -1637,6 +1637,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                         /**
                          * @psalm-suppress MissingTemplateParam
+                         * @psalm-suppress InvalidTemplateParam
                          *
                          * @psalm-param array<T> $elements
                          * @psalm-return ArrayCollection<T>
@@ -1853,11 +1854,6 @@ class ClassTemplateExtendsTest extends TestCase
                             return "Woof!";
                         }
                     }
-                    class Cat extends Animal {
-                        public function getSound() : string {
-                            return "Miaow";
-                        }
-                    }
 
                     /**
                      * @template-covariant TValue
@@ -1887,6 +1883,75 @@ class ClassTemplateExtendsTest extends TestCase
                     function takesDogList(Collection $list) : void {
                         getSounds($list); // this probably should not be an error
                     }',
+            ],
+            'allowPassingToCovariantCollectionWithExtends' => [
+                '<?php
+                    abstract class Animal {
+                        abstract public function getSound() : string;
+                    }
+
+                    class Dog extends Animal {
+                        public function getSound() : string {
+                            return "Woof!";
+                        }
+                    }
+
+                    /**
+                     * @template-covariant TValue
+                     * @template-extends \ArrayObject<int,TValue>
+                     */
+                    class Collection extends \ArrayObject {}
+
+                    /** @template-extends Collection<Dog> */
+                    class HardwiredDogCollection extends Collection {}
+
+                    /**
+                     * @param Collection<Animal> $list
+                     */
+                    function getSounds(Collection $list) : void {
+                        foreach ($list as $l) {
+                            echo $l->getSound();
+                        }
+                    }
+
+                    getSounds(new HardwiredDogCollection([new Dog]));',
+            ],
+            'butWithCatInstead' => [
+                '<?php
+                    /** @template-covariant T as object **/
+                    interface Viewable
+                    {
+                        /** @psalm-return T **/
+                        public function view(): object;
+                    }
+
+                    class CatView
+                    {
+                        /**
+                          * @var string
+                          * @readonly
+                          */
+                        public $name;
+
+                        public function __construct(string $name) {
+                            $this->name = $name;
+                        }
+                    }
+
+                    /** @implements Viewable<CatView> */
+                    class Cat implements Viewable
+                    {
+                        public function view(): object {
+                            return new CatView("Kittie");
+                        }
+                    }
+
+                    /** @psalm-param Viewable<object> $viewable */
+                    function getView(Viewable $viewable): object {
+                        return $viewable->view();
+                    }
+
+                    getView(new Cat());'
             ],
             'keyOfClassTemplateExtended' => [
                 '<?php
