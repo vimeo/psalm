@@ -1891,6 +1891,33 @@ class ClassTemplateTest extends TestCase
                         return ["foo", "baz"];
                     }'
             ],
+            'allowListAcceptanceIntoArray' => [
+                '<?php
+                    /** @template T */
+                    class Collection
+                    {
+                        /** @var array<T> */
+                        public $values;
+
+                        /** @param array<T> $values */
+                        function __construct(array $values)
+                        {
+                            $this->values = $values;
+                        }
+                    }
+
+                    /** @return Collection<string> */
+                    function makeStringCollection()
+                    {
+                        return new Collection(getStringList()); // gets typed as Collection<mixed> for some reason
+                    }
+
+                    /** @return list<string> */
+                    function getStringList(): array
+                    {
+                        return ["foo", "baz"];
+                    }'
+            ],
         ];
     }
 
