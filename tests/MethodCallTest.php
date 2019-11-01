@@ -731,6 +731,16 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullArgument',
             ],
+            'callOnVoid' => [
+                '<?php
+                    class A {
+                        public function foo(): void {}
+                    }
+
+                    $p = new A();
+                    $p->foo()->bar();',
+                'error_message' => 'NullReference'
+            ],
         ];
     }
 }

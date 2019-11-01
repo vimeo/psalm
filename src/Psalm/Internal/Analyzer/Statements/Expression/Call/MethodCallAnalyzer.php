@@ -140,7 +140,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $has_mock = false;
 
-        if ($class_type && $stmt->name instanceof PhpParser\Node\Identifier && $class_type->isNull()) {
+        if ($class_type
+            && $stmt->name instanceof PhpParser\Node\Identifier
+            && ($class_type->isNull() || $class_type->isVoid())
+        ) {
             if (IssueBuffer::accepts(
                 new NullReference(
                     'Cannot call method ' . $stmt->name->name . ' on null value',
