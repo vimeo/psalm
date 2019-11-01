@@ -144,6 +144,12 @@ class TList extends \Psalm\Type\Atomic
                 } else {
                     $input_type_param = $input_type->getGenericValueType();
                 }
+            } elseif ($input_type instanceof Atomic\TList) {
+                if ($offset === 0) {
+                    continue;
+                }
+
+                $input_type_param = clone $input_type->type_param;
             }
 
             $type_param->replaceTemplateTypesWithStandins(
