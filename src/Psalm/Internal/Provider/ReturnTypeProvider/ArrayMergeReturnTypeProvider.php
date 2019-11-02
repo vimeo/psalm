@@ -14,7 +14,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
 {
     public static function getFunctionIds() : array
     {
-        return ['array_merge'];
+        return ['array_merge', 'array_replace'];
     }
 
     /**
