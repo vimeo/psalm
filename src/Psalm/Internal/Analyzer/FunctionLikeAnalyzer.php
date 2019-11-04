@@ -1380,7 +1380,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             return ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($this->function->name->name);
         }
 
-        return $this->getFilePath()
+        return strtolower($this->getFilePath())
             . ':' . $this->function->getLine()
             . ':' . (int)$this->function->getAttribute('startFilePos')
             . ':-:closure';

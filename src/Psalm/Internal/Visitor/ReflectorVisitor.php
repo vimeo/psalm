@@ -1701,7 +1701,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
             }
         } else {
-            $function_id = $cased_function_id = $this->file_path
+            $function_id = $cased_function_id = strtolower($this->file_path)
                 . ':' . $stmt->getLine()
                 . ':' . (int) $stmt->getAttribute('startFilePos') . ':-:closure';
 
