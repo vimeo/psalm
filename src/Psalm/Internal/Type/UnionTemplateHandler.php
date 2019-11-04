@@ -49,6 +49,10 @@ class UnionTemplateHandler
         }
 
         if ($replace) {
+            if (array_values($original_atomic_types) === $atomic_types) {
+                return $union_type;
+            }
+
             if (!$atomic_types) {
                 throw new \UnexpectedValueException('Cannot remove all keys');
             }

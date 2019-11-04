@@ -1637,7 +1637,6 @@ class ClassTemplateExtendsTest extends TestCase
 
                         /**
                          * @psalm-suppress MissingTemplateParam
-                         * @psalm-suppress InvalidTemplateParam
                          *
                          * @psalm-param array<T> $elements
                          * @psalm-return ArrayCollection<T>
