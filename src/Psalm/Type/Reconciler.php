@@ -723,6 +723,7 @@ class Reconciler
                 if ($base_atomic_type instanceof Type\Atomic\ObjectLike
                     || ($base_atomic_type instanceof Type\Atomic\TArray
                         && !$base_atomic_type->type_params[1]->isEmpty())
+                    || $base_atomic_type instanceof Type\Atomic\TList
                 ) {
                     $new_base_type = clone $existing_types[$base_key];
 
@@ -740,6 +741,21 @@ class Reconciler
                         if (!$previous_key_type->isEmpty()) {
                             $base_atomic_type->previous_key_type = $previous_key_type;
                         }
+                        $base_atomic_type->previous_value_type = $previous_value_type;
+                    } elseif ($base_atomic_type instanceof Type\Atomic\TList) {
+                        $previous_key_type = Type::getInt();
+                        $previous_value_type = clone $base_atomic_type->type_param;
+
+                        $base_atomic_type = new Type\Atomic\ObjectLike(
+                            [
+                                $array_key_offset => clone $result_type,
+                            ],
+                            null
+                        );
+
+                        $base_atomic_type->is_list = true;
+
+                        $base_atomic_type->previous_key_type = $previous_key_type;
                         $base_atomic_type->previous_value_type = $previous_value_type;
                     } else {
                         $base_atomic_type = clone $base_atomic_type;

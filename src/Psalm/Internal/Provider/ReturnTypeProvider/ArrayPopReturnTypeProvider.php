@@ -59,10 +59,15 @@ class ArrayPopReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 $nullable = true;
             }
         } else {
-            $value_type = $first_arg_array->getGenericValueType();
+            // special case where we know the type of the first element
+            if ($function_id === 'array_shift' && $first_arg_array->is_list && isset($first_arg_array->properties[0])) {
+                $value_type = clone $first_arg_array->properties[0];
+            } else {
+                $value_type = $first_arg_array->getGenericValueType();
 
-            if (!$first_arg_array->sealed && !$first_arg_array->previous_value_type) {
-                $nullable = true;
+                if (!$first_arg_array->sealed && !$first_arg_array->previous_value_type) {
+                    $nullable = true;
+                }
             }
         }
 
