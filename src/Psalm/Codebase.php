@@ -774,7 +774,7 @@ class Codebase
      */
     public function getParentInterfaces($fq_interface_name)
     {
-        return $this->classlikes->getParentInterfaces($fq_interface_name);
+        return $this->classlikes->getParentInterfaces($this->classlikes->getUnAliasedName($fq_interface_name));
     }
 
     /**
