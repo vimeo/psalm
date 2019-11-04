@@ -7,6 +7,8 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
@@ -151,27 +153,21 @@ trait GenericTrait
         }
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union}>>     $template_types
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>     $generic_params
-     * @param  Atomic|null              $input_type
-     *
-     * @return void
-     */
     public function replaceTemplateTypesWithStandins(
-        array &$template_types,
-        array &$generic_params,
+        TemplateResult $template_result,
         Codebase $codebase = null,
         Atomic $input_type = null,
         bool $replace = true,
         bool $add_upper_bound = false,
         int $depth = 0
-    ) {
+    ) : Atomic {
         if ($input_type instanceof Atomic\TList) {
             $input_type = new Atomic\TArray([Type::getInt(), $input_type->type_param]);
         }
 
-        foreach ($this->type_params as $offset => $type_param) {
+        $atomic = clone $this;
+
+        foreach ($atomic->type_params as $offset => $type_param) {
             $input_type_param = null;
 
             if (($input_type instanceof Atomic\TGenericObject
@@ -191,9 +187,10 @@ trait GenericTrait
                 }
             }
 
-            $type_param->replaceTemplateTypesWithStandins(
-                $template_types,
-                $generic_params,
+            /** @psalm-suppress PropertyTypeCoercion */
+            $atomic->type_params[$offset] = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $type_param,
+                $template_result,
                 $codebase,
                 $input_type_param,
                 $replace,
@@ -201,10 +198,12 @@ trait GenericTrait
                 $depth + 1
             );
         }
+
+        return $atomic;
     }
 
     /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>>     $template_types
      *
      * @return void
      */

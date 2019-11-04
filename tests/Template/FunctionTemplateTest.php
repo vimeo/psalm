@@ -402,7 +402,7 @@ class FunctionTemplateTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MissingParamType'],
             ],
-            'bindFirstTemplatedClosureParameter' => [
+            'bindFirstTemplatedClosureParameterValid' => [
                 '<?php
                     /**
                      * @template T
@@ -410,10 +410,7 @@ class FunctionTemplateTest extends TestCase
                      * @param Closure(T):void $t1
                      * @param T $t2
                      */
-                    function apply(Closure $t1, $t2) : void
-                    {
-                        $t1($t2);
-                    }
+                    function apply(Closure $t1, $t2) : void {}
 
                     apply(function(int $_i) : void {}, 5);
                     apply(function(string $_i) : void {}, "hello");
@@ -952,7 +949,7 @@ class FunctionTemplateTest extends TestCase
                     }',
                 'error_message' => 'MixedMethodCall',
             ],
-            'bindFirstTemplatedClosureParameter' => [
+            'bindFirstTemplatedClosureParameterInvalidScalar' => [
                 '<?php
                     /**
                      * @template T

@@ -358,7 +358,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             return self::checkMethodArgs(
                 null,
                 $stmt->args,
-                $found_generic_params,
+                null,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer
@@ -747,8 +747,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         return false;
                     }
 
-                    $generic_params = [];
-
                     if (self::checkFunctionLikeArgumentsMatch(
                         $statements_analyzer,
                         $args,
@@ -756,7 +754,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $pseudo_method_storage->params,
                         $pseudo_method_storage,
                         null,
-                        $generic_params,
+                        null,
                         new CodeLocation($source, $stmt),
                         $context
                     ) === false) {
@@ -885,8 +883,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     return false;
                 }
 
-                $generic_params = [];
-
                 if (self::checkFunctionLikeArgumentsMatch(
                     $statements_analyzer,
                     $args,
@@ -894,7 +890,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $pseudo_method_storage->params,
                     $pseudo_method_storage,
                     null,
-                    $generic_params,
+                    null,
                     new CodeLocation($source, $stmt->name),
                     $context
                 ) === false) {
@@ -1022,6 +1018,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         }
 
+        $template_result = new \Psalm\Internal\Type\TemplateResult([], $class_template_params ?: []);
+
         if ($codebase->store_node_types
             && !$context->collect_initializations
             && !$context->collect_mutations
@@ -1037,7 +1035,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if (self::checkMethodArgs(
             $method_id,
             $args,
-            $class_template_params,
+            $template_result,
             $context,
             new CodeLocation($source, $stmt->name),
             $statements_analyzer
@@ -1096,16 +1094,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             if (!$return_type_candidate) {
                 if ($call_map_id && CallMap::inCallMap($call_map_id)) {
-                    if (($class_template_params || $class_storage->stubbed)
+                    if (($template_result->generic_params || $class_storage->stubbed)
                         && isset($class_storage->methods[$method_name_lc])
                         && ($method_storage = $class_storage->methods[$method_name_lc])
                         && $method_storage->return_type
                     ) {
                         $return_type_candidate = clone $method_storage->return_type;
 
-                        if ($class_template_params) {
+                        if ($template_result->generic_params) {
                             $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                                $class_template_params,
+                                $template_result->generic_params,
                                 $codebase
                             );
                         }
@@ -1200,9 +1198,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($return_type_candidate) {
                         $return_type_candidate = clone $return_type_candidate;
 
-                        if ($class_template_params) {
+                        if ($template_result->generic_params) {
                             $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                                $class_template_params,
+                                $template_result->generic_params,
                                 $codebase
                             );
                         }
@@ -1344,13 +1342,15 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             }
                         }
 
+                        $class_template_params = $template_result->generic_params;
+
                         if ($method_storage->assertions) {
                             self::applyAssertionsToContext(
                                 $stmt->name,
                                 ExpressionAnalyzer::getArrayVarId($stmt->var, null, $statements_analyzer),
                                 $method_storage->assertions,
                                 $args,
-                                $class_template_params ?: [],
+                                $class_template_params,
                                 $context,
                                 $statements_analyzer
                             );

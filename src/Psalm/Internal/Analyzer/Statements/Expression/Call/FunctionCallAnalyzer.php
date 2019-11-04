@@ -41,6 +41,7 @@ use function is_string;
 use function array_map;
 use function extension_loaded;
 use function strpos;
+use Psalm\Internal\Type\TemplateResult;
 
 /**
  * @internal
@@ -394,7 +395,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             $context->inside_conditional = false;
         }
 
-        $generic_params = null;
+        $template_result = null;
 
         if ($function_exists) {
             if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
@@ -409,6 +410,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 }
             }
 
+            $template_result = new TemplateResult([], []);
+
             // do this here to allow closure param checks
             if ($function_params !== null
                 && self::checkFunctionLikeArgumentsMatch(
@@ -418,7 +421,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $function_params,
                     $function_storage,
                     null,
-                    $generic_params,
+                    $template_result,
                     $code_location,
                     $context
                 ) === false) {
@@ -442,8 +445,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     if (!$in_call_map || $is_stubbed) {
                         if ($function_storage && $function_storage->template_types) {
                             foreach ($function_storage->template_types as $template_name => $_) {
-                                if (!isset($generic_params[$template_name])) {
-                                    $generic_params[$template_name] = ['' => [Type::getMixed(), 0]];
+                                if (!isset($template_result->generic_params[$template_name])) {
+                                    $template_result->generic_params[$template_name] = ['' => [Type::getMixed(), 0]];
                                 }
                             }
                         }
@@ -459,9 +462,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             if ($function_storage && $function_storage->return_type) {
                                 $return_type = clone $function_storage->return_type;
 
-                                if ($generic_params && $function_storage->template_types) {
+                                if ($template_result->generic_params && $function_storage->template_types) {
                                     $return_type->replaceTemplateTypesWithArgTypes(
-                                        $generic_params
+                                        $template_result->generic_params
                                     );
                                 }
 
@@ -687,13 +690,15 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         }
 
         if ($function_storage) {
+            $generic_params = $template_result ? $template_result->generic_params : [];
+
             if ($function_storage->assertions && $stmt->name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
                     $stmt->name,
                     null,
                     $function_storage->assertions,
                     $stmt->args,
-                    $generic_params ?: [],
+                    $generic_params,
                     $context,
                     $statements_analyzer
                 );

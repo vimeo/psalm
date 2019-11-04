@@ -115,12 +115,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($has_single_class) {
                     $fq_class_name = $stmt->class->inferredType->getSingleStringLiteral()->value;
                 } else {
-                    $generic_params = null;
-
                     if (self::checkMethodArgs(
                         null,
                         $stmt->args,
-                        $generic_params,
+                        null,
                         $context,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $statements_analyzer
@@ -384,10 +382,12 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         );
                     }
 
+                    $template_result = new \Psalm\Internal\Type\TemplateResult([], []);
+
                     if (self::checkMethodArgs(
                         $method_id,
                         $stmt->args,
-                        $found_generic_params,
+                        $template_result,
                         $context,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $statements_analyzer
@@ -435,14 +435,15 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             : $fq_class_name;
 
                         foreach ($storage->template_types as $template_name => $base_type) {
-                            if (isset($found_generic_params[$template_name][$fq_class_name])) {
-                                $generic_param_type = $found_generic_params[$template_name][$fq_class_name][0];
-                            } elseif ($storage->template_type_extends && $found_generic_params) {
+                            if (isset($template_result->generic_params[$template_name][$fq_class_name])) {
+                                $generic_param_type
+                                    = $template_result->generic_params[$template_name][$fq_class_name][0];
+                            } elseif ($storage->template_type_extends && $template_result->generic_params) {
                                 $generic_param_type = self::getGenericParamForOffset(
                                     $declaring_fq_class_name,
                                     $template_name,
                                     $storage->template_type_extends,
-                                    $found_generic_params
+                                    $template_result->generic_params
                                 );
                             } else {
                                 $generic_param_type = array_values($base_type)[0][0];

@@ -667,13 +667,15 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     }
                 }
 
+                $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+
                 $implementer_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_types,
+                    $template_result->template_types,
                     $codebase
                 );
 
                 $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_types,
+                    $template_result->template_types,
                     $codebase
                 );
             }
@@ -699,13 +701,15 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     }
                 }
 
+                $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+
                 $implementer_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_types,
+                    $template_result->template_types,
                     $codebase
                 );
 
                 $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_types,
+                    $template_result->template_types,
                     $codebase
                 );
             }
@@ -926,8 +930,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         }
                     }
 
+                    $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+
                     $guide_method_storage_param_type->replaceTemplateTypesWithArgTypes(
-                        $template_types,
+                        $template_result->template_types,
                         $codebase
                     );
                 }

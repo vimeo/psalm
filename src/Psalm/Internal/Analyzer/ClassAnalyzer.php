@@ -750,12 +750,17 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 '$this'
             );
 
+            $template_result = new \Psalm\Internal\Type\TemplateResult(
+                $class_template_params ?: [],
+                []
+            );
+
             if ($class_template_params) {
-                $generic_params = [];
-                $fleshed_out_type->replaceTemplateTypesWithStandins(
-                    $class_template_params,
-                    $generic_params,
-                    $codebase
+                $fleshed_out_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                    $fleshed_out_type,
+                    $template_result,
+                    $codebase,
+                    null
                 );
             }
 
@@ -1690,8 +1695,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $return_type = $codebase->methods->getMethodReturnType($analyzed_method_id, $fq_classlike_name);
 
         if ($return_type && $class_storage->template_type_extends) {
-            $generic_params = [];
-
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
             if ($declaring_method_id) {
@@ -1707,7 +1710,17 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 strtolower($stmt->name->name)
             ) ?: [];
 
-            $return_type->replaceTemplateTypesWithStandins($class_template_params, $generic_params);
+            $template_result = new \Psalm\Internal\Type\TemplateResult(
+                $class_template_params ?: [],
+                []
+            );
+
+            $return_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $return_type,
+                $template_result,
+                $codebase,
+                null
+            );
         }
 
         $overridden_method_ids = isset($class_storage->overridden_method_ids[strtolower($stmt->name->name)])

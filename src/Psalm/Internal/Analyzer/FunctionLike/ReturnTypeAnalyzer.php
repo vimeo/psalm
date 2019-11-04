@@ -719,11 +719,16 @@ class ReturnTypeAnalyzer
             $class_template_params = $class_template_params ?: $classlike_storage->template_types;
 
             if ($class_template_params) {
-                $generic_params = [];
-                $fleshed_out_return_type->replaceTemplateTypesWithStandins(
+                $template_result = new \Psalm\Internal\Type\TemplateResult(
                     $class_template_params,
-                    $generic_params,
-                    $codebase
+                    []
+                );
+
+                $fleshed_out_return_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                    $fleshed_out_return_type,
+                    $template_result,
+                    $codebase,
+                    null
                 );
             }
         }

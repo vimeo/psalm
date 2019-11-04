@@ -13,6 +13,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\ReservedWord;
@@ -794,23 +795,15 @@ abstract class Atomic
         $this->from_docblock = true;
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union}>> $template_types
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
-     * @param  Type\Atomic|null          $input_type
-     *
-     * @return void
-     */
     public function replaceTemplateTypesWithStandins(
-        array &$template_types,
-        array &$generic_params,
+        TemplateResult $template_result,
         Codebase $codebase = null,
         Type\Atomic $input_type = null,
         bool $replace = true,
         bool $add_upper_bound = false,
         int $depth = 0
-    ) {
-        // do nothing
+    ) : self {
+        return $this;
     }
 
     /**
