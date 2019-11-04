@@ -56,6 +56,7 @@ class UnionTemplateHandler
             $new_union_type = new Union($atomic_types);
             $new_union_type->ignore_nullable_issues = $union_type->ignore_nullable_issues;
             $new_union_type->ignore_falsable_issues = $union_type->ignore_falsable_issues;
+            $new_union_type->possibly_undefined = $union_type->possibly_undefined;
 
             return $new_union_type;
         }
