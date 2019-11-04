@@ -253,9 +253,39 @@ class FunctionTemplateAssertTest extends TestCase
                     $d = rand(0, 1) ? 4 : null;
                     assertSame(null, $d);
 
-                    function foo(string $a, string $b) : void {
+                    function assertStringsAreSame(string $a, string $b) : void {
+                        assertSame($a, $b);
+                    }
+
+                    /** @param mixed $a */
+                    function assertMaybeStringsAreSame($a, string $b) : void {
+                        assertSame($a, $b);
+                    }
+
+                    /** @param mixed $b */
+                    function alsoAssertMaybeStringsAreSame(string $a, $b) : void {
                         assertSame($a, $b);
                     }',
+            ],
+            'allowCanBeSameAfterStaticMethodAssertion' => [
+                '<?php
+                    namespace Bar;
+
+                    class Assertion {
+                        /**
+                         * Asserts that two variables are the same.
+                         *
+                         * @template T
+                         * @param T      $expected
+                         * @param mixed  $actual
+                         * @psalm-assert =T $actual
+                         */
+                        public static function assertSame($expected, $actual) : void {}
+                    }
+
+                    $a = rand(0, 1) ? "goodbye" : "hello";
+                    $b = rand(0, 1) ? "hello" : "goodbye";
+                    Assertion::assertSame($a, $b);',
             ],
             'allowCanBeNotSameAfterAssertion' => [
                 '<?php

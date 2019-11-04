@@ -907,13 +907,15 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
                     }
 
+                    $generic_params = $template_result->generic_params;
+
                     if ($method_storage->assertions) {
                         self::applyAssertionsToContext(
                             $stmt->name,
                             null,
                             $method_storage->assertions,
                             $stmt->args,
-                            $found_generic_params ?: [],
+                            $generic_params,
                             $context,
                             $statements_analyzer
                         );
@@ -921,8 +923,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     if ($method_storage->if_true_assertions) {
                         $stmt->ifTrueAssertions = array_map(
-                            function (Assertion $assertion) use ($found_generic_params) : Assertion {
-                                return $assertion->getUntemplatedCopy($found_generic_params ?: []);
+                            function (Assertion $assertion) use ($generic_params) : Assertion {
+                                return $assertion->getUntemplatedCopy($generic_params);
                             },
                             $method_storage->if_true_assertions
                         );
@@ -930,8 +932,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     if ($method_storage->if_false_assertions) {
                         $stmt->ifFalseAssertions = array_map(
-                            function (Assertion $assertion) use ($found_generic_params) : Assertion {
-                                return $assertion->getUntemplatedCopy($found_generic_params ?: []);
+                            function (Assertion $assertion) use ($generic_params) : Assertion {
+                                return $assertion->getUntemplatedCopy($generic_params);
                             },
                             $method_storage->if_false_assertions
                         );
