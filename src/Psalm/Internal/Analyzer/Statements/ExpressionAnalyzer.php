@@ -1266,6 +1266,14 @@ class ExpressionAnalyzer
                     $parent_class
                 );
             }
+        } elseif ($return_type instanceof Type\Atomic\TList) {
+            $return_type->type_param = self::fleshOutType(
+                $codebase,
+                $return_type->type_param,
+                $self_class,
+                $static_class_type,
+                $parent_class
+            );
         }
 
         if ($return_type instanceof Type\Atomic\TCallable) {
