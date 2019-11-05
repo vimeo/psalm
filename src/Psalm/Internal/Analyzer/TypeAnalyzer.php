@@ -721,11 +721,21 @@ class TypeAnalyzer
             return false;
         }
 
-        if ($input_type_part instanceof TNull && $container_type_part instanceof TNull) {
-            return true;
+        if ($input_type_part instanceof TNull) {
+            if ($container_type_part instanceof TNull) {
+                return true;
+            }
+
+            if ($container_type_part instanceof TTemplateParam
+                && $container_type_part->as->isNullable()
+            ) {
+                return true;
+            }
+
+            return false;
         }
 
-        if ($input_type_part instanceof TNull || $container_type_part instanceof TNull) {
+        if ($container_type_part instanceof TNull) {
             return false;
         }
 
