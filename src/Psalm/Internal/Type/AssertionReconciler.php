@@ -2066,11 +2066,22 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $atomic_comparison_results
                 );
 
-                if ($atomic_contained_by || $atomic_comparison_results->type_coerced) {
+                if ($atomic_contained_by) {
                     $has_local_match = true;
-                    if ($atomic_comparison_results->type_coerced) {
-                        $matching_atomic_types[] = $existing_type_part;
+
+                    if ($atomic_comparison_results->type_coerced
+                        && get_class($new_type_part) === Type\Atomic\TNamedObject::class
+                        && $existing_type_part instanceof Type\Atomic\TGenericObject
+                    ) {
+                        // this is a hack - it's not actually rigorous, as the params may be different
+                        $matching_atomic_types[] = new Type\Atomic\TGenericObject(
+                            $new_type_part->value,
+                            $existing_type_part->type_params
+                        );
                     }
+                } elseif ($atomic_comparison_results->type_coerced) {
+                    $has_local_match = true;
+                    $matching_atomic_types[] = $existing_type_part;
                 }
 
                 if (($new_type_part instanceof Type\Atomic\TGenericObject
