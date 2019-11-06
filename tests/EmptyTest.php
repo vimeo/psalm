@@ -343,6 +343,16 @@ class EmptyTest extends TestCase
                         }
                     }',
             ],
+            'allowEmptyCheckOnPossiblyNullPropertyFetch' => [
+                '<?php
+                    class A {
+                        public bool $b = false;
+                    }
+
+                    function foo(?A $a) : void {
+                        if (!empty($a->b)) {}
+                    }',
+            ],
         ];
     }
 
@@ -372,6 +382,13 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
                 'error_levels' => ['MixedAssignment', 'MissingParamType'],
+            ],
+            'preventEmptyOnBool' => [
+                '<?php
+                    function foo(bool $b) : void {
+                        if (!empty($b)) {}
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

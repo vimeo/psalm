@@ -297,15 +297,19 @@ class PropertyFetchAnalyzer
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getRootFilePath());
         }
 
-        if ($stmt_var_type->isNullable() && !$context->inside_isset && !$stmt_var_type->ignore_nullable_issues) {
-            if (IssueBuffer::accepts(
-                new PossiblyNullPropertyFetch(
-                    'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+        if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues) {
+            if (!$context->inside_isset) {
+                if (IssueBuffer::accepts(
+                    new PossiblyNullPropertyFetch(
+                        'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                $stmt->inferredType = Type::getNull();
             }
         }
 

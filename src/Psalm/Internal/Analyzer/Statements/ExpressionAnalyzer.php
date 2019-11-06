@@ -1651,6 +1651,24 @@ class ExpressionAnalyzer
         Context $context
     ) {
         self::analyzeIssetVar($statements_analyzer, $stmt->expr, $context);
+
+        if (isset($stmt->expr->inferredType)
+            && $stmt->expr->inferredType->hasBool()
+            && $stmt->expr->inferredType->isSingle()
+            && !$stmt->expr->inferredType->from_docblock
+        ) {
+            if (IssueBuffer::accepts(
+                new \Psalm\Issue\InvalidArgument(
+                    'Calling empty on a boolean value is almost certainly unintended',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
+                    'empty'
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
         $stmt->inferredType = Type::getBool();
     }
 
