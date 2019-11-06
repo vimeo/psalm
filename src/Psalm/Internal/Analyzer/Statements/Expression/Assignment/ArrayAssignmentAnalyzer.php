@@ -329,7 +329,7 @@ class ArrayAssignmentAnalyzer
                         }
                     }
 
-                    if ($type instanceof Type\Atomic\TString) {
+                    if ($type instanceof Type\Atomic\TString && is_int($key_value)) {
                         $has_matching_string = true;
 
                         if ($type instanceof Type\Atomic\TLiteralString
