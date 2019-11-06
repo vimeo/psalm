@@ -249,7 +249,7 @@ class CallAnalyzer
     protected static function checkMethodArgs(
         $method_id,
         array $args,
-        ?TemplateResult $template_result,
+        ?TemplateResult $class_template_result,
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer
@@ -266,7 +266,7 @@ class CallAnalyzer
             $method_params,
             $method_id,
             $context,
-            $template_result
+            $class_template_result
         ) === false) {
             return false;
         }
@@ -325,7 +325,7 @@ class CallAnalyzer
             $method_params,
             $method_storage,
             $class_storage,
-            $template_result,
+            $class_template_result,
             $code_location,
             $context
         ) === false) {
@@ -475,6 +475,7 @@ class CallAnalyzer
                         $replaced_type,
                         $replace_template_result,
                         $codebase,
+                        null,
                         null
                     );
 
@@ -564,7 +565,8 @@ class CallAnalyzer
                         $codebase,
                         isset($arg->value->inferredType)
                             ? $arg->value->inferredType
-                            : null
+                            : null,
+                        null
                     );
 
                     if ($replace_template_result->generic_params) {
@@ -1124,7 +1126,7 @@ class CallAnalyzer
         array $function_params,
         $function_storage,
         $class_storage,
-        ?TemplateResult $existing_template_result,
+        ?TemplateResult $class_template_result,
         CodeLocation $code_location,
         Context $context
     ) {
@@ -1195,6 +1197,10 @@ class CallAnalyzer
 
         $template_result = null;
 
+        $class_generic_params = $class_template_result
+            ? $class_template_result->generic_params
+            : [];
+
         if ($function_storage) {
             $template_types = self::getTemplateTypesForFunction(
                 $function_storage,
@@ -1203,7 +1209,7 @@ class CallAnalyzer
             );
 
             if ($template_types) {
-                $template_result = $existing_template_result;
+                $template_result = $class_template_result;
 
                 if (!$template_result) {
                     $template_result = new TemplateResult($template_types, []);
@@ -1228,23 +1234,20 @@ class CallAnalyzer
                         $template_result,
                         $codebase,
                         $arg->value->inferredType,
+                        $context->self ?: '',
                         false
                     );
 
-                    if (!$existing_template_result) {
+                    if (!$class_template_result) {
                         $template_result->generic_params = [];
                     }
                 }
             }
         }
 
-        $existing_generic_params = $existing_template_result
-            ? $existing_template_result->generic_params
-            : [];
-
-        foreach ($existing_generic_params as $template_name => $type_map) {
+        foreach ($class_generic_params as $template_name => $type_map) {
             foreach ($type_map as $class => $type) {
-                $existing_generic_params[$template_name][$class][0] = clone $type[0];
+                $class_generic_params[$template_name][$class][0] = clone $type[0];
             }
         }
 
@@ -1305,7 +1308,7 @@ class CallAnalyzer
                 $argument_offset,
                 $arg,
                 $context,
-                $existing_generic_params,
+                $class_generic_params,
                 $template_result,
                 $function_storage ? $function_storage->pure : false,
                 $in_call_map
@@ -1416,6 +1419,7 @@ class CallAnalyzer
                         $template_result,
                         $codebase,
                         clone $param->default_type,
+                        null,
                         true
                     );
                 }
@@ -1424,7 +1428,7 @@ class CallAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $existing_generic_params
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $class_generic_params
      * @return false|null
      */
     private static function checkFunctionLikeArgumentMatches(
@@ -1437,7 +1441,7 @@ class CallAnalyzer
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
-        array $existing_generic_params,
+        array $class_generic_params,
         ?TemplateResult $template_result,
         bool $function_is_pure,
         bool $in_call_map
@@ -1509,7 +1513,7 @@ class CallAnalyzer
             $argument_offset,
             $arg,
             $context,
-            $existing_generic_params,
+            $class_generic_params,
             $template_result,
             $function_is_pure,
             $in_call_map
@@ -1611,7 +1615,8 @@ class CallAnalyzer
                         $codebase,
                         isset($arg->value->inferredType)
                             ? $arg->value->inferredType
-                            : null
+                            : null,
+                        null
                     );
 
                     if ($template_result->generic_params) {
@@ -1648,7 +1653,7 @@ class CallAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $existing_generic_params
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $class_generic_params
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
      * @param  array<string, array<string, array{Type\Union}>> $template_types
      * @return false|null
@@ -1665,7 +1670,7 @@ class CallAnalyzer
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
-        ?array $existing_generic_params,
+        ?array $class_generic_params,
         ?TemplateResult $template_result,
         bool $function_is_pure,
         bool $in_call_map
@@ -1680,23 +1685,25 @@ class CallAnalyzer
             $param_type = clone $function_param->type;
         }
 
-        if ($existing_generic_params) {
+        if ($class_generic_params) {
             $empty_generic_params = [];
 
-            $empty_template_result = new TemplateResult($existing_generic_params, $empty_generic_params);
+            $empty_template_result = new TemplateResult($class_generic_params, $empty_generic_params);
 
             $param_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
                 $param_type,
                 $empty_template_result,
                 $codebase,
-                $arg->value->inferredType
+                $arg->value->inferredType,
+                $context->self ?: ''
             );
 
             $arg_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
                 $arg_type,
                 $empty_template_result,
                 $codebase,
-                $arg->value->inferredType
+                $arg->value->inferredType,
+                $context->self ?: ''
             );
         }
 
@@ -1727,7 +1734,8 @@ class CallAnalyzer
                 $param_type,
                 $template_result,
                 $codebase,
-                $arg_type_param
+                $arg_type_param,
+                $context->self ?: ''
             );
         }
 

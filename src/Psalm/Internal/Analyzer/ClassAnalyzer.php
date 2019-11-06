@@ -760,6 +760,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $fleshed_out_type,
                     $template_result,
                     $codebase,
+                    null,
                     null
                 );
             }
@@ -1719,6 +1720,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $return_type,
                 $template_result,
                 $codebase,
+                null,
                 null
             );
         }

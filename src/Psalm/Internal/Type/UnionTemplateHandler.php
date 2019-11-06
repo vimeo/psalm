@@ -22,6 +22,7 @@ class UnionTemplateHandler
         TemplateResult $template_result,
         ?Codebase $codebase,
         ?Union $input_type,
+        ?string $calling_class = null,
         bool $replace = true,
         bool $add_upper_bound = false,
         int $depth = 0
@@ -39,6 +40,7 @@ class UnionTemplateHandler
                     $template_result,
                     $codebase,
                     $input_type,
+                    $calling_class,
                     $replace,
                     $add_upper_bound,
                     $depth,
@@ -77,6 +79,7 @@ class UnionTemplateHandler
         TemplateResult $template_result,
         ?Codebase $codebase,
         ?Union $input_type,
+        ?string $calling_class,
         bool $replace,
         bool $add_upper_bound,
         int $depth,
@@ -94,6 +97,7 @@ class UnionTemplateHandler
                 $atomic_type,
                 $key,
                 $input_type,
+                $calling_class,
                 $template_result,
                 $codebase,
                 $replace,
@@ -334,6 +338,7 @@ class UnionTemplateHandler
         Atomic\TTemplateParam $atomic_type,
         string $key,
         ?Union $input_type,
+        ?string $calling_class,
         TemplateResult $template_result,
         ?Codebase $codebase,
         bool $replace,
@@ -395,8 +400,11 @@ class UnionTemplateHandler
                         }
                     }
 
-                    if ($replacement_atomic_type instanceof Atomic\TTemplateParam) {
+                    if ($replacement_atomic_type instanceof Atomic\TTemplateParam
+                        && $replacement_atomic_type->defining_class !== $calling_class
+                    ) {
                         foreach ($replacement_atomic_type->as->getTypes() as $nested_type_atomic) {
+                            $replacements_found = true;
                             $atomic_types[] = clone $nested_type_atomic;
                         }
                     }

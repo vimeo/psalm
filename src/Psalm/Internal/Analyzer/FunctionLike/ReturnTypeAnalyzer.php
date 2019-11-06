@@ -728,6 +728,7 @@ class ReturnTypeAnalyzer
                     $fleshed_out_return_type,
                     $template_result,
                     $codebase,
+                    null,
                     null
                 );
             }

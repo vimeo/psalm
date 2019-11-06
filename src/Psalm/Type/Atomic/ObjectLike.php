@@ -343,6 +343,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                 $template_result,
                 $codebase,
                 $input_type_param,
+                null,
                 $replace,
                 $add_upper_bound,
                 $depth
