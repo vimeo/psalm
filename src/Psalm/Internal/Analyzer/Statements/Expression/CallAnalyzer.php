@@ -484,8 +484,6 @@ class CallAnalyzer
                         $codebase
                     );
 
-                    $template_result->generic_params = $replace_template_result->generic_params;
-
                     $closure_id = strtolower($statements_analyzer->getFilePath())
                         . ':' . $arg->value->getLine()
                         . ':' . (int)$arg->value->getAttribute('startFilePos')
