@@ -2397,7 +2397,7 @@ class ClassTemplateTest extends TestCase
                     function expectsShape($_): void {}',
                 'error_message' => 'MixedArgumentTypeCoercion'
             ],
-            'preventUseWithMoreSpecificParam' => [
+            'preventUseWithMoreSpecificParamInt' => [
                 '<?php
                     /** @template T */
                     abstract class Collection {
@@ -2411,6 +2411,23 @@ class ClassTemplateTest extends TestCase
                      */
                     function usesCollection(Collection $col): void {
                         $col->add(456);
+                    }',
+                'error_message' => 'InvalidArgument'
+            ],
+            'preventUseWithMoreSpecificParamEmptyArray' => [
+                '<?php
+                    /** @template T */
+                    abstract class Collection {
+                        /** @param T $elem */
+                        public function add($elem): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param Collection<T> $col
+                     */
+                    function usesCollection(Collection $col): void {
+                        $col->add([]);
                     }',
                 'error_message' => 'InvalidArgument'
             ],

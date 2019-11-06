@@ -677,9 +677,21 @@ class ClassTemplateExtendsTest extends TestCase
 
                     class Collection3 extends Collection2{}
 
-                    $a = new Collection1(["a" => "b"]);
-                    $a = new Collection2(["a" => "b"]);
-                    $a = new Collection3(["a" => "b"]);',
+                    foreach ((new Collection1(["a" => "b"])) as $a) {}
+
+                    /** @psalm-suppress MixedAssignment */
+                    foreach ((new Collection2(["a" => "b"])) as $a) {}
+
+                    /** @psalm-suppress MixedAssignment */
+                    foreach ((new Collection3(["a" => "b"])) as $a) {}
+
+                    foreach ((new Collection1([])) as $i) {}
+
+                    /** @psalm-suppress MixedAssignment */
+                    foreach ((new Collection2([])) as $i) {}
+
+                    /** @psalm-suppress MixedAssignment */
+                    foreach ((new Collection3([])) as $i) {}',
             ],
             'iterateOverExtendedArrayObjectWithoutParam' => [
                 '<?php

@@ -814,7 +814,10 @@ class TypeAnalyzer
                     $allow_float_int_equality,
                     $atomic_comparison_result
                 )) {
-                    if ($allow_interface_equality || $input_type_part instanceof TArray) {
+                    if ($allow_interface_equality
+                        || ($input_type_part instanceof TArray
+                            && !$input_type_part->type_params[1]->isEmpty())
+                    ) {
                         return true;
                     }
                 }
