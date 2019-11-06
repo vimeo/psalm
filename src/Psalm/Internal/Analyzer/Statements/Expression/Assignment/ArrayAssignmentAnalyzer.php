@@ -329,7 +329,7 @@ class ArrayAssignmentAnalyzer
                         }
                     }
 
-                    if ($type instanceof Type\Atomic\TString && is_int($key_value)) {
+                    if ($type instanceof Type\Atomic\TString && \is_int($key_value)) {
                         $has_matching_string = true;
 
                         if ($type instanceof Type\Atomic\TLiteralString
@@ -337,7 +337,7 @@ class ArrayAssignmentAnalyzer
                         ) {
                             $new_char = $current_type->getSingleStringLiteral()->value;
 
-                            if (strlen($new_char) === 1) {
+                            if (\strlen($new_char) === 1) {
                                 $type->value[0] = $new_char;
                             }
                         }
