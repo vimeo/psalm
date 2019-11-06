@@ -318,6 +318,7 @@ class ArrayAssignmentAnalyzer
 
             if ($key_value !== null) {
                 $has_matching_objectlike_property = false;
+                $has_matching_string = false;
 
                 foreach ($child_stmt->inferredType->getTypes() as $type) {
                     if ($type instanceof ObjectLike) {
@@ -327,9 +328,23 @@ class ArrayAssignmentAnalyzer
                             $type->properties[$key_value] = clone $current_type;
                         }
                     }
+
+                    if ($type instanceof Type\Atomic\TString) {
+                        $has_matching_string = true;
+
+                        if ($type instanceof Type\Atomic\TLiteralString
+                            && $current_type->isSingleStringLiteral()
+                        ) {
+                            $new_char = $current_type->getSingleStringLiteral()->value;
+
+                            if (strlen($new_char) === 1) {
+                                $type->value[0] = $new_char;
+                            }
+                        }
+                    }
                 }
 
-                if (!$has_matching_objectlike_property) {
+                if (!$has_matching_objectlike_property && !$has_matching_string) {
                     $array_assignment_type = new Type\Union([
                         new ObjectLike([$key_value => $current_type]),
                     ]);
