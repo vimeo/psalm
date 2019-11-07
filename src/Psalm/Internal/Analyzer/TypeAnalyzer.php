@@ -1683,6 +1683,21 @@ class TypeAnalyzer
                     // do nothing
                 }
             }
+        } elseif ($input_type_part instanceof TNamedObject
+            && $codebase->classExists($input_type_part->value)
+            && $codebase->methodExists($input_type_part->value . '::__invoke')
+        ) {
+            return new TCallable(
+                'callable',
+                $codebase->getMethodParams(
+                    $input_type_part->value . '::__invoke'
+                ),
+                $codebase->getMethodReturnType(
+                    $input_type_part->value . '::__invoke',
+                    $input_type_part->value,
+                    []
+                )
+            );
         }
 
         return null;
