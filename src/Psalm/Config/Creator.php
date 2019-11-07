@@ -25,7 +25,8 @@ class Creator
     public static function getContents(
         string $current_dir,
         string $suggested_dir = null,
-        int $level = 3
+        int $level = 3,
+        string $vendor_dir = 'vendor'
     ) : string {
         $replacements = [];
 
@@ -79,6 +80,12 @@ class Creator
         $template = str_replace(
             '<directory name="src" />',
             implode("\n        ", $replacements),
+            $template
+        );
+
+        $template = str_replace(
+            '<directory name="vendor" />',
+            '<directory name="' . $vendor_dir . '" />',
             $template
         );
 
