@@ -178,6 +178,14 @@ class TList extends \Psalm\Type\Atomic
     }
 
     /**
+     * @return list<Type\Atomic\TTemplateParam>
+     */
+    public function getTemplateTypes() : array
+    {
+        return $this->type_param->getTemplateTypes();
+    }
+
+    /**
      * @return bool
      */
     public function equals(Atomic $other_type)

@@ -220,6 +220,20 @@ trait GenericTrait
     }
 
     /**
+     * @return list<Type\Atomic\TTemplateParam>
+     */
+    public function getTemplateTypes() : array
+    {
+        $template_types = [];
+
+        foreach ($this->type_params as $type_param) {
+            $template_types = \array_merge($template_types, $type_param->getTemplateTypes());
+        }
+
+        return $template_types;
+    }
+
+    /**
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues

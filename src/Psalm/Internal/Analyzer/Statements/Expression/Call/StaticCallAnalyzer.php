@@ -833,6 +833,22 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($return_type_candidate) {
                         $return_type_candidate = clone $return_type_candidate;
 
+                        if ($template_result->template_types) {
+                            $bindable_template_types = $return_type_candidate->getTemplateTypes();
+
+                            foreach ($bindable_template_types as $template_type) {
+                                if (!isset(
+                                    $template_result->generic_params
+                                        [$template_type->param_name]
+                                        [$template_type->defining_class ?: '']
+                                )) {
+                                    $template_result->generic_params[$template_type->param_name] = [
+                                        ($template_type->defining_class ?: '') => [Type::getEmpty(), 0]
+                                    ];
+                                }
+                            }
+                        }
+
                         if ($template_result->generic_params) {
                             $return_type_candidate->replaceTemplateTypesWithArgTypes(
                                 $template_result->generic_params,

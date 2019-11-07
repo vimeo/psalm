@@ -869,6 +869,24 @@ class Union
     }
 
     /**
+     * @return list<Type\Atomic\TTemplateParam>
+     */
+    public function getTemplateTypes() : array
+    {
+        $template_types = [];
+
+        foreach ($this->types as $type) {
+            if ($type instanceof Type\Atomic\TTemplateParam) {
+                $template_types[] = $type;
+            }
+
+            $template_types = array_merge($template_types, $type->getTemplateTypes());
+        }
+
+        return $template_types;
+    }
+
+    /**
      * @return bool
      */
     public function hasMixed()
@@ -1226,7 +1244,10 @@ class Union
             }
         }
 
-        $this->types = array_merge($this->types, $new_types);
+        $this->types = TypeCombination::combineTypes(
+            array_values(array_merge($this->types, $new_types)),
+            $codebase
+        )->getTypes();
     }
 
     /**

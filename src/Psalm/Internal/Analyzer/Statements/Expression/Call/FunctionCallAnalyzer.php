@@ -446,7 +446,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         if ($function_storage && $function_storage->template_types) {
                             foreach ($function_storage->template_types as $template_name => $_) {
                                 if (!isset($template_result->generic_params[$template_name])) {
-                                    $template_result->generic_params[$template_name] = ['' => [Type::getMixed(), 0]];
+                                    $template_result->generic_params[$template_name] = ['' => [Type::getEmpty(), 0]];
                                 }
                             }
                         }

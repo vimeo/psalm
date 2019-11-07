@@ -1728,6 +1728,8 @@ class CallAnalyzer
                 }
             }
 
+            $bindable_template_params = $param_type->getTemplateTypes();
+
             $param_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
                 $param_type,
                 $template_result,
@@ -1735,6 +1737,18 @@ class CallAnalyzer
                 $arg_type_param,
                 $context->self ?: ''
             );
+
+            foreach ($bindable_template_params as $template_type) {
+                if (!isset(
+                    $template_result->generic_params
+                        [$template_type->param_name]
+                        [$template_type->defining_class ?: '']
+                )) {
+                    $template_result->generic_params[$template_type->param_name] = [
+                        ($template_type->defining_class ?: '') => [clone $template_type->as, 0]
+                    ];
+                }
+            }
         }
 
         if (!$context->check_variables) {

@@ -1198,6 +1198,24 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($return_type_candidate) {
                         $return_type_candidate = clone $return_type_candidate;
 
+                        if ($template_result->template_types) {
+                            $bindable_template_types = $return_type_candidate->getTemplateTypes();
+
+                            foreach ($bindable_template_types as $template_type) {
+                                if ($template_type->defining_class !== $fq_class_name
+                                    && !isset(
+                                        $template_result->generic_params
+                                            [$template_type->param_name]
+                                            [$template_type->defining_class ?: '']
+                                    )
+                                ) {
+                                    $template_result->generic_params[$template_type->param_name] = [
+                                        ($template_type->defining_class ?: '') => [Type::getEmpty(), 0]
+                                    ];
+                                }
+                            }
+                        }
+
                         if ($template_result->generic_params) {
                             $return_type_candidate->replaceTemplateTypesWithArgTypes(
                                 $template_result->generic_params,
@@ -1652,7 +1670,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
 
                         $class_template_params[$type_name][$class_storage->name] = [
-                            $output_type_extends ?: Type::getMixed()
+                            $output_type_extends ?: Type::getEmpty()
                         ];
                     }
 

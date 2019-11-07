@@ -272,6 +272,28 @@ trait CallableTrait
     }
 
     /**
+     * @return list<Type\Atomic\TTemplateParam>
+     */
+    public function getTemplateTypes() : array
+    {
+        $template_types = [];
+
+        if ($this->params) {
+            foreach ($this->params as $param) {
+                if ($param->type) {
+                    $template_types = \array_merge($template_types, $param->type->getTemplateTypes());
+                }
+            }
+        }
+
+        if ($this->return_type) {
+            $template_types = \array_merge($template_types, $this->return_type->getTemplateTypes());
+        }
+
+        return $template_types;
+    }
+
+    /**
      * @return void
      */
     public function setFromDocblock()

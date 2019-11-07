@@ -817,6 +817,14 @@ abstract class Atomic
     }
 
     /**
+     * @return list<Type\Atomic\TTemplateParam>
+     */
+    public function getTemplateTypes() : array
+    {
+        return [];
+    }
+
+    /**
      * @return bool
      */
     public function equals(Atomic $other_type)

@@ -369,6 +369,20 @@ class ObjectLike extends \Psalm\Type\Atomic
     }
 
     /**
+     * @return list<Type\Atomic\TTemplateParam>
+     */
+    public function getTemplateTypes() : array
+    {
+        $template_types = [];
+
+        foreach ($this->properties as $property) {
+            $template_types = \array_merge($template_types, $property->getTemplateTypes());
+        }
+
+        return $template_types;
+    }
+
+    /**
      * @return bool
      */
     public function equals(Atomic $other_type)
