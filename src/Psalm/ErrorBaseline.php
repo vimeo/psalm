@@ -104,8 +104,11 @@ class ErrorBaseline
 
             $files[$fileName] = [];
 
-            /** @var \DOMElement $issue */
             foreach ($file->childNodes as $issue) {
+                if (!$issue instanceof \DOMElement) {
+                    continue;
+                }
+
                 $issueType = $issue->tagName;
 
                 $files[$fileName][$issueType] = [
