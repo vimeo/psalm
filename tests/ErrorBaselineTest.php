@@ -299,4 +299,49 @@ class ErrorBaselineTest extends TestCase
             ],
         ], $remainingBaseline);
     }
+
+    /**
+     * @return void
+     */
+    public function testAddingACommentInBaselineDoesntTriggerNotice()
+    {
+        $baselineFilePath = 'baseline.xml';
+
+        $this->fileProvider->fileExists($baselineFilePath)->willReturn(true);
+        $this->fileProvider->getContents($baselineFilePath)->willReturn(
+            '<?xml version="1.0" encoding="UTF-8"?>
+            <files>
+              <file src="sample/sample-file.php">
+                <!-- here is a comment ! //-->
+                <MixedAssignment occurrences="2">
+                  <code>foo</code>
+                  <code>bar</code>
+                </MixedAssignment>
+                <InvalidReturnStatement occurrences="1"/>
+              </file>
+              <!-- And another one ! //-->
+              <file src="sample\sample-file2.php">
+                <PossiblyUnusedMethod occurrences="2">
+                  <code>foo</code>
+                  <code>bar</code>
+                </PossiblyUnusedMethod>
+              </file>
+            </files>'
+        );
+
+        $expectedParsedBaseline = [
+            'sample/sample-file.php' => [
+                'MixedAssignment' => ['o' => 2, 's' => ['foo', 'bar']],
+                'InvalidReturnStatement' => ['o' => 1, 's' => []],
+            ],
+            'sample/sample-file2.php' => [
+                'PossiblyUnusedMethod' => ['o' => 2, 's' => ['foo', 'bar']],
+            ],
+        ];
+
+        $this->assertSame(
+            $expectedParsedBaseline,
+            ErrorBaseline::read($this->fileProvider->reveal(), $baselineFilePath)
+        );
+    }
 }
