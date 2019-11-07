@@ -862,7 +862,7 @@ class Codebase
      */
     public function getMethodReturnType($method_id, &$self_class, array $call_args = [])
     {
-        return $this->methods->getMethodReturnType($method_id, $self_class);
+        return $this->methods->getMethodReturnType($method_id, $self_class, $call_args);
     }
 
     /**
