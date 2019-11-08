@@ -1464,6 +1464,18 @@ class ExpressionAnalyzer
             }
         }
 
+        if (isset($codebase->config->forbidden_functions['print'])) {
+            if (IssueBuffer::accepts(
+                new ForbiddenCode(
+                    'You have forbidden the use of print',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // continue
+            }
+        }
+
         $stmt->inferredType = Type::getInt(false, 1);
 
         return null;

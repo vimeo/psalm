@@ -915,6 +915,60 @@ class ConfigTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
+    public function testAllowedPrintFunction()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm></psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                print "hello";'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testForbiddenPrintFunction()
+    {
+        $this->expectExceptionMessage('ForbiddenCode');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <forbiddenFunctions>
+                        <function name="print" />
+                    </forbiddenFunctions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                print "hello";'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testAllowedVarExportFunction()
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
