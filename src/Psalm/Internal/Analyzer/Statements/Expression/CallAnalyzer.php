@@ -2446,6 +2446,7 @@ class CallAnalyzer
                 if (!$function_param->by_ref
                     && !($function_param->is_variadic xor $unpack)
                     && $cased_method_id !== 'echo'
+                    && $cased_method_id !== 'print'
                     && (!$in_call_map || $context->strict_types)
                 ) {
                     self::coerceValueAfterGatekeeperArgument(
@@ -2584,6 +2585,7 @@ class CallAnalyzer
             && !$input_type->hasArray()
             && !$param_type->from_docblock
             && $cased_method_id !== 'echo'
+            && $cased_method_id !== 'print'
             && $cased_method_id !== 'sprintf'
         ) {
             $union_comparison_results->scalar_type_match_found = false;
@@ -2622,7 +2624,7 @@ class CallAnalyzer
             }
         }
 
-        if ($union_comparison_results->to_string_cast && $cased_method_id !== 'echo') {
+        if ($union_comparison_results->to_string_cast && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
             if (IssueBuffer::accepts(
                 new ImplicitToStringCast(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
@@ -2645,7 +2647,7 @@ class CallAnalyzer
             );
 
             if ($union_comparison_results->scalar_type_match_found) {
-                if ($cased_method_id !== 'echo') {
+                if ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
                             'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
@@ -2809,7 +2811,7 @@ class CallAnalyzer
             }
         }
 
-        if (!$param_type->isNullable() && $cased_method_id !== 'echo') {
+        if (!$param_type->isNullable() && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
             if ($input_type->isNull()) {
                 if (IssueBuffer::accepts(
                     new NullArgument(
@@ -2863,6 +2865,7 @@ class CallAnalyzer
             && !$function_param->by_ref
             && !($function_param->is_variadic xor $unpack)
             && $cased_method_id !== 'echo'
+            && $cased_method_id !== 'print'
             && (!$in_call_map || $context->strict_types)
         ) {
             self::coerceValueAfterGatekeeperArgument(

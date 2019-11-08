@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
@@ -46,6 +47,7 @@ use Psalm\Issue\UndefinedVariable;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
@@ -683,7 +685,7 @@ class ExpressionAnalyzer
                 // continue
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Print_) {
-            if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
+            if (self::analyzePrint($statements_analyzer, $stmt, $context) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_) {
@@ -1419,6 +1421,62 @@ class ExpressionAnalyzer
                 $context->vars_in_scope[$use_var_id] = Type::getMixed();
             }
         }
+
+        return null;
+    }
+
+    /**
+     * @param   StatementsAnalyzer           $statements_analyzer
+     * @param   PhpParser\Node\Expr\Print_  $stmt
+     * @param   Context                     $context
+     *
+     * @return  false|null
+     */
+    protected static function analyzePrint(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Print_ $stmt,
+        Context $context
+    ) {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
+            return false;
+        }
+
+        if (isset($stmt->expr->inferredType)) {
+            if (CallAnalyzer::checkFunctionArgumentType(
+                $statements_analyzer,
+                $stmt->expr->inferredType,
+                Type::getString(),
+                null,
+                'print',
+                0,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
+                $stmt->expr,
+                $context,
+                new FunctionLikeParameter('var', false),
+                false,
+                false,
+                true,
+                new CodeLocation($statements_analyzer->getSource(), $stmt)
+            ) === false) {
+                return false;
+            }
+        }
+
+        if (isset($codebase->config->forbidden_functions['print'])) {
+            if (IssueBuffer::accepts(
+                new ForbiddenCode(
+                    'You have forbidden the use of print',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // continue
+            }
+        }
+
+        $stmt->inferredType = Type::getInt(false, 1);
 
         return null;
     }

@@ -2622,6 +2622,16 @@ class FunctionCallTest extends TestCase
                     array_push();',
                 'error_message' => 'TooFewArguments',
             ],
+            'printOnlyString' => [
+                '<?php
+                    print [];',
+                'error_message' => 'InvalidArgument',
+            ],
+            'printReturns1' => [
+                '<?php
+                    (print "test") === 2;',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }
