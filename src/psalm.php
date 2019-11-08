@@ -247,8 +247,10 @@ if (isset($options['i'])) {
         $source_dir = $args[0];
     }
 
+    $vendor_dir = getVendorDir($current_dir);
+
     try {
-        $template_contents = Psalm\Config\Creator::getContents($current_dir, $source_dir, $level);
+        $template_contents = Psalm\Config\Creator::getContents($current_dir, $source_dir, $level, $vendor_dir);
     } catch (Psalm\Exception\ConfigCreationException $e) {
         die($e->getMessage() . PHP_EOL);
     }
