@@ -1713,7 +1713,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $template_params[] = new Type\Union([
                         new Type\Atomic\TTemplateParam(
                             $param_name,
-                            reset($template_map)[0],
+                            \reset($template_map)[0],
                             $key
                         )
                     ]);

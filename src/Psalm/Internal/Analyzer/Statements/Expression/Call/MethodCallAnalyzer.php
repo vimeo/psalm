@@ -1553,8 +1553,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $e = $calling_class_storage->template_type_extends;
 
         if ($lhs_type_part instanceof TGenericObject) {
-            if ($calling_class_storage->template_types && $class_storage === $calling_class_storage) {
+            if ($class_storage === $calling_class_storage && $calling_class_storage->template_types) {
                 $i = 0;
+
                 foreach ($calling_class_storage->template_types as $type_name => $_) {
                     if (isset($lhs_type_part->type_params[$i])) {
                         $class_template_params[$type_name][$calling_class_storage->name] = [

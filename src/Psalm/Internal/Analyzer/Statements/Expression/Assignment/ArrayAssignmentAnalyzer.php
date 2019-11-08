@@ -602,7 +602,6 @@ class ArrayAssignmentAnalyzer
                     // do nothing
                 }
             }
-
         }
 
         return null;
