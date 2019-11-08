@@ -103,6 +103,22 @@ trait HasIntersectionTrait
     }
 
     /**
+     * @return list<Type\Atomic\TTemplateParam>
+     */
+    public function getIntersectionTemplateTypes() : array
+    {
+        $template_types = [];
+
+        if ($this->extra_types) {
+            foreach ($this->extra_types as $extra_type) {
+                $template_types = \array_merge($template_types, $extra_type->getTemplateTypes());
+            }
+        }
+
+        return $template_types;
+    }
+
+    /**
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues

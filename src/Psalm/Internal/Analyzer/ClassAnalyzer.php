@@ -1704,11 +1704,35 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
             }
 
+            if ($class_storage->template_types) {
+                $template_params = [];
+
+                foreach ($class_storage->template_types as $param_name => $template_map) {
+                    $key = array_keys($template_map)[0];
+
+                    $template_params[] = new Type\Union([
+                        new Type\Atomic\TTemplateParam(
+                            $param_name,
+                            reset($template_map)[0],
+                            $key
+                        )
+                    ]);
+                }
+
+                $this_object_type = new Type\Atomic\TGenericObject(
+                    $original_fq_classlike_name,
+                    $template_params
+                );
+            } else {
+                $this_object_type = new Type\Atomic\TNamedObject($original_fq_classlike_name);
+            }
+
             $class_template_params = Statements\Expression\Call\MethodCallAnalyzer::getClassTemplateParams(
                 $codebase,
                 $class_storage,
                 $original_fq_classlike_name,
-                strtolower($stmt->name->name)
+                strtolower($stmt->name->name),
+                $this_object_type
             ) ?: [];
 
             $template_result = new \Psalm\Internal\Type\TemplateResult(

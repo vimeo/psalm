@@ -50,6 +50,7 @@ use function array_search;
 use function array_keys;
 use function in_array;
 use Psalm\Internal\Taint\Source;
+use Doctrine\Instantiator\Exception\UnexpectedValueException;
 
 /**
  * @internal
@@ -1499,6 +1500,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $template_types = $class_storage->template_types;
 
+        $candidate_class_storages = [$class_storage];
+
         if ($calling_class_storage->template_type_extends
             && $method_name
             && !empty($non_trait_class_storage->overridden_method_ids[$method_name])
@@ -1510,24 +1513,35 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
 
                 if (!$overridden_storage->return_type) {
-                    return null;
+                    continue;
                 }
 
                 if ($overridden_storage->return_type->isNull()) {
-                    return null;
+                    continue;
                 }
 
                 list($fq_overridden_class) = explode('::', $overridden_method_id);
 
                 $overridden_class_storage = $codebase->classlike_storage_provider->get($fq_overridden_class);
 
+                $overridden_template_types = $overridden_class_storage->template_types;
+
                 if (!$template_types) {
-                    $template_types = $overridden_class_storage->template_types;
-                } elseif ($overridden_class_storage->template_types) {
-                    $template_types = array_merge($overridden_class_storage->template_types, $template_types);
+                    $template_types = $overridden_template_types;
+                } elseif ($overridden_template_types) {
+                    foreach ($overridden_template_types as $template_name => $template_map) {
+                        if (isset($template_types[$template_name])) {
+                            $template_types[$template_name] = array_merge(
+                                $template_types[$template_name],
+                                $template_map
+                            );
+                        } else {
+                            $template_types[$template_name] = $template_map;
+                        }
+                    }
                 }
 
-                $class_storage = $overridden_class_storage;
+                $candidate_class_storages[] = $overridden_class_storage;
             }
         }
 
@@ -1637,13 +1651,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 $i++;
             }
-        } else {
-            foreach ($template_types as $type_name => $type_map) {
-                foreach ($type_map as list($type)) {
-                    if ($class_storage !== $calling_class_storage
-                        && isset($e[$class_storage->name][$type_name])
+        }
+
+        foreach ($template_types as $type_name => $type_map) {
+            foreach ($type_map as list($type)) {
+                foreach ($candidate_class_storages as $candidate_class_storage) {
+                    if ($candidate_class_storage !== $calling_class_storage
+                        && isset($e[$candidate_class_storage->name][$type_name])
+                        && !isset($class_template_params[$type_name][$candidate_class_storage->name])
                     ) {
-                        $input_type_extends = $e[$class_storage->name][$type_name];
+                        $input_type_extends = $e[$candidate_class_storage->name][$type_name];
 
                         $output_type_extends = null;
 
@@ -1669,15 +1686,15 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             }
                         }
 
-                        $class_template_params[$type_name][$class_storage->name] = [
-                            $output_type_extends ?: Type::getEmpty()
+                        $class_template_params[$type_name][$candidate_class_storage->name] = [
+                            $output_type_extends ?: Type::getMixed()
                         ];
                     }
+                }
 
-                    if ($lhs_var_id !== '$this') {
-                        if (!isset($class_template_params[$type_name])) {
-                            $class_template_params[$type_name][$class_storage->name] = [$type];
-                        }
+                if ($lhs_var_id !== '$this') {
+                    if (!isset($class_template_params[$type_name])) {
+                        $class_template_params[$type_name][$class_storage->name] = [$type];
                     }
                 }
             }

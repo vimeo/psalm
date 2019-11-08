@@ -1610,6 +1610,54 @@ class ClassTemplateExtendsTest extends TestCase
                         use T;
                     }',
             ],
+            'extendWithEnoughArgs' => [
+                '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template T
+                     * @template-extends IteratorAggregate<TKey, T>
+                     */
+                    interface Collection extends IteratorAggregate
+                    {
+                    }
+
+                    /**
+                     * @template T
+                     * @template TKey of array-key
+                     * @template-implements Collection<TKey, T>
+                     */
+                    class ArrayCollection implements Collection
+                    {
+                        /**
+                         * @psalm-var array<TKey, T>
+                         */
+                        private $elements;
+
+                        /**
+                         * @psalm-param array<TKey, T> $elements
+                         */
+                        public function __construct(array $elements = [])
+                        {
+                            $this->elements = $elements;
+                        }
+
+                        public function getIterator()
+                        {
+                            return new ArrayIterator($this->elements);
+                        }
+
+                        /**
+                         * @psalm-suppress MissingTemplateParam
+                         *
+                         * @psalm-param array<T> $elements
+                         * @psalm-return ArrayCollection<T>
+                         */
+                        protected function createFrom(array $elements)
+                        {
+                            return new static($elements);
+                        }
+                    }',
+            ],
             'extendWithTooFewArgs' => [
                 '<?php
                     /**
@@ -1712,7 +1760,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
             ],
-            'implementsAndExtendsWithTemplate' => [
+            'implementsAndExtendsWithTemplateReturningValid' => [
                 '<?php
                     /**
                      * @template TReal
@@ -3167,7 +3215,7 @@ class ClassTemplateExtendsTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
-            'implementsAndExtendsWithTemplate' => [
+            'implementsAndExtendsWithTemplateReturningInvalid' => [
                 '<?php
                     /**
                      * @template TReal
@@ -3315,6 +3363,116 @@ class ClassTemplateExtendsTest extends TestCase
                         return new Left(new B());
                     }',
                 'error_message' => 'InvalidReturnStatement'
+            ],
+            'possiblyNullReferenceOnTraitDefinedMethod' => [
+                '<?php
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     */
+                    trait T1 {
+                        /**
+                         * @var array<TKey, TValue>
+                         */
+                        protected $mocks = [];
+
+                        /**
+                         * @param TKey $offset
+                         * @return TValue|null
+                         * @psalm-suppress LessSpecificImplementedReturnType
+                         * @psalm-suppress ImplementedParamTypeMismatch
+                         */
+                        public function offsetGet($offset) {
+                            return $this->mocks[$offset] ?? null;
+                        }
+                    }
+
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     */
+                    interface Arr {
+                        /**
+                         * @param TKey $offset
+                         * @return TValue|null
+                         */
+                        public function offsetGet($offset);
+                    }
+
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     * @implements Arr<TKey, TValue>
+                     */
+                    class C implements Arr {
+                        /** @use T1<TKey, TValue> */
+                        use T1;
+
+                        /**
+                         * @param TKey $offset
+                         * @psalm-suppress MixedMethodCall
+                         */
+                        public function foo($offset) : void {
+                            $this->offsetGet($offset)->bar();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference'
+            ],
+            'possiblyNullReferenceOnTraitDefinedMethodExtended' => [
+                '<?php
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     */
+                    trait T1 {
+                        /**
+                         * @var array<TKey, TValue>
+                         */
+                        protected $mocks = [];
+
+                        /**
+                         * @param TKey $offset
+                         * @return TValue|null
+                         * @psalm-suppress LessSpecificImplementedReturnType
+                         * @psalm-suppress ImplementedParamTypeMismatch
+                         */
+                        public function offsetGet($offset) {
+                            return $this->mocks[$offset] ?? null;
+                        }
+                    }
+
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     */
+                    interface Arr {
+                        /**
+                         * @param TKey $offset
+                         * @return TValue|null
+                         */
+                        public function offsetGet($offset);
+                    }
+
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     * @implements Arr<TKey, TValue>
+                     */
+                    class C implements Arr {
+                        /** @use T1<TKey, TValue> */
+                        use T1;
+                    }
+
+                    class D extends C {
+                        /**
+                         * @param mixed $offset
+                         * @psalm-suppress MixedArgument
+                         */
+                        public function foo($offset) : void {
+                            $this->offsetGet($offset)->bar();
+                        }
+                    }',
+                'error_message' => 'MixedMethodCall'
             ],
         ];
     }

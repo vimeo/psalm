@@ -6,6 +6,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Context;
+use Psalm\IssueBuffer;
+use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
@@ -582,6 +584,25 @@ class ArrayAssignmentAnalyzer
             }
         } elseif ($root_var_id) {
             $context->vars_in_scope[$root_var_id] = $root_type;
+        }
+
+        if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
+            || $root_array_expr instanceof PhpParser\Node\Expr\StaticCall
+            || $root_array_expr instanceof PhpParser\Node\Expr\FuncCall
+        ) {
+            if ($root_type->hasArray()) {
+                if (IssueBuffer::accepts(
+                    new InvalidArrayAssignment(
+                        'Assigning to the output of a function has no effect',
+                        new \Psalm\CodeLocation($statements_analyzer->getSource(), $root_array_expr)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )
+                ) {
+                    // do nothing
+                }
+            }
+
         }
 
         return null;

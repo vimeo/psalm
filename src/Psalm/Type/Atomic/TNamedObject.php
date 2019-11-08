@@ -119,6 +119,14 @@ class TNamedObject extends Atomic
     }
 
     /**
+     * @return list<Type\Atomic\TTemplateParam>
+     */
+    public function getTemplateTypes() : array
+    {
+        return $this->getIntersectionTemplateTypes();
+    }
+
+    /**
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
