@@ -291,7 +291,25 @@ class UnionTemplateHandler
                 }
             }
 
-            if ($atomic_input_type instanceof Atomic\TNamedObject && $atomic_type instanceof Atomic\TNamedObject) {
+            if ($atomic_input_type instanceof Atomic\TNamedObject
+                && ($atomic_type instanceof Atomic\TNamedObject
+                    || $atomic_type instanceof Atomic\TIterable)
+            ) {
+                if ($atomic_type instanceof Atomic\TIterable) {
+                    if ($atomic_input_type->value === 'Traversable') {
+                        return $atomic_input_type;
+                    }
+
+                    if ($atomic_type->type_params) {
+                        $atomic_type = new Atomic\TGenericObject(
+                            'Traversable',
+                            $atomic_type->type_params
+                        );
+                    } else {
+                        $atomic_type = new Atomic\TNamedObject('Traversable');
+                    }
+                }
+
                 try {
                     $classlike_storage =
                         $codebase->classlike_storage_provider->get($atomic_input_type->value);
