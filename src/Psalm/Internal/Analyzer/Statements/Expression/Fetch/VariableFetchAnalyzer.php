@@ -272,6 +272,30 @@ class VariableFetchAnalyzer
         } else {
             $stmt->inferredType = clone $context->vars_in_scope[$var_name];
 
+            if ($stmt->inferredType->possibly_undefined_from_try && !$context->inside_isset) {
+                if ($context->is_global) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyUndefinedGlobalVariable(
+                            'Possibly undefined global variable ' . $var_name . ' defined in try block',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new PossiblyUndefinedVariable(
+                            'Possibly undefined variable ' . $var_name . ' defined in try block',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
             if ($codebase->store_node_types
                 && !$context->collect_initializations
                 && !$context->collect_mutations

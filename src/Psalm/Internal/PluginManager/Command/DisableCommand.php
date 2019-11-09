@@ -60,8 +60,9 @@ class DisableCommand extends Command
 
         $plugin_list = ($this->plugin_list_factory)($current_dir, $config_file_path);
 
+        $plugin_name = $i->getArgument('pluginName');
+
         try {
-            $plugin_name = $i->getArgument('pluginName');
             assert(is_string($plugin_name));
 
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);

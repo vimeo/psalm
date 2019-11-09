@@ -110,14 +110,15 @@ class TryCatchTest extends TestCase
                     'MixedMethodCall' => \Psalm\Config::REPORT_INFO,
                 ],
             ],
-            'issetAfterTryCatch' => [
+            'issetAfterTryCatchWithoutAssignmentInCatch' => [
                 '<?php
                     function test(): string {
                         throw new Exception("bad");
                     }
 
+                    $a = "foo";
+
                     try {
-                        $a = "foo";
                         $var = test();
                     } catch (Exception $e) {
                         echo "bad";
@@ -127,22 +128,44 @@ class TryCatchTest extends TestCase
 
                     echo $a;',
             ],
-            'issetAfterTryCatchWithCombinedType' => [
+            'issetAfterTryCatchWithAssignmentInCatch' => [
                 '<?php
                     function test(): string {
                         throw new Exception("bad");
                     }
 
+                    $a = "foo";
+
                     try {
-                        $a = "foo";
                         $var = test();
                     } catch (Exception $e) {
                         $var = "bad";
                     }
 
-                    if (isset($var)) {}
-
+                    echo $var;
                     echo $a;',
+            ],
+            'issetAfterTryCatchWithIfInCatch' => [
+                '<?php
+                    function test(): string {
+                        throw new Exception("bad");
+                    }
+
+                    function foo() : void {
+                        $a = null;
+
+                        $params = null;
+
+                        try {
+                            $a = test();
+
+                            $params = $a;
+                        } catch (\Exception $exception) {
+                            $params = "hello";
+                        }
+
+                        echo $params;
+                    }',
             ],
             'noRedundantConditionsInFinally' => [
                 '<?php
@@ -317,6 +340,32 @@ class TryCatchTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnType',
+            ],
+            'preventPossiblyUndefinedVarInTry' => [
+                '<?php
+                    class Foo {
+                        public static function possiblyThrows(): bool {
+                            $result = (bool)rand(0, 1);
+
+                            if (!$result) {
+                                throw new \Exception("BOOM");
+                            }
+
+                            return true;
+                        }
+                    }
+
+                    try {
+                        $result = Foo::possiblyThrows();
+                        $a = "ACME";
+
+                        if ($result) {
+                            echo $a;
+                        }
+                    } catch (\Exception $e) {
+                        echo $a;
+                    }',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
         ];
     }

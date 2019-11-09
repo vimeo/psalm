@@ -1217,8 +1217,6 @@ class Codebase
      */
     public function getSignatureInformation(string $function_symbol) : ?\LanguageServerProtocol\SignatureInformation
     {
-        $params = null;
-
         if (strpos($function_symbol, '::') !== false) {
             $declaring_method_id = $this->methods->getDeclaringMethodId($function_symbol);
 

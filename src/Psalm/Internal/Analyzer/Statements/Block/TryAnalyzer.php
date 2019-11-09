@@ -78,6 +78,8 @@ class TryAnalyzer
         $old_unreferenced_vars = $try_context->unreferenced_vars;
         $newly_unreferenced_vars = [];
 
+        $old_context_vars = $context->vars_in_scope;
+
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
         }
@@ -159,9 +161,17 @@ class TryAnalyzer
             'TypeDoesNotContainType',
         ];
 
+        $definitely_newly_assigned_var_ids = $newly_assigned_var_ids;
+
         /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
+
+            foreach ($catch_context->vars_in_scope as $var_id => $type) {
+                if (!isset($old_context_vars[$var_id])) {
+                    $type->possibly_undefined_from_try = true;
+                }
+            }
 
             $fq_catch_classes = [];
 
@@ -312,6 +322,10 @@ class TryAnalyzer
                 }
             }
 
+            $old_catch_assigned_var_ids = $catch_context->referenced_var_ids;
+
+            $catch_context->assigned_var_ids = [];
+
             $statements_analyzer->analyze($catch->stmts, $catch_context);
 
             // recalculate in case there's a no-return clause
@@ -326,6 +340,11 @@ class TryAnalyzer
                     $statements_analyzer->removeSuppressedIssues([$issue_to_suppress]);
                 }
             }
+
+            /** @var array<string, bool> */
+            $new_catch_assigned_var_ids = $catch_context->assigned_var_ids;
+
+            $catch_context->assigned_var_ids += $old_catch_assigned_var_ids;
 
             $context->referenced_var_ids = array_intersect_key(
                 $catch_context->referenced_var_ids,
@@ -369,7 +388,16 @@ class TryAnalyzer
             }
 
             if ($catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {
+                $definitely_newly_assigned_var_ids = array_intersect_key(
+                    $new_catch_assigned_var_ids,
+                    $definitely_newly_assigned_var_ids
+                );
+
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
+                    if (!isset($old_context_vars[$var_id])) {
+                        $type->possibly_undefined_from_try = false;
+                    }
+
                     if ($stmt_control_actions === [ScopeAnalyzer::ACTION_END]) {
                         $context->vars_in_scope[$var_id] = $type;
                     } elseif (isset($context->vars_in_scope[$var_id])
@@ -386,11 +414,19 @@ class TryAnalyzer
                     $catch_context->vars_possibly_in_scope,
                     $context->vars_possibly_in_scope
                 );
-            } elseif ($stmt->finally) {
-                $context->vars_possibly_in_scope = array_merge(
-                    $catch_context->vars_possibly_in_scope,
-                    $context->vars_possibly_in_scope
-                );
+            } else {
+                if ($stmt->finally) {
+                    $context->vars_possibly_in_scope = array_merge(
+                        $catch_context->vars_possibly_in_scope,
+                        $context->vars_possibly_in_scope
+                    );
+                }
+            }
+        }
+
+        foreach ($definitely_newly_assigned_var_ids as $var_id => $_) {
+            if (isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
             }
         }
 
