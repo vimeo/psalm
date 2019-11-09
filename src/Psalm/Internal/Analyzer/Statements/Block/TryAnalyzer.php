@@ -96,7 +96,7 @@ class TryAnalyzer
             $newly_assigned_var_ids
         );
 
-        $possibly_referenced_var_ids = array_diff(
+        $possibly_referenced_var_ids = array_merge(
             $context->referenced_var_ids,
             $old_referenced_var_ids
         );

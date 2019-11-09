@@ -1133,6 +1133,44 @@ class UnusedVariableTest extends TestCase
                       echo $index;
                     } while (($index = $index +  1) < 10);'
             ],
+            'tryCatchInsaneRepro' => [
+                '<?php
+                    function maybeThrows() : string {
+                        return "hello";
+                    }
+
+                    function b(bool $a): void {
+                        if (!$a) {
+                            return;
+                        }
+
+                        $b = "";
+
+                        try {
+                            $b = maybeThrows();
+                            echo $b;
+                        } catch (\Exception $e) {}
+
+                        echo $b;
+                    }'
+            ],
+            'tryCatchInsaneReproNoFirstBoolCheck' => [
+                '<?php
+                    function maybeThrows() : string {
+                        return "hello";
+                    }
+
+                    function b(): void {
+                        $b = "";
+
+                        try {
+                            $b = maybeThrows();
+                            echo $b;
+                        } catch (\Exception $e) {}
+
+                        echo $b;
+                    }'
+            ],
         ];
     }
 
