@@ -198,7 +198,7 @@ class FooChild extends Foo {}
 
 /**
  * @template T of Foo
- * @psalm-param T $class
+ * @psalm-param T $t
  * @return array<int, T>
  */
 function makeArray($t) {
