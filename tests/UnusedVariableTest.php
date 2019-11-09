@@ -1171,6 +1171,29 @@ class UnusedVariableTest extends TestCase
                         echo $b;
                     }'
             ],
+            'tryWithWhile' => [
+                '<?php
+                    function foo(): void {
+                        $done = false;
+
+                        while (!$done) {
+                            try {
+                                $done = true;
+                            } catch (\Exception $e) {
+                            }
+                        }
+                    }',
+            ],
+            'tryWithWhileWithoutTry' => [
+                '<?php
+                    function foo(): void {
+                        $done = false;
+
+                        while (!$done) {
+                            $done = true;
+                        }
+                    }',
+            ],
         ];
     }
 

@@ -414,6 +414,20 @@ class TryAnalyzer
                     $statements_analyzer->registerVariableUses($locations);
                 }
             }
+
+            $newly_unreferenced_vars = array_merge(
+                $newly_unreferenced_vars,
+                array_diff_key(
+                    $try_context->unreferenced_vars,
+                    $old_unreferenced_vars
+                )
+            );
+
+            foreach ($newly_unreferenced_vars as $var_id => $locations) {
+                if (!isset($context->unreferenced_vars[$var_id])) {
+                    $context->unreferenced_vars[$var_id] = $locations;
+                }
+            }
         }
 
         if ($stmt->finally) {
