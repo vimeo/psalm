@@ -84,76 +84,89 @@ class Reconciler
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
         foreach ($new_types as $nk => $type) {
-            if ((strpos($nk, '[') || strpos($nk, '->'))
-                && ($type[0][0] === '=isset'
+            if (strpos($nk, '[') || strpos($nk, '->')) {
+                if ($type[0][0] === '=isset'
                     || $type[0][0] === '!=empty'
                     || $type[0][0] === 'isset'
-                    || $type[0][0] === '!empty')
-            ) {
-                $isset_or_empty = $type[0][0] === 'isset' || $type[0][0] === '=isset'
-                    ? '=isset'
-                    : '!=empty';
+                    || $type[0][0] === '!empty'
+                ) {
+                    $isset_or_empty = $type[0][0] === 'isset' || $type[0][0] === '=isset'
+                        ? '=isset'
+                        : '!=empty';
 
-                $key_parts = Reconciler::breakUpPathIntoParts($nk);
-
-                if (!$key_parts) {
-                    throw new \UnexpectedValueException('There should be some key parts');
-                }
-
-                $base_key = array_shift($key_parts);
-
-                if (!isset($existing_types[$base_key]) || $existing_types[$base_key]->isNullable()) {
-                    if (!isset($new_types[$base_key])) {
-                        $new_types[$base_key] = [['=isset']];
-                    } else {
-                        $new_types[$base_key][] = ['=isset'];
-                    }
-                }
-
-                while ($key_parts) {
-                    $divider = array_shift($key_parts);
-
-                    if ($divider === '[') {
-                        $array_key = array_shift($key_parts);
-                        array_shift($key_parts);
-
-                        $new_base_key = $base_key . '[' . $array_key . ']';
-
-                        if (strpos($array_key, '\'') !== false) {
-                            $new_types[$base_key][] = ['=string-array-access'];
-                        } else {
-                            $new_types[$base_key][] = ['=int-or-string-array-access'];
-                        }
-
-                        $base_key = $new_base_key;
-
-                        continue;
-                    }
-
-                    if ($divider === '->') {
-                        $property_name = array_shift($key_parts);
-                        $new_base_key = $base_key . '->' . $property_name;
-
-                        $base_key = $new_base_key;
-                    } else {
-                        throw new \InvalidArgumentException('Unexpected divider ' . $divider);
-                    }
+                    $key_parts = Reconciler::breakUpPathIntoParts($nk);
 
                     if (!$key_parts) {
-                        break;
+                        throw new \UnexpectedValueException('There should be some key parts');
                     }
 
-                    if (!isset($new_types[$base_key])) {
-                        $new_types[$base_key] = [['!~bool'], ['!~int'], ['=isset']];
-                    } else {
-                        $new_types[$base_key][] = ['!~bool'];
-                        $new_types[$base_key][] = ['!~int'];
-                        $new_types[$base_key][] = ['=isset'];
+                    $base_key = array_shift($key_parts);
+
+                    if (!isset($existing_types[$base_key]) || $existing_types[$base_key]->isNullable()) {
+                        if (!isset($new_types[$base_key])) {
+                            $new_types[$base_key] = [['=isset']];
+                        } else {
+                            $new_types[$base_key][] = ['=isset'];
+                        }
                     }
+
+                    while ($key_parts) {
+                        $divider = array_shift($key_parts);
+
+                        if ($divider === '[') {
+                            $array_key = array_shift($key_parts);
+                            array_shift($key_parts);
+
+                            $new_base_key = $base_key . '[' . $array_key . ']';
+
+                            if (strpos($array_key, '\'') !== false) {
+                                $new_types[$base_key][] = ['=string-array-access'];
+                            } else {
+                                $new_types[$base_key][] = ['=int-or-string-array-access'];
+                            }
+
+                            $base_key = $new_base_key;
+
+                            continue;
+                        }
+
+                        if ($divider === '->') {
+                            $property_name = array_shift($key_parts);
+                            $new_base_key = $base_key . '->' . $property_name;
+
+                            $base_key = $new_base_key;
+                        } else {
+                            throw new \InvalidArgumentException('Unexpected divider ' . $divider);
+                        }
+
+                        if (!$key_parts) {
+                            break;
+                        }
+
+                        if (!isset($new_types[$base_key])) {
+                            $new_types[$base_key] = [['!~bool'], ['!~int'], ['=isset']];
+                        } else {
+                            $new_types[$base_key][] = ['!~bool'];
+                            $new_types[$base_key][] = ['!~int'];
+                            $new_types[$base_key][] = ['=isset'];
+                        }
+                    }
+
+                    // replace with a less specific check
+                    $new_types[$nk][0][0] = $isset_or_empty;
                 }
 
-                // replace with a less specific check
-                $new_types[$nk][0][0] = $isset_or_empty;
+                if ($type[0][0] === 'array-key-exists') {
+                    $key_parts = Reconciler::breakUpPathIntoParts($nk);
+
+                    if (count($key_parts) === 4 && $key_parts[1] === '[') {
+                        if (isset($new_types[$key_parts[2]])) {
+                            $new_types[$key_parts[2]][] = ['=in-array-' . $key_parts[0]];
+                        } else {
+                            $new_types[$key_parts[2]] = [['=in-array-' . $key_parts[0]]];
+                        }
+                    }
+                }
             }
         }
 

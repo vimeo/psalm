@@ -53,6 +53,7 @@ use Psalm\Type\Atomic\TTrue;
 use function strpos;
 use function substr;
 use Psalm\Issue\InvalidDocblock;
+use Doctrine\Instantiator\Exception\UnexpectedValueException;
 
 class AssertionReconciler extends \Psalm\Type\Reconciler
 {
@@ -189,6 +190,14 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $existing_var_type->possibly_undefined = false;
 
             return $existing_var_type;
+        }
+
+        if (substr($assertion, 0, 9) === 'in-array-') {
+            return self::reconcileInArray(
+                $codebase,
+                $existing_var_type,
+                substr($assertion, 9)
+            );
         }
 
         if ($assertion === 'falsy' || $assertion === 'empty') {
@@ -1369,6 +1378,44 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $failed_reconciliation = 2;
 
         return Type::getMixed();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileInArray(
+        Codebase $codebase,
+        Union $existing_var_type,
+        string $assertion
+    ) : Union {
+        if (strpos($assertion, '::')) {
+            list($fq_classlike_name, $const_name) = explode('::', $assertion);
+
+            $class_constant_type = $codebase->classlikes->getConstantForClass(
+                $fq_classlike_name,
+                $const_name,
+                \ReflectionProperty::IS_PRIVATE
+            );
+
+            if ($class_constant_type) {
+                foreach ($class_constant_type->getTypes() as $const_type_atomic) {
+                    if ($const_type_atomic instanceof Type\Atomic\ObjectLike
+                        || $const_type_atomic instanceof Type\Atomic\TArray
+                    ) {
+                        if ($const_type_atomic instanceof Type\Atomic\ObjectLike) {
+                            $const_type_atomic = $const_type_atomic->getGenericArrayType();
+                        }
+
+                        return clone $const_type_atomic->type_params[0];
+                    }
+                }
+            }
+        }
+
+        $existing_var_type->removeType('null');
+
+        return $existing_var_type;
     }
 
     /**

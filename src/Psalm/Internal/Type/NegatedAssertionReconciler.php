@@ -91,6 +91,8 @@ class NegatedAssertionReconciler extends Reconciler
                 return Type::getNull();
             } elseif ($assertion === 'array-key-exists') {
                 return Type::getEmpty();
+            } elseif (substr($assertion, 0, 9) === 'in-array-') {
+                return $existing_var_type;
             }
         }
 
