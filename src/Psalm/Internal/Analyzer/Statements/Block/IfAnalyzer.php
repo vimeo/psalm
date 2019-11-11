@@ -1123,8 +1123,6 @@ class IfAnalyzer
             }
         }
 
-        $old_elseif_context = clone $elseif_context;
-
         $pre_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;
         $elseif_context->assigned_var_ids = [];
         $pre_stmts_possibly_assigned_var_ids = $elseif_context->possibly_assigned_var_ids;
@@ -1304,14 +1302,6 @@ class IfAnalyzer
                     $implied_outer_context,
                     false,
                     array_keys($negated_elseif_types),
-                    $if_scope->updated_vars
-                );
-            } elseif ($entry_clauses && (count($entry_clauses) > 1 || !array_values($entry_clauses)[0]->wedge)) {
-                $outer_context->update(
-                    $old_elseif_context,
-                    $elseif_context,
-                    false,
-                    array_keys(\array_intersect_key($negated_elseif_types, $pre_conditional_context->vars_in_scope)),
                     $if_scope->updated_vars
                 );
             }
