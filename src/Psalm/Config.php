@@ -1272,6 +1272,12 @@ class Config
      */
     public static function getParentIssueType($issue_type)
     {
+        if ($issue_type === 'PossiblyUndefinedIntArrayOffset'
+            || $issue_type === 'PossiblyUndefinedStringArrayOffset'
+        ) {
+            return 'PossiblyUndefinedArrayOffset';
+        }
+
         if (strpos($issue_type, 'Possibly') === 0) {
             $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type);
 

@@ -25,6 +25,8 @@ use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAssignment;
 use Psalm\Issue\PossiblyNullArrayOffset;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
+use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
+use Psalm\Issue\PossiblyUndefinedStringArrayOffset;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
@@ -1263,7 +1265,7 @@ class ArrayFetchAnalyzer
 
             if (!$found_match) {
                 if (IssueBuffer::accepts(
-                    new PossiblyUndefinedArrayOffset(
+                    new PossiblyUndefinedIntArrayOffset(
                         'Possibly undefined array offset \''
                             . $offset_type->getId() . '\' '
                             . 'is risky given expected type \''
@@ -1312,7 +1314,7 @@ class ArrayFetchAnalyzer
 
             if (!$found_match) {
                 if (IssueBuffer::accepts(
-                    new PossiblyUndefinedArrayOffset(
+                    new PossiblyUndefinedStringArrayOffset(
                         'Possibly undefined array offset \''
                             . $offset_type->getId() . '\' '
                             . 'is risky given expected type \''

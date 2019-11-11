@@ -1951,6 +1951,32 @@ echo $arr["b"];
 
 ```
 
+### PossiblyUndefinedIntArrayOffset
+
+Emitted when the config flag `ensureArrayIntOffsetsExist` is set to `true` and an integer-keyed offset is not checked for existence
+
+```php
+/**
+ * @param array<int, string> $arr
+ */
+function foo(array $arr) : void {
+    echo $arr[0];
+}
+```
+
+### PossiblyUndefinedStringArrayOffset
+
+Emitted when the config flag `ensureArrayStringOffsetsExist` is set to `true` and an integer-keyed offset is not checked for existence
+
+```php
+/**
+ * @param array<string, string> $arr
+ */
+function foo(array $arr) : void {
+    echo $arr["hello"];
+}
+```
+
 ### PossiblyUndefinedGlobalVariable
 
 Emitted when trying to access a variable in the global scope that may not be defined
