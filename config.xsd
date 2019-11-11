@@ -208,6 +208,7 @@
             <xs:element name="InvalidMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidNullableReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidOperand" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidParent" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPassByReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
