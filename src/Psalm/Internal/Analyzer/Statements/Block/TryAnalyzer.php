@@ -109,9 +109,6 @@ class TryAnalyzer
                 if (!isset($try_context->vars_in_scope[$var_id])) {
                     $try_context->vars_in_scope[$var_id] = clone $type;
                     $try_context->vars_in_scope[$var_id]->from_docblock = true;
-                    $type = clone $type;
-                    $type->possibly_undefined_from_try = true;
-                    $context->vars_in_scope[$var_id] = $type;
                 } else {
                     $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $try_context->vars_in_scope[$var_id],
@@ -172,7 +169,9 @@ class TryAnalyzer
 
             foreach ($catch_context->vars_in_scope as $var_id => $type) {
                 if (!isset($old_context->vars_in_scope[$var_id])) {
+                    $type = clone $type;
                     $type->possibly_undefined_from_try = true;
+                    $catch_context->vars_in_scope[$var_id] = $type;
                 } else {
                     $catch_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
@@ -403,21 +402,20 @@ class TryAnalyzer
                 }
             }
 
-            if ($catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {
+            if ($catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]
+                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_CONTINUE]
+                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_BREAK]
+            ) {
                 $definitely_newly_assigned_var_ids = array_intersect_key(
                     $new_catch_assigned_var_ids,
                     $definitely_newly_assigned_var_ids
                 );
 
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
-                    if (!isset($old_context->vars_in_scope[$var_id])) {
-                        $type->possibly_undefined_from_try = false;
-                    }
-
                     if ($stmt_control_actions === [ScopeAnalyzer::ACTION_END]) {
                         $context->vars_in_scope[$var_id] = $type;
                     } elseif (isset($context->vars_in_scope[$var_id])
-                        && $context->vars_in_scope[$var_id]->getId() !== $type->getId()
+                        && !$context->vars_in_scope[$var_id]->equals($type)
                     ) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
@@ -442,7 +440,9 @@ class TryAnalyzer
 
         foreach ($definitely_newly_assigned_var_ids as $var_id => $_) {
             if (isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
+                $new_type = clone $context->vars_in_scope[$var_id];
+                $new_type->possibly_undefined_from_try = false;
+                $context->vars_in_scope[$var_id] = $new_type;
             }
         }
 
