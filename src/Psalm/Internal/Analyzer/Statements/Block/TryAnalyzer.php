@@ -436,6 +436,24 @@ class TryAnalyzer
                     );
                 }
             }
+
+            if ($stmt->finally) {
+                $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+                foreach ($issues_to_suppress as $issue_to_suppress) {
+                    if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
+                        $statements_analyzer->addSuppressedIssues([$issue_to_suppress]);
+                    }
+                }
+
+                $statements_analyzer->analyze($stmt->finally->stmts, $catch_context);
+
+                foreach ($issues_to_suppress as $issue_to_suppress) {
+                    if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
+                        $statements_analyzer->removeSuppressedIssues([$issue_to_suppress]);
+                    }
+                }
+            }
         }
 
         foreach ($definitely_newly_assigned_var_ids as $var_id => $_) {

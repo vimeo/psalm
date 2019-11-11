@@ -984,7 +984,9 @@ class UnusedVariableTest extends TestCase
                     } catch (\Exception $e) {
                         throw new \Exception("Something went wrong");
                     } finally {
-                        \fclose($stream);
+                        if ($stream) {
+                            \fclose($stream);
+                        }
                     }',
             ],
             'varUsedInloop' => [
@@ -1215,6 +1217,20 @@ class UnusedVariableTest extends TestCase
                         }
                         return "hello";
                     }',
+            ],
+            'useTryAndCatchAssignedVariableInsideFinally' => [
+                '<?php
+                    function foo() : void {
+                        try {
+                            // do something dangerous
+                            $a = 5;
+                        } catch (Exception $e) {
+                            $a = 4;
+                            throw new Exception("bad");
+                        } finally {
+                            echo $a;
+                        }
+                    }'
             ],
         ];
     }
