@@ -61,6 +61,8 @@ class TryAnalyzer
          */
         $context->possibly_thrown_exceptions = [];
 
+        $old_context = clone $context;
+
         if ($all_catches_leave && !$stmt->finally) {
             $try_context = $context;
         } else {
@@ -77,8 +79,6 @@ class TryAnalyzer
         $old_referenced_var_ids = $try_context->referenced_var_ids;
         $old_unreferenced_vars = $try_context->unreferenced_vars;
         $newly_unreferenced_vars = [];
-
-        $old_context_vars = $context->vars_in_scope;
 
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
@@ -168,8 +168,13 @@ class TryAnalyzer
             $catch_context = clone $original_context;
 
             foreach ($catch_context->vars_in_scope as $var_id => $type) {
-                if (!isset($old_context_vars[$var_id])) {
+                if (!isset($old_context->vars_in_scope[$var_id])) {
                     $type->possibly_undefined_from_try = true;
+                } else {
+                    $catch_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $old_context->vars_in_scope[$var_id]
+                    );
                 }
             }
 
@@ -394,7 +399,7 @@ class TryAnalyzer
                 );
 
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
-                    if (!isset($old_context_vars[$var_id])) {
+                    if (!isset($old_context->vars_in_scope[$var_id])) {
                         $type->possibly_undefined_from_try = false;
                     }
 

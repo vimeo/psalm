@@ -62,9 +62,9 @@ class EnableCommand extends Command
 
         $plugin_name = $i->getArgument('pluginName');
 
-        try {
-            assert(is_string($plugin_name));
+        assert(is_string($plugin_name));
 
+        try {
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);
         } catch (InvalidArgumentException $e) {
             $io->error('Unknown plugin class ' . $plugin_name);
