@@ -78,6 +78,7 @@ class TryAnalyzer
 
         $old_referenced_var_ids = $try_context->referenced_var_ids;
         $old_unreferenced_vars = $try_context->unreferenced_vars;
+
         $newly_unreferenced_vars = [];
 
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
@@ -175,6 +176,14 @@ class TryAnalyzer
                         $type,
                         $old_context->vars_in_scope[$var_id]
                     );
+                }
+
+                if (isset($old_context->unreferenced_vars[$var_id])) {
+                    if (!isset($catch_context->unreferenced_vars[$var_id])) {
+                        $catch_context->unreferenced_vars[$var_id] = $old_context->unreferenced_vars[$var_id];
+                    } else {
+                        $catch_context->unreferenced_vars[$var_id] += $old_context->unreferenced_vars[$var_id];
+                    }
                 }
             }
 
