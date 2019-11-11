@@ -1740,7 +1740,6 @@ class TypeAnalyzer
             return null;
         }
 
-        $lhs = $input_type_part->properties[0];
         $method_name = $rhs->getSingleStringLiteral()->value;
 
         $class_name = null;
@@ -1753,6 +1752,13 @@ class TypeAnalyzer
                     $class_name = $lhs_atomic_type->value;
                 }
             }
+        }
+
+        if ($class_name === 'self'
+            || $class_name === 'static'
+            || $class_name === 'parent'
+        ) {
+            return null;
         }
 
         if (!$class_name) {
