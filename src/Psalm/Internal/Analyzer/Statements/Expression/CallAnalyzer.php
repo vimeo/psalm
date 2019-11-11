@@ -764,7 +764,7 @@ class CallAnalyzer
                 && $arg->value->inferredType->hasArray()
             ) {
                 /**
-                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var TArray|TList|ObjectLike
                  */
                 $array_type = $arg->value->inferredType->getTypes()['array'];
@@ -844,7 +844,7 @@ class CallAnalyzer
 
         if (isset($array_arg->inferredType) && $array_arg->inferredType->hasArray()) {
             /**
-             * @psalm-suppress PossiblyUndefinedArrayOffset
+             * @psalm-suppress PossiblyUndefinedStringArrayOffset
              * @var TArray|ObjectLike|TList
              */
             $array_type = $array_arg->inferredType->getTypes()['array'];
@@ -989,7 +989,7 @@ class CallAnalyzer
             && $replacement_arg->inferredType->hasArray()
         ) {
             /**
-             * @psalm-suppress PossiblyUndefinedArrayOffset
+             * @psalm-suppress PossiblyUndefinedStringArrayOffset
              * @var TArray|ObjectLike|TList
              */
             $array_type = $array_arg->inferredType->getTypes()['array'];
@@ -999,7 +999,7 @@ class CallAnalyzer
             }
 
             /**
-             * @psalm-suppress PossiblyUndefinedArrayOffset
+             * @psalm-suppress PossiblyUndefinedStringArrayOffset
              * @var TArray|ObjectLike|TList
              */
             $replacement_array_type = $replacement_arg->inferredType->getTypes()['array'];
@@ -1465,7 +1465,7 @@ class CallAnalyzer
                     && $param_type->hasArray()
                 ) {
                     /**
-                     * @psalm-suppress PossiblyUndefinedArrayOffset
+                     * @psalm-suppress PossiblyUndefinedStringArrayOffset
                      * @var TList|TArray
                      */
                     $array_type = $param_type->getTypes()['array'];
@@ -1711,7 +1711,7 @@ class CallAnalyzer
             if ($arg->unpack) {
                 if ($arg_type->hasArray()) {
                     /**
-                     * @psalm-suppress PossiblyUndefinedArrayOffset
+                     * @psalm-suppress PossiblyUndefinedStringArrayOffset
                      * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
                      */
                     $array_atomic_type = $arg_type->getTypes()['array'];
@@ -1809,7 +1809,7 @@ class CallAnalyzer
 
             if ($arg_type->hasArray()) {
                 /**
-                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
                  */
                 $array_atomic_type = $arg_type->getTypes()['array'];
@@ -1963,7 +1963,7 @@ class CallAnalyzer
             $array_arg = isset($arg->value) ? $arg->value : null;
 
             /**
-             * @psalm-suppress PossiblyUndefinedArrayOffset
+             * @psalm-suppress PossiblyUndefinedStringArrayOffset
              * @var ObjectLike|TArray|TList|null
              */
             $array_arg_type = $array_arg

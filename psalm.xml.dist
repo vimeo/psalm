@@ -141,13 +141,13 @@
             </errorLevel>
         </InternalMethod>
 
-        <PossiblyUndefinedArrayOffset>
+        <PossiblyUndefinedStringArrayOffset>
             <errorLevel type="suppress">
                 <directory name="src/Psalm/Internal/Provider/ReturnTypeProvider" />
                 <file name="src/Psalm/Internal/Type/AssertionReconciler.php" />
                 <file name="src/Psalm/Internal/Type/NegatedAssertionReconciler.php" />
                 <directory name="tests"/>
             </errorLevel>
-        </PossiblyUndefinedArrayOffset>
+        </PossiblyUndefinedStringArrayOffset>
     </issueHandlers>
 </psalm>

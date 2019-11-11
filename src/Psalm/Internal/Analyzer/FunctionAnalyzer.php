@@ -314,7 +314,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                         if (isset($first_arg->inferredType)) {
                             if ($first_arg->inferredType->hasArray()) {
-                                /** @psalm-suppress PossiblyUndefinedArrayOffset */
+                                /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                                 $array_type = $first_arg->inferredType->getTypes()['array'];
                                 if ($array_type instanceof Type\Atomic\ObjectLike) {
                                     return $array_type->getGenericValueType();

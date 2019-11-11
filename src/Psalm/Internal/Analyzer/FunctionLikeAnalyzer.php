@@ -584,7 +584,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 ) {
                     if ($this->function->inferredType) {
                         /**
-                         * @psalm-suppress PossiblyUndefinedArrayOffset
+                         * @psalm-suppress PossiblyUndefinedStringArrayOffset
                          * @var Type\Atomic\TFn
                          */
                         $closure_atomic = \array_values($this->function->inferredType->getTypes())[0];

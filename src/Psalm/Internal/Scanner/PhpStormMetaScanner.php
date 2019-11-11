@@ -202,7 +202,7 @@ class PhpStormMetaScanner
                         if (($call_arg_type = $call_args[$element_type_offset]->value->inferredType ?? null)) {
                             if ($call_arg_type->hasArray()) {
                                 /**
-                                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
                                  * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
                                  */
                                 $array_atomic_type = $call_arg_type->getTypes()['array'];
@@ -337,7 +337,7 @@ class PhpStormMetaScanner
                         if (($call_arg_type = $call_args[$element_type_offset]->value->inferredType ?? null)) {
                             if ($call_arg_type->hasArray()) {
                                 /**
-                                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
                                  * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
                                  */
                                 $array_atomic_type = $call_arg_type->getTypes()['array'];

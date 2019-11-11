@@ -766,7 +766,7 @@ class ForeachAnalyzer
 
                                     // The collection might be an iterator, in which case
                                     // we want to call the iterator function
-                                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
+                                    /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                                     if (!isset($generic_storage->template_type_extends['Traversable'])
                                         || ($generic_storage
                                                 ->template_type_extends['Traversable']['TKey']->isMixed()

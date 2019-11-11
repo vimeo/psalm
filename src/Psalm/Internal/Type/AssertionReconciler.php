@@ -795,7 +795,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $old_var_type_string = $existing_var_type->getId();
 
         if ($existing_var_type->hasType('array')) {
-            /** @psalm-suppress PossiblyUndefinedArrayOffset */
+            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
             $array_atomic_type = $existing_var_type->getTypes()['array'];
             $did_remove_type = false;
 

@@ -151,10 +151,6 @@ class DocumentationTest extends TestCase
         $this->project_analyzer->getConfig()->ensure_array_string_offsets_exist = $is_array_offset_test;
         $this->project_analyzer->getConfig()->ensure_array_int_offsets_exist = $is_array_offset_test;
 
-        if (strpos($error_message, 'ArrayOffset')) {
-
-        }
-
         foreach ($error_levels as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }

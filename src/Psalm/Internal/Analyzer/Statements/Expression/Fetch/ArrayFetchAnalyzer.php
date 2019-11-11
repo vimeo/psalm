@@ -185,7 +185,7 @@ class ArrayFetchAnalyzer
                     || $stmt->var instanceof PhpParser\Node\Expr\ConstFetch)
             ) {
                 /**
-                 * @psalm-suppress PossiblyUndefinedArrayOffset
+                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var TArray|ObjectLike|TList
                  */
                 $array_type = $stmt->var->inferredType->getTypes()['array'];
