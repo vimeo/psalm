@@ -1007,6 +1007,36 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'ImplementedParamTypeMismatch',
             ],
+            'returnsParentWithNoParent' => [
+                '<?php
+                    class Foo {
+                        public function f(): parent {}
+                    }
+                ',
+                'error_message' => 'InvalidParent',
+            ],
+            'returnsParentWithNoParentAndInvalidParentSuppressed' => [
+                '<?php
+                    class Foo {
+                        public function f(): parent {
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidReturnType',
+                2 => ['InvalidParent'],
+            ],
+            // not sure how to handle it
+            'SKIPPED-returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
+                '<?php
+                    class Foo {
+                        public function f(): parent {
+                            return false;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidReturnType',
+                2 => ['InvalidParent'],
+            ],
         ];
     }
 }
