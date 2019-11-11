@@ -109,7 +109,9 @@ class TryAnalyzer
                 if (!isset($try_context->vars_in_scope[$var_id])) {
                     $try_context->vars_in_scope[$var_id] = clone $type;
                     $try_context->vars_in_scope[$var_id]->from_docblock = true;
-                    $try_context->vars_in_scope[$var_id]->possibly_undefined_from_try = true;
+                    $type = clone $type;
+                    $type->possibly_undefined_from_try = true;
+                    $context->vars_in_scope[$var_id] = $type;
                 } else {
                     $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $try_context->vars_in_scope[$var_id],
