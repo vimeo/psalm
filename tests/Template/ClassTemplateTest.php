@@ -1682,7 +1682,7 @@ class ClassTemplateTest extends TestCase
                     class Child extends Base {}
 
                     /**
-                     * @template T
+                     * @template-covariant T
                      */
                     class Foo
                     {
@@ -1700,7 +1700,7 @@ class ClassTemplateTest extends TestCase
             ],
             'allowMoreSpecificArray' => [
                 '<?php
-                    /** @template T */
+                    /** @template-covariant T */
                     class Foo {
                         /** @param \Closure():T $closure */
                         public function __construct($closure) {}
@@ -1714,6 +1714,33 @@ class ClassTemplateTest extends TestCase
                             $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
                         }
                     }'
+            ],
+            'specializeTypeInPropertyAssignment' => [
+                '<?php
+                    /** @template-covariant T */
+                    class Foo {
+                        /** @var \Closure():T $closure */
+                        private $closure;
+
+                        /** @param \Closure():T $closure */
+                        public function __construct($closure)
+                        {
+                            $this->closure = $closure;
+                        }
+                    }
+
+                    class Bar {
+                        /** @var Foo<array> */
+                        private $FooArray;
+
+                        public function __construct() {
+                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
+                            expectsShape($this->FooArray);
+                        }
+                    }
+
+                    /** @param Foo<array{foo: string}> $_ */
+                    function expectsShape($_): void {}',
             ],
             'reflectTemplatedClass' => [
                 '<?php
@@ -2446,34 +2473,6 @@ class ClassTemplateTest extends TestCase
                     function takesFooDerived($foo): void {}',
                 'error_message' => 'InvalidReturnStatement'
             ],
-            'specializeTypeInPropertyAssignment' => [
-                '<?php
-                    /** @template T */
-                    class Foo {
-                        /** @var \Closure():T $closure */
-                        private $closure;
-
-                        /** @param \Closure():T $closure */
-                        public function __construct($closure)
-                        {
-                            $this->closure = $closure;
-                        }
-                    }
-
-                    class Bar {
-                        /** @var Foo<array> */
-                        private $FooArray;
-
-                        public function __construct() {
-                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
-                            expectsShape($this->FooArray);
-                        }
-                    }
-
-                    /** @param Foo<array{foo: string}> $_ */
-                    function expectsShape($_): void {}',
-                'error_message' => 'MixedArgumentTypeCoercion'
-            ],
             'preventUseWithMoreSpecificParamInt' => [
                 '<?php
                     /** @template T */
@@ -2506,6 +2505,48 @@ class ClassTemplateTest extends TestCase
                     function usesCollection(Collection $col): void {
                         $col->add([]);
                     }',
+                'error_message' => 'InvalidArgument'
+            ],
+            'preventTemplatedCorrectionBeingWrittenTo' => [
+                '<?php
+                    namespace NS;
+
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    class ArrayCollection {
+                        /** @var array<TKey,TValue> */
+                        private $data;
+
+                        /** @param array<TKey,TValue> $data */
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+
+                        /**
+                         * @param TKey $key
+                         * @param TValue $value
+                         */
+                        public function addItem($key, $value) : void {
+                            $this->data[$key] = $value;
+                        }
+                    }
+
+                    class Item {}
+                    class SubItem extends Item {}
+                    class OtherSubItem extends Item {}
+
+                    /**
+                     * @param ArrayCollection<int,Item> $i
+                     */
+                    function takesCollectionOfItems(ArrayCollection $i): void {
+                       $i->addItem(10, new OtherSubItem);
+                    }
+
+                    $subitem_collection = new ArrayCollection([ new SubItem ]);
+
+                    takesCollectionOfItems($subitem_collection);',
                 'error_message' => 'InvalidArgument'
             ],
         ];

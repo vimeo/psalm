@@ -1940,11 +1940,11 @@ class TypeAnalyzer
                     && !$container_param->hasTemplate()
                     && !$input_param->hasTemplate()
                 ) {
-                    if ($input_param->had_template
-                        || $input_param->hasEmptyArray()
+                    if ($input_param->hasEmptyArray()
                         || $input_param->hasLiteralValue()
                     ) {
                         if (!$atomic_comparison_result->replacement_atomic_type) {
+
                             $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
                         }
 
@@ -1966,7 +1966,7 @@ class TypeAnalyzer
                                 $container_param->ignore_falsable_issues,
                                 $param_comparison_result,
                                 $allow_interface_equality
-                            ) || $atomic_comparison_result->type_coerced
+                            ) || $param_comparison_result->type_coerced
                             ) {
                                 if ($container_param->hasMixed() || $container_param->isArrayKey()) {
                                     $atomic_comparison_result->type_coerced_from_mixed = true;
