@@ -14,7 +14,7 @@ class ArrayAccessTest extends TestCase
     public function testEnsureArrayOffsetsExist()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('PossiblyUndefinedArrayOffset');
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
 
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
 
@@ -101,7 +101,7 @@ class ArrayAccessTest extends TestCase
     public function testComplainAfterFirstIsset()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('PossiblyUndefinedArrayOffset');
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
 
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
 
@@ -122,7 +122,7 @@ class ArrayAccessTest extends TestCase
     public function testEnsureArrayIntOffsetsExist()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('PossiblyUndefinedArrayOffset');
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -211,7 +211,7 @@ class ArrayAccessTest extends TestCase
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('PossiblyUndefinedArrayOffset');
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
         $this->addFile(
             'somefile.php',
