@@ -108,7 +108,7 @@ class DoAnalyzer
                 function (Clause $c) use ($mixed_var_ids) {
                     $keys = array_keys($c->possibilities);
 
-                    $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+                    $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
 
                     foreach ($keys as $key) {
                         foreach ($mixed_var_ids as $mixed_var_id) {
