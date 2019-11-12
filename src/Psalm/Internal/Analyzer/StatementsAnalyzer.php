@@ -1091,7 +1091,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $project_analyzer = $this->getProjectAnalyzer();
 
         foreach ($this->unused_var_locations as $hash => list($var_id, $original_location)) {
-            if ($var_id === '$_' || isset($this->used_var_locations[$hash])) {
+            if (substr($var_id, 0, 2) === '$_' || isset($this->used_var_locations[$hash])) {
                 continue;
             }
 
