@@ -1160,7 +1160,13 @@ class ExpressionAnalyzer
                     if (is_string($static_class_type)) {
                         $return_type->value = $static_class_type;
                     } else {
-                        $return_type = clone $static_class_type;
+                        if ($return_type instanceof Type\Atomic\TGenericObject
+                            && $static_class_type instanceof Type\Atomic\TNamedObject
+                        ) {
+                            $return_type->value = $static_class_type->value;
+                        } else {
+                            $return_type = clone $static_class_type;
+                        }
                     }
                 } elseif ($return_type_lc === 'self') {
                     if (!$self_class) {

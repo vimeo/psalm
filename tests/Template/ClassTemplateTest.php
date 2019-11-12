@@ -2102,6 +2102,37 @@ class ClassTemplateTest extends TestCase
                         return iterableToArray($t);
                     }',
             ],
+            'templateStaticWithParam' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class ArrayCollection {
+                        /** @var list<T> */
+                        private $elements;
+
+                        /**
+                         * @param list<T> $elements
+                         */
+                        public function __construct(array $elements) {
+                            $this->elements = $elements;
+                        }
+
+                        /**
+                         * @template U
+                         * @param callable(T=):U $callback
+                         * @return static<U>
+                         */
+                        public function map(callable $callback) {
+                            return new static(array_values(array_map($callback, $this->elements)));
+                        }
+                    }
+
+                    /** @param ArrayCollection<int> $ints */
+                    function takesInts(ArrayCollection $ints) :void {}
+
+                    takesInts((new ArrayCollection([ "a", "bc" ]))->map("strlen"));'
+            ],
         ];
     }
 
