@@ -372,12 +372,6 @@ class TryAnalyzer
             );
 
             if ($context->collect_references && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {
-                foreach ($context->unreferenced_vars as $var_id => $_) {
-                    if (!isset($catch_context->unreferenced_vars[$var_id])) {
-                        unset($context->unreferenced_vars[$var_id]);
-                    }
-                }
-
                 $newly_unreferenced_vars = array_merge(
                     $newly_unreferenced_vars,
                     array_diff_key(

@@ -1223,7 +1223,7 @@ class FunctionTemplateTest extends TestCase
                         return $callback();
                     }
 
-                    makeResultSet([A::class, "returnsObjectOrNull"]);',
+                    makeResultSet([B::class, "returnsObjectOrNull"]);',
                 'error_message' => 'InvalidArgument',
             ],
             'templateInvokeArg' => [
