@@ -36,7 +36,7 @@ class TGenericObject extends TNamedObject
 
         $extra_types = '';
 
-        if ($this instanceof TNamedObject && $this->extra_types) {
+        if ($this->extra_types) {
             $extra_types = '&' . implode('&', $this->extra_types);
         }
 
