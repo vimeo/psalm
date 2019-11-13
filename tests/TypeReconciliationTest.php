@@ -1507,6 +1507,16 @@ class TypeReconciliationTest extends TestCase
                         return filter_input_array(INPUT_POST) ?? [];
                     }',
             ],
+            'noCrashOnWeirdArrayKeys' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedPropertyFetch
+                     * @psalm-suppress MixedArrayOffset
+                     */
+                    function foo(array $a, array $b) : void {
+                        if (isset($a[$b[0]->id])) {}
+                    }',
+            ],
         ];
     }
 

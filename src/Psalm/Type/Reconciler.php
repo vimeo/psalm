@@ -136,7 +136,7 @@ class Reconciler
 
                             $base_key = $new_base_key;
                         } else {
-                            throw new \InvalidArgumentException('Unexpected divider ' . $divider);
+                            break;
                         }
 
                         if (!$key_parts) {
@@ -598,15 +598,6 @@ class Reconciler
 
                 $base_key = $new_base_key;
             } else {
-                if ($code_location) {
-                    IssueBuffer::add(
-                        new PsalmInternalError(
-                            'Unexpected divider ' . $divider,
-                            $code_location
-                        )
-                    );
-                }
-
                 return null;
             }
         }
