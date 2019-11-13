@@ -308,7 +308,7 @@ class TernaryAnalyzer
             $t_else_context->unreferenced_vars
         );
 
-        foreach ($context->unreferenced_vars as $var_id => $locations) {
+        foreach ($context->unreferenced_vars as $var_id => $_) {
             if (isset($t_else_context->unreferenced_vars[$var_id])) {
                 $context->unreferenced_vars[$var_id] += $t_else_context->unreferenced_vars[$var_id];
             }
