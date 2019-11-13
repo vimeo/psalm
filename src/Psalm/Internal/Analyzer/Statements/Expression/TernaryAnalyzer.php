@@ -308,6 +308,16 @@ class TernaryAnalyzer
             $t_else_context->unreferenced_vars
         );
 
+        foreach ($context->unreferenced_vars as $var_id => $locations) {
+            if (isset($t_else_context->unreferenced_vars[$var_id])) {
+                $context->unreferenced_vars[$var_id] += $t_else_context->unreferenced_vars[$var_id];
+            }
+
+            if (isset($t_if_context->unreferenced_vars[$var_id])) {
+                $context->unreferenced_vars[$var_id] += $t_if_context->unreferenced_vars[$var_id];
+            }
+        }
+
         $lhs_type = null;
 
         if ($stmt->if) {

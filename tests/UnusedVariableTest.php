@@ -1270,7 +1270,28 @@ class UnusedVariableTest extends TestCase
                         $arr["a"]["b"][$c] = 1;
                         return $arr;
                     }',
-            ]
+            ],
+            'binaryOpIncrementInElse' => [
+                '<?php
+                    function foo(int $i, string $alias) : void {
+                        echo $alias ?: $i++;
+                        echo $i;
+                    }'
+            ],
+            'binaryOpIncrementInCond' => [
+                '<?php
+                    function foo(int $i, string $alias) : void {
+                        echo $i++ ?: $alias;
+                        echo $i;
+                    }'
+            ],
+            'binaryOpIncrementInIf' => [
+                '<?php
+                    function foo(int $i, string $alias) : void {
+                        echo rand(0, 1) ? $i++ : $alias;
+                        echo $i;
+                    }'
+            ],
         ];
     }
 
