@@ -279,6 +279,21 @@ class ArrayAssignmentAnalyzer
 
             if ($child_stmt->var->inferredType->hasMixed()) {
                 $full_var_id = false;
+
+                while ($child_stmts) {
+                    $child_stmt = array_shift($child_stmts);
+
+                    if ($child_stmt->dim) {
+                        if (ExpressionAnalyzer::analyze(
+                            $statements_analyzer,
+                            $child_stmt->dim,
+                            $context
+                        ) === false) {
+                            return false;
+                        }
+                    }
+                }
+
                 break;
             }
         }

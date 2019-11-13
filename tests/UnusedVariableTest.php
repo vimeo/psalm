@@ -1251,6 +1251,26 @@ class UnusedVariableTest extends TestCase
 
                     echo $a;'
             ],
+            'unusedForeach' => [
+                '<?php
+                    /**
+                     * @param array<int, string> $test
+                     */
+                    function foo(array $test) : void {
+                        foreach($test as $key => $_testValue) {
+                            echo $key;
+                        }
+                    }'
+            ],
+            'usedAfterMixedVariableAssignment' => [
+                '<?php
+                    function foo(array $arr): array {
+                        $c = "c";
+                        /** @psalm-suppress MixedArrayAssignment */
+                        $arr["a"]["b"][$c] = 1;
+                        return $arr;
+                    }',
+            ]
         ];
     }
 
