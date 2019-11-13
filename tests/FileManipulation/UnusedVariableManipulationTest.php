@@ -29,7 +29,27 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 ['UnusedVariable'],
                 true,
             ],
-
+            'removeUnusedVariableFromTry' => [
+                '<?php
+                    class A {
+                        public function foo() : void {
+                            try {
+                                $c = false;
+                                $d = null;
+                            } catch (Exception $e) {}
+                        }
+                    }',
+                '<?php
+                    class A {
+                        public function foo() : void {
+                            try {
+                            } catch (Exception $e) {}
+                        }
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
             'removeUnusedVariableAndFunctionCall' => [
                 '<?php
                     class A {

@@ -1005,10 +1005,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $assign_exp_found = false;
 
         $i = 0;
-        while ($i<count($stmts) && !$assign_exp_found) {
+
+        while ($i < count($stmts) && !$assign_exp_found) {
             $stmt = $stmts[$i];
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
                 $search_result = $this->findAssignExp($stmt->expr, $var_id, $original_location->raw_file_start);
+
                 $target_exp = $search_result[0];
                 $levels_taken = $search_result[1];
 
@@ -1017,8 +1019,43 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $assign_exp = $target_exp;
                     $assign_stmt = $levels_taken === 1 ? $stmt : null;
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
+                $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
+
+                if ($search_result[0] && $search_result[1]) {
+                    return $search_result;
+                }
+
+                foreach ($stmt->catches as $catch_stmt) {
+                    $search_result = $this->findAssignStmt($catch_stmt->stmts, $var_id, $original_location);
+
+                    if ($search_result[0] && $search_result[1]) {
+                        return $search_result;
+                    }
+                }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_
+                || $stmt instanceof PhpParser\Node\Stmt\While_
+            ) {
+                $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
+
+                if ($search_result[0] && $search_result[1]) {
+                    return $search_result;
+                }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
+                $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
+
+                if ($search_result[0] && $search_result[1]) {
+                    return $search_result;
+                }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
+                $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
+
+                if ($search_result[0] && $search_result[1]) {
+                    return $search_result;
+                }
             }
-            $i+=1;
+
+            $i++;
         }
 
         return [$assign_stmt, $assign_exp];
