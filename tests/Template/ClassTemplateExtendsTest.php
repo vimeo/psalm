@@ -1903,115 +1903,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
             ],
-            'allowPassingToCovariantCollection' => [
-                '<?php
-                    abstract class Animal {
-                        abstract public function getSound() : string;
-                    }
-                    class Dog extends Animal {
-                        public function getSound() : string {
-                            return "Woof!";
-                        }
-                    }
 
-                    /**
-                     * @template-covariant TValue
-                     * @template-extends \ArrayObject<int,TValue>
-                     */
-                    class Collection extends \ArrayObject {
-                        /**
-                         * @param array<int,TValue> $kv
-                         */
-                        public function __construct(array $kv) {
-                            parent::__construct($kv);
-                        }
-                    }
-
-                    /**
-                     * @param Collection<Animal> $list
-                     */
-                    function getSounds(Traversable $list) : void {
-                        foreach ($list as $l) {
-                            $l->getSound();
-                        }
-                    }
-
-                    /**
-                     * @param Collection<Dog> $list
-                     */
-                    function takesDogList(Collection $list) : void {
-                        getSounds($list); // this probably should not be an error
-                    }',
-            ],
-            'allowPassingToCovariantCollectionWithExtends' => [
-                '<?php
-                    abstract class Animal {
-                        abstract public function getSound() : string;
-                    }
-
-                    class Dog extends Animal {
-                        public function getSound() : string {
-                            return "Woof!";
-                        }
-                    }
-
-                    /**
-                     * @template-covariant TValue
-                     * @template-extends \ArrayObject<int,TValue>
-                     */
-                    class Collection extends \ArrayObject {}
-
-                    /** @template-extends Collection<Dog> */
-                    class HardwiredDogCollection extends Collection {}
-
-                    /**
-                     * @param Collection<Animal> $list
-                     */
-                    function getSounds(Collection $list) : void {
-                        foreach ($list as $l) {
-                            echo $l->getSound();
-                        }
-                    }
-
-                    getSounds(new HardwiredDogCollection([new Dog]));',
-            ],
-            'butWithCatInstead' => [
-                '<?php
-                    /** @template-covariant T as object **/
-                    interface Viewable
-                    {
-                        /** @psalm-return T **/
-                        public function view(): object;
-                    }
-
-                    class CatView
-                    {
-                        /**
-                          * @var string
-                          * @readonly
-                          */
-                        public $name;
-
-                        public function __construct(string $name) {
-                            $this->name = $name;
-                        }
-                    }
-
-                    /** @implements Viewable<CatView> */
-                    class Cat implements Viewable
-                    {
-                        public function view(): object {
-                            return new CatView("Kittie");
-                        }
-                    }
-
-                    /** @psalm-param Viewable<object> $viewable */
-                    function getView(Viewable $viewable): object {
-                        return $viewable->view();
-                    }
-
-                    getView(new Cat());'
-            ],
             'keyOfClassTemplateExtended' => [
                 '<?php
                     /**
@@ -2518,33 +2410,6 @@ class ClassTemplateExtendsTest extends TestCase
                     if ($maybe instanceof Some) {
                         $anInt = $maybe->extract();
                     }'
-            ],
-            'allowExtendingInterfaceWithExtraParam' => [
-                '<?php
-                    usesElementInterfaceCollection(new Collection([ new Element ]));
-
-                    /**
-                     * @template TKey as array-key
-                     * @template-covariant TValue
-                     */
-                    interface CollectionInterface {}
-
-                    interface ElementInterface {}
-
-                    /**
-                     * @template-covariant T
-                     * @template-implements CollectionInterface<int, T>
-                     */
-                    class Collection implements CollectionInterface
-                    {
-                      /** @param list<T> $elements */
-                      public function __construct(array $elements) {}
-                    }
-
-                    class Element implements ElementInterface {}
-
-                    /** @param CollectionInterface<int, ElementInterface> $col */
-                    function usesElementInterfaceCollection(CollectionInterface $col) :void {}'
             ],
         ];
     }
@@ -3306,26 +3171,6 @@ class ClassTemplateExtendsTest extends TestCase
                         ord($c->example("boris"));
                     }',
                 'error_message' => 'MixedArgument - src/somefile.php:31:29 - Argument 1 of ord cannot be mixed, expecting string',
-            ],
-            'preventExtendingWithCovariance' => [
-                '<?php
-                    /**
-                     * @template T
-                     */
-                    class InvariantFoo
-                    {
-                        /**
-                         * @param T $value
-                         */
-                        public function set($value): void {}
-                    }
-
-                    /**
-                     * @template-covariant T
-                     * @extends InvariantFoo<T>
-                     */
-                    class CovariantFoo extends InvariantFoo {}',
-                'error_message' => 'InvalidTemplateParam',
             ],
             'preventWiderParentType' => [
                 '<?php

@@ -1676,72 +1676,6 @@ class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
-            'allowBoundedType' => [
-                '<?php
-                    class Base {}
-                    class Child extends Base {}
-
-                    /**
-                     * @template-covariant T
-                     */
-                    class Foo
-                    {
-                        /** @param Closure():T $t */
-                        public function __construct(Closure $t) {}
-                    }
-
-                    /**
-                     * @return Foo<Base>
-                     */
-                    function returnFooBase() : Foo {
-                        $f = new Foo(function () { return new Child(); });
-                        return $f;
-                    }',
-            ],
-            'allowMoreSpecificArray' => [
-                '<?php
-                    /** @template-covariant T */
-                    class Foo {
-                        /** @param \Closure():T $closure */
-                        public function __construct($closure) {}
-                    }
-
-                    class Bar {
-                        /** @var Foo<array> */
-                        private $FooArray;
-
-                        public function __construct() {
-                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
-                        }
-                    }'
-            ],
-            'specializeTypeInPropertyAssignment' => [
-                '<?php
-                    /** @template-covariant T */
-                    class Foo {
-                        /** @var \Closure():T $closure */
-                        private $closure;
-
-                        /** @param \Closure():T $closure */
-                        public function __construct($closure)
-                        {
-                            $this->closure = $closure;
-                        }
-                    }
-
-                    class Bar {
-                        /** @var Foo<array> */
-                        private $FooArray;
-
-                        public function __construct() {
-                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
-                            expectsShape($this->FooArray);
-                        }
-                    }
-
-                    /** @param Foo<array{foo: string}> $_ */
-                    function expectsShape($_): void {}',
-            ],
             'reflectTemplatedClass' => [
                 '<?php
                     /** @template T1 of object */
@@ -2347,19 +2281,6 @@ class ClassTemplateTest extends TestCase
                         addAnimal($list); // this should be an error
                     }',
                 'error_message' => 'InvalidArgument',
-            ],
-            'preventCovariantParamUsage' => [
-                '<?php
-                    /**
-                     * @template-covariant T
-                     */
-                    class Covariant {
-                        /**
-                         * @param T $value
-                         */
-                        public function set($value): void {}
-                    }',
-                'error_message' => 'InvalidTemplateParam',
             ],
             'templateEmptyParamCoercionChangeVariable' => [
                 '<?php
