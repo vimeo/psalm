@@ -353,6 +353,18 @@ class EmptyTest extends TestCase
                         if (!empty($a->b)) {}
                     }',
             ],
+            'allowNumericEmpty' => [
+                '<?php
+                    /**
+                     * @param numeric $p
+                     */
+                    function f($p): bool {
+                        if (empty($p)) {
+                            return false;
+                        }
+                        return true;
+                    }'
+            ],
         ];
     }
 

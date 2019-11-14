@@ -2001,6 +2001,42 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
+        if ($existing_var_type->hasNumeric()) {
+            $existing_int_types = $existing_var_type->getLiteralInts();
+
+            if ($existing_int_types) {
+                foreach ($existing_int_types as $int_key => $literal_type) {
+                    if ($literal_type->value) {
+                        $existing_var_type->removeType($int_key);
+                    }
+                }
+            }
+
+            $existing_string_types = $existing_var_type->getLiteralStrings();
+
+            if ($existing_string_types) {
+                foreach ($existing_string_types as $string_key => $literal_type) {
+                    if ($literal_type->value) {
+                        $existing_var_type->removeType($string_key);
+                    }
+                }
+            }
+
+            $existing_float_types = $existing_var_type->getLiteralFloats();
+
+            if ($existing_float_types) {
+                foreach ($existing_float_types as $float_key => $literal_type) {
+                    if ($literal_type->value) {
+                        $existing_var_type->removeType($float_key);
+                    }
+                }
+            }
+
+            $did_remove_type = true;
+            $existing_var_type->removeType('numeric');
+            $existing_var_type->addType(new Type\Atomic\TEmptyNumeric);
+        }
+
         if (isset($existing_var_atomic_types['array'])) {
             $array_atomic_type = $existing_var_atomic_types['array'];
 
