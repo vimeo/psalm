@@ -1571,7 +1571,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     if ($duplicate_function_storage->location
                         && $duplicate_function_storage->location->getLineNumber() === $stmt->getLine()
                     ) {
-                        return $this->file_storage->functions[$function_id];
+                        $storage = $this->file_storage->functions[$function_id];
+                        $this->functionlike_storages[] = $storage;
+
+                        return $storage;
                     }
 
                     if (IssueBuffer::accepts(
@@ -1590,8 +1593,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     $duplicate_function_storage->has_visitor_issues = true;
 
-                    return $this->file_storage->functions[$function_id];
-                } elseif (isset($this->config->getPredefinedFunctions()[$function_id])) {
+                    $storage = $this->file_storage->functions[$function_id];
+                    $this->functionlike_storages[] = $storage;
+
+                    return $storage;
+                }
+
+                if (isset($this->config->getPredefinedFunctions()[$function_id])) {
                     /** @psalm-suppress TypeCoercion */
                     $reflection_function = new \ReflectionFunction($function_id);
 
