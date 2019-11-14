@@ -1053,6 +1053,28 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 if ($search_result[0] && $search_result[1]) {
                     return $search_result;
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
+                $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
+
+                if ($search_result[0] && $search_result[1]) {
+                    return $search_result;
+                }
+
+                foreach ($stmt->elseifs as $elseif_stmt) {
+                    $search_result = $this->findAssignStmt($elseif_stmt->stmts, $var_id, $original_location);
+
+                    if ($search_result[0] && $search_result[1]) {
+                        return $search_result;
+                    }
+                }
+
+                if ($stmt->else) {
+                    $search_result = $this->findAssignStmt($stmt->else->stmts, $var_id, $original_location);
+
+                    if ($search_result[0] && $search_result[1]) {
+                        return $search_result;
+                    }
+                }
             }
 
             $i++;
