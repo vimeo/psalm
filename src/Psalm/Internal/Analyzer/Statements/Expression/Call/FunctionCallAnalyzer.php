@@ -918,6 +918,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
         }
 
+        if (!isset($stmt->inferredType)) {
+            $stmt->inferredType = Type::getMixed();
+        }
+
         return null;
     }
 }

@@ -1126,5 +1126,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
             $context->removeAllObjectVars();
         }
+
+        if (!isset($stmt->inferredType)) {
+            $stmt->inferredType = Type::getMixed();
+        }
     }
 }
