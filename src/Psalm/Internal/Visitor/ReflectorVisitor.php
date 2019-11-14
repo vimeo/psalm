@@ -653,11 +653,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if (!$this->file_storage->has_visitor_issues) {
                 $this->codebase->cacheClassLikeStorage($classlike_storage, $this->file_path);
             }
-        } elseif ($node instanceof PhpParser\Node\Stmt\Function_
-            || $node instanceof PhpParser\Node\Stmt\ClassMethod
-        ) {
-            $this->function_template_types = [];
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
+            if ($node instanceof PhpParser\Node\Stmt\Function_
+                || $node instanceof PhpParser\Node\Stmt\ClassMethod
+            ) {
+                $this->function_template_types = [];
+            }
+
             if ($this->skip_if_descendants) {
                 return;
             }
