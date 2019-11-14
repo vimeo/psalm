@@ -1833,13 +1833,15 @@ class TypeAnalyzer
             }
 
             $input_type_params = $input_type_part->type_params;
-            $input_type_params_covariant = [];
+            $container_type_params_covariant = [];
 
             try {
                 $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
-                $input_type_params_covariant = $input_class_storage->template_covariants;
+                $container_class_storage = $codebase->classlike_storage_provider->get($container_type_part->value);
+                $container_type_params_covariant = $container_class_storage->template_covariants;
             } catch (\Throwable $e) {
                 $input_class_storage = null;
+                $container_class_storage = null;
             }
 
             if ($input_type_part->value !== $container_type_part->value && $input_class_storage) {
@@ -1849,7 +1851,6 @@ class TypeAnalyzer
                     $params = $template_extends[$container_type_part->value];
 
                     $new_input_params = [];
-                    $new_params_covariant = [];
 
                     foreach ($params as $key => $extended_input_param_type) {
                         if (is_string($key)) {
@@ -1869,14 +1870,8 @@ class TypeAnalyzer
                                         return false;
                                     }
 
-                                    $new_params_covariant[count($new_input_params)]
-                                        = $input_type_params_covariant[$old_params_offset] ?? false;
-
                                     $candidate_param_type = $input_type_params[$old_params_offset];
                                 } else {
-                                    $offset = count($new_input_params);
-                                    $new_params_covariant[$offset]
-                                        = $input_type_params_covariant[$offset] ?? false;
                                     $candidate_param_type = new Type\Union([$et]);
                                 }
 
@@ -1897,7 +1892,6 @@ class TypeAnalyzer
                     }
 
                     $input_type_params = $new_input_params;
-                    $input_type_params_covariant = $new_params_covariant;
                 }
             }
 
@@ -1971,7 +1965,7 @@ class TypeAnalyzer
                                 = clone $container_param;
                         }
                     } else {
-                        if ($input_class_storage && !($input_type_params_covariant[$i] ?? false)) {
+                        if (!($container_type_params_covariant[$i] ?? false)) {
                             // Make sure types are basically the same
                             if (!self::isContainedBy(
                                 $codebase,
