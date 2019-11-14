@@ -665,7 +665,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if (!$this->functionlike_storages) {
-                throw new \UnexpectedValueException('There should be function storages');
+                throw new \UnexpectedValueException(
+                    'There should be function storages for line ' . $this->file_path . ':' . $node->getLine()
+                );
             }
 
             $functionlike_storage = array_pop($this->functionlike_storages);
@@ -1557,7 +1559,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $this->file_storage->functions[$function_id]
                     );
 
-                    return $this->file_storage->functions[$function_id];
+                    $storage = $this->file_storage->functions[$function_id];
+                    $this->functionlike_storages[] = $storage;
+
+                    return $storage;
                 }
             } else {
                 if (isset($this->file_storage->functions[$function_id])) {
