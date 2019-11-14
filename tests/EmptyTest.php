@@ -402,6 +402,24 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'preventEmptyCreatingArray' => [
+                '<?php
+                    /** @return array{a:mixed} */
+                    function foo(array $r) {
+                        if (!empty($r["a"])) {}
+                        return $r;
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion'
+            ],
+            'preventEmptyEquivalentCreatingArray' => [
+                '<?php
+                    /** @return array{a:mixed} */
+                    function foo(array $r) {
+                        if (isset($r["a"]) && $r["a"]) {}
+                        return $r;
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion'
+            ],
         ];
     }
 }

@@ -273,7 +273,7 @@ class Reconciler
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[] = $key;
 
-                if (substr($key, -1) === ']' && !$has_inverted_isset) {
+                if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_empty) {
                     $key_parts = self::breakUpPathIntoParts($key);
                     self::adjustObjectLikeType(
                         $key_parts,
