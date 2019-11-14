@@ -2560,7 +2560,7 @@ class CallAnalyzer
                         $statements_analyzer->getFilePath()
                     );
 
-                    if ($potential_method_id) {
+                    if ($potential_method_id && $potential_method_id !== 'not-callable') {
                         $potential_method_ids[] = $potential_method_id;
                     }
                 } elseif ($input_type_part instanceof Type\Atomic\TLiteralString) {

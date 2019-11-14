@@ -1657,7 +1657,8 @@ class TypeAnalyzer
                 }
             }
         } elseif ($input_type_part instanceof ObjectLike) {
-            if ($method_id = self::getCallableMethodIdFromObjectLike($input_type_part)) {
+            $method_id = self::getCallableMethodIdFromObjectLike($input_type_part);
+            if ($method_id && $method_id !== 'not-callable') {
                 try {
                     $method_storage = $codebase->methods->getStorage($method_id);
                     list($method_fqcln) = \explode('::', $method_id);
