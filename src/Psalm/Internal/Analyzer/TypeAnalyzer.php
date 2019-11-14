@@ -145,6 +145,7 @@ class TypeAnalyzer
 
                 if ($input_type_part instanceof TMixed
                     && $input_type->from_template_default
+                    && $input_type->from_docblock
                     && $atomic_comparison_result
                     && $atomic_comparison_result->type_coerced_from_mixed
                 ) {
@@ -250,7 +251,9 @@ class TypeAnalyzer
                 if ($all_type_coerced_from_mixed) {
                     $union_comparison_result->type_coerced_from_mixed = true;
 
-                    if ($input_type->from_template_default || $all_type_coerced_from_as_mixed) {
+                    if (($input_type->from_template_default && $input_type->from_docblock)
+                        || $all_type_coerced_from_as_mixed
+                    ) {
                         $union_comparison_result->type_coerced_from_as_mixed = true;
                     }
                 }
@@ -265,7 +268,9 @@ class TypeAnalyzer
                     if ($some_type_coerced_from_mixed) {
                         $union_comparison_result->type_coerced_from_mixed = true;
 
-                        if ($input_type->from_template_default || $all_type_coerced_from_as_mixed) {
+                        if (($input_type->from_template_default && $input_type->from_docblock)
+                            || $all_type_coerced_from_as_mixed
+                        ) {
                             $union_comparison_result->type_coerced_from_as_mixed = true;
                         }
                     }
