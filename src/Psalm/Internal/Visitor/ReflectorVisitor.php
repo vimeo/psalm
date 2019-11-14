@@ -665,6 +665,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if (!$this->functionlike_storages) {
+                if ($this->file_storage->has_visitor_issues) {
+                    return;
+                }
+
                 throw new \UnexpectedValueException(
                     'There should be function storages for line ' . $this->file_path . ':' . $node->getLine()
                 );
