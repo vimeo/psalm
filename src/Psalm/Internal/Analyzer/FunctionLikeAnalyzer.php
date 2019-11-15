@@ -1194,7 +1194,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 $codebase,
                 $storage->return_type,
                 $context->self,
-                $context->self,
+                'static',
                 $this->getParentFQCLN(),
                 false
             );
@@ -1218,7 +1218,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $codebase,
                     $function_param->type,
                     $context->self,
-                    $context->self,
+                    'static',
                     $this->getParentFQCLN(),
                     false
                 );

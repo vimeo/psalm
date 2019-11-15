@@ -215,11 +215,13 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         /**
                          * @param self $one
                          * @param A $two
+                         * @return static
                          */
                         public static function foo(self $one, A $two) : void {
                             A::foo($one, $two);
                             parent::foo($one, $two);
                             static::foo($one, $two);
+                            return new static();
                         }
                     }
 
@@ -243,11 +245,13 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         /**
                          * @param self $one
                          * @param self $two
+                         * @return static
                          */
                         public static function foo(self $one, self $two) : void {
                             self::foo($one, $two);
                             parent::foo($one, $two);
                             static::foo($one, $two);
+                            return new static();
                         }
                     }
 
@@ -534,6 +538,90 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                             /** @var A|B|null */
                             public $z = null;
                         }
+                    }',
+                [
+                    'Foo\A' => 'Bar\Baz\A',
+                    'Foo\B' => 'Bar\Baz\B',
+                ],
+            ],
+            'moveClassesIntoNamespaceWithoutAlias' => [
+                '<?php
+                    namespace Foo {
+                        class A {
+                            /** @var ?B */
+                            public $x = null;
+                            /** @var ?A */
+                            public $y = null;
+                            /** @var A|B|C|null */
+                            public $z = null;
+
+                            public static $vars = [1, 2, 3];
+                        }
+                    }
+
+                    namespace Foo {
+                        class B {
+                            /** @var ?A */
+                            public $x = null;
+                            /** @var ?B */
+                            public $y = null;
+                            /** @var A|B|C|null */
+                            public $z = null;
+                        }
+
+                        foreach (A::$vars[$foo] as $var) {}
+                    }
+
+                    namespace Bar {
+                        class C {
+                            /** @var ?\Foo\A */
+                            public $x = null;
+                            /** @var ?\Foo\B */
+                            public $y = null;
+                            /** @var \Foo\A|\Foo\B|null */
+                            public $z = null;
+                        }
+
+                        foreach (\Foo\A::$vars as $var) {}
+                    }',
+                '<?php
+                    namespace Bar\Baz {
+                        class A {
+                            /** @var B|null */
+                            public $x = null;
+                            /** @var null|self */
+                            public $y = null;
+                            /** @var B|\Foo\C|null|self */
+                            public $z = null;
+
+                            public static $vars = [1, 2, 3];
+                        }
+                    }
+
+                    namespace Bar\Baz {
+                        class B {
+                            /** @var A|null */
+                            public $x = null;
+                            /** @var null|self */
+                            public $y = null;
+                            /** @var A|\Foo\C|null|self */
+                            public $z = null;
+                        }
+
+                        foreach (\Bar\Baz\A::$vars[$foo] as $var) {}
+                    }
+
+                    namespace Bar {
+                        class C {
+                            /** @var Baz\A|null */
+                            public $x = null;
+                            /** @var Baz\B|null */
+                            public $y = null;
+                            /** @var Baz\A|Baz\B|null */
+                            public $z = null;
+                        }
+
+                        foreach (Baz\A::$vars as $var) {}
                     }',
                 [
                     'Foo\A' => 'Bar\Baz\A',

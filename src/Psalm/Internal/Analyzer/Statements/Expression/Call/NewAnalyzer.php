@@ -258,7 +258,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         }
 
         if ($fq_class_name) {
-            if ($codebase->alter_code) {
+            if ($codebase->alter_code
+                && $stmt->class instanceof PhpParser\Node\Name
+                && !in_array($stmt->class->parts[0], ['parent', 'static'])
+            ) {
                 $codebase->classlikes->handleClassLikeReferenceInMigration(
                     $codebase,
                     $statements_analyzer,
