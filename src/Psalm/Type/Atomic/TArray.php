@@ -58,7 +58,7 @@ class TArray extends \Psalm\Type\Atomic
 
     public function canBeFullyExpressedInPhp()
     {
-        return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
+        return $this->type_params[0]->isArrayKey() && $this->type_params[1]->isMixed();
     }
 
     /**

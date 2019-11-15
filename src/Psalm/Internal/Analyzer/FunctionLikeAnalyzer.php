@@ -635,6 +635,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                             // fall through
                         }
                     }
+
+                    if ($codebase->alter_code) {
+                        $codebase->classlikes->handleDocblockTypeInMigration(
+                            $codebase,
+                            $this,
+                            $input_type,
+                            $storage->throw_locations[$expected_exception],
+                            $context->calling_method_id
+                        );
+                    }
                 }
             }
         }

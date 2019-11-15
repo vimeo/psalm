@@ -1076,7 +1076,12 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
             }
 
-            if ($codebase->alter_code && $fq_class_name && !$moved_call) {
+            if ($codebase->alter_code
+                && $fq_class_name
+                && !$moved_call
+                && $stmt->class instanceof PhpParser\Node\Name
+                && !in_array($stmt->class->parts[0], ['parent', 'static'])
+            ) {
                 $codebase->classlikes->handleClassLikeReferenceInMigration(
                     $codebase,
                     $statements_analyzer,

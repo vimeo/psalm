@@ -205,15 +205,27 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                 '<?php
                     namespace Ns;
 
-                    class A {
+                    class AParent {
+                        public static function foo(A $one, A $two) {
+
+                        }
+                    }
+
+                    class A extends AParent {
                         /**
                          * @param self $one
                          * @param A $two
                          */
                         public static function foo(self $one, A $two) : void {
                             A::foo($one, $two);
+                            parent::foo($one, $two);
+                            static::foo($one, $two);
                         }
                     }
+
+                    $a = A::class;
+
+                    $a::foo(new A(), new A());
 
                     function foo() {
                         A::foo(new A(), A::foo());
@@ -221,15 +233,27 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                 '<?php
                     namespace Ns;
 
-                    class B {
+                    class AParent {
+                        public static function foo(B $one, B $two) {
+
+                        }
+                    }
+
+                    class B extends AParent {
                         /**
                          * @param self $one
                          * @param self $two
                          */
                         public static function foo(self $one, self $two) : void {
                             self::foo($one, $two);
+                            parent::foo($one, $two);
+                            static::foo($one, $two);
                         }
                     }
+
+                    $a = B::class;
+
+                    $a::foo(new B(), new B());
 
                     function foo() {
                         B::foo(new B(), B::foo());
@@ -280,10 +304,17 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                          * @var string
                          */
                         public static $one = "one";
+
+                        /**
+                         * @var array
+                         */
+                        public static $vars = ["one"];
                     }
 
                     echo A::$one;
-                    A::$one = "two";',
+                    A::$one = "two";
+
+                    foreach (A::$vars as $var) {}',
                 '<?php
                     namespace Ns;
 
@@ -292,10 +323,17 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                          * @var string
                          */
                         public static $one = "one";
+
+                        /**
+                         * @var array<array-key, mixed>
+                         */
+                        public static $vars = ["one"];
                     }
 
                     echo B::$one;
-                    B::$one = "two";',
+                    B::$one = "two";
+
+                    foreach (B::$vars as $var) {}',
                 [
                     'Ns\A' => 'Ns\B',
                 ],
@@ -310,6 +348,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                         /**
                          * @param ArrayObject<int, A> $a
+                         * @throws RunTimeException
                          */
                         public function foo(ArrayObject $a) : Exception {
                             foreach ($a as $b) {
@@ -343,6 +382,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                         /**
                          * @param \ArrayObject<int, self> $a
+                         * @throws \RunTimeException
                          */
                         public function foo(\ArrayObject $a) : Exception {
                             foreach ($a as $b) {
