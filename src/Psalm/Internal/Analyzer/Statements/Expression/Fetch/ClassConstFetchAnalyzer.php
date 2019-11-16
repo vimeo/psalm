@@ -90,7 +90,7 @@ class ClassConstFetchAnalyzer
             $moved_class = false;
 
             if ($codebase->alter_code
-                && !in_array($stmt->class->parts[0], ['parent', 'static'])
+                && !\in_array($stmt->class->parts[0], ['parent', 'static'])
             ) {
                 $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
                     $codebase,
