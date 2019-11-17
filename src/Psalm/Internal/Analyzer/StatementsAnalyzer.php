@@ -1141,7 +1141,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $function_storage = $source instanceof FunctionLikeAnalyzer ? $source->getFunctionLikeStorage($this) : null;
         if ($codebase->alter_code) {
             // Reverse array to deal with chain of assignments
-            $this->unused_var_locations = array_reverse($this->unused_var_locations);
+            $this->unused_var_locations = array_reverse($this->unused_var_locations, true);
         }
         $var_list = array_column($this->unused_var_locations, 0);
         $loc_list = array_column($this->unused_var_locations, 1);
