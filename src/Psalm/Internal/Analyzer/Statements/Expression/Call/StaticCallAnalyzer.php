@@ -974,7 +974,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     $stmt->class,
                                     $new_fq_class_name,
                                     $context->calling_method_id,
-                                    strtolower($old_declaring_fq_class_name) !== strtolower($new_fq_class_name)
+                                    strtolower($old_declaring_fq_class_name) !== strtolower($new_fq_class_name),
+                                    $stmt->class->parts[0] === 'self'
                                 )) {
                                     $moved_call = true;
                                 }
@@ -1087,7 +1088,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id
+                    $context->calling_method_id,
+                    false,
+                    $stmt->class->parts[0] === 'self'
                 );
             }
 

@@ -1027,7 +1027,8 @@ class ClassLikes
         PhpParser\Node $class_name_node,
         string $fq_class_name,
         ?string $calling_method_id,
-        bool $force_change = false
+        bool $force_change = false,
+        bool $was_self = false
     ) : bool {
         $calling_fq_class_name = $source->getFQCLN();
 
@@ -1050,7 +1051,8 @@ class ClassLikes
                 $source->getFilePath(),
                 (int) $class_name_node->getAttribute('startFilePos'),
                 (int) $class_name_node->getAttribute('endFilePos') + 1,
-                $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_
+                $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_,
+                $was_self
             );
 
             return true;
@@ -1120,7 +1122,8 @@ class ClassLikes
                     $new_fq_class_name,
                     $source_namespace,
                     $uses_flipped,
-                    $migrated_source_fqcln
+                    $migrated_source_fqcln,
+                    $was_self
                 )
                     . ($class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_ ? '::class' : '')
             );
@@ -1330,7 +1333,8 @@ class ClassLikes
         string $source_file_path,
         int $source_start,
         int $source_end,
-        bool $add_class_constant = false
+        bool $add_class_constant = false,
+        bool $allow_self = false
     ) : void {
         $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -1350,7 +1354,8 @@ class ClassLikes
                 $fq_class_name,
                 $destination_class_storage->aliases->namespace,
                 $destination_class_storage->aliases->uses_flipped,
-                $destination_class_storage->name
+                $destination_class_storage->name,
+                $allow_self
             ) . ($add_class_constant ? '::class' : '')
         );
 

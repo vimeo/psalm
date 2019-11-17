@@ -1100,9 +1100,10 @@ abstract class Type
         string $value,
         ?string $namespace,
         array $aliased_classes,
-        ?string $this_class
+        ?string $this_class,
+        bool $allow_self = false
     ) : string {
-        if ($value === $this_class) {
+        if ($allow_self && $value === $this_class) {
             return 'self';
         }
 

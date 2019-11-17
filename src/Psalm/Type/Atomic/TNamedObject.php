@@ -77,7 +77,8 @@ class TNamedObject extends Atomic
             $use_phpdoc_format
         );
 
-        return Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class) . $intersection_types;
+        return Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class, true)
+            . $intersection_types;
     }
 
     /**

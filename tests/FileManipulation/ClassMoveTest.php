@@ -219,6 +219,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                          */
                         public static function foo(self $one, A $two) : void {
                             A::foo($one, $two);
+                            self::foo($one, $two);
                             parent::foo($one, $two);
                             static::foo($one, $two);
                             return new static();
@@ -248,6 +249,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                          * @return static
                          */
                         public static function foo(self $one, self $two) : void {
+                            B::foo($one, $two);
                             self::foo($one, $two);
                             parent::foo($one, $two);
                             static::foo($one, $two);
@@ -367,6 +369,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                             echo \A::class;
                             echo __CLASS__;
+                            echo self::class;
 
                             ArrayObject::foo();
 
@@ -399,7 +402,8 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
                             }
 
-                            echo self::class;
+                            echo B::class;
+                            echo B::class;
                             echo self::class;
 
                             \ArrayObject::foo();

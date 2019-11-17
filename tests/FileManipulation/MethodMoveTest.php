@@ -116,8 +116,8 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                     class B {
                         public static function bar() : void {
-                            self::Fe();
-                            foreach (self::Fe() as $f) {}
+                            B::Fe();
+                            foreach (B::Fe() as $f) {}
                         }
 
                         /**
@@ -356,11 +356,11 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                             echo A::C;
                             A::Bar();
                             A::Bar();
-                            echo self::D;
+                            echo B::D;
                             new A();
                             /** @var A */
                             $a = new A();
-                            new self();
+                            new B();
 
                             return $a;
                         }
@@ -433,12 +433,12 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                             echo A::C;
                             echo A::C;
                             self::Blacksheep();
-                            self::Blacksheep();
-                            echo self::D;
+                            B::Blacksheep();
+                            echo B::D;
                             new A();
                             /** @var A */
                             $a = new A();
-                            new self();
+                            new B();
 
                             return $a;
                         }
@@ -515,11 +515,11 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                             echo A::C;
                             $this->Bar();
                             A::Bar();
-                            echo self::D;
+                            echo AChild::D;
                             new A();
                             /** @var A */
                             $a = new A();
-                            new self();
+                            new AChild();
 
                             return $a;
                         }
@@ -559,7 +559,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                     class B {
                         public static function bar() : void {
-                            self::Fe();
+                            B::Fe();
                         }
 
                         /**
@@ -598,7 +598,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                     class B {
                         public static function bar() : void {
-                            self::Fe();
+                            B::Fe();
                         }
 
                         /**
@@ -652,7 +652,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
                     namespace Ns2\Ns3 {
                         class B {
                             public static function bar() : void {
-                                self::Fe();
+                                B::Fe();
                             }
 
                             /**
@@ -705,7 +705,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
                         class B {
                             public static function bar() : void {
-                                self::Fedcba();
+                                B::Fedcba();
                             }
 
                             /**
