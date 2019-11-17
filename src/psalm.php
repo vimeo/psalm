@@ -34,6 +34,7 @@ $valid_long_options = [
     'disable-extension:',
     'find-dead-code::',
     'find-unused-code::',
+    'find-unused-variables',
     'find-references-to:',
     'help',
     'ignore-baseline',
@@ -364,6 +365,8 @@ if (isset($options['find-unused-code'])) {
     }
 }
 
+$find_unused_variables = isset($options['find-unused-variables']);
+
 $find_references_to = isset($options['find-references-to']) && is_string($options['find-references-to'])
     ? $options['find-references-to']
     : null;
@@ -512,7 +515,7 @@ if ($find_unused_code) {
     $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
 }
 
-if ($config->find_unused_variables) {
+if ($config->find_unused_variables || $find_unused_variables) {
     $project_analyzer->getCodebase()->reportUnusedVariables();
 }
 
