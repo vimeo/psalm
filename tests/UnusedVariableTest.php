@@ -1292,6 +1292,20 @@ class UnusedVariableTest extends TestCase
                         echo $i;
                     }'
             ],
+            'usedInNewCall' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedAssignment
+                     * @psalm-suppress MixedMethodCall
+                     * @psalm-suppress MissingParamType
+                     * @psalm-suppress MixedArgument
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function foo($a): void {
+                        $m = $_GET["m"] ?? null;
+                        $a->foo(new Exception($m));
+                    }',
+            ],
         ];
     }
 
