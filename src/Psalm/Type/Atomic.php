@@ -546,6 +546,16 @@ abstract class Atomic
                 );
             }
         }
+
+        if ($this instanceof ObjectLike) {
+            foreach ($this->properties as $property) {
+                $property->queueClassLikesForScanning(
+                    $codebase,
+                    $file_storage,
+                    $phantom_classes
+                );
+            }
+        }
     }
 
     public function containsClassLike(string $fq_classlike_name) : bool
