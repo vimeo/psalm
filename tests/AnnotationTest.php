@@ -563,6 +563,15 @@ class AnnotationTest extends TestCase
                      */
                     class A {}',
             ],
+            'builtInClassInAShape' => [
+                '<?php
+                  /**
+                   * @return array{d:Exception}
+                   * @psalm-suppress InvalidReturnType
+                   */
+                  function f() {}
+                '
+            ],
             'slashAfter?' => [
                 '<?php
                     namespace ns;
