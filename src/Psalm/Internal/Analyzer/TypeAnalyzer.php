@@ -1753,7 +1753,7 @@ class TypeAnalyzer
         if ($lhs->isSingleStringLiteral()) {
             $class_name = $lhs->getSingleStringLiteral()->value;
             if ($class_name[0] === '\\') {
-                $class_name = substr($class_name, 1);
+                $class_name = \substr($class_name, 1);
             }
         } elseif ($lhs->isSingle()) {
             foreach ($lhs->getTypes() as $lhs_atomic_type) {
