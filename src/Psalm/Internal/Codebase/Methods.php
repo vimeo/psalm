@@ -913,7 +913,11 @@ class Methods
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        try {
+            $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        } catch (\InvalidArgumentException $e) {
+            throw new \UnexpectedValueException($e->getMessage());
+        }
 
         $method_name_lc = strtolower($method_name);
 

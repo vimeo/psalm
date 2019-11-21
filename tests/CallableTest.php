@@ -973,6 +973,18 @@ class CallableTest extends TestCase
                         }
                     }',
             ],
+            'noFatalErrorOnClassWithSlash' => [
+                '<?php
+                    class Func {
+                        public function __construct(string $name, callable $callable) {}
+                    }
+
+                    class Foo {
+                        public static function bar(): string { return "asd"; }
+                    }
+
+                    new Func("f", ["\Foo", "bar"]);',
+            ],
         ];
     }
 
@@ -1506,6 +1518,24 @@ class CallableTest extends TestCase
                         return $int;
                     }',
                 'error_message' => 'MixedReturnStatement'
+            ],
+            'noFatalErrorOnMissingClassWithSlash' => [
+                '<?php
+                    class Func {
+                        public function __construct(string $name, callable $callable) {}
+                    }
+
+                    new Func("f", ["\Foo", "bar"]);',
+                'error_message' => 'InvalidArgument'
+            ],
+            'noFatalErrorOnMissingClassWithoutSlash' => [
+                '<?php
+                    class Func {
+                        public function __construct(string $name, callable $callable) {}
+                    }
+
+                    new Func("f", ["Foo", "bar"]);',
+                'error_message' => 'InvalidArgument'
             ],
         ];
     }
