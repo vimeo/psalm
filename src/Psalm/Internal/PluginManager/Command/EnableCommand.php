@@ -45,7 +45,7 @@ class EnableCommand extends Command
     }
 
     /**
-     * @return null|int
+     * @return int
      */
     protected function execute(InputInterface $i, OutputInterface $o)
     {
@@ -80,5 +80,7 @@ class EnableCommand extends Command
 
         $plugin_list->enable($plugin_class);
         $io->success('Plugin enabled');
+
+        return 0;
     }
 }

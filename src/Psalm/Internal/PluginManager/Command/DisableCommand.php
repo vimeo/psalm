@@ -45,7 +45,7 @@ class DisableCommand extends Command
     }
 
     /**
-     * @return null|int
+     * @return int
      */
     protected function execute(InputInterface $i, OutputInterface $o)
     {
@@ -80,5 +80,7 @@ class DisableCommand extends Command
 
         $plugin_list->disable($plugin_class);
         $io->success('Plugin disabled');
+
+        return 0;
     }
 }

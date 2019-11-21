@@ -40,7 +40,7 @@ class ShowCommand extends Command
     }
 
     /**
-     * @return null|int
+     * @return int
      */
     protected function execute(InputInterface $i, OutputInterface $o)
     {
@@ -90,5 +90,7 @@ class ShowCommand extends Command
         } else {
             $io->note('No plugins available');
         }
+
+        return 0;
     }
 }
