@@ -111,7 +111,7 @@ abstract class Type
     ];
 
     /**
-     * @var array<string, array<int, array{0: string, 1: int}>>
+     * @var array<string, list<array{0: string, 1: int}>>
      */
     private static $memoized_tokens = [];
 
@@ -151,7 +151,7 @@ abstract class Type
 
             // Note: valid identifiers can include class names or $this
             if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
-                if (!is_numeric($only_token)
+                if (!\is_numeric($only_token[0])
                     && strpos($only_token[0], '\'') !== false
                     && strpos($only_token[0], '"') !== false
                 ) {
@@ -776,7 +776,7 @@ abstract class Type
      * @param  string $string_type
      * @param  bool   $ignore_space
      *
-     * @return array<int, array{0: string, 1: int}>
+     * @return list<array{0: string, 1: int}>
      */
     public static function tokenize($string_type, $ignore_space = true)
     {
@@ -946,6 +946,7 @@ abstract class Type
 
         self::$memoized_tokens[$string_type] = $type_tokens;
 
+        /** @var list<array{0: string, 1: int}> */
         return $type_tokens;
     }
 
@@ -953,7 +954,7 @@ abstract class Type
      * @param  array<string, mixed>|null    $template_type_map
      * @param  array<string, array<int, array{0: string, 1: int}>>|null   $type_aliases
      *
-     * @return array<int, array{0: string, 1: int}>
+     * @return list<array{0: string, 1: int}>
      */
     public static function fixUpLocalType(
         string $string_type,
@@ -1065,6 +1066,7 @@ abstract class Type
             }
         }
 
+        /** @var list<array{0: string, 1: int}> */
         return $type_tokens;
     }
 

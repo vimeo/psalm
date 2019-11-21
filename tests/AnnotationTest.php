@@ -1011,6 +1011,27 @@ class AnnotationTest extends TestCase
                      */
                     $foo = ["foo" => "", "bar" => "", "baz" => ""];',
             ],
+            'returnNumber' => [
+                '<?php
+                    class C {
+                        /**
+                         * @return 1
+                         */
+                        public static function barBar() {
+                            return 1;
+                        }
+                    }',
+            ],
+            'returnNumberForInterface' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @return 1
+                         */
+                        public static function barBar();
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 
@@ -1032,18 +1053,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingDocblockType',
             ],
-            'invalidClassMethodReturnClass' => [
-                '<?php
-                    class C {
-                        /**
-                         * @return 1
-                         */
-                        public static function barBar() {
-                            return 1;
-                        }
-                    }',
-                'error_message' => 'InvalidDocblock',
-            ],
+
             'invalidClassMethodReturnBrackets' => [
                 '<?php
                     class C {
@@ -1066,16 +1076,6 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingDocblockType',
             ],
-            'invalidInterfaceMethodReturnClass' => [
-                '<?php
-                    interface I {
-                        /**
-                         * @return 1
-                         */
-                        public static function barBar();
-                    }',
-                'error_message' => 'InvalidDocblock',
-            ],
             'invalidInterfaceMethodReturnBrackets' => [
                 '<?php
                     interface I {
@@ -1083,16 +1083,6 @@ class AnnotationTest extends TestCase
                          * @return []
                          */
                         public static function barBar();
-                    }',
-                'error_message' => 'InvalidDocblock',
-            ],
-            'invalidPropertyClass' => [
-                '<?php
-                    class A {
-                        /**
-                         * @var 1
-                         */
-                        public $bar;
                     }',
                 'error_message' => 'InvalidDocblock',
             ],

@@ -227,7 +227,7 @@ class CommentAnalyzer
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return array<string, array<int, array{0: string, 1: int}>>
+     * @return array<string, list<array{0: string, 1: int}>>
      */
     public static function getTypeAliasesFromComment(
         PhpParser\Comment\Doc $comment,
@@ -254,7 +254,7 @@ class CommentAnalyzer
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return array<string, array<int, array{0: string, 1: int}>>
+     * @return array<string, list<array{0: string, 1: int}>>
      */
     private static function getTypeAliasesFromCommentLines(
         array $type_alias_comment_lines,
