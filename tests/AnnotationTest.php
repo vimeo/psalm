@@ -1030,7 +1030,6 @@ class AnnotationTest extends TestCase
                          */
                         public static function barBar();
                     }',
-                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
