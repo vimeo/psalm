@@ -135,7 +135,7 @@ abstract class Type
     /**
      * Parses a string type representation
      *
-     * @param  array<int, array{0: string, 1: int}> $type_tokens
+     * @param  list<array{0: string, 1: int}> $type_tokens
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
@@ -151,16 +151,21 @@ abstract class Type
 
             // Note: valid identifiers can include class names or $this
             if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
-                throw new TypeParseTreeException("Invalid type '$only_token[0]'");
+                if (!is_numeric($only_token)
+                    && strpos($only_token[0], '\'') !== false
+                    && strpos($only_token[0], '"') !== false
+                ) {
+                    throw new TypeParseTreeException("Invalid type '$only_token[0]'");
+                }
+            } else {
+                $only_token[0] = self::fixScalarTerms($only_token[0], $php_version);
+
+                $atomic = Atomic::create($only_token[0], $php_version, $template_type_map);
+                $atomic->offset_start = 0;
+                $atomic->offset_end = strlen($only_token[0]);
+
+                return new Union([$atomic]);
             }
-
-            $only_token[0] = self::fixScalarTerms($only_token[0], $php_version);
-
-            $atomic = Atomic::create($only_token[0], $php_version, $template_type_map);
-            $atomic->offset_start = 0;
-            $atomic->offset_end = strlen($only_token[0]);
-
-            return new Union([$atomic]);
         }
 
         $parse_tree = ParseTree::createFromTokens($type_tokens);

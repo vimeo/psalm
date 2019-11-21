@@ -646,6 +646,16 @@ class ValueTest extends TestCase
                         public $foo = "a";
                     }',
             ],
+            'supportSingleLiteralType' => [
+                '<?php
+                    class A {
+                        /**
+                         * @var string
+                         * @psalm-var "easy"
+                         */
+                        private $type = "easy";
+                    }'
+            ],
         ];
     }
 

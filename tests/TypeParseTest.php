@@ -859,6 +859,39 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testSingleLiteralString()
+    {
+        $this->assertSame(
+            'string',
+            (string)Type::parseString('"var"')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testSingleLiteralInt()
+    {
+        $this->assertSame(
+            'int',
+            (string)Type::parseString('6')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testSingleLiteralFloat()
+    {
+        $this->assertSame(
+            'float',
+            (string)Type::parseString('6.315')
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testEnumWithClassConstants()
     {
         $docblock_type = Type::parseString('("baz" | One2::TWO_THREE | Foo::BAR_BAR | Bat\Bar::BAZ_BAM)');
