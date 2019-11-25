@@ -644,7 +644,7 @@ class IssetTest extends TestCase
                         echo isset($port) ? "cool" : "uncool";
                     }',
             ],
-            'listDestructuringErrorSuppress' => [
+            'listDestructuringErrorSuppressWithFirstString' => [
                 '<?php
                     function foo(string $s) : string {
                         @list($port, $starboard) = explode(":", $s);
