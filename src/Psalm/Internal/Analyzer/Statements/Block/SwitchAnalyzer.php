@@ -444,8 +444,6 @@ class SwitchAnalyzer
             );
         }
 
-        $statements_analyzer->node_data = $old_node_data;
-
         if ($switch_scope->negated_clauses) {
             $entry_clauses = Algebra::simplifyCNF(
                 array_merge(
@@ -536,6 +534,18 @@ class SwitchAnalyzer
         $case_context->assigned_var_ids = [];
 
         $statements_analyzer->analyze($case_stmts, $case_context);
+
+        $traverser = new PhpParser\NodeTraverser;
+        $traverser->addVisitor(
+            new \Psalm\Internal\Visitor\TypeMappingVisitor(
+                $statements_analyzer->node_data,
+                $old_node_data
+            )
+        );
+
+        $traverser->traverse([$case]);
+
+        $statements_analyzer->node_data = $old_node_data;
 
         /** @var array<string, bool> */
         $new_case_assigned_var_ids = $case_context->assigned_var_ids;
