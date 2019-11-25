@@ -819,6 +819,16 @@ class FunctionCallTest extends TestCase
                     '$foo' => 'float|int',
                 ],
             ],
+            'arrayMapWithArrayAndCallable' => [
+                '<?php
+                    /**
+                     * @psalm-return array<array-key, int>
+                     */
+                    function foo(array $v): array {
+                        $r = array_map("intval", $v);
+                        return $r;
+                    }',
+            ],
             'arrayMapObjectLikeAndCallable' => [
                 '<?php
                     /**
@@ -829,6 +839,18 @@ class FunctionCallTest extends TestCase
                         $r = array_map("intval", $v);
                         return $r;
                     }',
+            ],
+            'arrayMapObjectLikeListAndCallable' => [
+                '<?php
+                    /** @param list<int> $list */
+                    function takesList(array $list): void {}
+                    
+                    takesList(
+                        array_map(
+                            "intval",
+                            ["1", "2", "3"]
+                        )
+                    );',
             ],
             'arrayMapObjectLikeAndClosure' => [
                 '<?php
@@ -844,6 +866,50 @@ class FunctionCallTest extends TestCase
                 'error_levels' => [
                     'MissingClosureParamType',
                     'MixedTypeCoercion',
+                ],
+            ],
+            'arrayMapObjectLikeListAndClosure' => [
+                '<?php
+                    /** @param list<string> $list */
+                    function takesList(array $list): void {}
+                    
+                    takesList(
+                        array_map(
+                            function (string $str): string { return $str . "x"; },
+                            ["foo", "bar", "baz"]
+                        )
+                    );',
+            ],
+            'arrayMapUntypedCallable' => [
+                '<?php
+                    /**
+                     * @var callable $callable
+                     * @var array<string, int> $array
+                     */
+                    $a = array_map($callable, $array);
+                    
+                    /**
+                     * @var callable $callable
+                     * @var array<string, int> $array
+                     */
+                    $b = array_map($callable, $array, $array);
+
+                    /**
+                     * @var callable $callable
+                     * @var list<string> $list
+                     */
+                    $c = array_map($callable, $list);
+
+                    /**
+                     * @var callable $callable
+                     * @var list<string> $list
+                     */
+                    $d = array_map($callable, $list, $list);',
+                'assertions' => [
+                    '$a' => 'array<string, mixed>',
+                    '$b' => 'list<mixed>',
+                    '$c' => 'list<mixed>',
+                    '$d' => 'list<mixed>',
                 ],
             ],
             'arrayFilterGoodArgs' => [
