@@ -5308,7 +5308,7 @@ return [
 'imageopenpolygon' => ['bool', 'image'=>'resource', 'points'=>'array', 'num_points'=>'int', 'color'=>'int'],
 'imagepalettecopy' => ['void', 'dst'=>'resource', 'src'=>'resource'],
 'imagepalettetotruecolor' => ['bool', 'src'=>'resource'],
-'imagepng' => ['bool', 'im'=>'resource', 'filename='=>'?string', 'quality='=>'int', 'filters='=>'int'],
+'imagepng' => ['bool', 'im'=>'resource', 'filename='=>'?string|?resource', 'quality='=>'int', 'filters='=>'int'],
 'imagepolygon' => ['bool', 'im'=>'resource', 'point'=>'array', 'num_points'=>'int', 'col'=>'int'],
 'imagerectangle' => ['bool', 'im'=>'resource', 'x1'=>'int', 'y1'=>'int', 'x2'=>'int', 'y2'=>'int', 'col'=>'int'],
 'imageresolution' => ['array|bool', 'image'=>'resource', 'res_x='=>'int', 'res_y='=>'int'],
