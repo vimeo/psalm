@@ -31,6 +31,7 @@ class FunctionReturnTypeProvider
     {
         self::$handlers = [];
 
+        $this->registerClass(ReturnTypeProvider\ArrayChunkReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayColumnReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayFilterReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayMapReturnTypeProvider::class);

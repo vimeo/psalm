@@ -2155,6 +2155,68 @@ class FunctionCallTest extends TestCase
                     '$result' => 'array<array-key, mixed>',
                 ],
             ],
+            'arrayChunk' => [
+                '<?php
+                    /** @var array{a: int, b: int, c: int, d: int} $arr */
+                    $a = array_chunk($arr, 2);
+                    /** @var list<string> $list */
+                    $b = array_chunk($list, 2);
+                    /** @var array<string, float> $arr */
+                    $c = array_chunk($arr, 2);
+                    ',
+                'assertions' => [
+                    '$a' => 'list<non-empty-list<int>>',
+                    '$b' => 'list<non-empty-list<string>>',
+                    '$c' => 'list<non-empty-list<float>>',
+                ],
+            ],
+            'arrayChunkPreservedKeys' => [
+                '<?php
+                    /** @var array{a: int, b: int, c: int, d: int} $arr */
+                    $a = array_chunk($arr, 2, true);
+                    /** @var list<string> $list */
+                    $b = array_chunk($list, 2, true);
+                    /** @var array<string, float> $arr */
+                    $c = array_chunk($arr, 2, true);',
+                'assertions' => [
+                    '$a' => 'list<non-empty-array<string, int>>',
+                    '$b' => 'list<non-empty-array<int, string>>',
+                    '$c' => 'list<non-empty-array<string, float>>',
+                ],
+            ],
+            'arrayChunkPreservedKeysExplicitFalse' => [
+                '<?php
+                    /** @var array<string, string> $arr */
+                    $result = array_chunk($arr, 2, false);',
+                'assertions' => [
+                    '$result' => 'list<non-empty-list<string>>',
+                ],
+            ],
+            'arrayChunkMixed' => [
+                '<?php
+                    /** @var array{a: mixed, b: mixed, c: mixed} $arr */
+                    $a = array_chunk($arr, 2);
+                    /** @var list<mixed> $list */
+                    $b = array_chunk($list, 2);
+                    /** @var mixed[] $arr */
+                    $c = array_chunk($arr, 2);',
+                'assertions' => [
+                    '$a' => 'list<non-empty-list<mixed>>',
+                    '$b' => 'list<non-empty-list<mixed>>',
+                    '$c' => 'list<non-empty-list<mixed>>',
+                ],
+            ],
+            'arrayChunkFallback' => [
+                '<?php
+                    /**
+                     * @var mixed $mixed
+                     * @psalm-suppress MixedArgument
+                     */
+                    $result = array_chunk($mixed, $mixed, $mixed);',
+                'assertions' => [
+                    '$result' => 'list<array<array-key, mixed>>',
+                ],
+            ],
         ];
     }
 
