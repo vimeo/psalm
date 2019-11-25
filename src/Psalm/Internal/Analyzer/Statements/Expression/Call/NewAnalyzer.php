@@ -109,11 +109,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         } else {
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
 
-            if (isset($stmt->class->inferredType)) {
-                $has_single_class = $stmt->class->inferredType->isSingleStringLiteral();
+            if ($stmt_class_type = $statements_analyzer->node_data->getType($stmt->class)) {
+                $has_single_class = $stmt_class_type->isSingleStringLiteral();
 
                 if ($has_single_class) {
-                    $fq_class_name = $stmt->class->inferredType->getSingleStringLiteral()->value;
+                    $fq_class_name = $stmt_class_type->getSingleStringLiteral()->value;
                 } else {
                     if (self::checkMethodArgs(
                         null,
@@ -129,9 +129,9 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                 $new_type = null;
 
-                foreach ($stmt->class->inferredType->getTypes() as $lhs_type_part) {
+                foreach ($stmt_class_type->getTypes() as $lhs_type_part) {
                     if ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
-                        if (!isset($stmt->inferredType)) {
+                        if (!$statements_analyzer->node_data->getType($stmt)) {
                             $new_type_part = new Type\Atomic\TTemplateParam(
                                 $lhs_type_part->param_name,
                                 $lhs_type_part->as_type
@@ -156,7 +156,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
                         || $lhs_type_part instanceof Type\Atomic\TClassString
                     ) {
-                        if (!isset($stmt->inferredType)) {
+                        if (!$statements_analyzer->node_data->getType($stmt)) {
                             $class_name = $lhs_type_part instanceof Type\Atomic\TClassString
                                 ? $lhs_type_part->as
                                 : $lhs_type_part->value;
@@ -217,11 +217,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             // fall through
                         }
                     } elseif ($lhs_type_part instanceof Type\Atomic\TFalse
-                        && $stmt->class->inferredType->ignore_falsable_issues
+                        && $stmt_class_type->ignore_falsable_issues
                     ) {
                         // do nothing
                     } elseif ($lhs_type_part instanceof Type\Atomic\TNull
-                        && $stmt->class->inferredType->ignore_nullable_issues
+                        && $stmt_class_type->ignore_nullable_issues
                     ) {
                         // do nothing
                     } elseif (IssueBuffer::accepts(
@@ -247,7 +247,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                 if (!$has_single_class) {
                     if ($new_type) {
-                        $stmt->inferredType = $new_type;
+                        $statements_analyzer->node_data->setType($stmt, $new_type);
                     }
 
                     return null;
@@ -300,7 +300,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 }
             }
 
-            $stmt->inferredType = new Type\Union([new TNamedObject($fq_class_name)]);
+            $statements_analyzer->node_data->setType($stmt, new Type\Union([new TNamedObject($fq_class_name)]));
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 $codebase->classlikes->classExists($fq_class_name)
@@ -459,12 +459,15 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
 
                     if ($generic_param_types) {
-                        $stmt->inferredType = new Type\Union([
-                            new Type\Atomic\TGenericObject(
-                                $fq_class_name,
-                                $generic_param_types
-                            ),
-                        ]);
+                        $statements_analyzer->node_data->setType(
+                            $stmt,
+                            new Type\Union([
+                                new Type\Atomic\TGenericObject(
+                                    $fq_class_name,
+                                    $generic_param_types
+                                ),
+                            ])
+                        );
                     }
                 } elseif ($stmt->args) {
                     if (IssueBuffer::accepts(
@@ -482,7 +485,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($storage->external_mutation_free) {
                     /** @psalm-suppress UndefinedPropertyAssignment */
                     $stmt->external_mutation_free = true;
-                    $stmt->inferredType->external_mutation_free = true;
+                    $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+                    if ($stmt_type) {
+                        $stmt_type->external_mutation_free = true;
+                    }
                 }
             }
         }

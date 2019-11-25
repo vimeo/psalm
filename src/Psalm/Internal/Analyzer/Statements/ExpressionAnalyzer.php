@@ -91,7 +91,8 @@ class ExpressionAnalyzer
         PhpParser\Node\Expr $stmt,
         Context $context,
         $array_assignment = false,
-        Context $global_context = null
+        Context $global_context = null,
+        bool $from_stmt = false
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -121,7 +122,9 @@ class ExpressionAnalyzer
                 return false;
             }
 
-            $stmt->inferredType = $assignment_type;
+            if (!$from_stmt) {
+                $statements_analyzer->node_data->setType($stmt, $assignment_type);
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp) {
             if (AssignmentAnalyzer::analyzeAssignmentOperation($statements_analyzer, $stmt, $context) === false) {
                 return false;
@@ -137,12 +140,12 @@ class ExpressionAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             ConstFetchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            $stmt->inferredType = Type::getString($stmt->value);
+            $statements_analyzer->node_data->setType($stmt, Type::getString($stmt->value));
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
             if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Line) {
-                $stmt->inferredType = Type::getInt();
+                $statements_analyzer->node_data->setType($stmt, Type::getInt());
             } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Class_) {
                 if (!$context->self) {
                     if (IssueBuffer::accepts(
@@ -155,7 +158,7 @@ class ExpressionAnalyzer
                         // fall through
                     }
 
-                    $stmt->inferredType = Type::getClassString();
+                    $statements_analyzer->node_data->setType($stmt, Type::getClassString());
                 } else {
                     if ($codebase->alter_code) {
                         $codebase->classlikes->handleClassLikeReferenceInMigration(
@@ -167,7 +170,7 @@ class ExpressionAnalyzer
                         );
                     }
 
-                    $stmt->inferredType = Type::getLiteralClassString($context->self);
+                    $statements_analyzer->node_data->setType($stmt, Type::getLiteralClassString($context->self));
                 }
             } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Namespace_) {
                 $namespace = $statements_analyzer->getNamespace();
@@ -183,19 +186,19 @@ class ExpressionAnalyzer
                     // fall through
                 }
 
-                $stmt->inferredType = Type::getString($namespace);
+                $statements_analyzer->node_data->setType($stmt, Type::getString($namespace));
             } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File
                 || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir
                 || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_
                 || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Trait_
                 || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Method
             ) {
-                $stmt->inferredType = Type::getString();
+                $statements_analyzer->node_data->setType($stmt, Type::getString());
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            $stmt->inferredType = Type::getInt(false, $stmt->value);
+            $statements_analyzer->node_data->setType($stmt, Type::getInt(false, $stmt->value));
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
-            $stmt->inferredType = Type::getFloat($stmt->value);
+            $statements_analyzer->node_data->setType($stmt, Type::getFloat($stmt->value));
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus ||
             $stmt instanceof PhpParser\Node\Expr\UnaryPlus
         ) {
@@ -203,14 +206,14 @@ class ExpressionAnalyzer
                 return false;
             }
 
-            if (!isset($stmt->expr->inferredType)) {
-                $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
-            } elseif ($stmt->expr->inferredType->isMixed()) {
-                $stmt->inferredType = Type::getMixed();
+            if (!($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))) {
+                $statements_analyzer->node_data->setType($stmt, new Type\Union([new TInt, new TFloat]));
+            } elseif ($stmt_expr_type->isMixed()) {
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             } else {
                 $acceptable_types = [];
 
-                foreach ($stmt->expr->inferredType->getTypes() as $type_part) {
+                foreach ($stmt_expr_type->getTypes() as $type_part) {
                     if ($type_part instanceof TInt || $type_part instanceof TFloat) {
                         if ($type_part instanceof Type\Atomic\TLiteralInt
                             && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
@@ -231,11 +234,11 @@ class ExpressionAnalyzer
                     }
                 }
 
-                $stmt->inferredType = new Type\Union($acceptable_types);
+                $statements_analyzer->node_data->setType($stmt, new Type\Union($acceptable_types));
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Isset_) {
             self::analyzeIsset($statements_analyzer, $stmt, $context);
-            $stmt->inferredType = Type::getBool();
+            $statements_analyzer->node_data->setType($stmt, Type::getBool());
         } elseif ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             if (ClassConstFetchAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
                 return false;
@@ -253,16 +256,16 @@ class ExpressionAnalyzer
                 return false;
             }
 
-            if (!isset($stmt->expr->inferredType)) {
-                $stmt->inferredType = new Type\Union([new TInt(), new TString()]);
-            } elseif ($stmt->expr->inferredType->isMixed()) {
-                $stmt->inferredType = Type::getMixed();
+            if (!($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))) {
+                $statements_analyzer->node_data->setType($stmt, new Type\Union([new TInt(), new TString()]));
+            } elseif ($stmt_expr_type->isMixed()) {
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             } else {
                 $acceptable_types = [];
                 $unacceptable_type = null;
                 $has_valid_operand = false;
 
-                foreach ($stmt->expr->inferredType->getTypes() as $type_string => $type_part) {
+                foreach ($stmt_expr_type->getTypes() as $type_string => $type_part) {
                     if ($type_part instanceof TInt || $type_part instanceof TString) {
                         if ($type_part instanceof Type\Atomic\TLiteralInt) {
                             $type_part->value = ~$type_part->value;
@@ -277,8 +280,8 @@ class ExpressionAnalyzer
                             new Type\Atomic\TLiteralInt(~$type_part->value) :
                             new TInt;
 
-                        $stmt->expr->inferredType->removeType($type_string);
-                        $stmt->expr->inferredType->addType($type_part);
+                        $stmt_expr_type->removeType($type_string);
+                        $stmt_expr_type->addType($type_part);
 
                         $acceptable_types[] = $type_part;
                         $has_valid_operand = true;
@@ -311,9 +314,9 @@ class ExpressionAnalyzer
                         }
                     }
 
-                    $stmt->inferredType = Type::getMixed();
+                    $statements_analyzer->node_data->setType($stmt, Type::getMixed());
                 } else {
-                    $stmt->inferredType = new Type\Union($acceptable_types);
+                    $statements_analyzer->node_data->setType($stmt, new Type\Union($acceptable_types));
                 }
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
@@ -343,14 +346,15 @@ class ExpressionAnalyzer
                 $context->inside_assignment = false;
             }
 
-            if (isset($stmt->var->inferredType)) {
+            if ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var)) {
                 $return_type = null;
 
                 $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
-                $fake_right_expr->inferredType = Type::getInt();
+                $statements_analyzer->node_data->setType($fake_right_expr, Type::getInt());
 
                 BinaryOpAnalyzer::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
+                    $statements_analyzer->node_data,
                     $stmt->var,
                     $fake_right_expr,
                     $stmt,
@@ -358,14 +362,16 @@ class ExpressionAnalyzer
                     $context
                 );
 
-                $stmt->inferredType = clone $stmt->var->inferredType;
-                $stmt->inferredType->from_calculation = true;
+                $stmt_type = clone $stmt_var_type;
 
-                foreach ($stmt->inferredType->getTypes() as $atomic_type) {
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                $stmt_type->from_calculation = true;
+
+                foreach ($stmt_type->getTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                        $stmt->inferredType->addType(new Type\Atomic\TInt);
+                        $stmt_type->addType(new Type\Atomic\TInt);
                     } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
-                        $stmt->inferredType->addType(new Type\Atomic\TFloat);
+                        $stmt_type->addType(new Type\Atomic\TFloat);
                     }
                 }
 
@@ -384,7 +390,7 @@ class ExpressionAnalyzer
                 }
 
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = $stmt->inferredType;
+                    $context->vars_in_scope[$var_id] = $stmt_type;
 
                     if ($context->collect_references && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
                         $location = new CodeLocation($statements_analyzer, $stmt->var);
@@ -398,7 +404,7 @@ class ExpressionAnalyzer
                     }
                 }
             } else {
-                $stmt->inferredType = Type::getMixed();
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\New_) {
             if (NewAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
@@ -500,10 +506,10 @@ class ExpressionAnalyzer
 
             $use_context->calling_method_id = $context->calling_method_id;
 
-            $closure_analyzer->analyze($use_context, $context, false, $byref_uses);
+            $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false, $byref_uses);
 
-            if (!isset($stmt->inferredType)) {
-                $stmt->inferredType = Type::getClosure();
+            if (!$statements_analyzer->node_data->getType($stmt)) {
+                $statements_analyzer->node_data->setType($stmt, Type::getClosure());
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             if (ArrayFetchAnalyzer::analyze(
@@ -518,40 +524,44 @@ class ExpressionAnalyzer
                 return false;
             }
 
-            $stmt->inferredType = Type::getInt();
+            $statements_analyzer->node_data->setType($stmt, Type::getInt());
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
 
-            $stmt->inferredType = Type::getFloat();
+            $statements_analyzer->node_data->setType($stmt, Type::getFloat());
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Bool_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
 
-            $stmt->inferredType = Type::getBool();
+            $statements_analyzer->node_data->setType($stmt, Type::getBool());
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\String_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
 
-            if (isset($stmt->expr->inferredType)) {
+            if ($statements_analyzer->node_data->getType($stmt->expr)) {
                 self::castStringAttempt($statements_analyzer, $stmt->expr);
             }
 
-            $stmt->inferredType = Type::getString();
+            $stmt_type = Type::getString();
 
-            if (isset($stmt->expr->inferredType) && $stmt->expr->inferredType->tainted) {
-                $stmt->inferredType->tainted = $stmt->expr->inferredType->tainted;
-                $stmt->inferredType->sources = $stmt->expr->inferredType->sources;
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+            if (($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))
+                && $stmt_expr_type->tainted
+            ) {
+                $stmt_type->tainted = $stmt_expr_type->tainted;
+                $stmt_type->sources = $stmt_expr_type->sources;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
 
-            $stmt->inferredType = new Type\Union([new TNamedObject('stdClass')]);
+            $statements_analyzer->node_data->setType($stmt, new Type\Union([new TNamedObject('stdClass')]));
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -560,10 +570,10 @@ class ExpressionAnalyzer
             $permissible_atomic_types = [];
             $all_permissible = false;
 
-            if (isset($stmt->expr->inferredType)) {
+            if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
                 $all_permissible = true;
 
-                foreach ($stmt->expr->inferredType->getTypes() as $type) {
+                foreach ($stmt_expr_type->getTypes() as $type) {
                     if ($type instanceof Scalar) {
                         $permissible_atomic_types[] = new ObjectLike([new Type\Union([$type])]);
                     } elseif ($type instanceof TNull) {
@@ -580,16 +590,19 @@ class ExpressionAnalyzer
             }
 
             if ($all_permissible) {
-                $stmt->inferredType = TypeCombination::combineTypes($permissible_atomic_types);
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    TypeCombination::combineTypes($permissible_atomic_types)
+                );
             } else {
-                $stmt->inferredType = Type::getArray();
+                $statements_analyzer->node_data->setType($stmt, Type::getArray());
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Unset_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
 
-            $stmt->inferredType = Type::getNull();
+            $statements_analyzer->node_data->setType($stmt, Type::getNull());
         } elseif ($stmt instanceof PhpParser\Node\Expr\Clone_) {
             self::analyzeClone($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Expr\Instanceof_) {
@@ -645,7 +658,7 @@ class ExpressionAnalyzer
                 }
             }
 
-            $stmt->inferredType = Type::getBool();
+            $statements_analyzer->node_data->setType($stmt, Type::getBool());
         } elseif ($stmt instanceof PhpParser\Node\Expr\Exit_) {
             if ($stmt->expr) {
                 $context->inside_call = true;
@@ -673,7 +686,12 @@ class ExpressionAnalyzer
                 return false;
             }
             $context->error_suppressing = false;
-            $stmt->inferredType = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
+
+            $expr_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+            if ($expr_type) {
+                $statements_analyzer->node_data->setType($stmt, $expr_type);
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             if (IssueBuffer::accepts(
                 new ForbiddenCode(
@@ -715,12 +733,16 @@ class ExpressionAnalyzer
                 || $stmt instanceof PhpParser\Node\Expr\Isset_
                 || $stmt instanceof PhpParser\Node\Expr\FuncCall)
         ) {
-            AssertionFinder::scrapeAssertions(
-                $stmt,
-                $context->self,
-                $statements_analyzer,
-                $codebase
-            );
+            $assertions = $statements_analyzer->node_data->getAssertions($stmt);
+
+            if ($assertions === null) {
+                AssertionFinder::scrapeAssertions(
+                    $stmt,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase
+                );
+            }
         }
 
         $plugin_classes = $codebase->config->after_expression_checks;
@@ -732,7 +754,7 @@ class ExpressionAnalyzer
                 if ($plugin_fq_class_name::afterExpressionAnalysis(
                     $stmt,
                     $context,
-                    $statements_analyzer->getSource(),
+                    $statements_analyzer,
                     $codebase,
                     $file_manipulations
                 ) === false) {
@@ -825,8 +847,10 @@ class ExpressionAnalyzer
                 if ($existing_type->getId() !== 'array<empty, empty>') {
                     $context->vars_in_scope[$var_id] = clone $by_ref_out_type;
 
-                    if (!isset($stmt->inferredType) || $stmt->inferredType->isEmpty()) {
-                        $stmt->inferredType = clone $by_ref_type;
+                    if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
+                        || $stmt_type->isEmpty()
+                    ) {
+                        $statements_analyzer->node_data->setType($stmt, clone $by_ref_type);
                     }
 
                     return;
@@ -835,8 +859,8 @@ class ExpressionAnalyzer
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
 
-            if (!isset($stmt->inferredType) || $stmt->inferredType->isEmpty()) {
-                $stmt->inferredType = clone $by_ref_type;
+            if (!($stmt_type = $statements_analyzer->node_data->getType($stmt)) || $stmt_type->isEmpty()) {
+                $statements_analyzer->node_data->setType($stmt, clone $by_ref_type);
             }
         }
     }
@@ -975,11 +999,13 @@ class ExpressionAnalyzer
                     if ($object_id && $stmt->dim->name instanceof PhpParser\Node\Identifier) {
                         $offset = $object_id . '->' . $stmt->dim->name;
                     }
-                } elseif (isset($stmt->dim->inferredType)) {
-                    if ($stmt->dim->inferredType->isSingleStringLiteral()) {
-                        $offset = '\'' . $stmt->dim->inferredType->getSingleStringLiteral()->value . '\'';
-                    } elseif ($stmt->dim->inferredType->isSingleIntLiteral()) {
-                        $offset = $stmt->dim->inferredType->getSingleIntLiteral()->value;
+                } elseif ($stmt->dim
+                    && $source instanceof StatementsAnalyzer
+                    && ($stmt_dim_type = $source->node_data->getType($stmt->dim))) {
+                    if ($stmt_dim_type->isSingleStringLiteral()) {
+                        $offset = '\'' . $stmt_dim_type->getSingleStringLiteral()->value . '\'';
+                    } elseif ($stmt_dim_type->isSingleIntLiteral()) {
+                        $offset = $stmt_dim_type->getSingleIntLiteral()->value;
                     }
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $stmt->dim->name instanceof PhpParser\Node\Identifier
@@ -1005,8 +1031,11 @@ class ExpressionAnalyzer
 
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 return $object_id . '->' . $stmt->name;
-            } elseif (isset($stmt->name->inferredType) && $stmt->name->inferredType->isSingleStringLiteral()) {
-                return $object_id . '->' . $stmt->name->inferredType->getSingleStringLiteral()->value;
+            } elseif ($source instanceof StatementsAnalyzer
+                && ($stmt_name_type = $source->node_data->getType($stmt->name))
+                && $stmt_name_type->isSingleStringLiteral()
+            ) {
+                return $object_id . '->' . $stmt_name_type->getSingleStringLiteral()->value;
             } else {
                 return null;
             }
@@ -1449,10 +1478,10 @@ class ExpressionAnalyzer
             return false;
         }
 
-        if (isset($stmt->expr->inferredType)) {
+        if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
             if (CallAnalyzer::checkFunctionArgumentType(
                 $statements_analyzer,
-                $stmt->expr->inferredType,
+                $stmt_expr_type,
                 Type::getString(),
                 null,
                 'print',
@@ -1482,7 +1511,7 @@ class ExpressionAnalyzer
             }
         }
 
-        $stmt->inferredType = Type::getInt(false, 1);
+        $statements_analyzer->node_data->setType($stmt, Type::getInt(false, 1));
 
         return null;
     }
@@ -1597,14 +1626,14 @@ class ExpressionAnalyzer
             $context->inside_call = false;
 
             if ($var_comment_type) {
-                $stmt->inferredType = $var_comment_type;
-            } elseif (isset($stmt->value->inferredType)) {
-                $stmt->inferredType = $stmt->value->inferredType;
+                $statements_analyzer->node_data->setType($stmt, $var_comment_type);
+            } elseif ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->value)) {
+                $statements_analyzer->node_data->setType($stmt, $stmt_var_type);
             } else {
-                $stmt->inferredType = Type::getMixed();
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
         } else {
-            $stmt->inferredType = Type::getNull();
+            $statements_analyzer->node_data->setType($stmt, Type::getNull());
         }
 
         $source = $statements_analyzer->getSource();
@@ -1624,7 +1653,7 @@ class ExpressionAnalyzer
                         if (!$atomic_return_type->type_params[2]->isMixed()
                             && !$atomic_return_type->type_params[2]->isVoid()
                         ) {
-                            $stmt->inferredType = clone $atomic_return_type->type_params[2];
+                            $statements_analyzer->node_data->setType($stmt, clone $atomic_return_type->type_params[2]);
                         }
                     }
                 }
@@ -1650,10 +1679,10 @@ class ExpressionAnalyzer
             return false;
         }
 
-        if (isset($stmt->expr->inferredType)) {
+        if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
             $yield_from_type = null;
 
-            foreach ($stmt->expr->inferredType->getTypes() as $atomic_type) {
+            foreach ($stmt_expr_type->getTypes() as $atomic_type) {
                 if ($yield_from_type === null) {
                     if ($atomic_type instanceof Type\Atomic\TGenericObject
                         && strtolower($atomic_type->value) === 'generator'
@@ -1671,7 +1700,7 @@ class ExpressionAnalyzer
             }
 
             // this should be whatever the generator above returns, but *not* the return type
-            $stmt->inferredType = $yield_from_type ?: Type::getMixed();
+            $statements_analyzer->node_data->setType($stmt, $yield_from_type ?: Type::getMixed());
         }
 
         return null;
@@ -1689,7 +1718,7 @@ class ExpressionAnalyzer
         PhpParser\Node\Expr\BooleanNot $stmt,
         Context $context
     ) {
-        $stmt->inferredType = Type::getBool();
+        $statements_analyzer->node_data->setType($stmt, Type::getBool());
 
         $inside_negation = $context->inside_negation;
 
@@ -1716,10 +1745,10 @@ class ExpressionAnalyzer
     ) {
         self::analyzeIssetVar($statements_analyzer, $stmt->expr, $context);
 
-        if (isset($stmt->expr->inferredType)
-            && $stmt->expr->inferredType->hasBool()
-            && $stmt->expr->inferredType->isSingle()
-            && !$stmt->expr->inferredType->from_docblock
+        if (($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))
+            && $stmt_expr_type->hasBool()
+            && $stmt_expr_type->isSingle()
+            && !$stmt_expr_type->from_docblock
         ) {
             if (IssueBuffer::accepts(
                 new \Psalm\Issue\InvalidArgument(
@@ -1733,7 +1762,7 @@ class ExpressionAnalyzer
             }
         }
 
-        $stmt->inferredType = Type::getBool();
+        $statements_analyzer->node_data->setType($stmt, Type::getBool());
     }
 
     /**
@@ -1753,12 +1782,12 @@ class ExpressionAnalyzer
                 return false;
             }
 
-            if (isset($part->inferredType)) {
+            if ($statements_analyzer->node_data->getType($part)) {
                 self::castStringAttempt($statements_analyzer, $part);
             }
         }
 
-        $stmt->inferredType = Type::getString();
+        $statements_analyzer->node_data->setType($stmt, Type::getString());
 
         return null;
     }
@@ -1770,14 +1799,14 @@ class ExpressionAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt
     ) {
-        if (!isset($stmt->inferredType)) {
+        if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))) {
             return;
         }
 
         $has_valid_cast = false;
         $invalid_casts = [];
 
-        foreach ($stmt->inferredType->getTypes() as $atomic_type) {
+        foreach ($stmt_type->getTypes() as $atomic_type) {
             $atomic_type_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
             if (!$atomic_type instanceof TMixed
@@ -1853,7 +1882,7 @@ class ExpressionAnalyzer
             self::analyzeIssetVar($statements_analyzer, $isset_var, $context);
         }
 
-        $stmt->inferredType = Type::getBool();
+        $statements_analyzer->node_data->setType($stmt, Type::getBool());
     }
 
     /**
@@ -1894,8 +1923,10 @@ class ExpressionAnalyzer
             return false;
         }
 
-        if (isset($stmt->expr->inferredType)) {
-            $clone_type = $stmt->expr->inferredType;
+        $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+        if ($stmt_expr_type) {
+            $clone_type = $stmt_expr_type;
 
             $immutable_cloned = false;
 
@@ -1943,12 +1974,13 @@ class ExpressionAnalyzer
                 }
             }
 
-            $stmt->inferredType = $stmt->expr->inferredType;
+            $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
 
             if ($immutable_cloned) {
-                $stmt->inferredType = clone $stmt->inferredType;
-                $stmt->inferredType->external_mutation_free = true;
-                $stmt->inferredType->mutation_free = false;
+                $stmt_expr_type = clone $stmt_expr_type;
+                $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
+                $stmt_expr_type->external_mutation_free = true;
+                $stmt_expr_type->mutation_free = false;
             }
         }
     }

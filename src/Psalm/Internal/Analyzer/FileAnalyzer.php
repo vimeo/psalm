@@ -106,6 +106,9 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     private $first_statement_offset = -1;
 
+    /** @var ?\Psalm\Internal\Provider\NodeDataProvider */
+    private $node_data;
+
     /**
      * @param string  $file_path
      * @param string  $file_name
@@ -176,9 +179,10 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             }
         }
 
-        $statements_analyzer = new StatementsAnalyzer($this);
-
         $leftover_stmts = $this->populateCheckers($stmts);
+
+        $this->node_data = new \Psalm\Internal\Provider\NodeDataProvider();
+        $statements_analyzer = new StatementsAnalyzer($this, $this->node_data);
 
         // if there are any leftover statements, evaluate them,
         // in turn causing the classes/interfaces be evaluated
@@ -636,6 +640,15 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     public function getFirstStatementOffset() : int
     {
         return $this->first_statement_offset;
+    }
+
+    public function getNodeTypeProvider() : \Psalm\NodeTypeProvider
+    {
+        if (!$this->node_data) {
+            throw new \UnexpectedValueException('There should be a node type provider');
+        }
+
+        return $this->node_data;
     }
 
     public function clearSourceBeforeDestruction() : void

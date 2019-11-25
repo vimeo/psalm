@@ -29,10 +29,12 @@ class EchoChecker implements AfterStatementAnalysisInterface
     ) {
         if ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
             foreach ($stmt->exprs as $expr) {
-                if (!isset($expr->inferredType) || $expr->inferredType->hasMixed()) {
+                $expr_type = $statements_source->getNodeTypeProvider()->getType($expr);
+
+                if (!$expr_type || $expr_type->hasMixed()) {
                     if (IssueBuffer::accepts(
                         new ArgumentTypeCoercion(
-                            'Echo requires an unescaped string, ' . $expr->inferredType . ' provided',
+                            'Echo requires an unescaped string, ' . $expr_type . ' provided',
                             new CodeLocation($statements_source, $expr),
                             'echo'
                         ),
@@ -44,7 +46,7 @@ class EchoChecker implements AfterStatementAnalysisInterface
                     continue;
                 }
 
-                $types = $expr->inferredType->getTypes();
+                $types = $expr_type->getTypes();
 
                 foreach ($types as $type) {
                     if ($type instanceof \Psalm\Type\Atomic\TString
@@ -53,7 +55,7 @@ class EchoChecker implements AfterStatementAnalysisInterface
                     ) {
                         if (IssueBuffer::accepts(
                             new ArgumentTypeCoercion(
-                                'Echo requires an unescaped string, ' . $expr->inferredType . ' provided',
+                                'Echo requires an unescaped string, ' . $expr_type . ' provided',
                                 new CodeLocation($statements_source, $expr),
                                 'echo'
                             ),

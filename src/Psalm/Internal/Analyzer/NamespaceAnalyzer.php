@@ -87,7 +87,7 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($leftover_stmts) {
-            $statements_analyzer = new StatementsAnalyzer($this);
+            $statements_analyzer = new StatementsAnalyzer($this, new \Psalm\Internal\Provider\NodeDataProvider());
             $context = new Context();
             $context->collect_references = $codebase->collect_references;
             $context->is_global = true;

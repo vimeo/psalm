@@ -34,6 +34,10 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            return Type::getMixed();
+        }
+
         if (!isset($call_args[0]) || !isset($call_args[1])) {
             return Type::getMixed();
         }
@@ -43,25 +47,31 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         $array_arg = $call_args[0]->value;
         $function_call_arg = $call_args[1]->value;
 
-        if (!isset($array_arg->inferredType) || !isset($function_call_arg->inferredType)) {
+        $array_arg_type = $statements_source->node_data->getType($array_arg);
+        $function_call_arg_type = $statements_source->node_data->getType($function_call_arg);
+
+        if (!$array_arg_type || !$function_call_arg_type) {
             return Type::getMixed();
         }
 
-        $array_arg_type = null;
+        $array_arg_types = $array_arg_type->getTypes();
 
-        $array_arg_types = $array_arg->inferredType->getTypes();
+        $array_arg_atomic_type = null;
 
         if (isset($array_arg_types['array'])
             && ($array_arg_types['array'] instanceof Type\Atomic\TArray
                 || $array_arg_types['array'] instanceof Type\Atomic\ObjectLike
                 || $array_arg_types['array'] instanceof Type\Atomic\TList)
         ) {
-            $array_arg_type = $array_arg_types['array'];
+            $array_arg_atomic_type = $array_arg_types['array'];
 
-            if ($array_arg_type instanceof Type\Atomic\ObjectLike) {
-                $array_arg_type = $array_arg_type->getGenericArrayType();
-            } elseif ($array_arg_type instanceof Type\Atomic\TList) {
-                $array_arg_type = new Type\Atomic\TArray([Type::getInt(), clone $array_arg_type->type_param]);
+            if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike) {
+                $array_arg_atomic_type = $array_arg_atomic_type->getGenericArrayType();
+            } elseif ($array_arg_atomic_type instanceof Type\Atomic\TList) {
+                $array_arg_atomic_type = new Type\Atomic\TArray([
+                    Type::getInt(),
+                    clone $array_arg_atomic_type->type_param
+                ]);
             }
         }
 
@@ -69,11 +79,11 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             $reduce_return_type = Type::getNull();
             $reduce_return_type->ignore_nullable_issues = true;
         } else {
-            if (!isset($call_args[2]->value->inferredType)) {
+            $reduce_return_type = $statements_source->node_data->getType($call_args[2]->value);
+
+            if (!$reduce_return_type) {
                 return Type::getMixed();
             }
-
-            $reduce_return_type = $call_args[2]->value->inferredType;
 
             if ($reduce_return_type->hasMixed()) {
                 return Type::getMixed();
@@ -82,7 +92,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
         $initial_type = $reduce_return_type;
 
-        if ($closure_types = $function_call_arg->inferredType->getClosureTypes()) {
+        if ($closure_types = $function_call_arg_type->getClosureTypes()) {
             $closure_atomic_type = \reset($closure_types);
 
             $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
@@ -144,18 +154,18 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                 }
 
                 if ($item_param->type
-                    && $array_arg_type
-                    && !$array_arg_type->type_params[1]->hasMixed()
+                    && $array_arg_atomic_type
+                    && !$array_arg_atomic_type->type_params[1]->hasMixed()
                     && !TypeAnalyzer::isContainedBy(
                         $codebase,
-                        $array_arg_type->type_params[1],
+                        $array_arg_atomic_type->type_params[1],
                         $item_param->type
                     )
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidArgument(
                             'The second param of the closure passed to array_reduce must take '
-                                . $array_arg_type->type_params[1] . ' but only accepts ' . $item_param->type,
+                                . $array_arg_atomic_type->type_params[1] . ' but only accepts ' . $item_param->type,
                             $item_param->type_location
                                 ?: new CodeLocation($statements_source, $function_call_arg)
                         ),
@@ -238,11 +248,10 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                                 $return_type
                             );
                         } else {
-                            if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
-                                || !$codebase->functions->functionExists(
-                                    $statements_source,
-                                    $mapping_function_id_part
-                                )
+                            if (!$codebase->functions->functionExists(
+                                $statements_source,
+                                $mapping_function_id_part
+                            )
                             ) {
                                 return Type::getMixed();
                             }

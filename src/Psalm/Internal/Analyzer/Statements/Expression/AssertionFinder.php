@@ -39,19 +39,16 @@ class AssertionFinder
      *
      * @param string|null $this_class_name
      *
-     * @return void
+     * @return array<string, non-empty-list<non-empty-list<string>>>|null
      */
     public static function scrapeAssertions(
         PhpParser\Node\Expr $conditional,
         $this_class_name,
         FileSource $source,
         Codebase $codebase = null,
-        bool $inside_negation = false
+        bool $inside_negation = false,
+        bool $cache = true
     ) {
-        if (isset($conditional->assertions)) {
-            return;
-        }
-
         $if_types = [];
 
         if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {
@@ -67,7 +64,9 @@ class AssertionFinder
                 if ($var_name) {
                     $if_types[$var_name] = [$instanceof_types];
 
-                    $var_type = $conditional->expr->inferredType ?? null;
+                    $var_type = $source instanceof StatementsAnalyzer
+                        ? $source->node_data->getType($conditional->expr)
+                        : null;
 
                     foreach ($instanceof_types as $instanceof_type) {
                         if ($instanceof_type[0] === '=') {
@@ -77,7 +76,7 @@ class AssertionFinder
                         if ($codebase
                             && $var_type
                             && $inside_negation
-                            && $source instanceof StatementsSource
+                            && $source instanceof StatementsAnalyzer
                         ) {
                             if ($codebase->interfaceExists($instanceof_type)) {
                                 continue;
@@ -119,8 +118,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         $var_name = ExpressionAnalyzer::getArrayVarId(
@@ -132,8 +130,7 @@ class AssertionFinder
         if ($var_name) {
             $if_types[$var_name] = [['!falsy']];
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\Assign) {
@@ -147,46 +144,74 @@ class AssertionFinder
                 $if_types[$var_name] = [['!falsy']];
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
-            self::scrapeAssertions(
-                $conditional->expr,
-                $this_class_name,
-                $source,
-                $codebase,
-                !$inside_negation
-            );
+            $expr_assertions = null;
 
-            if (!isset($conditional->expr->assertions)) {
+            if ($cache && $source instanceof StatementsAnalyzer) {
+                $expr_assertions = $source->node_data->getAssertions($conditional->expr);
+            }
+
+            if ($expr_assertions === null) {
+                $expr_assertions = self::scrapeAssertions(
+                    $conditional->expr,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    !$inside_negation,
+                    $cache
+                );
+
+                if ($cache && $source instanceof StatementsAnalyzer) {
+                    $source->node_data->setAssertions($conditional->expr, $expr_assertions);
+                }
+            }
+
+            if ($expr_assertions === null) {
                 throw new \UnexpectedValueException('Assertions should be set');
             }
 
-            $conditional->assertions = \Psalm\Type\Algebra::negateTypes($conditional->expr->assertions);
-            return;
+            $if_types = \Psalm\Type\Algebra::negateTypes($expr_assertions);
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
         ) {
-            self::scrapeEqualityAssertions($conditional, $this_class_name, $source, $codebase);
-            return;
+            $if_types = self::scrapeEqualityAssertions(
+                $conditional,
+                $this_class_name,
+                $source,
+                $codebase,
+                false,
+                $cache
+            );
+
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
         ) {
-            self::scrapeInequalityAssertions($conditional, $this_class_name, $source, $codebase);
-            return;
+            $if_types = self::scrapeInequalityAssertions(
+                $conditional,
+                $this_class_name,
+                $source,
+                $codebase,
+                false,
+                $cache
+            );
+
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
         ) {
             $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional);
-            $typed_value_position = self::hasTypedValueComparison($conditional);
+            $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
             if ($count_equality_position) {
                 if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -210,8 +235,7 @@ class AssertionFinder
                     }
                 }
 
-                $conditional->assertions = $if_types;
-                return;
+                return $if_types;
             }
 
             if ($typed_value_position) {
@@ -232,19 +256,17 @@ class AssertionFinder
                     $if_types[$var_name] = [['=isset']];
                 }
 
-                $conditional->assertions = $if_types;
-                return;
+                return $if_types;
             }
 
-            $conditional->assertions = [];
-            return;
+            return [];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
         ) {
             $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional);
-            $typed_value_position = self::hasTypedValueComparison($conditional);
+            $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
             if ($count_equality_position) {
                 if ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
@@ -264,8 +286,7 @@ class AssertionFinder
                     $if_types[$var_name] = [['=non-empty-countable']];
                 }
 
-                $conditional->assertions = $if_types;
-                return;
+                return $if_types;
             }
 
             if ($typed_value_position) {
@@ -286,24 +307,24 @@ class AssertionFinder
                     $if_types[$var_name] = [['=isset']];
                 }
 
-                $conditional->assertions = $if_types;
-                return;
+                return $if_types;
             }
 
-            $conditional->assertions = [];
-            return;
+            return [];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\FuncCall) {
-            $conditional->assertions = self::processFunctionCall($conditional, $this_class_name, $source, false);
-            return;
+            $if_types = self::processFunctionCall($conditional, $this_class_name, $source, false);
+
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\MethodCall
             || $conditional instanceof PhpParser\Node\Expr\StaticCall
         ) {
-            $conditional->assertions = self::processCustomAssertion($conditional, $this_class_name, $source, false);
-            return;
+            $if_types = self::processCustomAssertion($conditional, $this_class_name, $source, false);
+
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
@@ -317,8 +338,7 @@ class AssertionFinder
                 $if_types[$var_name] = [['empty']];
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\Isset_) {
@@ -351,8 +371,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
@@ -383,27 +402,30 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
-        $conditional->assertions = [];
-        return;
+        return [];
     }
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @param string|null $this_class_name
      *
-     * @return void
+     * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     private static function scrapeEqualityAssertions(
         PhpParser\Node\Expr\BinaryOp $conditional,
         $this_class_name,
         FileSource $source,
         Codebase $codebase = null,
-        bool $inside_negation = false
+        bool $inside_negation = false,
+        bool $cache = true
     ) {
+        if (!$source instanceof StatementsAnalyzer) {
+            return [];
+        }
+
         $if_types = [];
 
         $null_position = self::hasNullVariable($conditional);
@@ -411,9 +433,9 @@ class AssertionFinder
         $true_position = self::hasTrueVariable($conditional);
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
         $gettype_position = self::hasGetTypeCheck($conditional);
-        $getclass_position = self::hasGetClassCheck($conditional);
+        $getclass_position = self::hasGetClassCheck($conditional, $source);
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional);
-        $typed_value_position = self::hasTypedValueComparison($conditional);
+        $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
         if ($null_position !== null) {
             if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -430,7 +452,7 @@ class AssertionFinder
                 $source
             );
 
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+            $var_type = $source->node_data->getType($base_conditional);
 
             if ($var_name) {
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
@@ -443,7 +465,6 @@ class AssertionFinder
             if ($codebase
                 && $var_type
                 && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                && $source instanceof StatementsSource
             ) {
                 $null_type = Type::getNull();
 
@@ -480,8 +501,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($true_position) {
@@ -493,7 +513,7 @@ class AssertionFinder
                 throw new \UnexpectedValueException('Unrecognised position');
             }
 
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+            $var_type = $source->node_data->getType($base_conditional);
 
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
                 $if_types = self::processFunctionCall(
@@ -516,21 +536,37 @@ class AssertionFinder
                         $if_types[$var_name] = [['!falsy']];
                     }
                 } else {
-                    self::scrapeAssertions(
-                        $base_conditional,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        $inside_negation
-                    );
-                    $if_types = $base_conditional->assertions;
+                    $base_assertions = null;
+
+                    if ($cache) {
+                        $base_assertions = $source->node_data->getAssertions($base_conditional);
+                    }
+
+                    if ($base_assertions === null) {
+                        $base_assertions = self::scrapeAssertions(
+                            $base_conditional,
+                            $this_class_name,
+                            $source,
+                            $codebase,
+                            $inside_negation,
+                            $cache
+                        );
+
+                        if ($cache) {
+                            $source->node_data->setAssertions($base_conditional, $base_assertions);
+                        }
+                    }
+
+                    if ($base_assertions === null) {
+                        throw new \UnexpectedValueException('Assertions should be set');
+                    }
+
+                    $if_types = $base_assertions;
                 }
             }
 
             if ($codebase && $var_type) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                    && $source instanceof StatementsSource
-                ) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                     $true_type = Type::getTrue();
 
                     if (!TypeAnalyzer::isContainedBy(
@@ -567,8 +603,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($false_position) {
@@ -580,7 +615,7 @@ class AssertionFinder
                 throw new \UnexpectedValueException('$false_position value');
             }
 
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+            $var_type = $source->node_data->getType($base_conditional);
 
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
                 $if_types = self::processFunctionCall(
@@ -603,13 +638,32 @@ class AssertionFinder
                         $if_types[$var_name] = [['falsy']];
                     }
                 } elseif ($var_type) {
-                    self::scrapeAssertions($base_conditional, $this_class_name, $source, $codebase, $inside_negation);
+                    $base_assertions = null;
 
-                    if (!isset($base_conditional->assertions)) {
+                    if ($cache) {
+                        $base_assertions = $source->node_data->getAssertions($base_conditional);
+                    }
+
+                    if ($base_assertions === null) {
+                        $base_assertions = self::scrapeAssertions(
+                            $base_conditional,
+                            $this_class_name,
+                            $source,
+                            $codebase,
+                            $inside_negation,
+                            $cache
+                        );
+
+                        if ($cache) {
+                            $source->node_data->setAssertions($base_conditional, $base_assertions);
+                        }
+                    }
+
+                    if ($base_assertions === null) {
                         throw new \UnexpectedValueException('Assertions should be set');
                     }
 
-                    $notif_types = $base_conditional->assertions;
+                    $notif_types = $base_assertions;
 
                     if (count($notif_types) === 1) {
                         $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
@@ -618,9 +672,7 @@ class AssertionFinder
             }
 
             if ($codebase && $var_type) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                    && $source instanceof StatementsSource
-                ) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                     $false_type = Type::getFalse();
 
                     if (!TypeAnalyzer::isContainedBy(
@@ -657,8 +709,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($empty_array_position !== null) {
@@ -676,7 +727,7 @@ class AssertionFinder
                 $source
             );
 
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+            $var_type = $source->node_data->getType($base_conditional);
 
             if ($var_name) {
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
@@ -689,7 +740,6 @@ class AssertionFinder
             if ($codebase
                 && $var_type
                 && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                && $source instanceof StatementsSource
             ) {
                 $null_type = Type::getEmptyArray();
 
@@ -726,8 +776,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($gettype_position) {
@@ -751,9 +800,7 @@ class AssertionFinder
             /** @var PhpParser\Node\Scalar\String_ $string_expr */
             $var_type = $string_expr->value;
 
-            if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])
-                && $source instanceof StatementsSource
-            ) {
+            if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])) {
                 if (IssueBuffer::accepts(
                     new UnevaluatedCode(
                         'gettype cannot return this value',
@@ -768,8 +815,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($count_equality_position) {
@@ -792,8 +838,7 @@ class AssertionFinder
                 $if_types[$var_name] = [['=non-empty-countable']];
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($getclass_position) {
@@ -831,9 +876,7 @@ class AssertionFinder
                     $var_type = null;
                 }
 
-                if ($source instanceof StatementsSource
-                    && $var_type
-                ) {
+                if ($var_type) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $source,
                         $var_type,
@@ -842,8 +885,7 @@ class AssertionFinder
                         false
                     ) === false
                     ) {
-                        $conditional->assertions = $if_types;
-                        return;
+                        return $if_types;
                     }
                 }
 
@@ -851,7 +893,7 @@ class AssertionFinder
                     $if_types[$var_name] = [['=getclass-' . $var_type]];
                 }
             } else {
-                $type = $whichclass_expr->inferredType;
+                $type = $source->node_data->getType($whichclass_expr);
 
                 if ($type && $var_name) {
                     foreach ($type->getTypes() as $type_part) {
@@ -862,8 +904,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($typed_value_position) {
@@ -875,8 +916,8 @@ class AssertionFinder
                     $source
                 );
 
-                $other_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
-                $var_type = $conditional->right->inferredType;
+                $other_type = $source->node_data->getType($conditional->left);
+                $var_type = $source->node_data->getType($conditional->right);
             } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
                 /** @var PhpParser\Node\Expr $conditional->left */
                 $var_name = ExpressionAnalyzer::getArrayVarId(
@@ -885,8 +926,8 @@ class AssertionFinder
                     $source
                 );
 
-                $var_type = $conditional->left->inferredType;
-                $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                $var_type = $source->node_data->getType($conditional->left);
+                $other_type = $source->node_data->getType($conditional->right);
             } else {
                 throw new \UnexpectedValueException('$typed_value_position value');
             }
@@ -911,12 +952,10 @@ class AssertionFinder
                 && $other_type
                 && $var_type
                 && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                && $source instanceof StatementsSource
             ) {
                 $parent_source = $source->getSource();
 
-                if ($parent_source
-                    && $parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+                if ($parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
                     && (($var_type->isSingleStringLiteral()
                             && $var_type->getSingleStringLiteral()->value === $this_class_name)
                         || ($other_type->isSingleStringLiteral()
@@ -952,18 +991,16 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
-        $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
-        $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+        $var_type = $source->node_data->getType($conditional->left);
+        $other_type = $source->node_data->getType($conditional->right);
 
         if ($codebase
             && $var_type
             && $other_type
             && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-            && $source instanceof StatementsSource
         ) {
             if (!TypeAnalyzer::canExpressionTypesBeIdentical($codebase, $var_type, $other_type)) {
                 if (IssueBuffer::accepts(
@@ -978,33 +1015,36 @@ class AssertionFinder
             }
         }
 
-        $conditional->assertions = [];
-        return;
+        return [];
     }
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @param string|null $this_class_name
      *
-     * @return void
+     * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     private static function scrapeInequalityAssertions(
         PhpParser\Node\Expr\BinaryOp $conditional,
         $this_class_name,
         FileSource $source,
         Codebase $codebase = null,
-        bool $inside_negation = false
+        bool $inside_negation = false,
+        bool $cache = true
     ) {
-        $if_types = [];
+        if (!$source instanceof StatementsAnalyzer) {
+            return [];
+        }
 
+        $if_types = [];
 
         $null_position = self::hasNullVariable($conditional);
         $false_position = self::hasFalseVariable($conditional);
         $true_position = self::hasTrueVariable($conditional);
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
         $gettype_position = self::hasGetTypeCheck($conditional);
-        $getclass_position = self::hasGetClassCheck($conditional);
-        $typed_value_position = self::hasTypedValueComparison($conditional);
+        $getclass_position = self::hasGetClassCheck($conditional, $source);
+        $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
         if ($null_position !== null) {
             if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1015,7 +1055,7 @@ class AssertionFinder
                 throw new \UnexpectedValueException('Bad null variable position');
             }
 
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+            $var_type = $source->node_data->getType($base_conditional);
 
             $var_name = ExpressionAnalyzer::getArrayVarId(
                 $base_conditional,
@@ -1032,9 +1072,7 @@ class AssertionFinder
             }
 
             if ($codebase && $var_type) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-                    && $source instanceof StatementsSource
-                ) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                     $null_type = Type::getNull();
 
                     if (!TypeAnalyzer::isContainedBy(
@@ -1071,8 +1109,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($false_position) {
@@ -1090,7 +1127,7 @@ class AssertionFinder
                 $source
             );
 
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+            $var_type = $source->node_data->getType($base_conditional);
 
             if ($var_name) {
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
@@ -1099,13 +1136,32 @@ class AssertionFinder
                     $if_types[$var_name] = [['!falsy']];
                 }
             } elseif ($var_type) {
-                self::scrapeAssertions($base_conditional, $this_class_name, $source, $codebase, $inside_negation);
+                $base_assertions = null;
 
-                if (!isset($base_conditional->assertions)) {
+                if ($cache) {
+                    $base_assertions = $source->node_data->getAssertions($base_conditional);
+                }
+
+                if ($base_assertions === null) {
+                    $base_assertions = self::scrapeAssertions(
+                        $base_conditional,
+                        $this_class_name,
+                        $source,
+                        $codebase,
+                        $inside_negation,
+                        $cache
+                    );
+
+                    if ($cache) {
+                        $source->node_data->setAssertions($base_conditional, $base_assertions);
+                    }
+                }
+
+                if ($base_assertions === null) {
                     throw new \UnexpectedValueException('Assertions should be set');
                 }
 
-                $notif_types = $base_conditional->assertions;
+                $notif_types = $base_assertions;
 
                 if (count($notif_types) === 1) {
                     $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
@@ -1113,9 +1169,7 @@ class AssertionFinder
             }
 
             if ($codebase && $var_type) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-                    && $source instanceof StatementsSource
-                ) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                     $false_type = Type::getFalse();
 
                     if (!TypeAnalyzer::isContainedBy(
@@ -1152,8 +1206,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($true_position) {
@@ -1165,7 +1218,7 @@ class AssertionFinder
                 throw new \UnexpectedValueException('Bad null variable position');
             }
 
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+            $var_type = $source->node_data->getType($base_conditional);
 
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
                 $if_types = self::processFunctionCall(
@@ -1188,19 +1241,32 @@ class AssertionFinder
                         $if_types[$var_name] = [['falsy']];
                     }
                 } elseif ($var_type) {
-                    self::scrapeAssertions(
-                        $base_conditional,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        $inside_negation
-                    );
+                    $base_assertions = null;
 
-                    if (!isset($base_conditional->assertions)) {
+                    if ($cache) {
+                        $base_assertions = $source->node_data->getAssertions($base_conditional);
+                    }
+
+                    if ($base_assertions === null) {
+                        $base_assertions = self::scrapeAssertions(
+                            $base_conditional,
+                            $this_class_name,
+                            $source,
+                            $codebase,
+                            $inside_negation,
+                            $cache
+                        );
+
+                        if ($cache) {
+                            $source->node_data->setAssertions($base_conditional, $base_assertions);
+                        }
+                    }
+
+                    if ($base_assertions === null) {
                         throw new \UnexpectedValueException('Assertions should be set');
                     }
 
-                    $notif_types = $base_conditional->assertions;
+                    $notif_types = $base_assertions;
 
                     if (count($notif_types) === 1) {
                         $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
@@ -1209,9 +1275,7 @@ class AssertionFinder
             }
 
             if ($codebase && $var_type) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-                    && $source instanceof StatementsSource
-                ) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                     $true_type = Type::getTrue();
 
                     if (!TypeAnalyzer::isContainedBy(
@@ -1248,8 +1312,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($empty_array_position !== null) {
@@ -1261,7 +1324,7 @@ class AssertionFinder
                 throw new \UnexpectedValueException('Bad empty array variable position');
             }
 
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+            $var_type = $source->node_data->getType($base_conditional);
 
             $var_name = ExpressionAnalyzer::getArrayVarId(
                 $base_conditional,
@@ -1278,9 +1341,7 @@ class AssertionFinder
             }
 
             if ($codebase && $var_type) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-                    && $source instanceof StatementsSource
-                ) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                     $empty_array_type = Type::getEmptyArray();
 
                     if (!TypeAnalyzer::isContainedBy(
@@ -1317,8 +1378,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($gettype_position) {
@@ -1367,8 +1427,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($getclass_position) {
@@ -1408,7 +1467,7 @@ class AssertionFinder
                     $var_type = null;
                 }
             } else {
-                $type = $whichclass_expr->inferredType;
+                $type = $source->node_data->getType($whichclass_expr);
 
                 if ($type && $var_name) {
                     foreach ($type->getTypes() as $type_part) {
@@ -1418,12 +1477,10 @@ class AssertionFinder
                     }
                 }
 
-                $conditional->assertions = $if_types;
-                return;
+                return $if_types;
             }
 
-            if ($source instanceof StatementsSource
-                && $var_type
+            if ($var_type
                 && ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $source,
                     $var_type,
@@ -1439,8 +1496,7 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
         if ($typed_value_position) {
@@ -1452,8 +1508,8 @@ class AssertionFinder
                     $source
                 );
 
-                $other_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
-                $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                $other_type = $source->node_data->getType($conditional->left);
+                $var_type = $source->node_data->getType($conditional->right);
             } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
                 /** @var PhpParser\Node\Expr $conditional->left */
                 $var_name = ExpressionAnalyzer::getArrayVarId(
@@ -1462,8 +1518,8 @@ class AssertionFinder
                     $source
                 );
 
-                $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
-                $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                $var_type = $source->node_data->getType($conditional->left);
+                $other_type = $source->node_data->getType($conditional->right);
             } else {
                 throw new \UnexpectedValueException('$typed_value_position value');
             }
@@ -1488,12 +1544,10 @@ class AssertionFinder
                 if ($codebase
                     && $other_type
                     && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-                    && $source instanceof StatementsSource
                 ) {
                     $parent_source = $source->getSource();
 
-                    if ($parent_source
-                        && $parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+                    if ($parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
                         && (($var_type->isSingleStringLiteral()
                                 && $var_type->getSingleStringLiteral()->value === $this_class_name)
                             || ($other_type->isSingleStringLiteral()
@@ -1530,12 +1584,10 @@ class AssertionFinder
                 }
             }
 
-            $conditional->assertions = $if_types;
-            return;
+            return $if_types;
         }
 
-        $conditional->assertions = [];
-        return;
+        return [];
     }
 
     /**
@@ -1568,7 +1620,7 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'null']];
             }
-        } elseif (self::hasIsACheck($expr)) {
+        } elseif (self::hasIsACheck($expr) && $source instanceof StatementsAnalyzer) {
             if ($expr->args[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $expr->args[0]->value->name instanceof PhpParser\Node\Identifier
                 && strtolower($expr->args[0]->value->name->name) === 'class'
@@ -1607,11 +1659,11 @@ class AssertionFinder
 
                     $first_arg = $expr->args[0]->value;
 
-                    if (isset($first_arg->inferredType)
-                        && $first_arg->inferredType->isSingleStringLiteral()
-                        && $source instanceof StatementsAnalyzer
+                    if ($first_arg
+                        && ($first_arg_type = $source->node_data->getType($first_arg))
+                        && $first_arg_type->isSingleStringLiteral()
                         && $source->getSource()->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
-                        && $first_arg->inferredType->getSingleStringLiteral()->value === $this_class_name
+                        && $first_arg_type->getSingleStringLiteral()->value === $this_class_name
                     ) {
                         // do nothing
                     } else {
@@ -1624,11 +1676,11 @@ class AssertionFinder
                 ) {
                     $first_arg = $expr->args[0]->value;
 
-                    if (isset($first_arg->inferredType)
-                        && $first_arg->inferredType->isSingleStringLiteral()
-                        && $source instanceof StatementsAnalyzer
+                    if ($first_arg
+                        && ($first_arg_type = $source->node_data->getType($first_arg))
+                        && $first_arg_type->isSingleStringLiteral()
                         && $source->getSource()->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
-                        && $first_arg->inferredType->getSingleStringLiteral()->value === $this_class_name
+                        && $first_arg_type->getSingleStringLiteral()->value === $this_class_name
                     ) {
                         // do nothing
                     } else {
@@ -1732,9 +1784,11 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'hasmethod-' . $expr->args[1]->value->value]];
             }
-        } elseif (self::hasInArrayCheck($expr)) {
-            if ($first_var_name && isset($expr->args[1]->value->inferredType)) {
-                foreach ($expr->args[1]->value->inferredType->getTypes() as $atomic_type) {
+        } elseif (self::hasInArrayCheck($expr) && $source instanceof StatementsAnalyzer) {
+            if ($first_var_name
+                && ($second_arg_type = $source->node_data->getType($expr->args[1]->value))
+            ) {
+                foreach ($second_arg_type->getTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TArray
                         || $atomic_type instanceof Type\Atomic\ObjectLike
                     ) {
@@ -1819,9 +1873,14 @@ class AssertionFinder
         FileSource $source,
         $negate = false
     ) {
-        if (!$source instanceof StatementsAnalyzer
-            || (!isset($expr->ifTrueAssertions) && !isset($expr->ifFalseAssertions))
-        ) {
+        if (!$source instanceof StatementsAnalyzer) {
+            return [];
+        }
+
+        $if_true_assertions = $source->node_data->getIfTrueAssertions($expr);
+        $if_false_assertions = $source->node_data->getIfFalseAssertions($expr);
+
+        if ($if_true_assertions === null && $if_false_assertions === null) {
             return [];
         }
 
@@ -1837,8 +1896,8 @@ class AssertionFinder
 
         $if_types = [];
 
-        if (isset($expr->ifTrueAssertions)) {
-            foreach ($expr->ifTrueAssertions as $assertion) {
+        if ($if_true_assertions) {
+            foreach ($if_true_assertions as $assertion) {
                 if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
                         $var_name = $first_var_name;
@@ -1884,10 +1943,10 @@ class AssertionFinder
             }
         }
 
-        if (isset($expr->ifFalseAssertions)) {
+        if ($if_false_assertions) {
             $negated_prefix = !$negate ? '!' : '';
 
-            foreach ($expr->ifFalseAssertions as $assertion) {
+            foreach ($if_false_assertions as $assertion) {
                 if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
                         $var_name = $first_var_name;
@@ -1965,18 +2024,22 @@ class AssertionFinder
 
                 return [$this_class_name];
             }
-        } elseif (isset($stmt->class->inferredType)) {
-            $literal_class_strings = [];
+        } elseif ($source instanceof StatementsAnalyzer) {
+            $stmt_class_type = $source->node_data->getType($stmt->class);
 
-            foreach ($stmt->class->inferredType->getTypes() as $atomic_type) {
-                if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
-                    $literal_class_strings[] = $atomic_type->value;
-                } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
-                    $literal_class_strings[] = $atomic_type->param_name;
+            if ($stmt_class_type) {
+                $literal_class_strings = [];
+
+                foreach ($stmt_class_type->getTypes() as $atomic_type) {
+                    if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
+                        $literal_class_strings[] = $atomic_type->value;
+                    } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                        $literal_class_strings[] = $atomic_type->param_name;
+                    }
                 }
-            }
 
-            return $literal_class_strings;
+                return $literal_class_strings;
+            }
         }
 
         return [];
@@ -2103,8 +2166,14 @@ class AssertionFinder
      *
      * @return  false|int
      */
-    protected static function hasGetClassCheck(PhpParser\Node\Expr\BinaryOp $conditional)
-    {
+    protected static function hasGetClassCheck(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        FileSource $source
+    ) {
+        if (!$source instanceof StatementsAnalyzer) {
+            return false;
+        }
+
         $right_get_class = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
             && strtolower($conditional->right->name->parts[0]) === 'get_class';
@@ -2120,7 +2189,7 @@ class AssertionFinder
             && $conditional->left->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->left->name->name) === 'class';
 
-        $left_type = ($conditional->left->inferredType ?? null);
+        $left_type = $source->node_data->getType($conditional->left);
 
         $left_class_string_t = false;
 
@@ -2151,7 +2220,7 @@ class AssertionFinder
             && $conditional->right->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->right->name->name) === 'class';
 
-        $right_type = ($conditional->right->inferredType ?? null);
+        $right_type = $source->node_data->getType($conditional->right);
 
         $right_class_string_t = false;
 
@@ -2269,27 +2338,33 @@ class AssertionFinder
      *
      * @return  false|int
      */
-    protected static function hasTypedValueComparison(PhpParser\Node\Expr\BinaryOp $conditional)
-    {
-        if (isset($conditional->right->inferredType)
+    protected static function hasTypedValueComparison(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        FileSource $source
+    ) {
+        if (!$source instanceof StatementsAnalyzer) {
+            return false;
+        }
+
+        if (($right_type = $source->node_data->getType($conditional->right))
             && ((!$conditional->right instanceof PhpParser\Node\Expr\Variable
                     && !$conditional->right instanceof PhpParser\Node\Expr\PropertyFetch
                     && !$conditional->right instanceof PhpParser\Node\Expr\StaticPropertyFetch)
                 || $conditional->left instanceof PhpParser\Node\Expr\Variable
                 || $conditional->left instanceof PhpParser\Node\Expr\PropertyFetch
                 || $conditional->left instanceof PhpParser\Node\Expr\StaticPropertyFetch)
-            && count($conditional->right->inferredType->getTypes()) === 1
-            && !$conditional->right->inferredType->hasMixed()
+            && count($right_type->getTypes()) === 1
+            && !$right_type->hasMixed()
         ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if (isset($conditional->left->inferredType)
+        if (($left_type = $source->node_data->getType($conditional->left))
             && !$conditional->left instanceof PhpParser\Node\Expr\Variable
             && !$conditional->left instanceof PhpParser\Node\Expr\PropertyFetch
             && !$conditional->left instanceof PhpParser\Node\Expr\StaticPropertyFetch
-            && count($conditional->left->inferredType->getTypes()) === 1
-            && !$conditional->left->inferredType->hasMixed()
+            && count($left_type->getTypes()) === 1
+            && !$left_type->hasMixed()
         ) {
             return self::ASSIGNMENT_TO_LEFT;
         }

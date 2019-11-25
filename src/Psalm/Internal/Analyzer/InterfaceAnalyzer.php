@@ -99,7 +99,9 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
-                $method_analyzer->analyze(new \Psalm\Context($this->getFQCLN()));
+                $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();
+
+                $method_analyzer->analyze(new \Psalm\Context($this->getFQCLN()), $type_provider);
 
                 $actual_method_id = (string)$method_analyzer->getMethodId();
 
@@ -110,6 +112,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $stmt,
                         $method_analyzer,
                         $this,
+                        $type_provider,
                         $codebase,
                         $class_storage,
                         $fq_interface_name,

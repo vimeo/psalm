@@ -95,7 +95,7 @@ class PhpStormMetaScanner
                      * @return ?Type\Union
                      */
                     function (
-                        \Psalm\StatementsSource $_statements_analyzer,
+                        \Psalm\StatementsSource $statements_analyzer,
                         string $fq_classlike_name,
                         string $method_name,
                         array $call_args,
@@ -107,13 +107,18 @@ class PhpStormMetaScanner
                         $meta_fq_classlike_name,
                         $meta_method_name
                     ) {
+                        if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                            return Type::getMixed();
+                        }
+
                         if ($meta_method_name !== $method_name
                             || $meta_fq_classlike_name !== $fq_classlike_name
                         ) {
                             return null;
                         }
 
-                        if (($call_arg_type = $call_args[$offset]->value->inferredType ?? null)
+                        if (isset($call_args[$offset]->value)
+                            && ($call_arg_type = $statements_analyzer->node_data->getType($call_args[$offset]->value))
                             && $call_arg_type->isSingleStringLiteral()
                         ) {
                             $offset_arg_value = $call_arg_type->getSingleStringLiteral()->value;
@@ -148,7 +153,7 @@ class PhpStormMetaScanner
                      * @return ?Type\Union
                      */
                     function (
-                        \Psalm\StatementsSource $_statements_analyzer,
+                        \Psalm\StatementsSource $statements_analyzer,
                         string $fq_classlike_name,
                         string $method_name,
                         array $call_args,
@@ -160,13 +165,20 @@ class PhpStormMetaScanner
                         $meta_fq_classlike_name,
                         $meta_method_name
                     ) {
+                        if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                            return Type::getMixed();
+                        }
+
                         if ($meta_method_name !== $method_name
                             || $meta_fq_classlike_name !== $fq_classlike_name
                         ) {
                             return null;
                         }
 
-                        if (($call_arg_type = $call_args[$type_offset]->value->inferredType ?? null)) {
+                        if (isset($call_args[$type_offset]->value)
+                            && ($call_arg_type
+                                = $statements_analyzer->node_data->getType($call_args[$type_offset]->value))
+                        ) {
                             return clone $call_arg_type;
                         }
 
@@ -181,7 +193,7 @@ class PhpStormMetaScanner
                      * @return ?Type\Union
                      */
                     function (
-                        \Psalm\StatementsSource $_statements_analyzer,
+                        \Psalm\StatementsSource $statements_analyzer,
                         string $fq_classlike_name,
                         string $method_name,
                         array $call_args,
@@ -193,30 +205,36 @@ class PhpStormMetaScanner
                         $meta_fq_classlike_name,
                         $meta_method_name
                     ) {
+                        if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                            return Type::getMixed();
+                        }
+
                         if ($meta_method_name !== $method_name
                             || $meta_fq_classlike_name !== $fq_classlike_name
                         ) {
                             return null;
                         }
 
-                        if (($call_arg_type = $call_args[$element_type_offset]->value->inferredType ?? null)) {
-                            if ($call_arg_type->hasArray()) {
-                                /**
-                                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
-                                 */
-                                $array_atomic_type = $call_arg_type->getTypes()['array'];
+                        if (isset($call_args[$element_type_offset]->value)
+                            && ($call_arg_type
+                                = $statements_analyzer->node_data->getType($call_args[$element_type_offset]->value))
+                            && $call_arg_type->hasArray()
+                        ) {
+                            /**
+                             * @psalm-suppress PossiblyUndefinedStringArrayOffset
+                             * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                             */
+                            $array_atomic_type = $call_arg_type->getTypes()['array'];
 
-                                if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                                    return $array_atomic_type->getGenericValueType();
-                                }
-
-                                if ($array_atomic_type instanceof Type\Atomic\TList) {
-                                    return $array_atomic_type->type_param;
-                                }
-
-                                return clone $array_atomic_type->type_params[1];
+                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                                return $array_atomic_type->getGenericValueType();
                             }
+
+                            if ($array_atomic_type instanceof Type\Atomic\TList) {
+                                return $array_atomic_type->type_param;
+                            }
+
+                            return clone $array_atomic_type->type_params[1];
                         }
 
                         return null;
@@ -250,7 +268,13 @@ class PhpStormMetaScanner
                         $map,
                         $offset
                     ) : Type\Union {
-                        if (($call_arg_type = $call_args[$offset]->value->inferredType ?? null)
+                        if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                            return Type::getMixed();
+                        }
+
+                        if (isset($call_args[$offset]->value)
+                            && ($call_arg_type
+                                = $statements_analyzer->node_data->getType($call_args[$offset]->value))
                             && $call_arg_type->isSingleStringLiteral()
                         ) {
                             $offset_arg_value = $call_arg_type->getSingleStringLiteral()->value;
@@ -272,10 +296,6 @@ class PhpStormMetaScanner
                                     }
                                 }
                             }
-                        }
-
-                        if (!$statements_analyzer instanceof StatementsAnalyzer) {
-                            throw new \UnexpectedValueException('This is bad');
                         }
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
@@ -302,12 +322,15 @@ class PhpStormMetaScanner
                         $map,
                         $type_offset
                     ) : Type\Union {
-                        if (($call_arg_type = $call_args[$type_offset]->value->inferredType ?? null)) {
-                            return clone $call_arg_type;
+                        if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                            return Type::getMixed();
                         }
 
-                        if (!$statements_analyzer instanceof StatementsAnalyzer) {
-                            throw new \UnexpectedValueException('This is bad');
+                        if (isset($call_args[$type_offset]->value)
+                            && ($call_arg_type
+                                = $statements_analyzer->node_data->getType($call_args[$type_offset]->value))
+                        ) {
+                            return clone $call_arg_type;
                         }
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
@@ -334,28 +357,30 @@ class PhpStormMetaScanner
                         $map,
                         $element_type_offset
                     ) : Type\Union {
-                        if (($call_arg_type = $call_args[$element_type_offset]->value->inferredType ?? null)) {
-                            if ($call_arg_type->hasArray()) {
-                                /**
-                                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
-                                 */
-                                $array_atomic_type = $call_arg_type->getTypes()['array'];
-
-                                if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                                    return $array_atomic_type->getGenericValueType();
-                                }
-
-                                if ($array_atomic_type instanceof Type\Atomic\TList) {
-                                    return $array_atomic_type->type_param;
-                                }
-
-                                return clone $array_atomic_type->type_params[1];
-                            }
+                        if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                            return Type::getMixed();
                         }
 
-                        if (!$statements_analyzer instanceof StatementsAnalyzer) {
-                            throw new \UnexpectedValueException('This is bad');
+                        if (isset($call_args[$element_type_offset]->value)
+                            && ($call_arg_type
+                                = $statements_analyzer->node_data->getType($call_args[$element_type_offset]->value))
+                            && $call_arg_type->hasArray()
+                        ) {
+                            /**
+                             * @psalm-suppress PossiblyUndefinedStringArrayOffset
+                             * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                             */
+                            $array_atomic_type = $call_arg_type->getTypes()['array'];
+
+                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                                return $array_atomic_type->getGenericValueType();
+                            }
+
+                            if ($array_atomic_type instanceof Type\Atomic\TList) {
+                                return $array_atomic_type->type_param;
+                            }
+
+                            return clone $array_atomic_type->type_params[1];
                         }
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(

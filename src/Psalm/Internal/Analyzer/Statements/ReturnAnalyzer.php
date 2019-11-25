@@ -119,16 +119,19 @@ class ReturnAnalyzer
 
         if ($stmt->expr) {
             $context->inside_call = true;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
 
             if ($var_comment_type) {
-                $stmt->inferredType = $var_comment_type;
-            } elseif (isset($stmt->expr->inferredType)) {
-                $stmt->inferredType = $stmt->expr->inferredType;
+                $stmt_type = $var_comment_type;
 
-                if ($stmt->inferredType->isNever()) {
+                $statements_analyzer->node_data->setType($stmt, $var_comment_type);
+            } elseif ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+                $stmt_type = $stmt_expr_type;
+
+                if ($stmt_type->isNever()) {
                     if (IssueBuffer::accepts(
                         new NoValue(
                             'This function or method call never returns output',
@@ -139,18 +142,20 @@ class ReturnAnalyzer
                         // fall through
                     }
 
-                    $stmt->inferredType = Type::getEmpty();
+                    $stmt_type = Type::getEmpty();
                 }
 
-                if ($stmt->inferredType->isVoid()) {
-                    $stmt->inferredType = Type::getNull();
+                if ($stmt_type->isVoid()) {
+                    $stmt_type = Type::getNull();
                 }
             } else {
-                $stmt->inferredType = Type::getMixed();
+                $stmt_type = Type::getMixed();
             }
         } else {
-            $stmt->inferredType = Type::getVoid();
+            $stmt_type = Type::getVoid();
         }
+
+        $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
         if ($source instanceof FunctionLikeAnalyzer
             && !($source->getSource() instanceof TraitAnalyzer)
@@ -166,7 +171,7 @@ class ReturnAnalyzer
             if ($stmt->expr && $storage->location) {
                 $inferred_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
-                    $stmt->inferredType,
+                    $stmt_type,
                     $source->getFQCLN(),
                     $source->getFQCLN(),
                     $source->getParentFQCLN()
@@ -215,7 +220,7 @@ class ReturnAnalyzer
                         return null;
                     }
 
-                    if ($stmt->inferredType->hasMixed()) {
+                    if ($stmt_type->hasMixed()) {
                         if ($local_return_type->isVoid() || $local_return_type->isNever()) {
                             if (IssueBuffer::accepts(
                                 new InvalidReturnStatement(
@@ -288,7 +293,7 @@ class ReturnAnalyzer
                                 if (!$union_comparison_results->type_coerced_from_as_mixed) {
                                     if (IssueBuffer::accepts(
                                         new MixedReturnTypeCoercion(
-                                            'The type \'' . $stmt->inferredType->getId() . '\' is more general than the'
+                                            'The type \'' . $stmt_type->getId() . '\' is more general than the'
                                                 . ' declared return type \'' . $local_return_type->getId() . '\''
                                                 . ' for ' . $cased_method_id,
                                             new CodeLocation($source, $stmt->expr)
@@ -301,7 +306,7 @@ class ReturnAnalyzer
                             } else {
                                 if (IssueBuffer::accepts(
                                     new LessSpecificReturnStatement(
-                                        'The type \'' . $stmt->inferredType->getId() . '\' is more general than the'
+                                        'The type \'' . $stmt_type->getId() . '\' is more general than the'
                                             . ' declared return type \'' . $local_return_type->getId() . '\''
                                             . ' for ' . $cased_method_id,
                                         new CodeLocation($source, $stmt->expr)
@@ -350,7 +355,7 @@ class ReturnAnalyzer
                         } else {
                             if (IssueBuffer::accepts(
                                 new InvalidReturnStatement(
-                                    'The type \'' . $stmt->inferredType->getId()
+                                    'The type \'' . $stmt_type->getId()
                                         . '\' does not match the declared return '
                                         . 'type \'' . $local_return_type->getId() . '\' for ' . $cased_method_id,
                                     new CodeLocation($source, $stmt->expr)
@@ -362,7 +367,7 @@ class ReturnAnalyzer
                         }
                     }
 
-                    if (!$stmt->inferredType->ignore_nullable_issues
+                    if (!$stmt_type->ignore_nullable_issues
                         && $inferred_type->isNullable()
                         && !$local_return_type->isNullable()
                     ) {
@@ -379,7 +384,7 @@ class ReturnAnalyzer
                         }
                     }
 
-                    if (!$stmt->inferredType->ignore_falsable_issues
+                    if (!$stmt_type->ignore_falsable_issues
                         && $inferred_type->isFalsable()
                         && !$local_return_type->isFalsable()
                         && !$local_return_type->hasBool()

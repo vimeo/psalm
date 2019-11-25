@@ -67,13 +67,16 @@ class IncludeAnalyzer
             $context->inside_call = false;
         }
 
+        $stmt_expr_type = null;
+
         if ($stmt->expr instanceof PhpParser\Node\Scalar\String_
-            || (isset($stmt->expr->inferredType) && $stmt->expr->inferredType->isSingleStringLiteral())
+            || (($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))
+                && $stmt_expr_type->isSingleStringLiteral())
         ) {
             if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
                 $path_to_file = $stmt->expr->value;
             } else {
-                $path_to_file = $stmt->expr->inferredType->getSingleStringLiteral()->value;
+                $path_to_file = $stmt_expr_type->getSingleStringLiteral()->value;
             }
 
             $path_to_file = str_replace('/', DIRECTORY_SEPARATOR, $path_to_file);
@@ -92,7 +95,12 @@ class IncludeAnalyzer
                 $path_to_file = $config->base_dir . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
-            $path_to_file = self::getPathTo($stmt->expr, $statements_analyzer->getFileName(), $config);
+            $path_to_file = self::getPathTo(
+                $stmt->expr,
+                $statements_analyzer->node_data,
+                $statements_analyzer->getFileName(),
+                $config
+            );
         }
 
         if ($path_to_file) {
@@ -209,8 +217,12 @@ class IncludeAnalyzer
      * @return string|null
      * @psalm-suppress MixedAssignment
      */
-    public static function getPathTo(PhpParser\Node\Expr $stmt, $file_name, Config $config)
-    {
+    public static function getPathTo(
+        PhpParser\Node\Expr $stmt,
+        ?\Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        $file_name,
+        Config $config
+    ) {
         if (DIRECTORY_SEPARATOR === '/') {
             $is_path_relative = $file_name[0] !== DIRECTORY_SEPARATOR;
         } else {
@@ -228,15 +240,19 @@ class IncludeAnalyzer
             return $stmt->value;
         }
 
-        if (isset($stmt->inferredType) && $stmt->inferredType->isSingleStringLiteral()) {
+        if ($type_provider
+            && ($stmt_type = $type_provider->getType($stmt))
+            && $stmt_type->isSingleStringLiteral()
+        ) {
             if (DIRECTORY_SEPARATOR !== '/') {
                 return str_replace(
                     '/',
                     DIRECTORY_SEPARATOR,
-                    $stmt->inferredType->getSingleStringLiteral()->value
+                    $stmt_type->getSingleStringLiteral()->value
                 );
             }
-            return $stmt->inferredType->getSingleStringLiteral()->value;
+
+            return $stmt_type->getSingleStringLiteral()->value;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
@@ -250,8 +266,8 @@ class IncludeAnalyzer
                 }
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-            $left_string = self::getPathTo($stmt->left, $file_name, $config);
-            $right_string = self::getPathTo($stmt->right, $file_name, $config);
+            $left_string = self::getPathTo($stmt->left, $type_provider, $file_name, $config);
+            $right_string = self::getPathTo($stmt->right, $type_provider, $file_name, $config);
 
             if ($left_string && $right_string) {
                 return $left_string . $right_string;
@@ -271,7 +287,7 @@ class IncludeAnalyzer
                     }
                 }
 
-                $evaled_path = self::getPathTo($stmt->args[0]->value, $file_name, $config);
+                $evaled_path = self::getPathTo($stmt->args[0]->value, $type_provider, $file_name, $config);
 
                 if (!$evaled_path) {
                     return null;

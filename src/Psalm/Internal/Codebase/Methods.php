@@ -356,7 +356,8 @@ class Methods
                 $matching_callable = CallMap::getMatchingCallableFromCallMapOptions(
                     $source->getCodebase(),
                     $function_callables,
-                    $args
+                    $args,
+                    $source->getNodeTypeProvider()
                 );
 
                 assert($matching_callable->params !== null);
@@ -536,8 +537,12 @@ class Methods
      *
      * @return Type\Union|null
      */
-    public function getMethodReturnType($method_id, &$self_class, array $args = null)
-    {
+    public function getMethodReturnType(
+        $method_id,
+        &$self_class,
+        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer = null,
+        array $args = null
+    ) {
         list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
 
         $original_fq_class_name = $this->classlikes->getUnAliasedName($original_fq_class_name);
@@ -579,10 +584,12 @@ class Methods
             && CallMap::inCallMap($appearing_method_id)
         ) {
             if ($appearing_method_id === 'Closure::fromcallable'
-                && isset($args[0]->value->inferredType)
-                && $args[0]->value->inferredType->isSingle()
+                && isset($args[0])
+                && $statements_analyzer
+                && ($first_arg_type = $statements_analyzer->node_data->getType($args[0]->value))
+                && $first_arg_type->isSingle()
             ) {
-                foreach ($args[0]->value->inferredType->getTypes() as $atomic_type) {
+                foreach ($first_arg_type->getTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TCallable
                         || $atomic_type instanceof Type\Atomic\TFn
                     ) {

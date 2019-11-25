@@ -34,19 +34,23 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            return Type::getMixed();
+        }
+
         $array_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
-        $array_arg_type = null;
+        $array_arg_atomic_type = null;
 
-        if ($array_arg && isset($array_arg->inferredType)) {
-            $arg_types = $array_arg->inferredType->getTypes();
+        if ($array_arg && ($array_arg_type = $statements_source->node_data->getType($array_arg))) {
+            $arg_types = $array_arg_type->getTypes();
 
             if (isset($arg_types['array'])
                 && ($arg_types['array'] instanceof Type\Atomic\TArray
                     || $arg_types['array'] instanceof Type\Atomic\ObjectLike
                     || $arg_types['array'] instanceof Type\Atomic\TList)
             ) {
-                $array_arg_type = $arg_types['array'];
+                $array_arg_atomic_type = $arg_types['array'];
             }
         }
 
@@ -54,19 +58,21 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             $function_call_arg = $call_args[0];
 
             if (count($call_args) === 2) {
-                if ($array_arg_type instanceof Type\Atomic\ObjectLike) {
-                    $generic_key_type = $array_arg_type->getGenericKeyType();
-                } elseif ($array_arg_type instanceof Type\Atomic\TList) {
+                if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike) {
+                    $generic_key_type = $array_arg_atomic_type->getGenericKeyType();
+                } elseif ($array_arg_atomic_type instanceof Type\Atomic\TList) {
                     $generic_key_type = Type::getInt();
                 } else {
-                    $generic_key_type = $array_arg_type ? clone $array_arg_type->type_params[0] : Type::getArrayKey();
+                    $generic_key_type = $array_arg_atomic_type
+                        ? clone $array_arg_atomic_type->type_params[0]
+                        : Type::getArrayKey();
                 }
             } else {
                 $generic_key_type = Type::getInt();
             }
 
-            if (isset($function_call_arg->value->inferredType)
-                && ($closure_types = $function_call_arg->value->inferredType->getClosureTypes())
+            if (($function_call_type = $statements_source->node_data->getType($function_call_arg->value))
+                && ($closure_types = $function_call_type->getClosureTypes())
             ) {
                 $closure_atomic_type = \reset($closure_types);
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
@@ -77,7 +83,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
                 $inner_type = clone $closure_return_type;
 
-                if ($array_arg_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
+                if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
                     return new Type\Union([
                         new Type\Atomic\ObjectLike(
                             array_map(
@@ -87,14 +93,14 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                 function (Type\Union $_) use ($inner_type) {
                                     return clone $inner_type;
                                 },
-                                $array_arg_type->properties
+                                $array_arg_atomic_type->properties
                             )
                         ),
                     ]);
                 }
 
-                if ($array_arg_type instanceof Type\Atomic\TList) {
-                    if ($array_arg_type instanceof Type\Atomic\TNonEmptyList) {
+                if ($array_arg_atomic_type instanceof Type\Atomic\TList) {
+                    if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyList) {
                         return new Type\Union([
                             new Type\Atomic\TNonEmptyList(
                                 $inner_type
@@ -109,7 +115,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     ]);
                 }
 
-                if ($array_arg_type instanceof Type\Atomic\TNonEmptyArray) {
+                if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyArray) {
                     return new Type\Union([
                         new Type\Atomic\TNonEmptyArray([
                             $generic_key_type,
@@ -215,11 +221,10 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     $mapping_return_type = $return_type;
                                 }
                             } else {
-                                if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
-                                    || !$codebase->functions->functionExists(
-                                        $statements_source,
-                                        $mapping_function_id_part
-                                    )
+                                if (!$codebase->functions->functionExists(
+                                    $statements_source,
+                                    $mapping_function_id_part
+                                )
                                 ) {
                                     $mapping_return_type = Type::getMixed();
                                     continue;
@@ -252,7 +257,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 }
 
                 if ($mapping_return_type) {
-                    if ($array_arg_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
+                    if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
                         return new Type\Union([
                             new Type\Atomic\ObjectLike(
                                 array_map(
@@ -262,7 +267,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     function (Type\Union $_) use ($mapping_return_type) {
                                         return clone $mapping_return_type;
                                     },
-                                    $array_arg_type->properties
+                                    $array_arg_atomic_type->properties
                                 )
                             ),
                         ]);

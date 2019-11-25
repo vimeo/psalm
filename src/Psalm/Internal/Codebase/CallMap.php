@@ -49,8 +49,12 @@ class CallMap
      *
      * @return TCallable
      */
-    public static function getCallableFromCallMapById(Codebase $codebase, $method_id, array $args)
-    {
+    public static function getCallableFromCallMapById(
+        Codebase $codebase,
+        $method_id,
+        array $args,
+        ?\Psalm\Internal\Provider\NodeDataProvider $nodes
+    ) {
         $possible_callables = self::getCallablesFromCallMap($method_id);
 
         if ($possible_callables === null) {
@@ -59,7 +63,12 @@ class CallMap
             );
         }
 
-        return self::getMatchingCallableFromCallMapOptions($codebase, $possible_callables, $args);
+        return self::getMatchingCallableFromCallMapOptions(
+            $codebase,
+            $possible_callables,
+            $args,
+            $nodes
+        );
     }
 
     /**
@@ -71,7 +80,8 @@ class CallMap
     public static function getMatchingCallableFromCallMapOptions(
         Codebase $codebase,
         array $callables,
-        array $args
+        array $args,
+        ?\Psalm\NodeTypeProvider $nodes
     ) {
         if (count($callables) === 1) {
             return $callables[0];
@@ -121,11 +131,13 @@ class CallMap
                     continue;
                 }
 
-                if (!isset($arg->value->inferredType)) {
+                $arg_type = null;
+
+                if (!$nodes
+                    || !($arg_type = $nodes->getType($arg->value))
+                ) {
                     continue;
                 }
-
-                $arg_type = $arg->value->inferredType;
 
                 if ($arg_type->hasMixed()) {
                     continue;

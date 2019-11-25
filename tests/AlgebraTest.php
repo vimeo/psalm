@@ -81,7 +81,7 @@ class AlgebraTest extends TestCase
 
         $file_analyzer = new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
         $file_analyzer->context = new Context();
-        $statements_analyzer = new StatementsAnalyzer($file_analyzer);
+        $statements_analyzer = new StatementsAnalyzer($file_analyzer, new \Psalm\Internal\Provider\NodeDataProvider());
 
         $dnf_clauses = Algebra::getFormula(
             $dnf_stmt->expr,

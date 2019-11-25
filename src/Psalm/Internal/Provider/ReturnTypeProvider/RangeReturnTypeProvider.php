@@ -24,6 +24,10 @@ class RangeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            return Type::getMixed();
+        }
+
         $all_ints = true;
         $all_strings = true;
         $all_floats = true;
@@ -34,12 +38,12 @@ class RangeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
             $is_float = false;
             $is_string = false;
 
-            if (isset($call_arg->value->inferredType)) {
-                if ($call_arg->value->inferredType->isInt()) {
+            if ($call_arg_type = $statements_source->node_data->getType($call_arg->value)) {
+                if ($call_arg_type->isInt()) {
                     $is_int = true;
-                } elseif ($call_arg->value->inferredType->isFloat()) {
+                } elseif ($call_arg_type->isFloat()) {
                     $is_float = true;
-                } elseif ($call_arg->value->inferredType->isString()) {
+                } elseif ($call_arg_type->isString()) {
                     $is_string = true;
                 }
             }

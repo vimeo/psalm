@@ -26,6 +26,7 @@ class ReturnTypeCollector
      */
     public static function getReturnTypes(
         \Psalm\Codebase $codebase,
+        \Psalm\Internal\Provider\NodeDataProvider $nodes,
         array $stmts,
         array &$yield_types,
         bool &$ignore_nullable_issues = false,
@@ -38,19 +39,19 @@ class ReturnTypeCollector
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 if ($stmt->expr instanceof PhpParser\Node\Expr\Yield_ ||
                     $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom) {
-                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr));
+                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
                 }
 
                 if (!$stmt->expr) {
                     $return_types[] = new Atomic\TVoid();
-                } elseif (isset($stmt->inferredType)) {
-                    $return_types = array_merge(array_values($stmt->inferredType->getTypes()), $return_types);
+                } elseif ($stmt_type = $nodes->getType($stmt)) {
+                    $return_types = array_merge(array_values($stmt_type->getTypes()), $return_types);
 
-                    if ($stmt->inferredType->ignore_nullable_issues) {
+                    if ($stmt_type->ignore_nullable_issues) {
                         $ignore_nullable_issues = true;
                     }
 
-                    if ($stmt->inferredType->ignore_falsable_issues) {
+                    if ($stmt_type->ignore_falsable_issues) {
                         $ignore_falsable_issues = true;
                     }
                 } else {
@@ -71,11 +72,11 @@ class ReturnTypeCollector
                 && ($stmt->expr instanceof PhpParser\Node\Expr\Yield_
                     || $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom)
             ) {
-                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr));
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
             } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_
                 || $stmt instanceof PhpParser\Node\Expr\YieldFrom
             ) {
-                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt));
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt, $nodes));
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
                 && $stmt->expr instanceof PhpParser\Node\Expr\Assign
             ) {
@@ -83,6 +84,7 @@ class ReturnTypeCollector
                     $return_types,
                     self::getReturnTypes(
                         $codebase,
+                        $nodes,
                         [$stmt->expr->expr],
                         $yield_types,
                         $ignore_nullable_issues,
@@ -96,13 +98,14 @@ class ReturnTypeCollector
                 )
             ) {
                 foreach ($stmt->expr->args as $arg) {
-                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($arg->value));
+                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($arg->value, $nodes));
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
                         $codebase,
+                        $nodes,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -115,6 +118,7 @@ class ReturnTypeCollector
                         $return_types,
                         self::getReturnTypes(
                             $codebase,
+                            $nodes,
                             $elseif->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -128,6 +132,7 @@ class ReturnTypeCollector
                         $return_types,
                         self::getReturnTypes(
                             $codebase,
+                            $nodes,
                             $stmt->else->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -140,6 +145,7 @@ class ReturnTypeCollector
                     $return_types,
                     self::getReturnTypes(
                         $codebase,
+                        $nodes,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -152,6 +158,7 @@ class ReturnTypeCollector
                         $return_types,
                         self::getReturnTypes(
                             $codebase,
+                            $nodes,
                             $catch->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -165,6 +172,7 @@ class ReturnTypeCollector
                         $return_types,
                         self::getReturnTypes(
                             $codebase,
+                            $nodes,
                             $stmt->finally->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -177,6 +185,7 @@ class ReturnTypeCollector
                     $return_types,
                     self::getReturnTypes(
                         $codebase,
+                        $nodes,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -188,6 +197,7 @@ class ReturnTypeCollector
                     $return_types,
                     self::getReturnTypes(
                         $codebase,
+                        $nodes,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -195,11 +205,12 @@ class ReturnTypeCollector
                     )
                 );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
-                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->cond));
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->cond, $nodes));
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
                         $codebase,
+                        $nodes,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -211,6 +222,7 @@ class ReturnTypeCollector
                     $return_types,
                     self::getReturnTypes(
                         $codebase,
+                        $nodes,
                         $stmt->stmts,
                         $yield_types,
                         $ignore_nullable_issues,
@@ -223,6 +235,7 @@ class ReturnTypeCollector
                         $return_types,
                         self::getReturnTypes(
                             $codebase,
+                            $nodes,
                             $case->stmts,
                             $yield_types,
                             $ignore_nullable_issues,
@@ -309,21 +322,23 @@ class ReturnTypeCollector
      *
      * @return  list<Atomic>
      */
-    protected static function getYieldTypeFromExpression(PhpParser\Node\Expr $stmt)
-    {
+    protected static function getYieldTypeFromExpression(
+        PhpParser\Node\Expr $stmt,
+        \Psalm\Internal\Provider\NodeDataProvider $nodes
+    ) {
         if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
             $key_type = null;
 
-            if (isset($stmt->key->inferredType)) {
-                $key_type = $stmt->key->inferredType;
+            if ($stmt->key && ($stmt_key_type = $nodes->getType($stmt->key))) {
+                $key_type = $stmt_key_type;
             }
 
-            if (isset($stmt->inferredType)) {
+            if ($stmt_type = $nodes->getType($stmt)) {
                 $generator_type = new Atomic\TGenericObject(
                     'Generator',
                     [
                         $key_type ?: Type::getInt(),
-                        $stmt->inferredType,
+                        $stmt_type,
                     ]
                 );
 
@@ -332,18 +347,18 @@ class ReturnTypeCollector
 
             return [new Atomic\TMixed()];
         } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
-            if (isset($stmt->expr->inferredType)) {
-                return array_values($stmt->expr->inferredType->getTypes());
+            if ($stmt_expr_type = $nodes->getType($stmt->expr)) {
+                return array_values($stmt_expr_type->getTypes());
             }
 
             return [new Atomic\TMixed()];
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             return array_merge(
-                self::getYieldTypeFromExpression($stmt->left),
-                self::getYieldTypeFromExpression($stmt->right)
+                self::getYieldTypeFromExpression($stmt->left, $nodes),
+                self::getYieldTypeFromExpression($stmt->right, $nodes)
             );
         } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
-            return self::getYieldTypeFromExpression($stmt->expr);
+            return self::getYieldTypeFromExpression($stmt->expr, $nodes);
         }
 
         return [];

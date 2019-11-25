@@ -115,7 +115,7 @@ class PropertyAssignmentAnalyzer
                 return false;
             }
 
-            $lhs_type = isset($stmt->var->inferredType) ? $stmt->var->inferredType : null;
+            $lhs_type = $statements_analyzer->node_data->getType($stmt->var);
 
             if ($lhs_type === null) {
                 return null;
@@ -380,6 +380,10 @@ class PropertyAssignmentAnalyzer
                             unset($context->vars_in_scope[$var_id]);
                         }
 
+                        $old_data_provider = $statements_analyzer->node_data;
+
+                        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
                         $fake_method_call = new PhpParser\Node\Expr\MethodCall(
                             $stmt->var,
                             new PhpParser\Node\Identifier('__set', $stmt->name->getAttributes()),
@@ -412,6 +416,8 @@ class PropertyAssignmentAnalyzer
                         if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
                             $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
                         }
+
+                        $statements_analyzer->node_data = $old_data_provider;
                     }
 
                     /*
@@ -623,9 +629,11 @@ class PropertyAssignmentAnalyzer
                             true
                         );
 
-                        $property_pure_compatible = isset($stmt->var->inferredType)
-                            && $stmt->var->inferredType->external_mutation_free
-                            && !$stmt->var->inferredType->mutation_free;
+                        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+
+                        $property_pure_compatible = $stmt_var_type
+                            && $stmt_var_type->external_mutation_free
+                            && !$stmt_var_type->mutation_free;
 
                         if ($appearing_property_class
                             && !($context->self
@@ -1066,7 +1074,7 @@ class PropertyAssignmentAnalyzer
             $statements_analyzer
         );
 
-        $fq_class_name = (string)$stmt->class->inferredType;
+        $fq_class_name = (string) $statements_analyzer->node_data->getType($stmt->class);
 
         $codebase = $statements_analyzer->getCodebase();
 

@@ -27,6 +27,10 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            return Type::getMixed();
+        }
+
         $inner_value_types = [];
         $inner_key_types = [];
 
@@ -37,11 +41,11 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         $all_nonempty_lists = true;
 
         foreach ($call_args as $call_arg) {
-            if (!isset($call_arg->value->inferredType)) {
+            if (!($call_arg_type = $statements_source->node_data->getType($call_arg->value))) {
                 return Type::getArray();
             }
 
-            foreach ($call_arg->value->inferredType->getTypes() as $type_part) {
+            foreach ($call_arg_type->getTypes() as $type_part) {
                 if ($call_arg->unpack) {
                     if (!$type_part instanceof Type\Atomic\TArray) {
                         if ($type_part instanceof Type\Atomic\ObjectLike) {

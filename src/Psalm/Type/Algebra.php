@@ -91,7 +91,8 @@ class Algebra
         $this_class_name,
         FileSource $source,
         Codebase $codebase = null,
-        bool $inside_negation = false
+        bool $inside_negation = false,
+        bool $cache = true
     ) {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
@@ -101,7 +102,8 @@ class Algebra
                 $this_class_name,
                 $source,
                 $codebase,
-                $inside_negation
+                $inside_negation,
+                $cache
             );
 
             $right_assertions = self::getFormula(
@@ -109,7 +111,8 @@ class Algebra
                 $this_class_name,
                 $source,
                 $codebase,
-                $inside_negation
+                $inside_negation,
+                $cache
             );
 
             return array_merge(
@@ -128,7 +131,8 @@ class Algebra
                 $this_class_name,
                 $source,
                 $codebase,
-                $inside_negation
+                $inside_negation,
+                $cache
             );
 
             $right_clauses = self::getFormula(
@@ -136,7 +140,8 @@ class Algebra
                 $this_class_name,
                 $source,
                 $codebase,
-                $inside_negation
+                $inside_negation,
+                $cache
             );
 
             return self::combineOredClauses($left_clauses, $right_clauses);
@@ -161,24 +166,36 @@ class Algebra
                     $this_class_name,
                     $source,
                     $codebase,
-                    $inside_negation
+                    $inside_negation,
+                    false
                 );
             }
 
             if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_
                 && count($conditional->expr->vars) > 1
             ) {
-                AssertionFinder::scrapeAssertions(
-                    $conditional->expr,
-                    $this_class_name,
-                    $source,
-                    $codebase,
-                    $inside_negation
-                );
+                $assertions = null;
 
-                if (isset($conditional->expr->assertions)) {
-                    $assertions = $conditional->expr->assertions;
+                if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                    $assertions = $source->node_data->getAssertions($conditional->expr);
+                }
 
+                if ($assertions === null) {
+                    $assertions = AssertionFinder::scrapeAssertions(
+                        $conditional->expr,
+                        $this_class_name,
+                        $source,
+                        $codebase,
+                        $inside_negation,
+                        $cache
+                    );
+
+                    if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                        $source->node_data->setAssertions($conditional->expr, $assertions);
+                    }
+                }
+
+                if ($assertions !== null) {
                     $clauses = [];
 
                     foreach ($assertions as $var => $anded_types) {
@@ -218,7 +235,8 @@ class Algebra
                     $this_class_name,
                     $source,
                     $codebase,
-                    $inside_negation
+                    $inside_negation,
+                    false
                 );
             }
         }
@@ -237,7 +255,8 @@ class Algebra
                     $this_class_name,
                     $source,
                     $codebase,
-                    $inside_negation
+                    $inside_negation,
+                    $cache
                 );
             } elseif ($false_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
                 && ($conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
@@ -250,22 +269,34 @@ class Algebra
                     $this_class_name,
                     $source,
                     $codebase,
-                    $inside_negation
+                    $inside_negation,
+                    $cache
                 );
             }
         }
 
-        AssertionFinder::scrapeAssertions(
-            $conditional,
-            $this_class_name,
-            $source,
-            $codebase,
-            $inside_negation
-        );
+        $assertions = null;
 
-        if (isset($conditional->assertions) && $conditional->assertions) {
-            $assertions = $conditional->assertions;
+        if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            $assertions = $source->node_data->getAssertions($conditional);
+        }
 
+        if ($assertions === null) {
+            $assertions = AssertionFinder::scrapeAssertions(
+                $conditional,
+                $this_class_name,
+                $source,
+                $codebase,
+                $inside_negation,
+                $cache
+            );
+
+            if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                $source->node_data->setAssertions($conditional, $assertions);
+            }
+        }
+
+        if ($assertions) {
             $clauses = [];
 
             foreach ($assertions as $var => $anded_types) {

@@ -47,7 +47,7 @@ use Psalm\Internal\Taint\Source;
 /**
  * @internal
  */
-abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements StatementsSource
+abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
     /**
      * @var Closure|Function_|ClassMethod
@@ -122,6 +122,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      */
     public function analyze(
         Context $context,
+        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
         Context $global_context = null,
         $add_mutations = false,
         array $byref_uses = null
@@ -321,13 +322,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 $closure_return_type = Type::getMixed();
             }
 
-            $this->function->inferredType = new Type\Union([
-                new Type\Atomic\TFn(
-                    'Closure',
-                    $storage->params,
-                    $closure_return_type
-                ),
-            ]);
+            $type_provider->setType(
+                $this->function,
+                new Type\Union([
+                    new Type\Atomic\TFn(
+                        'Closure',
+                        $storage->params,
+                        $closure_return_type
+                    ),
+                ])
+            );
         }
 
         $this->suppressed_issues = $this->getSource()->getSuppressedIssues() + $storage->suppressed_issues;
@@ -336,7 +340,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $this->is_static = true;
         }
 
-        $statements_analyzer = new StatementsAnalyzer($this);
+        $statements_analyzer = new StatementsAnalyzer($this, $type_provider);
 
         if ($byref_uses) {
             $statements_analyzer->setByRefUses($byref_uses);
@@ -563,6 +567,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
             $closure_return_types = ReturnTypeCollector::getReturnTypes(
                 $codebase,
+                $type_provider,
                 $this->function->stmts,
                 $closure_yield_types,
                 $ignore_nullable_issues,
@@ -582,12 +587,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                             $storage->return_type
                         ))
                 ) {
-                    if ($this->function->inferredType) {
+                    if ($function_type = $statements_analyzer->node_data->getType($this->function)) {
                         /**
                          * @psalm-suppress PossiblyUndefinedStringArrayOffset
                          * @var Type\Atomic\TFn
                          */
-                        $closure_atomic = \array_values($this->function->inferredType->getTypes())[0];
+                        $closure_atomic = \array_values($function_type->getTypes())[0];
                         $closure_atomic->return_type = $closure_return_type;
                     }
                 }
@@ -1014,9 +1019,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             if ($parser_param->default) {
                 ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
 
-                $default_type = isset($parser_param->default->inferredType)
-                    ? $parser_param->default->inferredType
-                    : null;
+                $default_type = $statements_analyzer->node_data->getType($parser_param->default);
 
                 if ($default_type
                     && !$default_type->hasMixed()
@@ -1255,6 +1258,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         ReturnTypeAnalyzer::verifyReturnType(
             $this->function,
             $statements_analyzer,
+            $statements_analyzer->node_data,
             $this,
             $return_type,
             $fq_class_name,
@@ -1537,6 +1541,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     public function getParentFQCLN()
     {
         return $this->source->getParentFQCLN();
+    }
+
+    public function getNodeTypeProvider() : \Psalm\NodeTypeProvider
+    {
+        return $this->source->getNodeTypeProvider();
     }
 
     /**

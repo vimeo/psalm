@@ -58,6 +58,7 @@ class ReturnTypeAnalyzer
     public static function verifyReturnType(
         FunctionLike $function,
         SourceAnalyzer $source,
+        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
         FunctionLikeAnalyzer $function_like_analyzer,
         Type\Union $return_type = null,
         $fq_class_name = null,
@@ -128,6 +129,7 @@ class ReturnTypeAnalyzer
 
         $inferred_return_type_parts = ReturnTypeCollector::getReturnTypes(
             $codebase,
+            $type_provider,
             $function_stmts,
             $inferred_yield_types,
             $ignore_nullable_issues,
@@ -138,6 +140,7 @@ class ReturnTypeAnalyzer
         if ((!$return_type || $return_type->from_docblock)
             && ScopeAnalyzer::getFinalControlActions(
                 $function_stmts,
+                $type_provider,
                 $codebase->config->exit_functions
             ) !== [ScopeAnalyzer::ACTION_END]
             && !$inferred_yield_types
@@ -160,6 +163,7 @@ class ReturnTypeAnalyzer
             && !$inferred_yield_types
             && ScopeAnalyzer::getFinalControlActions(
                 $function_stmts,
+                $type_provider,
                 $codebase->config->exit_functions
             ) !== [ScopeAnalyzer::ACTION_END]
         ) {
@@ -182,6 +186,7 @@ class ReturnTypeAnalyzer
             && !$inferred_yield_types
             && ScopeAnalyzer::getFinalControlActions(
                 $function_stmts,
+                $type_provider,
                 $codebase->config->exit_functions,
                 false,
                 false

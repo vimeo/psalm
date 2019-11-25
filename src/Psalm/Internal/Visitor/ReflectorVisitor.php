@@ -486,8 +486,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Const_) {
             foreach ($node->consts as $const) {
-                $const_type = StatementsAnalyzer::getSimpleType($this->codebase, $const->value, $this->aliases)
-                    ?: Type::getMixed();
+                $const_type = StatementsAnalyzer::getSimpleType(
+                    $this->codebase,
+                    new \Psalm\Internal\Provider\NodeDataProvider(),
+                    $const->value,
+                    $this->aliases
+                ) ?: Type::getMixed();
 
                 $fq_const_name = Type::getFQCLNFromString($const->name->name, $this->aliases);
 
@@ -803,11 +807,18 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
             $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
             if ($first_arg_value && $second_arg_value) {
-                $const_name = StatementsAnalyzer::getConstName($first_arg_value, $this->codebase, $this->aliases);
+                $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();
+                $const_name = StatementsAnalyzer::getConstName(
+                    $first_arg_value,
+                    $type_provider,
+                    $this->codebase,
+                    $this->aliases
+                );
 
                 if ($const_name !== null) {
                     $const_type = StatementsAnalyzer::getSimpleType(
                         $this->codebase,
+                        $type_provider,
                         $second_arg_value,
                         $this->aliases
                     ) ?: Type::getMixed();
@@ -1832,6 +1843,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     if ($function_stmt instanceof PhpParser\Node\Stmt\If_) {
                         $final_actions = \Psalm\Internal\Analyzer\ScopeAnalyzer::getFinalControlActions(
                             $function_stmt->stmts,
+                            null,
                             $this->config->exit_functions,
                             false,
                             false
@@ -2736,7 +2748,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $is_optional,
             $is_nullable,
             $param->variadic,
-            $param->default ? StatementsAnalyzer::getSimpleType($this->codebase, $param->default, $this->aliases) : null
+            $param->default
+                ? StatementsAnalyzer::getSimpleType(
+                    $this->codebase,
+                    new \Psalm\Internal\Provider\NodeDataProvider(),
+                    $param->default,
+                    $this->aliases
+                )
+                : null
         );
     }
 
@@ -3090,6 +3109,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 if ($property->default) {
                     $property_storage->suggested_type = StatementsAnalyzer::getSimpleType(
                         $this->codebase,
+                        new \Psalm\Internal\Provider\NodeDataProvider(),
                         $property->default,
                         $this->aliases,
                         null,
@@ -3210,6 +3230,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         foreach ($stmt->consts as $const) {
             $const_type = StatementsAnalyzer::getSimpleType(
                 $this->codebase,
+                new \Psalm\Internal\Provider\NodeDataProvider(),
                 $const->value,
                 $this->aliases,
                 null,
@@ -3469,7 +3490,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $path_to_file = $config->base_dir . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
-            $path_to_file = IncludeAnalyzer::getPathTo($stmt->expr, $this->file_path, $this->config);
+            $path_to_file = IncludeAnalyzer::getPathTo(
+                $stmt->expr,
+                null,
+                $this->file_path,
+                $this->config
+            );
         }
 
         if ($path_to_file) {

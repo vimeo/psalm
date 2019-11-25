@@ -347,7 +347,8 @@ class Reflection
                 $callmap_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                     $this->codebase,
                     $function_id,
-                    []
+                    [],
+                    null
                 );
             }
 

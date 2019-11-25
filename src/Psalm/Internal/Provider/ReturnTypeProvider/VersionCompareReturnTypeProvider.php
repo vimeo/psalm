@@ -26,10 +26,14 @@ class VersionCompareReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRet
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        if (count($call_args) > 2) {
-            if (isset($call_args[2]->value->inferredType)) {
-                $operator_type = $call_args[2]->value->inferredType;
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            return Type::getMixed();
+        }
 
+        if (count($call_args) > 2) {
+            $operator_type = $statements_source->node_data->getType($call_args[2]->value);
+
+            if ($operator_type) {
                 if (!$operator_type->hasMixed()) {
                     $acceptable_operator_type = new Type\Union([
                         new Type\Atomic\TLiteralString('<'),

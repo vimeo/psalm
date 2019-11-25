@@ -42,20 +42,20 @@ class ConstFetchAnalyzer
 
         switch (strtolower($const_name)) {
             case 'null':
-                $stmt->inferredType = Type::getNull();
+                $statements_analyzer->node_data->setType($stmt, Type::getNull());
                 break;
 
             case 'false':
                 // false is a subtype of bool
-                $stmt->inferredType = Type::getFalse();
+                $statements_analyzer->node_data->setType($stmt, Type::getFalse());
                 break;
 
             case 'true':
-                $stmt->inferredType = Type::getTrue();
+                $statements_analyzer->node_data->setType($stmt, Type::getTrue());
                 break;
 
             case 'stdin':
-                $stmt->inferredType = Type::getResource();
+                $statements_analyzer->node_data->setType($stmt, Type::getResource());
                 break;
 
             default:
@@ -66,7 +66,7 @@ class ConstFetchAnalyzer
                 );
 
                 if ($const_type) {
-                    $stmt->inferredType = clone $const_type;
+                    $statements_analyzer->node_data->setType($stmt, clone $const_type);
                 } elseif ($context->check_consts) {
                     if (IssueBuffer::accepts(
                         new UndefinedConstant(

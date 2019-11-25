@@ -191,8 +191,8 @@ class ForeachAnalyzer
             $statements_analyzer
         );
 
-        if (isset($stmt->expr->inferredType)) {
-            $iterator_type = $stmt->expr->inferredType;
+        if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+            $iterator_type = $stmt_expr_type;
         } elseif ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
             $iterator_type = $context->vars_in_scope[$var_id];
         } else {
@@ -715,6 +715,10 @@ class ForeachAnalyzer
                         )
                     )
                 ) {
+                    $old_data_provider = $statements_analyzer->node_data;
+
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
                     $fake_method_call = new PhpParser\Node\Expr\MethodCall(
                         $foreach_expr,
                         new PhpParser\Node\Identifier('getIterator', $foreach_expr->getAttributes())
@@ -736,7 +740,9 @@ class ForeachAnalyzer
                         $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
 
-                    $iterator_class_type = $fake_method_call->inferredType ?? null;
+                    $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?: null;
+
+                    $statements_analyzer->node_data = $old_data_provider;
 
                     if ($iterator_class_type) {
                         foreach ($iterator_class_type->getTypes() as $array_atomic_type) {
@@ -835,6 +841,10 @@ class ForeachAnalyzer
                         )
                     )
                 ) {
+                    $old_data_provider = $statements_analyzer->node_data;
+
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
                     $fake_method_call = new PhpParser\Node\Expr\MethodCall(
                         $foreach_expr,
                         new PhpParser\Node\Identifier('current', $foreach_expr->getAttributes())
@@ -856,7 +866,9 @@ class ForeachAnalyzer
                         $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
 
-                    $iterator_class_type = $fake_method_call->inferredType ?? null;
+                    $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?: null;
+
+                    $statements_analyzer->node_data = $old_data_provider;
 
                     if ($iterator_class_type && !$iterator_class_type->isMixed()) {
                         if (!$value_type) {

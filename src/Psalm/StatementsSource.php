@@ -97,4 +97,6 @@ interface StatementsSource extends FileSource
      * @return void
      */
     public function removeSuppressedIssues(array $new_issues);
+
+    public function getNodeTypeProvider() : NodeTypeProvider;
 }

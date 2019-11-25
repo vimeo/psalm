@@ -69,6 +69,7 @@ class ScopeAnalyzer
      */
     public static function getFinalControlActions(
         array $stmts,
+        ?\Psalm\Internal\Provider\NodeDataProvider $nodes,
         array $exit_functions,
         $in_switch = false,
         $return_is_exit = true
@@ -108,8 +109,9 @@ class ScopeAnalyzer
                 }
 
                 // This allows calls to functions that always exit to act as exit statements themselves
-                if (isset($stmt->expr->inferredType)
-                    && $stmt->expr->inferredType->isNever()
+                if ($nodes
+                    && ($stmt_expr_type = $nodes->getType($stmt->expr))
+                    && $stmt_expr_type->isNever()
                 ) {
                     return [self::ACTION_END];
                 }
@@ -164,9 +166,9 @@ class ScopeAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $if_statement_actions = self::getFinalControlActions($stmt->stmts, $exit_functions, $in_switch);
+                $if_statement_actions = self::getFinalControlActions($stmt->stmts, $nodes, $exit_functions, $in_switch);
                 $else_statement_actions = $stmt->else
-                    ? self::getFinalControlActions($stmt->else->stmts, $exit_functions, $in_switch)
+                    ? self::getFinalControlActions($stmt->else->stmts, $nodes, $exit_functions, $in_switch)
                     : [];
 
                 $all_same = count($if_statement_actions) === 1
@@ -179,6 +181,7 @@ class ScopeAnalyzer
                     foreach ($stmt->elseifs as $elseif) {
                         $elseif_control_actions = self::getFinalControlActions(
                             $elseif->stmts,
+                            $nodes,
                             $exit_functions,
                             $in_switch
                         );
@@ -212,7 +215,7 @@ class ScopeAnalyzer
                 for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
                     $case = $stmt->cases[$d];
 
-                    $case_actions = self::getFinalControlActions($case->stmts, $exit_functions, true);
+                    $case_actions = self::getFinalControlActions($case->stmts, $nodes, $exit_functions, true);
 
                     if (array_intersect([
                         self::ACTION_LEAVE_SWITCH,
@@ -250,19 +253,29 @@ class ScopeAnalyzer
             if ($stmt instanceof PhpParser\Node\Stmt\Do_
                 || $stmt instanceof PhpParser\Node\Stmt\While_
             ) {
-                $do_actions = self::getFinalControlActions($stmt->stmts, $exit_functions);
+                $do_actions = self::getFinalControlActions($stmt->stmts, $nodes, $exit_functions);
 
                 $control_actions = array_merge($control_actions, $do_actions);
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                $try_statement_actions = self::getFinalControlActions($stmt->stmts, $exit_functions, $in_switch);
+                $try_statement_actions = self::getFinalControlActions(
+                    $stmt->stmts,
+                    $nodes,
+                    $exit_functions,
+                    $in_switch
+                );
 
                 if ($stmt->catches) {
                     $all_same = count($try_statement_actions) === 1;
 
                     foreach ($stmt->catches as $catch) {
-                        $catch_actions = self::getFinalControlActions($catch->stmts, $exit_functions, $in_switch);
+                        $catch_actions = self::getFinalControlActions(
+                            $catch->stmts,
+                            $nodes,
+                            $exit_functions,
+                            $in_switch
+                        );
 
                         $all_same = $all_same && $try_statement_actions == $catch_actions;
 
@@ -280,6 +293,7 @@ class ScopeAnalyzer
                     if ($stmt->finally->stmts) {
                         $finally_statement_actions = self::getFinalControlActions(
                             $stmt->finally->stmts,
+                            $nodes,
                             $exit_functions,
                             $in_switch
                         );

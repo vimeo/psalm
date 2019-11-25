@@ -28,9 +28,10 @@ class ThrowAnalyzer
             return false;
         }
 
-        if ($context->check_classes && isset($stmt->expr->inferredType) && !$stmt->expr->inferredType->hasMixed()) {
-            $throw_type = $stmt->expr->inferredType;
-
+        if ($context->check_classes
+            && ($throw_type = $statements_analyzer->node_data->getType($stmt->expr))
+            && !$throw_type->hasMixed()
+        ) {
             $exception_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
 
             $file_analyzer = $statements_analyzer->getFileAnalyzer();

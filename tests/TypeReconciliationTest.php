@@ -31,7 +31,10 @@ class TypeReconciliationTest extends TestCase
 
         $this->file_analyzer = new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
         $this->file_analyzer->context = new Context();
-        $this->statements_analyzer = new StatementsAnalyzer($this->file_analyzer);
+        $this->statements_analyzer = new StatementsAnalyzer(
+            $this->file_analyzer,
+            new \Psalm\Internal\Provider\NodeDataProvider()
+        );
     }
 
     /**

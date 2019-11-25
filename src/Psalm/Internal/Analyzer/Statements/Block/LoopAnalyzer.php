@@ -84,7 +84,12 @@ class LoopAnalyzer
             );
         }
 
-        $final_actions = ScopeAnalyzer::getFinalControlActions($stmts, Config::getInstance()->exit_functions);
+        $final_actions = ScopeAnalyzer::getFinalControlActions(
+            $stmts,
+            $statements_analyzer->node_data,
+            Config::getInstance()->exit_functions
+        );
+
         $does_always_break = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
         if ($assignment_map) {
@@ -335,7 +340,11 @@ class LoopAnalyzer
 
                 $traverser = new PhpParser\NodeTraverser;
 
-                $traverser->addVisitor(new \Psalm\Internal\Visitor\NodeCleanerVisitor());
+                $traverser->addVisitor(
+                    new \Psalm\Internal\Visitor\NodeCleanerVisitor(
+                        $statements_analyzer->node_data
+                    )
+                );
                 $traverser->traverse($stmts);
 
                 $statements_analyzer->analyze($stmts, $inner_context);

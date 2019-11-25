@@ -70,6 +70,8 @@ class BinaryOpAnalyzer
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
+        $stmt_type = null;
+
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 20) {
             // ignore deeply-nested string concatenation
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
@@ -333,7 +335,9 @@ class BinaryOpAnalyzer
                 $context->vars_possibly_in_scope
             );
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-            $stmt->inferredType = Type::getString();
+            $stmt_type = Type::getString();
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context) === false) {
                 return false;
@@ -347,22 +351,22 @@ class BinaryOpAnalyzer
                 $sources = [];
                 $either_tainted = 0;
 
-                if (isset($stmt->left->inferredType)) {
-                    $sources = $stmt->left->inferredType->sources ?: [];
-                    $either_tainted = $stmt->left->inferredType->tainted;
+                if ($stmt_left_type = $statements_analyzer->node_data->getType($stmt->left)) {
+                    $sources = $stmt_left_type->sources ?: [];
+                    $either_tainted = $stmt_left_type->tainted;
                 }
 
-                if (isset($stmt->right->inferredType)) {
-                    $sources = array_merge($sources, $stmt->right->inferredType->sources ?: []);
-                    $either_tainted = $either_tainted | $stmt->right->inferredType->tainted;
+                if ($stmt_right_type = $statements_analyzer->node_data->getType($stmt->right)) {
+                    $sources = array_merge($sources, $stmt_right_type->sources ?: []);
+                    $either_tainted = $either_tainted | $stmt_right_type->tainted;
                 }
 
                 if ($sources) {
-                    $stmt->inferredType->sources = $sources;
+                    $stmt_type->sources = $sources;
                 }
 
                 if ($either_tainted) {
-                    $stmt->inferredType->tainted = $either_tainted;
+                    $stmt_type->tainted = $either_tainted;
                 }
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
@@ -448,7 +452,7 @@ class BinaryOpAnalyzer
                 IssueBuffer::clearRecordingLevel();
                 IssueBuffer::stopRecording();
 
-                $naive_type = $stmt->left->inferredType ?? null;
+                $naive_type = $statements_analyzer->node_data->getType($stmt->left);
 
                 if ($naive_type
                     && !$naive_type->hasMixed()
@@ -545,10 +549,10 @@ class BinaryOpAnalyzer
 
             $lhs_type = null;
 
-            if (isset($stmt->left->inferredType)) {
+            if ($stmt_left_type = $statements_analyzer->node_data->getType($stmt->left)) {
                 $if_return_type_reconciled = AssertionReconciler::reconcile(
                     '!null',
-                    $stmt->left->inferredType,
+                    $stmt_left_type,
                     '',
                     $statements_analyzer,
                     $context->inside_loop,
@@ -560,10 +564,16 @@ class BinaryOpAnalyzer
                 $lhs_type = $if_return_type_reconciled;
             }
 
-            if (!$lhs_type || !isset($stmt->right->inferredType)) {
-                $stmt->inferredType = Type::getMixed();
+            $stmt_right_type = null;
+
+            if (!$lhs_type || !($stmt_right_type = $statements_analyzer->node_data->getType($stmt->right))) {
+                $stmt_type = Type::getMixed();
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
             } else {
-                $stmt->inferredType = Type::combineUnionTypes($lhs_type, $stmt->right->inferredType);
+                $stmt_type = Type::combineUnionTypes($lhs_type, $stmt_right_type);
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
             }
         } else {
             if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
@@ -587,22 +597,27 @@ class BinaryOpAnalyzer
             }
         }
 
+        $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
+        $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
+
         // let's do some fun type assignment
-        if (isset($stmt->left->inferredType) && isset($stmt->right->inferredType)) {
-            if ($stmt->left->inferredType->hasString()
-                && $stmt->right->inferredType->hasString()
+        if ($stmt_left_type && $stmt_right_type) {
+            if ($stmt_left_type->hasString()
+                && $stmt_right_type->hasString()
                 && ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
                 )
             ) {
-                $stmt->inferredType = Type::getString();
+                $stmt_type = Type::getString();
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mod
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
-                || (($stmt->left->inferredType->hasInt() || $stmt->right->inferredType->hasInt())
+                || (($stmt_left_type->hasInt() || $stmt_right_type->hasInt())
                     && ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
                         || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
                         || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
@@ -613,6 +628,7 @@ class BinaryOpAnalyzer
             ) {
                 self::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
+                    $statements_analyzer->node_data,
                     $stmt->left,
                     $stmt->right,
                     $stmt,
@@ -621,19 +637,20 @@ class BinaryOpAnalyzer
                 );
 
                 if ($result_type) {
-                    $stmt->inferredType = $result_type;
+                    $statements_analyzer->node_data->setType($stmt, $result_type);
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
-                && ($stmt->left->inferredType->hasBool() || $stmt->right->inferredType->hasBool())
+                && ($stmt_left_type->hasBool() || $stmt_right_type->hasBool())
             ) {
-                $stmt->inferredType = Type::getInt();
+                $statements_analyzer->node_data->setType($stmt, Type::getInt());
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
-                && ($stmt->left->inferredType->hasBool() || $stmt->right->inferredType->hasBool())
+                && ($stmt_left_type->hasBool() || $stmt_right_type->hasBool())
             ) {
-                $stmt->inferredType = Type::getBool();
+                $statements_analyzer->node_data->setType($stmt, Type::getBool());
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                 self::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
+                    $statements_analyzer->node_data,
                     $stmt->left,
                     $stmt->right,
                     $stmt,
@@ -646,7 +663,7 @@ class BinaryOpAnalyzer
                         $result_type->addType(new TFloat);
                     }
 
-                    $stmt->inferredType = $result_type;
+                    $statements_analyzer->node_data->setType($stmt, $result_type);
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
                 self::analyzeConcatOp(
@@ -658,27 +675,30 @@ class BinaryOpAnalyzer
                 );
 
                 if ($result_type) {
-                    $stmt->inferredType = $result_type;
+                    $stmt_type = $result_type;
+
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 }
 
-                if ($codebase->taint && $stmt->inferredType) {
-                    $sources = $stmt->left->inferredType->sources ?: [];
-                    $either_tainted = $stmt->left->inferredType->tainted;
+                if ($codebase->taint && $stmt_type) {
+                    $sources = $stmt_left_type->sources ?: [];
+                    $either_tainted = $stmt_left_type->tainted;
 
-                    $sources = array_merge($sources, $stmt->right->inferredType->sources ?: []);
-                    $either_tainted = $either_tainted | $stmt->right->inferredType->tainted;
+                    $sources = array_merge($sources, $stmt_right_type->sources ?: []);
+                    $either_tainted = $either_tainted | $stmt_right_type->tainted;
 
                     if ($sources) {
-                        $stmt->inferredType->sources = $sources;
+                        $stmt_type->sources = $sources;
                     }
 
                     if ($either_tainted) {
-                        $stmt->inferredType->tainted = $either_tainted;
+                        $stmt_type->tainted = $either_tainted;
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
                 self::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
+                    $statements_analyzer->node_data,
                     $stmt->left,
                     $stmt->right,
                     $stmt,
@@ -701,11 +721,11 @@ class BinaryOpAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
         ) {
-            $stmt->inferredType = Type::getBool();
+            $statements_analyzer->node_data->setType($stmt, Type::getBool());
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
-            $stmt->inferredType = Type::getInt();
+            $statements_analyzer->node_data->setType($stmt, Type::getInt());
         }
 
         return null;
@@ -728,6 +748,7 @@ class BinaryOpAnalyzer
 
     public static function analyzeNonDivArithmeticOp(
         ?StatementsSource $statements_source,
+        \Psalm\Internal\Provider\NodeDataProvider $nodes,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,
@@ -736,8 +757,8 @@ class BinaryOpAnalyzer
     ) : void {
         $codebase = $statements_source ? $statements_source->getCodebase() : null;
 
-        $left_type = isset($left->inferredType) ? $left->inferredType : null;
-        $right_type = isset($right->inferredType) ? $right->inferredType : null;
+        $left_type = $nodes->getType($left);
+        $right_type = $nodes->getType($right);
         $config = Config::getInstance();
 
         if ($left_type && $right_type) {
@@ -1334,8 +1355,8 @@ class BinaryOpAnalyzer
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
-        $left_type = isset($left->inferredType) ? $left->inferredType : null;
-        $right_type = isset($right->inferredType) ? $right->inferredType : null;
+        $left_type = $statements_analyzer->node_data->getType($left);
+        $right_type = $statements_analyzer->node_data->getType($right);
         $config = Config::getInstance();
 
         if ($left_type && $right_type) {

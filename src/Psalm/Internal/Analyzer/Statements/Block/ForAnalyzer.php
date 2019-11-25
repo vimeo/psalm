@@ -87,8 +87,8 @@ class ForAnalyzer
         $always_enters_loop = false;
 
         foreach ($stmt->cond as $cond) {
-            if (isset($cond->inferredType)) {
-                foreach ($cond->inferredType->getTypes() as $iterator_type) {
+            if ($cond_type = $statements_analyzer->node_data->getType($cond)) {
+                foreach ($cond_type->getTypes() as $iterator_type) {
                     $always_enters_loop = $iterator_type instanceof Type\Atomic\TTrue;
 
                     break;

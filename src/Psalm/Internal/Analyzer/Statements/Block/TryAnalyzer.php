@@ -49,6 +49,7 @@ class TryAnalyzer
         foreach ($stmt->catches as $i => $catch) {
             $catch_actions[$i] = ScopeAnalyzer::getFinalControlActions(
                 $catch->stmts,
+                $statements_analyzer->node_data,
                 $codebase->config->exit_functions
             );
             $all_catches_leave = $all_catches_leave && !in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
@@ -87,6 +88,7 @@ class TryAnalyzer
 
         $stmt_control_actions = ScopeAnalyzer::getFinalControlActions(
             $stmt->stmts,
+            $statements_analyzer->node_data,
             $codebase->config->exit_functions,
             $context->inside_case
         );
@@ -346,6 +348,7 @@ class TryAnalyzer
             // recalculate in case there's a no-return clause
             $catch_actions[$i] = ScopeAnalyzer::getFinalControlActions(
                 $catch->stmts,
+                $statements_analyzer->node_data,
                 $codebase->config->exit_functions,
                 $context->inside_case
             );

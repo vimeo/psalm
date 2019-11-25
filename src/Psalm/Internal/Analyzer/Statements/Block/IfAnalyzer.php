@@ -691,6 +691,7 @@ class IfAnalyzer
 
         $final_actions = ScopeAnalyzer::getFinalControlActions(
             $stmt->stmts,
+            $statements_analyzer->node_data,
             $codebase->config->exit_functions,
             $outer_context->inside_case
         );
@@ -1178,6 +1179,7 @@ class IfAnalyzer
 
         $final_actions = ScopeAnalyzer::getFinalControlActions(
             $elseif->stmts,
+            $statements_analyzer->node_data,
             $codebase->config->exit_functions,
             $outer_context->inside_case
         );
@@ -1526,6 +1528,7 @@ class IfAnalyzer
         $final_actions = $else
             ? ScopeAnalyzer::getFinalControlActions(
                 $else->stmts,
+                $statements_analyzer->node_data,
                 $codebase->config->exit_functions,
                 $outer_context->inside_case
             )

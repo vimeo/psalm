@@ -26,9 +26,13 @@ class MktimeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeP
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            return Type::getMixed();
+        }
+
         foreach ($call_args as $call_arg) {
-            if (!isset($call_arg->value->inferredType)
-                || !$call_arg->value->inferredType->isInt()
+            if (!($call_arg_type = $statements_source->node_data->getType($call_arg->value))
+                || !$call_arg_type->isInt()
             ) {
                 $value_type = new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFalse]);
 

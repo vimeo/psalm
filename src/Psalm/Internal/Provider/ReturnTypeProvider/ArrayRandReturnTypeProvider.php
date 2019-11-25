@@ -24,13 +24,17 @@ class ArrayRandReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            return Type::getMixed();
+        }
+
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
         $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
         $first_arg_array = $first_arg
-            && isset($first_arg->inferredType)
-            && $first_arg->inferredType->hasType('array')
-            && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
+            && ($first_arg_type = $statements_source->node_data->getType($first_arg))
+            && $first_arg_type->hasType('array')
+            && ($array_atomic_type = $first_arg_type->getTypes()['array'])
             && ($array_atomic_type instanceof Type\Atomic\TArray
                 || $array_atomic_type instanceof Type\Atomic\ObjectLike
                 || $array_atomic_type instanceof Type\Atomic\TList)

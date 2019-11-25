@@ -26,14 +26,18 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            return Type::getMixed();
+        }
+
         $row_shape = null;
 
         // calculate row shape
-        if (isset($call_args[0]->value->inferredType)
-            && $call_args[0]->value->inferredType->isSingle()
-            && $call_args[0]->value->inferredType->hasArray()
+        if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
+            && $first_arg_type->isSingle()
+            && $first_arg_type->hasArray()
         ) {
-            $input_array = $call_args[0]->value->inferredType->getTypes()['array'];
+            $input_array = $first_arg_type->getTypes()['array'];
             if ($input_array instanceof Type\Atomic\ObjectLike) {
                 $row_type = $input_array->getGenericArrayType()->type_params[1];
                 if ($row_type->isSingle() && $row_type->hasArray()) {
@@ -54,23 +58,23 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
         $value_column_name = null;
         // calculate value column name
-        if (isset($call_args[1]->value->inferredType)) {
-            $value_column_name_arg = $call_args[1]->value->inferredType;
-            if ($value_column_name_arg->isSingleIntLiteral()) {
-                $value_column_name = $value_column_name_arg->getSingleIntLiteral()->value;
-            } elseif ($value_column_name_arg->isSingleStringLiteral()) {
-                $value_column_name = $value_column_name_arg->getSingleStringLiteral()->value;
+        if (($second_arg_type = $statements_source->node_data->getType($call_args[1]->value))) {
+            if ($second_arg_type->isSingleIntLiteral()) {
+                $value_column_name = $second_arg_type->getSingleIntLiteral()->value;
+            } elseif ($second_arg_type->isSingleStringLiteral()) {
+                $value_column_name = $second_arg_type->getSingleStringLiteral()->value;
             }
         }
 
         $key_column_name = null;
         // calculate key column name
-        if (isset($call_args[2]->value->inferredType)) {
-            $key_column_name_arg = $call_args[2]->value->inferredType;
-            if ($key_column_name_arg->isSingleIntLiteral()) {
-                $key_column_name = $key_column_name_arg->getSingleIntLiteral()->value;
-            } elseif ($key_column_name_arg->isSingleStringLiteral()) {
-                $key_column_name = $key_column_name_arg->getSingleStringLiteral()->value;
+        if (isset($call_args[2])
+            && ($third_arg_type = $statements_source->node_data->getType($call_args[2]->value))
+        ) {
+            if ($third_arg_type->isSingleIntLiteral()) {
+                $key_column_name = $third_arg_type->getSingleIntLiteral()->value;
+            } elseif ($third_arg_type->isSingleStringLiteral()) {
+                $key_column_name = $third_arg_type->getSingleStringLiteral()->value;
             }
         }
 

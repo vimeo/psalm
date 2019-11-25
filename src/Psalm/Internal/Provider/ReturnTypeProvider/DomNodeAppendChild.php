@@ -30,11 +30,15 @@ class DomNodeAppendChild implements \Psalm\Plugin\Hook\MethodReturnTypeProviderI
         string $called_fq_classlike_name = null,
         string $called_method_name_lowercase = null
     ) {
+        if (!$source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            return Type::getMixed();
+        }
+
         if ($method_name_lowercase === 'appendchild'
-            && isset($call_args[0]->value->inferredType)
-            && $call_args[0]->value->inferredType->hasObjectType()
+            && ($first_arg_type = $source->node_data->getType($call_args[0]->value))
+            && $first_arg_type->hasObjectType()
         ) {
-            return clone $call_args[0]->value->inferredType;
+            return clone $first_arg_type;
         }
     }
 }

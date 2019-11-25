@@ -217,4 +217,9 @@ abstract class SourceAnalyzer implements StatementsSource
     {
         return $this->source->getTemplateTypeMap();
     }
+
+    public function getNodeTypeProvider() : \Psalm\NodeTypeProvider
+    {
+        return $this->source->getNodeTypeProvider();
+    }
 }

@@ -380,7 +380,8 @@ class Functions
         $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
             $codebase,
             $function_id,
-            $args ?: []
+            $args ?: [],
+            null
         );
 
         if (!$function_callable->params
