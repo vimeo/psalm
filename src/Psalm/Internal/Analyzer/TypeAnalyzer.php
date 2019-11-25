@@ -1962,6 +1962,7 @@ class TypeAnalyzer
                         $all_types_contain = false;
                     }
                 } elseif (!$input_type_part instanceof TIterable
+                    && !$container_type_part instanceof TIterable
                     && !$container_param->hasTemplate()
                     && !$input_param->hasTemplate()
                 ) {
