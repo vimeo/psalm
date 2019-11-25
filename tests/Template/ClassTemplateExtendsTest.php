@@ -2411,7 +2411,7 @@ class ClassTemplateExtendsTest extends TestCase
                         $anInt = $maybe->extract();
                     }'
             ],
-           'extendIterable' => [
+            'extendIterable' => [
                 '<?php
                     class MyTestCase {
                         /** @return iterable<int,array<int,int>> */
