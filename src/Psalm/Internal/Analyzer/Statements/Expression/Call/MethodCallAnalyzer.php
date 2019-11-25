@@ -701,6 +701,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $args = $stmt->args;
 
+        $old_node_data = null;
+
         if (!$codebase->methods->methodExists(
             $method_id,
             $context->calling_method_id,
@@ -820,6 +822,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     },
                     $args
                 );
+
+                $old_node_data = $statements_analyzer->node_data;
+                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
                 $args = [
                     new PhpParser\Node\Arg(new PhpParser\Node\Scalar\String_($method_name_lc)),
@@ -1404,6 +1409,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
             }
+        }
+
+        if ($old_node_data) {
+            $statements_analyzer->node_data = $old_node_data;
         }
 
         if (!$args && $lhs_var_id) {
