@@ -644,6 +644,13 @@ class IssetTest extends TestCase
                         echo isset($port) ? "cool" : "uncool";
                     }',
             ],
+            'listDestructuringErrorSuppress' => [
+                '<?php
+                    function foo(string $s) : string {
+                        @list($port, $starboard) = explode(":", $s);
+                        return $port;
+                    }',
+            ],
         ];
     }
 
@@ -685,6 +692,14 @@ class IssetTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArrayOffset',
+            ],
+            'listDestructuringErrorSuppress' => [
+                '<?php
+                    function foo(string $s) : string {
+                        @list($port) = explode(":", $s, -1);
+                        return $port;
+                    }',
+                'error_message' => 'NullableReturnStatement',
             ],
         ];
     }

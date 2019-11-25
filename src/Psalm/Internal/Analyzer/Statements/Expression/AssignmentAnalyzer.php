@@ -434,6 +434,8 @@ class AssignmentAnalyzer
                 }
             }
 
+            $can_be_empty = true;
+
             foreach ($assign_var->items as $offset => $assign_var_item) {
                 // $assign_var_item can be null e.g. list($a, ) = ['a', 'b']
                 if (!$assign_var_item) {
@@ -559,8 +561,12 @@ class AssignmentAnalyzer
 
                         if ($assign_value_atomic_type instanceof Type\Atomic\TArray) {
                             $new_assign_type = clone $assign_value_atomic_type->type_params[1];
+
+                            $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyArray;
                         } elseif ($assign_value_atomic_type instanceof Type\Atomic\TList) {
                             $new_assign_type = clone $assign_value_atomic_type->type_param;
+
+                            $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyList;
                         } elseif ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike) {
                             if ($assign_var_item->key
                                 && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
@@ -584,6 +590,8 @@ class AssignmentAnalyzer
                                     $new_assign_type->possibly_undefined = false;
                                 }
                             }
+
+                            $can_be_empty = !$assign_value_atomic_type->sealed;
                         } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
                             ForeachAnalyzer::getKeyValueParamsForTraversableObject(
                                 $assign_value_atomic_type,
@@ -642,7 +650,7 @@ class AssignmentAnalyzer
                 if ($list_var_id) {
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
 
-                    if ($context->error_suppressing) {
+                    if ($context->error_suppressing && ($offset || $can_be_empty)) {
                         $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
                     }
                 }
