@@ -2072,6 +2072,89 @@ class FunctionCallTest extends TestCase
                     $mysqli = mysqli_init();
                     mysqli_real_connect($mysqli, null, \'test\', null);',
             ],
+            'arrayPad' => [
+                '<?php
+                    $a = array_pad(["foo" => 1, "bar" => 2], 10, 123);
+                    $b = array_pad(["a", "b", "c"], 10, "x");
+                    /** @var list<int> $list */
+                    $c = array_pad($list, 10, 0);
+                    /** @var array<string, string> $array */
+                    $d = array_pad($array, 10, "");',
+                'assertions' => [
+                    '$a' => 'non-empty-array<int|string, int>',
+                    '$b' => 'non-empty-list<string>',
+                    '$c' => 'non-empty-list<int>',
+                    '$d' => 'non-empty-array<int|string, string>',
+                ],
+            ],
+            'arrayPadDynamicSize' => [
+                '<?php
+                    function getSize(): int { return random_int(1, 10); }
+
+                    $a = array_pad(["foo" => 1, "bar" => 2], getSize(), 123);
+                    $b = array_pad(["a", "b", "c"], getSize(), "x");
+                    /** @var list<int> $list */
+                    $c = array_pad($list, getSize(), 0);
+                    /** @var array<string, string> $array */
+                    $d = array_pad($array, getSize(), "");',
+                'assertions' => [
+                    '$a' => 'array<int|string, int>',
+                    '$b' => 'list<string>',
+                    '$c' => 'list<int>',
+                    '$d' => 'array<int|string, string>',
+                ],
+            ],
+            'arrayPadZeroSize' => [
+                '<?php
+                    /** @var array $arr */
+                    $result = array_pad($arr, 0, null);',
+                'assertions' => [
+                    '$result' => 'array<array-key, mixed|null>',
+                ],
+            ],
+            'arrayPadTypeCombination' => [
+                '<?php
+                    $a = array_pad(["foo" => 1, "bar" => "two"], 5, false);
+                    $b = array_pad(["a", 2, 3.14], 5, null);
+                    /** @var list<string|bool> $list */
+                    $c = array_pad($list, 5, 0);
+                    /** @var array<string, string> $array */
+                    $d = array_pad($array, 5, null);',
+                'assertions' => [
+                    '$a' => 'non-empty-array<int|string, false|int|string>',
+                    '$b' => 'non-empty-list<float|int|null|string>',
+                    '$c' => 'non-empty-list<bool|int|string>',
+                    '$d' => 'non-empty-array<int|string, null|string>',
+                ],
+            ],
+            'arrayPadMixed' => [
+                '<?php
+                    /** @var array{foo: mixed, bar: mixed} $arr */
+                    $a = array_pad($arr, 5, null);
+                    /** @var mixed $mixed */
+                    $b = array_pad([$mixed, $mixed], 5, null);
+                    /** @var list $list */
+                    $c = array_pad($list, 5, null);
+                    /** @var mixed[] $array */
+                    $d = array_pad($array, 5, null);',
+                'assertions' => [
+                    '$a' => 'non-empty-array<int|string, mixed|null>',
+                    '$b' => 'non-empty-list<mixed|null>',
+                    '$c' => 'non-empty-list<mixed|null>',
+                    '$d' => 'non-empty-array<array-key, mixed|null>',
+                ],
+            ],
+            'arrayPadFallback' => [
+                '<?php
+                    /**
+                     * @var mixed $mixed
+                     * @psalm-suppress MixedArgument
+                     */
+                    $result = array_pad($mixed, $mixed, $mixed);',
+                'assertions' => [
+                    '$result' => 'array<array-key, mixed>',
+                ],
+            ],
         ];
     }
 

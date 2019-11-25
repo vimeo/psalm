@@ -35,6 +35,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\ArrayFilterReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayMapReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayMergeReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayPadReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayPointerAdjustmentReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayPopReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayRandReturnTypeProvider::class);
