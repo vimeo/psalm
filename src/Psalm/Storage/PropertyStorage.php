@@ -10,14 +10,14 @@ class PropertyStorage
     use CustomMetadataTrait;
 
     /**
-     * @var bool
+     * @var ?bool
      */
     public $is_static;
 
     /**
      * @var int
      */
-    public $visibility;
+    public $visibility = 0;
 
     /**
      * @var CodeLocation|null

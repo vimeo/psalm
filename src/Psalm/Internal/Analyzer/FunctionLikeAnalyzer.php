@@ -751,6 +751,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!($storage instanceof MethodStorage)
+                || !$storage->cased_name
                 || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 if ($this->function instanceof Closure) {
@@ -804,6 +805,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($storage instanceof MethodStorage
             && $class_storage
+            && $storage->cased_name
             && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
         ) {
             $method_id_lc = strtolower($this->getMethodId());
@@ -816,7 +818,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $method_id_lc
                     );
 
-                    /** @var ClassMethod $this->function */
                     $method_name_lc = strtolower($storage->cased_name);
 
                     if (!isset($class_storage->overridden_method_ids[$method_name_lc])) {

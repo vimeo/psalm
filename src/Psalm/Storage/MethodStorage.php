@@ -6,22 +6,22 @@ class MethodStorage extends FunctionLikeStorage
     /**
      * @var bool
      */
-    public $is_static;
+    public $is_static = false;
 
     /**
      * @var int
      */
-    public $visibility;
+    public $visibility = 0;
 
     /**
      * @var bool
      */
-    public $final;
+    public $final = false;
 
     /**
      * @var bool
      */
-    public $abstract;
+    public $abstract = false;
 
     /**
      * @var bool
@@ -44,7 +44,7 @@ class MethodStorage extends FunctionLikeStorage
     public $inherited_return_type = false;
 
     /**
-     * @var string
+     * @var ?string
      */
     public $defining_fqcln;
 

@@ -25,6 +25,11 @@ class CaseScope
      */
     public $break_vars;
 
+    public function __construct(Context $parent_context)
+    {
+        $this->parent_context = $parent_context;
+    }
+
     public function __destruct()
     {
         /** @psalm-suppress PossiblyNullPropertyAssignmentValue */

@@ -638,8 +638,13 @@ class Scanner
 
             if ($this->codebase->register_autoload_files) {
                 foreach ($file_storage->functions as $function_storage) {
-                    if (!$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)) {
-                        $this->codebase->functions->addGlobalFunction($function_storage->cased_name, $function_storage);
+                    if ($function_storage->cased_name
+                        && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
+                    ) {
+                        $this->codebase->functions->addGlobalFunction(
+                            $function_storage->cased_name,
+                            $function_storage
+                        );
                     }
                 }
 

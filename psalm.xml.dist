@@ -49,18 +49,13 @@
     </plugins>
 
     <issueHandlers>
-        <MisplacedRequiredParam errorLevel="suppress"/>
         <PossiblyNullOperand errorLevel="suppress"/>
-        <MissingConstructor>
+
+        <DeprecatedMethod>
             <errorLevel type="suppress">
-                <file name="src/Psalm/Internal/Scanner/FunctionDocblockComment.php"/>
-                <file name="src/Psalm/Storage/FunctionLikeStorage.php"/>
-                <file name="src/Psalm/Storage/MethodStorage.php"/>
-                <file name="src/Psalm/Storage/PropertyStorage.php"/>
-                <file name="src/Psalm/Internal/Scope/CaseScope.php"/>
+                <directory name="tests" />
             </errorLevel>
-        </MissingConstructor>
-        <DeprecatedProperty errorLevel="suppress"/>
+        </DeprecatedMethod>
 
         <DeprecatedMethod>
             <errorLevel type="suppress">

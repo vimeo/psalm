@@ -527,7 +527,7 @@ class Methods
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        return $this->classlike_storage_provider->get($fq_class_name)->methods[$method_name]->variadic;
+        return $this->classlike_storage_provider->get($fq_class_name)->methods[$method_name ?: '']->variadic;
     }
 
     /**

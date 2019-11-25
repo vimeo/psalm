@@ -57,7 +57,7 @@ class FunctionLikeStorage
     public $signature_return_type_location;
 
     /**
-     * @var string
+     * @var ?string
      */
     public $cased_name;
 
@@ -67,12 +67,12 @@ class FunctionLikeStorage
     public $suppressed_issues = [];
 
     /**
-     * @var bool
+     * @var ?bool
      */
     public $deprecated;
 
     /**
-     * @var bool
+     * @var ?bool
      */
     public $internal;
 
@@ -84,7 +84,7 @@ class FunctionLikeStorage
     /**
      * @var bool
      */
-    public $variadic;
+    public $variadic = false;
 
     /**
      * @var bool
@@ -92,7 +92,7 @@ class FunctionLikeStorage
     public $returns_by_ref = false;
 
     /**
-     * @var int
+     * @var ?int
      */
     public $required_param_count;
 

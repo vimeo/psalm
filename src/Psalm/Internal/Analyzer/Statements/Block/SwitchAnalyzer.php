@@ -259,9 +259,7 @@ class SwitchAnalyzer
         }
 
         $case_context->parent_context = $context;
-        $case_scope = $case_context->case_scope = new CaseScope();
-
-        $case_scope->parent_context = $case_context;
+        $case_scope = $case_context->case_scope = new CaseScope($case_context);
 
         $case_equality_expr = null;
 

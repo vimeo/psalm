@@ -94,6 +94,10 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                 $function_id
             );
 
+            if (!$function_storage->cased_name) {
+                return;
+            }
+
             $function_name_parts = explode('\\', $function_storage->cased_name);
 
             if (end($function_name_parts) !== end($expr->name->parts)) {
