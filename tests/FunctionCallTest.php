@@ -1123,19 +1123,23 @@ class FunctionCallTest extends TestCase
                     $c = array_column([["k" => "a", "v" => 1], ["k" => "b", "v" => 2]], "v", "k");
                     $d = array_column([], 0);
                     $e = array_column(makeMixedArray(), 0);
-                    $f = array_column(makeGenericArray(), 0);
-                    $g = array_column(makeShapeArray(), 0);
-                    $h = array_column(makeUnionArray(), 0);
+                    $f = array_column(makeMixedArray(), 0, "k");
+                    $g = array_column(makeMixedArray(), 0, null);
+                    $h = array_column(makeGenericArray(), 0);
+                    $i = array_column(makeShapeArray(), 0);
+                    $j = array_column(makeUnionArray(), 0);
                 ',
                 'assertions' => [
-                    '$a' => 'array<array-key, int>',
-                    '$b' => 'array<array-key, int>',
+                    '$a' => 'list<int>',
+                    '$b' => 'list<int>',
                     '$c' => 'array<string, int>',
-                    '$d' => 'array<array-key, mixed>',
-                    '$e' => 'array<array-key, mixed>',
+                    '$d' => 'list<mixed>',
+                    '$e' => 'list<mixed>',
                     '$f' => 'array<array-key, mixed>',
-                    '$g' => 'array<array-key, string>',
-                    '$h' => 'array<array-key, mixed>',
+                    '$g' => 'list<mixed>',
+                    '$h' => 'list<mixed>',
+                    '$i' => 'list<string>',
+                    '$j' => 'list<mixed>',
                 ],
             ],
             'strtrWithPossiblyFalseFirstArg' => [

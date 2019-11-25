@@ -67,6 +67,7 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         }
 
         $key_column_name = null;
+        $third_arg_type = null;
         // calculate key column name
         if (isset($call_args[2])
             && ($third_arg_type = $statements_source->node_data->getType($call_args[2]->value))
@@ -93,19 +94,10 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             }
         }
 
-        if ($result_element_type) {
-            return new Type\Union([
-                new Type\Atomic\TArray([
-                    $result_key_type,
-                    $result_element_type,
-                ]),
-            ]);
-        }
-
-        $callmap_callables = CallMap::getCallablesFromCallMap($function_id);
-
-        assert($callmap_callables && $callmap_callables[0]->return_type);
-
-        return $callmap_callables[0]->return_type;
+        return new Type\Union([
+            isset($call_args[2]) && (string) $third_arg_type !== 'null'
+                ? new Type\Atomic\TArray([$result_key_type, $result_element_type ?? Type::getMixed()])
+                : new Type\Atomic\TList($result_element_type ?? Type::getMixed())
+        ]);
     }
 }
