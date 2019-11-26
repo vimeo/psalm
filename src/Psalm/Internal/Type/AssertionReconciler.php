@@ -2125,6 +2125,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Type\Union {
         $matching_atomic_types = [];
 
+        $has_cloned_type = false;
+
         foreach ($new_type->getTypes() as $new_type_part) {
             $has_local_match = false;
 
@@ -2165,6 +2167,42 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 } elseif ($atomic_comparison_results->type_coerced) {
                     $has_local_match = true;
                     $matching_atomic_types[] = $existing_type_part;
+                }
+
+                if ($new_type_part instanceof Type\Atomic\ObjectLike
+                    && $existing_type_part instanceof Type\Atomic\TList
+                ) {
+                    $new_type_key = $new_type_part->getGenericKeyType();
+                    $new_type_value = $new_type_part->getGenericValueType();
+
+                    if (!$new_type_key->hasString()) {
+                        $has_param_match = false;
+
+                        $new_type_value = self::filterTypeWithAnother(
+                            $codebase,
+                            $existing_type_part->type_param,
+                            $new_type_value,
+                            $template_type_map,
+                            $has_param_match,
+                            $any_scalar_type_match_found
+                        );
+
+                        $hybrid_type_part = new Type\Atomic\ObjectLike($new_type_part->properties);
+                        $hybrid_type_part->previous_key_type = Type::getInt();
+                        $hybrid_type_part->previous_value_type = $new_type_value;
+                        $hybrid_type_part->is_list = true;
+
+                        if (!$has_cloned_type) {
+                            $new_type = clone $new_type;
+                        }
+
+                        $has_local_match = true;
+
+                        $new_type->removeType($key);
+                        $new_type->addType($hybrid_type_part);
+
+                        continue;
+                    }
                 }
 
                 if (($new_type_part instanceof Type\Atomic\TGenericObject
@@ -2232,6 +2270,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             }
                         )
                     ) {
+                        if (!$has_cloned_type) {
+                            $new_type = clone $new_type;
+                        }
+
                         $new_type->removeType($key);
                         $new_type->addType($existing_type_part);
                         $new_type->from_docblock = $existing_type_part->from_docblock;
