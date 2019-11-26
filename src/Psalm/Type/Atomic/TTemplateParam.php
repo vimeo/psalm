@@ -169,16 +169,22 @@ class TTemplateParam extends \Psalm\Type\Atomic
                 && isset($class_storage->template_covariants[$template_offset])
                 && $class_storage->template_covariants[$template_offset]
             ) {
-                if (\Psalm\IssueBuffer::accepts(
-                    new \Psalm\Issue\InvalidTemplateParam(
-                        'Template param ' . $this->param_name . ' of '
-                            . $this->defining_class . ' is marked covariant and cannot be used'
-                            . ' as input to a function',
-                        $code_location
-                    ),
-                    $source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $source->getFunctionLikeStorage()->mutation_free
+                ) {
+                    // do nothing
+                } else {
+                    if (\Psalm\IssueBuffer::accepts(
+                        new \Psalm\Issue\InvalidTemplateParam(
+                            'Template param ' . $this->param_name . ' of '
+                                . $this->defining_class . ' is marked covariant and cannot be used'
+                                . ' as input to a function',
+                            $code_location
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }
