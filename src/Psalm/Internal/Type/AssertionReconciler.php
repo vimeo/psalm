@@ -2194,6 +2194,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                         if (!$has_cloned_type) {
                             $new_type = clone $new_type;
+                            $has_cloned_type = true;
                         }
 
                         $has_local_match = true;
@@ -2272,6 +2273,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     ) {
                         if (!$has_cloned_type) {
                             $new_type = clone $new_type;
+                            $has_cloned_type = true;
                         }
 
                         $new_type->removeType($key);
