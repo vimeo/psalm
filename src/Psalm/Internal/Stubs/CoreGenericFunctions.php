@@ -153,18 +153,6 @@ function array_change_key_case(array $arr, int $case = CASE_LOWER)
 }
 
 /**
- * @psalm-template T
- *
- * @param array<array-key, T> $arr
- *
- * @return array<int, array<array-key, T>>
- * @psalm-pure
- */
-function array_chunk(array $arr, int $size, bool $preserve_keys = false)
-{
-}
-
-/**
  * @psalm-template TKey as array-key
  *
  * @param TKey $key

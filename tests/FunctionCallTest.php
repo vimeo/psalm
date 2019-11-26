@@ -819,6 +819,16 @@ class FunctionCallTest extends TestCase
                     '$foo' => 'float|int',
                 ],
             ],
+            'arrayMapWithArrayAndCallable' => [
+                '<?php
+                    /**
+                     * @psalm-return array<array-key, int>
+                     */
+                    function foo(array $v): array {
+                        $r = array_map("intval", $v);
+                        return $r;
+                    }',
+            ],
             'arrayMapObjectLikeAndCallable' => [
                 '<?php
                     /**
@@ -829,6 +839,18 @@ class FunctionCallTest extends TestCase
                         $r = array_map("intval", $v);
                         return $r;
                     }',
+            ],
+            'arrayMapObjectLikeListAndCallable' => [
+                '<?php
+                    /** @param list<int> $list */
+                    function takesList(array $list): void {}
+                    
+                    takesList(
+                        array_map(
+                            "intval",
+                            ["1", "2", "3"]
+                        )
+                    );',
             ],
             'arrayMapObjectLikeAndClosure' => [
                 '<?php
@@ -844,6 +866,50 @@ class FunctionCallTest extends TestCase
                 'error_levels' => [
                     'MissingClosureParamType',
                     'MixedTypeCoercion',
+                ],
+            ],
+            'arrayMapObjectLikeListAndClosure' => [
+                '<?php
+                    /** @param list<string> $list */
+                    function takesList(array $list): void {}
+                    
+                    takesList(
+                        array_map(
+                            function (string $str): string { return $str . "x"; },
+                            ["foo", "bar", "baz"]
+                        )
+                    );',
+            ],
+            'arrayMapUntypedCallable' => [
+                '<?php
+                    /**
+                     * @var callable $callable
+                     * @var array<string, int> $array
+                     */
+                    $a = array_map($callable, $array);
+                    
+                    /**
+                     * @var callable $callable
+                     * @var array<string, int> $array
+                     */
+                    $b = array_map($callable, $array, $array);
+
+                    /**
+                     * @var callable $callable
+                     * @var list<string> $list
+                     */
+                    $c = array_map($callable, $list);
+
+                    /**
+                     * @var callable $callable
+                     * @var list<string> $list
+                     */
+                    $d = array_map($callable, $list, $list);',
+                'assertions' => [
+                    '$a' => 'array<string, mixed>',
+                    '$b' => 'list<mixed>',
+                    '$c' => 'list<mixed>',
+                    '$d' => 'list<mixed>',
                 ],
             ],
             'arrayFilterGoodArgs' => [
@@ -1123,19 +1189,23 @@ class FunctionCallTest extends TestCase
                     $c = array_column([["k" => "a", "v" => 1], ["k" => "b", "v" => 2]], "v", "k");
                     $d = array_column([], 0);
                     $e = array_column(makeMixedArray(), 0);
-                    $f = array_column(makeGenericArray(), 0);
-                    $g = array_column(makeShapeArray(), 0);
-                    $h = array_column(makeUnionArray(), 0);
+                    $f = array_column(makeMixedArray(), 0, "k");
+                    $g = array_column(makeMixedArray(), 0, null);
+                    $h = array_column(makeGenericArray(), 0);
+                    $i = array_column(makeShapeArray(), 0);
+                    $j = array_column(makeUnionArray(), 0);
                 ',
                 'assertions' => [
-                    '$a' => 'array<array-key, int>',
-                    '$b' => 'array<array-key, int>',
+                    '$a' => 'list<int>',
+                    '$b' => 'list<int>',
                     '$c' => 'array<string, int>',
-                    '$d' => 'array<array-key, mixed>',
-                    '$e' => 'array<array-key, mixed>',
+                    '$d' => 'list<mixed>',
+                    '$e' => 'list<mixed>',
                     '$f' => 'array<array-key, mixed>',
-                    '$g' => 'array<array-key, string>',
-                    '$h' => 'array<array-key, mixed>',
+                    '$g' => 'list<mixed>',
+                    '$h' => 'list<mixed>',
+                    '$i' => 'list<string>',
+                    '$j' => 'list<mixed>',
                 ],
             ],
             'strtrWithPossiblyFalseFirstArg' => [
@@ -2067,6 +2137,151 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $mysqli = mysqli_init();
                     mysqli_real_connect($mysqli, null, \'test\', null);',
+            ],
+            'arrayPad' => [
+                '<?php
+                    $a = array_pad(["foo" => 1, "bar" => 2], 10, 123);
+                    $b = array_pad(["a", "b", "c"], 10, "x");
+                    /** @var list<int> $list */
+                    $c = array_pad($list, 10, 0);
+                    /** @var array<string, string> $array */
+                    $d = array_pad($array, 10, "");',
+                'assertions' => [
+                    '$a' => 'non-empty-array<int|string, int>',
+                    '$b' => 'non-empty-list<string>',
+                    '$c' => 'non-empty-list<int>',
+                    '$d' => 'non-empty-array<int|string, string>',
+                ],
+            ],
+            'arrayPadDynamicSize' => [
+                '<?php
+                    function getSize(): int { return random_int(1, 10); }
+
+                    $a = array_pad(["foo" => 1, "bar" => 2], getSize(), 123);
+                    $b = array_pad(["a", "b", "c"], getSize(), "x");
+                    /** @var list<int> $list */
+                    $c = array_pad($list, getSize(), 0);
+                    /** @var array<string, string> $array */
+                    $d = array_pad($array, getSize(), "");',
+                'assertions' => [
+                    '$a' => 'array<int|string, int>',
+                    '$b' => 'list<string>',
+                    '$c' => 'list<int>',
+                    '$d' => 'array<int|string, string>',
+                ],
+            ],
+            'arrayPadZeroSize' => [
+                '<?php
+                    /** @var array $arr */
+                    $result = array_pad($arr, 0, null);',
+                'assertions' => [
+                    '$result' => 'array<array-key, mixed|null>',
+                ],
+            ],
+            'arrayPadTypeCombination' => [
+                '<?php
+                    $a = array_pad(["foo" => 1, "bar" => "two"], 5, false);
+                    $b = array_pad(["a", 2, 3.14], 5, null);
+                    /** @var list<string|bool> $list */
+                    $c = array_pad($list, 5, 0);
+                    /** @var array<string, string> $array */
+                    $d = array_pad($array, 5, null);',
+                'assertions' => [
+                    '$a' => 'non-empty-array<int|string, false|int|string>',
+                    '$b' => 'non-empty-list<float|int|null|string>',
+                    '$c' => 'non-empty-list<bool|int|string>',
+                    '$d' => 'non-empty-array<int|string, null|string>',
+                ],
+            ],
+            'arrayPadMixed' => [
+                '<?php
+                    /** @var array{foo: mixed, bar: mixed} $arr */
+                    $a = array_pad($arr, 5, null);
+                    /** @var mixed $mixed */
+                    $b = array_pad([$mixed, $mixed], 5, null);
+                    /** @var list $list */
+                    $c = array_pad($list, 5, null);
+                    /** @var mixed[] $array */
+                    $d = array_pad($array, 5, null);',
+                'assertions' => [
+                    '$a' => 'non-empty-array<int|string, mixed|null>',
+                    '$b' => 'non-empty-list<mixed|null>',
+                    '$c' => 'non-empty-list<mixed|null>',
+                    '$d' => 'non-empty-array<array-key, mixed|null>',
+                ],
+            ],
+            'arrayPadFallback' => [
+                '<?php
+                    /**
+                     * @var mixed $mixed
+                     * @psalm-suppress MixedArgument
+                     */
+                    $result = array_pad($mixed, $mixed, $mixed);',
+                'assertions' => [
+                    '$result' => 'array<array-key, mixed>',
+                ],
+            ],
+            'arrayChunk' => [
+                '<?php
+                    /** @var array{a: int, b: int, c: int, d: int} $arr */
+                    $a = array_chunk($arr, 2);
+                    /** @var list<string> $list */
+                    $b = array_chunk($list, 2);
+                    /** @var array<string, float> $arr */
+                    $c = array_chunk($arr, 2);
+                    ',
+                'assertions' => [
+                    '$a' => 'list<non-empty-list<int>>',
+                    '$b' => 'list<non-empty-list<string>>',
+                    '$c' => 'list<non-empty-list<float>>',
+                ],
+            ],
+            'arrayChunkPreservedKeys' => [
+                '<?php
+                    /** @var array{a: int, b: int, c: int, d: int} $arr */
+                    $a = array_chunk($arr, 2, true);
+                    /** @var list<string> $list */
+                    $b = array_chunk($list, 2, true);
+                    /** @var array<string, float> $arr */
+                    $c = array_chunk($arr, 2, true);',
+                'assertions' => [
+                    '$a' => 'list<non-empty-array<string, int>>',
+                    '$b' => 'list<non-empty-array<int, string>>',
+                    '$c' => 'list<non-empty-array<string, float>>',
+                ],
+            ],
+            'arrayChunkPreservedKeysExplicitFalse' => [
+                '<?php
+                    /** @var array<string, string> $arr */
+                    $result = array_chunk($arr, 2, false);',
+                'assertions' => [
+                    '$result' => 'list<non-empty-list<string>>',
+                ],
+            ],
+            'arrayChunkMixed' => [
+                '<?php
+                    /** @var array{a: mixed, b: mixed, c: mixed} $arr */
+                    $a = array_chunk($arr, 2);
+                    /** @var list<mixed> $list */
+                    $b = array_chunk($list, 2);
+                    /** @var mixed[] $arr */
+                    $c = array_chunk($arr, 2);',
+                'assertions' => [
+                    '$a' => 'list<non-empty-list<mixed>>',
+                    '$b' => 'list<non-empty-list<mixed>>',
+                    '$c' => 'list<non-empty-list<mixed>>',
+                ],
+            ],
+            'arrayChunkFallback' => [
+                '<?php
+                    /**
+                     * @var mixed $mixed
+                     * @psalm-suppress MixedArgument
+                     */
+                    $result = array_chunk($mixed, $mixed, $mixed);',
+                'assertions' => [
+                    '$result' => 'list<array<array-key, mixed>>',
+                ],
             ],
         ];
     }
