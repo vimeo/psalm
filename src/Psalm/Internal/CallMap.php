@@ -5973,7 +5973,7 @@ return [
 'inclued_get_data' => ['array'],
 'inet_ntop' => ['string|false', 'in_addr'=>'string'],
 'inet_pton' => ['string|false', 'ip_address'=>'string'],
-'InfiniteIterator::__construct' => ['void', 'iterator'=>'Iteator'],
+'InfiniteIterator::__construct' => ['void', 'iterator'=>'Iterator'],
 'InfiniteIterator::current' => ['mixed'],
 'InfiniteIterator::getInnerIterator' => ['Traversable'],
 'InfiniteIterator::key' => ['bool|float|int|string'],
