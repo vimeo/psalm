@@ -32,8 +32,7 @@
             "Psalm\\": "src/Psalm"
         },
         "files": [
-            "src/functions.php",
-            "src/spl_object_id.php"
+            "src/functions.php"
         ]
     },
     "autoload-dev": {

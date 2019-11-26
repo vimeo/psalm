@@ -23,7 +23,6 @@
             <file name="src/Psalm/Internal/CallMap.php"/>
             <file name="src/Psalm/Internal/Traverser/CustomTraverser.php"/>
             <file name="tests/ErrorBaselineTest.php"/>
-            <file name="src/spl_object_id.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
             <directory name="src/Psalm/Internal/Stubs"/>
             <directory name="tests/fixtures"/>
