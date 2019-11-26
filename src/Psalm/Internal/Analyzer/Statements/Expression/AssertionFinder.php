@@ -210,7 +210,8 @@ class AssertionFinder
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
         ) {
-            $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional);
+            $min_count = null;
+            $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
             $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
             if ($count_equality_position) {
@@ -231,7 +232,11 @@ class AssertionFinder
                     if (self::hasReconcilableNonEmptyCountEqualityCheck($conditional)) {
                         $if_types[$var_name] = [['non-empty-countable']];
                     } else {
-                        $if_types[$var_name] = [['=non-empty-countable']];
+                        if ($min_count) {
+                            $if_types[$var_name] = [['=has-at-least-' . $min_count]];
+                        } else {
+                            $if_types[$var_name] = [['=non-empty-countable']];
+                        }
                     }
                 }
 
@@ -265,7 +270,8 @@ class AssertionFinder
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
         ) {
-            $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional);
+            $min_count = null;
+            $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
             $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
             if ($count_equality_position) {
@@ -283,7 +289,11 @@ class AssertionFinder
                 );
 
                 if ($var_name) {
-                    $if_types[$var_name] = [['=non-empty-countable']];
+                    if ($min_count) {
+                        $if_types[$var_name] = [['=has-at-least-' . $min_count]];
+                    } else {
+                        $if_types[$var_name] = [['=non-empty-countable']];
+                    }
                 }
 
                 return $if_types;
@@ -434,7 +444,8 @@ class AssertionFinder
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
         $gettype_position = self::hasGetTypeCheck($conditional);
         $getclass_position = self::hasGetClassCheck($conditional, $source);
-        $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional);
+        $min_count = null;
+        $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
         $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
         if ($null_position !== null) {
@@ -835,7 +846,11 @@ class AssertionFinder
             );
 
             if ($var_name) {
-                $if_types[$var_name] = [['=non-empty-countable']];
+                if ($min_count) {
+                    $if_types[$var_name] = [['=has-at-least-' . $min_count]];
+                } else {
+                    $if_types[$var_name] = [['=non-empty-countable']];
+                }
             }
 
             return $if_types;
@@ -2244,16 +2259,14 @@ class AssertionFinder
      *
      * @return  false|int
      */
-    protected static function hasNonEmptyCountEqualityCheck(PhpParser\Node\Expr\BinaryOp $conditional)
-    {
+    protected static function hasNonEmptyCountEqualityCheck(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        ?int &$min_count
+    ) {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
             && strtolower($conditional->left->name->parts[0]) === 'count'
             && $conditional->left->args;
-
-        $right_number = $conditional->right instanceof PhpParser\Node\Scalar\LNumber
-            && $conditional->right->value >= (
-                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1);
 
         $operator_greater_than_or_equal =
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
@@ -2261,7 +2274,18 @@ class AssertionFinder
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
 
-        if ($left_count && $right_number && $operator_greater_than_or_equal) {
+        if ($left_count
+            && $conditional->right instanceof PhpParser\Node\Scalar\LNumber
+            && $operator_greater_than_or_equal
+            && $conditional->right->value >= (
+                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                ? 0
+                : 1
+            )
+        ) {
+            $min_count = $conditional->right->value +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
+
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
@@ -2270,17 +2294,22 @@ class AssertionFinder
             && strtolower($conditional->right->name->parts[0]) === 'count'
             && $conditional->right->args;
 
-        $left_number = $conditional->left instanceof PhpParser\Node\Scalar\LNumber
-            && $conditional->left->value >= (
-                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 0 : 1);
-
         $operator_less_than_or_equal =
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
 
-        if ($right_count && $left_number && $operator_less_than_or_equal) {
+        if ($right_count
+            && $conditional->left instanceof PhpParser\Node\Scalar\LNumber
+            && $operator_less_than_or_equal
+            && $conditional->left->value >= (
+                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 0 : 1
+            )
+        ) {
+            $min_count = $conditional->left->value +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
+
             return self::ASSIGNMENT_TO_LEFT;
         }
 

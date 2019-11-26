@@ -679,7 +679,9 @@ class ArrayFetchAnalyzer
                 } elseif ($type instanceof TList) {
                     // if we're assigning to an empty array with a key offset, refashion that array
                     if (!$in_assignment) {
-                        if ($key_value !== 0 || !$type instanceof TNonEmptyList) {
+                        if (!$type instanceof TNonEmptyList
+                            || ($key_value > 0 && $key_value > ($type->count - 1))
+                        ) {
                             $expected_offset_type = Type::getInt();
 
                             if ($codebase->config->ensure_array_int_offsets_exist) {

@@ -120,7 +120,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 return Type::getMixed($inside_loop);
             }
 
-            if ($assertion === 'array-key-exists' || $assertion === 'non-empty-countable') {
+            if ($assertion === 'array-key-exists'
+                || $assertion === 'non-empty-countable'
+                || strpos($assertion, 'has-at-least-') === 0
+            ) {
                 return Type::getMixed();
             }
 
@@ -365,7 +368,20 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
+                null
+            );
+        }
+
+        if (substr($assertion, 0, 13) === 'has-at-least-') {
+            return self::reconcileNonEmptyCountable(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+                (int) substr($assertion, 13)
             );
         }
 
@@ -790,7 +806,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
+        ?int $min_count
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
@@ -812,15 +829,21 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         )
                     );
                 }
-            } elseif ($array_atomic_type instanceof TList
-                && !$array_atomic_type instanceof Type\Atomic\TNonEmptyList
-            ) {
-                $did_remove_type = true;
-                $existing_var_type->addType(
-                    new Type\Atomic\TNonEmptyList(
+            } elseif ($array_atomic_type instanceof TList) {
+                if (!$array_atomic_type instanceof Type\Atomic\TNonEmptyList
+                    || ($array_atomic_type->count < $min_count)
+                ) {
+                    $non_empty_list = new Type\Atomic\TNonEmptyList(
                         $array_atomic_type->type_param
-                    )
-                );
+                    );
+
+                    if ($min_count) {
+                        $non_empty_list->count = $min_count;
+                    }
+
+                    $did_remove_type = true;
+                    $existing_var_type->addType($non_empty_list);
+                }
             } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                 foreach ($array_atomic_type->properties as $property_type) {
                     if ($property_type->possibly_undefined) {

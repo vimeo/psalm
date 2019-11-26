@@ -230,6 +230,111 @@ class ArrayAccessTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testEnsureListOffsetExistsAfterCountValueInRange()
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param list<string> $arr */
+                function takesList(array $arr) : void {
+                    if (count($arr) >= 3) {
+                        echo $arr[0];
+                        echo $arr[1];
+                        echo $arr[2];
+                    }
+
+                    if (count($arr) > 2) {
+                        echo $arr[0];
+                        echo $arr[1];
+                        echo $arr[2];
+                    }
+
+                    if (count($arr) === 3) {
+                        echo $arr[0];
+                        echo $arr[1];
+                        echo $arr[2];
+                    }
+
+                    if (3 === count($arr)) {
+                        echo $arr[0];
+                        echo $arr[1];
+                        echo $arr[2];
+                    }
+
+                    if (3 <= count($arr)) {
+                        echo $arr[0];
+                        echo $arr[1];
+                        echo $arr[2];
+                    }
+
+                    if (2 < count($arr)) {
+                        echo $arr[0];
+                        echo $arr[1];
+                        echo $arr[2];
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnsureListOffsetExistsAfterCountValueOutOfRange()
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param list<string> $arr */
+                function takesList(array $arr) : void {
+                    if (count($arr) >= 2) {
+                        echo $arr[0];
+                        echo $arr[1];
+                        echo $arr[2];
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnsureListOffsetExistsAfterCountValueOutOfRangeSmallerThan()
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param list<string> $arr */
+                function takesList(array $arr) : void {
+                    if (2 <= count($arr)) {
+                        echo $arr[0];
+                        echo $arr[1];
+                        echo $arr[2];
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()
