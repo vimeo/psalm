@@ -1022,6 +1022,26 @@ class FunctionCallTest extends TestCase
                     '$c' => 'int',
                 ],
             ],
+            'array_key_first' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_key_first($a);
+                    $c = $a[$b];',
+                'assertions' => [
+                    '$b' => 'null|string',
+                    '$c' => 'int',
+                ],
+            ],
+            'array_key_last' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_key_last($a);
+                    $c = $a[$b];',
+                'assertions' => [
+                    '$b' => 'null|string',
+                    '$c' => 'int',
+                ],
+            ],
             'explode' => [
                 '<?php
                     /** @var string $string */

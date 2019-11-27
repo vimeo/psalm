@@ -115,6 +115,32 @@ function key($arr)
 }
 
 /**
+ * @psalm-template TKey as array-key
+ *
+ * @param array<TKey, mixed> $arr
+ *
+ * @return TKey|null
+ * @psalm-ignore-nullable-return
+ * @psalm-pure
+ */
+function array_key_first($arr)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ *
+ * @param array<TKey, mixed> $arr
+ *
+ * @return TKey|null
+ * @psalm-ignore-nullable-return
+ * @psalm-pure
+ */
+function array_key_last($arr)
+{
+}
+
+/**
  * @psalm-template T
  *
  * @param mixed           $needle
