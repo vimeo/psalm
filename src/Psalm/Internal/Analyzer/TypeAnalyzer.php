@@ -1374,7 +1374,7 @@ class TypeAnalyzer
 
         if ($container_type_part instanceof TCallable &&
             (
-                $input_type_part instanceof TString
+                $input_type_part instanceof TLiteralString
                 || $input_type_part instanceof TArray
                 || $input_type_part instanceof ObjectLike
                 || $input_type_part instanceof TList

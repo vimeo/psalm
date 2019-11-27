@@ -1574,6 +1574,16 @@ class CallableTest extends TestCase
                     new Func("f", ["Foo", "bar"]);',
                 'error_message' => 'InvalidArgument'
             ],
+            'preventStringDocblockType' => [
+                '<?php
+                    /**
+                     * @param string $mapper
+                     */
+                    function map2(callable $mapper): void {}
+
+                    map2("foo");',
+                'error_message' => 'MismatchingDocblockParamType',
+            ],
         ];
     }
 }
