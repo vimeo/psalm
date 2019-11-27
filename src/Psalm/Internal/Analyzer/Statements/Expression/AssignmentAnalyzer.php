@@ -956,6 +956,38 @@ class AssignmentAnalyzer
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+            $old_data_provider = $statements_analyzer->node_data;
+
+            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+            $fake_coalesce_expr = new PhpParser\Node\Expr\BinaryOp\Coalesce(
+                $stmt->var,
+                $stmt->expr,
+                $stmt->getAttributes()
+            );
+
+            if (BinaryOpAnalyzer::analyze(
+                $statements_analyzer,
+                $fake_coalesce_expr,
+                $context
+            ) === false) {
+                return false;
+            }
+
+            $fake_coalesce_type = $statements_analyzer->node_data->getType($fake_coalesce_expr);
+
+            $statements_analyzer->node_data = $old_data_provider;
+
+            if ($fake_coalesce_type) {
+                if ($array_var_id) {
+                    $context->vars_in_scope[$array_var_id] = $fake_coalesce_type;
+                }
+
+                $statements_analyzer->node_data->setType($stmt, $fake_coalesce_type);
+            }
+        }
+
         if (!$was_in_assignment) {
             $context->inside_assignment = false;
         }

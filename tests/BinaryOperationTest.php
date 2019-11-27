@@ -222,6 +222,13 @@ class BinaryOperationTest extends TestCase
                     '$a' => 'string',
                 ],
             ],
+            'nullCoalescingAssignment' => [
+                '<?php
+                    function foo(?string $s): string {
+                        $s ??= "Hello";
+                        return $s;
+                    }'
+            ],
         ];
     }
 
