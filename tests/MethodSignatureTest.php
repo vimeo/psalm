@@ -114,6 +114,167 @@ class MethodSignatureTest extends TestCase
     /**
      * @return void
      */
+    public function testMismatchingCovariantReturnIn73()
+    {
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+
+        $this->project_analyzer->setPhpVersion('7.3');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    function foo(): C {
+                        return new C();
+                    }
+                }
+                class B extends A {
+                    function foo(): D {
+                        return new D();
+                    }
+                }
+                class C {}
+                class D extends C {}'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMismatchingCovariantReturnIn74()
+    {
+        $this->project_analyzer->setPhpVersion('7.4');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    function foo(): C {
+                        return new C();
+                    }
+                }
+                class B extends A {
+                    function foo(): D {
+                        return new D();
+                    }
+                }
+                class C {}
+                class D extends C {}'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMismatchingCovariantReturnIn73WithSelf()
+    {
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+
+        $this->project_analyzer->setPhpVersion('7.3');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    function foo(): self {
+                        return new A();
+                    }
+                }
+                class B extends A {
+                    function foo(): self {
+                        return new B();
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMismatchingCovariantReturnIn74WithSelf()
+    {
+        $this->project_analyzer->setPhpVersion('7.4');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    function foo(): self {
+                        return new A();
+                    }
+                }
+                class B extends A {
+                    function foo(): self {
+                        return new B();
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMismatchingCovariantParamIn73()
+    {
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+
+        $this->project_analyzer->setPhpVersion('7.3');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    public function foo(D $d) : void {}
+                }
+                class B extends A {
+                    public function foo(C $c): void {}
+                }
+
+                class C {}
+                class D extends C {}'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMismatchingCovariantParamIn74()
+    {
+        $this->project_analyzer->setPhpVersion('7.4');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    public function foo(D $d) : void {}
+                }
+                class B extends A {
+                    public function foo(C $c): void {}
+                }
+
+                class C {}
+                class D extends C {}'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testExtendDocblockParamTypeWithWrongDocblockParam()
     {
         $this->expectExceptionMessage('ImplementedParamTypeMismatch');
@@ -642,36 +803,6 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
                 'error_message' => 'Argument 1 of B::foo has wrong type \'string\', expecting \'null|string\' as',
-            ],
-            'mismatchingCovariantReturn' => [
-                '<?php
-                    class A {
-                        function foo(): C {
-                            return new C();
-                        }
-                    }
-                    class B extends A {
-                        function foo(): D {
-                            return new D();
-                        }
-                    }
-                    class C {}
-                    class D extends C {}',
-                'error_message' => 'MethodSignatureMismatch',
-            ],
-            'mismatchingCovariantReturnWithSelf' => [
-                '<?php
-                    class A {
-                        function foo(): self {
-                            return new A();
-                        }
-                    }
-                    class B extends A {
-                        function foo(): self {
-                            return new B();
-                        }
-                    }',
-                'error_message' => 'MethodSignatureMismatch',
             ],
             'misplacedRequiredParam' => [
                 '<?php
