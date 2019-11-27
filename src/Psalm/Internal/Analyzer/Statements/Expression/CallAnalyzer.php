@@ -435,7 +435,8 @@ class CallAnalyzer
 
                 $codebase = $statements_analyzer->getCodebase();
 
-                if ($arg->value instanceof PhpParser\Node\Expr\Closure
+                if (($arg->value instanceof PhpParser\Node\Expr\Closure
+                        || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
                     && $template_result
                     && $template_result->generic_params
                     && $param

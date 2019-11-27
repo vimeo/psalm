@@ -844,7 +844,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     /** @param list<int> $list */
                     function takesList(array $list): void {}
-                    
+
                     takesList(
                         array_map(
                             "intval",
@@ -872,7 +872,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     /** @param list<string> $list */
                     function takesList(array $list): void {}
-                    
+
                     takesList(
                         array_map(
                             function (string $str): string { return $str . "x"; },
@@ -887,7 +887,7 @@ class FunctionCallTest extends TestCase
                      * @var array<string, int> $array
                      */
                     $a = array_map($callable, $array);
-                    
+
                     /**
                      * @var callable $callable
                      * @var array<string, int> $array
@@ -1921,6 +1921,16 @@ class FunctionCallTest extends TestCase
                             function ($dateTime) {
                                 return (string) ($dateTime->format("c"));
                             },
+                            $dateTimes
+                        );
+                    }',
+            ],
+            'inferArrayMapArrowFunctionReturnType' => [
+                '<?php
+                    /** @return array<string> */
+                    function Foo(DateTime ...$dateTimes) : array {
+                        return array_map(
+                            fn ($dateTime) => (string) ($dateTime->format("c")),
                             $dateTimes
                         );
                     }',
