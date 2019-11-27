@@ -80,7 +80,7 @@ class ArrayAnalyzer
                     if ($unpacked_atomic_type instanceof Type\Atomic\ObjectLike) {
                         $unpacked_array_offset = 0;
                         foreach ($unpacked_atomic_type->properties as $key => $property_value) {
-                            if (is_string($key)) {
+                            if (\is_string($key)) {
                                 if (IssueBuffer::accepts(
                                     new DuplicateArrayKey(
                                         'String keys are not supported in unpacked arrays',
