@@ -1945,6 +1945,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             if ($parser_return_type instanceof PhpParser\Node\Identifier) {
                 $return_type_string = $parser_return_type->name . $suffix;
+            } elseif ($parser_return_type instanceof PhpParser\Node\UnionType) {
+                // for now unsupported
+                $return_type_string = 'mixed';
             } else {
                 $return_type_fq_classlike_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $parser_return_type,
@@ -2691,6 +2694,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $this->codebase->scanner->queueClassLikeForScanning($param_type_string, $this->file_path);
                 $this->file_storage->referenced_classlikes[strtolower($param_type_string)] = $param_type_string;
+            } elseif ($param_typehint instanceof PhpParser\Node\UnionType) {
+                // not yet supported
+                $param_type_string = 'mixed';
             } else {
                 if ($this->classlike_storages
                     && strtolower($param_typehint->parts[0]) === 'self'
@@ -3060,6 +3066,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             if ($parser_property_type instanceof PhpParser\Node\Identifier) {
                 $property_type_string = $parser_property_type->name . $suffix;
+            } elseif ($parser_property_type instanceof PhpParser\Node\UnionType) {
+                // not yet supported
+                $property_type_string = 'mixed';
             } else {
                 $property_type_fq_classlike_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $parser_property_type,
