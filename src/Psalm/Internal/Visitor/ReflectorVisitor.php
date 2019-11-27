@@ -524,6 +524,16 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )
                 ) {
                     $this->exists_cond_expr = $node->cond;
+                } elseif ($node->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    && $node->cond->left instanceof PhpParser\Node\Expr\FuncCall
+                    && $node->cond->left->name instanceof PhpParser\Node\Name
+                    && (
+                        $node->cond->left->name->parts === ['function_exists']
+                        || $node->cond->left->name->parts === ['class_exists']
+                        || $node->cond->left->name->parts === ['interface_exists']
+                    )
+                ) {
+                    $this->exists_cond_expr = $node->cond->left;
                 }
             }
 
