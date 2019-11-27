@@ -65,6 +65,83 @@ class ArrayAnalyzer
                 continue;
             }
 
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
+                return false;
+            }
+
+            if ($item->unpack) {
+                $unpacked_array_type = $statements_analyzer->node_data->getType($item->value);
+
+                if (!$unpacked_array_type) {
+                    continue;
+                }
+
+                foreach ($unpacked_array_type->getTypes() as $unpacked_atomic_type) {
+                    if ($unpacked_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        $unpacked_array_offset = 0;
+                        foreach ($unpacked_atomic_type->properties as $key => $property_value) {
+                            if (is_string($key)) {
+                                if (IssueBuffer::accepts(
+                                    new DuplicateArrayKey(
+                                        'String keys are not supported in unpacked arrays',
+                                        new CodeLocation($statements_analyzer->getSource(), $item->value)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+
+                                continue;
+                            }
+
+                            $item_key_atomic_types[] = new Type\Atomic\TLiteralInt($key);
+                            $item_value_atomic_types = array_merge(
+                                $item_value_atomic_types,
+                                array_values($property_value->getTypes())
+                            );
+                            $array_keys[$int_offset + $int_offset_diff + $unpacked_array_offset] = true;
+                            $property_types[$int_offset + $int_offset_diff + $unpacked_array_offset] = $property_value;
+
+                            $unpacked_array_offset++;
+                        }
+
+                        $int_offset_diff += $unpacked_array_offset - 1;
+                    } else {
+                        $can_create_objectlike = false;
+
+                        if ($unpacked_atomic_type instanceof Type\Atomic\TArray) {
+                            if ($unpacked_atomic_type->type_params[0]->hasString()) {
+                                if (IssueBuffer::accepts(
+                                    new DuplicateArrayKey(
+                                        'String keys are not supported in unpacked arrays',
+                                        new CodeLocation($statements_analyzer->getSource(), $item->value)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } elseif ($unpacked_atomic_type->type_params[0]->hasInt()) {
+                                $item_key_atomic_types[] = new Type\Atomic\TInt();
+                            }
+
+                            $item_value_atomic_types = array_merge(
+                                $item_value_atomic_types,
+                                array_values($unpacked_atomic_type->type_params[1]->getTypes())
+                            );
+                        } elseif ($unpacked_atomic_type instanceof Type\Atomic\TList) {
+                            $item_key_atomic_types[] = new Type\Atomic\TInt();
+
+                            $item_value_atomic_types = array_merge(
+                                $item_value_atomic_types,
+                                array_values($unpacked_atomic_type->type_param->getTypes())
+                            );
+                        }
+                    }
+                }
+
+                continue;
+            }
+
             $item_key_value = null;
 
             if ($item->key) {
@@ -123,10 +200,6 @@ class ArrayAnalyzer
                 }
 
                 $array_keys[$item_key_value] = true;
-            }
-
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
-                return false;
             }
 
             if ($codebase->taint) {

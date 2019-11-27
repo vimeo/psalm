@@ -1258,6 +1258,21 @@ class ArrayAssignmentTest extends TestCase
                         return $arr[0];
                     }'
             ],
+            'arraySpread' => [
+                '<?php
+                    $arrayA = [1, 2, 3];
+                    $arrayB = [4, 5];
+                    $result = [0, ...$arrayA, ...$arrayB, 6 ,7];
+
+                    $arr1 = [3 => 1, 1 => 2, 3];
+                    $arr2 = [...$arr1];
+                    $arr3 = [1 => 0, ...$arr1];',
+                [
+                    '$result' => 'array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int}',
+                    '$arr2' => 'array{0: int, 1: int, 2: int}',
+                    '$arr3' => 'array{1: int, 2: int, 3: int, 4: int}',
+                ]
+            ],
         ];
     }
 
