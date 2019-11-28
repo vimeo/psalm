@@ -147,18 +147,22 @@ class PropertyFetchAnalyzer
                     && $source->getMethodName() === '__construct'
                     && !$context->inside_unset
                 ) {
-                    if (IssueBuffer::accepts(
-                        new UninitializedProperty(
-                            'Cannot use uninitialized property ' . $var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $var_id
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    if ($context->inside_isset) {
+                        $stmt_type->initialized = true;
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new UninitializedProperty(
+                                'Cannot use uninitialized property ' . $var_id,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $var_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
 
-                    $stmt_type->addType(new Type\Atomic\TNull);
+                        $stmt_type->addType(new Type\Atomic\TNull);
+                    }
                 }
             }
 
