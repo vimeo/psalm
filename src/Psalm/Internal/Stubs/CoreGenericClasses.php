@@ -1195,3 +1195,22 @@ class ReflectionClass implements Reflector {
     */
     public function newInstanceWithoutConstructor() : object;
 }
+
+/**
+ * @template-covariant T as object
+ * @psalm-immutable
+ */
+final class WeakReference
+{
+    // always fail
+    public function __construct();
+    /**
+     * @template TIn as object
+     * @param TIn $referent
+     * @return WeakReference<TIn>
+     */
+    public static function create(object $referent): WeakReference;
+
+    /** @return ?T */
+    public function get(): ?object;
+}
