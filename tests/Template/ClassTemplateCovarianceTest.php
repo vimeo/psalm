@@ -429,6 +429,31 @@ class ClassTemplateCovarianceTest extends TestCase
                     }',
                 'error_message' => 'MixedArgumentTypeCoercion',
             ],
+            'preventGeneratorVariance' => [
+                '<?php
+                    class Foo {
+                        function a(): void {}
+                    }
+
+                    class Bar extends Foo {
+                      function b(): void {}
+                    }
+
+                    /** @return Generator<int,Bar,Bar,mixed> */
+                    function gen() {
+                      $bar = yield new Bar();
+                      $bar->b();
+                    }
+
+                    /** @param Generator<int,Foo,Foo,mixed> $gen */
+                    function sendFoo($gen): void {
+                      $gen->send(new Foo());
+                    }
+
+                    $gen = gen();
+                    sendFoo($gen);',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
