@@ -2067,6 +2067,22 @@ class ClassTemplateTest extends TestCase
 
                     takesInts((new ArrayCollection([ "a", "bc" ]))->map("strlen"));'
             ],
+            'weakReferenceIsTyped' => [
+                '<?php
+                    $e = new Exception;
+                    $r = WeakReference::create($e);
+                    $ex = $r->get();
+                ',
+                [ '$ex' => 'Exception|null' ],
+            ],
+            'weakReferenceIsCovariant' => [
+                '<?php
+                    /** @param WeakReference<Throwable> $_ref */
+                    function acceptsThrowableRef(WeakReference $_ref): void {}
+
+                    acceptsThrowableRef(WeakReference::create(new Exception));
+                '
+            ]
         ];
     }
 
