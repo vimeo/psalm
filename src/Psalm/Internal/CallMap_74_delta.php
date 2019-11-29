@@ -15,9 +15,11 @@
  */
 return [
 'new' => [
-    'password_hash' => ['string|null', 'password'=>'string', 'algo'=>'int', 'options='=>'array'],
+    'password_hash' => ['string|null', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
+    'password_needs_rehash' => ['bool', 'hash'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
 ],
 'old' => [
     'password_hash' => ['string|false', 'password'=>'string', 'algo'=>'int', 'options='=>'array'],
+    'password_needs_rehash' => ['bool', 'hash'=>'string', 'algo'=>'int', 'options='=>'array'],
 ]
 ];
