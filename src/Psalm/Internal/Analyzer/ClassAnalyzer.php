@@ -1380,7 +1380,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     continue;
                 }
 
-                $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
+                $fq_trait_name_resolved = $codebase->classlikes->getUnAliasedName($fq_trait_name);
+                $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_resolved);
 
                 if ($trait_storage->deprecated) {
                     if (IssueBuffer::accepts(
@@ -1394,13 +1395,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
-                $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
-                $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name);
+                $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
+                $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name_resolved);
+                $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name_resolved);
                 $trait_analyzer = new TraitAnalyzer(
                     $trait_node,
                     $trait_file_analyzer,
-                    $fq_trait_name,
+                    $fq_trait_name_resolved,
                     $trait_aliases
                 );
 
