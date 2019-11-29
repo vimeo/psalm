@@ -260,6 +260,7 @@ trait GenericTrait
             }
 
             $expected_type_params = $class_storage->template_types ?: [];
+            $expected_param_covariants = $class_storage->template_covariants;
         } else {
             $expected_type_params = [
                 'TKey' => [
@@ -305,7 +306,9 @@ trait GenericTrait
                 $suppressed_issues,
                 $phantom_classes,
                 $inferred,
-                $prevent_template_covariance
+                $source instanceof \Psalm\Internal\Analyzer\MethodAnalyzer
+                    && $source->getMethodName() !== '__construct'
+                    && empty($expected_param_covariants[$i])
             ) === false) {
                 return false;
             }

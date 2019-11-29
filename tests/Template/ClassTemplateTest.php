@@ -382,17 +382,17 @@ class ClassTemplateTest extends TestCase
                     class FooFacade
                     {
                         /**
-                         * @template T
+                         * @template T as object
                          * @param  T $item
                          */
-                        public function add($item): void
+                        public function add(object $item): void
                         {
                             $foo = $this->ensureFoo([$item]);
                             $foo->add($item);
                         }
 
                         /**
-                         * @template T
+                         * @template T as object
                          * @param  array<mixed,T> $items
                          * @return Foo<T>
                          */

@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Union;
+use Psalm\Storage\MethodStorage;
 
 class TTemplateParam extends \Psalm\Type\Atomic
 {
@@ -169,16 +170,20 @@ class TTemplateParam extends \Psalm\Type\Atomic
                 && isset($class_storage->template_covariants[$template_offset])
                 && $class_storage->template_covariants[$template_offset]
             ) {
-                if ($source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                    && $source->getFunctionLikeStorage()->mutation_free
+                $method_storage = $source instanceof \Psalm\Internal\Analyzer\MethodAnalyzer
+                    ? $source->getFunctionLikeStorage()
+                    : null;
+
+                if ($method_storage instanceof MethodStorage
+                    && $method_storage->mutation_free
+                    && !$method_storage->mutation_free_inferred
                 ) {
                     // do nothing
                 } else {
                     if (\Psalm\IssueBuffer::accepts(
                         new \Psalm\Issue\InvalidTemplateParam(
                             'Template param ' . $this->param_name . ' of '
-                                . $this->defining_class . ' is marked covariant and cannot be used'
-                                . ' as input to a function',
+                                . $this->defining_class . ' is marked covariant and cannot be used here',
                             $code_location
                         ),
                         $source->getSuppressedIssues()

@@ -731,6 +731,15 @@ class ReturnTypeAnalyzer
             $parent_class
         );
 
+        if ($fleshed_out_return_type->check(
+            $function_like_analyzer,
+            $storage->return_type_location,
+            $storage->suppressed_issues,
+            []
+        ) === false) {
+            return false;
+        }
+
         if ($classlike_storage && $context->self && $function->name) {
             $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
                 $codebase,
