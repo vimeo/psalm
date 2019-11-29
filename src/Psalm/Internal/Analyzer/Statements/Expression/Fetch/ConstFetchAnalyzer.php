@@ -17,6 +17,7 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use function array_key_exists;
 use function implode;
 use function strtolower;
 use function explode;
@@ -102,7 +103,7 @@ class ConstFetchAnalyzer
 
         $predefined_constants = $codebase->config->getPredefinedConstants();
 
-        if (isset($predefined_constants[$fq_const_name])
+        if (($fq_const_name && isset($predefined_constants[$fq_const_name]))
             || isset($predefined_constants[$const_name])
         ) {
             switch ($const_name) {
