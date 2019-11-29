@@ -775,7 +775,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                       }
 
                       /**
-                        * @return ArrayIterator<mixed, Item>
+                        * @return ArrayIterator<array-key, Item>
                         */
                       public function getIterator(): \ArrayIterator
                       {
