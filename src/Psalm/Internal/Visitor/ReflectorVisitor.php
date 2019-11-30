@@ -1127,6 +1127,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 if ($docblock_info->templates) {
                     $storage->template_types = [];
 
+                    usort(
+                        $docblock_info->templates,
+                        function(array $l, array $r) : int {
+                            return $l[4] > $r[4] ? 1 : -1;
+                        }
+                    );
+
                     foreach ($docblock_info->templates as $i => $template_map) {
                         $template_name = $template_map[0];
 

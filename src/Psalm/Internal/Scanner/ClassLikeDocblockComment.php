@@ -28,7 +28,7 @@ class ClassLikeDocblockComment
     public $psalm_internal = null;
 
     /**
-     * @var array<int, array{string, ?string, ?string, bool}>
+     * @var array<int, array{string, ?string, ?string, bool, int}>
      */
     public $templates = [];
 

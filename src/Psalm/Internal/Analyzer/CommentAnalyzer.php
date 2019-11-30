@@ -575,38 +575,6 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($parsed_docblock['specials']['template-covariant'])
-            || isset($parsed_docblock['specials']['psalm-template-covariant'])
-        ) {
-            $all_templates =
-                (isset($parsed_docblock['specials']['template-covariant'])
-                    ? $parsed_docblock['specials']['template-covariant']
-                    : [])
-                + (isset($parsed_docblock['specials']['psalm-template-covariant'])
-                    ? $parsed_docblock['specials']['psalm-template-covariant']
-                    : []);
-
-            foreach ($all_templates as $template_line) {
-                $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
-
-                $template_name = array_shift($template_type);
-
-                if (count($template_type) > 1
-                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
-                ) {
-                    $template_modifier = strtolower(array_shift($template_type));
-                    $info->templates[] = [
-                        $template_name,
-                        $template_modifier,
-                        implode(' ', $template_type),
-                        true
-                    ];
-                } else {
-                    $info->templates[] = [$template_name, null, null, true];
-                }
-            }
-        }
-
         if (isset($parsed_docblock['specials']['template-typeof'])) {
             foreach ($parsed_docblock['specials']['template-typeof'] as $template_typeof) {
                 $typeof_parts = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_typeof));
@@ -758,7 +726,7 @@ class CommentAnalyzer
                     ? $parsed_docblock['specials']['psalm-template']
                     : []);
 
-            foreach ($all_templates as $template_line) {
+            foreach ($all_templates as $offset => $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
 
                 $template_name = array_shift($template_type);
@@ -771,10 +739,11 @@ class CommentAnalyzer
                         $template_name,
                         $template_modifier,
                         implode(' ', $template_type),
-                        false
+                        false,
+                        $offset
                     ];
                 } else {
-                    $info->templates[] = [$template_name, null, null, false];
+                    $info->templates[] = [$template_name, null, null, false, $offset];
                 }
             }
         }
@@ -790,7 +759,7 @@ class CommentAnalyzer
                     ? $parsed_docblock['specials']['psalm-template-covariant']
                     : []);
 
-            foreach ($all_templates as $template_line) {
+            foreach ($all_templates as $offset => $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
 
                 $template_name = array_shift($template_type);
@@ -803,10 +772,11 @@ class CommentAnalyzer
                         $template_name,
                         $template_modifier,
                         implode(' ', $template_type),
-                        true
+                        true,
+                        $offset
                     ];
                 } else {
-                    $info->templates[] = [$template_name, null, null, true];
+                    $info->templates[] = [$template_name, null, null, true, $offset];
                 }
             }
         }
