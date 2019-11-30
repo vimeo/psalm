@@ -942,7 +942,7 @@ class ClassTemplateTest extends TestCase
                     '$e===' => 'E<string(bar)>',
                 ],
             ],
-            'SKIPPED-templateDefaultClassConstant' => [
+            'SKIPPED-templateDefaultClassMemberConstant' => [
                 '<?php
                     class D {
                         const FOO = "bar";
@@ -966,6 +966,30 @@ class ClassTemplateTest extends TestCase
                     $e = new E();',
                 'assertions' => [
                     '$e===' => 'E<string(bar)>',
+                ],
+            ],
+            'templateDefaultClassConstant' => [
+                '<?php
+                    class D {}
+
+                    /**
+                     * @template T as object
+                     */
+                    class E {
+                        /** @var class-string<T> */
+                        public $t;
+
+                        /**
+                         * @param class-string<T> $t
+                         */
+                        function __construct(string $t = D::class) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    $e = new E();',
+                'assertions' => [
+                    '$e===' => 'E<D>',
                 ],
             ],
             'allowNullablePropertyAssignment' => [

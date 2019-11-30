@@ -1574,6 +1574,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     private function registerFunctionLike(PhpParser\Node\FunctionLike $stmt, $fake_method = false)
     {
         $class_storage = null;
+        $fq_classlike_name = null;
 
         if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             $cased_function_id = '@method ' . $stmt->name->name;
@@ -1803,7 +1804,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 continue;
             }
 
-            $param_array = $this->getTranslatedFunctionParam($param, $stmt, $fake_method);
+            $param_array = $this->getTranslatedFunctionParam($param, $stmt, $fake_method, $fq_classlike_name);
 
             if (isset($existing_params['$' . $param_array->name])) {
                 if (IssueBuffer::accepts(
@@ -2691,7 +2692,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     public function getTranslatedFunctionParam(
         PhpParser\Node\Param $param,
         PhpParser\Node\FunctionLike $stmt,
-        bool $fake_method
+        bool $fake_method,
+        ?string $fq_classlike_name
     ) : FunctionLikeParameter {
         $param_type = null;
 
@@ -2783,7 +2785,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->codebase,
                     new \Psalm\Internal\Provider\NodeDataProvider(),
                     $param->default,
-                    $this->aliases
+                    $this->aliases,
+                    null,
+                    null,
+                    $fq_classlike_name
                 )
                 : null
         );
