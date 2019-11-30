@@ -1915,10 +1915,6 @@ class TypeAnalyzer
 
                 $container_param = $container_type_part->type_params[$i];
 
-                if ($input_type_part->value === 'Generator' && $i === 2) {
-                    continue;
-                }
-
                 if ($input_param->isEmpty()) {
                     continue;
                 }
