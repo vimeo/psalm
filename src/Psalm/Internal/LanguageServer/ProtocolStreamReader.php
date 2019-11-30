@@ -48,6 +48,7 @@ class ProtocolStreamReader implements ProtocolReader
         asyncCall(
             /**
              * @return \Generator<int, string, string, void>
+             * @psalm-suppress MixedReturnTypeCoercion
              */
             function () use ($input) : \Generator {
                 while ($this->is_accepting_new_requests && ($chunk = yield $input->read()) !== null) {
