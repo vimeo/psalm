@@ -187,11 +187,18 @@ class ExpressionAnalyzer
                 }
 
                 $statements_analyzer->node_data->setType($stmt, Type::getString($namespace));
+            } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Method
+                || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_
+            ) {
+                $source = $statements_analyzer->getSource();
+                if ($source instanceof FunctionLikeAnalyzer) {
+                    $statements_analyzer->node_data->setType($stmt, Type::getString($source->getMethodId()));
+                } else {
+                    $statements_analyzer->node_data->setType($stmt, new Type\Union([new Type\Atomic\TCallableString]));
+                }
             } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File
                 || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir
-                || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_
                 || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Trait_
-                || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Method
             ) {
                 $statements_analyzer->node_data->setType($stmt, Type::getString());
             }
