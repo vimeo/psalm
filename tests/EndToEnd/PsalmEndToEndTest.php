@@ -29,11 +29,7 @@ use function preg_replace;
  */
 class PsalmEndToEndTest extends TestCase
 {
-    /** @var string */
-    private $psalm = __DIR__ . '/../../psalm';
-
-    /** @var string */
-    private $psalter = __DIR__ . '/../../psalter';
+    use PsalmRunnerTrait;
 
     /** @var string */
     private static $tmpDir;
@@ -71,12 +67,12 @@ class PsalmEndToEndTest extends TestCase
 
     public function testHelpReturnsMessage(): void
     {
-        $this->assertStringContainsString('Usage:', $this->runPsalm(['--help'])['STDOUT']);
+        $this->assertStringContainsString('Usage:', $this->runPsalm(['--help'], self::$tmpDir)['STDOUT']);
     }
 
     public function testVersion(): void
     {
-        $this->assertStringStartsWith('Psalm 3', $this->runPsalm(['--version'], false, false)['STDOUT']);
+        $this->assertStringStartsWith('Psalm 3', $this->runPsalm(['--version'], self::$tmpDir, false, false)['STDOUT']);
     }
 
     public function testInit(): void
@@ -91,23 +87,23 @@ class PsalmEndToEndTest extends TestCase
 
         $this->assertStringContainsString(
             'No errors found!',
-            $this->runPsalm(['--alter', '--issues=all'], false, true)['STDOUT']
+            $this->runPsalm(['--alter', '--issues=all'], self::$tmpDir, false, true)['STDOUT']
         );
 
-        $this->assertSame(0, $this->runPsalm([])['CODE']);
+        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
     }
 
     public function testPsalter(): void
     {
         $this->runPsalmInit();
         (new Process(['php', $this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
-        $this->assertSame(0, $this->runPsalm([])['CODE']);
+        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
     }
 
     public function testPsalm(): void
     {
         $this->runPsalmInit();
-        $result = $this->runPsalm([], true);
+        $result = $this->runPsalm([], self::$tmpDir, true);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('2 errors', $result['STDOUT']);
@@ -131,44 +127,11 @@ class PsalmEndToEndTest extends TestCase
     }
 
     /**
-     * @param array<string> $args
-     *
-     * @return array{STDOUT: string, STDERR: string, CODE: int|null}
-     */
-    private function runPsalm(array $args, bool $shouldFail = false, bool $relyOnConfigDir = true): array
-    {
-        // As config files all contain `resolveFromConfigFile="true"` Psalm shouldn't need to be run from the same
-        // directory that the code being analysed exists in.
-
-        // Windows doesn't read shabangs, so to allow this to work on windows we run `php psalm` rather than just `psalm`.
-
-        if ($relyOnConfigDir) {
-            $process = new Process(array_merge(['php', $this->psalm, '-c=' . self::$tmpDir . '/psalm.xml'], $args), null);
-        } else {
-            $process = new Process(array_merge(['php', $this->psalm], $args), self::$tmpDir);
-        }
-
-        if (!$shouldFail) {
-            $process->mustRun();
-        } else {
-            $process->run();
-            $this->assertGreaterThan(0, $process->getExitCode());
-        }
-
-        return [
-            'STDOUT' => $process->getOutput(),
-            'STDERR' => $process->getErrorOutput(),
-            'CODE' => $process->getExitCode(),
-        ];
-    }
-
-
-    /**
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
     private function runPsalmInit(): array
     {
-        return $this->runPsalm(['--init'], false, false);
+        return $this->runPsalm(['--init'], self::$tmpDir, false, false);
     }
 
     /** from comment by itay at itgoldman dot com at
