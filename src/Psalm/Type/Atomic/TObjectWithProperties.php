@@ -5,8 +5,15 @@ use function array_keys;
 use function array_map;
 use function count;
 use function implode;
+use Psalm\Codebase;
+use Psalm\CodeLocation;
+use Psalm\StatementsSource;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\UnionTemplateHandler;
 
 class TObjectWithProperties extends TObject
 {
@@ -235,11 +242,109 @@ class TObjectWithProperties extends TObject
         return true;
     }
 
+    public function replaceTemplateTypesWithStandins(
+        TemplateResult $template_result,
+        Codebase $codebase = null,
+        Atomic $input_type = null,
+        bool $replace = true,
+        bool $add_upper_bound = false,
+        int $depth = 0
+    ) : Atomic {
+        $object_like = clone $this;
+
+        foreach ($this->properties as $offset => $property) {
+            $input_type_param = null;
+
+            if ($input_type instanceof Atomic\ObjectLike
+                && isset($input_type->properties[$offset])
+            ) {
+                $input_type_param = $input_type->properties[$offset];
+            }
+
+            $object_like->properties[$offset] = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $property,
+                $template_result,
+                $codebase,
+                $input_type_param,
+                null,
+                $replace,
+                $add_upper_bound,
+                $depth
+            );
+        }
+
+        return $object_like;
+    }
+
+    /**
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>>     $template_types
+     *
+     * @return void
+     */
+    public function replaceTemplateTypesWithArgTypes(array $template_types, ?\Psalm\Codebase $codebase)
+    {
+        foreach ($this->properties as $property) {
+            $property->replaceTemplateTypesWithArgTypes(
+                $template_types,
+                $codebase
+            );
+        }
+    }
+
+    /**
+     * @return list<Type\Atomic\TTemplateParam>
+     */
+    public function getTemplateTypes() : array
+    {
+        $template_types = [];
+
+        foreach ($this->properties as $property) {
+            $template_types = \array_merge($template_types, $property->getTemplateTypes());
+        }
+
+        return $template_types;
+    }
+
     /**
      * @return string
      */
     public function getAssertionString()
     {
         return $this->getKey();
+    }
+
+    /**
+     * @param  StatementsSource $source
+     * @param  CodeLocation     $code_location
+     * @param  array<string>    $suppressed_issues
+     * @param  array<string, bool> $phantom_classes
+     * @param  bool             $inferred
+     *
+     * @return void
+     */
+    public function check(
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        array $phantom_classes = [],
+        bool $inferred = true,
+        bool $prevent_template_covariance = false
+    ) {
+        if ($this->checked) {
+            return;
+        }
+
+        foreach ($this->properties as $property_type) {
+            $property_type->check(
+                $source,
+                $code_location,
+                $suppressed_issues,
+                $phantom_classes,
+                $inferred,
+                $prevent_template_covariance
+            );
+        }
+
+        $this->checked = true;
     }
 }
