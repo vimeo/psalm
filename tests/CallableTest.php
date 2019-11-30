@@ -205,14 +205,6 @@ class CallableTest extends TestCase
                     '$f' => 'array{0: string, 1: string}',
                 ],
             ],
-            'arrayMapClosureVar' => [
-                '<?php
-                    $mirror = function(int $i) : int { return $i; };
-                    $a = array_map($mirror, [1, 2, 3]);',
-                'assertions' => [
-                    '$a' => 'array{0: int, 1: int, 2: int}',
-                ],
-            ],
             'arrayCallableMethod' => [
                 '<?php
                     class A {
@@ -335,211 +327,6 @@ class CallableTest extends TestCase
 
                     callMeMaybe("foo");',
             ],
-            'arrayMapVariadicClosureArg' => [
-                '<?php
-                    $a = array_map(
-                        function(int $type, string ...$args):string {
-                            return "hello";
-                        },
-                        [1, 2, 3]
-                    );',
-            ],
-            'returnsTypedClosure' => [
-                '<?php
-                    /**
-                     * @param Closure(int):int $f
-                     * @param Closure(int):int $g
-                     *
-                     * @return Closure(int):int
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return function (int $x) use ($f, $g) : int {
-                            return $f($g($x));
-                        };
-                    }',
-            ],
-            'returnsTypedClosureArrow' => [
-                '<?php
-                    /**
-                     * @param Closure(int):int $f
-                     * @param Closure(int):int $g
-                     *
-                     * @return Closure(int):int
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return fn(int $x):int => $f($g($x));
-                    }',
-            ],
-            'returnsTypedClosureWithClasses' => [
-                '<?php
-                    class A {}
-                    class B {}
-                    class C {}
-
-                    /**
-                     * @param Closure(B):A $f
-                     * @param Closure(C):B $g
-                     *
-                     * @return Closure(C):A
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return function (C $x) use ($f, $g) : A {
-                            return $f($g($x));
-                        };
-                    }
-
-                    $a = foo(
-                        function(B $b) : A { return new A;},
-                        function(C $c) : B { return new B;}
-                    )(new C);',
-                'assertions' => [
-                    '$a' => 'A',
-                ],
-            ],
-            'returnsTypedClosureWithSubclassParam' => [
-                '<?php
-                    class A {}
-                    class B {}
-                    class C {}
-                    class C2 extends C {}
-
-                    /**
-                     * @param Closure(B):A $f
-                     * @param Closure(C):B $g
-                     *
-                     * @return Closure(C2):A
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return function (C $x) use ($f, $g) : A {
-                            return $f($g($x));
-                        };
-                    }
-
-                    $a = foo(
-                        function(B $b) : A { return new A;},
-                        function(C $c) : B { return new B;}
-                    )(new C2);',
-                'assertions' => [
-                    '$a' => 'A',
-                ],
-            ],
-            'returnsTypedClosureWithParentReturn' => [
-                '<?php
-                    class A {}
-                    class B {}
-                    class C {}
-                    class A2 extends A {}
-
-                    /**
-                     * @param Closure(B):A2 $f
-                     * @param Closure(C):B $g
-                     *
-                     * @return Closure(C):A
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return function (C $x) use ($f, $g) : A2 {
-                            return $f($g($x));
-                        };
-                    }
-
-                    $a = foo(
-                        function(B $b) : A2 { return new A2;},
-                        function(C $c) : B { return new B;}
-                    )(new C);',
-                'assertions' => [
-                    '$a' => 'A',
-                ],
-            ],
-            'returnsTypedCallableFromClosure' => [
-                '<?php
-                    class A {}
-                    class B {}
-                    class C {}
-
-                    /**
-                     * @param Closure(B):A $f
-                     * @param Closure(C):B $g
-                     *
-                     * @return callable(C):A
-                     */
-                    function foo(Closure $f, Closure $g) : callable {
-                        return function (C $x) use ($f, $g) : A {
-                            return $f($g($x));
-                        };
-                    }
-
-                    $a = foo(
-                        function(B $b) : A { return new A;},
-                        function(C $c) : B { return new B;}
-                    )(new C);',
-                'assertions' => [
-                    '$a' => 'A',
-                ],
-            ],
-            'inferClosureTypeWithTypehint' => [
-                '<?php
-                    $adder1 = function(int $i) : callable {
-                      return function(int $j) use ($i) : int {
-                        return $i + $j;
-                      };
-                    };
-                    $adder2 = function(int $i) {
-                      return function(int $j) use ($i) : int {
-                        return $i + $j;
-                      };
-                    };',
-                'assertions' => [
-                    '$adder1' => 'Closure(int):Closure(int):int',
-                    '$adder2' => 'Closure(int):Closure(int):int',
-                ],
-                'error_levels' => ['MissingClosureReturnType'],
-            ],
-            'inferArrayMapReturnTypeWithoutTypehints' => [
-                '<?php
-                    /**
-                     * @param array{0:string,1:string}[] $ret
-                     * @return array{0:string,1:int}[]
-                     */
-                    function f(array $ret) : array
-                    {
-                        return array_map(
-                            /**
-                             * @param array{0:string,1:string} $row
-                             */
-                            function (array $row) {
-                                return [
-                                    strval($row[0]),
-                                    intval($row[1]),
-                                ];
-                            },
-                            $ret
-                        );
-                    }',
-                'assertions' => [],
-                'error_levels' => ['MissingClosureReturnType'],
-            ],
-            'inferArrayMapReturnTypeWithTypehints' => [
-                '<?php
-                    /**
-                     * @param array{0:string,1:string}[] $ret
-                     * @return array{0:string,1:int}[]
-                     */
-                    function f(array $ret): array
-                    {
-                        return array_map(
-                            /**
-                             * @param array{0:string,1:string} $row
-                             */
-                            function (array $row): array {
-                                return [
-                                    strval($row[0]),
-                                    intval($row[1]),
-                                ];
-                            },
-                            $ret
-                        );
-                    }',
-            ],
             'allowVoidCallable' => [
                 '<?php
                     /**
@@ -595,38 +382,11 @@ class CallableTest extends TestCase
                         }
                     }',
             ],
-            'PHP71-mirrorCallableParams' => [
-                '<?php
-                    namespace NS;
-                    use Closure;
-                    /** @param Closure(int):bool $c */
-                    function acceptsIntToBool(Closure $c): void {}
-
-                    acceptsIntToBool(Closure::fromCallable(function(int $n): bool { return $n > 0; }));',
-            ],
-            'singleLineClosures' => [
-                '<?php
-                    $a = function() : Closure { return function() : string { return "hello"; }; };
-                    $b = $a()();',
-                'assertions' => [
-                    '$a' => 'Closure():Closure():string(hello)',
-                    '$b' => 'string',
-                ],
-            ],
             'nullableReturnTypeShorthand' => [
                 '<?php
                     class A {}
                     /** @param callable(mixed):?A $a */
                     function foo(callable $a): void {}',
-            ],
-            'voidReturningArrayMap' => [
-                '<?php
-                    array_map(
-                        function(int $i) : void {
-                            echo $i;
-                        },
-                        [1, 2, 3]
-                    );',
             ],
             'callablesCanBeObjects' => [
                 '<?php
@@ -692,38 +452,6 @@ class CallableTest extends TestCase
                             "file_exists"
                         );
                     }',
-            ],
-            'PHP71-closureFromCallableInvokableNamedClass' => [
-                '<?php
-                    namespace NS;
-                    use Closure;
-
-                    /** @param Closure(int):bool $c */
-                    function acceptsIntToBool(Closure $c): void {}
-
-                    class NamedInvokable {
-                        public function __invoke(int $p): bool {
-                            return $p > 0;
-                        }
-                    }
-
-                    acceptsIntToBool(Closure::fromCallable(new NamedInvokable));',
-            ],
-            'PHP71-closureFromCallableInvokableAnonymousClass' => [
-                '<?php
-                    namespace NS;
-                    use Closure;
-
-                    /** @param Closure(int):bool $c */
-                    function acceptsIntToBool(Closure $c): void {}
-
-                    $anonInvokable = new class {
-                        public function __invoke(int $p):bool {
-                            return $p > 0;
-                        }
-                    };
-
-                    acceptsIntToBool(Closure::fromCallable($anonInvokable));',
             ],
             'callableSelfArg' => [
                 '<?php
@@ -860,30 +588,6 @@ class CallableTest extends TestCase
                         }
                     }',
             ],
-            'PHP71-publicCallableFromInside' => [
-                '<?php
-                    class Base  {
-                        public function publicMethod() : void {}
-                    }
-
-                    class Example extends Base {
-                        public function test() : Closure {
-                            return Closure::fromCallable([$this, "publicMethod"]);
-                        }
-                    }',
-            ],
-            'PHP71-protectedCallableFromInside' => [
-                '<?php
-                    class Base  {
-                        protected function protectedMethod() : void {}
-                    }
-
-                    class Example extends Base {
-                        public function test() : Closure {
-                            return Closure::fromCallable([$this, "protectedMethod"]);
-                        }
-                    }',
-            ],
             'callableIsArrayAssertion' => [
                 '<?php
                     function foo(callable $c) : void {
@@ -903,54 +607,6 @@ class CallableTest extends TestCase
                         }
                     }',
             ],
-            'allowCallableWithNarrowerReturn' => [
-                '<?php
-                    class A {}
-                    class B extends A {}
-
-                    /**
-                     * @param Closure():A $x
-                     */
-                    function accept_closure($x) : void {
-                        $x();
-                    }
-                    accept_closure(
-                        function () : B {
-                            return new B();
-                        }
-                    );',
-            ],
-            'allowCallableWithWiderParam' => [
-                '<?php
-                    class A {}
-                    class B extends A {}
-
-                    /**
-                     * @param Closure(B $a):A $x
-                     */
-                    function accept_closure($x) : void {
-                        $x(new B());
-                    }
-                    accept_closure(
-                        function (A $a) : A {
-                            return $a;
-                        }
-                    );',
-            ],
-            'allowCallableWithOptionalArg' => [
-                '<?php
-                    /**
-                     * @param Closure():int $x
-                     */
-                    function accept_closure($x) : void {
-                        $x();
-                    }
-                    accept_closure(
-                        function (int $x = 5) : int {
-                            return $x;
-                        }
-                    );',
-            ],
             'dontInferMethodIdWhenFormatDoesntFit' => [
                 '<?php
                     /** @param string|callable $p */
@@ -968,30 +624,6 @@ class CallableTest extends TestCase
                         }
                         $setter = "b" . $key;
                         if (is_callable($setter)) {}
-                    }'
-            ],
-            'refineCallableTypeWithTypehint' => [
-                '<?php
-                    /** @param string[][] $arr */
-                    function foo(array $arr) : void {
-                        array_map(
-                            function(array $a) {
-                                return reset($a);
-                            },
-                            $arr
-                        );
-                    }'
-            ],
-            'refineCallableTypeWithoutTypehint' => [
-                '<?php
-                    /** @param string[][] $arr */
-                    function foo(array $arr) : void {
-                        array_map(
-                            function($a) {
-                                return reset($a);
-                            },
-                            $arr
-                        );
                     }'
             ],
             'noExceptionOnSelfString' => [
@@ -1031,29 +663,6 @@ class CallableTest extends TestCase
     public function providerInvalidCodeParse()
     {
         return [
-            'wrongArg' => [
-                '<?php
-                    $bar = ["foo", "bar"];
-
-                    $bam = array_map(
-                        function(int $a): int {
-                            return $a + 1;
-                        },
-                        $bar
-                    );',
-                'error_message' => 'InvalidScalarArgument',
-            ],
-            'noReturn' => [
-                '<?php
-                    $bar = ["foo", "bar"];
-
-                    $bam = array_map(
-                        function(string $a): string {
-                        },
-                        $bar
-                    );',
-                'error_message' => 'InvalidReturnType',
-            ],
             'undefinedCallableClass' => [
                 '<?php
                     class A {
@@ -1147,47 +756,11 @@ class CallableTest extends TestCase
                     foo("trime");',
                 'error_message' => 'UndefinedFunction',
             ],
-            'possiblyNullFunctionCall' => [
-                '<?php
-                    /**
-                     * @var Closure|null $foo
-                     */
-                    $foo = null;
-
-
-                    $foo =
-                        /**
-                         * @param mixed $bar
-                         * @psalm-suppress MixedFunctionCall
-                         */
-                        function ($bar) use (&$foo): string
-                        {
-                            if (is_array($bar)) {
-                                return $foo($bar);
-                            }
-
-                            return $bar;
-                        };',
-                'error_message' => 'MixedReturnStatement',
-            ],
             'stringFunctionCall' => [
                 '<?php
                     $bad_one = "hello";
                     $a = $bad_one(1);',
                 'error_message' => 'MixedAssignment',
-            ],
-            'wrongParamType' => [
-                '<?php
-                    $take_string = function(string $s): string { return $s; };
-                    $take_string(42);',
-                'error_message' => 'InvalidScalarArgument',
-            ],
-            'missingClosureReturnType' => [
-                '<?php
-                    $a = function() {
-                        return "foo";
-                    };',
-                'error_message' => 'MissingClosureReturnType',
             ],
             'wrongCallableReturnType' => [
                 '<?php
@@ -1204,174 +777,6 @@ class CallableTest extends TestCase
 
                     bar($add_one);',
                 'error_message' => 'InvalidReturnStatement',
-            ],
-            'returnsTypedClosureWithBadReturnType' => [
-                '<?php
-                    /**
-                     * @param Closure(int):int $f
-                     * @param Closure(int):int $g
-                     *
-                     * @return Closure(int):string
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return function (int $x) use ($f, $g) : int {
-                            return $f($g($x));
-                        };
-                    }',
-                'error_message' => 'InvalidReturnStatement',
-            ],
-            'returnsTypedCallableWithBadReturnType' => [
-                '<?php
-                    /**
-                     * @param Closure(int):int $f
-                     * @param Closure(int):int $g
-                     *
-                     * @return callable(int):string
-                     */
-                    function foo(Closure $f, Closure $g) : callable {
-                        return function (int $x) use ($f, $g) : int {
-                            return $f($g($x));
-                        };
-                    }',
-                'error_message' => 'InvalidReturnStatement',
-            ],
-            'returnsTypedClosureWithBadParamType' => [
-                '<?php
-                    /**
-                     * @param Closure(int):int $f
-                     * @param Closure(int):int $g
-                     *
-                     * @return Closure(string):int
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return function (int $x) use ($f, $g) : int {
-                            return $f($g($x));
-                        };
-                    }',
-                'error_message' => 'InvalidReturnStatement',
-            ],
-            'returnsTypedCallableWithBadParamType' => [
-                '<?php
-                    /**
-                     * @param Closure(int):int $f
-                     * @param Closure(int):int $g
-                     *
-                     * @return callable(string):int
-                     */
-                    function foo(Closure $f, Closure $g) : callable {
-                        return function (int $x) use ($f, $g) : int {
-                            return $f($g($x));
-                        };
-                    }',
-                'error_message' => 'InvalidReturnStatement',
-            ],
-            'returnsTypedClosureWithBadCall' => [
-                '<?php
-                    class A {}
-                    class B {}
-                    class C {}
-                    class D {}
-
-                    /**
-                     * @param Closure(B):A $f
-                     * @param Closure(C):B $g
-                     *
-                     * @return Closure(C):A
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return function (int $x) use ($f, $g) : int {
-                            return $f($g($x));
-                        };
-                    }',
-                'error_message' => 'InvalidArgument',
-            ],
-            'returnsTypedClosureWithSubclassParam' => [
-                '<?php
-                    class A {}
-                    class B {}
-                    class C {}
-                    class C2 extends C {}
-
-                    /**
-                     * @param Closure(B):A $f
-                     * @param Closure(C):B $g
-                     *
-                     * @return Closure(C):A
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return function (C2 $x) use ($f, $g) : A {
-                            return $f($g($x));
-                        };
-                    }',
-                'error_message' => 'LessSpecificReturnStatement',
-            ],
-            'returnsTypedClosureWithSubclassReturn' => [
-                '<?php
-                    class A {}
-                    class B {}
-                    class C {}
-                    class A2 extends A {}
-
-                    /**
-                     * @param Closure(B):A $f
-                     * @param Closure(C):B $g
-                     *
-                     * @return Closure(C):A2
-                     */
-                    function foo(Closure $f, Closure $g) : Closure {
-                        return function (C $x) use ($f, $g) : A {
-                            return $f($g($x));
-                        };
-                    }',
-                'error_message' => 'LessSpecificReturnStatement',
-            ],
-            'returnsTypedClosureFromCallable' => [
-                '<?php
-                    class A {}
-                    class B {}
-                    class C {}
-
-                    /**
-                     * @param Closure(B):A $f
-                     * @param Closure(C):B $g
-                     *
-                     * @return callable(C):A
-                     */
-                    function foo(Closure $f, Closure $g) : callable {
-                        return function (C $x) use ($f, $g) : A {
-                            return $f($g($x));
-                        };
-                    }
-
-                    /**
-                     * @param Closure(B):A $f
-                     * @param Closure(C):B $g
-                     *
-                     * @return Closure(C):A
-                     */
-                    function bar(Closure $f, Closure $g) : Closure {
-                        return foo($f, $g);
-                    }',
-                'error_message' => 'LessSpecificReturnStatement',
-            ],
-            'undefinedVariable' => [
-                '<?php
-                    $a = function() use ($i) {};',
-                'error_message' => 'UndefinedVariable',
-            ],
-            'voidReturningArrayMap' => [
-                '<?php
-                    $arr = array_map(
-                        function(int $i) : void {
-                            echo $i;
-                        },
-                        [1, 2, 3]
-                    );
-
-                    foreach ($arr as $a) {
-                        if ($a) {}
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
             ],
             'checkCallableTypeString' => [
                 '<?php
@@ -1410,40 +815,6 @@ class CallableTest extends TestCase
 
                     f([C::class, "m"]);',
                 'error_message' => 'InvalidScalarArgument',
-            ],
-            'PHP71-closureFromCallableInvokableNamedClassWrongArgs' => [
-                '<?php
-                    namespace NS;
-                    use Closure;
-
-                    /** @param Closure(string):bool $c */
-                    function acceptsIntToBool(Closure $c): void {}
-
-                    class NamedInvokable {
-                        public function __invoke(int $p): bool {
-                            return $p > 0;
-                        }
-                    }
-
-                    acceptsIntToBool(Closure::fromCallable(new NamedInvokable));',
-                'error_message' => 'InvalidScalarArgument',
-            ],
-            'undefinedClassForCallable' => [
-                '<?php
-                    class Foo {
-                        public function __construct(UndefinedClass $o) {}
-                    }
-                    new Foo(function() : void {});',
-                'error_message' => 'UndefinedClass',
-            ],
-            'useDuplicateName' => [
-                '<?php
-                    $foo = "bar";
-
-                    $a = function (string $foo) use ($foo) : string {
-                      return $foo;
-                    };',
-                'error_message' => 'DuplicateParam',
             ],
             'callableWithSpaceAfterColonBadVarArg' => [
                 '<?php
@@ -1498,63 +869,6 @@ class CallableTest extends TestCase
                     class one { public function two(string $_p): void {} }
                     array_map(["two", "three"], ["one", "two"]);',
                 'error_message' => 'InvalidArgument',
-            ],
-            'PHP71-privateCallable' => [
-                '<?php
-                    class Base  {
-                        private function privateMethod() : void {}
-                    }
-
-                    class Example extends Base {
-                        public function test() : Closure {
-                            return Closure::fromCallable([$this, "privateMethod"]);
-                        }
-                    }',
-                'error_message' => 'InvalidArgument',
-            ],
-            'prohibitCallableWithRequiredArg' => [
-                '<?php
-                    /**
-                     * @param Closure():int $x
-                     */
-                    function accept_closure($x) : void {
-                        $x();
-                    }
-                    accept_closure(
-                      function (int $x) : int {
-                        return $x;
-                      }
-                    );',
-                'error_message' => 'InvalidArgument',
-            ],
-            'useClosureDocblockType' => [
-                '<?php
-                    class A {}
-                    class B extends A {}
-
-                    function takesA(A $_a) : void {}
-                    function takesB(B $_b) : void {}
-
-                    $getAButReallyB = /** @return A */ function() {
-                        return new B;
-                    };
-
-                    takesA($getAButReallyB());
-                    takesB($getAButReallyB());',
-                'error_message' => 'ArgumentTypeCoercion - src/somefile.php:13:28 - Argument 1 of takesB expects B, parent type A provided',
-            ],
-            'closureByRefUseToMixed' => [
-                '<?php
-                    function assertInt(int $int): int {
-                        $s = static function() use(&$int): void {
-                            $int = "42";
-                        };
-
-                        $s();
-
-                        return $int;
-                    }',
-                'error_message' => 'MixedReturnStatement'
             ],
             'noFatalErrorOnMissingClassWithSlash' => [
                 '<?php
