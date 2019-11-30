@@ -352,7 +352,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
     /**
      * Sort the entries with a user-defined comparison function and maintain key association
      * @link http://php.net/manual/en/arrayobject.uasort.php
-     * @param callback $cmp_function <p>
+     * @param callable $cmp_function <p>
      * Function <i>cmp_function</i> should accept two
      * parameters which will be filled by pairs of entries.
      * The comparison function must return an integer less than, equal
@@ -367,8 +367,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
     /**
      * Sort the entries by keys using a user-defined comparison function
      * @link http://php.net/manual/en/arrayobject.uksort.php
-     * @param callback $cmp_function <p>
-     * The callback comparison function.
+     * @param callable $cmp_function <p>
+     * The callable comparison function.
      * </p>
      * <p>
      * Function <i>cmp_function</i> should accept two

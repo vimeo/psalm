@@ -10,6 +10,6 @@ class SuicidalAutoloaderTest extends TestCase
 
     public function testSucceedsWithEmptyFile(): void
     {
-        $this->runPsalm([], __DIR__ . '/' . '../fixtures/SuicidalAutoloader/');
+        $this->runPsalm(['--no-cache'], __DIR__ . '/' . '../fixtures/SuicidalAutoloader/');
     }
 }

@@ -437,7 +437,7 @@ abstract class Atomic
         array $phantom_classes = []
     ) {
         if ($this instanceof TNamedObject) {
-            if (!isset($phantom_classes[strtolower($this->value)])) {
+            if (!isset($phantom_classes[$this->value]) && !isset($phantom_classes[strtolower($this->value)])) {
                 $codebase->scanner->queueClassLikeForScanning(
                     $this->value,
                     $file_storage ? $file_storage->file_path : null,
@@ -479,14 +479,16 @@ abstract class Atomic
         }
 
         if ($this instanceof TClassString && $this->as !== 'object') {
-            $codebase->scanner->queueClassLikeForScanning(
-                $this->as,
-                $file_storage ? $file_storage->file_path : null,
-                false,
-                !$this->from_docblock
-            );
-            if ($file_storage) {
-                $file_storage->referenced_classlikes[strtolower($this->as)] = $this->as;
+            if (!isset($phantom_classes[$this->as]) && !isset($phantom_classes[strtolower($this->as)])) {
+                $codebase->scanner->queueClassLikeForScanning(
+                    $this->as,
+                    $file_storage ? $file_storage->file_path : null,
+                    false,
+                    !$this->from_docblock
+                );
+                if ($file_storage) {
+                    $file_storage->referenced_classlikes[strtolower($this->as)] = $this->as;
+                }
             }
         }
 
