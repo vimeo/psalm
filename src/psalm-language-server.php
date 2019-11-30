@@ -186,6 +186,7 @@ if (array_key_exists('v', $options)) {
 if (ini_get('pcre.jit') === '1'
     && PHP_OS === 'Darwin'
     && version_compare(PHP_VERSION, '7.3.0') >= 0
+    && version_compare(PHP_VERSION, '7.4.0') < 0
 ) {
     die(\Psalm\Internal\Fork\Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL);
 }
