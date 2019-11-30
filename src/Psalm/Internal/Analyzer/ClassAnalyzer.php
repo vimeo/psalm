@@ -1860,7 +1860,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                         if (isset($parent_storage->template_covariants[$i])
                             && !$parent_storage->template_covariants[$i]
-                            && $parent_storage->user_defined
                         ) {
                             foreach ($extended_type->getTypes() as $t) {
                                 if ($t instanceof Type\Atomic\TTemplateParam
@@ -1869,13 +1868,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                     && ($local_offset
                                         = array_search($t->param_name, array_keys($storage->template_types)))
                                         !== false
-                                    && isset($storage->template_covariants[$local_offset])
-                                    && $storage->template_covariants[$local_offset]
+                                    && !empty($storage->template_covariants[$local_offset])
                                 ) {
                                     if (IssueBuffer::accepts(
                                         new InvalidTemplateParam(
                                             'Cannot extend an invariant template param ' . $template_name
-                                                . ' from an invariant context',
+                                                . ' into a covariant context',
                                             $code_location
                                         ),
                                         $storage->suppressed_issues + $this->getSuppressedIssues()

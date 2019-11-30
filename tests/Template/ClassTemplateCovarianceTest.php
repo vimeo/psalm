@@ -95,21 +95,30 @@ class ClassTemplateCovarianceTest extends TestCase
 
                     /**
                      * @template-covariant TValue
-                     * @template-extends \ArrayObject<int,TValue>
+                     * @implements IteratorAggregate<int, TValue>
                      */
-                    class Collection extends \ArrayObject {
+                    class Collection implements IteratorAggregate {
+                        private $arr;
+
                         /**
-                         * @param array<int,TValue> $kv
+                         * @param array<int,TValue> $arr
                          */
-                        public function __construct(array $kv) {
-                            parent::__construct($kv);
+                        public function __construct(array $arr) {
+                            $this->arr = $arr;
+                        }
+
+                        /** @return Traversable<int, TValue> */
+                        public function getIterator() {
+                            foreach ($this->arr as $k => $v) {
+                                yield $k => $v;
+                            }
                         }
                     }
 
                     /**
                      * @param Collection<Animal> $list
                      */
-                    function getSounds(Traversable $list) : void {
+                    function getSounds(Collection $list) : void {
                         foreach ($list as $l) {
                             $l->getSound();
                         }
@@ -136,9 +145,25 @@ class ClassTemplateCovarianceTest extends TestCase
 
                     /**
                      * @template-covariant TValue
-                     * @template-extends \ArrayObject<int,TValue>
+                     * @implements IteratorAggregate<int, TValue>
                      */
-                    class Collection extends \ArrayObject {}
+                    class Collection implements IteratorAggregate {
+                        private $arr;
+
+                        /**
+                         * @param array<int,TValue> $arr
+                         */
+                        public function __construct(array $arr) {
+                            $this->arr = $arr;
+                        }
+
+                        /** @return Traversable<int, TValue> */
+                        public function getIterator() {
+                            foreach ($this->arr as $k => $v) {
+                                yield $k => $v;
+                            }
+                        }
+                    }
 
                     /** @template-extends Collection<Dog> */
                     class HardwiredDogCollection extends Collection {}
@@ -541,6 +566,15 @@ class ClassTemplateCovarianceTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidTemplateParam'
+            ],
+            'preventExtendingCoreWithCovariantParam' => [
+                '<?php
+                    /**
+                     * @template-covariant TValue
+                     * @template-extends \ArrayObject<int,TValue>
+                     */
+                    class Collection extends \ArrayObject {}',
+                'error_message' => 'InvalidTemplateParam',
             ],
         ];
     }
