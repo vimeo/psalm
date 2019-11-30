@@ -481,14 +481,17 @@ class ClassTemplateCovarianceTest extends TestCase
                       function b(): void {}
                     }
 
-                    /** @return Generator<int,Bar,Bar,mixed> */
-                    function gen() {
+                    /**
+                     * @return Generator<int,Bar,Bar,mixed>
+                     * @psalm-suppress MixedReturnTypeCoercion
+                     */
+                    function gen() : Generator {
                       $bar = yield new Bar();
                       $bar->b();
                     }
 
-                    /** @param Generator<int,Foo,Foo,mixed> $gen */
-                    function sendFoo($gen): void {
+                    /** @param Generator<int,Bar,Foo,mixed> $gen */
+                    function sendFoo(Generator $gen): void {
                       $gen->send(new Foo());
                     }
 
