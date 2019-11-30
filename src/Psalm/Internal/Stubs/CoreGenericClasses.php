@@ -88,7 +88,7 @@ interface Iterator extends Traversable {
 /**
  * @template-covariant TKey
  * @template TValue
- * @template-covariant TSend
+ * @template TSend
  * @template-covariant TReturn
  *
  * @template-implements Traversable<TKey, TValue>
