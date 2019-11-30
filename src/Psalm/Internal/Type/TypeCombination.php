@@ -111,6 +111,9 @@ class TypeCombination
     /** @var array<string, Atomic\TLiteralFloat>|null */
     private $floats = [];
 
+    /** @var array<string, Atomic\TNamedObject|Atomic\TObject>|null */
+    private $class_string_types = [];
+
     /**
      * @var array<string, TNamedObject|TTemplateParam|TIterable|TObject>|null
      */
@@ -192,6 +195,7 @@ class TypeCombination
             && !$combination->object_type_params
             && !$combination->named_object_types
             && !$combination->strings
+            && !$combination->class_string_types
             && !$combination->ints
             && !$combination->floats
         ) {
@@ -468,6 +472,23 @@ class TypeCombination
             $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
 
             $new_types[] = new TGenericObject($generic_type, $generic_type_params);
+        }
+
+        if ($combination->class_string_types) {
+            if (!isset($combination->value_types['string'])) {
+                $object_type = self::combineTypes(
+                    array_values($combination->class_string_types),
+                    $codebase
+                );
+
+                foreach ($object_type->getTypes() as $object_atomic_type) {
+                    if ($object_atomic_type instanceof TNamedObject) {
+                        $new_types[] = new TClassString($object_atomic_type->value, $object_atomic_type);
+                    } elseif ($object_atomic_type instanceof TObject) {
+                        $new_types[] = new TClassString();
+                    }
+                }
+            }
         }
 
         if ($combination->strings) {
@@ -930,8 +951,12 @@ class TypeCombination
 
                     if ($type instanceof Type\Atomic\TTemplateParamClass) {
                         $combination->value_types[$type_key] = $type;
-                    } elseif ($type instanceof Type\Atomic\TClassString && $type->as !== 'object') {
-                        $combination->value_types[$type_key] = $type;
+                    } elseif ($type instanceof Type\Atomic\TClassString) {
+                        if (!$type->as_type) {
+                            $combination->class_string_types['object'] = new TObject();
+                        } else {
+                            $combination->class_string_types[$type->as] = $type->as_type;
+                        }
                     } elseif ($type instanceof TLiteralString) {
                         if ($combination->strings !== null && count($combination->strings) < $literal_limit) {
                             $combination->strings[$type_key] = $type;
@@ -954,10 +979,9 @@ class TypeCombination
                                 if ($mutual) {
                                     $first_class = array_keys($mutual)[0];
 
-                                    $class_string_type = new TClassString($first_class, new TNamedObject($first_class));
-                                    $combination->value_types[$class_string_type->getKey()] = $class_string_type;
+                                    $combination->class_string_types[$first_class] = new TNamedObject($first_class);
                                 } else {
-                                    $combination->value_types['class-string'] = new TClassString();
+                                    $combination->class_string_types['object'] = new TObject();
                                 }
                             } else {
                                 $combination->value_types['string'] = new TString();
@@ -984,10 +1008,10 @@ class TypeCombination
                                 ) {
                                     $combination->value_types[$type_key] = new TString();
                                 } else {
-                                    if (isset($shared_classlikes[$type->as])) {
-                                        $combination->value_types[$type->getKey()] = $type;
+                                    if (isset($shared_classlikes[$type->as]) && $type->as_type) {
+                                        $combination->class_string_types[$type->as] = $type->as_type;
                                     } else {
-                                        $combination->value_types[$type_key] = new TClassString();
+                                        $combination->class_string_types['object'] = new TObject();
                                     }
                                 }
                             } else {
@@ -996,41 +1020,6 @@ class TypeCombination
                         } elseif (get_class($combination->value_types['string']) !== TString::class) {
                             if (get_class($type) === TString::class) {
                                 $combination->value_types[$type_key] = $type;
-                            } elseif ($combination->value_types['string'] instanceof HasClassString
-                                && $type instanceof HasClassString
-                            ) {
-                                $a_named_object = $combination->value_types['string']->hasSingleNamedObject();
-                                $b_named_object = $type->hasSingleNamedObject();
-
-                                if ($a_named_object && $b_named_object) {
-                                    $a_object = $combination->value_types['string']->getSingleNamedObject();
-                                    $b_object = $type->getSingleNamedObject();
-
-                                    if ($a_object->value === $b_object->value) {
-                                        $combination->value_types[$type_key] = new TClassString(
-                                            $a_object->value,
-                                            $a_object
-                                        );
-                                    } else {
-                                        $union = self::combineTypes([$a_object, $b_object], $codebase);
-
-                                        if ($union->hasSingleNamedObject()) {
-                                            $combined_object = $union->getSingleNamedObject();
-
-                                            $combined_class_string = new TClassString(
-                                                $combined_object->value,
-                                                $combined_object
-                                            );
-
-                                            $combination->value_types[$combined_class_string->getKey()]
-                                                = $combined_class_string;
-                                        } else {
-                                            $combination->value_types[$type_key] = new TClassString();
-                                        }
-                                    }
-                                } else {
-                                    $combination->value_types[$type_key] = new TClassString();
-                                }
                             } elseif ($combination->value_types['string'] instanceof TTraitString
                                 && $type instanceof TClassString
                             ) {
@@ -1102,14 +1091,16 @@ class TypeCombination
             }
         }
 
-        foreach ($this->value_types as $value_type) {
-            if ($value_type instanceof TClassString && $value_type->as_type) {
-                $classlikes = self::getClassLikes($codebase, $value_type->as_type->value);
+        if ($this->class_string_types) {
+            foreach ($this->class_string_types as $value_type) {
+                if ($value_type instanceof TNamedObject) {
+                    $classlikes = self::getClassLikes($codebase, $value_type->value);
 
-                if ($shared_classlikes === null) {
-                    $shared_classlikes = $classlikes;
-                } elseif ($shared_classlikes) {
-                    $shared_classlikes = array_intersect_key($shared_classlikes, $classlikes);
+                    if ($shared_classlikes === null) {
+                        $shared_classlikes = $classlikes;
+                    } elseif ($shared_classlikes) {
+                        $shared_classlikes = array_intersect_key($shared_classlikes, $classlikes);
+                    }
                 }
             }
         }

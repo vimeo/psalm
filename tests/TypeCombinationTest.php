@@ -445,6 +445,34 @@ class TypeCombinationTest extends TestCase
                     'Closure(B):void',
                 ],
             ],
+            'combineClassStringWithString' => [
+                'string',
+                [
+                    'class-string',
+                    'string',
+                ],
+            ],
+            'combineClassStringWithFalse' => [
+                'class-string|false',
+                [
+                    'class-string',
+                    'false',
+                ],
+            ],
+            'combineRefinedClassStringWithString' => [
+                'string',
+                [
+                    'class-string<Exception>',
+                    'string',
+                ],
+            ],
+            'combineRefinedClassStrings' => [
+                'class-string<Exception>|class-string<Iterator>',
+                [
+                    'class-string<Exception>',
+                    'class-string<Iterator>',
+                ],
+            ],
         ];
     }
 

@@ -8,7 +8,7 @@ use function preg_replace;
 use function stripos;
 use function strtolower;
 
-class TClassString extends TString implements HasClassString
+class TClassString extends TString
 {
     /**
      * @var string
@@ -109,20 +109,6 @@ class TClassString extends TString implements HasClassString
     public function canBeFullyExpressedInPhp()
     {
         return false;
-    }
-
-    public function hasSingleNamedObject() : bool
-    {
-        return (bool) $this->as_type;
-    }
-
-    public function getSingleNamedObject() : TNamedObject
-    {
-        if (!$this->as_type) {
-            throw new \UnexpectedValueException('Bad object');
-        }
-
-        return $this->as_type;
     }
 
     /**

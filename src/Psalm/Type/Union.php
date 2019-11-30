@@ -1426,22 +1426,6 @@ class Union
         return reset($this->literal_int_types);
     }
 
-    public function hasSingleNamedObject() : bool
-    {
-        return $this->isSingle() && $this->hasNamedObject();
-    }
-
-    public function getSingleNamedObject() : TNamedObject
-    {
-        $first_value = array_values($this->types)[0];
-
-        if (!$first_value instanceof TNamedObject) {
-            throw new \UnexpectedValueException('Bad object');
-        }
-
-        return $first_value;
-    }
-
     /**
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
