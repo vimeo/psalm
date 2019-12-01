@@ -1621,10 +1621,8 @@ class CallAnalyzer
                 if ($template_result && $by_ref_type) {
                     $original_by_ref_type = clone $by_ref_type;
 
-                    $by_ref_type = clone $by_ref_type;
-
                     $by_ref_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
-                        $by_ref_type,
+                        clone $by_ref_type,
                         $template_result,
                         $codebase,
                         $statements_analyzer->node_data->getType($arg->value),
@@ -1637,6 +1635,26 @@ class CallAnalyzer
                         );
 
                         $by_ref_type = $original_by_ref_type;
+                    }
+                }
+
+                if ($template_result && $by_ref_out_type) {
+                    $original_by_ref_out_type = clone $by_ref_type;
+
+                    $by_ref_out_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                        clone $by_ref_out_type,
+                        $template_result,
+                        $codebase,
+                        $statements_analyzer->node_data->getType($arg->value),
+                        null
+                    );
+
+                    if ($template_result->generic_params) {
+                        $original_by_ref_out_type->replaceTemplateTypesWithArgTypes(
+                            $template_result->generic_params
+                        );
+
+                        $by_ref_out_type = $original_by_ref_out_type;
                     }
                 }
 
