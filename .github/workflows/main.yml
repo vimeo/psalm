@@ -11,3 +11,4 @@ jobs:
       uses: docker://muglug/psalm-github-actions
       with:
         args: --shepherd
+
