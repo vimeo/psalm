@@ -47,10 +47,10 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             return;
         }
 
-        if ($source_control_info instanceof \Psalm\SourceControl\Git\GitInfo && $build_info) {
+        if ($build_info) {
             $data = [
                 'build' => $build_info,
-                'git' => $source_control_info->toArray(),
+                'git' => $source_control_info ? $source_control_info->toArray() : [],
                 'issues' => array_filter(
                     $issues,
                     /**
@@ -98,8 +98,12 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                     fwrite(STDERR, self::getCurlErrorMessage($ch) . PHP_EOL);
                 } else {
                     echo $return . PHP_EOL;
-                    echo 'Git args: ' . var_export($source_control_info->toArray(), true) . PHP_EOL;
-                    echo 'CI args: ' . var_export($build_info, true) . PHP_EOL;
+                    echo 'Git args: '
+                        . var_export($source_control_info ? $source_control_info->toArray() : [], true)
+                        . PHP_EOL;
+                    echo 'CI args: '
+                        . var_export($build_info, true)
+                        . PHP_EOL;
                 }
             }
 
