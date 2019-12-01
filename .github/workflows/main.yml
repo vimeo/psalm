@@ -10,4 +10,4 @@ jobs:
     - name: Psalm
       uses: docker://mickaelandrieu/psalm-ga
       with:
-        args: --shepherd
+        args: --with-shepherd
