@@ -154,6 +154,7 @@ class ForeachAnalyzer
                     && $type_location
                     && isset($context->vars_in_scope[$var_comment->var_id])
                     && $context->vars_in_scope[$var_comment->var_id]->getId() === $comment_type->getId()
+                    && !$comment_type->isMixed()
                 ) {
                     $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -163,7 +164,8 @@ class ForeachAnalyzer
                         FileManipulationBuffer::addVarAnnotationToRemove($type_location);
                     } elseif (IssueBuffer::accepts(
                         new UnnecessaryVarAnnotation(
-                            'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
+                            'The @var ' . $comment_type . ' annotation for '
+                                . $var_comment->var_id . ' is unnecessary',
                             $type_location
                         )
                     )) {

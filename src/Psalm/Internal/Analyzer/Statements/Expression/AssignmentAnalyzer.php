@@ -177,6 +177,7 @@ class AssignmentAnalyzer
                         && $type_location
                         && isset($context->vars_in_scope[$var_comment->var_id])
                         && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
+                        && !$comment_type->isMixed()
                     ) {
                         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -186,7 +187,8 @@ class AssignmentAnalyzer
                             FileManipulationBuffer::addVarAnnotationToRemove($type_location);
                         } elseif (IssueBuffer::accepts(
                             new UnnecessaryVarAnnotation(
-                                'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
+                                'The @var ' . $var_comment . ' annotation for '
+                                    . $var_comment->var_id . ' is unnecessary',
                                 $type_location
                             )
                         )) {
@@ -248,6 +250,7 @@ class AssignmentAnalyzer
                 && $temp_assign_value_type
                 && $array_var_id
                 && $temp_assign_value_type->getId() === $comment_type->getId()
+                && !$comment_type->isMixed()
             ) {
                 if ($codebase->alter_code
                     && isset($statements_analyzer->getProjectAnalyzer()->getIssuesToFix()['UnnecessaryVarAnnotation'])
@@ -255,7 +258,8 @@ class AssignmentAnalyzer
                     FileManipulationBuffer::addVarAnnotationToRemove($comment_type_location);
                 } elseif (IssueBuffer::accepts(
                     new UnnecessaryVarAnnotation(
-                        'The @var annotation for ' . $array_var_id . ' is unnecessary',
+                        'The @var ' . $comment_type . ' annotation for '
+                            . $array_var_id . ' is unnecessary',
                         $comment_type_location
                     )
                 )) {
