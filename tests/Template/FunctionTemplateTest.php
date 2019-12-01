@@ -835,7 +835,7 @@ class FunctionTemplateTest extends TestCase
 
                     /**
                      * @param array<int, array{0: int, 1: string}> $array
-                     * @return array<int, array{0: int, 1: string}>
+                     * @return list<array{0: int, 1: string}>
                      */
                     function example(array $array): array {
                         example_sort_by_ref($array);

@@ -1639,7 +1639,7 @@ class CallAnalyzer
                 }
 
                 if ($template_result && $by_ref_out_type) {
-                    $original_by_ref_out_type = clone $by_ref_type;
+                    $original_by_ref_out_type = clone $by_ref_out_type;
 
                     $by_ref_out_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
                         clone $by_ref_out_type,
