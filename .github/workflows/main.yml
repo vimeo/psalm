@@ -8,6 +8,6 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Psalm
-      uses: docker://mickaelandrieu/psalm-ga
+      uses: docker://muglug/psalm-github-actions
       with:
-        args: --with-shepherd
+        args: --shepherd
