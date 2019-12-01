@@ -177,7 +177,7 @@ class AssignmentAnalyzer
                         && $type_location
                         && isset($context->vars_in_scope[$var_comment->var_id])
                         && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
-                        && !$comment_type->isMixed()
+                        && !$var_comment_type->isMixed()
                     ) {
                         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -187,7 +187,7 @@ class AssignmentAnalyzer
                             FileManipulationBuffer::addVarAnnotationToRemove($type_location);
                         } elseif (IssueBuffer::accepts(
                             new UnnecessaryVarAnnotation(
-                                'The @var ' . $var_comment . ' annotation for '
+                                'The @var ' . $var_comment_type . ' annotation for '
                                     . $var_comment->var_id . ' is unnecessary',
                                 $type_location
                             )
