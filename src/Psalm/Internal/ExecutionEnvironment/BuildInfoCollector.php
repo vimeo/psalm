@@ -252,7 +252,7 @@ class BuildInfoCollector
             $githubRef = (string) $this->env['GITHUB_REF'];
             if (\strpos($githubRef, 'refs/heads/') !== false) {
                 $githubRef = \str_replace('refs/heads/', '', $githubRef);
-            } elseif (strpos($githubRef, 'refs/tags/') !== false) {
+            } elseif (\strpos($githubRef, 'refs/tags/') !== false) {
                 $githubRef = \str_replace('refs/tags/', '', $githubRef);
             }
 
