@@ -45,7 +45,8 @@ class BuildInfoCollector
             ->fillCircleCi()
             ->fillAppVeyor()
             ->fillJenkins()
-            ->fillScrutinizer();
+            ->fillScrutinizer()
+            ->fillGithubActions();
 
         return $this->readEnv;
     }
@@ -233,6 +234,46 @@ class BuildInfoCollector
             }
         }
 
+        return $this;
+    }
+
+    /**
+     * Fill Github Actions environment variables.
+     *
+     * @return $this
+     * @psalm-suppress PossiblyUndefinedStringArrayOffset
+     */
+    protected function fillGithubActions()
+    {
+        if (isset($this->env['GITHUB_ACTIONS'])) {
+            $this->env['CI_NAME'] = 'github-actions';
+            $this->env['CI_JOB_ID'] = $this->env['GITHUB_ACTIONS'];
+
+            $githubRef = (string) $this->env['GITHUB_REF'];
+            if (\strpos($githubRef, 'refs/heads/') !== false) {
+                $githubRef = \str_replace('refs/heads/', '', $githubRef);
+            } elseif (strpos($githubRef, 'refs/tags/') !== false) {
+                $githubRef = \str_replace('refs/tags/', '', $githubRef);
+            }
+
+            $this->env['CI_BRANCH'] = $githubRef;
+
+            $this->readEnv['GITHUB_ACTIONS'] = $this->env['GITHUB_ACTIONS'];
+            $this->readEnv['GITHUB_REF'] = $this->env['GITHUB_REF'];
+            $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
+
+            if (isset($this->env['GITHUB_EVENT_PATH'])) {
+                $event_json = \file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
+                /** @var array */
+                $event_data = \json_decode($event_json, true);
+                /** @psalm-suppress ForbiddenCode */
+                \var_dump($event_data);
+
+                if ($this->env['GITHUB_EVENT_PATH'] === 'pull_request') {
+                    $this->readEnv['CI_PR_NUMBER'] = $event_data['number'];
+                }
+            }
+        }
         return $this;
     }
 }
