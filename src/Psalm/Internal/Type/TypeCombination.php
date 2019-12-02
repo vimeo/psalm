@@ -475,6 +475,15 @@ class TypeCombination
         }
 
         if ($combination->class_string_types) {
+            if ($combination->strings) {
+                foreach ($combination->strings as $k => $string) {
+                    if ($string instanceof TLiteralClassString) {
+                        $combination->class_string_types[$string->value] = new TNamedObject($string->value);
+                        unset($combination->strings[$k]);
+                    }
+                }
+            }
+
             if (!isset($combination->value_types['string'])) {
                 $object_type = self::combineTypes(
                     array_values($combination->class_string_types),

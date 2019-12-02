@@ -473,6 +473,13 @@ class TypeCombinationTest extends TestCase
                     'class-string<Iterator>',
                 ],
             ],
+            'combineClassStringsWithLiteral' => [
+                'class-string',
+                [
+                    'class-string',
+                    'Exception::class',
+                ],
+            ],
         ];
     }
 
