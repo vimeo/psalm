@@ -282,7 +282,7 @@ class BuildInfoCollector
                         ->setCommitterName($event_data['head_commit']['committer']['name'])
                         ->setCommitterEmail($event_data['head_commit']['committer']['email'])
                         ->setMessage($event_data['head_commit']['message'])
-                        ->setDate(strtotime($event_data['head_commit']['timestamp'])),
+                        ->setDate(\strtotime($event_data['head_commit']['timestamp'])),
                     []
                 );
 
