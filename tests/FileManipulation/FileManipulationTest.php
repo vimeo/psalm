@@ -88,7 +88,7 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $this->project_analyzer->checkClassReferences();
+        $this->project_analyzer->consolidateAnalyzedData();
 
         $this->project_analyzer->getCodebase()->analyzer->updateFile($file_path, false);
         $this->assertSame($output_code, $this->project_analyzer->getCodebase()->getFileContents($file_path));

@@ -1002,7 +1002,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                 '\', should be \'' . $signature_type . '\'',
                             $function_param->type_location
                         ),
-                        $storage->suppressed_issues
+                        $storage->suppressed_issues,
+                        true
                     )) {
                         // do nothing
                     }

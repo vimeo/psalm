@@ -1277,7 +1277,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                 if (IssueBuffer::accepts(
                     $issue,
-                    $this->getSuppressedIssues()
+                    $this->getSuppressedIssues(),
+                    true
                 )) {
                     // fall through
                 }

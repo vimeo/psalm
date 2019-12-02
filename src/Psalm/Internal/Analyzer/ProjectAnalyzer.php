@@ -490,6 +490,8 @@ class ProjectAnalyzer
             $this->config->initializePlugins($this);
 
             $this->codebase->scanFiles($this->threads);
+
+            $this->codebase->infer_types_from_usage = true;
         } else {
             $this->progress->debug(count($diff_files) . ' changed files: ' . "\n");
             $this->progress->debug('    ' . implode("\n    ", $diff_files) . "\n");
@@ -540,15 +542,12 @@ class ProjectAnalyzer
     /**
      * @return void
      */
-    public function checkClassReferences()
+    public function consolidateAnalyzedData()
     {
-        if (!$this->codebase->collect_references) {
-            throw new \UnexpectedValueException('Should not be checking references');
-        }
-
-        $this->codebase->classlikes->checkClassReferences(
+        $this->codebase->classlikes->consolidateAnalyzedData(
             $this->codebase->methods,
-            $this->progress
+            $this->progress,
+            $this->codebase->collect_references
         );
     }
 

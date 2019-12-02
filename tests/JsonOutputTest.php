@@ -90,7 +90,7 @@ echo $a;';
             $file_contents
         );
 
-        $this->project_analyzer->checkClassReferences();
+        $this->project_analyzer->consolidateAnalyzedData();
 
         $this->analyzeFile('somefile.php', new Context());
 

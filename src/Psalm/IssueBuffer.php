@@ -44,6 +44,11 @@ class IssueBuffer
     protected static $console_issues = [];
 
     /**
+     * @var array<string, int>
+     */
+    protected static $fixable_issue_counts = [];
+
+    /**
      * @var int
      */
     protected static $error_count = 0;
@@ -75,13 +80,13 @@ class IssueBuffer
      *
      * @return  bool
      */
-    public static function accepts(CodeIssue $e, array $suppressed_issues = [])
+    public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false)
     {
         if (self::isSuppressed($e, $suppressed_issues)) {
             return false;
         }
 
-        return self::add($e);
+        return self::add($e, $is_fixable);
     }
 
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
@@ -165,7 +170,7 @@ class IssueBuffer
      *
      * @return  bool
      */
-    public static function add(CodeIssue $e)
+    public static function add(CodeIssue $e, bool $is_fixable = false)
     {
         $config = Config::getInstance();
 
@@ -214,7 +219,20 @@ class IssueBuffer
             self::$issues_data[] = $e->toArray(Config::REPORT_ERROR);
         }
 
+        if ($is_fixable) {
+            self::addFixableIssue($issue_type);
+        }
+
         return true;
+    }
+
+    public static function addFixableIssue(string $issue_type) : void
+    {
+        if (isset(self::$fixable_issue_counts[$issue_type])) {
+            self::$fixable_issue_counts[$issue_type]++;
+        } else {
+            self::$fixable_issue_counts[$issue_type] = 1;
+        }
     }
 
     /**
@@ -225,6 +243,28 @@ class IssueBuffer
     public static function getIssuesData()
     {
         return self::$issues_data;
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    public static function getFixableIssues()
+    {
+        return self::$fixable_issue_counts;
+    }
+
+    /**
+     * @param array<string, int> $fixable_issue_counts
+     */
+    public static function addFixableIssues(array $fixable_issue_counts) : void
+    {
+        foreach ($fixable_issue_counts as $issue_type => $count) {
+            if (isset(self::$fixable_issue_counts[$issue_type])) {
+                self::$fixable_issue_counts[$issue_type] += $count;
+            } else {
+                self::$fixable_issue_counts[$issue_type] = $count;
+            }
+        }
     }
 
     /**
@@ -472,14 +512,36 @@ class IssueBuffer
                 echo 'No errors found!' . "\n";
             }
 
-            if ($info_count && $project_analyzer->stdout_report_options->show_info) {
+            $show_info = $project_analyzer->stdout_report_options->show_info;
+            $show_suggestions = $project_analyzer->stdout_report_options->show_suggestions;
+
+            if ($info_count && ($show_info || $show_suggestions)) {
                 echo str_repeat('-', 30) . "\n";
 
-                echo $info_count . ' other issues found.' . "\n"
-                    . 'You can hide them with ' .
-                    ($project_analyzer->stdout_report_options->use_color
-                        ? "\e[30;48;5;195m--show-info=false\e[0m"
-                        : '--show-info=false') . "\n";
+                echo $info_count . ' other issues found.' . "\n";
+
+                if ($show_info) {
+                    echo 'You can hide them with ' .
+                        ($project_analyzer->stdout_report_options->use_color
+                            ? "\e[30;48;5;195m--show-info=false\e[0m"
+                            : '--show-info=false') . "\n";
+                }
+            }
+
+            if (self::$fixable_issue_counts && $show_suggestions) {
+                echo str_repeat('-', 30) . "\n";
+
+                $total_count = \array_sum(self::$fixable_issue_counts);
+                $command = '--alter --issues=' . \implode(',', \array_keys(self::$fixable_issue_counts));
+                $command .= ' --dry-run';
+
+                echo 'Psalm can automatically fix ' . $total_count
+                    . ($show_info ? 'issues' : ' of them') . ".\n"
+                    . 'Run Psalm again with ' . "\n"
+                    . ($project_analyzer->stdout_report_options->use_color
+                        ? "\e[30;48;5;195m" . $command . "\e[0m"
+                        : $command) . "\n"
+                    . 'to see what it can fix.' . "\n";
             }
 
             echo str_repeat('-', 30) . "\n" . "\n";
@@ -526,24 +588,25 @@ class IssueBuffer
 
         switch ($report_options->format) {
             case Report::TYPE_COMPACT:
-                $output = new CompactReport(self::$issues_data, $report_options);
+                $output = new CompactReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_EMACS:
-                $output = new EmacsReport(self::$issues_data, $report_options);
+                $output = new EmacsReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_TEXT:
-                $output = new TextReport(self::$issues_data, $report_options);
+                $output = new TextReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_JSON:
-                $output = new JsonReport(self::$issues_data, $report_options);
+                $output = new JsonReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_JSON_SUMMARY:
                 $output = new JsonSummaryReport(
                     self::$issues_data,
+                    self::$fixable_issue_counts,
                     $report_options,
                     $mixed_expression_count,
                     $total_expression_count
@@ -551,23 +614,23 @@ class IssueBuffer
                 break;
 
             case Report::TYPE_SONARQUBE:
-                $output = new SonarqubeReport(self::$issues_data, $report_options);
+                $output = new SonarqubeReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_PYLINT:
-                $output = new PylintReport(self::$issues_data, $report_options);
+                $output = new PylintReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_CHECKSTYLE:
-                $output = new CheckstyleReport(self::$issues_data, $report_options);
+                $output = new CheckstyleReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_XML:
-                $output = new XmlReport(self::$issues_data, $report_options);
+                $output = new XmlReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_CONSOLE:
-                $output = new ConsoleReport(self::$issues_data, $report_options);
+                $output = new ConsoleReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
         }
 

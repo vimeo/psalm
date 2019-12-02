@@ -168,7 +168,7 @@ class DocumentationTest extends TestCase
         $this->analyzeFile($file_path, $context);
 
         if ($check_references) {
-            $this->project_analyzer->checkClassReferences();
+            $this->project_analyzer->consolidateAnalyzedData();
         }
     }
 

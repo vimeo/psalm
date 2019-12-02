@@ -225,7 +225,8 @@ class VariableFetchAnalyzer
                                 $first_appearance->getLineNumber(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
+                        (bool) $statements_analyzer->getBranchPoint($var_name)
                     )) {
                         return false;
                     }
@@ -250,7 +251,8 @@ class VariableFetchAnalyzer
                                 $first_appearance->getLineNumber(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
+                        (bool) $statements_analyzer->getBranchPoint($var_name)
                     )) {
                         return false;
                     }

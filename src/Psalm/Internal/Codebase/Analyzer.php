@@ -46,6 +46,7 @@ use function usort;
  *
  * @psalm-type  WorkerData = array{
  *      issues: array<int, IssueData>,
+ *      fixable_issue_counts: array<string, int>,
  *      file_references_to_classes: array<string, array<string,bool>>,
  *      file_references_to_class_members: array<string, array<string,bool>>,
  *      file_references_to_missing_class_members: array<string, array<string,bool>>,
@@ -278,10 +279,8 @@ class Analyzer
 
         $this->progress->finish();
 
-        if ($codebase->find_unused_code
-            && ($project_analyzer->full_run || $codebase->find_unused_code === 'always')
-        ) {
-            $project_analyzer->checkClassReferences();
+        if ($project_analyzer->full_run || $codebase->find_unused_code === 'always') {
+            $project_analyzer->consolidateAnalyzedData();
         }
 
         if ($codebase->track_unused_suppressions) {
@@ -427,6 +426,7 @@ class Analyzer
                     // @codingStandardsIgnoreStart
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
+                        'fixable_issue_counts' => IssueBuffer::getFixableIssues(),
                         'file_references_to_classes' => $rerun ? [] : $file_reference_provider->getAllFileReferencesToClasses(),
                         'file_references_to_class_members' => $rerun ? [] : $file_reference_provider->getAllFileReferencesToClassMembers(),
                         'method_references_to_class_members' => $rerun ? [] : $file_reference_provider->getAllMethodReferencesToClassMembers(),
@@ -463,6 +463,7 @@ class Analyzer
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
+                IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
 
                 if ($codebase->track_unused_suppressions) {
                     IssueBuffer::addUnusedSuppressions($pool_data['unused_suppressions']);

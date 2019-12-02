@@ -63,7 +63,7 @@ class UnusedCodeTest extends TestCase
 
         $this->analyzeFile($file_path, $context, false);
 
-        $this->project_analyzer->checkClassReferences();
+        $this->project_analyzer->consolidateAnalyzedData();
 
         \Psalm\IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
     }
@@ -102,7 +102,7 @@ class UnusedCodeTest extends TestCase
 
         $this->analyzeFile($file_path, $context, false);
 
-        $this->project_analyzer->checkClassReferences();
+        $this->project_analyzer->consolidateAnalyzedData();
 
         \Psalm\IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
     }

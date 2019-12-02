@@ -1024,6 +1024,6 @@ class StubTest extends TestCase
 
         $this->analyzeFile($file_path, $context, false);
 
-        $this->project_analyzer->checkClassReferences();
+        $this->project_analyzer->consolidateAnalyzedData();
     }
 }

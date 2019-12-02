@@ -299,7 +299,8 @@ class ReturnTypeAnalyzer
                             'Closure does not have a return type, expecting ' . $inferred_return_type,
                             new CodeLocation($function_like_analyzer, $function, null, true)
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
+                        !$inferred_return_type->hasMixed() && !$inferred_return_type->isNull()
                     )) {
                         // fall through
                     }
@@ -338,7 +339,8 @@ class ReturnTypeAnalyzer
                       (!$inferred_return_type->hasMixed() ? ', expecting ' . $inferred_return_type : ''),
                     new CodeLocation($function_like_analyzer, $function->name, null, true)
                 ),
-                $suppressed_issues
+                $suppressed_issues,
+                !$inferred_return_type->hasMixed() && !$inferred_return_type->isNull()
             )) {
                 // fall through
             }
@@ -401,7 +403,8 @@ class ReturnTypeAnalyzer
                             ' but return type \'' . $declared_return_type . '\' was expected',
                         $return_type_location
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
+                    true
                 )) {
                     return false;
                 }
@@ -495,7 +498,8 @@ class ReturnTypeAnalyzer
                                 ' is incorrect, got \'' . $inferred_return_type . '\'',
                             $return_type_location
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
+                        true
                     )) {
                         return false;
                     }
@@ -553,7 +557,8 @@ class ReturnTypeAnalyzer
                                 ' is more specific than the declared return type \'' . $declared_return_type . '\'',
                             $return_type_location
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
+                        !($function_like_storage instanceof MethodStorage && $function_like_storage->inheritdoc)
                     )) {
                         return false;
                     }
@@ -591,7 +596,8 @@ class ReturnTypeAnalyzer
                             ' is not nullable, but \'' . $inferred_return_type . '\' contains null',
                         $return_type_location
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
+                    !$inferred_return_type->isNull()
                 )) {
                     return false;
                 }
@@ -627,7 +633,8 @@ class ReturnTypeAnalyzer
                             ' does not allow false, but \'' . $inferred_return_type . '\' contains false',
                         $return_type_location
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
+                    true
                 )) {
                     return false;
                 }
@@ -794,7 +801,8 @@ class ReturnTypeAnalyzer
                         '\', should be \'' . $storage->signature_return_type->getId() . '\'',
                     $storage->return_type_location
                 ),
-                $storage->suppressed_issues
+                $storage->suppressed_issues,
+                true
             )) {
                 return false;
             }

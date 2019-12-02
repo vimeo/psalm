@@ -727,7 +727,7 @@ class ClassLikes
     /**
      * @return void
      */
-    public function checkClassReferences(Methods $methods, Progress $progress = null)
+    public function consolidateAnalyzedData(Methods $methods, ?Progress $progress, bool $check_references)
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -746,21 +746,25 @@ class ClassLikes
                 && $this->config->isInProjectDirs($classlike_storage->location->file_path)
                 && !$classlike_storage->is_trait
             ) {
-                if (!$this->file_reference_provider->isClassReferenced($fq_class_name_lc)) {
-                    if (IssueBuffer::accepts(
-                        new UnusedClass(
-                            'Class ' . $classlike_storage->name . ' is never used',
-                            $classlike_storage->location,
-                            $classlike_storage->name
-                        ),
-                        $classlike_storage->suppressed_issues
-                    )) {
-                        // fall through
+                if ($check_references) {
+                    if (!$this->file_reference_provider->isClassReferenced($fq_class_name_lc)) {
+                        if (IssueBuffer::accepts(
+                            new UnusedClass(
+                                'Class ' . $classlike_storage->name . ' is never used',
+                                $classlike_storage->location,
+                                $classlike_storage->name
+                            ),
+                            $classlike_storage->suppressed_issues
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        $this->checkMethodReferences($classlike_storage, $methods);
+                        $this->checkPropertyReferences($classlike_storage);
                     }
-                } else {
-                    $this->checkMethodReferences($classlike_storage, $methods);
-                    $this->checkPropertyReferences($classlike_storage);
                 }
+
+                $this->findPossibleMethodParamTypes($classlike_storage);
             }
         }
     }
@@ -1805,7 +1809,10 @@ class ClassLikes
                             }
                         } elseif (IssueBuffer::accepts(
                             $issue,
-                            $method_storage->suppressed_issues
+                            $method_storage->suppressed_issues,
+                            $method_storage->stmt_location
+                                && !$declaring_classlike_storage->is_trait
+                                && !$has_variable_calls
                         )) {
                             // fall through
                         }
@@ -1838,55 +1845,15 @@ class ClassLikes
                         }
                     } elseif (IssueBuffer::accepts(
                         $issue,
-                        $method_storage->suppressed_issues
+                        $method_storage->suppressed_issues,
+                        $method_storage->stmt_location
+                            && !$declaring_classlike_storage->is_trait
+                            && !$has_variable_calls
                     )) {
                         // fall through
                     }
                 }
             } else {
-                if ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
-                    && isset($codebase->analyzer->possible_method_param_types[strtolower($method_id)])
-                ) {
-                    if ($method_storage->location) {
-                        $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
-                            $method_id,
-                            $method_storage->location->file_path
-                        );
-
-                        $possible_param_types
-                            = $codebase->analyzer->possible_method_param_types[strtolower($method_id)];
-
-                        if ($function_analyzer && $possible_param_types) {
-                            foreach ($possible_param_types as $offset => $possible_type) {
-                                if (!isset($method_storage->params[$offset])) {
-                                    continue;
-                                }
-
-                                $param_name = $method_storage->params[$offset]->name;
-
-                                if ($possible_type->hasMixed() || $possible_type->isNull()) {
-                                    continue;
-                                }
-
-                                if ($method_storage->params[$offset]->default_type) {
-                                    $possible_type = \Psalm\Type::combineUnionTypes(
-                                        $possible_type,
-                                        $method_storage->params[$offset]->default_type
-                                    );
-                                }
-
-                                $function_analyzer->addOrUpdateParamType(
-                                    $project_analyzer,
-                                    $param_name,
-                                    $possible_type,
-                                    true
-                                );
-                            }
-                        }
-                    }
-                }
-
                 if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
                     && !$classlike_storage->is_interface
                 ) {
@@ -1902,6 +1869,97 @@ class ClassLikes
                                 $method_storage->suppressed_issues
                             )) {
                                 // fall through
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    private function findPossibleMethodParamTypes(ClassLikeStorage $classlike_storage)
+    {
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
+        foreach ($classlike_storage->appearing_method_ids as $method_name => $appearing_method_id) {
+            list($appearing_fq_classlike_name) = explode('::', $appearing_method_id);
+
+            if ($appearing_fq_classlike_name !== $classlike_storage->name) {
+                continue;
+            }
+
+            $method_id = $appearing_method_id;
+
+            $declaring_classlike_storage = $classlike_storage;
+
+            if (isset($classlike_storage->methods[$method_name])) {
+                $method_storage = $classlike_storage->methods[$method_name];
+            } else {
+                $declaring_method_id = $classlike_storage->declaring_method_ids[$method_name];
+
+                list($declaring_fq_classlike_name, $declaring_method_name) = explode('::', $declaring_method_id);
+
+                try {
+                    $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
+                } catch (\InvalidArgumentException $e) {
+                    continue;
+                }
+
+                $method_storage = $declaring_classlike_storage->methods[$declaring_method_name];
+                $method_id = $declaring_method_id;
+            }
+
+            if ($method_storage->location
+                && !$project_analyzer->canReportIssues($method_storage->location->file_path)
+                && !$codebase->analyzer->canReportIssues($method_storage->location->file_path)
+            ) {
+                continue;
+            }
+
+            if (isset($codebase->analyzer->possible_method_param_types[strtolower($method_id)])) {
+                if ($method_storage->location) {
+                    $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
+                        $method_id,
+                        $method_storage->location->file_path
+                    );
+
+                    $possible_param_types
+                        = $codebase->analyzer->possible_method_param_types[strtolower($method_id)];
+
+                    if ($function_analyzer && $possible_param_types) {
+                        foreach ($possible_param_types as $offset => $possible_type) {
+                            if (!isset($method_storage->params[$offset])) {
+                                continue;
+                            }
+
+                            $param_name = $method_storage->params[$offset]->name;
+
+                            if ($possible_type->hasMixed() || $possible_type->isNull()) {
+                                continue;
+                            }
+
+                            if ($method_storage->params[$offset]->default_type) {
+                                $possible_type = \Psalm\Type::combineUnionTypes(
+                                    $possible_type,
+                                    $method_storage->params[$offset]->default_type
+                                );
+                            }
+
+                            if ($codebase->alter_code
+                                && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
+                            ) {
+                                $function_analyzer->addOrUpdateParamType(
+                                    $project_analyzer,
+                                    $param_name,
+                                    $possible_type,
+                                    true
+                                );
+                            } else {
+                                IssueBuffer::addFixableIssue('MissingParamType');
                             }
                         }
                     }

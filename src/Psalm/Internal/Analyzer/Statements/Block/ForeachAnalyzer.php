@@ -167,7 +167,9 @@ class ForeachAnalyzer
                             'The @var ' . $comment_type . ' annotation for '
                                 . $var_comment->var_id . ' is unnecessary',
                             $type_location
-                        )
+                        ),
+                        [],
+                        true
                     )) {
                         // fall through
                     }

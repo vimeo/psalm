@@ -29,4 +29,9 @@ class ReportOptions
      * @var ?string
      */
     public $output_path;
+
+    /**
+     * @var bool
+     */
+    public $show_suggestions = true;
 }

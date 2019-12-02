@@ -81,7 +81,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-            $this->project_analyzer->checkClassReferences();
+            $this->project_analyzer->consolidateAnalyzedData();
         }
 
         foreach ($end_files as $file_path => $contents) {
@@ -99,7 +99,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-        $this->project_analyzer->checkClassReferences();
+        $this->project_analyzer->consolidateAnalyzedData();
     }
 
     /**

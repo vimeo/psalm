@@ -379,6 +379,9 @@ Options:
     --long-progress
         Use a progress indicator suitable for Continuous Integration logs
 
+    --no-suggestions
+        Hide suggestions
+
     --alter
         Run Psalter
 
