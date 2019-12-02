@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal\ExecutionEnvironment;
 
+use Psalm\SourceControl\Git\CommitInfo;
+use Psalm\SourceControl\Git\GitInfo;
 use function explode;
 
 /**
@@ -262,12 +264,29 @@ class BuildInfoCollector
             $this->readEnv['GITHUB_REF'] = $this->env['GITHUB_REF'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
 
+            /**
+             * @psalm-suppress MixedArrayAccess
+             * @psalm-suppress MixedArgument
+             */
             if (isset($this->env['GITHUB_EVENT_PATH'])) {
                 $event_json = \file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
                 /** @var array */
                 $event_data = \json_decode($event_json, true);
-                /** @psalm-suppress ForbiddenCode */
-                \var_dump($event_data);
+
+                $gitinfo = new GitInfo(
+                    $githubRef,
+                    (new CommitInfo())
+                        ->setId($event_data['head_commit']['id'])
+                        ->setAuthorName($event_data['head_commit']['author']['name'])
+                        ->setAuthorEmail($event_data['head_commit']['author']['email'])
+                        ->setCommitterName($event_data['head_commit']['committer']['name'])
+                        ->setCommitterEmail($event_data['head_commit']['committer']['email'])
+                        ->setMessage($event_data['head_commit']['message'])
+                        ->setDate(strtotime($event_data['head_commit']['timestamp'])),
+                    []
+                );
+
+                $this->readEnv['git'] = $gitinfo->toArray();
 
                 if ($this->env['GITHUB_EVENT_PATH'] === 'pull_request') {
                     $this->readEnv['CI_PR_NUMBER'] = $event_data['number'];
