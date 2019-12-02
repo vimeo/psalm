@@ -247,8 +247,6 @@ class ClassLikes
      */
     public function addFullyQualifiedClassLikeName($fq_class_name_lc, $file_path = null)
     {
-        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
-
         if ($file_path) {
             $this->scanner->setClassLikeFilePath($fq_class_name_lc, $file_path);
         }
