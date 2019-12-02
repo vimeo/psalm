@@ -743,7 +743,7 @@ class TypeParseTest extends TestCase
     public function testCombineLiteralClassStringWithClassString()
     {
         $this->assertSame(
-            'A::class|class-string',
+            'class-string',
             Type::parseString('A::class|class-string')->getId()
         );
     }
