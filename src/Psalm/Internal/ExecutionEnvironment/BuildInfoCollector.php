@@ -264,29 +264,37 @@ class BuildInfoCollector
             $this->readEnv['GITHUB_REF'] = $this->env['GITHUB_REF'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
 
-            /**
-             * @psalm-suppress MixedArrayAccess
-             * @psalm-suppress MixedArgument
-             */
             if (isset($this->env['GITHUB_EVENT_PATH'])) {
                 $event_json = \file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
                 /** @var array */
                 $event_data = \json_decode($event_json, true);
 
-                $gitinfo = new GitInfo(
-                    $githubRef,
-                    (new CommitInfo())
-                        ->setId($event_data['head_commit']['id'])
-                        ->setAuthorName($event_data['head_commit']['author']['name'])
-                        ->setAuthorEmail($event_data['head_commit']['author']['email'])
-                        ->setCommitterName($event_data['head_commit']['committer']['name'])
-                        ->setCommitterEmail($event_data['head_commit']['committer']['email'])
-                        ->setMessage($event_data['head_commit']['message'])
-                        ->setDate(\strtotime($event_data['head_commit']['timestamp'])),
-                    []
-                );
+                if (isset($event_data['head_commit'])) {
+                    /**
+                     * @var array{
+                     *    id: string,
+                     *    author: array{name: string, email: string},
+                     *    committer: array{name: string, email: string},
+                     *    message: string,
+                     *    timestamp: string
+                     * }
+                     */
+                    $head_commit_data = $event_data['head_commit'];
+                    $gitinfo = new GitInfo(
+                        $githubRef,
+                        (new CommitInfo())
+                            ->setId($head_commit_data['id'])
+                            ->setAuthorName($head_commit_data['author']['name'])
+                            ->setAuthorEmail($head_commit_data['author']['email'])
+                            ->setCommitterName($head_commit_data['committer']['name'])
+                            ->setCommitterEmail($head_commit_data['committer']['email'])
+                            ->setMessage($head_commit_data['message'])
+                            ->setDate(\strtotime($head_commit_data['timestamp'])),
+                        []
+                    );
 
-                $this->readEnv['git'] = $gitinfo->toArray();
+                    $this->readEnv['git'] = $gitinfo->toArray();
+                }
 
                 if ($this->env['GITHUB_EVENT_PATH'] === 'pull_request') {
                     $this->readEnv['CI_PR_NUMBER'] = $event_data['number'];
