@@ -847,7 +847,7 @@ final class Map implements IteratorAggregate, ArrayAccess, Collection
     /**
      * Returns a sequence of pairs representing all associations.
      *
-     * @return Sequence<Pair<Tkey, TValue>>
+     * @return Sequence<Pair<TKey, TValue>>
      */
     public function pairs(): Sequence
     {
