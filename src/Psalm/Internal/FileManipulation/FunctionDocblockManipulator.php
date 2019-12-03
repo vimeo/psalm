@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
+use PhpParser;
 use function count;
-
 use function ltrim;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
@@ -72,9 +72,6 @@ class FunctionDocblockManipulator
     /** @var array<string, string> */
     private $new_php_param_types = [];
 
-    /** @var array<string, bool> */
-    private $param_type_is_php_compatible = [];
-
     /** @var array<string, string> */
     private $new_phpdoc_param_types = [];
 
@@ -86,6 +83,12 @@ class FunctionDocblockManipulator
 
     /** @var string|null */
     private $return_type_description;
+
+    /** @var array<string, int> */
+    private $param_offsets = [];
+
+    /** @var array<string, array{int, int}> */
+    private $param_typehint_offsets = [];
 
     /**
      * @param  string $file_path
@@ -123,6 +126,21 @@ class FunctionDocblockManipulator
         $this->docblock_start = $docblock ? $docblock->getFilePos() : (int)$stmt->getAttribute('startFilePos');
         $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
         $function_end = (int)$stmt->getAttribute('endFilePos');
+
+        foreach ($stmt->params as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable
+                && \is_string($param->var->name)
+            ) {
+                $this->param_offsets[$param->var->name] = (int) $param->var->getAttribute('startFilePos');
+
+                if ($param->type) {
+                    $this->param_typehint_offsets[$param->var->name] = [
+                        (int) $param->type->getAttribute('startFilePos'),
+                        (int) $param->type->getAttribute('endFilePos')
+                    ];
+                }
+            }
+        }
 
         $codebase = $project_analyzer->getCodebase();
 
@@ -273,16 +291,22 @@ class FunctionDocblockManipulator
      *
      * @return  void
      */
-    public function setParamType($param_name, $php_type, $new_type, $phpdoc_type, $is_php_compatible)
-    {
+    public function setParamType(
+        string $param_name,
+        ?string $php_type,
+        string $new_type,
+        string $phpdoc_type
+    ) {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<empty, empty>'], '', $new_type);
 
         if ($php_type) {
             $this->new_php_param_types[$param_name] = $php_type;
         }
-        $this->new_phpdoc_param_types[$param_name] = $phpdoc_type;
-        $this->new_psalm_param_types[$param_name] = $new_type;
-        $this->param_type_is_php_compatible[$param_name] = $is_php_compatible;
+
+        if ($php_type !== $new_type) {
+            $this->new_phpdoc_param_types[$param_name] = $phpdoc_type;
+            $this->new_psalm_param_types[$param_name] = $new_type;
+        }
     }
 
     /**
@@ -331,6 +355,10 @@ class FunctionDocblockManipulator
 
         if ($this->new_phpdoc_return_type !== $this->new_psalm_return_type && $this->new_psalm_return_type) {
             $parsed_docblock['specials']['psalm-return'] = [$this->new_psalm_return_type];
+        }
+
+        if (!$parsed_docblock['specials'] && !$parsed_docblock['description']) {
+            return '';
         }
 
         return DocComment::render($parsed_docblock, $this->indentation);
@@ -386,6 +414,40 @@ class FunctionDocblockManipulator
                     $manipulator->docblock_end,
                     $manipulator->getDocblock()
                 );
+            }
+
+            foreach ($manipulator->new_php_param_types as $param_name => $new_php_param_type) {
+                if (!isset($manipulator->param_offsets[$param_name])) {
+                    continue;
+                }
+
+                $param_offset = $manipulator->param_offsets[$param_name];
+
+                $typehint_offsets = $manipulator->param_typehint_offsets[$param_name] ?? null;
+
+                if ($new_php_param_type) {
+                    if ($typehint_offsets) {
+                        $file_manipulations[$typehint_offsets[0]] = new FileManipulation(
+                            $typehint_offsets[0],
+                            $typehint_offsets[1],
+                            $new_php_param_type
+                        );
+                    } else {
+                        $file_manipulations[$param_offset] = new FileManipulation(
+                            $param_offset,
+                            $param_offset,
+                            $new_php_param_type . ' '
+                        );
+                    }
+                } elseif ($new_php_param_type === ''
+                    && $typehint_offsets
+                ) {
+                    $file_manipulations[$typehint_offsets[0]] = new FileManipulation(
+                        $typehint_offsets[0],
+                        $param_offset,
+                        ''
+                    );
+                }
             }
         }
 

@@ -1295,9 +1295,27 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $this->getMethodId(),
             $this->function
         );
+
+        $codebase = $project_analyzer->getCodebase();
+        $is_final = true;
+        $fqcln = $this->source->getFQCLN();
+
+        if ($fqcln !== null && $this->function instanceof ClassMethod) {
+            $class_storage = $codebase->classlike_storage_provider->get($fqcln);
+            $is_final = $this->function->isFinal() || $class_storage->final;
+        }
+
+        $allow_native_type = !$docblock_only
+            && $codebase->php_major_version >= 7
+            && (
+                $codebase->allow_backwards_incompatible_changes
+                || $is_final
+                || !$this->function instanceof PhpParser\Node\Stmt\ClassMethod
+            );
+
         $manipulator->setParamType(
             $param_name,
-            !$docblock_only && $project_analyzer->getCodebase()->php_major_version >= 7
+            $allow_native_type
                 ? $inferred_return_type->toPhpString(
                     $this->source->getNamespace(),
                     $this->source->getAliasedClassesFlipped(),
@@ -1316,8 +1334,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->source->getAliasedClassesFlipped(),
                 $this->source->getFQCLN(),
                 true
-            ),
-            $inferred_return_type->canBeFullyExpressedInPhp()
+            )
         );
     }
 

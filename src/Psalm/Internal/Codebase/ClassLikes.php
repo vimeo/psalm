@@ -1957,7 +1957,8 @@ class ClassLikes
                                         $project_analyzer,
                                         $param_name,
                                         $possible_type,
-                                        true
+                                        $possible_type->from_docblock
+                                            && $project_analyzer->only_replace_php_types_with_non_docblock_types
                                     );
                                 }
                             } else {
