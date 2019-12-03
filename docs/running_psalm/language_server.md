@@ -37,10 +37,11 @@ When you install the plugin, you should see a "Language Server Protocol" section
 
 In the "Server definitions" tab you should add a definition for Psalm:
 
+ - Select `Executable`
  - Extension: `php`
- - Path: `<path-to-php-binary>` e.g. `/usr/local/bin/php`
+ - Path: `<path-to-php-binary>` e.g. `/usr/local/bin/php` or `C:\php\php.exe`
     - this should be an absolute path, not just `php`
- - Args: `vendor/bin/psalm-language-server`
+ - Args: `vendor/bin/psalm-language-server` (on Windows use `vendor/vimeo/psalm/psalm-language-server`)
 
 In the "Timeouts" tab you can adjust the initialization timeout. This is important if you have a large project. You should set the "Init" value to the number of milliseconds you allow Psalm to scan your entire project and your project's dependencies.
 
