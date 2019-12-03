@@ -112,6 +112,8 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                         . var_export($build_info, true)
                         . PHP_EOL;
                 }
+            } else {
+                echo "Shepherd: Sent CI metadata to $base_address" . PHP_EOL;
             }
 
             // Close cURL session handle

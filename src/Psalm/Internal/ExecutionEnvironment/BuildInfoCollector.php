@@ -269,9 +269,6 @@ class BuildInfoCollector
                 /** @var array */
                 $event_data = \json_decode($event_json, true);
 
-                /** @psalm-suppress ForbiddenCode */
-                var_dump($event_data);
-
                 if (isset($event_data['head_commit'])) {
                     /**
                      * @var array{
