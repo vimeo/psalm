@@ -1952,6 +1952,17 @@ class ClassLikes
                                     $method_storage->location->file_path
                                 );
 
+                                $has_variable_calls = $codebase->analyzer->hasMixedMemberName(
+                                    strtolower($method_name)
+                                )
+                                    || $codebase->analyzer->hasMixedMemberName(
+                                        strtolower($classlike_storage->name . '::')
+                                    );
+
+                                if ($has_variable_calls) {
+                                    $possible_type->from_docblock = true;
+                                }
+
                                 if ($function_analyzer) {
                                     $function_analyzer->addOrUpdateParamType(
                                         $project_analyzer,
