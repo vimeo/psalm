@@ -51,8 +51,9 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 
         if (!$source_control_data && isset($build_info['git']) && \is_array($build_info['git'])) {
             $source_control_data = $build_info['git'];
-            unset($build_info['git']);
         }
+
+        unset($build_info['git']);
 
         if ($build_info) {
             $data = [
@@ -114,12 +115,6 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                 }
             } else {
                 echo "🐑 Shepherd data sent 🐑" . PHP_EOL;
-                echo 'Git args: '
-                        . var_export($source_control_data, true)
-                        . PHP_EOL;
-                echo 'CI args: '
-                    . var_export($build_info, true)
-                    . PHP_EOL;
             }
 
             // Close cURL session handle

@@ -263,6 +263,7 @@ class BuildInfoCollector
             $this->readEnv['GITHUB_ACTIONS'] = $this->env['GITHUB_ACTIONS'];
             $this->readEnv['GITHUB_REF'] = $this->env['GITHUB_REF'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
+            $this->readEnv['CI_BRANCH'] = $this->env['CI_BRANCH'];
 
             $slug_parts = explode('/', (string) $this->env['GITHUB_REPOSITORY']);
 
