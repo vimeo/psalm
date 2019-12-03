@@ -114,6 +114,12 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                 }
             } else {
                 echo "🐑 Shepherd data sent 🐑" . PHP_EOL;
+                echo 'Git args: '
+                        . var_export($source_control_data, true)
+                        . PHP_EOL;
+                echo 'CI args: '
+                    . var_export($build_info, true)
+                    . PHP_EOL;
             }
 
             // Close cURL session handle
