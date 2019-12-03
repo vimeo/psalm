@@ -382,6 +382,9 @@ Options:
     --no-suggestions
         Hide suggestions
 
+    --shepherd[=host]
+        Send data to Shepherd, Psalm's GitHub integration tool.
+
     --alter
         Run Psalter
 
