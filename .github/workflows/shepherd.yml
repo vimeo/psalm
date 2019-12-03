@@ -1,4 +1,4 @@
-name: PHP Composer
+name: Run Shepherd
 
 on: [push]
 
