@@ -16,6 +16,14 @@ If you want to run on specific files, use
 
 Run with `--help` to see a list of options that Psalm supports.
 
+## Shepherd
+
+Psalm currently offers some GitHub integration with public projects.
+
+Add `--shepherd` to send information about your build to https://shepherd.dev.
+
+Currently, Shepherd tracks type coverage (the percentage of types Psalm can infer) on `master` branches.
+
 ### Running Psalm faster
 
 Psalm has a couple of command-line options that will result in faster builds:
