@@ -264,6 +264,11 @@ class BuildInfoCollector
             $this->readEnv['GITHUB_REF'] = $this->env['GITHUB_REF'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
 
+            $slug_parts = explode('/', (string) $this->env['GITHUB_REPOSITORY']);
+
+            $this->readEnv['CI_REPO_OWNER'] = $slug_parts[0];
+            $this->readEnv['CI_REPO_NAME'] = $slug_parts[1];
+
             if (isset($this->env['GITHUB_EVENT_PATH'])) {
                 $event_json = \file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
                 /** @var array */
