@@ -247,6 +247,8 @@ class BuildInfoCollector
      */
     protected function fillGithubActions()
     {
+        /** @psalm-suppress ForbiddenCode */
+        var_dump($this->env);
         if (isset($this->env['GITHUB_ACTIONS'])) {
             $this->env['CI_NAME'] = 'github-actions';
             $this->env['CI_JOB_ID'] = $this->env['GITHUB_ACTIONS'];
