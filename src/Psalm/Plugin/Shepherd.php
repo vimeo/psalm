@@ -114,7 +114,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                         . PHP_EOL;
                 }
             } else {
-                $short_address = str_replace('https://', '', $base_address);
+                $short_address = \str_replace('https://', '', $base_address);
 
                 echo "🐑 results sent to $short_address 🐑" . PHP_EOL;
             }
