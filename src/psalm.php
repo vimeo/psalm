@@ -409,6 +409,8 @@ if (isset($options['clear-global-cache'])) {
     exit;
 }
 
+var_dump($_SERVER);
+
 // disable progressbar on CI
 if (isset($_SERVER['TRAVIS'])
     || isset($_SERVER['CIRCLECI'])
