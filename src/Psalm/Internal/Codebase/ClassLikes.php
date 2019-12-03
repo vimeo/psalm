@@ -1922,15 +1922,10 @@ class ClassLikes
 
             if (isset($codebase->analyzer->possible_method_param_types[strtolower($method_id)])) {
                 if ($method_storage->location) {
-                    $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
-                        $method_id,
-                        $method_storage->location->file_path
-                    );
-
                     $possible_param_types
                         = $codebase->analyzer->possible_method_param_types[strtolower($method_id)];
 
-                    if ($function_analyzer && $possible_param_types) {
+                    if ($possible_param_types) {
                         foreach ($possible_param_types as $offset => $possible_type) {
                             if (!isset($method_storage->params[$offset])) {
                                 continue;
@@ -1952,12 +1947,19 @@ class ClassLikes
                             if ($codebase->alter_code
                                 && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
                             ) {
-                                $function_analyzer->addOrUpdateParamType(
-                                    $project_analyzer,
-                                    $param_name,
-                                    $possible_type,
-                                    true
+                                $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
+                                    $method_id,
+                                    $method_storage->location->file_path
                                 );
+
+                                if ($function_analyzer) {
+                                    $function_analyzer->addOrUpdateParamType(
+                                        $project_analyzer,
+                                        $param_name,
+                                        $possible_type,
+                                        true
+                                    );
+                                }
                             } else {
                                 IssueBuffer::addFixableIssue('MissingParamType');
                             }
