@@ -78,6 +78,36 @@ class ParamTypeManipulationTest extends FileManipulationTest
                 ['MissingParamType'],
                 true,
             ],
+            'noStringParamTypeWithDocblockCall' => [
+                '<?php
+                    class C {
+                        public function fooFoo($a): void {}
+                    }
+
+                    /**
+                     * @param string $a
+                     */
+                    function callsWithString($a): void {
+                        (new C)->fooFoo($a);
+                    }',
+                '<?php
+                    class C {
+                        /**
+                         * @param string $a
+                         */
+                        public function fooFoo($a): void {}
+                    }
+
+                    /**
+                     * @param string $a
+                     */
+                    function callsWithString($a): void {
+                        (new C)->fooFoo($a);
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
             'noStringParamType56' => [
                 '<?php
                     class C {
