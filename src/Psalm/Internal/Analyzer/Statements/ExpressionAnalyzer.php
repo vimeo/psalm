@@ -1028,6 +1028,12 @@ class ExpressionAnalyzer
                     if ($object_id && $stmt->dim->name instanceof PhpParser\Node\Identifier) {
                         $offset = $object_id . '->' . $stmt->dim->name;
                     }
+                } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $stmt->dim->name instanceof PhpParser\Node\Identifier
+                    && $stmt->dim->class instanceof PhpParser\Node\Name
+                    && $stmt->dim->class->parts[0] === 'static'
+                ) {
+                    $offset = 'static::' . $stmt->dim->name;
                 } elseif ($stmt->dim
                     && $source instanceof StatementsAnalyzer
                     && ($stmt_dim_type = $source->node_data->getType($stmt->dim))) {

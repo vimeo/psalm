@@ -889,7 +889,9 @@ class ArrayFetchAnalyzer
 
                             $has_valid_offset = true;
                         } else {
-                            if (!$context->inside_isset || $type->sealed) {
+                            if (!$context->inside_isset
+                                || ($type->sealed && !$union_comparison_results->type_coerced)
+                            ) {
                                 $expected_offset_types[] = (string)$generic_key_type->getId();
                             }
 
