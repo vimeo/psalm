@@ -498,7 +498,7 @@ class Reconciler
                             }
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
-                        } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !is_numeric($array_key[0]))) {
+                        } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !\is_numeric($array_key[0]))) {
                             if ($has_empty) {
                                 return null;
                             }
