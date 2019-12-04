@@ -1,4 +1,4 @@
-<h1><a href="https://psalm.dev"><img src="PsalmLogo.png" height="64" alt="logo" /></a></h1>
+<h1>Psalm</h1>
 
 [![Packagist](https://img.shields.io/packagist/v/vimeo/psalm.svg)](https://packagist.org/packages/vimeo/psalm)
 [![Packagist](https://img.shields.io/packagist/dt/vimeo/psalm.svg)](https://packagist.org/packages/vimeo/psalm)
