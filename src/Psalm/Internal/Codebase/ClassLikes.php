@@ -1615,6 +1615,10 @@ class ClassLikes
         }
 
         if ($c instanceof UnresolvedConstant\ClassConstant) {
+            if ($c->name === 'class') {
+                return new Type\Atomic\TLiteralClassString($c->fqcln);
+            }
+
             $found_type = $this->getConstantForClass(
                 $c->fqcln,
                 $c->name,
