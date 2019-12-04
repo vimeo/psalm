@@ -16,6 +16,8 @@ ini_set('memory_limit', '4096M');
 gc_collect_cycles();
 gc_disable();
 
+require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
+
 $args = array_slice($argv, 1);
 
 $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];

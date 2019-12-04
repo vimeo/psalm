@@ -93,6 +93,8 @@ if (isset($options['refactor'])) {
     exit;
 }
 
+require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
+
 array_map(
     /**
      * @param string $arg
