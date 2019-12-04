@@ -309,6 +309,7 @@ trait GenericTrait
                 $source instanceof \Psalm\Internal\Analyzer\MethodAnalyzer
                     && $source->getMethodName() !== '__construct'
                     && empty($expected_param_covariants[$i])
+                    && !$this instanceof TArray
             ) === false) {
                 return false;
             }
