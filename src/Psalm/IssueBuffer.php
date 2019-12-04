@@ -536,7 +536,7 @@ class IssueBuffer
                 $command .= ' --dry-run';
 
                 echo 'Psalm can automatically fix ' . $total_count
-                    . ($show_info ? 'issues' : ' of them') . ".\n"
+                    . ($show_info ? ' issues' : ' of them') . ".\n"
                     . 'Run Psalm again with ' . "\n"
                     . ($project_analyzer->stdout_report_options->use_color
                         ? "\e[30;48;5;195m" . $command . "\e[0m"
