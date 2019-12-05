@@ -9,6 +9,8 @@ gc_disable();
 // show all errors
 error_reporting(-1);
 
+require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
+
 $valid_short_options = [
     'h',
     'v',
