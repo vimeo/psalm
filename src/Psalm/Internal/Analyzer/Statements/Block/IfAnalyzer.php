@@ -110,6 +110,10 @@ class IfAnalyzer
             $codebase
         );
 
+        if (count($if_clauses) > 200) {
+            $if_clauses = [];
+        }
+
         $if_clauses = array_values(
             array_map(
                 /**
