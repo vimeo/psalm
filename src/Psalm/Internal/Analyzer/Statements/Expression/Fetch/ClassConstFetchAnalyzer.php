@@ -14,6 +14,7 @@ use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -197,12 +198,16 @@ class ClassConstFetchAnalyzer
                 $class_visibility = \ReflectionProperty::IS_PUBLIC;
             }
 
-            $class_constant_type = $codebase->classlikes->getConstantForClass(
-                $fq_class_name,
-                $stmt->name->name,
-                $class_visibility,
-                $statements_analyzer
-            );
+            try {
+                $class_constant_type = $codebase->classlikes->getConstantForClass(
+                    $fq_class_name,
+                    $stmt->name->name,
+                    $class_visibility,
+                    $statements_analyzer
+                );
+            } catch (\InvalidArgumentException $_) {
+                return;
+            }
 
             if (!$class_constant_type) {
                 if ($fq_class_name !== $context->self) {
