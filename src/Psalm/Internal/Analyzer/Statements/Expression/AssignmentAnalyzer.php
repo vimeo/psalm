@@ -277,6 +277,10 @@ class AssignmentAnalyzer
         }
 
         if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
+            if ($context->vars_in_scope[$array_var_id]->by_ref) {
+                $assign_value_type->by_ref = true;
+            }
+
             // removes dependennt vars from $context
             $context->removeDescendents(
                 $array_var_id,
@@ -419,7 +423,7 @@ class AssignmentAnalyzer
                 );
             }
 
-            if (isset($context->byref_constraints[$var_id])) {
+            if (isset($context->byref_constraints[$var_id]) || $assign_value_type->by_ref) {
                 $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
@@ -1024,6 +1028,8 @@ class AssignmentAnalyzer
         if ($assignment_type === false) {
             return false;
         }
+
+        $assignment_type->by_ref = true;
 
         $lhs_var_id = ExpressionAnalyzer::getVarId(
             $stmt->var,
