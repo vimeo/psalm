@@ -133,8 +133,7 @@ class ScopeTest extends TestCase
 
                     if (false) {
 
-                    }
-                    elseif ($a && $a->foo) {
+                    } elseif ($a && $a->foo) {
                         echo $a;
                     }',
             ],

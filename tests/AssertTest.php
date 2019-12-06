@@ -480,6 +480,116 @@ class AssertTest extends TestCase
                         return false;
                     }'
             ],
+            'SKIPPED-assertVarRedefinedInIfWithOr' => [
+                '<?php
+                    class O {}
+
+                    /**
+                     * @param mixed $value
+                     */
+                    function exampleWithOr($value): O {
+                        if (!is_string($value) || ($value = rand(0, 1) ? new O : null) === null) {
+                            return new O();
+                        }
+
+                        return $value;
+                    }'
+            ],
+            'SKIPPED-assertVarRedefinedInOpWithAnd' => [
+                '<?php
+                    class O {
+                        public function foo() : bool { return true; }
+                    }
+
+                    /** @var mixed */
+                    $value = $_GET["foo"];
+
+                    $a = is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo();',
+                [
+                    '$a' => 'bool',
+                ]
+            ],
+            'SKIPPED-assertVarRedefinedInOpWithOr' => [
+                '<?php
+                    class O {
+                        public function foo() : bool { return true; }
+                    }
+
+                    /** @var mixed */
+                    $value = $_GET["foo"];
+
+                    $a = !is_string($value) || (($value = rand(0, 1) ? new O : null) === null) || $value->foo();',
+                [
+                    '$a' => 'bool',
+                ]
+            ],
+            'SKIPPED-assertVarRedefinedInIfWithAnd' => [
+                '<?php
+                    class O {}
+
+                    /**
+                     * @param mixed $value
+                     */
+                    function exampleWithAnd($value): O {
+                        if (is_string($value) && ($value = rand(0, 1) ? new O : null) !== null) {
+                            return $value;
+                        }
+
+                        return new O();
+                    }'
+            ],
+            'assertVarInOrAfterAnd' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+                    class C extends A {}
+
+                    function takesA(A $a): void {}
+
+                    function foo(?A $a, ?A $b): void {
+                        $c = ($a instanceof B && $b instanceof B) || ($a instanceof C && $b instanceof C);
+                    }'
+            ],
+            'assertAssertionsWithCreation' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+                    class C extends A {}
+
+                    function getA(A $a): ?A {
+                        return rand(0, 1) ? $a : null;
+                    }
+
+                    function foo(?A $a, ?A $c): void {
+                        $c = $a && ($b = getA($a)) && $c ? 1 : 0;
+                    }'
+            ],
+            'definedInBothBranchesOfConditional' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    function foo(): void {
+                        $a = null;
+                        if (($a = getA()) || ($a = getA())) {
+                            $a->foo();
+                        }
+                    }'
+            ],
+            'assertOnArrayThings' => [
+                '<?php
+                    /** @var array<string, array<int, string>> */
+                    $a = null;
+
+                    if (isset($a["b"]) || isset($a["c"])) {
+                        $all_params = ($a["b"] ?? []) + ($a["c"] ?? []);
+                    }'
+            ]
         ];
     }
 }

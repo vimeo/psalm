@@ -12,7 +12,7 @@ class TypeAlgebraTest extends TestCase
     public function providerValidCodeParse()
     {
         return [
-            'twoVarLogic' => [
+            'twoVarLogicSimple' => [
                 '<?php
                     function takesString(string $s): void {}
 
@@ -46,7 +46,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
-            'twoVarLogicNotNested' => [
+            'twoVarLogicNotNestedSimple' => [
                 '<?php
                     function foo(?string $a, ?string $b): string {
                         if (!$a && !$b) return "bad";
