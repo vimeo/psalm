@@ -1,12 +1,12 @@
 <?php
-namespace Psalm\Tests;
+namespace Psalm\Tests\TypeReconciliation;
 
 use const DIRECTORY_SEPARATOR;
 
-class RedundantConditionTest extends TestCase
+class RedundantConditionTest extends \Psalm\Tests\TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
-    use Traits\InvalidCodeAnalysisTestTrait;
+    use \Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+    use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>

@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Tests;
+namespace Psalm\Tests\TypeReconciliation;
 
 use function is_array;
 use Psalm\Context;
@@ -11,160 +11,10 @@ use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 
-class TypeReconciliationTest extends TestCase
+class ConditionalTest extends \Psalm\Tests\TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
-
-    /** @var FileAnalyzer */
-    protected $file_analyzer;
-
-    /** @var StatementsAnalyzer */
-    protected $statements_analyzer;
-
-    /**
-     * @return void
-     */
-    public function setUp() : void
-    {
-        parent::setUp();
-
-        $this->file_analyzer = new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
-        $this->file_analyzer->context = new Context();
-        $this->statements_analyzer = new StatementsAnalyzer(
-            $this->file_analyzer,
-            new \Psalm\Internal\Provider\NodeDataProvider()
-        );
-    }
-
-    /**
-     * @dataProvider providerTestReconcilation
-     *
-     * @param string $expected
-     * @param string $type
-     * @param string $string
-     *
-     * @return void
-     */
-    public function testReconcilation($expected, $type, $string)
-    {
-        $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
-            $type,
-            Type::parseString($string),
-            null,
-            $this->statements_analyzer,
-            false,
-            []
-        );
-
-        $this->assertSame(
-            $expected,
-            $reconciled->getId()
-        );
-
-        if (is_array($reconciled->getTypes())) {
-            $this->assertContainsOnlyInstancesOf('Psalm\Type\Atomic', $reconciled->getTypes());
-        }
-    }
-
-    /**
-     * @dataProvider providerTestTypeIsContainedBy
-     *
-     * @param string $input
-     * @param string $container
-     *
-     * @return void
-     */
-    public function testTypeIsContainedBy($input, $container)
-    {
-        $this->assertTrue(
-            TypeAnalyzer::isContainedBy(
-                $this->project_analyzer->getCodebase(),
-                Type::parseString($input),
-                Type::parseString($container)
-            )
-        );
-    }
-
-    /**
-     * @return array<string,array{string,string,string}>
-     */
-    public function providerTestReconcilation()
-    {
-        return [
-            'notNullWithObject' => ['MyObject', '!null', 'MyObject'],
-            'notNullWithObjectPipeNull' => ['MyObject', '!null', 'MyObject|null'],
-            'notNullWithMyObjectPipeFalse' => ['MyObject|false', '!null', 'MyObject|false'],
-            'notNullWithMixed' => ['mixed', '!null', 'mixed'],
-
-            'notEmptyWithMyObject' => ['MyObject', '!falsy', 'MyObject'],
-            'notEmptyWithMyObjectPipeNull' => ['MyObject', '!falsy', 'MyObject|null'],
-            'notEmptyWithMyObjectPipeFalse' => ['MyObject', '!falsy', 'MyObject|false'],
-            'notEmptyWithMixed' => ['non-empty-mixed', '!falsy', 'mixed'],
-            // @todo in the future this should also work
-            //'notEmptyWithMyObjectFalseTrue' => ['MyObject|true', '!falsy', 'MyObject|bool'],
-
-            'nullWithMyObjectPipeNull' => ['null', 'null', 'MyObject|null'],
-            'nullWithMixed' => ['null', 'null', 'mixed'],
-
-            'falsyWithMyObject' => ['mixed', 'falsy', 'MyObject'],
-            'falsyWithMyObjectPipeFalse' => ['false', 'falsy', 'MyObject|false'],
-            'falsyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
-            'falsyWithMixed' => ['empty-mixed', 'falsy', 'mixed'],
-            'falsyWithBool' => ['false', 'falsy', 'bool'],
-            'falsyWithStringOrNull' => ['null|string()|string(0)', 'falsy', 'string|null'],
-            'falsyWithScalarOrNull' => ['empty-scalar', 'falsy', 'scalar'],
-
-            'notMyObjectWithMyObjectPipeBool' => ['bool', '!MyObject', 'MyObject|bool'],
-            'notMyObjectWithMyObjectPipeNull' => ['null', '!MyObject', 'MyObject|null'],
-            'notMyObjectWithMyObjectAPipeMyObjectB' => ['MyObjectB', '!MyObjectA', 'MyObjectA|MyObjectB'],
-
-            'myObjectWithMyObjectPipeBool' => ['MyObject', 'MyObject', 'MyObject|bool'],
-            'myObjectWithMyObjectAPipeMyObjectB' => ['MyObjectA', 'MyObjectA', 'MyObjectA|MyObjectB'],
-
-            'array' => ['array<array-key, mixed>', 'array', 'array|null'],
-
-            '2dArray' => ['array<array-key, array<array-key, string>>', 'array', 'array<array<string>>|null'],
-
-            'numeric' => ['numeric-string', 'numeric', 'string'],
-
-            'nullableClassString' => ['null', 'falsy', '?class-string'],
-            'mixedOrNullNotFalsy' => ['non-empty-mixed', '!falsy', 'mixed|null'],
-            'mixedOrNullFalsy' => ['empty-mixed|null', 'falsy', 'mixed|null'],
-            'nullableClassStringFalsy' => ['null', 'falsy', 'class-string<A>|null'],
-            'nullableClassStringEqualsNull' => ['null', '=null', 'class-string<A>|null'],
-            'nullableClassStringTruthy' => ['class-string<A>', '!falsy', 'class-string<A>|null'],
-            'iterableToArray' => ['array<int, int>', 'array', 'iterable<int, int>'],
-            'iterableToTraversable' => ['Traversable<int, int>', 'Traversable', 'iterable<int, int>'],
-            'callableToCallableArray' => ['callable-array{0: object|string, 1: string}', 'array', 'callable'],
-            'callableOrArrayToCallableArray' => ['array<array-key, mixed>|callable-array{0: object|string, 1: string}', 'array', 'callable|array'],
-            'traversableToIntersection' => ['Countable&Traversable', 'Traversable', 'Countable'],
-            'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', '!array', 'iterable'],
-            'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', '!array', 'iterable<int, string>'],
-        ];
-    }
-
-    /**
-     * @return array<string,array{string,string}>
-     */
-    public function providerTestTypeIsContainedBy()
-    {
-        return [
-            'arrayContainsWithArrayOfStrings' => ['array<string>', 'array'],
-            'arrayContainsWithArrayOfExceptions' => ['array<Exception>', 'array'],
-
-            'unionContainsWithstring' => ['string', 'string|false'],
-            'unionContainsWithFalse' => ['false', 'string|false'],
-            'objectLikeTypeWithPossiblyUndefinedToGeneric' => [
-                'array{0: array{a: string}, 1: array{c: string, e: string}}',
-                'array<int, array<string, string>>',
-            ],
-            'objectLikeTypeWithPossiblyUndefinedToEmpty' => [
-                'array<empty, empty>',
-                'array{a?: string, b?: string}',
-            ],
-        ];
-    }
+    use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+    use \Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -1521,6 +1371,585 @@ class TypeReconciliationTest extends TestCase
                         if (isset($a[$b[0]->id])) {}
                     }',
             ],
+            'assertArrayReturnTypeNarrowed' => [
+                '<?php
+                    /** @return array{0:Exception} */
+                    function f(array $a): array {
+                        if ($a[0] instanceof Exception) {
+                            return $a;
+                        }
+
+                        return [new Exception("bad")];
+                    }',
+            ],
+            'assertTypeNarrowedByAssert' => [
+                '<?php
+                    /** @return array{0:Exception,1:Exception} */
+                    function f(array $ret): array {
+                        assert($ret[0] instanceof Exception);
+                        assert($ret[1] instanceof Exception);
+                        return $ret;
+                    }',
+            ],
+            'assertTypeNarrowedByButOtherFetchesAreMixed' => [
+                '<?php
+                    /**
+                     * @return array{0:Exception}
+                     * @psalm-suppress MixedArgument
+                     */
+                    function f(array $ret): array {
+                        assert($ret[0] instanceof Exception);
+                        echo strlen($ret[1]);
+                        return $ret;
+                    }',
+            ],
+            'assertTypeNarrowedByNestedIsset' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedMethodCall
+                     * @psalm-suppress MixedArgument
+                     */
+                    function foo(array $array = []): void {
+                        if (array_key_exists("a", $array)) {
+                            echo $array["a"];
+                        }
+
+                        if (array_key_exists("b", $array)) {
+                            echo $array["b"]->format("Y-m-d");
+                        }
+                    }',
+            ],
+            'assertCheckOnNonZeroArrayOffset' => [
+                '<?php
+                    /**
+                     * @param array{string,array|null} $a
+                     * @return string
+                     */
+                    function f(array $a) {
+                        assert(is_array($a[1]));
+                        return $a[0];
+                    }',
+            ],
+            'assertOnParseUrlOutput' => [
+                '<?php
+                    /**
+                     * @param array<"a"|"b"|"c", mixed> $arr
+                     */
+                    function uriToPath(array $arr) : string {
+                        if (!isset($arr["a"]) || $arr["b"] !== "foo") {
+                            throw new \InvalidArgumentException("bad");
+                        }
+
+                        return (string) $arr["c"];
+                    }',
+            ],
+            'combineAfterLoopAssert' => [
+                '<?php
+                    function foo(array $array) : void {
+                        $c = 0;
+
+                        if ($array["a"] === "a") {
+                            foreach ([rand(0, 1), rand(0, 1)] as $i) {
+                                if ($array["b"] === "c") {}
+                                $c++;
+                            }
+                        }
+                    }',
+            ],
+            'assertOnXml' => [
+                '<?php
+                    function f(array $array) : void {
+                        if ($array["foo"] === "ok") {
+                            if ($array["bar"] === "a") {}
+                            if ($array["bar"] === "b") {}
+                        }
+                    }',
+            ],
+            'assertOnBacktrace' => [
+                '<?php
+                    function _validProperty(array $c, array $arr) : void {
+                        if (empty($arr["a"])) {}
+
+                        if ($c && $c["a"] !== "b") {}
+                    }',
+            ],
+            'assertOnRemainderOfArray' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedInferredReturnType
+                     * @psalm-suppress MixedReturnStatement
+                     */
+                    function foo(string $file_name) : int {
+                        while ($data = getData()) {
+                            if (is_numeric($data[0])) {
+                                for ($i = 1; $i < count($data); $i++) {
+                                    return $data[$i];
+                                }
+                            }
+                        }
+
+                        return 5;
+                    }
+
+                    function getData() : ?array {
+                        return rand(0, 1) ? ["a", "b", "c"] : null;
+                    }',
+            ],
+            'notEmptyCheck' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedAssignment
+                     */
+                    function load(string $objectName, array $config = []) : void {
+                        if (isset($config["className"])) {
+                            $name = $objectName;
+                            $objectName = $config["className"];
+                        }
+                        if (!empty($config)) {}
+                    }',
+            ],
+            'unsetAfterIssetCheck' => [
+                '<?php
+                    function checkbox(array $options = []) : void {
+                        if ($options["a"]) {}
+
+                        unset($options["a"], $options["b"]);
+                    }',
+            ],
+            'dontCrashWhenGettingEmptyCountAssertions' => [
+                '<?php
+                    function foo() : bool {
+                        /** @psalm-suppress TooFewArguments */
+                        return count() > 0;
+                    }',
+            ],
+            'assertHasArrayAccess' => [
+                '<?php
+                    /**
+                     * @return array|ArrayAccess
+                     */
+                    function getBar(array $array) {
+                        if (isset($array[\'foo\'][\'bar\'])) {
+                            return $array[\'foo\'];
+                        }
+
+                        return [];
+                    }',
+            ],
+            'assertHasArrayAccessWithType' => [
+                '<?php
+                    /**
+                     * @param array<string, array<string, string>> $array
+                     * @return array<string, string>
+                     */
+                    function getBar(array $array) : array {
+                        if (isset($array[\'foo\'][\'bar\'])) {
+                            return $array[\'foo\'];
+                        }
+
+                        return [];
+                    }',
+            ],
+            'assertHasArrayAccessOnSimpleXMLElement' => [
+                '<?php
+                    function getBar(SimpleXMLElement $e, string $s) : void {
+                        if (isset($e[$s])) {
+                            echo (string) $e[$s];
+                        }
+
+                        if (isset($e[\'foo\'])) {
+                            echo (string) $e[\'foo\'];
+                        }
+
+                        if (isset($e->bar)) {}
+                    }',
+            ],
+            'assertArrayOffsetToTraversable' => [
+                '<?php
+                    function render(array $data): ?Traversable {
+                        if ($data["o"] instanceof Traversable) {
+                            return $data["o"];
+                        }
+
+                        return null;
+                    }'
+            ],
+            'assertOnArrayShouldNotChangeType' => [
+                '<?php
+                    /** @return array|string|false */
+                    function foo(string $a, string $b) {
+                        $options = getopt($a, [$b]);
+
+                        if (isset($options["config"])) {
+                            $options["c"] = $options["config"];
+                        }
+
+                        if (isset($options["root"])) {
+                            return $options["root"];
+                        }
+
+                        return false;
+                    }'
+            ],
+            'assertOnArrayInTernary' => [
+                '<?php
+                    function foo(string $a, string $b) : void {
+                        $o = getopt($a, [$b]);
+
+                        $a = isset($o["a"]) && is_string($o["a"]) ? $o["a"] : "foo";
+                        $a = isset($o["a"]) && is_string($o["a"]) ? $o["a"] : "foo";
+                        echo $a;
+                    }'
+            ],
+            'nonEmptyArrayAfterIsset' => [
+                '<?php
+                    /**
+                     * @param array<string, int> $arr
+                     * @return non-empty-array<string, int>
+                     */
+                    function foo(array $arr) : array {
+                        if (isset($arr["a"])) {
+                            return $arr;
+                        }
+
+                        return ["b" => 1];
+                    }'
+            ],
+            'setArrayConstantOffset' => [
+                '<?php
+                    class S {
+                        const A = 0;
+                        const B = 1;
+                        const C = 2;
+                    }
+
+                    function foo(array $arr) : void {
+                        switch ($arr[S::A]) {
+                            case S::B:
+                            case S::C:
+                            break;
+                        }
+                    }',
+            ],
+            'assertArrayWithPropertyOffset' => [
+                '<?php
+                    class A {
+                        public int $id = 0;
+                    }
+                    class B {
+                        public function foo() : void {}
+                    }
+
+                    /**
+                     * @param array<int, B> $arr
+                     */
+                    function foo(A $a, array $arr): void {
+                        if (!isset($arr[$a->id])) {
+                            $arr[$a->id] = new B();
+                        }
+                        $arr[$a->id]->foo();
+                    }'
+            ],
+            'assertAfterNotEmptyArrayCheck' => [
+                '<?php
+                    function foo(array $c): void {
+                        if (!empty($c["d"])) {}
+
+                        foreach (["a", "b", "c"] as $k) {
+                            /** @psalm-suppress MixedAssignment */
+                            foreach ($c[$k] as $d) {}
+                        }
+                    }',
+            ],
+            'assertNotEmptyTwiceOnInstancePropertyArray' => [
+                '<?php
+                    class A {
+                        private array $c = [];
+
+                        public function bar(string $s, string $t): void {
+                            if (empty($this->c[$s]) && empty($this->c[$t])) {}
+                        }
+                    }'
+            ],
+            'assertNotEmptyTwiceOnStaticPropertyArray' => [
+                '<?php
+                    class A {
+                        private static array $c = [];
+
+                        public static function bar(string $s, string $t): void {
+                            if (empty(self::$c[$s]) && empty(self::$c[$t])) {}
+                        }
+                    }'
+            ],
+            'assertConstantArrayOffsetTwice' => [
+                '<?php
+                    class A {
+                        const FOO = "foo";
+                        const BAR = "bar";
+
+                        /** @psalm-suppress MixedArgument */
+                        public function bar(array $args) : void {
+                            if ($args[self::FOO]) {
+                                echo $args[self::FOO];
+                            }
+                            if ($args[self::BAR]) {
+                                echo $args[self::BAR];
+                            }
+                        }
+                    }'
+            ],
+            'assertNotEmptyOnArray' => [
+                '<?php
+                    function foo(bool $c, array $arr) : void {
+                        if ($c && !empty($arr["b"])) {
+                            return;
+                        }
+
+                        if ($c && rand(0, 1)) {}
+                    }'
+            ],
+            'assertIssetOnArray' => [
+                '<?php
+                    function foo(bool $c, array $arr) : void {
+                        if ($c && $arr && isset($arr["b"]) && $arr["b"]) {
+                            return;
+                        }
+
+                        if ($c && rand(0, 1)) {}
+                    }'
+            ],
+            'assertMixedOffsetExists' => [
+                '<?php
+                    class A {
+                        /** @var mixed */
+                        private $arr;
+
+                        /**
+                         * @psalm-suppress MixedArrayAccess
+                         * @psalm-suppress MixedReturnStatement
+                         * @psalm-suppress MixedInferredReturnType
+                         */
+                        public function foo() : stdClass {
+                            if (isset($this->arr[0])) {
+                                return $this->arr[0];
+                            }
+
+                            $this->arr[0] = new stdClass;
+                            return $this->arr[0];
+                        }
+                    }'
+            ],
+            'assertArrayKeyExistsRefinesType' => [
+                '<?php
+                    class Foo {
+                        /** @var array<int,string> */
+                        public const DAYS = [
+                            1 => "mon",
+                            2 => "tue",
+                            3 => "wed",
+                            4 => "thu",
+                            5 => "fri",
+                            6 => "sat",
+                            7 => "sun",
+                        ];
+
+                        /** @param key-of<self::DAYS> $dayNum*/
+                        private static function doGetDayName(int $dayNum): string {
+                            return self::DAYS[$dayNum];
+                        }
+
+                        /** @throws LogicException */
+                        public static function getDayName(int $dayNum): string {
+                            if (! array_key_exists($dayNum, self::DAYS)) {
+                                throw new \LogicException();
+                            }
+                            return self::doGetDayName($dayNum);
+                        }
+                    }'
+            ],
+            'assertPropertiesOfElseStatement' => [
+                '<?php
+                    class C {
+                        public string $a = "";
+                        public string $b = "";
+                    }
+
+                    function testElse(C $obj) : void {
+                        if ($obj->a === "foo") {
+                        } elseif ($obj->b === "bar") {
+                        } else if ($obj->b === "baz") {}
+
+                        if ($obj->b === "baz") {}
+                    }'
+            ],
+            'assertPropertiesOfElseifStatement' => [
+                '<?php
+                    class C {
+                        public string $a = "";
+                        public string $b = "";
+                    }
+
+                    function testElseif(C $obj) : void {
+                        if ($obj->a === "foo") {
+                        } elseif ($obj->b === "bar") {
+                        } elseif ($obj->b === "baz") {}
+
+                        if ($obj->b === "baz") {}
+                    }'
+            ],
+            'assertArrayWithOffset' => [
+                '<?php
+                    /**
+                     * @param mixed $decoded
+                     * @return array{icons:mixed}
+                     */
+                    function assertArrayWithOffset($decoded): array {
+                        if (!is_array($decoded)
+                            || !isset($decoded["icons"])
+                        ) {
+                            throw new RuntimeException("Bad");
+                        }
+
+                        return $decoded;
+                    }'
+            ],
+            'avoidOOM' => [
+                '<?php
+                    function gameOver(
+                        int $b0,
+                        int $b1,
+                        int $b2,
+                        int $b3,
+                        int $b4,
+                        int $b5,
+                        int $b6,
+                        int $b7,
+                        int $b8
+                    ): bool {
+                        if (($b0 === 1 && $b4 === 1 && $b8 === 1)
+                            || ($b0 === 1 && $b1 === 1 && $b2 === 1)
+                            || ($b0 === 1 && $b3 === 1 && $b6 === 1)
+                            || ($b1 === 1 && $b4 === 1 && $b7 === 1)
+                            || ($b2 === 1 && $b5 === 1 && $b8 === 1)
+                            || ($b2 === 1 && $b4 === 1 && $b6 === 1)
+                            || ($b3 === 1 && $b4 === 1 && $b5 === 1)
+                            || ($b6 === 1 && $b7 === 1 && $b8 === 1)
+                        ) {
+                            return true;
+                        }
+                        return false;
+                    }'
+            ],
+            'SKIPPED-assertVarRedefinedInIfWithOr' => [
+                '<?php
+                    class O {}
+
+                    /**
+                     * @param mixed $value
+                     */
+                    function exampleWithOr($value): O {
+                        if (!is_string($value) || ($value = rand(0, 1) ? new O : null) === null) {
+                            return new O();
+                        }
+
+                        return $value;
+                    }'
+            ],
+            'SKIPPED-assertVarRedefinedInOpWithAnd' => [
+                '<?php
+                    class O {
+                        public function foo() : bool { return true; }
+                    }
+
+                    /** @var mixed */
+                    $value = $_GET["foo"];
+
+                    $a = is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo();',
+                [
+                    '$a' => 'bool',
+                ]
+            ],
+            'SKIPPED-assertVarRedefinedInOpWithOr' => [
+                '<?php
+                    class O {
+                        public function foo() : bool { return true; }
+                    }
+
+                    /** @var mixed */
+                    $value = $_GET["foo"];
+
+                    $a = !is_string($value) || (($value = rand(0, 1) ? new O : null) === null) || $value->foo();',
+                [
+                    '$a' => 'bool',
+                ]
+            ],
+            'SKIPPED-assertVarRedefinedInIfWithAnd' => [
+                '<?php
+                    class O {}
+
+                    /**
+                     * @param mixed $value
+                     */
+                    function exampleWithAnd($value): O {
+                        if (is_string($value) && ($value = rand(0, 1) ? new O : null) !== null) {
+                            return $value;
+                        }
+
+                        return new O();
+                    }'
+            ],
+            'assertVarInOrAfterAnd' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+                    class C extends A {}
+
+                    function takesA(A $a): void {}
+
+                    function foo(?A $a, ?A $b): void {
+                        $c = ($a instanceof B && $b instanceof B) || ($a instanceof C && $b instanceof C);
+                    }'
+            ],
+            'assertAssertionsWithCreation' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+                    class C extends A {}
+
+                    function getA(A $a): ?A {
+                        return rand(0, 1) ? $a : null;
+                    }
+
+                    function foo(?A $a, ?A $c): void {
+                        $c = $a && ($b = getA($a)) && $c ? 1 : 0;
+                    }'
+            ],
+            'definedInBothBranchesOfConditional' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    function foo(): void {
+                        $a = null;
+                        if (($a = getA()) || ($a = getA())) {
+                            $a->foo();
+                        }
+                    }'
+            ],
+            'assertOnArrayThings' => [
+                '<?php
+                    /** @var array<string, array<int, string>> */
+                    $a = null;
+
+                    if (isset($a["b"]) || isset($a["c"])) {
+                        $all_params = ($a["b"] ?? []) + ($a["c"] ?? []);
+                    }'
+            ]
         ];
     }
 
