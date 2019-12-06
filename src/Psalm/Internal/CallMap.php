@@ -13506,7 +13506,7 @@ return [
 'strcspn' => ['int', 'str'=>'string', 'mask'=>'string', 'start='=>'int', 'length='=>'int'],
 'stream_bucket_append' => ['void', 'brigade'=>'resource', 'bucket'=>'object'],
 'stream_bucket_make_writeable' => ['object', 'brigade'=>'resource'],
-'stream_bucket_new' => ['resource|false', 'stream'=>'resource', 'buffer'=>'string'],
+'stream_bucket_new' => ['object|false', 'stream'=>'resource', 'buffer'=>'string'],
 'stream_bucket_prepend' => ['void', 'brigade'=>'resource', 'bucket'=>'object'],
 'stream_context_create' => ['resource', 'options='=>'array', 'params='=>'array'],
 'stream_context_get_default' => ['resource', 'options='=>'array'],
