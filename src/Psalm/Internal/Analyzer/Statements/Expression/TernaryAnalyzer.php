@@ -39,124 +39,26 @@ class TernaryAnalyzer
         PhpParser\Node\Expr\Ternary $stmt,
         Context $context
     ) {
-        $first_if_cond_expr = IfAnalyzer::getDefinitelyEvaluatedExpression($stmt->cond);
+        $codebase = $statements_analyzer->getCodebase();
 
-        $was_inside_conditional = $context->inside_conditional;
+        $if_scope = new \Psalm\Internal\Scope\IfScope();
 
-        $context->inside_conditional = true;
+        try {
+            $if_conditional_scope = IfAnalyzer::analyzeIfConditional(
+                $statements_analyzer,
+                $stmt->cond,
+                $context,
+                $codebase,
+                $if_scope,
+                $context->branch_point ?: (int) $stmt->getAttribute('startFilePos')
+            );
 
-        $pre_condition_vars_in_scope = $context->vars_in_scope;
+            $if_context = $if_conditional_scope->if_context;
 
-        $referenced_var_ids = $context->referenced_var_ids;
-        $context->referenced_var_ids = [];
-
-        $pre_assigned_var_ids = $context->assigned_var_ids;
-        $context->assigned_var_ids = [];
-
-        if ($first_if_cond_expr) {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $first_if_cond_expr, $context) === false) {
-                return false;
-            }
+            $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
+        } catch (\Psalm\Exception\ScopeAnalysisException $e) {
+            return false;
         }
-
-        $first_cond_assigned_var_ids = $context->assigned_var_ids;
-        $context->assigned_var_ids = array_merge(
-            $pre_assigned_var_ids,
-            $first_cond_assigned_var_ids
-        );
-
-        /** @var array<string, bool> */
-        $first_cond_referenced_var_ids = $context->referenced_var_ids;
-        $context->referenced_var_ids = array_merge(
-            $referenced_var_ids,
-            $first_cond_referenced_var_ids
-        );
-
-        if (!$was_inside_conditional) {
-            $context->inside_conditional = false;
-        }
-
-        $t_if_context = clone $context;
-
-        $t_if_context->inside_conditional = true;
-
-        if ($first_if_cond_expr !== $stmt->cond) {
-            $assigned_var_ids = $context->assigned_var_ids;
-            $t_if_context->assigned_var_ids = [];
-
-            $referenced_var_ids = $context->referenced_var_ids;
-            $t_if_context->referenced_var_ids = [];
-
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $t_if_context) === false) {
-                return false;
-            }
-
-            /** @var array<string, bool> */
-            $more_cond_referenced_var_ids = $t_if_context->referenced_var_ids;
-            $t_if_context->referenced_var_ids = array_merge(
-                $more_cond_referenced_var_ids,
-                $referenced_var_ids
-            );
-
-            $cond_referenced_var_ids = array_merge(
-                $first_cond_referenced_var_ids,
-                $more_cond_referenced_var_ids
-            );
-
-            /** @var array<string, bool> */
-            $more_cond_assigned_var_ids = $t_if_context->assigned_var_ids;
-            $t_if_context->assigned_var_ids = array_merge(
-                $more_cond_assigned_var_ids,
-                $assigned_var_ids
-            );
-
-            $cond_assigned_var_ids = array_merge(
-                $first_cond_assigned_var_ids,
-                $more_cond_assigned_var_ids
-            );
-        } else {
-            $cond_referenced_var_ids = $first_cond_referenced_var_ids;
-
-            $cond_assigned_var_ids = $first_cond_assigned_var_ids;
-        }
-
-        $newish_var_ids = array_map(
-            /**
-             * @param Type\Union $_
-             *
-             * @return true
-             */
-            function (Type\Union $_) {
-                return true;
-            },
-            array_diff_key(
-                $t_if_context->vars_in_scope,
-                $pre_condition_vars_in_scope,
-                $cond_referenced_var_ids,
-                $cond_assigned_var_ids
-            )
-        );
-
-        // get all the var ids that were referened in the conditional, but not assigned in it
-        $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);
-
-        // remove all newly-asserted var ids too
-        $cond_referenced_var_ids = array_filter(
-            $cond_referenced_var_ids,
-            /**
-             * @param string $var_id
-             *
-             * @return bool
-             */
-            function ($var_id) use ($pre_condition_vars_in_scope) {
-                return isset($pre_condition_vars_in_scope[$var_id]);
-            },
-            ARRAY_FILTER_USE_KEY
-        );
-
-        $cond_referenced_var_ids = array_merge($newish_var_ids, $cond_referenced_var_ids);
-
-        $t_if_context->inside_conditional = false;
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -221,28 +123,28 @@ class TernaryAnalyzer
         $changed_var_ids = [];
 
         if ($reconcilable_if_types) {
-            $t_if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+            $if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                 $reconcilable_if_types,
-                $t_if_context->vars_in_scope,
+                $if_context->vars_in_scope,
                 $changed_var_ids,
                 $cond_referenced_var_ids,
                 $statements_analyzer,
                 [],
-                $t_if_context->inside_loop,
+                $if_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
             );
 
-            $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+            $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
         }
 
         $t_else_context = clone $context;
 
         if ($stmt->if) {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $t_if_context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $if_context) === false) {
                 return false;
             }
 
-            foreach ($t_if_context->vars_in_scope as $var_id => $type) {
+            foreach ($if_context->vars_in_scope as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
                 }
@@ -250,12 +152,12 @@ class TernaryAnalyzer
 
             $context->referenced_var_ids = array_merge(
                 $context->referenced_var_ids,
-                $t_if_context->referenced_var_ids
+                $if_context->referenced_var_ids
             );
 
             $context->unreferenced_vars = array_intersect_key(
                 $context->unreferenced_vars,
-                $t_if_context->unreferenced_vars
+                $if_context->unreferenced_vars
             );
         }
 
@@ -284,9 +186,9 @@ class TernaryAnalyzer
                     $context->vars_in_scope[$var_id],
                     $type
                 );
-            } elseif (isset($t_if_context->vars_in_scope[$var_id])) {
+            } elseif (isset($if_context->vars_in_scope[$var_id])) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                    $t_if_context->vars_in_scope[$var_id],
+                    $if_context->vars_in_scope[$var_id],
                     $type
                 );
             }
@@ -294,7 +196,7 @@ class TernaryAnalyzer
 
         $context->vars_possibly_in_scope = array_merge(
             $context->vars_possibly_in_scope,
-            $t_if_context->vars_possibly_in_scope,
+            $if_context->vars_possibly_in_scope,
             $t_else_context->vars_possibly_in_scope
         );
 
@@ -313,8 +215,8 @@ class TernaryAnalyzer
                 $context->unreferenced_vars[$var_id] += $t_else_context->unreferenced_vars[$var_id];
             }
 
-            if (isset($t_if_context->unreferenced_vars[$var_id])) {
-                $context->unreferenced_vars[$var_id] += $t_if_context->unreferenced_vars[$var_id];
+            if (isset($if_context->unreferenced_vars[$var_id])) {
+                $context->unreferenced_vars[$var_id] += $if_context->unreferenced_vars[$var_id];
             }
         }
 

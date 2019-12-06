@@ -542,7 +542,7 @@ class AssignmentAnalyzer
                         $context->assigned_var_ids[$list_var_id] = true;
                         $context->possibly_assigned_var_ids[$list_var_id] = true;
 
-                        $already_in_scope = isset($context->vars_in_scope[$var_id]);
+                        $already_in_scope = isset($context->vars_in_scope[$list_var_id]);
 
                         if (strpos($list_var_id, '-') === false && strpos($list_var_id, '[') === false) {
                             $location = new CodeLocation($statements_analyzer, $var);
