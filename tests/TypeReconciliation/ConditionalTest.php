@@ -1910,6 +1910,17 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         $c = ($a instanceof B && $b instanceof B) || ($a instanceof C && $b instanceof C);
                     }'
             ],
+            'assertVarAfterNakedBinaryOp' => [
+                '<?php
+                    class A {
+                        public bool $b = false;
+                    }
+
+                    function foo(A $a, A $b): void {
+                        $c = !$a->b && !$b->b;
+                        echo $a->b ? 1 : 0;
+                    }'
+            ],
             'assertAssertionsWithCreation' => [
                 '<?php
                     class A {}
@@ -2043,7 +2054,62 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     if (isset($a["b"]) || isset($a["c"])) {
                         $all_params = ($a["b"] ?? []) + ($a["c"] ?? []);
                     }'
-            ]
+            ],
+            'assertOnNestedLogic' => [
+                '<?php
+                    function foo(?string $a) : void {
+                        if (($a && rand(0, 1)) || rand(0, 1)) {
+                            if ($a && strlen($a) > 5) {}
+                        }
+                    }'
+            ],
+            'arrayUnionTypeSwitching' => [
+                '<?php
+                    /** @param array<string, int|string> $map */
+                    function foo(array $map, string $o) : void {
+                        if ($mapped_type = $map[$o] ?? null) {
+                            if (is_int($mapped_type)) {
+                                return;
+                            }
+                        }
+
+                        if (($mapped_type = $map[""] ?? null) && is_string($mapped_type)) {
+
+                        }
+                    }'
+            ],
+            'propertySetOnElementInConditional' => [
+                '<?php
+                    class DiffElem {
+                        /** @var scalar */
+                        public $old = false;
+                        /** @var scalar */
+                        public $new = false;
+                    }
+
+                    function foo(DiffElem $diff_elem) : void {
+                        if ((is_string($diff_elem->old) && is_string($diff_elem->new))
+                            || (is_int($diff_elem->old) && is_int($diff_elem->new))
+                        ) {
+                        }
+                    }'
+            ],
+            'manyNestedAsserts' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+                    function foo(A $left, A $right) : void {
+                        if (($left instanceof B && rand(0, 1))
+                            || ($right instanceof B && rand(0, 1))
+                        ) {
+                            if ($left instanceof B
+                                && rand(0, 1)
+                                && $right instanceof B
+                                && rand(0, 1)
+                            ) {}
+                        }
+                    }'
+            ],
         ];
     }
 

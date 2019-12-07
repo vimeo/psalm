@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-class IssetTest extends TestCase
+class IssetTest extends \Psalm\Tests\TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
-    use Traits\InvalidCodeAnalysisTestTrait;
+    use \Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+    use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -413,7 +413,7 @@ class IssetTest extends TestCase
                         throw new \InvalidArgumentException();
                     }',
             ],
-            'notIssetOneOrOther' => [
+            'notIssetOneOrOtherSimple' => [
                 '<?php
                     $foo = [
                         "one" => rand(0,1) ? new DateTime : null,
@@ -437,7 +437,7 @@ class IssetTest extends TestCase
                         "three" => new DateTime
                     ];
 
-                    isset($foo["one"]) || isset($foo["two"]);
+                    $a = isset($foo["one"]) || isset($foo["two"]);
 
                     echo $foo["one"]->format("Y");',
                 'assertions' => [],

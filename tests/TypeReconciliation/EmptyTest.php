@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-class EmptyTest extends TestCase
+class EmptyTest extends \Psalm\Tests\TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+    use \Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
