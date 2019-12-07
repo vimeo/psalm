@@ -155,11 +155,27 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                     if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
                         || $lhs_type_part instanceof Type\Atomic\TClassString
+                        || $lhs_type_part instanceof Type\Atomic\GetClassT
                     ) {
                         if (!$statements_analyzer->node_data->getType($stmt)) {
-                            $class_name = $lhs_type_part instanceof Type\Atomic\TClassString
-                                ? $lhs_type_part->as
-                                : $lhs_type_part->value;
+                            if ($lhs_type_part instanceof Type\Atomic\TClassString) {
+                                $class_name = $lhs_type_part->as;
+                            } elseif ($lhs_type_part instanceof Type\Atomic\GetClassT) {
+                                $class_name = 'object';
+
+                                if ($lhs_type_part->as_type
+                                    && $lhs_type_part->as_type->hasObjectType()
+                                    && $lhs_type_part->as_type->isSingle()
+                                ) {
+                                    foreach ($lhs_type_part->as_type->getTypes() as $typeof_type_atomic) {
+                                        if ($typeof_type_atomic instanceof Type\Atomic\TNamedObject) {
+                                            $class_name = $typeof_type_atomic->value;
+                                        }
+                                    }
+                                }
+                            } else {
+                                $class_name = $lhs_type_part->value;
+                            }
 
                             if ($lhs_type_part instanceof Type\Atomic\TClassString) {
                                 $can_extend = true;

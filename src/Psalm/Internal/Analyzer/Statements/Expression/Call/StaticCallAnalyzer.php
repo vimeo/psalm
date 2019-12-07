@@ -232,6 +232,21 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 $intersection_types = $lhs_type_part->as_type->extra_types;
+            } elseif ($lhs_type_part instanceof Type\Atomic\GetClassT
+                && !$lhs_type_part->as_type->hasObject()
+            ) {
+                $fq_class_name = 'object';
+
+                if ($lhs_type_part->as_type
+                    && $lhs_type_part->as_type->hasObjectType()
+                    && $lhs_type_part->as_type->isSingle()
+                ) {
+                    foreach ($lhs_type_part->as_type->getTypes() as $typeof_type_atomic) {
+                        if ($typeof_type_atomic instanceof Type\Atomic\TNamedObject) {
+                            $fq_class_name = $typeof_type_atomic->value;
+                        }
+                    }
+                }
             } elseif ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
                 $fq_class_name = $lhs_type_part->value;
 

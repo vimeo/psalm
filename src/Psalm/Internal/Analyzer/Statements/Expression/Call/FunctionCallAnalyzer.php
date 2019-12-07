@@ -619,36 +619,49 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
         }
 
-        if ($stmt->name instanceof PhpParser\Node\Name &&
-            ($stmt->name->parts === ['get_class'] || $stmt->name->parts === ['gettype']) &&
-            $stmt->args
+        if ($stmt->name instanceof PhpParser\Node\Name
+            && ($stmt->name->parts === ['get_class'] || $stmt->name->parts === ['gettype'])
         ) {
-            $var = $stmt->args[0]->value;
+            if ($stmt->args) {
+                $var = $stmt->args[0]->value;
 
-            if ($var instanceof PhpParser\Node\Expr\Variable
-                && is_string($var->name)
-            ) {
-                $var_id = '$' . $var->name;
+                if ($var instanceof PhpParser\Node\Expr\Variable
+                    && is_string($var->name)
+                ) {
+                    $var_id = '$' . $var->name;
 
-                if (isset($context->vars_in_scope[$var_id])) {
-                    $atomic_type = $stmt->name->parts === ['get_class']
-                        ? new Type\Atomic\GetClassT($var_id, $context->vars_in_scope[$var_id])
-                        : new Type\Atomic\GetTypeT($var_id);
+                    if (isset($context->vars_in_scope[$var_id])) {
+                        $atomic_type = $stmt->name->parts === ['get_class']
+                            ? new Type\Atomic\GetClassT($var_id, $context->vars_in_scope[$var_id])
+                            : new Type\Atomic\GetTypeT($var_id);
 
-                    $statements_analyzer->node_data->setType($stmt, new Type\Union([$atomic_type]));
-                }
-            } elseif ($var_type = $statements_analyzer->node_data->getType($var)) {
-                $class_string_types = [];
+                        $statements_analyzer->node_data->setType($stmt, new Type\Union([$atomic_type]));
+                    }
+                } elseif ($var_type = $statements_analyzer->node_data->getType($var)) {
+                    $class_string_types = [];
 
-                foreach ($var_type->getTypes() as $class_type) {
-                    if ($class_type instanceof Type\Atomic\TNamedObject) {
-                        $class_string_types[] = new Type\Atomic\TClassString($class_type->value, clone $class_type);
+                    foreach ($var_type->getTypes() as $class_type) {
+                        if ($class_type instanceof Type\Atomic\TNamedObject) {
+                            $class_string_types[] = new Type\Atomic\TClassString($class_type->value, clone $class_type);
+                        }
+                    }
+
+                    if ($class_string_types) {
+                        $statements_analyzer->node_data->setType($stmt, new Type\Union($class_string_types));
                     }
                 }
-
-                if ($class_string_types) {
-                    $statements_analyzer->node_data->setType($stmt, new Type\Union($class_string_types));
-                }
+            } elseif ($stmt->name->parts === ['get_class']
+                && ($get_class_name = $statements_analyzer->getFQCLN())
+            ) {
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    new Type\Union([
+                        new Type\Atomic\TClassString(
+                            $get_class_name,
+                            new Type\Atomic\TNamedObject($get_class_name)
+                        )
+                    ])
+                );
             }
         }
 
