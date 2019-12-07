@@ -564,7 +564,8 @@ class IfAnalyzer
             $if_context->branch_point = $branch_point;
         }
 
-        // we need to clone the current context so our ongoing updates to $outer_context don't mess with elseif/else blocks
+        // we need to clone the current context so our ongoing updates
+        // to $outer_context don't mess with elseif/else blocks
         $original_context = clone $outer_context;
 
         $if_context->inside_conditional = true;
