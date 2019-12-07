@@ -237,8 +237,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             ) {
                 $fq_class_name = 'object';
 
-                if ($lhs_type_part->as_type
-                    && $lhs_type_part->as_type->hasObjectType()
+                if ($lhs_type_part->as_type->hasObjectType()
                     && $lhs_type_part->as_type->isSingle()
                 ) {
                     foreach ($lhs_type_part->as_type->getTypes() as $typeof_type_atomic) {
