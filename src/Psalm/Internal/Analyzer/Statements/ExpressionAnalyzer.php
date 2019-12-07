@@ -886,6 +886,8 @@ class ExpressionAnalyzer
                 }
             }
 
+            $context->assigned_var_ids[$var_id] = true;
+
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
 
             if (!($stmt_type = $statements_analyzer->node_data->getType($stmt)) || $stmt_type->isEmpty()) {

@@ -3171,6 +3171,10 @@ class CallAnalyzer
                 }
             }
 
+            if ($context->inside_conditional) {
+                $context->assigned_var_ids[$var_id] = true;
+            }
+
             if ($was_cloned) {
                 $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
             }

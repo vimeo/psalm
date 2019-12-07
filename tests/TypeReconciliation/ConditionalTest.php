@@ -2110,6 +2110,50 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'assertionAfterAssertionInsideBooleanNot' => [
+                '<?php
+                    class A {}
+
+                    function foo(?A $a) : void {
+                        if (rand(0, 1) && !($a && rand(0, 1))) {
+                            if ($a !== null) {}
+                        }
+                    }'
+            ],
+            'assertionAfterAssertionInsideExpandedBooleanNot' => [
+                '<?php
+                    class A {}
+
+                    function bar(?A $a) : void {
+                        if (rand(0, 1) && (!$a || rand(0, 1))) {
+                            if ($a !== null) {}
+                        }
+                    }'
+            ],
+            'byrefChangeNested' => [
+                '<?php
+                    if (!preg_match("/hello/", "hello", $matches) || $matches[0] !== "hello") {}'
+            ],
+            'checkBeforeUse' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function takesA(A $a) : bool {
+                        return true;
+                    }
+
+                    /**
+                     * @param mixed $a
+                     */
+                    function takesMaybeA($a) : void {
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        if ($a !== null && takesA($a)) {}
+                    }'
+            ],
         ];
     }
 
