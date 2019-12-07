@@ -593,14 +593,14 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $assert_type_assertions = Algebra::getTruthsFromFormula($simplified_clauses);
 
                 if ($assert_type_assertions) {
-                    $changed_vars = [];
+                    $changed_var_ids = [];
 
                     // while in an and, we allow scope to boil over to support
                     // statements of the form if ($x && $x->foo())
                     $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
                         $assert_type_assertions,
                         $context->vars_in_scope,
-                        $changed_vars,
+                        $changed_var_ids,
                         [],
                         $statements_analyzer,
                         [],
@@ -608,9 +608,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     );
 
-                    foreach ($changed_vars as $changed_var) {
-                        if (isset($op_vars_in_scope[$changed_var])) {
-                            $op_vars_in_scope[$changed_var]->from_docblock = true;
+                    foreach ($changed_var_ids as $var_id => $_) {
+                        if (isset($op_vars_in_scope[$var_id])) {
+                            $op_vars_in_scope[$var_id]->from_docblock = true;
                         }
                     }
 

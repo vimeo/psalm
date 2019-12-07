@@ -487,7 +487,7 @@ class Context
     }
 
     /**
-     * @param  string[]             $changed_var_ids
+     * @param  array<string, bool>  $changed_var_ids
      *
      * @return void
      */
@@ -503,7 +503,7 @@ class Context
                     }
 
                     foreach ($c->possibilities as $key => $_) {
-                        if (in_array($key, $changed_var_ids, true)) {
+                        if (isset($changed_var_ids[$key])) {
                             return false;
                         }
                     }

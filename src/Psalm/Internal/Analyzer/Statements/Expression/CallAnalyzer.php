@@ -3474,7 +3474,7 @@ class CallAnalyzer
             }
         }
 
-        $changed_vars = [];
+        $changed_var_ids = [];
 
         foreach ($type_assertions as $var_id => $_) {
             $asserted_keys[$var_id] = true;
@@ -3486,7 +3486,7 @@ class CallAnalyzer
             $op_vars_in_scope = \Psalm\Type\Reconciler::reconcileKeyedTypes(
                 $type_assertions,
                 $context->vars_in_scope,
-                $changed_vars,
+                $changed_var_ids,
                 $asserted_keys,
                 $statements_analyzer,
                 $template_type_map,
@@ -3494,11 +3494,11 @@ class CallAnalyzer
                 new CodeLocation($statements_analyzer->getSource(), $expr)
             );
 
-            foreach ($changed_vars as $changed_var) {
-                if (isset($op_vars_in_scope[$changed_var])) {
-                    $op_vars_in_scope[$changed_var]->from_docblock = true;
+            foreach ($changed_var_ids as $var_id => $_) {
+                if (isset($op_vars_in_scope[$var_id])) {
+                    $op_vars_in_scope[$var_id]->from_docblock = true;
 
-                    foreach ($op_vars_in_scope[$changed_var]->getTypes() as $changed_atomic_type) {
+                    foreach ($op_vars_in_scope[$var_id]->getTypes() as $changed_atomic_type) {
                         $changed_atomic_type->from_docblock = true;
 
                         if ($changed_atomic_type instanceof Type\Atomic\TNamedObject

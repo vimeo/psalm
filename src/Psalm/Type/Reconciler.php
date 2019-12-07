@@ -59,7 +59,7 @@ class Reconciler
      *
      * @param  array<string, string[][]> $new_types
      * @param  array<string, Type\Union> $existing_types
-     * @param  array<string>             $changed_var_ids
+     * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
      * @param  StatementsAnalyzer         $statements_analyzer
      * @param  CodeLocation|null         $code_location
@@ -271,7 +271,7 @@ class Reconciler
             $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
 
             if ($type_changed || $failed_reconciliation) {
-                $changed_var_ids[] = $key;
+                $changed_var_ids[$key] = true;
 
                 if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_empty) {
                     $key_parts = self::breakUpPathIntoParts($key);
@@ -313,7 +313,7 @@ class Reconciler
                     $suppressed_issues
                 );
             } elseif (!$has_negation && !$has_falsyish && !$has_isset) {
-                $changed_var_ids[] = $key;
+                $changed_var_ids[$key] = true;
             }
 
             if ($failed_reconciliation === 2) {
@@ -696,7 +696,7 @@ class Reconciler
     /**
      * @param  string[]                  $key_parts
      * @param  array<string,Type\Union>  $existing_types
-     * @param  array<string>             $changed_var_ids
+     * @param  array<string, bool>       $changed_var_ids
      *
      * @return void
      */
@@ -768,7 +768,7 @@ class Reconciler
 
                     $new_base_type->addType($base_atomic_type);
 
-                    $changed_var_ids[] = $base_key . '[' . $array_key . ']';
+                    $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
 
                     if ($key_parts[count($key_parts) - 1] === ']') {
                         self::adjustObjectLikeType(

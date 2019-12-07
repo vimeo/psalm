@@ -447,7 +447,7 @@ class LoopAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0])
                 );
 
-                foreach ($changed_var_ids as $var_id) {
+                foreach ($changed_var_ids as $var_id => $_) {
                     if (isset($vars_in_scope_reconciled[$var_id])
                         && isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
                     ) {

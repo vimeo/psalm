@@ -1941,6 +1941,100 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'definedInConditionalAndCheckedInSubbranch' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    function foo(): void {
+                        if (($a = getA()) || rand(0, 1)) {
+                            if ($a) {
+                                $a->foo();
+                            }
+                        }
+                    }'
+            ],
+            'definedInRhsOfConditionalInNegation' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    function foo(): void {
+                        if (rand(0, 1) && ($a = getA()) !== null) {
+                            $a->foo();
+                        }
+                    }'
+            ],
+            'literalStringComparisonInIf' => [
+                '<?php
+                    function foo(string $t, bool $b) : void {
+                        if ($t !== "a") {
+                            if ($t === "b" && $b) {}
+                        }
+                    }
+
+                    function bar(string $t, bool $b) : void {
+                        if ($t !== "a") {
+                            if ($t === "b" || $b) {}
+                        }
+                    }'
+            ],
+            'literalStringComparisonInElseif' => [
+                '<?php
+                    function foo(string $t, bool $b) : void {
+                        if ($t === "a") {
+                        } elseif ($t === "b" && $b) {}
+                    }
+
+                    function bar(string $t, bool $b) : void {
+                        if ($t === "a") {
+                        } elseif ($t === "b" || $b) {}
+                    }'
+            ],
+            'literalStringComparisonInElse' => [
+                '<?php
+                    function foo(string $t, bool $b) : void {
+                        if ($t === "a") {
+                        } else {
+                            if ($t === "b" && $b) {}
+                        }
+                    }
+
+                    function bar(string $t, bool $b) : void {
+                        if ($t === "a") {
+                        } else {
+                            if ($t === "b" || $b) {}
+                        }
+                    }'
+            ],
+            'definedInOrRHS' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    function foo(bool $b): void {
+                        $a = null;
+                        if (!$b || !($a = getA())) {
+                            return;
+                        }
+                        $a->foo();
+                    }'
+            ],
             'assertOnArrayThings' => [
                 '<?php
                     /** @var array<string, array<int, string>> */

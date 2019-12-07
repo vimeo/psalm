@@ -520,7 +520,7 @@ class IfAnalyzer
                             function (Clause $c) use ($changed_var_ids) {
                                 return count($c->possibilities) > 1
                                     || $c->wedge
-                                    || !in_array(array_keys($c->possibilities)[0], $changed_var_ids, true);
+                                    || !isset($changed_var_ids[array_keys($c->possibilities)[0]]);
                             }
                         )
                     );
@@ -766,12 +766,12 @@ class IfAnalyzer
             $if_scope->assigned_var_ids = $new_assigned_var_ids;
             $if_scope->possibly_assigned_var_ids = $new_possibly_assigned_var_ids;
 
-            $changed_var_ids = array_keys($new_assigned_var_ids);
+            $changed_var_ids = $new_assigned_var_ids;
 
             // if the variable was only set in the conditional, it's not possibly redefined
             foreach ($if_scope->possibly_redefined_vars as $var_id => $_) {
                 if (!isset($new_possibly_assigned_var_ids[$var_id])
-                    && in_array($var_id, $if_scope->if_cond_changed_var_ids, true)
+                    && isset($if_scope->if_cond_changed_var_ids[$var_id])
                 ) {
                     unset($if_scope->possibly_redefined_vars[$var_id]);
                 }
@@ -779,7 +779,7 @@ class IfAnalyzer
 
             if ($if_scope->reasonable_clauses) {
                 // remove all reasonable clauses that would be negated by the if stmts
-                foreach ($changed_var_ids as $var_id) {
+                foreach ($changed_var_ids as $var_id => $_) {
                     $if_scope->reasonable_clauses = Context::filterClauses(
                         $var_id,
                         $if_scope->reasonable_clauses,
@@ -816,18 +816,13 @@ class IfAnalyzer
                     )
                 );
 
-                foreach ($changed_var_ids as $changed_var_id) {
+                foreach ($changed_var_ids as $changed_var_id => $_) {
                     $outer_context->removeVarFromConflictingClauses($changed_var_id);
                 }
 
-                $changed_var_ids = array_unique(
-                    array_merge(
-                        $changed_var_ids,
-                        array_keys($new_assigned_var_ids)
-                    )
-                );
+                $changed_var_ids += $new_assigned_var_ids;
 
-                foreach ($changed_var_ids as $var_id) {
+                foreach ($changed_var_ids as $var_id => $_) {
                     $if_scope->negated_clauses = Context::filterClauses(
                         $var_id,
                         $if_scope->negated_clauses
@@ -1222,7 +1217,7 @@ class IfAnalyzer
 
             foreach ($possibly_redefined_vars as $var_id => $_) {
                 if (!isset($new_stmts_assigned_var_ids[$var_id])
-                    && in_array($var_id, $changed_var_ids, true)
+                    && isset($changed_var_ids[$var_id])
                 ) {
                     unset($possibly_redefined_vars[$var_id]);
                 }
