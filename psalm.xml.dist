@@ -24,6 +24,7 @@
             <file name="src/Psalm/Internal/Traverser/CustomTraverser.php"/>
             <file name="tests/ErrorBaselineTest.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
+            <file name="src/spl_object_id.php"/>
             <directory name="src/Psalm/Internal/Stubs"/>
             <directory name="tests/fixtures"/>
             <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
