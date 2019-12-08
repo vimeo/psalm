@@ -1855,6 +1855,23 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return new O();
                     }'
             ],
+            'assertVarRedefinedInIfWithAndAndMethodCall' => [
+                '<?php
+                    class O {
+                        public function foo() : bool { return true; }
+                    }
+
+                    /**
+                     * @param mixed $value
+                     */
+                    function anotherExampleWithAnd($value): O {
+                        if (is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo()) {
+                            return $value;
+                        }
+
+                        return new O();
+                    }'
+            ],
             'SKIPPED-assertVarRedefinedInIfWithOr' => [
                 '<?php
                     class O {}
@@ -1898,7 +1915,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     /** @var mixed */
                     $value = $_GET["foo"];
 
-                    $a = is_string($value) && (($valu = rand(0, 1) ? new O : null) !== null) && $valu->foo();',
+                    $a = is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo();',
                 [
                     '$a' => 'bool',
                 ]

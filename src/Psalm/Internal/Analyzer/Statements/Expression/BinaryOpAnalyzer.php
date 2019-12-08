@@ -231,7 +231,7 @@ class BinaryOpAnalyzer
                 }
 
                 $if_context->reconciled_expression_clauses = array_merge(
-                    $context->if_context->reconciled_expression_clauses,
+                    $if_context->reconciled_expression_clauses,
                     array_map(
                         function ($c) {
                             return $c->getHash();

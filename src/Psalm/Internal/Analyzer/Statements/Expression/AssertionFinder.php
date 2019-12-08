@@ -1079,6 +1079,10 @@ class AssertionFinder
             );
 
             if ($var_name) {
+                if ($base_conditional instanceof PhpParser\Node\Expr\Assign) {
+                    $var_name = '=' . $var_name;
+                }
+
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                     $if_types[$var_name] = [['!null']];
                 } else {

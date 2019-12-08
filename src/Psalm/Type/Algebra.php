@@ -199,6 +199,14 @@ class Algebra
                     $clauses = [];
 
                     foreach ($assertions as $var => $anded_types) {
+                        $redefined = false;
+
+                        if ($var[0] === '=') {
+                            /** @var string */
+                            $var = substr($var, 1);
+                            $redefined = true;
+                        }
+
                         foreach ($anded_types as $orred_types) {
                             $clauses[] = new Clause(
                                 [$var => $orred_types],
@@ -208,7 +216,8 @@ class Algebra
                                     || $orred_types[0][0] === '~'
                                     || (strlen($orred_types[0]) > 1
                                         && ($orred_types[0][1] === '='
-                                            || $orred_types[0][1] === '~'))
+                                            || $orred_types[0][1] === '~')),
+                                $redefined ? [$var => true] : []
                             );
                         }
                     }
@@ -300,6 +309,14 @@ class Algebra
             $clauses = [];
 
             foreach ($assertions as $var => $anded_types) {
+                $redefined = false;
+
+                if ($var[0] === '=') {
+                    /** @var string */
+                    $var = substr($var, 1);
+                    $redefined = true;
+                }
+
                 foreach ($anded_types as $orred_types) {
                     $clauses[] = new Clause(
                         [$var => $orred_types],
@@ -309,7 +326,8 @@ class Algebra
                             || $orred_types[0][0] === '~'
                             || (strlen($orred_types[0]) > 1
                                 && ($orred_types[0][1] === '='
-                                    || $orred_types[0][1] === '~'))
+                                    || $orred_types[0][1] === '~')),
+                        $redefined ? [$var => true] : []
                     );
                 }
             }
@@ -462,7 +480,7 @@ class Algebra
             foreach ($clause->possibilities as $var => $possible_types) {
                 // if there's only one possible type, return it
                 if (count($clause->possibilities) === 1 && count($possible_types) === 1) {
-                    if (isset($truths[$var])) {
+                    if (isset($truths[$var]) && !isset($clause->redefined_vars[$var])) {
                         $truths[$var][] = [array_pop($possible_types)];
                     } else {
                         $truths[$var] = [[array_pop($possible_types)]];

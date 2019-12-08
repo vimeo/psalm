@@ -60,18 +60,28 @@ class Clause
     /** @var bool */
     public $generated = false;
 
+    /** @var array<string, bool> */
+    public $redefined_vars = [];
+
     /**
      * @param array<string, non-empty-list<string>>  $possibilities
      * @param bool                          $wedge
      * @param bool                          $reconcilable
      * @param bool                          $generated
+     * @param array<string, bool> $redefined_vars
      */
-    public function __construct(array $possibilities, $wedge = false, $reconcilable = true, $generated = false)
-    {
+    public function __construct(
+        array $possibilities,
+        $wedge = false,
+        $reconcilable = true,
+        $generated = false,
+        array $redefined_vars = []
+    ) {
         $this->possibilities = $possibilities;
         $this->wedge = $wedge;
         $this->reconcilable = $reconcilable;
         $this->generated = $generated;
+        $this->redefined_vars = $redefined_vars;
     }
 
     /**
