@@ -103,7 +103,7 @@ class ConstFetchAnalyzer
 
         $predefined_constants = $codebase->config->getPredefinedConstants();
 
-        if ($fq_const_name && array_key_exists($fq_const_name, $predefined_constants)
+        if (($fq_const_name && array_key_exists($fq_const_name, $predefined_constants))
             || array_key_exists($const_name, $predefined_constants)
         ) {
             switch ($const_name) {

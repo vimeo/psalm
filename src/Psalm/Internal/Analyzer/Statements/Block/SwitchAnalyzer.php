@@ -514,7 +514,7 @@ class SwitchAnalyzer
             }
 
             if ($changed_var_ids) {
-                $case_context->removeReconciledClauses($changed_var_ids);
+                $case_context->clauses = Context::removeReconciledClauses($case_context->clauses, $changed_var_ids)[0];
             }
         }
 

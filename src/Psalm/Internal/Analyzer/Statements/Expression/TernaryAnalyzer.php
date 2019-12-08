@@ -83,7 +83,6 @@ class TernaryAnalyzer
             }
         }
 
-
         $if_clauses = array_values(
             array_map(
                 /**
@@ -108,7 +107,22 @@ class TernaryAnalyzer
             )
         );
 
-        $ternary_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $if_clauses));
+        $ternary_clauses = array_merge($context->clauses, $if_clauses);
+
+        if ($if_context->reconciled_expression_clauses) {
+            $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
+
+            $ternary_clauses = array_values(
+                array_filter(
+                    $ternary_clauses,
+                    function ($c) use ($reconciled_expression_clauses) {
+                        return !\in_array($c->getHash(), $reconciled_expression_clauses);
+                    }
+                )
+            );
+        }
+
+        $ternary_clauses = Algebra::simplifyCNF($ternary_clauses);
 
         $negated_clauses = Algebra::negateFormula($if_clauses);
 

@@ -309,6 +309,8 @@ class LoopAnalyzer
                     unset($inner_context->vars_in_scope[$var_id]);
                 }
 
+                $inner_context->clauses = $pre_loop_context->clauses;
+
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
 

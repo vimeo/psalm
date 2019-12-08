@@ -148,6 +148,13 @@ class Context
     public $clauses = [];
 
     /**
+     * A list of hashed clauses that have already been factored in
+     *
+     * @var list<string>
+     */
+    public $reconciled_expression_clauses = [];
+
+    /**
      * Whether or not to do a deep analysis and collect mutations to this context
      *
      * @var bool
@@ -279,6 +286,16 @@ class Context
      * @var Internal\Scope\CaseScope|null
      */
     public $case_scope = null;
+
+    /**
+     * @var Context|null
+     */
+    public $if_context = null;
+
+    /**
+     * @var \Psalm\Internal\Scope\IfScope|null
+     */
+    public $if_scope = null;
 
     /**
      * @var bool
@@ -487,31 +504,62 @@ class Context
     }
 
     /**
+     * This removes all clauses that are invalidated because
+     * all possibilities are overwritten by changed var ids
+     *
+     * @param  Clause[]             $clauses
      * @param  array<string, bool>  $changed_var_ids
      *
-     * @return void
+     * @return list<Clause>
      */
-    public function removeReconciledClauses(array $changed_var_ids)
+    public static function removeOverwrittenClauses(array $clauses, array $changed_var_ids)
     {
-        $this->clauses = \array_values(
-            array_filter(
-                $this->clauses,
-                /** @return bool */
-                function (Clause $c) use ($changed_var_ids) {
-                    if ($c->wedge) {
-                        return true;
-                    }
+        $included_clauses = [];
 
-                    foreach ($c->possibilities as $key => $_) {
-                        if (isset($changed_var_ids[$key])) {
-                            return false;
-                        }
-                    }
+        foreach ($clauses as $c) {
+            if ($c->wedge) {
+                $included_clauses[] = $c;
+                continue;
+            }
 
-                    return true;
+            if (!\array_diff_key($c->possibilities, $changed_var_ids)) {
+                continue;
+            }
+
+            $included_clauses[] = $c;
+        }
+
+        return $included_clauses;
+    }
+
+    /**
+     * @param  Clause[]             $clauses
+     * @param  array<string, bool>  $changed_var_ids
+     *
+     * @return array{0: list<Clause>, list<Clause>}
+     */
+    public static function removeReconciledClauses(array $clauses, array $changed_var_ids)
+    {
+        $included_clauses = [];
+        $rejected_clauses = [];
+
+        foreach ($clauses as $c) {
+            if ($c->wedge) {
+                $included_clauses[] = $c;
+                continue;
+            }
+
+            foreach ($c->possibilities as $key => $_) {
+                if (isset($changed_var_ids[$key])) {
+                    $rejected_clauses[] = $c;
+                    continue 2;
                 }
-            )
-        );
+            }
+
+            $included_clauses[] = $c;
+        }
+
+        return [$included_clauses, $rejected_clauses];
     }
 
     /**
