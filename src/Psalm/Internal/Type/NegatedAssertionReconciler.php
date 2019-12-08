@@ -1033,7 +1033,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $existing_var_type,
                     $old_var_type_string,
                     $key,
-                    $assertion,
+                    '!' . $assertion,
                     !$did_remove_type,
                     $code_location,
                     $suppressed_issues
