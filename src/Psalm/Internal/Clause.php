@@ -18,6 +18,9 @@ use function spl_object_hash;
  */
 class Clause
 {
+    /** @var ?int */
+    public $creating_object_id;
+
     /**
      * An array of strings of the form
      * [
@@ -75,13 +78,15 @@ class Clause
         $wedge = false,
         $reconcilable = true,
         $generated = false,
-        array $redefined_vars = []
+        array $redefined_vars = [],
+        ?int $creating_object_id = null
     ) {
         $this->possibilities = $possibilities;
         $this->wedge = $wedge;
         $this->reconcilable = $reconcilable;
         $this->generated = $generated;
         $this->redefined_vars = $redefined_vars;
+        $this->creating_object_id = $creating_object_id;
     }
 
     /**

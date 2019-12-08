@@ -175,8 +175,11 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
                             assert($statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer);
 
+                            $assertions = ['$inner_type' => $assertions['$' . $first_param->var->name]];
+
                             $reconciled_types = Reconciler::reconcileKeyedTypes(
-                                ['$inner_type' => $assertions['$' . $first_param->var->name]],
+                                $assertions,
+                                $assertions,
                                 ['$inner_type' => $inner_type],
                                 $changed_var_ids,
                                 ['$inner_type' => true],

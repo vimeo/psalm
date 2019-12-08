@@ -1880,6 +1880,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         }
 
                         $if_clauses = \Psalm\Type\Algebra::getFormula(
+                            \spl_object_id($function_stmt->cond),
                             $function_stmt->cond,
                             $this->fq_classlike_names
                                 ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1]

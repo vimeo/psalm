@@ -148,6 +148,7 @@ class SwitchAnalyzer
                 $case_vars_in_scope_reconciled =
                     Reconciler::reconcileKeyedTypes(
                         $reconcilable_if_types,
+                        [],
                         $original_context->vars_in_scope,
                         $changed_var_ids,
                         [],
@@ -433,6 +434,7 @@ class SwitchAnalyzer
 
         if ($case_equality_expr) {
             $case_clauses = Algebra::getFormula(
+                \spl_object_id($case_equality_expr),
                 $case_equality_expr,
                 $context->self,
                 $statements_analyzer,
@@ -487,6 +489,7 @@ class SwitchAnalyzer
             $case_vars_in_scope_reconciled =
                 Reconciler::reconcileKeyedTypes(
                     $reconcilable_if_types,
+                    [],
                     $case_context->vars_in_scope,
                     $changed_var_ids,
                     $case->cond && $switch_var_id ? [$switch_var_id => true] : [],

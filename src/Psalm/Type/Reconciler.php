@@ -58,6 +58,7 @@ class Reconciler
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
      * @param  array<string, string[][]> $new_types
+     * @param  array<string, string[][]> $active_new_types - types we can complain about
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
@@ -69,6 +70,7 @@ class Reconciler
      */
     public static function reconcileKeyedTypes(
         array $new_types,
+        array $active_new_types,
         array $existing_types,
         array &$changed_var_ids,
         array $referenced_var_ids,
@@ -232,7 +234,7 @@ class Reconciler
 
             $failed_reconciliation = 0;
 
-            foreach ($new_type_parts as $new_type_part_parts) {
+            foreach ($new_type_parts as $offset => $new_type_part_parts) {
                 $orred_type = null;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
@@ -243,7 +245,11 @@ class Reconciler
                         $statements_analyzer,
                         $inside_loop,
                         $template_type_map,
-                        $code_location && isset($referenced_var_ids[$key]) ? $code_location : null,
+                        $code_location
+                            && isset($referenced_var_ids[$key])
+                            && isset($active_new_types[$key][$offset])
+                            ? $code_location
+                            : null,
                         $suppressed_issues,
                         $failed_reconciliation
                     );

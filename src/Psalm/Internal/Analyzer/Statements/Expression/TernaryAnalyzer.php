@@ -63,6 +63,7 @@ class TernaryAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $if_clauses = \Psalm\Type\Algebra::getFormula(
+            \spl_object_id($stmt->cond),
             $stmt->cond,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
@@ -132,13 +133,21 @@ class TernaryAnalyzer
             )
         );
 
-        $reconcilable_if_types = Algebra::getTruthsFromFormula($ternary_clauses, $cond_referenced_var_ids);
+        $active_if_types = [];
+
+        $reconcilable_if_types = Algebra::getTruthsFromFormula(
+            $ternary_clauses,
+            \spl_object_id($stmt->cond),
+            $cond_referenced_var_ids,
+            $active_if_types
+        );
 
         $changed_var_ids = [];
 
         if ($reconcilable_if_types) {
             $if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                 $reconcilable_if_types,
+                $active_if_types,
                 $if_context->vars_in_scope,
                 $changed_var_ids,
                 $cond_referenced_var_ids,
@@ -177,6 +186,7 @@ class TernaryAnalyzer
 
         if ($negated_if_types) {
             $t_else_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+                $negated_if_types,
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
                 $changed_var_ids,

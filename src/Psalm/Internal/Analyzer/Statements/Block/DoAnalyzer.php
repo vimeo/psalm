@@ -95,6 +95,7 @@ class DoAnalyzer
         }
 
         $while_clauses = Algebra::getFormula(
+            \spl_object_id($stmt->cond),
             $stmt->cond,
             $context->self,
             $statements_analyzer,
@@ -134,6 +135,7 @@ class DoAnalyzer
             $while_vars_in_scope_reconciled =
                 Type\Reconciler::reconcileKeyedTypes(
                     $reconcilable_while_types,
+                    [],
                     $do_context->vars_in_scope,
                     $changed_var_ids,
                     [],
@@ -187,6 +189,7 @@ class DoAnalyzer
             $inner_loop_context->vars_in_scope =
                 Type\Reconciler::reconcileKeyedTypes(
                     $negated_while_types,
+                    [],
                     $inner_loop_context->vars_in_scope,
                     $changed_var_ids,
                     [],

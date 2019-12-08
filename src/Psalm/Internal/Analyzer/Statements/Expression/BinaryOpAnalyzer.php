@@ -78,6 +78,7 @@ class BinaryOpAnalyzer
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
             $left_clauses = Algebra::getFormula(
+                \spl_object_id($stmt->left),
                 $stmt->left,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer,
@@ -146,7 +147,14 @@ class BinaryOpAnalyzer
 
             $simplified_clauses = Algebra::simplifyCNF($context_clauses);
 
-            $left_type_assertions = Algebra::getTruthsFromFormula($simplified_clauses);
+            $active_left_assertions = [];
+
+            $left_type_assertions = Algebra::getTruthsFromFormula(
+                $simplified_clauses,
+                \spl_object_id($stmt->left),
+                $new_referenced_var_ids,
+                $active_left_assertions
+            );
 
             $changed_var_ids = [];
 
@@ -157,6 +165,7 @@ class BinaryOpAnalyzer
                 // statements of the form if ($x && $x->foo())
                 $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
                     $left_type_assertions,
+                    $active_left_assertions,
                     $context->vars_in_scope,
                     $changed_var_ids,
                     $new_referenced_var_ids,
@@ -286,6 +295,7 @@ class BinaryOpAnalyzer
             $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
 
             $left_clauses = Algebra::getFormula(
+                \spl_object_id($stmt->left),
                 $stmt->left,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer,
@@ -318,7 +328,14 @@ class BinaryOpAnalyzer
                 )
             );
 
-            $negated_type_assertions = Algebra::getTruthsFromFormula($clauses_for_right_analysis);
+            $active_negated_type_assertions = [];
+
+            $negated_type_assertions = Algebra::getTruthsFromFormula(
+                $clauses_for_right_analysis,
+                \spl_object_id($stmt->left),
+                $new_referenced_var_ids,
+                $active_negated_type_assertions
+            );
 
             $changed_var_ids = [];
 
@@ -329,6 +346,7 @@ class BinaryOpAnalyzer
                 // statements of the form if ($x === null || $x->foo())
                 $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
                     $negated_type_assertions,
+                    $active_negated_type_assertions,
                     $op_context->vars_in_scope,
                     $changed_var_ids,
                     $new_referenced_var_ids,
@@ -509,6 +527,7 @@ class BinaryOpAnalyzer
             $t_if_context = clone $context;
 
             $if_clauses = Algebra::getFormula(
+                \spl_object_id($stmt),
                 $stmt,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer,
@@ -566,6 +585,7 @@ class BinaryOpAnalyzer
             if ($reconcilable_if_types) {
                 $t_if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                     $reconcilable_if_types,
+                    [],
                     $t_if_context->vars_in_scope,
                     $changed_var_ids,
                     [],
@@ -659,6 +679,7 @@ class BinaryOpAnalyzer
             if ($negated_if_types) {
                 $t_else_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                     $negated_if_types,
+                    [],
                     $t_else_context->vars_in_scope,
                     $changed_var_ids,
                     [],

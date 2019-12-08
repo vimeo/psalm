@@ -582,6 +582,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 isset($stmt->args[0])
             ) {
                 $assert_clauses = \Psalm\Type\Algebra::getFormula(
+                    \spl_object_id($stmt->args[0]->value),
                     $stmt->args[0]->value,
                     $statements_analyzer->getFQCLN(),
                     $statements_analyzer,
@@ -598,6 +599,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     // while in an and, we allow scope to boil over to support
                     // statements of the form if ($x && $x->foo())
                     $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
+                        $assert_type_assertions,
                         $assert_type_assertions,
                         $context->vars_in_scope,
                         $changed_var_ids,
@@ -933,6 +935,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                 if ($assertions) {
                     Reconciler::reconcileKeyedTypes(
+                        $assertions,
                         $assertions,
                         $context->vars_in_scope,
                         $changed_vars,

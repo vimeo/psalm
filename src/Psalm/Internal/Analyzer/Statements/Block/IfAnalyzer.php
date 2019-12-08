@@ -105,6 +105,7 @@ class IfAnalyzer
         }
 
         $if_clauses = Algebra::getFormula(
+            \spl_object_id($stmt->cond),
             $stmt->cond,
             $context->self,
             $statements_analyzer,
@@ -194,9 +195,13 @@ class IfAnalyzer
             )
         );
 
+        $active_if_types = [];
+
         $reconcilable_if_types = Algebra::getTruthsFromFormula(
             $if_context->clauses,
-            $cond_referenced_var_ids
+            \spl_object_id($stmt->cond),
+            $cond_referenced_var_ids,
+            $active_if_types
         );
 
         if (array_filter(
@@ -233,6 +238,7 @@ class IfAnalyzer
             $if_vars_in_scope_reconciled =
                 Reconciler::reconcileKeyedTypes(
                     $reconcilable_if_types,
+                    $active_if_types,
                     $if_context->vars_in_scope,
                     $changed_var_ids,
                     $cond_referenced_var_ids,
@@ -280,9 +286,10 @@ class IfAnalyzer
         if ($if_scope->negated_types) {
             $else_vars_reconciled = Reconciler::reconcileKeyedTypes(
                 $if_scope->negated_types,
+                [],
                 $temp_else_context->vars_in_scope,
                 $changed_var_ids,
-                $stmt->else || $stmt->elseifs ? $cond_referenced_var_ids : [],
+                [],
                 $statements_analyzer,
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $context->inside_loop,
@@ -511,6 +518,7 @@ class IfAnalyzer
             if ($if_scope->negated_types) {
                 $vars_reconciled = Reconciler::reconcileKeyedTypes(
                     $if_scope->negated_types,
+                    [],
                     $outer_context->vars_in_scope,
                     $changed_var_ids,
                     [],
@@ -847,6 +855,7 @@ class IfAnalyzer
 
                 $outer_context_vars_reconciled = Reconciler::reconcileKeyedTypes(
                     $if_scope->negated_types,
+                    [],
                     $outer_context->vars_in_scope,
                     $changed_var_ids,
                     [],
@@ -1028,6 +1037,7 @@ class IfAnalyzer
         }
 
         $elseif_clauses = Algebra::getFormula(
+            \spl_object_id($elseif->cond),
             $elseif->cond,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
@@ -1109,6 +1119,8 @@ class IfAnalyzer
 
         $elseif_context->clauses = Algebra::simplifyCNF($elseif_context_clauses);
 
+        $active_elseif_types = [];
+
         try {
             if (array_filter(
                 $entry_clauses,
@@ -1136,8 +1148,15 @@ class IfAnalyzer
                     $omit_keys
                 );
             }
-            $reconcilable_elseif_types = Algebra::getTruthsFromFormula($elseif_context->clauses);
-            $negated_elseif_types = Algebra::getTruthsFromFormula(Algebra::negateFormula($elseif_clauses));
+            $reconcilable_elseif_types = Algebra::getTruthsFromFormula(
+                $elseif_context->clauses,
+                \spl_object_id($elseif->cond),
+                $cond_referenced_var_ids,
+                $active_elseif_types
+            );
+            $negated_elseif_types = Algebra::getTruthsFromFormula(
+                Algebra::negateFormula($elseif_clauses)
+            );
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             $reconcilable_elseif_types = [];
             $negated_elseif_types = [];
@@ -1169,6 +1188,7 @@ class IfAnalyzer
         if ($reconcilable_elseif_types) {
             $elseif_vars_reconciled = Reconciler::reconcileKeyedTypes(
                 $reconcilable_elseif_types,
+                $active_elseif_types,
                 $elseif_context->vars_in_scope,
                 $changed_var_ids,
                 $cond_referenced_var_ids,
@@ -1357,6 +1377,7 @@ class IfAnalyzer
 
                 $leaving_vars_reconciled = Reconciler::reconcileKeyedTypes(
                     $negated_elseif_types,
+                    [],
                     $pre_conditional_context->vars_in_scope,
                     $changed_var_ids,
                     [],
@@ -1515,6 +1536,7 @@ class IfAnalyzer
 
             $else_vars_reconciled = Reconciler::reconcileKeyedTypes(
                 $else_types,
+                [],
                 $else_context->vars_in_scope,
                 $changed_var_ids,
                 [],

@@ -3448,17 +3448,21 @@ class CallAnalyzer
                 }
             } elseif ($arg_value && ($assertion->rule === [['!falsy']] || $assertion->rule === [['true']])) {
                 if ($assertion->rule === [['true']]) {
+                    $conditional = new PhpParser\Node\Expr\BinaryOp\Identical(
+                        $arg_value,
+                        new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('true'))
+                    );
+
                     $assert_clauses = \Psalm\Type\Algebra::getFormula(
-                        new PhpParser\Node\Expr\BinaryOp\Identical(
-                            $arg_value,
-                            new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('true'))
-                        ),
+                        \spl_object_id($conditional),
+                        $conditional,
                         $statements_analyzer->getFQCLN(),
                         $statements_analyzer,
                         $statements_analyzer->getCodebase()
                     );
                 } else {
                     $assert_clauses = \Psalm\Type\Algebra::getFormula(
+                        \spl_object_id($arg_value),
                         $arg_value,
                         $statements_analyzer->getFQCLN(),
                         $statements_analyzer,
@@ -3488,6 +3492,7 @@ class CallAnalyzer
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             $op_vars_in_scope = \Psalm\Type\Reconciler::reconcileKeyedTypes(
+                $type_assertions,
                 $type_assertions,
                 $context->vars_in_scope,
                 $changed_var_ids,

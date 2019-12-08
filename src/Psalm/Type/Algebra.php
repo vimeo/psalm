@@ -87,6 +87,7 @@ class Algebra
      * @return array<int, Clause>
      */
     public static function getFormula(
+        int $object_id,
         PhpParser\Node\Expr $conditional,
         $this_class_name,
         FileSource $source,
@@ -98,6 +99,7 @@ class Algebra
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
             $left_assertions = self::getFormula(
+                $object_id,
                 $conditional->left,
                 $this_class_name,
                 $source,
@@ -107,6 +109,7 @@ class Algebra
             );
 
             $right_assertions = self::getFormula(
+                $object_id,
                 $conditional->right,
                 $this_class_name,
                 $source,
@@ -127,6 +130,7 @@ class Algebra
             // at the moment we only support formulae in CNF
 
             $left_clauses = self::getFormula(
+                $object_id,
                 $conditional->left,
                 $this_class_name,
                 $source,
@@ -136,6 +140,7 @@ class Algebra
             );
 
             $right_clauses = self::getFormula(
+                $object_id,
                 $conditional->right,
                 $this_class_name,
                 $source,
@@ -162,6 +167,7 @@ class Algebra
                 );
 
                 return self::getFormula(
+                    $object_id,
                     $and_expr,
                     $this_class_name,
                     $source,
@@ -217,7 +223,8 @@ class Algebra
                                     || (strlen($orred_types[0]) > 1
                                         && ($orred_types[0][1] === '='
                                             || $orred_types[0][1] === '~')),
-                                $redefined ? [$var => true] : []
+                                $redefined ? [$var => true] : [],
+                                $object_id
                             );
                         }
                     }
@@ -240,6 +247,7 @@ class Algebra
                 );
 
                 return self::getFormula(
+                    $object_id,
                     $and_expr,
                     $this_class_name,
                     $source,
@@ -260,6 +268,7 @@ class Algebra
                 $inside_negation = !$inside_negation;
 
                 return self::getFormula(
+                    $object_id,
                     $conditional->left,
                     $this_class_name,
                     $source,
@@ -274,6 +283,7 @@ class Algebra
                 $inside_negation = !$inside_negation;
 
                 return self::getFormula(
+                    $object_id,
                     $conditional->right,
                     $this_class_name,
                     $source,
@@ -327,7 +337,8 @@ class Algebra
                             || (strlen($orred_types[0]) > 1
                                 && ($orred_types[0][1] === '='
                                     || $orred_types[0][1] === '~')),
-                        $redefined ? [$var => true] : []
+                        $redefined ? [$var => true] : [],
+                        $object_id
                     );
                 }
             }
@@ -459,14 +470,18 @@ class Algebra
      *
      * @param  list<Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids
+     * @param  array<string, array<int, array<int, string>>> $active_truths
      *
      * @return array<string, array<int, array<int, string>>>
      */
     public static function getTruthsFromFormula(
         array $clauses,
-        array &$cond_referenced_var_ids = []
+        ?int $creating_object_id = null,
+        array &$cond_referenced_var_ids = [],
+        array &$active_truths = []
     ) {
         $truths = [];
+        $active_truths = [];
 
         if (empty($clauses)) {
             return [];
@@ -480,10 +495,20 @@ class Algebra
             foreach ($clause->possibilities as $var => $possible_types) {
                 // if there's only one possible type, return it
                 if (count($clause->possibilities) === 1 && count($possible_types) === 1) {
+                    $possible_type = array_pop($possible_types);
+
                     if (isset($truths[$var]) && !isset($clause->redefined_vars[$var])) {
-                        $truths[$var][] = [array_pop($possible_types)];
+                        $truths[$var][] = [$possible_type];
                     } else {
-                        $truths[$var] = [[array_pop($possible_types)]];
+                        $truths[$var] = [[$possible_type]];
+                    }
+
+                    if ($creating_object_id && $creating_object_id === $clause->creating_object_id) {
+                        if (!isset($active_truths[$var])) {
+                            $active_truths[$var] = [];
+                        }
+
+                        $active_truths[$var][count($truths[$var]) - 1] = [$possible_type];
                     }
                 } elseif (count($clause->possibilities) === 1) {
                     // if there's only one active clause, return all the non-negation clause members ORed together
@@ -508,6 +533,10 @@ class Algebra
 
                         /** @var array<int, string> $things_that_can_be_said */
                         $truths[$var] = [$things_that_can_be_said];
+
+                        if ($creating_object_id && $creating_object_id === $clause->creating_object_id) {
+                            $active_truths[$var] = [$things_that_can_be_said];
+                        }
                     }
                 }
             }

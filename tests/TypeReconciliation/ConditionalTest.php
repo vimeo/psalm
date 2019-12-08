@@ -2190,7 +2190,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         if ($a !== null && takesA($a)) {}
                     }'
             ],
-            'SKIPPED-nestedAssertInElse' => [
+            'nestedAssertInElse' => [
                 '<?php
                     function foo(string $type, bool $and) : void {
                         if ($type === "a") {
