@@ -811,7 +811,11 @@ class PropertyFetchAnalyzer
                             }
                         }
 
-                        $class_property_type = Type::parseTokens($new_type_tokens);
+                        $class_property_type = Type::parseTokens(
+                            $new_type_tokens,
+                            null,
+                            $statements_analyzer->getTemplateTypeMap() ?: []
+                        );
                     }
                 }
             }
