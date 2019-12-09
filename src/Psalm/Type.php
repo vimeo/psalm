@@ -1280,7 +1280,7 @@ abstract class Type
      */
     public static function getScalar()
     {
-        $type = new TMixed();
+        $type = new TScalar();
 
         return new Union([$type]);
     }
