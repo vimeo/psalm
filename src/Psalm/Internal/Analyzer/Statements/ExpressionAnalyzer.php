@@ -1227,7 +1227,7 @@ class ExpressionAnalyzer
                         $return_type->value = $static_class_type;
                     } else {
                         if ($return_type instanceof Type\Atomic\TGenericObject
-                            && $static_class_type instanceof Type\Atomic\TNamedObject
+                            && $static_class_type instanceof Type\Atomic\TGenericObject
                         ) {
                             $return_type->value = $static_class_type->value;
                         } else {
