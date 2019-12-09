@@ -167,6 +167,19 @@ function usort(array &$arr, callable $callback): bool
 }
 
 /**
+ * @template TKey
+ * @template T
+ *
+ * @param array<TKey,T> $arr
+ * @param callable(T,T):int $callback
+ * @param-out array<TKey,T> $arr
+ * @psalm-pure
+ */
+function uasort(array &$arr, callable $callback): bool
+{
+}
+
+/**
  * @psalm-template T
  *
  * @param array<string, T> $arr

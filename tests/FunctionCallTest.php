@@ -550,18 +550,15 @@ class FunctionCallTest extends TestCase
             ],
             'uasort' => [
                 '<?php
+                    $manifest = ["a" => 1, "b" => 2];
                     uasort(
-                      $manifest,
-                      function ($a, $b) {
-                        return strcmp($a["parent"],$b["parent"]);
-                      }
+                        $manifest,
+                        function (int $a, int $b) {
+                            return $a > $b ? 1 : -1;
+                        }
                     );',
-                'assertions' => [],
-                'error_levels' => [
-                    'MixedArrayAccess',
-                    'MixedArgument',
-                    'MissingClosureParamType',
-                    'MissingClosureReturnType',
+                'assertions' => [
+                    '$manifest' => 'array<string, int>'
                 ],
             ],
             'byRefAfterCallable' => [
