@@ -559,6 +559,10 @@ class CommentAnalyzer
 
                 $template_name = array_shift($template_type);
 
+                if (!$template_name) {
+                    throw new IncorrectDocblockException('Empty @template tag');
+                }
+
                 if (count($template_type) > 1
                     && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
                 ) {
@@ -731,6 +735,10 @@ class CommentAnalyzer
 
                 $template_name = array_shift($template_type);
 
+                if (!$template_name) {
+                    throw new IncorrectDocblockException('Empty @template tag');
+                }
+
                 if (count($template_type) > 1
                     && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
                 ) {
@@ -763,6 +771,10 @@ class CommentAnalyzer
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
 
                 $template_name = array_shift($template_type);
+
+                if (!$template_name) {
+                    throw new IncorrectDocblockException('Empty @template-covariant tag');
+                }
 
                 if (count($template_type) > 1
                     && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)

@@ -1277,6 +1277,12 @@ class FunctionTemplateTest extends TestCase
                     apply(new Printer(), new B());',
                 'error_message' => 'InvalidArgument'
             ],
+            'invalidTemplateDocblock' => [
+                '<?php
+                    /** @template */
+                    function f():void {}',
+                'error_message' => 'MissingDocblockType'
+            ],
         ];
     }
 }
