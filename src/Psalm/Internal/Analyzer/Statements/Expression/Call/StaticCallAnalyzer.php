@@ -891,7 +891,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 $lhs_type_part->param_name,
                                 $lhs_type_part->as_type
                                     ? new Type\Union([$lhs_type_part->as_type])
-                                    : Type::getObject()
+                                    : Type::getObject(),
+                                $lhs_type_part->defining_class
                             );
                         } else {
                             $static_type = $fq_class_name;
