@@ -3444,7 +3444,14 @@ class CallAnalyzer
                         }
                     }
                 } else {
-                    $type_assertions[$assertion_var_id] = $assertion->rule;
+                    if (isset($type_assertions[$assertion_var_id])) {
+                        $type_assertions[$assertion_var_id] = array_merge(
+                            $type_assertions[$assertion_var_id],
+                            $assertion->rule
+                        );
+                    } else {
+                        $type_assertions[$assertion_var_id] = $assertion->rule;
+                    }
                 }
             } elseif ($arg_value && ($assertion->rule === [['!falsy']] || $assertion->rule === [['true']])) {
                 if ($assertion->rule === [['true']]) {
