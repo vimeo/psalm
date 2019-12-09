@@ -1959,6 +1959,57 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
+        if ($existing_var_type->hasScalar()) {
+            if ($existing_var_type->isSingle()
+                && $existing_var_atomic_types['scalar'] instanceof Type\Atomic\TNonEmptyScalar
+            ) {
+                if ($code_location
+                    && $key
+                    && IssueBuffer::accepts(
+                        new ParadoxicalCondition(
+                            'Found a paradox when evaluating ' . $key
+                                . ' of type ' . $existing_var_type->getId()
+                                . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )
+                ) {
+                    // fall through
+                }
+
+                return Type::getScalar();
+            }
+
+            if (!$existing_var_atomic_types['scalar'] instanceof Type\Atomic\TEmptyScalar) {
+                $did_remove_type = true;
+                $existing_var_type->removeType('scalar');
+
+                if (!$existing_var_atomic_types['scalar'] instanceof Type\Atomic\TNonEmptyScalar) {
+                    $existing_var_type->addType(new Type\Atomic\TEmptyScalar);
+                }
+            } elseif ($existing_var_type->isSingle()) {
+                if ($code_location
+                    && $key
+                    && IssueBuffer::accepts(
+                        new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key
+                                . ' of type ' . $existing_var_type->getId()
+                                . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )
+                ) {
+                    // fall through
+                }
+            }
+
+            if ($existing_var_type->isSingle()) {
+                return $existing_var_type;
+            }
+        }
+
         if ($existing_var_type->hasType('bool')) {
             $did_remove_type = true;
             $existing_var_type->removeType('bool');

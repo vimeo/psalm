@@ -2200,6 +2200,19 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'allowEmptyScalarAndNonEmptyScalarAssertions' => [
+                '<?php
+                    /** @param mixed $value */
+                    function foo($value) : void {
+                        if (\is_scalar($value)) {
+                            if ($value) {
+                                echo $value;
+                            } else {
+                                echo $value;
+                            }
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -2490,6 +2503,62 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return ((string) $s) ?? "bar";
                     }',
                 'error_message' => 'TypeDoesNotContainType'
+            ],
+            'allowEmptyScalarAndNonEmptyScalarAssertions1' => [
+                '<?php
+                    /** @param mixed $value */
+                    function foo($value) : void {
+                        if (\is_scalar($value)) {
+                            if ($value) {
+                                if (\is_scalar($value)) {}
+                            } else {
+                                echo $value;
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'allowEmptyScalarAndNonEmptyScalarAssertions2' => [
+                '<?php
+                    /** @param mixed $value */
+                    function foo($value) : void {
+                        if (\is_scalar($value)) {
+                            if ($value) {
+                                echo $value;
+                            } else {
+                                if (\is_scalar($value)) {}
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'allowEmptyScalarAndNonEmptyScalarAssertions3' => [
+                '<?php
+                    /** @param mixed $value */
+                    function foo($value) : void {
+                        if (\is_scalar($value)) {
+                            if ($value) {
+                                if ($value) {}
+                            } else {
+                                echo $value;
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'allowEmptyScalarAndNonEmptyScalarAssertions4' => [
+                '<?php
+                    /** @param mixed $value */
+                    function foo($value) : void {
+                        if (\is_scalar($value)) {
+                            if ($value) {
+                                echo $value;
+                            } else {
+                                if (!$value) {}
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

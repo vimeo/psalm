@@ -1278,6 +1278,16 @@ abstract class Type
     /**
      * @return Type\Union
      */
+    public static function getScalar()
+    {
+        $type = new TMixed();
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @return Type\Union
+     */
     public static function getEmpty()
     {
         $type = new TEmpty();
