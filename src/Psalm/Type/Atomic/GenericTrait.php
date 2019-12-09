@@ -289,7 +289,7 @@ trait GenericTrait
         } elseif ($template_type_count < $template_param_count) {
             if (IssueBuffer::accepts(
                 new TooManyTemplateParams(
-                    $this->value . ' has too many template params, expecting '
+                    $this->getId(). ' has too many template params, expecting '
                         . $template_type_count,
                     $code_location
                 ),
@@ -329,7 +329,9 @@ trait GenericTrait
                 if (!TypeAnalyzer::isContainedBy($codebase, $type_param, $expected_type_param)) {
                     if (IssueBuffer::accepts(
                         new InvalidTemplateParam(
-                            'Extended template param ' . $template_name . ' expects type '
+                            'Extended template param ' . $template_name
+                                . ' of ' . $this->getId()
+                                . ' expects type '
                                 . $expected_type_param->getId()
                                 . ', type ' . $type_param->getId() . ' given',
                             $code_location
