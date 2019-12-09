@@ -1247,9 +1247,17 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             } elseif ($type instanceof TCallable) {
                 $object_types[] = new Type\Atomic\TCallableObject();
                 $did_remove_type = true;
-            } elseif ($type instanceof TTemplateParam) {
+            } elseif ($type instanceof TTemplateParam
+                && $type->as->isMixed()
+            ) {
+                $type = clone $type;
+                $type->as = Type::getObject();
                 $object_types[] = $type;
                 $did_remove_type = true;
+            } elseif ($type instanceof TTemplateParam
+                && $type->as->hasObject()
+            ) {
+                $object_types[] = $type;
             } else {
                 $did_remove_type = true;
             }
