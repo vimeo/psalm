@@ -869,14 +869,16 @@ class NegatedAssertionReconciler extends Reconciler
             || $existing_var_type->hasScalar();
 
         foreach ($existing_var_type->getTypes() as $type) {
-            if (!$type->isNumericType()) {
-                $non_numeric_types[] = $type;
-            } elseif ($type instanceof TTemplateParam) {
+            if ($type instanceof TTemplateParam) {
                 if (!$type->as->hasNumeric()) {
+                    if ($type->as->hasMixed()) {
+                        $did_remove_type = true;
+                    }
+
                     $non_numeric_types[] = $type;
                 }
-
-                $did_remove_type = true;
+            } elseif (!$type->isNumericType()) {
+                $non_numeric_types[] = $type;
             } else {
                 $did_remove_type = true;
             }
