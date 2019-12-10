@@ -1041,7 +1041,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
     }
 
     /**
@@ -1100,7 +1102,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
     }
 
     /**
@@ -1155,7 +1159,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
     }
 
     /**
@@ -1220,7 +1226,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
     }
 
     /**
@@ -1283,7 +1291,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
     }
 
     /**
@@ -1517,7 +1527,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
     }
 
     /**
@@ -1591,7 +1603,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
     }
 
     /**
@@ -1681,7 +1695,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
     }
 
     /**
