@@ -118,6 +118,7 @@ class TList extends \Psalm\Type\Atomic
         TemplateResult $template_result,
         Codebase $codebase = null,
         Atomic $input_type = null,
+        ?string $calling_class = null,
         bool $replace = true,
         bool $add_upper_bound = false,
         int $depth = 0
@@ -153,7 +154,7 @@ class TList extends \Psalm\Type\Atomic
                 $template_result,
                 $codebase,
                 $input_type_param,
-                null,
+                $calling_class,
                 $replace,
                 $add_upper_bound,
                 $depth + 1

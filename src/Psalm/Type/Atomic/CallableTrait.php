@@ -198,6 +198,7 @@ trait CallableTrait
         TemplateResult $template_result,
         Codebase $codebase = null,
         Atomic $input_type = null,
+        ?string $calling_class = null,
         bool $replace = true,
         bool $add_upper_bound = false,
         int $depth = 0

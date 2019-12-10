@@ -231,6 +231,7 @@ class UnionTemplateHandler
             $template_result,
             $codebase,
             $matching_atomic_type,
+            $calling_class,
             $replace,
             $add_upper_bound,
             $depth + 1
