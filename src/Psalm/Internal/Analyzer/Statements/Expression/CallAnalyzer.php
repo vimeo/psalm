@@ -2414,6 +2414,7 @@ class CallAnalyzer
             if ($codebase->infer_types_from_usage
                 && !$input_type->hasMixed()
                 && !$param_type->from_docblock
+                && !$param_type->had_template
                 && $cased_method_id
                 && strpos($cased_method_id, '::')
                 && !strpos($cased_method_id, '__')

@@ -31,6 +31,8 @@ class UnionTemplateHandler
 
         $original_atomic_types = $union_type->getTypes();
 
+        $had_template = false;
+
         foreach ($original_atomic_types as $key => $atomic_type) {
             $atomic_types = array_merge(
                 $atomic_types,
@@ -45,7 +47,8 @@ class UnionTemplateHandler
                     $add_upper_bound,
                     $depth,
                     count($original_atomic_types) === 1,
-                    $union_type->isNullable()
+                    $union_type->isNullable(),
+                    $had_template
                 )
             );
         }
@@ -63,6 +66,10 @@ class UnionTemplateHandler
             $new_union_type->ignore_nullable_issues = $union_type->ignore_nullable_issues;
             $new_union_type->ignore_falsable_issues = $union_type->ignore_falsable_issues;
             $new_union_type->possibly_undefined = $union_type->possibly_undefined;
+
+            if ($had_template) {
+                $new_union_type->had_template = true;
+            }
 
             return $new_union_type;
         }
@@ -84,7 +91,8 @@ class UnionTemplateHandler
         bool $add_upper_bound,
         int $depth,
         bool $was_single,
-        bool $was_nullable
+        bool $was_nullable,
+        bool &$had_template
     ) : array {
         if ($bracket_pos = strpos($key, '<')) {
             $key = substr($key, 0, $bracket_pos);
@@ -103,7 +111,8 @@ class UnionTemplateHandler
                 $replace,
                 $add_upper_bound,
                 $depth,
-                $was_nullable
+                $was_nullable,
+                $had_template
             );
 
             return $a;
@@ -363,7 +372,8 @@ class UnionTemplateHandler
         bool $replace,
         bool $add_upper_bound,
         int $depth,
-        bool $was_nullable
+        bool $was_nullable,
+        bool &$had_template
     ) : array {
         $template_type = $template_result->template_types[$key][$atomic_type->defining_class ?: ''][0];
 
@@ -432,6 +442,8 @@ class UnionTemplateHandler
                     if (!$replacements_found) {
                         $atomic_types[] = clone $replacement_atomic_type;
                     }
+
+                    $had_template = true;
                 }
             }
 
