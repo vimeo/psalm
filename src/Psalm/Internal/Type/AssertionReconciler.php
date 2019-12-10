@@ -1080,7 +1080,6 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 }
 
                 if ($existing_var_type->from_calculation) {
-                    $type->from_calculation = false;
                     $did_remove_type = true;
                 }
             } elseif ($type instanceof TNumeric) {
