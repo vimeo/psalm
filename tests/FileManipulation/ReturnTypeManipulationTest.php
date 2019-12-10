@@ -735,6 +735,37 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
+            'addMissingTemplateReturnType' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     *
+                     * @param object $t Flabble
+                     *
+                     * @psalm-param T $t
+                     */
+                    function foo($t) {
+                        return $t;
+                    }',
+                '<?php
+                    /**
+                     * @template T as object
+                     *
+                     * @param object $t Flabble
+                     *
+                     * @psalm-param T $t
+                     *
+                     * @return object
+                     *
+                     * @psalm-return T
+                     */
+                    function foo($t) {
+                        return $t;
+                    }',
+                '7.4',
+                ['MissingReturnType'],
+                true
+            ],
             'fixInvalidIntReturnType56' => [
                 '<?php
                     /**

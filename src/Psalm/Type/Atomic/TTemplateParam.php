@@ -108,6 +108,15 @@ class TTemplateParam extends \Psalm\Type\Atomic
         ?string $this_class,
         bool $use_phpdoc_format
     ) {
+        if ($use_phpdoc_format) {
+            return $this->as->toNamespacedString(
+                $namespace,
+                $aliased_classes,
+                $this_class,
+                $use_phpdoc_format
+            );
+        }
+
         $intersection_types = $this->getNamespacedIntersectionTypes(
             $namespace,
             $aliased_classes,
