@@ -10,6 +10,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\InaccessibleClassConstant;
@@ -206,6 +207,18 @@ class ClassConstFetchAnalyzer
                     $statements_analyzer
                 );
             } catch (\InvalidArgumentException $_) {
+                return;
+            } catch (\Psalm\Exception\CircularReferenceException $e) {
+                if (IssueBuffer::accepts(
+                    new CircularReference(
+                        'Constant ' . $const_id . ' contains a circular reference',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
                 return;
             }
 

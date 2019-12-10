@@ -1769,6 +1769,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         return null;
                     } catch (\InvalidArgumentException $e) {
                         return null;
+                    } catch (\Psalm\Exception\CircularReferenceException $e) {
+                        return null;
                     }
                 }
             }

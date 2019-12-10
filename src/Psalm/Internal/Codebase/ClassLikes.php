@@ -1440,10 +1440,10 @@ class ClassLikes
         string $class_name,
         string $constant_name,
         int $visibility,
-        ?\Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer = null
+        ?\Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer = null,
+        array $visited_constant_ids = []
     ) : ?Type\Union {
         $class_name = strtolower($class_name);
-
         $storage = $this->classlike_storage_provider->get($class_name);
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
@@ -1481,7 +1481,13 @@ class ClassLikes
         }
 
         if (isset($fallbacks[$constant_name])) {
-            return new Type\Union([$this->resolveConstantType($fallbacks[$constant_name], $statements_analyzer)]);
+            return new Type\Union([
+                $this->resolveConstantType(
+                    $fallbacks[$constant_name],
+                    $statements_analyzer,
+                    $visited_constant_ids
+                )
+            ]);
         }
 
         return null;
@@ -1509,15 +1515,30 @@ class ClassLikes
 
     private function resolveConstantType(
         \Psalm\Internal\Scanner\UnresolvedConstantComponent $c,
-        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer = null
+        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer = null,
+        array $visited_constant_ids = []
     ) : Type\Atomic {
+        $c_id = \spl_object_id($c);
+
+        if (isset($visited_constant_ids[$c_id])) {
+            throw new \Psalm\Exception\CircularReferenceException('Found a circular reference');
+        }
+
         if ($c instanceof UnresolvedConstant\ScalarValue) {
             return self::getLiteralTypeFromScalarValue($c->value);
         }
 
         if ($c instanceof UnresolvedConstant\UnresolvedBinaryOp) {
-            $left = $this->resolveConstantType($c->left, $statements_analyzer);
-            $right = $this->resolveConstantType($c->right, $statements_analyzer);
+            $left = $this->resolveConstantType(
+                $c->left,
+                $statements_analyzer,
+                $visited_constant_ids + [$c_id => true]
+            );
+            $right = $this->resolveConstantType(
+                $c->right,
+                $statements_analyzer,
+                $visited_constant_ids + [$c_id => true]
+            );
 
             if ($left instanceof Type\Atomic\TMixed || $right instanceof Type\Atomic\TMixed) {
                 return new Type\Atomic\TMixed;
@@ -1566,9 +1587,21 @@ class ClassLikes
         }
 
         if ($c instanceof UnresolvedConstant\UnresolvedTernary) {
-            $cond = $this->resolveConstantType($c->cond, $statements_analyzer);
-            $if = $c->if ? $this->resolveConstantType($c->if, $statements_analyzer) : null;
-            $else = $this->resolveConstantType($c->else, $statements_analyzer);
+            $cond = $this->resolveConstantType(
+                $c->cond,
+                $statements_analyzer,
+                $visited_constant_ids + [$c_id => true]
+            );
+            $if = $c->if ? $this->resolveConstantType(
+                $c->if,
+                $statements_analyzer,
+                $visited_constant_ids + [$c_id => true]
+            ) : null;
+            $else = $this->resolveConstantType(
+                $c->else,
+                $statements_analyzer,
+                $visited_constant_ids + [$c_id => true]
+            );
 
             if ($cond instanceof Type\Atomic\TLiteralFloat
                 || $cond instanceof Type\Atomic\TLiteralInt
@@ -1593,7 +1626,11 @@ class ClassLikes
 
             foreach ($c->entries as $i => $entry) {
                 if ($entry->key) {
-                    $key_type = $this->resolveConstantType($entry->key, $statements_analyzer);
+                    $key_type = $this->resolveConstantType(
+                        $entry->key,
+                        $statements_analyzer,
+                        $visited_constant_ids + [$c_id => true]
+                    );
                 } else {
                     $key_type = new Type\Atomic\TLiteralInt($i);
                 }
@@ -1606,7 +1643,11 @@ class ClassLikes
                     return new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
                 }
 
-                $value_type = new Type\Union([$this->resolveConstantType($entry->value, $statements_analyzer)]);
+                $value_type = new Type\Union([$this->resolveConstantType(
+                    $entry->value,
+                    $statements_analyzer,
+                    $visited_constant_ids + [$c_id => true]
+                )]);
 
                 $properties[$key_value] = $value_type;
             }
@@ -1623,7 +1664,8 @@ class ClassLikes
                 $c->fqcln,
                 $c->name,
                 ReflectionProperty::IS_PRIVATE,
-                $statements_analyzer
+                $statements_analyzer,
+                $visited_constant_ids + [$c_id => true]
             );
 
             if ($found_type) {

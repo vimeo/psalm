@@ -1266,11 +1266,15 @@ class ExpressionAnalyzer
                     return new Type\Atomic\TLiteralClassString($return_type->fq_classlike_name);
                 }
 
-                $class_constant = $codebase->classlikes->getConstantForClass(
-                    $return_type->fq_classlike_name,
-                    $return_type->const_name,
-                    \ReflectionProperty::IS_PRIVATE
-                );
+                try {
+                    $class_constant = $codebase->classlikes->getConstantForClass(
+                        $return_type->fq_classlike_name,
+                        $return_type->const_name,
+                        \ReflectionProperty::IS_PRIVATE
+                    );
+                } catch (\Psalm\Exception\CircularReferenceException $e) {
+                    $class_constant = null;
+                }
 
                 if ($class_constant) {
                     if ($class_constant->isSingle()) {
@@ -1292,11 +1296,15 @@ class ExpressionAnalyzer
             }
 
             if ($evaluate && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
-                $class_constant_type = $codebase->classlikes->getConstantForClass(
-                    $return_type->fq_classlike_name,
-                    $return_type->const_name,
-                    \ReflectionProperty::IS_PRIVATE
-                );
+                try {
+                    $class_constant_type = $codebase->classlikes->getConstantForClass(
+                        $return_type->fq_classlike_name,
+                        $return_type->const_name,
+                        \ReflectionProperty::IS_PRIVATE
+                    );
+                } catch (\Psalm\Exception\CircularReferenceException $e) {
+                    $class_constant_type = null;
+                }
 
                 if ($class_constant_type) {
                     foreach ($class_constant_type->getTypes() as $const_type_atomic) {
