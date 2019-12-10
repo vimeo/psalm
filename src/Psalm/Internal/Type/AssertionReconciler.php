@@ -361,6 +361,24 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
+        if ($assertion === 'int' && !$existing_var_type->hasMixed()) {
+            return self::reconcileInt(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality
+            );
+        }
+
+        if ($assertion === 'float'
+            && $existing_var_type->from_calculation
+            && $existing_var_type->hasInt()
+        ) {
+            return Type::getFloat();
+        }
+
         if ($assertion === 'non-empty-countable') {
             return self::reconcileNonEmptyCountable(
                 $existing_var_type,
@@ -395,17 +413,6 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $suppressed_issues,
                 $failed_reconciliation
             );
-        }
-
-        if (($assertion === 'int' || $assertion === 'float')
-            && $existing_var_type->from_calculation
-            && $existing_var_type->hasInt()
-        ) {
-            if ($assertion === 'int') {
-                return Type::getInt();
-            }
-
-            return Type::getFloat();
         }
 
         if (substr($assertion, 0, 4) === 'isa-') {
@@ -1037,6 +1044,78 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($string_types) {
             return new Type\Union($string_types);
+        }
+
+        $failed_reconciliation = 2;
+
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileInt(
+        Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ) : Union {
+        $old_var_type_string = $existing_var_type->getId();
+        $existing_var_atomic_types = $existing_var_type->getTypes();
+
+        $int_types = [];
+        $did_remove_type = false;
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type instanceof TInt) {
+                $int_types[] = $type;
+
+                if (get_class($type) === TInt::class) {
+                    $type->from_docblock = false;
+                }
+
+                if ($existing_var_type->from_calculation) {
+                    $type->from_calculation = false;
+                    $did_remove_type = true;
+                }
+            } elseif ($type instanceof TNumeric) {
+                $int_types[] = new TInt;
+                $did_remove_type = true;
+            } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
+                $int_types[] = new TInt;
+                $did_remove_type = true;
+            } elseif ($type instanceof TTemplateParam) {
+                if ($type->as->hasInt() || $type->as->hasMixed()) {
+                    $int_types[] = $type;
+                }
+
+                $did_remove_type = true;
+            } else {
+                $did_remove_type = true;
+            }
+        }
+
+        if ((!$did_remove_type || !$int_types) && !$is_equality) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    'int',
+                    !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+        }
+
+        if ($int_types) {
+            return new Type\Union($int_types);
         }
 
         $failed_reconciliation = 2;
