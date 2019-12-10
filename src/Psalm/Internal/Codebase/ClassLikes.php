@@ -1966,6 +1966,10 @@ class ClassLikes
                 continue;
             }
 
+            if ($declaring_classlike_storage->is_trait) {
+                continue;
+            }
+
             if (isset($codebase->analyzer->possible_method_param_types[strtolower($method_id)])) {
                 if ($method_storage->location) {
                     $possible_param_types
