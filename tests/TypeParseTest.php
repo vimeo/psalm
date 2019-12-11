@@ -834,6 +834,39 @@ class TypeParseTest extends TestCase
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
     }
 
+    public function testEmptyString()
+    {
+        $docblock_type = Type::parseString('""|"admin"|"fun"');
+
+        $resolved_type = new Type\Union([
+            new Type\Atomic\TLiteralString(''),
+            new Type\Atomic\TLiteralString('admin'),
+            new Type\Atomic\TLiteralString('fun'),
+        ]);
+
+        $this->assertSame($resolved_type->getId(), $docblock_type->getId());
+
+        $docblock_type = Type::parseString('"admin"|""|"fun"');
+
+        $resolved_type = new Type\Union([
+            new Type\Atomic\TLiteralString('admin'),
+            new Type\Atomic\TLiteralString(''),
+            new Type\Atomic\TLiteralString('fun'),
+        ]);
+
+        $this->assertSame($resolved_type->getId(), $docblock_type->getId());
+
+        $docblock_type = Type::parseString('"admin"|"fun"|""');
+
+        $resolved_type = new Type\Union([
+            new Type\Atomic\TLiteralString('admin'),
+            new Type\Atomic\TLiteralString('fun'),
+            new Type\Atomic\TLiteralString(''),
+        ]);
+
+        $this->assertSame($resolved_type->getId(), $docblock_type->getId());
+    }
+
     /**
      * @return void
      */

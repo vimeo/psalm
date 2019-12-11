@@ -812,7 +812,7 @@ abstract class Type
             }
 
             if ($quote_char) {
-                if ($char === $quote_char && $i > 1 && !$escaped) {
+                if ($char === $quote_char && $i > 0 && !$escaped) {
                     $quote_char = null;
 
                     $type_tokens[$rtc][0] .= $char;
