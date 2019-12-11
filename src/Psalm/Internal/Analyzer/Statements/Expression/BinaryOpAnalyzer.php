@@ -86,7 +86,6 @@ class BinaryOpAnalyzer
             );
 
             $pre_referenced_var_ids = $context->referenced_var_ids;
-            $original_vars_in_scope = $context->vars_in_scope;
 
             $pre_assigned_var_ids = $context->assigned_var_ids;
 
@@ -115,20 +114,6 @@ class BinaryOpAnalyzer
             $new_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
 
             $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
-
-            // remove all newly-asserted var ids too
-            $new_referenced_var_ids = array_filter(
-                $new_referenced_var_ids,
-                /**
-                 * @param string $var_id
-                 *
-                 * @return bool
-                 */
-                function ($var_id) use ($original_vars_in_scope) {
-                    return isset($original_vars_in_scope[$var_id]);
-                },
-                ARRAY_FILTER_USE_KEY
-            );
 
             $context_clauses = array_merge($left_context->clauses, $left_clauses);
 

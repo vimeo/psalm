@@ -2616,23 +2616,14 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'SKIPPED-catchRedundantConditionOnBinaryOpForwards' => [
+            'catchRedundantConditionOnBinaryOpForwards' => [
                 '<?php
                     class App {}
 
                     function test(App $app) : void {
                         if ($app || rand(0, 1)) {}
                     }',
-                'error_message' => 'RedundantCondition',
-            ],
-            'SKIPPED-catchRedundantConditionOnBinaryOpBackwards' => [
-                '<?php
-                    class App {}
-
-                    function test(App $app) : void {
-                        if (rand(0, 1) || $app) {}
-                    }',
-                'error_message' => 'RedundantCondition',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

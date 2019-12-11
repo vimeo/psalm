@@ -1565,12 +1565,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             if ($type->hasTraversableInterface($codebase)) {
                 $traversable_types[] = $type;
             } elseif ($type instanceof Atomic\TIterable) {
-                if ($type->type_params) {
-                    $clone_type = clone $type;
-                    $traversable_types[] = new Atomic\TGenericObject('Traversable', $clone_type->type_params);
-                } else {
-                    $traversable_types[] = new Atomic\TNamedObject('Traversable');
-                }
+                $clone_type = clone $type;
+                $traversable_types[] = new Atomic\TGenericObject('Traversable', $clone_type->type_params);
                 $did_remove_type = true;
             } elseif ($type instanceof TObject) {
                 $traversable_types[] = new TNamedObject('Traversable');
@@ -1644,12 +1640,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                 $did_remove_type = true;
             } elseif ($type instanceof Atomic\TIterable) {
-                if ($type->type_params) {
-                    $clone_type = clone $type;
-                    $array_types[] = new TArray($clone_type->type_params);
-                } else {
-                    $array_types[] = new TArray([Type::getArrayKey(), Type::getMixed()]);
-                }
+                $clone_type = clone $type;
+                $array_types[] = new TArray($clone_type->type_params);
 
                 $did_remove_type = true;
             } else {
@@ -1736,12 +1728,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                 $did_remove_type = true;
             } elseif ($type instanceof Atomic\TIterable) {
-                if ($type->type_params) {
-                    $clone_type = clone $type;
-                    $array_types[] = new TList($clone_type->type_params[1]);
-                } else {
-                    $array_types[] = new TList(Type::getMixed());
-                }
+                $clone_type = clone $type;
+                $array_types[] = new TList($clone_type->type_params[1]);
 
                 $did_remove_type = true;
             } else {

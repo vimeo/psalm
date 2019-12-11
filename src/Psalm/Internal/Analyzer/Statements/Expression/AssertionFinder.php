@@ -2563,7 +2563,6 @@ class AssertionFinder
             $second_arg = $stmt->args[1]->value;
 
             if ($second_arg instanceof PhpParser\Node\Expr\ConstFetch
-                && $second_arg->name instanceof PhpParser\Node\Name
                 && strtolower($second_arg->name->parts[0]) === 'true'
             ) {
                 return 2;
@@ -2592,7 +2591,6 @@ class AssertionFinder
             $second_arg = $stmt->args[1]->value;
 
             if ($second_arg instanceof PhpParser\Node\Expr\ConstFetch
-                && $second_arg->name instanceof PhpParser\Node\Name
                 && strtolower($second_arg->name->parts[0]) === 'true'
             ) {
                 return 2;
@@ -2726,7 +2724,6 @@ class AssertionFinder
             $second_arg = $stmt->args[2]->value;
 
             if ($second_arg instanceof PhpParser\Node\Expr\ConstFetch
-                && $second_arg->name instanceof PhpParser\Node\Name
                 && strtolower($second_arg->name->parts[0]) === 'true'
             ) {
                 return true;

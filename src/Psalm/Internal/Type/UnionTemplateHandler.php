@@ -310,14 +310,10 @@ class UnionTemplateHandler
                         return $atomic_input_type;
                     }
 
-                    if ($atomic_type->type_params) {
-                        $atomic_type = new Atomic\TGenericObject(
-                            'Traversable',
-                            $atomic_type->type_params
-                        );
-                    } else {
-                        $atomic_type = new Atomic\TNamedObject('Traversable');
-                    }
+                    $atomic_type = new Atomic\TGenericObject(
+                        'Traversable',
+                        $atomic_type->type_params
+                    );
                 }
 
                 try {

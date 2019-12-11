@@ -229,7 +229,6 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType('iterable');
 
             if ($iterable instanceof Atomic\TIterable
-                && $iterable->type_params
                 && (!$iterable->type_params[0]->isMixed() || !$iterable->type_params[1]->isMixed())
             ) {
                 $traversable = new Atomic\TGenericObject('Traversable', $iterable->type_params);

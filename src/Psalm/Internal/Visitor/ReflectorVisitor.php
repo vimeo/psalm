@@ -2700,7 +2700,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $is_nullable = $param->default !== null &&
             $param->default instanceof PhpParser\Node\Expr\ConstFetch &&
-            $param->default->name instanceof PhpParser\Node\Name &&
             strtolower($param->default->name->parts[0]) === 'null';
 
         $param_typehint = $param->type;

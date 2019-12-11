@@ -747,7 +747,7 @@ class ReturnTypeAnalyzer
             return false;
         }
 
-        if ($classlike_storage && $context->self && $function->name) {
+        if ($classlike_storage && $context->self) {
             $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
                 $codebase,
                 $classlike_storage,

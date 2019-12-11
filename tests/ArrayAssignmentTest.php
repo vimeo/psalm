@@ -988,7 +988,7 @@ class ArrayAssignmentTest extends TestCase
                       /**
                        * @psalm-suppress MixedOperand
                        */
-                      $a[$key] += 5;
+                      $a[$key] += rand(0, 10);
                     }
 
                     $a["four"] = true;

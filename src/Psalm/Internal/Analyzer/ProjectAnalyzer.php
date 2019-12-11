@@ -244,12 +244,6 @@ class ProjectAnalyzer
             $progress
         );
 
-        if ($stdout_report_options
-            && !in_array($stdout_report_options->format, Report::SUPPORTED_OUTPUT_TYPES, true)
-        ) {
-            throw new \UnexpectedValueException('Unrecognised output format ' . $stdout_report_options->format);
-        }
-
         $this->stdout_report_options = $stdout_report_options;
         $this->generated_report_options = $generated_report_options;
 

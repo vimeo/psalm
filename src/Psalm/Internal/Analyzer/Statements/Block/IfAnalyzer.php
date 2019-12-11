@@ -624,8 +624,6 @@ class IfAnalyzer
         // to $outer_context don't mess with elseif/else blocks
         $original_context = clone $outer_context;
 
-        $if_conditional_context->inside_conditional = true;
-
         if ($internally_applied_if_cond_expr !== $cond
             || $externally_applied_if_cond_expr !== $cond
         ) {
@@ -635,9 +633,13 @@ class IfAnalyzer
             $referenced_var_ids = $outer_context->referenced_var_ids;
             $if_conditional_context->referenced_var_ids = [];
 
+            $if_conditional_context->inside_conditional = true;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $cond, $if_conditional_context) === false) {
                 throw new \Psalm\Exception\ScopeAnalysisException();
             }
+
+            $if_conditional_context->inside_conditional = false;
 
             /** @var array<string, bool> */
             $more_cond_referenced_var_ids = $if_conditional_context->referenced_var_ids;
@@ -688,23 +690,7 @@ class IfAnalyzer
         // get all the var ids that were referened in the conditional, but not assigned in it
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);
 
-        // remove all newly-asserted var ids too
-        $cond_referenced_var_ids = array_filter(
-            $cond_referenced_var_ids,
-            /**
-             * @param string $var_id
-             *
-             * @return bool
-             */
-            function ($var_id) use ($pre_condition_vars_in_scope) {
-                return isset($pre_condition_vars_in_scope[$var_id]);
-            },
-            ARRAY_FILTER_USE_KEY
-        );
-
         $cond_referenced_var_ids = array_merge($newish_var_ids, $cond_referenced_var_ids);
-
-        $if_conditional_context->inside_conditional = false;
 
         return new \Psalm\Internal\Scope\IfConditionalScope(
             $if_context,
