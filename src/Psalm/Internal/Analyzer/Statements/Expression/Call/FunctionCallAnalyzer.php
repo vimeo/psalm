@@ -712,7 +712,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $context->removeAllObjectVars();
                 }
             } elseif ($function_id
-                && (($function_storage && $function_storage->pure && $must_use)
+                && (($function_storage
+                        && $function_storage->pure
+                        && !$function_storage->assertions
+                        && $must_use)
                     || ($callmap_function_pure === true && $must_use))
                 && $codebase->find_unused_variables
                 && !$context->inside_conditional
