@@ -249,6 +249,11 @@ class BinaryOpAnalyzer
                     )
                 );
 
+                $if_context->vars_possibly_in_scope = array_merge(
+                    $context->vars_possibly_in_scope,
+                    $if_context->vars_possibly_in_scope
+                );
+
                 $if_context->updateChecks($context);
             } else {
                 $context->vars_in_scope = $left_context->vars_in_scope;
