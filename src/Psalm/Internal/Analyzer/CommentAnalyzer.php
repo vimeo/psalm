@@ -908,7 +908,11 @@ class CommentAnalyzer
 
                 $method_entry = trim(preg_replace('/\/\/.*/', '', $method_entry));
 
-                $method_entry = preg_replace('/array\(([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\)/', '[]', $method_entry);
+                $method_entry = preg_replace(
+                    '/array\(([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\)/',
+                    '[]',
+                    $method_entry
+                );
 
                 $end_of_method_regex = '/(?<!array\()\) ?(\: ?(\??[\\\\a-zA-Z0-9_]+))?/';
 
