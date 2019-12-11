@@ -1859,6 +1859,23 @@ class TypeAnalyzer
             }
 
             if ($input_type_part->value !== $container_type_part->value && $input_class_storage) {
+                $input_template_types = $input_class_storage->template_types;
+                $i = 0;
+
+                $replacement_templates = [];
+
+                if ($input_template_types) {
+                    foreach ($input_template_types as $template_name => $template_type_map) {
+                        if (!isset($input_type_params[$i])) {
+                            break;
+                        }
+
+                        $replacement_templates[$template_name][$input_type_part->value] = [$input_type_params[$i]];
+
+                        $i++;
+                    }
+                }
+
                 $template_extends = $input_class_storage->template_type_extends;
 
                 if (isset($template_extends[$container_type_part->value])) {
@@ -1886,7 +1903,7 @@ class TypeAnalyzer
 
                                     $candidate_param_type = $input_type_params[$old_params_offset];
                                 } else {
-                                    $candidate_param_type = new Type\Union([$et]);
+                                    $candidate_param_type = new Type\Union([clone $et]);
                                 }
 
                                 $candidate_param_type->from_template_default = true;
@@ -1900,6 +1917,10 @@ class TypeAnalyzer
                                     );
                                 }
                             }
+
+                            $new_input_param->replaceTemplateTypesWithArgTypes(
+                                $replacement_templates
+                            );
 
                             $new_input_params[] = $new_input_param ?: Type::getMixed();
                         }
