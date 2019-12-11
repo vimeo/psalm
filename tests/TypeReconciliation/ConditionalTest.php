@@ -2238,6 +2238,22 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         echo isset($a);
                     }'
             ],
+            'assertOnStaticClassKey' => [
+                '<?php
+                    abstract class Obj {
+                        /** @var array<class-string, array<string, int>> */
+                        private static $arr = [];
+
+                        /** @return array<string, int> */
+                        public static function getArr() : array {
+                            if (!isset(self::$arr[static::class])) {
+                                self::$arr[static::class] = ["hello" => 5];
+                            }
+
+                            return self::$arr[static::class];
+                        }
+                    }'
+            ],
         ];
     }
 

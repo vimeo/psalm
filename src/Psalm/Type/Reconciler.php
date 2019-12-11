@@ -11,6 +11,7 @@ use function ksort;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -393,6 +394,21 @@ class Reconciler
 
                     continue 2;
 
+                case ':':
+                    if (!$brackets
+                        && $i < $char_count - 2
+                        && $chars[$i + 1] === ':'
+                        && $chars[$i + 2] === '$'
+                    ) {
+                        ++$i;
+
+                        ++$parts_offset;
+                        $parts[$parts_offset] = '->';
+                        ++$parts_offset;
+                        continue 2;
+                    }
+                    // fall through
+
                 case '-':
                     if (!$brackets
                         && $i < $char_count - 1
@@ -578,11 +594,24 @@ class Reconciler
                                     (string)$declaring_property_class
                                 );
 
-                                $class_property_type = $class_storage->properties[$property_name]->type;
+                                $class_property_type = $codebase->properties->getPropertyType(
+                                    $property_id,
+                                    false,
+                                    null,
+                                    null
+                                );
 
-                                $class_property_type = $class_property_type
-                                    ? clone $class_property_type
-                                    : Type::getMixed();
+                                if ($class_property_type) {
+                                    $class_property_type = ExpressionAnalyzer::fleshOutType(
+                                        $codebase,
+                                        clone $class_property_type,
+                                        $declaring_property_class,
+                                        $declaring_property_class,
+                                        null
+                                    );
+                                } else {
+                                    $class_property_type = Type::getMixed();
+                                }
                             }
                         } else {
                             $class_property_type = Type::getMixed();
