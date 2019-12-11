@@ -267,6 +267,7 @@ class SwitchAnalyzer
         $old_node_data = $statements_analyzer->node_data;
 
         if ($case->cond) {
+            $was_inside_conditional = $case_context->inside_conditional;
             $case_context->inside_conditional = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
@@ -278,7 +279,9 @@ class SwitchAnalyzer
                 return false;
             }
 
-            $case_context->inside_conditional = false;
+            if (!$was_inside_conditional) {
+                $case_context->inside_conditional = false;
+            }
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 

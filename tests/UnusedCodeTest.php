@@ -642,6 +642,21 @@ class UnusedCodeTest extends TestCase
                         return $i;
                     }'
             ],
+            'usedFunctionCallInsideSwitchWithTernary' => [
+                '<?php
+                    function getArg(string $method) : void {
+                        switch (strtolower($method ?: "")) {
+                            case "post":
+                                break;
+
+                            case "get":
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }'
+            ]
         ];
     }
 
