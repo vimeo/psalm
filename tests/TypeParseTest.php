@@ -834,7 +834,7 @@ class TypeParseTest extends TestCase
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
     }
 
-    public function testEmptyString()
+    public function testEmptyString() : void
     {
         $docblock_type = Type::parseString('""|"admin"|"fun"');
 
