@@ -1865,7 +1865,7 @@ class TypeAnalyzer
                 $replacement_templates = [];
 
                 if ($input_template_types) {
-                    foreach ($input_template_types as $template_name => $template_type_map) {
+                    foreach ($input_template_types as $template_name => $_) {
                         if (!isset($input_type_params[$i])) {
                             break;
                         }
@@ -1918,9 +1918,11 @@ class TypeAnalyzer
                                 }
                             }
 
-                            $new_input_param->replaceTemplateTypesWithArgTypes(
-                                $replacement_templates
-                            );
+                            if ($new_input_param) {
+                                $new_input_param->replaceTemplateTypesWithArgTypes(
+                                    $replacement_templates
+                                );
+                            }
 
                             $new_input_params[] = $new_input_param ?: Type::getMixed();
                         }
