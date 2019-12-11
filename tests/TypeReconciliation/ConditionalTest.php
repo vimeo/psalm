@@ -2254,6 +2254,21 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'assertOnStaticPropertyOffset' => [
+                '<?php
+                    class C {
+                        /** @var array<string, string>|null */
+                        private static $map = [];
+
+                        public static function foo(string $id) : ?string {
+                            if (isset(self::$map[$id])) {
+                                return self::$map[$id];
+                            }
+
+                            return null;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2598,6 +2613,24 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                                 if (!$value) {}
                             }
                         }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'SKIPPED-catchRedundantConditionOnBinaryOpForwards' => [
+                '<?php
+                    class App {}
+
+                    function test(App $app) : void {
+                        if ($app || rand(0, 1)) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'SKIPPED-catchRedundantConditionOnBinaryOpBackwards' => [
+                '<?php
+                    class App {}
+
+                    function test(App $app) : void {
+                        if (rand(0, 1) || $app) {}
                     }',
                 'error_message' => 'RedundantCondition',
             ],

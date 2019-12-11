@@ -401,9 +401,10 @@ class Reconciler
                         && $chars[$i + 2] === '$'
                     ) {
                         ++$i;
+                        ++$i;
 
                         ++$parts_offset;
-                        $parts[$parts_offset] = '->';
+                        $parts[$parts_offset] = '::$';
                         ++$parts_offset;
                         continue 2;
                     }
@@ -518,6 +519,8 @@ class Reconciler
                             if ($has_isset) {
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
+                        } elseif ($existing_key_type_part instanceof Type\Atomic\TNull) {
+                            $new_base_type_candidate = Type::getNull();
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !\is_numeric($array_key[0]))) {
@@ -558,9 +561,9 @@ class Reconciler
                 }
 
                 $base_key = $new_base_key;
-            } elseif ($divider === '->') {
+            } elseif ($divider === '->' || $divider === '::$') {
                 $property_name = array_shift($key_parts);
-                $new_base_key = $base_key . '->' . $property_name;
+                $new_base_key = $base_key . $divider . $property_name;
 
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
@@ -588,10 +591,6 @@ class Reconciler
                                 $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
                                     $property_id,
                                     true
-                                );
-
-                                $class_storage = $codebase->classlike_storage_provider->get(
-                                    (string)$declaring_property_class
                                 );
 
                                 $class_property_type = $codebase->properties->getPropertyType(
