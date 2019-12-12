@@ -1141,6 +1141,21 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                     echo $array["other"];',
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'allEventualitiesMet' => [
+                '<?php
+                    function resize(bool $landscape, bool $crop) : int {
+                        if (($landscape && $crop) || (!$landscape && !$crop)) {
+                            return 100;
+                        }
+
+                        if ((!$landscape && $crop) || ($landscape && !$crop)) {
+                            return 50;
+                        }
+
+                        throw new \UnexpectedValueException("bad");
+                    }',
+                'error_message' => 'ParadoxicalCondition'
+            ],
         ];
     }
 }

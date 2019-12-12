@@ -210,7 +210,9 @@ class TernaryAnalyzer
                     $context->vars_in_scope[$var_id],
                     $type
                 );
-            } elseif (isset($if_context->vars_in_scope[$var_id])) {
+            } elseif (isset($if_context->vars_in_scope[$var_id])
+                && isset($if_context->assigned_var_ids[$var_id])
+            ) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $if_context->vars_in_scope[$var_id],
                     $type

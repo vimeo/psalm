@@ -253,6 +253,7 @@ class BinaryOpAnalyzer
 
             $left_context = clone $context;
             $left_context->parent_context = $context;
+            $left_context->if_context = null;
             $left_context->assigned_var_ids = [];
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $left_context) === false) {

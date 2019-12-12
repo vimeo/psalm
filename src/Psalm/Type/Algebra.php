@@ -691,6 +691,16 @@ class Algebra
                     }
                 }
 
+                foreach ($possibilities as $var_possibilities) {
+                    if (count($var_possibilities) === 2) {
+                        if ($var_possibilities[0] === '!' . $var_possibilities[1]
+                            || $var_possibilities[1] === '!' . $var_possibilities[0]
+                        ) {
+                            continue 2;
+                        }
+                    }
+                }
+
                 $clauses[] = new Clause(
                     $possibilities,
                     false,
