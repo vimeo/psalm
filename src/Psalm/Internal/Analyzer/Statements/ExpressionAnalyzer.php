@@ -1099,7 +1099,7 @@ class ExpressionAnalyzer
         ) {
             $config = \Psalm\Config::getInstance();
 
-            if ($config->memoize_method_calls) {
+            if ($config->memoize_method_calls || isset($stmt->pure)) {
                 $lhs_var_name = self::getArrayVarId(
                     $stmt->var,
                     $this_class_name,

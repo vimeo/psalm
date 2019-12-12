@@ -1064,6 +1064,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $declaring_method_id ?: $method_id
         );
 
+        $can_memoize = false;
+
         if ($method_name_lc === '__tostring') {
             $return_type_candidate = Type::getString();
         } else {
@@ -1326,24 +1328,33 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             } elseif (($method_storage->mutation_free
                                     || ($method_storage->external_mutation_free
                                         && (isset($stmt->var->external_mutation_free) || isset($stmt->var->pure))))
-                                && $codebase->find_unused_variables
-                                && !$context->inside_conditional
                                 && !$context->inside_unset
                             ) {
-                                if (!$context->inside_assignment && !$context->inside_call) {
-                                    if (IssueBuffer::accepts(
-                                        new \Psalm\Issue\UnusedMethodCall(
-                                            'The call to ' . $cased_method_id . ' is not used',
-                                            new CodeLocation($statements_analyzer, $stmt->name),
-                                            $method_id
-                                        ),
-                                        $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        // fall through
+                                if ($method_storage->mutation_free && !$method_storage->mutation_free_inferred) {
+                                    if ($context->inside_conditional) {
+                                        /** @psalm-suppress UndefinedPropertyAssignment */
+                                        $stmt->pure = true;
                                     }
-                                } else {
-                                    /** @psalm-suppress UndefinedPropertyAssignment */
-                                    $stmt->pure = true;
+
+                                    $can_memoize = true;
+                                }
+
+                                if ($codebase->find_unused_variables && !$context->inside_conditional) {
+                                    if (!$context->inside_assignment && !$context->inside_call) {
+                                        if (IssueBuffer::accepts(
+                                            new \Psalm\Issue\UnusedMethodCall(
+                                                'The call to ' . $cased_method_id . ' is not used',
+                                                new CodeLocation($statements_analyzer, $stmt->name),
+                                                $method_id
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
+                                    } else {
+                                        /** @psalm-suppress UndefinedPropertyAssignment */
+                                        $stmt->pure = true;
+                                    }
                                 }
                             }
 
@@ -1416,7 +1427,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         if (!$args && $lhs_var_id) {
-            if ($config->memoize_method_calls) {
+            if ($config->memoize_method_calls || $can_memoize) {
                 $method_var_id = $lhs_var_id . '->' . $method_name_lc . '()';
 
                 if (isset($context->vars_in_scope[$method_var_id])) {
