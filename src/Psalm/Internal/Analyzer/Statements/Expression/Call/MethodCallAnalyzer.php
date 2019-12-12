@@ -1351,7 +1351,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                         )) {
                                             // fall through
                                         }
-                                    } elseif ($can_memoize) {
+                                    } elseif (!$method_storage->mutation_free_inferred) {
                                         /** @psalm-suppress UndefinedPropertyAssignment */
                                         $stmt->pure = true;
                                     }
