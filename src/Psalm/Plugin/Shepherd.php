@@ -132,7 +132,9 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
         /** @var array */
         $curl_info = curl_getinfo($ch);
 
-        if (($curl_info['ssl_verify_result'] ?? 0) !== 0) {
+        if (isset($curl_info['ssl_verify_result'])
+            && $curl_info['ssl_verify_result'] !== 0
+        ) {
             switch ($curl_info['ssl_verify_result']) {
                 case 2:
                     return 'unable to get issuer certificate';

@@ -752,7 +752,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                             baz();
                         }
                     }',
-                'UndefinedVariable'
+                'error_message' => 'UndefinedVariable'
             ],
         ];
     }
