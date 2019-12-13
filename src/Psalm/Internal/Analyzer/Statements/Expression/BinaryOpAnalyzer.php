@@ -586,7 +586,11 @@ class BinaryOpAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->left)
                 );
 
-                $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+                foreach ($context->vars_in_scope as $var_id => $_) {
+                    if (isset($t_if_vars_in_scope_reconciled[$var_id])) {
+                        $t_if_context->vars_in_scope[$var_id] = $t_if_vars_in_scope_reconciled[$var_id];
+                    }
+                }
             }
 
             if (!self::hasArrayDimFetch($stmt->left)) {

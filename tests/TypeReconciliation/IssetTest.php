@@ -744,6 +744,16 @@ class IssetTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],
+            'undefinedVarInNullCoalesce' => [
+                '<?php
+                    function bar(): void {
+                        $do_baz = $config["do_it"] ?? false;
+                        if ($do_baz) {
+                            baz();
+                        }
+                    }',
+                'UndefinedVariable'
+            ],
         ];
     }
 }
