@@ -186,7 +186,7 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                         if ($a) {
                             // do nothing here
                         } elseif ($b) {
-                            $a = "";
+                            $a = null;
                         } else {
                             return "bad";
                         }
@@ -1140,21 +1140,6 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                     $array = [$x => 2];
                     echo $array["other"];',
                 'error_message' => 'InvalidArrayOffset',
-            ],
-            'allEventualitiesMet' => [
-                '<?php
-                    function resize(bool $landscape, bool $crop) : int {
-                        if (($landscape && $crop) || (!$landscape && !$crop)) {
-                            return 100;
-                        }
-
-                        if ((!$landscape && $crop) || ($landscape && !$crop)) {
-                            return 50;
-                        }
-
-                        throw new \UnexpectedValueException("bad");
-                    }',
-                'error_message' => 'ParadoxicalCondition'
             ],
         ];
     }
