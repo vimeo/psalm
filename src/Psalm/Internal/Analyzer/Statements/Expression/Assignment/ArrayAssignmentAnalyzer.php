@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use PhpParser;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -223,6 +224,15 @@ class ArrayAssignmentAnalyzer
                     if ($object_id) {
                         $var_id_additions[] = '[' . $object_id . '->' . $child_stmt->dim->name->name . ']';
                     }
+                } elseif ($child_stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $child_stmt->dim->name instanceof PhpParser\Node\Identifier
+                    && $child_stmt->dim->class instanceof PhpParser\Node\Name
+                ) {
+                    $object_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                        $child_stmt->dim->class,
+                        $statements_analyzer->getAliases()
+                    );
+                    $var_id_additions[] = '[' . $object_name . '::' . $child_stmt->dim->name->name . ']';
                 } else {
                     $var_id_additions[] = '[' . $child_stmt_dim_type . ']';
                     $full_var_id = false;

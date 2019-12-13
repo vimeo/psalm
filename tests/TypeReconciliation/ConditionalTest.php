@@ -2238,7 +2238,39 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         echo isset($a);
                     }'
             ],
-            'assertOnStaticClassKey' => [
+            'assertOnVarStaticClassKey' => [
+                '<?php
+                    abstract class Obj {
+                        /**
+                         * @param array<class-string, array<string, int>> $arr
+                         * @return array<string, int>
+                         */
+                        public static function getArr(array $arr) : array {
+                            if (!isset($arr[static::class])) {
+                                $arr[static::class] = ["hello" => 5];
+                            }
+
+                            return $arr[static::class];
+                        }
+                    }'
+            ],
+            'assertOnVarVar' => [
+                '<?php
+                    abstract class Obj {
+                        /**
+                         * @param array<class-string, array<string, int>> $arr
+                         * @return array<string, int>
+                         */
+                        function getArr(array $arr, string $s) : array {
+                            if (!isset($arr[$s])) {
+                                $arr[$s] = ["hello" => 5];
+                            }
+
+                            return $arr[$s];
+                        }
+                    }'
+            ],
+            'assertOnPropertyStaticClassKey' => [
                 '<?php
                     abstract class Obj {
                         /** @var array<class-string, array<string, int>> */
@@ -2246,11 +2278,12 @@ class ConditionalTest extends \Psalm\Tests\TestCase
 
                         /** @return array<string, int> */
                         public static function getArr() : array {
-                            if (!isset(self::$arr[static::class])) {
-                                self::$arr[static::class] = ["hello" => 5];
+                            $arr = self::$arr;
+                            if (!isset($arr[static::class])) {
+                                $arr[static::class] = ["hello" => 5];
                             }
 
-                            return self::$arr[static::class];
+                            return $arr[static::class];
                         }
                     }'
             ],
@@ -2284,6 +2317,38 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         ) {
                             isset($p[$id]) ? $p[$id] : new B;
                             isset($p[$id]) ? $p[$id]->foo() : "bar";
+                        }
+                    }'
+            ],
+            'reconcileEmptinessBetter' => [
+                '<?php
+                    /**
+                     * @param string|array $valuePath
+                     */
+                    function combine($valuePath) : void {
+                        if (!empty($valuePath) && is_array($valuePath)) {
+
+                        } elseif (!empty($valuePath)) {
+                            echo $valuePath;
+                        }
+                    }',
+            ],
+            'issetAssertionOnStaticProperty' => [
+                '<?php
+                    class C {
+                        protected static array $cache = [];
+
+                        /**
+                         * @psalm-suppress MixedArrayAccess
+                         * @psalm-suppress MixedReturnStatement
+                         * @psalm-suppress MixedInferredReturnType
+                         */
+                        public static function get(string $k1, string $k2) : ?string {
+                            if (!isset(static::$cache[$k1][$k2])) {
+                                return null;
+                            }
+
+                            return static::$cache[$k1][$k2];
                         }
                     }'
             ],

@@ -105,6 +105,11 @@ class Reconciler
 
                     $base_key = array_shift($key_parts);
 
+                    if ($base_key[0] !== '$' && count($key_parts) > 2 && $key_parts[0] === '::$') {
+                        $base_key .= array_shift($key_parts);
+                        $base_key .= array_shift($key_parts);
+                    }
+
                     if (!isset($existing_types[$base_key]) || $existing_types[$base_key]->isNullable()) {
                         if (!isset($new_types[$base_key])) {
                             $new_types[$base_key] = [['=isset']];
@@ -464,6 +469,11 @@ class Reconciler
         }
 
         $base_key = array_shift($key_parts);
+
+        if ($base_key[0] !== '$' && count($key_parts) > 2 && $key_parts[0] === '::$') {
+            $base_key .= array_shift($key_parts);
+            $base_key .= array_shift($key_parts);
+        }
 
         if (!isset($existing_keys[$base_key])) {
             if (strpos($base_key, '::')) {

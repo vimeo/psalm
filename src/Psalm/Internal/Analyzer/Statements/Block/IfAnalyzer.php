@@ -142,13 +142,6 @@ class IfAnalyzer
 
         $entry_clauses = $context->clauses;
 
-        if ($if_scope->if_cond_changed_var_ids) {
-            $entry_clauses = Context::removeOverwrittenClauses(
-                $entry_clauses,
-                $if_scope->if_cond_changed_var_ids
-            );
-        }
-
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
             $context->clauses,
@@ -1084,13 +1077,6 @@ class IfAnalyzer
             $elseif->cond,
             $cond_assigned_var_ids
         );
-
-        if ($if_scope->if_cond_changed_var_ids) {
-            $entry_clauses = Context::removeOverwrittenClauses(
-                $entry_clauses,
-                $if_scope->if_cond_changed_var_ids
-            );
-        }
 
         $elseif_context_clauses = array_merge($entry_clauses, $elseif_clauses);
 

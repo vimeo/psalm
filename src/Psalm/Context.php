@@ -504,35 +504,6 @@ class Context
     }
 
     /**
-     * This removes all clauses that are invalidated because
-     * all possibilities are overwritten by changed var ids
-     *
-     * @param  Clause[]             $clauses
-     * @param  array<string, bool>  $changed_var_ids
-     *
-     * @return list<Clause>
-     */
-    public static function removeOverwrittenClauses(array $clauses, array $changed_var_ids)
-    {
-        $included_clauses = [];
-
-        foreach ($clauses as $c) {
-            if ($c->wedge) {
-                $included_clauses[] = $c;
-                continue;
-            }
-
-            if (!\array_diff_key($c->possibilities, $changed_var_ids)) {
-                continue;
-            }
-
-            $included_clauses[] = $c;
-        }
-
-        return $included_clauses;
-    }
-
-    /**
      * @param  Clause[]             $clauses
      * @param  array<string, bool>  $changed_var_ids
      *
