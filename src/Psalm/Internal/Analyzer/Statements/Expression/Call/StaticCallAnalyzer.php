@@ -621,7 +621,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $context->include_location = $old_context_include_location;
                         $context->self = $old_self;
 
-                        if (isset($context->vars_in_scope['$this']) && $old_self) {
+                        if (isset($context->vars_in_scope['$this'])) {
                             $context->vars_in_scope['$this'] = Type::parseString($old_self);
                         }
                     }

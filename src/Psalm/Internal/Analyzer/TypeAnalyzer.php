@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -1153,6 +1154,7 @@ class TypeAnalyzer
         }
 
         if ((get_class($container_type_part) === TString::class
+                || get_class($container_type_part) === TNonEmptyString::class
                 || get_class($container_type_part) === TSingleLetter::class)
             && $input_type_part instanceof TLiteralString
         ) {
@@ -1177,7 +1179,9 @@ class TypeAnalyzer
             return false;
         }
 
-        if ((get_class($input_type_part) === TString::class || get_class($input_type_part) === TSingleLetter::class)
+        if ((get_class($input_type_part) === TString::class
+                || get_class($input_type_part) === TSingleLetter::class
+                || get_class($input_type_part) === TNonEmptyString::class)
             && $container_type_part instanceof TLiteralString
         ) {
             if ($atomic_comparison_result) {
@@ -1248,7 +1252,10 @@ class TypeAnalyzer
             return true;
         }
 
-        if ($container_type_part instanceof TTraitString && get_class($input_type_part) === TString::class) {
+        if ($container_type_part instanceof TTraitString
+            && (get_class($input_type_part) === TString::class
+                || get_class($input_type_part) === TNonEmptyString::class)
+        ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
             }
@@ -1259,14 +1266,16 @@ class TypeAnalyzer
         if (($input_type_part instanceof TClassString
             || $input_type_part instanceof TLiteralClassString)
             && (get_class($container_type_part) === TString::class
-                || get_class($container_type_part) === TSingleLetter::class)
+                || get_class($container_type_part) === TSingleLetter::class
+                || get_class($container_type_part) === TNonEmptyString::class)
         ) {
             return true;
         }
 
         if ($input_type_part instanceof TCallableString
             && (get_class($container_type_part) === TString::class
-                || get_class($container_type_part) === TSingleLetter::class)
+                || get_class($container_type_part) === TSingleLetter::class
+                || get_class($container_type_part) === TNonEmptyString::class)
         ) {
             return true;
         }

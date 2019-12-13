@@ -2451,59 +2451,57 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 );
             }
 
-            if ($docblock_return_type) {
-                try {
-                    $fixed_type_tokens = Type::fixUpLocalType(
-                        $docblock_return_type,
-                        $this->aliases,
-                        $this->function_template_types + $this->class_template_types,
-                        $this->type_aliases,
-                        $class_storage && !$class_storage->is_trait ? $class_storage->name : null
-                    );
+            try {
+                $fixed_type_tokens = Type::fixUpLocalType(
+                    $docblock_return_type,
+                    $this->aliases,
+                    $this->function_template_types + $this->class_template_types,
+                    $this->type_aliases,
+                    $class_storage && !$class_storage->is_trait ? $class_storage->name : null
+                );
 
-                    $storage->return_type = Type::parseTokens(
-                        $fixed_type_tokens,
-                        null,
-                        $this->function_template_types + $this->class_template_types
-                    );
+                $storage->return_type = Type::parseTokens(
+                    $fixed_type_tokens,
+                    null,
+                    $this->function_template_types + $this->class_template_types
+                );
 
-                    $storage->return_type->setFromDocblock();
+                $storage->return_type->setFromDocblock();
 
-                    if ($storage->signature_return_type) {
-                        $all_typehint_types_match = true;
-                        $signature_return_atomic_types = $storage->signature_return_type->getTypes();
+                if ($storage->signature_return_type) {
+                    $all_typehint_types_match = true;
+                    $signature_return_atomic_types = $storage->signature_return_type->getTypes();
 
-                        foreach ($storage->return_type->getTypes() as $key => $type) {
-                            if (isset($signature_return_atomic_types[$key])) {
-                                $type->from_docblock = false;
-                            } else {
-                                $all_typehint_types_match = false;
-                            }
-                        }
-
-                        if ($all_typehint_types_match) {
-                            $storage->return_type->from_docblock = false;
-                        }
-
-                        if ($storage->signature_return_type->isNullable()
-                            && !$storage->return_type->isNullable()
-                        ) {
-                            $storage->return_type->addType(new Type\Atomic\TNull());
+                    foreach ($storage->return_type->getTypes() as $key => $type) {
+                        if (isset($signature_return_atomic_types[$key])) {
+                            $type->from_docblock = false;
+                        } else {
+                            $all_typehint_types_match = false;
                         }
                     }
 
-                    $storage->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
-                } catch (TypeParseTreeException $e) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                            new CodeLocation($this->file_scanner, $stmt, null, true)
-                        )
-                    )) {
+                    if ($all_typehint_types_match) {
+                        $storage->return_type->from_docblock = false;
                     }
 
-                    $storage->has_docblock_issues = true;
+                    if ($storage->signature_return_type->isNullable()
+                        && !$storage->return_type->isNullable()
+                    ) {
+                        $storage->return_type->addType(new Type\Atomic\TNull());
+                    }
                 }
+
+                $storage->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+            } catch (TypeParseTreeException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    )
+                )) {
+                }
+
+                $storage->has_docblock_issues = true;
             }
 
             if ($storage->return_type && $docblock_info->ignore_nullable_return) {

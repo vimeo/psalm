@@ -173,6 +173,9 @@ abstract class Atomic
             case 'non-empty-list':
                 return new TNonEmptyList(Type::getMixed());
 
+            case 'non-empty-string':
+                return new Type\Atomic\TNonEmptyString();
+
             case 'resource':
                 return $php_version !== null ? new TNamedObject($value) : new TResource();
 

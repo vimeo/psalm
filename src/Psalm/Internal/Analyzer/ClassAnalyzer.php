@@ -328,7 +328,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                if ($codebase->store_node_types && $parent_fq_class_name) {
+                if ($codebase->store_node_types) {
                     $codebase->analyzer->addNodeReference(
                         $this->getFilePath(),
                         $class->extends,

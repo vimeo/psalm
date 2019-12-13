@@ -2125,8 +2125,11 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                 if ($existing_var_type->hasType('string')) {
                     $existing_var_type->removeType('string');
-                    $existing_var_type->addType(new Type\Atomic\TLiteralString(''));
-                    $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+
+                    if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonEmptyString) {
+                        $existing_var_type->addType(new Type\Atomic\TLiteralString(''));
+                        $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+                    }
                 }
             }
         }

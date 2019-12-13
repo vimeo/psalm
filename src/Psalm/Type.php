@@ -80,6 +80,7 @@ abstract class Type
         'callable' => true,
         'array' => true,
         'non-empty-array' => true,
+        'non-empty-string' => true,
         'iterable' => true,
         'null' => true,
         'mixed' => true,

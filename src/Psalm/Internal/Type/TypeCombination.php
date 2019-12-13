@@ -1028,7 +1028,7 @@ class TypeCombination
                             }
                         } elseif (get_class($combination->value_types['string']) !== TString::class) {
                             if (get_class($type) === TString::class) {
-                                $combination->value_types[$type_key] = $type;
+                                $combination->value_types['string'] = $type;
                             } elseif ($combination->value_types['string'] instanceof TTraitString
                                 && $type instanceof TClassString
                             ) {
@@ -1037,7 +1037,7 @@ class TypeCombination
 
                                 unset($combination->value_types['string']);
                             } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
-                                $combination->value_types[$type_key] = new TString();
+                                $combination->value_types['string'] = new TString();
                             }
                         }
 

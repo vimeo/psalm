@@ -182,11 +182,11 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
             ],
             'twoVarLogicNotNestedWithElseifCorrectlyNegatedInElseIf' => [
                 '<?php
-                    function foo(?string $a, ?string $b): string {
+                    function foo(string $a, string $b): string {
                         if ($a) {
                             // do nothing here
                         } elseif ($b) {
-                            $a = null;
+                            $a = "";
                         } else {
                             return "bad";
                         }

@@ -1055,7 +1055,7 @@ class ExpressionAnalyzer
                     }
                 }
 
-                return $root_var_id && $offset !== null ? $root_var_id . '[' . $offset . ']' : null;
+                return $offset !== null ? $root_var_id . '[' . $offset . ']' : null;
             }
         }
 

@@ -95,7 +95,7 @@ class PropertyAssignmentAnalyzer
                 $context
             );
 
-            if ($class_property_type && $context->self) {
+            if ($class_property_type) {
                 $class_storage = $codebase->classlike_storage_provider->get($context->self);
 
                 $class_property_type = ExpressionAnalyzer::fleshOutType(
@@ -755,7 +755,6 @@ class PropertyAssignmentAnalyzer
 
             if ($var_id) {
                 if ($context->collect_initializations
-                    && $var_id
                     && $lhs_var_id === '$this'
                 ) {
                     $assignment_value_type->initialized_class = $context->self;

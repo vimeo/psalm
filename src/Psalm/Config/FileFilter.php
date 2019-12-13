@@ -145,10 +145,6 @@ class FileFilter
                             );
                         }
 
-                        if (!$directory_path) {
-                            continue;
-                        }
-
                         if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
                             $filter->ignore_type_stats[$directory_path] = true;
                         }

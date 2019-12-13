@@ -587,6 +587,12 @@ class NegatedAssertionReconciler extends Reconciler
                 }
             }
 
+            if (isset($existing_var_atomic_types['string'])) {
+                $existing_var_type->removeType('string');
+
+                $existing_var_type->addType(new Type\Atomic\TNonEmptyString);
+            }
+
             self::removeFalsyNegatedLiteralTypes(
                 $existing_var_type,
                 $did_remove_type
@@ -663,6 +669,34 @@ class NegatedAssertionReconciler extends Reconciler
                 if (!$existing_var_atomic_types['scalar'] instanceof Type\Atomic\TEmptyScalar) {
                     $existing_var_type->addType(new Type\Atomic\TNonEmptyScalar);
                 }
+            } elseif ($existing_var_type->isSingle() && !$is_equality) {
+                if ($code_location
+                    && $key
+                    && IssueBuffer::accepts(
+                        new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key
+                                . ' of type ' . $existing_var_type->getId()
+                                . ' and trying to reconcile it with a non-' . $assertion . ' assertion',
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )
+                ) {
+                    // fall through
+                }
+            }
+
+            if ($existing_var_type->isSingle()) {
+                return $existing_var_type;
+            }
+        }
+
+        if (isset($existing_var_atomic_types['string'])) {
+            if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonEmptyString) {
+                $did_remove_type = true;
+                $existing_var_type->removeType('string');
+
+                $existing_var_type->addType(new Type\Atomic\TNonEmptyString);
             } elseif ($existing_var_type->isSingle() && !$is_equality) {
                 if ($code_location
                     && $key
