@@ -2636,6 +2636,19 @@ class ClassTemplateTest extends TestCase
                     takesCollectionOfItems($subitem_collection);',
                 'error_message' => 'InvalidArgument'
             ],
+            'noClassTemplatesInStaticMethods' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class C {
+                        /**
+                         * @param T $t
+                         */
+                        public static function foo($t) : void {}
+                    }',
+                'error_message' => 'UndefinedDocblockClass'
+            ],
         ];
     }
 }

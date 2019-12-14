@@ -1202,8 +1202,9 @@ class ClassTemplateExtendsTest extends TestCase
                         }
 
                         /**
-                         * @param T $t
-                         * @return static<T>
+                         * @template U
+                         * @param U $t
+                         * @return static<U>
                          */
                         public static function getContainer($t) {
                             return new static($t);
@@ -1246,8 +1247,9 @@ class ClassTemplateExtendsTest extends TestCase
                         }
 
                         /**
-                         * @param T $t
-                         * @return static<T>
+                         * @template U
+                         * @param U $t
+                         * @return static<U>
                          */
                         public static function getContainer($t) {
                             return new static($t);
@@ -1296,8 +1298,9 @@ class ClassTemplateExtendsTest extends TestCase
                         }
 
                         /**
-                         * @param T $t
-                         * @return static<T>
+                         * @template U
+                         * @param U $t
+                         * @return static<U>
                          */
                         public static function getContainer($t) {
                             return new static($t);
@@ -2014,14 +2017,14 @@ class ClassTemplateExtendsTest extends TestCase
                         /**
                          * @return key-of<DATA>
                          */
-                        abstract public static function getIdProperty() : string;
+                        abstract public function getIdProperty() : string;
                     }
 
                     /**
                      * @template-extends Foo<array{id:int, name:string}>
                      */
                     class FooChild extends Foo {
-                        public static function getIdProperty() : string {
+                        public function getIdProperty() : string {
                             return "id";
                         }
                     }',
@@ -2266,11 +2269,11 @@ class ClassTemplateExtendsTest extends TestCase
                         /**
                          * @return T
                          */
-                        public static function getItem();
+                        public function getItem();
                     }
 
                     trait FooTrait {
-                        public static function getItem() {
+                        public function getItem() {
                             return "hello";
                         }
                     }
@@ -3298,7 +3301,7 @@ class ClassTemplateExtendsTest extends TestCase
                         /**
                          * @param T $t
                          */
-                        public static function getString($t, object $o = null) : string {
+                        public function getString($t, object $o = null) : string {
                             return "hello";
                         }
                     }
@@ -3309,7 +3312,7 @@ class ClassTemplateExtendsTest extends TestCase
                      * @template-extends Stringer<A>
                      */
                     class AStringer extends Stringer {
-                        public static function getString($t, object $o = null) : string {
+                        public function getString($t, object $o = null) : string {
                             if ($o) {
                                 return parent::getString($o);
                             }
