@@ -733,7 +733,7 @@ class TypeAnalyzer
             }
 
             if ($container_type_part instanceof TTemplateParam
-                && $container_type_part->as->isNullable()
+                && ($container_type_part->as->isNullable() || $container_type_part->as->isMixed())
             ) {
                 return true;
             }

@@ -2953,7 +2953,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $existing_param_type_nullable = $storage_param->is_nullable;
 
             if (!$storage_param->type || $storage_param->type->hasMixed() || $storage->template_types) {
-                if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
+                if ($existing_param_type_nullable
+                    && !$new_param_type->isNullable()
+                    && !$new_param_type->hasTemplate()
+                ) {
                     $new_param_type->addType(new Type\Atomic\TNull());
                 }
 

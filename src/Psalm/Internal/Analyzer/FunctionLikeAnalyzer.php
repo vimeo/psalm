@@ -1041,9 +1041,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidParamDefault(
-                            'Default value type ' . $default_type . ' for argument ' . ($offset + 1)
+                            'Default value type ' . $default_type->getId() . ' for argument ' . ($offset + 1)
                                 . ' of method ' . $cased_method_id
-                                . ' does not match the given type ' . $param_type,
+                                . ' does not match the given type ' . $param_type->getId(),
                             $function_param->type_location
                         )
                     )) {
