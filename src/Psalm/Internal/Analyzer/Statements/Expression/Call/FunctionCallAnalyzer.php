@@ -149,12 +149,14 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                         $function_exists = true;
                         $has_valid_function_call_type = true;
+                    } elseif ($var_type_part instanceof TTemplateParam && $var_type_part->as->hasCallableType()) {
+                        $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TMixed || $var_type_part instanceof TTemplateParam) {
                         $has_valid_function_call_type = true;
 
                         if (IssueBuffer::accepts(
                             new MixedFunctionCall(
-                                'Cannot call function on mixed',
+                                'Cannot call function on ' . $var_type_part->getId(),
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()

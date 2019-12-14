@@ -1940,6 +1940,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $callable_types[] = $type;
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
+                if ($type->as->isMixed()) {
+                    $type = clone $type;
+                    $type->as = new Type\Union([new Type\Atomic\TCallable]);
+                }
                 $callable_types[] = $type;
                 $did_remove_type = true;
             } else {
