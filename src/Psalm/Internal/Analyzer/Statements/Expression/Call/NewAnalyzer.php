@@ -526,9 +526,20 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         string $fq_class_name,
         string $template_name,
         array $template_type_extends,
-        array $found_generic_params
+        array $found_generic_params,
+        bool $mapped = false
     ) {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
+            if (!$mapped && isset($template_type_extends[$fq_class_name][$template_name])) {
+                foreach ($template_type_extends[$fq_class_name][$template_name]->getTypes() as $t) {
+                    if ($t instanceof Type\Atomic\TTemplateParam) {
+                        if ($t->param_name !== $template_name) {
+                            return $t->as;
+                        }
+                    }
+                }
+            }
+
             return $found_generic_params[$template_name][$fq_class_name][0];
         }
 
@@ -544,7 +555,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             $fq_class_name,
                             $extended_template_name,
                             $template_type_extends,
-                            $found_generic_params
+                            $found_generic_params,
+                            true
                         );
                     }
                 }
