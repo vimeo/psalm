@@ -568,6 +568,7 @@ class ReturnTypeAnalyzer
             if (!$ignore_nullable_issues
                 && $inferred_return_type->isNullable()
                 && !$declared_return_type->isNullable()
+                && !$declared_return_type->hasTemplate()
                 && !$declared_return_type->isVoid()
             ) {
                 if ($codebase->alter_code

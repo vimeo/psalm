@@ -375,12 +375,13 @@ class ReturnAnalyzer
                     if (!$stmt_type->ignore_nullable_issues
                         && $inferred_type->isNullable()
                         && !$local_return_type->isNullable()
+                        && !$local_return_type->hasTemplate()
                     ) {
                         if (IssueBuffer::accepts(
                             new NullableReturnStatement(
-                                'The declared return type \'' . $local_return_type . '\' for '
+                                'The declared return type \'' . $local_return_type->getId() . '\' for '
                                     . $cased_method_id . ' is not nullable, but the function returns \''
-                                        . $inferred_type . '\'',
+                                        . $inferred_type->getId() . '\'',
                                 new CodeLocation($source, $stmt->expr)
                             ),
                             $statements_analyzer->getSuppressedIssues()

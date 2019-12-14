@@ -2168,6 +2168,40 @@ class ClassTemplateTest extends TestCase
                         }
                     }'
             ],
+            'nullableTemplateAs' => [
+                '<?php
+                    /**
+                     * @template T of null|array
+                     */
+                    class Foo
+                    {
+                        private ?\ArrayObject $arrayObject;
+
+                        public function __construct(?\ArrayObject $arrayObject)
+                        {
+                            $this->arrayObject = $arrayObject;
+                        }
+
+                        /**
+                         * @psalm-assert-if-true Foo<array> $this
+                         * @psalm-assert-if-true ArrayObject $this->arrayObject
+                         */
+                        public function hasArray(): bool
+                        {
+                            return $this->arrayObject instanceof \ArrayObject;
+                        }
+
+                        /** @return T */
+                        public function toMaybeArray()
+                        {
+                            if ($this->hasArray()) {
+                                return $this->arrayObject->getArrayCopy();
+                            }
+
+                            return null;
+                        }
+                    }'
+            ],
         ];
     }
 
