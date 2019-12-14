@@ -2054,6 +2054,21 @@ class TypeAnalyzer
             }
         }
 
+        if ($container_type_part instanceof Type\Atomic\TCallable
+            && $input_type_part instanceof Type\Atomic\TCallable
+        ) {
+            if (self::compareCallable(
+                $codebase,
+                $input_type_part,
+                $container_type_part,
+                $atomic_comparison_result,
+                $all_types_contain
+            ) === false
+            ) {
+                return false;
+            }
+        }
+
         if ($container_type_part instanceof TList
             && $input_type_part instanceof ObjectLike
         ) {

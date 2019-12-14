@@ -898,6 +898,18 @@ class CallableTest extends TestCase
                     map2("foo");',
                 'error_message' => 'MismatchingDocblockParamType',
             ],
+            'moreSpecificCallable' => [
+                '<?php
+                    /** @param callable(string):void $c */
+                    function takesSpecificCallable(callable $c) : void {
+                        $c("foo");
+                    }
+
+                    function takesCallable(callable $c) : void {
+                        takesSpecificCallable($c);
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion'
+            ],
         ];
     }
 }
