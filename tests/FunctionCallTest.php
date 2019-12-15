@@ -2310,6 +2310,16 @@ class FunctionCallTest extends TestCase
                     '$result' => 'list<array<array-key, mixed>>',
                 ],
             ],
+            'arrayMapPreserveNonEmptiness' => [
+                '<?php
+                    /**
+                     * @psalm-param non-empty-list<string> $strings
+                     * @psalm-return non-empty-list<int>
+                     */
+                    function foo(array $strings): array {
+                        return array_map("intval", $strings);
+                    }'
+            ],
         ];
     }
 

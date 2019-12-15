@@ -266,13 +266,38 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         return new Type\Union([$atomic_type]);
                     }
 
-                    return new Type\Union([
-                        count($call_args) === 2 && !($array_arg_type->is_list ?? false)
-                            ? new Type\Atomic\TArray([
+                    if ($array_arg_atomic_type instanceof Type\Atomic\TList
+                        || count($call_args) !== 2
+                    ) {
+                        if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyList) {
+                            return new Type\Union([
+                                new Type\Atomic\TNonEmptyList(
+                                    $generic_key_type
+                                ),
+                            ]);
+                        }
+
+                        return new Type\Union([
+                            new Type\Atomic\TList(
+                                $generic_key_type
+                            ),
+                        ]);
+                    }
+
+                    if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyArray) {
+                        return new Type\Union([
+                            new Type\Atomic\TNonEmptyArray([
                                 $generic_key_type,
-                                $mapping_return_type,
-                            ])
-                            : new Type\Atomic\TList($mapping_return_type)
+                                $inner_type,
+                            ]),
+                        ]);
+                    }
+
+                    return new Type\Union([
+                        new Type\Atomic\TArray([
+                            $generic_key_type,
+                            $mapping_return_type,
+                        ])
                     ]);
                 }
             }
