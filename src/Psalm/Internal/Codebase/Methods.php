@@ -469,7 +469,7 @@ class Methods
                     if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
                         $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];
 
-                        $types = array_values($extended_param->getTypes());
+                        $types = \array_values($extended_param->getTypes());
 
                         if (count($types) === 1 && $types[0] instanceof Type\Atomic\TNamedObject) {
                             $atomic_type->as_type = $types[0];
