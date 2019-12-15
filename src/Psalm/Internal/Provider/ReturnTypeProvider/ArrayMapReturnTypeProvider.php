@@ -53,6 +53,9 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             }
         }
 
+        $generic_key_type = null;
+        $mapping_return_type = null;
+
         if (isset($call_args[0])) {
             $function_call_arg = $call_args[0];
 
@@ -72,56 +75,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     $closure_return_type = Type::getNull();
                 }
 
-                $inner_type = clone $closure_return_type;
-
-                if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
-                    $atomic_type = new Type\Atomic\ObjectLike(
-                        array_map(
-                            /**
-                            * @return Type\Union
-                            */
-                            function (Type\Union $_) use ($inner_type) {
-                                return clone $inner_type;
-                            },
-                            $array_arg_atomic_type->properties
-                        )
-                    );
-                    $atomic_type->is_list = $array_arg_atomic_type->is_list;
-
-                    return new Type\Union([$atomic_type]);
-                }
-
-                if ($array_arg_atomic_type instanceof Type\Atomic\TList) {
-                    if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyList) {
-                        return new Type\Union([
-                            new Type\Atomic\TNonEmptyList(
-                                $inner_type
-                            ),
-                        ]);
-                    }
-
-                    return new Type\Union([
-                        new Type\Atomic\TList(
-                            $inner_type
-                        ),
-                    ]);
-                }
-
-                if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyArray) {
-                    return new Type\Union([
-                        new Type\Atomic\TNonEmptyArray([
-                            $generic_key_type,
-                            $inner_type,
-                        ]),
-                    ]);
-                }
-
-                return new Type\Union([
-                    new Type\Atomic\TArray([
-                        $generic_key_type,
-                        $inner_type,
-                    ]),
-                ]);
+                $mapping_return_type = clone $closure_return_type;
             } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\Array_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
@@ -247,60 +201,60 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         $mapping_return_type = Type::getMixed();
                     }
                 }
+            }
+        }
 
-                if ($mapping_return_type) {
-                    if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
-                        $atomic_type = new Type\Atomic\ObjectLike(
-                            array_map(
-                                /**
-                                * @return Type\Union
-                                */
-                                function (Type\Union $_) use ($mapping_return_type) {
-                                    return clone $mapping_return_type;
-                                },
-                                $array_arg_atomic_type->properties
-                            )
-                        );
-                        $atomic_type->is_list = $array_arg_atomic_type->is_list;
+        if ($mapping_return_type && $generic_key_type) {
+            if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
+                $atomic_type = new Type\Atomic\ObjectLike(
+                    array_map(
+                        /**
+                        * @return Type\Union
+                        */
+                        function (Type\Union $_) use ($mapping_return_type) {
+                            return clone $mapping_return_type;
+                        },
+                        $array_arg_atomic_type->properties
+                    )
+                );
+                $atomic_type->is_list = $array_arg_atomic_type->is_list;
 
-                        return new Type\Union([$atomic_type]);
-                    }
+                return new Type\Union([$atomic_type]);
+            }
 
-                    if ($array_arg_atomic_type instanceof Type\Atomic\TList
-                        || count($call_args) !== 2
-                    ) {
-                        if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyList) {
-                            return new Type\Union([
-                                new Type\Atomic\TNonEmptyList(
-                                    $generic_key_type
-                                ),
-                            ]);
-                        }
-
-                        return new Type\Union([
-                            new Type\Atomic\TList(
-                                $generic_key_type
-                            ),
-                        ]);
-                    }
-
-                    if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyArray) {
-                        return new Type\Union([
-                            new Type\Atomic\TNonEmptyArray([
-                                $generic_key_type,
-                                $inner_type,
-                            ]),
-                        ]);
-                    }
-
+            if ($array_arg_atomic_type instanceof Type\Atomic\TList
+                || count($call_args) !== 2
+            ) {
+                if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyList) {
                     return new Type\Union([
-                        new Type\Atomic\TArray([
-                            $generic_key_type,
-                            $mapping_return_type,
-                        ])
+                        new Type\Atomic\TNonEmptyList(
+                            $mapping_return_type
+                        ),
                     ]);
                 }
+
+                return new Type\Union([
+                    new Type\Atomic\TList(
+                        $mapping_return_type
+                    ),
+                ]);
             }
+
+            if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyArray) {
+                return new Type\Union([
+                    new Type\Atomic\TNonEmptyArray([
+                        $generic_key_type,
+                        $mapping_return_type,
+                    ]),
+                ]);
+            }
+
+            return new Type\Union([
+                new Type\Atomic\TArray([
+                    $generic_key_type,
+                    $mapping_return_type,
+                ])
+            ]);
         }
 
         return count($call_args) === 2 && !($array_arg_type->is_list ?? false)
