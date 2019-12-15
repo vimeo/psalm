@@ -875,8 +875,6 @@ class PropertyAssignmentAnalyzer
                     $has_valid_assignment_value_type = true;
                 }
 
-                var_dump($assignment_value_type->getId() . ' ' . $class_property_type->getId());
-
                 $invalid_assignment_value_types[] = $class_property_type->getId();
             } else {
                 $has_valid_assignment_value_type = true;
