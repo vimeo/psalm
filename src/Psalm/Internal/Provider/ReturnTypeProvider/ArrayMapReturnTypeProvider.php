@@ -127,6 +127,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     continue;
                                 }
 
+                                $class_storage = $codebase->classlike_storage_provider->get($callable_fq_class_name);
+
                                 if (!$codebase->methods->methodExists(
                                     $mapping_function_id_part,
                                     $context->calling_method_id,
@@ -150,12 +152,18 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     $self_class
                                 ) ?: Type::getMixed();
 
+                                $static_class = $self_class;
+
+                                if ($self_class !== 'self') {
+                                    $static_class = $class_storage->name;
+                                }
+
                                 $return_type = ExpressionAnalyzer::fleshOutType(
                                     $codebase,
                                     $return_type,
                                     $self_class,
-                                    $self_class,
-                                    $statements_source->getParentFQCLN()
+                                    $static_class,
+                                    $class_storage->parent_class
                                 );
 
                                 if ($mapping_return_type) {
