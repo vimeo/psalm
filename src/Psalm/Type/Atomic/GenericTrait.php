@@ -311,6 +311,7 @@ trait GenericTrait
                     && $source->getMethodName() !== '__construct'
                     && empty($expected_param_covariants[$i])
                     && !$this instanceof TArray
+                    && !$this instanceof TIterable
             ) === false) {
                 return false;
             }
