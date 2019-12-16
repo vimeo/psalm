@@ -330,7 +330,9 @@ class ExpressionAnalyzer
             if (BinaryOpAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
-                $context
+                $context,
+                0,
+                $from_stmt
             ) === false) {
                 return false;
             }

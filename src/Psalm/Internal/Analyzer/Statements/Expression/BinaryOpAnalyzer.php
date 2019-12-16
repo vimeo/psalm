@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -66,7 +67,8 @@ class BinaryOpAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
-        $nesting = 0
+        int $nesting = 0,
+        bool $from_stmt = false
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -77,6 +79,26 @@ class BinaryOpAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
+            if ($from_stmt) {
+                $fake_if_stmt = new PhpParser\Node\Stmt\If_(
+                    $stmt->left,
+                    [
+                        'stmts' => [
+                            new PhpParser\Node\Stmt\Expression(
+                                $stmt->right
+                            )
+                        ]
+                    ],
+                    $stmt->getAttributes()
+                );
+
+                if (IfAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) === false) {
+                    return false;
+                }
+
+                return null;
+            }
+
             $left_clauses = Algebra::getFormula(
                 \spl_object_id($stmt->left),
                 $stmt->left,
@@ -246,6 +268,26 @@ class BinaryOpAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
         ) {
+            if ($from_stmt) {
+                $fake_if_stmt = new PhpParser\Node\Stmt\If_(
+                    new PhpParser\Node\Expr\BooleanNot($stmt->left, $stmt->left->getAttributes()),
+                    [
+                        'stmts' => [
+                            new PhpParser\Node\Stmt\Expression(
+                                $stmt->right
+                            )
+                        ]
+                    ],
+                    $stmt->getAttributes()
+                );
+
+                if (IfAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) === false) {
+                    return false;
+                }
+
+                return null;
+            }
+
             $pre_referenced_var_ids = $context->referenced_var_ids;
             $context->referenced_var_ids = [];
 
