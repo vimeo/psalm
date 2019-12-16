@@ -929,6 +929,18 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedMethodCall',
             ],
+            'unusedClassReferencesItself' => [
+                '<?php
+                    class A {}
+
+                    class AChild extends A {
+                        public function __construct() {
+                            self::foo();
+                        }
+                        public static function foo() : void {}
+                    }',
+                'error_message' => 'UnusedClass',
+            ],
         ];
     }
 }
