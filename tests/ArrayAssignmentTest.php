@@ -1273,6 +1273,19 @@ class ArrayAssignmentTest extends TestCase
                     '$arr3' => 'array{1: int, 2: int, 3: int, 4: int}',
                 ]
             ],
+            'listPropertyAssignmentAfterIsset' => [
+                '<?php
+                    class Collection {
+                        /** @var list<string> */
+                        private $list = [];
+
+                        public function override(int $offset): void {
+                            if (isset($this->list[$offset])) {
+                                $this->list[$offset] = "a";
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 

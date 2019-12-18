@@ -144,6 +144,7 @@ class ArrayAssignmentAnalyzer
 
         $parent_var_id = null;
 
+        $offset_already_existed = false;
         $full_var_id = true;
 
         $child_stmt = null;
@@ -330,6 +331,14 @@ class ArrayAssignmentAnalyzer
             && !$child_stmt_var_type->hasObjectType()
         ) {
             $array_var_id = $root_var_id . implode('', $var_id_additions);
+            $parent_var_id = $root_var_id . implode('', \array_slice($var_id_additions, 0, -1));
+
+            if (isset($context->vars_in_scope[$array_var_id])
+                && !$context->vars_in_scope[$array_var_id]->possibly_undefined
+            ) {
+                $offset_already_existed = true;
+            }
+
             $context->vars_in_scope[$array_var_id] = clone $assignment_type;
         }
 
@@ -519,10 +528,21 @@ class ArrayAssignmentAnalyzer
                     $array_atomic_key_type = Type::getMixed();
                 }
 
-                $array_atomic_type = new TNonEmptyArray([
-                    $array_atomic_key_type,
-                    $current_type,
-                ]);
+                if ($offset_already_existed
+                    && $child_stmt
+                    && $parent_var_id
+                    && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)
+                    && $parent_type->hasList()
+                ) {
+                    $array_atomic_type = new TNonEmptyList(
+                        $current_type,
+                    );
+                } else {
+                    $array_atomic_type = new TNonEmptyArray([
+                        $array_atomic_key_type,
+                        $current_type,
+                    ]);
+                }
             } else {
                 $array_atomic_type = new TNonEmptyList($current_type);
             }

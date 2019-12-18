@@ -621,6 +621,14 @@ class Union
     /**
      * @return bool
      */
+    public function hasList()
+    {
+        return isset($this->types['array']) && $this->types['array'] instanceof Atomic\TList;
+    }
+
+    /**
+     * @return bool
+     */
     public function hasEmptyArray()
     {
         return isset($this->types['array'])
