@@ -172,7 +172,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $method_id = (string)$this->getMethodId($context->self);
 
             $fq_class_name = (string)$context->self;
-            $class_storage = $classlike_storage_provider->get($fq_class_name);
+            $appearing_class_storage = $classlike_storage_provider->get($fq_class_name);
 
             if ($add_mutations) {
                 $hash = md5($real_method_id . '::' . $context->getScopeSummary());
@@ -182,10 +182,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     return null;
                 }
             } elseif ($context->self) {
-                if ($class_storage->template_types) {
+                if ($appearing_class_storage->template_types) {
                     $template_params = [];
 
-                    foreach ($class_storage->template_types as $param_name => $template_map) {
+                    foreach ($appearing_class_storage->template_types as $param_name => $template_map) {
                         $key = array_keys($template_map)[0];
 
                         $template_params[] = new Type\Union([
@@ -220,7 +220,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->vars_possibly_in_scope['$this'] = true;
             }
 
-            if ($class_storage->has_visitor_issues) {
+            if ($appearing_class_storage->has_visitor_issues) {
                 return null;
             }
 
@@ -256,6 +256,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId($cased_method_id);
                     $implementer_declaring_method_id = $real_method_id;
 
+                    $declaring_class_storage = $appearing_class_storage;
+
                     if ($implementer_appearing_method_id
                         && $implementer_appearing_method_id !== $implementer_declaring_method_id
                     ) {
@@ -264,8 +266,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $implementer_appearing_method_id
                         );
 
+                        list($declaring_fq_class_name) = explode(
+                            '::',
+                            $implementer_declaring_method_id
+                        );
+
                         $appearing_class_storage = $classlike_storage_provider->get(
                             $appearing_fq_class_name
+                        );
+
+                        $declaring_class_storage = $classlike_storage_provider->get(
+                            $declaring_fq_class_name
                         );
 
                         if (isset($appearing_class_storage->trait_visibility_map[$appearing_method_name])) {
@@ -275,10 +286,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
 
                     // we've already checked this in the class checker
-                    if (!isset($class_storage->class_implements[strtolower($overridden_fq_class_name)])) {
+                    if (!isset($appearing_class_storage->class_implements[strtolower($overridden_fq_class_name)])) {
                         MethodAnalyzer::compareMethods(
                             $codebase,
-                            $class_storage,
+                            $declaring_class_storage,
                             $parent_storage,
                             $storage,
                             $parent_method_storage,
