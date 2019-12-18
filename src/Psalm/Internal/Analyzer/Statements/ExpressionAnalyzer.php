@@ -1330,7 +1330,10 @@ class ExpressionAnalyzer
             return $return_type;
         }
 
-        if ($return_type instanceof Type\Atomic\TArray || $return_type instanceof Type\Atomic\TGenericObject) {
+        if ($return_type instanceof Type\Atomic\TArray
+            || $return_type instanceof Type\Atomic\TGenericObject
+            || $return_type instanceof Type\Atomic\TIterable
+        ) {
             foreach ($return_type->type_params as &$type_param) {
                 $type_param = self::fleshOutType(
                     $codebase,
