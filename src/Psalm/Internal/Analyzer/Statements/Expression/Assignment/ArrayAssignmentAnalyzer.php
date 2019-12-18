@@ -535,7 +535,7 @@ class ArrayAssignmentAnalyzer
                     && $parent_type->hasList()
                 ) {
                     $array_atomic_type = new TNonEmptyList(
-                        $current_type,
+                        $current_type
                     );
                 } else {
                     $array_atomic_type = new TNonEmptyArray([
