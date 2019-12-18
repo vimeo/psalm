@@ -137,7 +137,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $cased_method_id = null;
 
-        $class_storage = null;
+        $appearing_class_storage = null;
 
         if ($global_context) {
             foreach ($global_context->constants as $const_name => $var_type) {
@@ -382,8 +382,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $template_types = $storage->template_types;
 
-        if ($class_storage && $class_storage->template_types) {
-            $template_types = array_merge($template_types ?: [], $class_storage->template_types);
+        if ($appearing_class_storage && $appearing_class_storage->template_types) {
+            $template_types = array_merge($template_types ?: [], $appearing_class_storage->template_types);
         }
 
         $params = $storage->params;
@@ -622,7 +622,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $this->checkParamReferences(
                 $statements_analyzer,
                 $storage,
-                $class_storage,
+                $appearing_class_storage,
                 $context
             );
         }
