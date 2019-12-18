@@ -2616,6 +2616,55 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }'
             ],
+            'useTraitReturnType' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     * @template TNormalizedValue
+                     */
+                    interface Normalizer
+                    {
+                        /**
+                         * @param TValue $v
+                         * @return TNormalizedValue
+                         */
+                        function normalize($v);
+                    }
+
+                    /**
+                     * @template TTraitValue
+                     * @template TTraitNormalizedValue
+                     */
+                    trait NormalizerTrait
+                    {
+                        /**
+                         * @param TTraitValue $v
+                         * @return TTraitNormalizedValue
+                         */
+                        function normalize($v)
+                        {
+                            return $this->doNormalize($v);
+                        }
+
+                        /**
+                         * @param TTraitValue $v
+                         * @return TTraitNormalizedValue
+                         */
+                        abstract protected function doNormalize($v);
+                    }
+
+                    /** @implements Normalizer<string, string> */
+                    class StringNormalizer implements Normalizer
+                    {
+                        /** @use NormalizerTrait<string, string> */
+                        use NormalizerTrait;
+
+                        protected function doNormalize($v): string
+                        {
+                            return trim($v);
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -2661,7 +2710,7 @@ class ClassTemplateExtendsTest extends TestCase
                             return new Foo();
                         }
                     }',
-                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:36 - The return type \'A\Bar\' for',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:36 - The inherited return type \'A\Bar\' for',
             ],
             'extendTemplateAndDoesNotOverrideWithWrongArg' => [
                 '<?php

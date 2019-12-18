@@ -665,6 +665,57 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             );
 
             $guide_class_name = $guide_classlike_storage->name;
+            $implementer_class_name = $implementer_classlike_storage->name;
+
+            $implementer_called_class_storage = $implementer_classlike_storage;
+
+            if ($implementer_called_class_name !== $implementer_class_name) {
+                $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
+                    $implementer_called_class_name
+                );
+            }
+
+            if ($implementer_called_class_storage !== $implementer_classlike_storage
+                && isset($implementer_called_class_storage->template_type_extends[$implementer_class_name])
+            ) {
+                $map = $implementer_called_class_storage->template_type_extends[$implementer_class_name];
+
+                $template_types = [];
+
+                foreach ($map as $key => $type) {
+                    if (is_string($key)) {
+                        $template_types[$key][$implementer_class_name] = [$type];
+                    }
+                }
+
+                $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+
+                $implementer_method_storage_return_type->replaceTemplateTypesWithArgTypes(
+                    $template_result->template_types,
+                    $codebase
+                );
+            }
+
+            if ($implementer_called_class_storage !== $implementer_classlike_storage
+                && isset($implementer_called_class_storage->template_type_extends[$guide_class_name])
+            ) {
+                $map = $implementer_called_class_storage->template_type_extends[$guide_class_name];
+
+                $template_types = [];
+
+                foreach ($map as $key => $type) {
+                    if (is_string($key)) {
+                        $template_types[$key][$guide_class_name] = [$type];
+                    }
+                }
+
+                $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+
+                $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
+                    $template_result->template_types,
+                    $codebase
+                );
+            }
 
             if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name])) {
                 $map = $implementer_classlike_storage->template_type_extends[$guide_class_name];
@@ -673,7 +724,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
                 foreach ($map as $key => $type) {
                     if (is_string($key)) {
-                        $template_types[$key][$guide_classlike_storage->name] = [$type];
+                        $template_types[$key][$guide_class_name] = [$type];
                     }
                 }
 
@@ -747,7 +798,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 if ($union_comparison_results->type_coerced) {
                     if (IssueBuffer::accepts(
                         new LessSpecificImplementedReturnType(
-                            'The return type \'' . $guide_method_storage_return_type->getId()
+                            'The inherited return type \'' . $guide_method_storage_return_type->getId()
                                 . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
                                 . 'return type for ' . $implementer_declaring_method_id . ' \''
                                 . $implementer_method_storage_return_type->getId() . '\'',
@@ -761,7 +812,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 } else {
                     if (IssueBuffer::accepts(
                         new ImplementedReturnTypeMismatch(
-                            'The return type \'' . $guide_method_storage_return_type->getId()
+                            'The inherited return type \'' . $guide_method_storage_return_type->getId()
                                 . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
                                 . 'return type for ' . $implementer_declaring_method_id . ' \''
                                 . $implementer_method_storage_return_type->getId() . '\'',
@@ -937,6 +988,57 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 );
 
                 $guide_class_name = $guide_classlike_storage->name;
+                $implementer_class_name = $implementer_classlike_storage->name;
+
+                $implementer_called_class_storage = $implementer_classlike_storage;
+
+                if ($implementer_called_class_name !== $implementer_class_name) {
+                    $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
+                        $implementer_called_class_name
+                    );
+                }
+
+                if ($implementer_called_class_storage !== $implementer_classlike_storage
+                    && isset($implementer_called_class_storage->template_type_extends[$implementer_class_name])
+                ) {
+                    $map = $implementer_called_class_storage->template_type_extends[$implementer_class_name];
+
+                    $template_types = [];
+
+                    foreach ($map as $key => $type) {
+                        if (is_string($key)) {
+                            $template_types[$key][$implementer_class_name] = [$type];
+                        }
+                    }
+
+                    $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+
+                    $implementer_method_storage_param_type->replaceTemplateTypesWithArgTypes(
+                        $template_result->template_types,
+                        $codebase
+                    );
+                }
+
+                if ($implementer_called_class_storage !== $implementer_classlike_storage
+                    && isset($implementer_called_class_storage->template_type_extends[$guide_class_name])
+                ) {
+                    $map = $implementer_called_class_storage->template_type_extends[$guide_class_name];
+
+                    $template_types = [];
+
+                    foreach ($map as $key => $type) {
+                        if (is_string($key)) {
+                            $template_types[$key][$guide_class_name] = [$type];
+                        }
+                    }
+
+                    $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+
+                    $guide_method_storage_param_type->replaceTemplateTypesWithArgTypes(
+                        $template_result->template_types,
+                        $codebase
+                    );
+                }
 
                 if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name])) {
                     $map = $implementer_classlike_storage->template_type_extends[$guide_class_name];
@@ -945,7 +1047,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
                     foreach ($map as $key => $type) {
                         if (is_string($key)) {
-                            $template_types[$key][$guide_classlike_storage->name] = [$type, 0];
+                            $template_types[$key][$guide_class_name] = [$type, 0];
                         }
                     }
 
