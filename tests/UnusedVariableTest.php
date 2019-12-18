@@ -1346,6 +1346,18 @@ class UnusedVariableTest extends TestCase
 
                     if (!($a = getA()) || $a->foo()) {}'
             ],
+            'usedInUndefinedFunction' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedInferredReturnType
+                     * @psalm-suppress MixedReturnStatement
+                     */
+                    function test(): string {
+                        $s = "a";
+                        /** @psalm-suppress UndefinedFunction */
+                        return undefined_function($s);
+                    }'
+            ],
         ];
     }
 

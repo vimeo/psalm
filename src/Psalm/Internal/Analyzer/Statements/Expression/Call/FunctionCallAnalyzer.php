@@ -338,6 +338,16 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $is_maybe_root_function
                     ) === false
                     ) {
+                        if (self::checkFunctionArguments(
+                            $statements_analyzer,
+                            $stmt->args,
+                            null,
+                            null,
+                            $context
+                        ) === false) {
+                            // fall through
+                        }
+
                         return;
                     }
                 }
