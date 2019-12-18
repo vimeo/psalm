@@ -2320,6 +2320,20 @@ class FunctionCallTest extends TestCase
                         return array_map("intval", $strings);
                     }'
             ],
+            'arrayMapZip' => [
+                '<?php
+                    /**
+                     * @return array{array{string,string|null}}
+                     */
+                    function getCharPairs(string $line) : array {
+                        $chars = str_split($line);
+                        return array_map(
+                            null,
+                            $chars,
+                            array_slice($chars, 1)
+                        );
+                    }'
+            ],
         ];
     }
 

@@ -39,6 +39,31 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             return Type::getMixed();
         }
 
+        $function_call_arg = $call_args[0] ?? null;
+
+        $function_call_type = $function_call_arg
+            ? $statements_source->node_data->getType($function_call_arg->value)
+            : null;
+
+        if ($function_call_type && $function_call_type->isNull()) {
+            \array_shift($call_args);
+
+            $array_arg_types = [];
+
+            foreach ($call_args as $call_arg) {
+                $call_arg_type = $statements_source->node_data->getType($call_arg->value);
+
+                if ($call_arg_type) {
+                    $array_arg_types[] = clone $call_arg_type;
+                } else {
+                    $array_arg_types[] = Type::getMixed();
+                    break;
+                }
+            }
+
+            return new Type\Union([new Type\Atomic\ObjectLike($array_arg_types)]);
+        }
+
         $array_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
         $array_arg_atomic_type = null;
@@ -56,18 +81,14 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         $generic_key_type = null;
         $mapping_return_type = null;
 
-        if (isset($call_args[0])) {
-            $function_call_arg = $call_args[0];
-
+        if ($function_call_arg && $function_call_type) {
             if (count($call_args) === 2) {
                 $generic_key_type = $array_arg_type->key ?? Type::getArrayKey();
             } else {
                 $generic_key_type = Type::getInt();
             }
 
-            if (($function_call_type = $statements_source->node_data->getType($function_call_arg->value))
-                && ($closure_types = $function_call_type->getClosureTypes())
-            ) {
+            if ($closure_types = $function_call_type->getClosureTypes()) {
                 $closure_atomic_type = \reset($closure_types);
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
