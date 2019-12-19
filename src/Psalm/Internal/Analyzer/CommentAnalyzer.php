@@ -611,30 +611,30 @@ class CommentAnalyzer
 
         if (isset($parsed_docblock['specials']['psalm-assert-if-true'])) {
             foreach ($parsed_docblock['specials']['psalm-assert-if-true'] as $assertion) {
-                $assertion_parts = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $assertion));
+                $line_parts = self::splitDocLine($assertion);
 
-                if (count($assertion_parts) < 2 || $assertion_parts[1][0] !== '$') {
+                if (count($line_parts) < 2 || $line_parts[1][0] !== '$') {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
                 $info->if_true_assertions[] = [
-                    'type' => $assertion_parts[0],
-                    'param_name' => substr($assertion_parts[1], 1),
+                    'type' => $line_parts[0],
+                    'param_name' => substr($line_parts[1], 1),
                 ];
             }
         }
 
         if (isset($parsed_docblock['specials']['psalm-assert-if-false'])) {
             foreach ($parsed_docblock['specials']['psalm-assert-if-false'] as $assertion) {
-                $assertion_parts = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $assertion));
+                $line_parts = self::splitDocLine($assertion);
 
-                if (count($assertion_parts) < 2 || $assertion_parts[1][0] !== '$') {
+                if (count($line_parts) < 2 || $line_parts[1][0] !== '$') {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
                 $info->if_false_assertions[] = [
-                    'type' => $assertion_parts[0],
-                    'param_name' => substr($assertion_parts[1], 1),
+                    'type' => $line_parts[0],
+                    'param_name' => substr($line_parts[1], 1),
                 ];
             }
         }
