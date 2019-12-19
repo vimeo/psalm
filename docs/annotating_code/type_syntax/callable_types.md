@@ -3,10 +3,10 @@
 Psalm supports a special format for `callable`s of the form. It can also be used for annotating `Closure`.
 
 ```
-callable(Type1, OptionalType2=, ...SpreadType3):ReturnType
+callable(Type1, OptionalType2=, SpreadType3...):ReturnType
 ```
 
-Adding `=` after the type implies it is optional, and prefixing with `...` implies the use of the spread operator.
+Adding `=` after the type implies it is optional, and suffixing with `...` implies the use of the spread operator.
 
 Using this annotation you can specify that a given function return a `Closure` e.g.
 
