@@ -269,6 +269,150 @@ class Baz extends Foo {
 }
 ```
 
+## Template covariance
+
+Imagine you have code like this:
+
+```php
+class Animal {}
+class Dog extends Animal {}
+class Cat extends Animal {}
+
+/**
+ * @template T
+ */
+class Collection {
+    /**
+     * @var array<int, T>
+     */
+    public array $list;
+  
+    /**
+     * @param array<int, T> $list
+     */
+    public function __construct(array $list) {
+        $this->list = $list;
+    }
+  
+    /**
+     * @param T $t
+     */
+    public function add($t) : void {
+        $this->list[] = $t;
+    }
+}
+
+/**
+ * @param Collection<Animal> $collection
+ */
+function addAnimal(Collection $collection) : void {
+    $collection->add(new Cat());
+}
+
+/**
+ * @param Collection<Dog> $dog_collection
+ */
+function takesDogList(Collection $dog_collection) : void {
+    addAnimal($dog_collection);
+}
+```
+
+That last call `addAnimal($doc_collection)` breaks the type of the collection – suddenly a collection of dogs becomes a collection of dogs _or_ cats. That is bad.
+
+To prevent this, Psalm emits an error when calling `addAnimal($dog_collection)` saying "addAnimal expects a `Collection<Animal>`, but `Collection<Dog>` was passed". If you haven't encountered this rule before it's probably confusing to you – any function that accepted an `Animal` would be happy to accept a subtype thereof. But as we see in the example above, doing so can lead to problems.
+
+But there are also times where it's perfectly safe to pass template param subtypes:
+
+```php
+abstract class Animal {
+    abstract public function getNoise() : string;
+}
+class Dog extends Animal {
+    public function getNoise() : string { return "woof"; }
+}
+class Cat extends Animal {
+    public function getNoise() : string { return "miaow"; }
+}
+
+/**
+ * @template T
+ */
+class Collection {
+    /** @var array<int, T> */
+    public array $list = [];
+}
+
+/**
+ * @param Collection<Animal> $collection
+ */
+function getNoises(Collection $collection) : void {
+    foreach ($collection->list as $animal) {
+        echo $animal->getNoise();
+    }
+}
+
+/**
+ * @param Collection<Dog> $dog_collection
+ */
+function takesDogList(Collection $dog_collection) : void {
+    getNoises($dog_collection);
+}
+```
+
+Here we're not doing anything bad – we're just iterating over an array of objects. But Psalm still gives that same basic error – "getNoises expects a `Collection<Animal>`, but `Collection<Dog>` was passed".
+
+We can tell Psalm that it's safe to pass subtypes for the templated param `T` by using the annotation `@template-covariant T`:
+
+```php
+/**
+ * @template-covariant T
+ */
+class Collection {
+    /** @var array<int, T> */
+    public array $list = [];
+}
+```
+
+Doing this for the above example produces no errors: https://psalm.dev/r/5254af7a8b
+
+But `@template-covariant` doesn't get rid of _all_ errors – if you add it to the first example, you get a new error – https://psalm.dev/r/0fcd699231 – complaining that you're attempting to use a covaraint template parameter for function input. That’s no good, as it means you're likely altering the collection somehow (which is, again, a violation).
+
+### But what about immutability?
+
+Psalm has [comprehensive support for declaring functional immutability](https://psalm.dev/articles/immutability-and-beyond).
+
+If we make sure that the class is immutable, we can declare a class with an `add` method that still takes a covariant param as input, but which does not modify the collection at all, instead returning a new one:
+
+```php
+/**
+ * @template-covariant T
+ * @psalm-immutable
+ */
+class Collection {
+    /**
+     * @var array<int, T>
+     */
+    public array $list = [];
+  
+    /**
+     * @param array<int, T> $list
+     */
+    public function __construct(array $list) {
+        $this->list = $list;
+    }
+  
+    /**
+     * @param T $t
+     * @return Collection<T>
+     */
+    public function add($t) : Collection {
+        return new Collection(array_merge($this->list, [$t]));
+    }
+}
+```
+
+This is perfectly valid, and Psalm won't complain.
+
 ## Builtin templated classes and interfaces
 
 Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.
