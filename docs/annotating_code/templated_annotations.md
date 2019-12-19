@@ -375,7 +375,7 @@ class Collection {
 
 Doing this for the above example produces no errors: https://psalm.dev/r/5254af7a8b
 
-But `@template-covariant` doesn't get rid of _all_ errors – if you add it to the first example, you get a new error – [https://psalm.dev/r/0fcd699231](https://psalm.dev/r/0fcd699231) – complaining that you're attempting to use a covaraint template parameter for function input. That’s no good, as it means you're likely altering the collection somehow (which is, again, a violation).
+But `@template-covariant` doesn't get rid of _all_ errors – if you add it to the first example, you get a new error – [https://psalm.dev/r/0fcd699231](https://psalm.dev/r/0fcd699231) – complaining that you're attempting to use a covariant template parameter for function input. That’s no good, as it means you're likely altering the collection somehow (which is, again, a violation).
 
 ### But what about immutability?
 
