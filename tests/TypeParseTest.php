@@ -426,7 +426,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testCallable()
+    public function testSimpleCallable()
     {
         $this->assertSame(
             'callable(int, string):void',
@@ -543,10 +543,12 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testCallableWithBadVariadic()
+    public function testCallableWithSpreadBefore()
     {
-        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
-        Type::parseString('callable(int, ...string) : void');
+        $this->assertSame(
+            'callable(int, string...):void',
+            (string)Type::parseString('callable(int, ...string):void')
+        );
     }
 
     /**

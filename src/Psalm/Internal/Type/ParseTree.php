@@ -243,7 +243,13 @@ class ParseTree
                     }
 
                     if (!$current_parent || !$current_leaf) {
-                        throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+                        if ($current_leaf instanceof ParseTree\CallableTree
+                            && $type_token[0] === '...'
+                        ) {
+                            $current_parent = $current_leaf;
+                        } else {
+                            throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+                        }
                     }
 
                     if ($current_parent instanceof ParseTree\CallableParamTree) {
@@ -253,12 +259,16 @@ class ParseTree
                     $new_leaf = new ParseTree\CallableParamTree($current_parent);
                     $new_leaf->has_default = $type_token[0] === '=';
                     $new_leaf->variadic = $type_token[0] === '...';
-                    $new_leaf->children = [$current_leaf];
 
-                    $current_leaf->parent = $new_leaf;
+                    if ($current_parent !== $current_leaf) {
+                        $new_leaf->children = [$current_leaf];
+                        $current_leaf->parent = $new_leaf;
 
-                    array_pop($current_parent->children);
-                    $current_parent->children[] = $new_leaf;
+                        array_pop($current_parent->children);
+                        $current_parent->children[] = $new_leaf;
+                    } else {
+                        $current_parent->children[] = $new_leaf;
+                    }
 
                     $current_leaf = $new_leaf;
 

@@ -805,7 +805,13 @@ abstract class Type
                 continue;
             }
 
-            if ($was_space && ($char === '$' || $char === '.')) {
+            if ($was_space
+                && ($char === '$'
+                    || ($char === '.'
+                        && ($chars[$i + 1] ?? null) === '.'
+                        && ($chars[$i + 2] ?? null) === '.'
+                        && ($chars[$i + 3] ?? null) === '$'))
+            ) {
                 $type_tokens[++$rtc] = [' ', $i - 1];
                 $type_tokens[++$rtc] = ['', $i];
             } elseif ($was_char) {
