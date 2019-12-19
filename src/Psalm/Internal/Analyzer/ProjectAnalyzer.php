@@ -283,6 +283,7 @@ class ProjectAnalyzer
             'checkstyle.xml' => Report::TYPE_CHECKSTYLE,
             'sonarqube.json' => Report::TYPE_SONARQUBE,
             'summary.json' => Report::TYPE_JSON_SUMMARY,
+            'junit.xml' => Report::TYPE_JUNIT,
             '.xml' => Report::TYPE_XML,
             '.json' => Report::TYPE_JSON,
             '.txt' => Report::TYPE_TEXT,

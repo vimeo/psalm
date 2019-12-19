@@ -333,7 +333,8 @@ Output:
         Enable monochrome output
 
     --output-format=console
-        Changes the output format. Available formats: compact, console, emacs, json, pylint, xml, checkstyle, sonarqube
+        Changes the output format.
+        Available formats: compact, console, emacs, json, pylint, xml, checkstyle, junit, sonarqube
 
     --no-progress
         Disable the progress indicator

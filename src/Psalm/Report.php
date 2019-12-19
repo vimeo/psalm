@@ -13,6 +13,7 @@ abstract class Report
     const TYPE_SONARQUBE = 'sonarqube';
     const TYPE_EMACS = 'emacs';
     const TYPE_XML = 'xml';
+    const TYPE_JUNIT = 'junit';
     const TYPE_CHECKSTYLE = 'checkstyle';
     const TYPE_TEXT = 'text';
 
@@ -25,6 +26,7 @@ abstract class Report
         self::TYPE_SONARQUBE,
         self::TYPE_EMACS,
         self::TYPE_XML,
+        self::TYPE_JUNIT,
         self::TYPE_CHECKSTYLE,
         self::TYPE_TEXT,
     ];

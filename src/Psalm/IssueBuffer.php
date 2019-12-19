@@ -20,6 +20,7 @@ use Psalm\Report\ConsoleReport;
 use Psalm\Report\EmacsReport;
 use Psalm\Report\JsonReport;
 use Psalm\Report\JsonSummaryReport;
+use Psalm\Report\JunitReport;
 use Psalm\Report\PylintReport;
 use Psalm\Report\SonarqubeReport;
 use Psalm\Report\TextReport;
@@ -627,6 +628,10 @@ class IssueBuffer
 
             case Report::TYPE_XML:
                 $output = new XmlReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
+                break;
+
+            case Report::TYPE_JUNIT:
+                $output = new JUnitReport(self::$issues_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_CONSOLE:
