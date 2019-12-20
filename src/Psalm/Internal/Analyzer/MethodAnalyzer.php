@@ -593,7 +593,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 : TypeAnalyzer::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
             if (!$is_contained_by) {
-                if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait) {
+                if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+                    || (!$implementer_method_storage->abstract
+                        && !$guide_classlike_storage->abstract)
+                ) {
                     if (IssueBuffer::accepts(
                         new MethodSignatureMismatch(
                             'Method ' . $cased_implementer_method_id . ' with return type \''
@@ -948,7 +951,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         $implementer_param_signature_type
                     );
                 if (!$is_contained_by) {
-                    if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait) {
+                    if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+                        || (!$implementer_method_storage->abstract
+                            && !$guide_classlike_storage->abstract)
+                    ) {
                         if (IssueBuffer::accepts(
                             new MethodSignatureMismatch(
                                 'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
