@@ -595,7 +595,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             if (!$is_contained_by) {
                 if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                     || (!$implementer_method_storage->abstract
-                        && !$guide_classlike_storage->abstract)
+                        && !$guide_method_storage->abstract)
                 ) {
                     if (IssueBuffer::accepts(
                         new MethodSignatureMismatch(
@@ -681,67 +681,35 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             }
 
             if ($implementer_called_class_storage !== $implementer_classlike_storage
-                && isset($implementer_called_class_storage->template_type_extends[$implementer_class_name])
+                && $implementer_called_class_storage->template_type_extends
             ) {
-                $map = $implementer_called_class_storage->template_type_extends[$implementer_class_name];
+                self::transformTemplates(
+                    $implementer_called_class_storage->template_type_extends,
+                    $implementer_class_name,
+                    $implementer_method_storage_return_type,
+                    $codebase
+                );
 
-                $template_types = [];
-
-                foreach ($map as $key => $type) {
-                    if (is_string($key)) {
-                        $template_types[$key][$implementer_class_name] = [$type];
-                    }
-                }
-
-                $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
-
-                $implementer_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_result->template_types,
+                self::transformTemplates(
+                    $implementer_called_class_storage->template_type_extends,
+                    $guide_class_name,
+                    $guide_method_storage_return_type,
                     $codebase
                 );
             }
 
-            if ($implementer_called_class_storage !== $implementer_classlike_storage
-                && isset($implementer_called_class_storage->template_type_extends[$guide_class_name])
-            ) {
-                $map = $implementer_called_class_storage->template_type_extends[$guide_class_name];
-
-                $template_types = [];
-
-                foreach ($map as $key => $type) {
-                    if (is_string($key)) {
-                        $template_types[$key][$guide_class_name] = [$type];
-                    }
-                }
-
-                $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
-
-                $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_result->template_types,
-                    $codebase
-                );
-            }
-
-            if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name])) {
-                $map = $implementer_classlike_storage->template_type_extends[$guide_class_name];
-
-                $template_types = [];
-
-                foreach ($map as $key => $type) {
-                    if (is_string($key)) {
-                        $template_types[$key][$guide_class_name] = [$type];
-                    }
-                }
-
-                $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
-
-                $implementer_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_result->template_types,
+            if ($implementer_classlike_storage->template_type_extends) {
+                self::transformTemplates(
+                    $implementer_classlike_storage->template_type_extends,
+                    $guide_class_name,
+                    $implementer_method_storage_return_type,
                     $codebase
                 );
 
-                $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_result->template_types,
+                self::transformTemplates(
+                    $implementer_classlike_storage->template_type_extends,
+                    $guide_class_name,
+                    $guide_method_storage_return_type,
                     $codebase
                 );
             }
@@ -808,11 +776,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                 . 'return type for ' . $implementer_declaring_method_id . ' \''
                                 . $implementer_method_storage_return_type->getId() . '\'',
                             $implementer_method_storage->return_type_location
-                                && $config->isInProjectDirs(
-                                    $implementer_method_storage->return_type_location->file_path
-                                )
-                                ? $implementer_method_storage->return_type_location
-                                : $code_location
+                                ?: $code_location
                         ),
                         $suppressed_issues
                     )) {
@@ -826,11 +790,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                 . 'return type for ' . $implementer_declaring_method_id . ' \''
                                 . $implementer_method_storage_return_type->getId() . '\'',
                             $implementer_method_storage->return_type_location
-                                && $config->isInProjectDirs(
-                                    $implementer_method_storage->return_type_location->file_path
-                                )
-                                ? $implementer_method_storage->return_type_location
-                                : $code_location
+                                ?: $code_location
                         ),
                         $suppressed_issues
                     )) {
@@ -953,7 +913,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 if (!$is_contained_by) {
                     if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                         || (!$implementer_method_storage->abstract
-                            && !$guide_classlike_storage->abstract)
+                            && !$guide_method_storage->abstract)
                     ) {
                         if (IssueBuffer::accepts(
                             new MethodSignatureMismatch(
@@ -1027,62 +987,21 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 }
 
                 if ($implementer_called_class_storage !== $implementer_classlike_storage
-                    && isset($implementer_called_class_storage->template_type_extends[$implementer_class_name])
+                    && $implementer_called_class_storage->template_type_extends
                 ) {
-                    $map = $implementer_called_class_storage->template_type_extends[$implementer_class_name];
-
-                    $template_types = [];
-
-                    foreach ($map as $key => $type) {
-                        if (is_string($key)) {
-                            $template_types[$key][$implementer_class_name] = [$type];
-                        }
-                    }
-
-                    $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
-
-                    $implementer_method_storage_param_type->replaceTemplateTypesWithArgTypes(
-                        $template_result->template_types,
+                    self::transformTemplates(
+                        $implementer_called_class_storage->template_type_extends,
+                        $implementer_class_name,
+                        $implementer_method_storage_param_type,
                         $codebase
                     );
                 }
 
-                if ($implementer_called_class_storage !== $implementer_classlike_storage
-                    && isset($implementer_called_class_storage->template_type_extends[$guide_class_name])
-                ) {
-                    $map = $implementer_called_class_storage->template_type_extends[$guide_class_name];
-
-                    $template_types = [];
-
-                    foreach ($map as $key => $type) {
-                        if (is_string($key)) {
-                            $template_types[$key][$guide_class_name] = [$type];
-                        }
-                    }
-
-                    $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
-
-                    $guide_method_storage_param_type->replaceTemplateTypesWithArgTypes(
-                        $template_result->template_types,
-                        $codebase
-                    );
-                }
-
-                if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name])) {
-                    $map = $implementer_classlike_storage->template_type_extends[$guide_class_name];
-
-                    $template_types = [];
-
-                    foreach ($map as $key => $type) {
-                        if (is_string($key)) {
-                            $template_types[$key][$guide_class_name] = [$type, 0];
-                        }
-                    }
-
-                    $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
-
-                    $guide_method_storage_param_type->replaceTemplateTypesWithArgTypes(
-                        $template_result->template_types,
+                if ($implementer_called_class_storage->template_type_extends) {
+                    self::transformTemplates(
+                        $implementer_called_class_storage->template_type_extends,
+                        $guide_class_name,
+                        $guide_method_storage_param_type,
                         $codebase
                     );
                 }
@@ -1108,11 +1027,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                         $guide_method_storage_param_type->getId() . '\' as defined by ' .
                                         $cased_guide_method_id,
                                     $implementer_method_storage->params[$i]->location
-                                        && $config->isInProjectDirs(
-                                            $implementer_method_storage->params[$i]->location->file_path
-                                        )
-                                        ? $implementer_method_storage->params[$i]->location
-                                        : $code_location
+                                        ?: $code_location
                                 ),
                                 $suppressed_issues
                             )) {
@@ -1135,11 +1050,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                         $guide_method_storage_param_type->getId() . '\' as defined by ' .
                                         $cased_guide_method_id,
                                     $implementer_method_storage->params[$i]->location
-                                        && $config->isInProjectDirs(
-                                            $implementer_method_storage->params[$i]->location->file_path
-                                        )
-                                        ? $implementer_method_storage->params[$i]->location
-                                        : $code_location
+                                        ?: $code_location
                                 ),
                                 $suppressed_issues
                             )) {
@@ -1154,11 +1065,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                         $guide_method_storage_param_type->getId() . '\' as defined by ' .
                                         $cased_guide_method_id,
                                     $implementer_method_storage->params[$i]->location
-                                        && $config->isInProjectDirs(
-                                            $implementer_method_storage->params[$i]->location->file_path
-                                        )
-                                        ? $implementer_method_storage->params[$i]->location
-                                        : $code_location
+                                        ?: $code_location
                                 ),
                                 $suppressed_issues
                             )) {
@@ -1176,7 +1083,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                             ($implementer_param->by_ref ? '' : ' not') . ' passed by reference, but argument ' .
                             ($i + 1) . ' of ' . $cased_guide_method_id . ' is' . ($guide_param->by_ref ? '' : ' not'),
                         $implementer_method_storage->params[$i]->location
-                            ?: $code_location
+                            && $config->isInProjectDirs(
+                                $implementer_method_storage->params[$i]->location->file_path
+                            )
+                            ? $implementer_method_storage->params[$i]->location
+                            : $code_location
                     )
                 )) {
                     return false;
@@ -1201,6 +1112,58 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             }
 
             return null;
+        }
+    }
+
+    /**
+     * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
+     */
+    private static function transformTemplates(
+        array $template_type_extends,
+        string $base_class_name,
+        Type\Union $templated_type,
+        Codebase $codebase
+    ) : void {
+        if (isset($template_type_extends[$base_class_name])) {
+            $map = $template_type_extends[$base_class_name];
+
+            $template_types = [];
+
+            foreach ($map as $key => $mapped_type) {
+                if (is_string($key)) {
+                    $new_bases = [];
+
+                    foreach ($mapped_type->getTypes() as $mapped_atomic_type) {
+                        if ($mapped_atomic_type instanceof Type\Atomic\TTemplateParam
+                            && $mapped_atomic_type->defining_class
+                        ) {
+                            $new_bases[] = $mapped_atomic_type->defining_class;
+                        }
+                    }
+
+                    if ($new_bases) {
+                        $mapped_type = clone $mapped_type;
+
+                        foreach ($new_bases as $new_base_class_name) {
+                            self::transformTemplates(
+                                $template_type_extends,
+                                $new_base_class_name,
+                                $mapped_type,
+                                $codebase
+                            );
+                        }
+                    }
+
+                    $template_types[$key][$base_class_name] = [$mapped_type];
+                }
+            }
+
+            $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+
+            $templated_type->replaceTemplateTypesWithArgTypes(
+                $template_result->template_types,
+                $codebase
+            );
         }
     }
 
