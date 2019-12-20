@@ -998,7 +998,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_method_storage,
                         $this->fq_class_name,
                         $pseudo_method_storage->visibility ?: 0,
-                        $pseudo_method_storage->location,
+                        $storage->location ?: $pseudo_method_storage->location,
                         $storage->suppressed_issues,
                         true,
                         false

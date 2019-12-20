@@ -656,7 +656,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /** @method D foo(string $s) */
                     class B extends A {}',
-                'error_message' => 'ImplementedReturnTypeMismatch - src/somefile.php:11:33',
+                'error_message' => 'ImplementedReturnTypeMismatch - src/somefile.php:12:27',
             ],
             'magicMethodOverridesParentWithDifferentParamType' => [
                 '<?php
@@ -671,7 +671,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /** @method D foo(int $s) */
                     class B extends A {}',
-                'error_message' => 'ImplementedParamTypeMismatch - src/somefile.php:11:21',
+                'error_message' => 'ImplementedParamTypeMismatch - src/somefile.php:12:27',
             ],
             'parseBadMethodAnnotation' => [
                 '<?php
