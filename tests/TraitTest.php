@@ -885,6 +885,41 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
+            'classAliasedTrait' => [
+                '<?php
+                    trait FeatureV1 {}
+
+                    class_alias(FeatureV1::class, Feature::class);
+
+                    class Application {
+                        use Feature;
+                    }',
+            ],
+            'inheritBad' => [
+                '<?php
+                    interface FooBarInterface
+                    {
+                        /**
+                         * @param string $parameter
+                         */
+                        public function foo($parameter): void;
+                    }
+
+                    trait FooBarTrait
+                    {
+                        /**
+                         * @param string $parameter
+                         */
+                        public function foo(string $parameter): void
+                        {
+                        }
+                    }
+
+                    class FooBar implements FooBarInterface
+                    {
+                        use FooBarTrait;
+                    }'
+            ],
         ];
     }
 

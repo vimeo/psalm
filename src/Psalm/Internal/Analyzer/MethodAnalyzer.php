@@ -519,6 +519,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $prevent_abstract_override = true,
         $prevent_method_signature_mismatch = true
     ) {
+        $config = $codebase->config;
+
         $implementer_method_id = $implementer_classlike_storage->name . '::'
             . strtolower($guide_method_storage->cased_name ?: '');
 
@@ -803,7 +805,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                 . 'return type for ' . $implementer_declaring_method_id . ' \''
                                 . $implementer_method_storage_return_type->getId() . '\'',
                             $implementer_method_storage->return_type_location
-                                ?: $code_location
+                                && $config->isInProjectDirs(
+                                    $implementer_method_storage->return_type_location->file_path
+                                )
+                                ? $implementer_method_storage->return_type_location
+                                : $code_location
                         ),
                         $suppressed_issues
                     )) {
@@ -817,7 +823,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                 . 'return type for ' . $implementer_declaring_method_id . ' \''
                                 . $implementer_method_storage_return_type->getId() . '\'',
                             $implementer_method_storage->return_type_location
-                                ?: $code_location
+                                && $config->isInProjectDirs(
+                                    $implementer_method_storage->return_type_location->file_path
+                                )
+                                ? $implementer_method_storage->return_type_location
+                                : $code_location
                         ),
                         $suppressed_issues
                     )) {
@@ -888,7 +898,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                     $guide_param_signature_type . '\' as defined by ' .
                                     $cased_guide_method_id,
                                 $implementer_method_storage->params[$i]->location
-                                    ?: $code_location
+                                    && $config->isInProjectDirs(
+                                        $implementer_method_storage->params[$i]->location->file_path
+                                    )
+                                    ? $implementer_method_storage->params[$i]->location
+                                    : $code_location
                             )
                         )) {
                             return false;
@@ -942,7 +956,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                     $guide_param_signature_type . '\' as defined by ' .
                                     $cased_guide_method_id,
                                 $implementer_method_storage->params[$i]->location
-                                    ?: $code_location
+                                    && $config->isInProjectDirs(
+                                        $implementer_method_storage->params[$i]->location->file_path
+                                    )
+                                    ? $implementer_method_storage->params[$i]->location
+                                    : $code_location
                             )
                         )) {
                             return false;
@@ -955,7 +973,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                     $guide_param_signature_type . '\' as defined by ' .
                                     $cased_guide_method_id,
                                 $implementer_method_storage->params[$i]->location
-                                    ?: $code_location
+                                    && $config->isInProjectDirs(
+                                        $implementer_method_storage->params[$i]->location->file_path
+                                    )
+                                    ? $implementer_method_storage->params[$i]->location
+                                    : $code_location
                             ),
                             $suppressed_issues
                         )) {
@@ -1080,7 +1102,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                         $guide_method_storage_param_type->getId() . '\' as defined by ' .
                                         $cased_guide_method_id,
                                     $implementer_method_storage->params[$i]->location
-                                        ?: $code_location
+                                        && $config->isInProjectDirs(
+                                            $implementer_method_storage->params[$i]->location->file_path
+                                        )
+                                        ? $implementer_method_storage->params[$i]->location
+                                        : $code_location
                                 ),
                                 $suppressed_issues
                             )) {
@@ -1103,7 +1129,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                         $guide_method_storage_param_type->getId() . '\' as defined by ' .
                                         $cased_guide_method_id,
                                     $implementer_method_storage->params[$i]->location
-                                        ?: $code_location
+                                        && $config->isInProjectDirs(
+                                            $implementer_method_storage->params[$i]->location->file_path
+                                        )
+                                        ? $implementer_method_storage->params[$i]->location
+                                        : $code_location
                                 ),
                                 $suppressed_issues
                             )) {
@@ -1118,7 +1148,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                                         $guide_method_storage_param_type->getId() . '\' as defined by ' .
                                         $cased_guide_method_id,
                                     $implementer_method_storage->params[$i]->location
-                                        ?: $code_location
+                                        && $config->isInProjectDirs(
+                                            $implementer_method_storage->params[$i]->location->file_path
+                                        )
+                                        ? $implementer_method_storage->params[$i]->location
+                                        : $code_location
                                 ),
                                 $suppressed_issues
                             )) {
