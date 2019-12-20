@@ -404,11 +404,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 if (isset($comments['specials']['template-use'])
                     || isset($comments['specials']['use'])
+                    || isset($comments['specials']['phpstan-use'])
+                    || isset($comments['specials']['psalm-use'])
                 ) {
-                    $all_inheritance = array_merge(
-                        $comments['specials']['template-use'] ?? [],
-                        $comments['specials']['use'] ?? []
-                    );
+                    $all_inheritance = ($comments['specials']['template-use'] ?? [])
+                        + ($comments['specials']['use'] ?? [])
+                        + ($comments['specials']['phpstan-use'] ?? [])
+                        + ($comments['specials']['psalm-use'] ?? []);
 
                     foreach ($all_inheritance as $template_line) {
                         $this->useTemplatedType(

@@ -98,8 +98,9 @@ class CommentAnalyzer
         $var_line_number = $comment->getLine();
 
         if ($parsed_docblock) {
-            $all_vars = (isset($parsed_docblock['specials']['var']) ? $parsed_docblock['specials']['var'] : [])
-                + (isset($parsed_docblock['specials']['psalm-var']) ? $parsed_docblock['specials']['psalm-var'] : []);
+            $all_vars = ($parsed_docblock['specials']['var'] ?? [])
+                + ($parsed_docblock['specials']['phpstan-var'] ?? [])
+                + ($parsed_docblock['specials']['psalm-var'] ?? []);
 
             foreach ($all_vars as $offset => $var_line) {
                 $var_line = trim($var_line);
@@ -337,10 +338,17 @@ class CommentAnalyzer
 
         $info = new FunctionDocblockComment();
 
-        if (isset($parsed_docblock['specials']['return']) || isset($parsed_docblock['specials']['psalm-return'])) {
-            $return_specials = isset($parsed_docblock['specials']['psalm-return'])
-                ? $parsed_docblock['specials']['psalm-return']
-                : $parsed_docblock['specials']['return'];
+        if (isset($parsed_docblock['specials']['return'])
+            || isset($parsed_docblock['specials']['psalm-return'])
+            || isset($parsed_docblock['specials']['phpstan-return'])
+        ) {
+            if (isset($parsed_docblock['specials']['psalm-return'])) {
+                $return_specials = $parsed_docblock['specials']['psalm-return'];
+            } elseif (isset($parsed_docblock['specials']['phpstan-return'])) {
+                $return_specials = $parsed_docblock['specials']['phpstan-return'];
+            } else {
+                $return_specials = $parsed_docblock['specials']['return'];
+            }
 
             self::extractReturnType(
                 $comment,
@@ -349,10 +357,16 @@ class CommentAnalyzer
             );
         }
 
-        if (isset($parsed_docblock['specials']['param']) || isset($parsed_docblock['specials']['psalm-param'])) {
+        if (isset($parsed_docblock['specials']['param'])
+            || isset($parsed_docblock['specials']['psalm-param'])
+            || isset($parsed_docblock['specials']['phpstan-param'])
+        ) {
             $all_params =
                 (isset($parsed_docblock['specials']['param'])
                     ? $parsed_docblock['specials']['param']
+                    : [])
+                + (isset($parsed_docblock['specials']['phpstan-param'])
+                    ? $parsed_docblock['specials']['phpstan-param']
                     : [])
                 + (isset($parsed_docblock['specials']['psalm-param'])
                     ? $parsed_docblock['specials']['psalm-param']
@@ -545,13 +559,19 @@ class CommentAnalyzer
             $info->inheritdoc = true;
         }
 
-        if (isset($parsed_docblock['specials']['template']) || isset($parsed_docblock['specials']['psalm-template'])) {
+        if (isset($parsed_docblock['specials']['template'])
+            || isset($parsed_docblock['specials']['psalm-template'])
+            || isset($parsed_docblock['specials']['phpstan-template'])
+        ) {
             $all_templates
                 = (isset($parsed_docblock['specials']['template'])
                     ? $parsed_docblock['specials']['template']
                     : [])
                 + (isset($parsed_docblock['specials']['psalm-template'])
                     ? $parsed_docblock['specials']['psalm-template']
+                    : [])
+                + (isset($parsed_docblock['specials']['phpstan-template'])
+                    ? $parsed_docblock['specials']['phpstan-template']
                     : []);
 
             foreach ($all_templates as $template_line) {
@@ -721,10 +741,15 @@ class CommentAnalyzer
 
         $info = new ClassLikeDocblockComment();
 
-        if (isset($parsed_docblock['specials']['template']) || isset($parsed_docblock['specials']['psalm-template'])) {
+        if (isset($parsed_docblock['specials']['template'])
+            || isset($parsed_docblock['specials']['psalm-template'])
+        ) {
             $all_templates
                 = (isset($parsed_docblock['specials']['template'])
                     ? $parsed_docblock['specials']['template']
+                    : [])
+                + (isset($parsed_docblock['specials']['phpstan-template'])
+                    ? $parsed_docblock['specials']['phpstan-template']
                     : [])
                 + (isset($parsed_docblock['specials']['psalm-template'])
                     ? $parsed_docblock['specials']['psalm-template']
@@ -758,10 +783,14 @@ class CommentAnalyzer
 
         if (isset($parsed_docblock['specials']['template-covariant'])
             || isset($parsed_docblock['specials']['psalm-template-covariant'])
+            || isset($parsed_docblock['specials']['phpstan-template-covariant'])
         ) {
             $all_templates =
                 (isset($parsed_docblock['specials']['template-covariant'])
                     ? $parsed_docblock['specials']['template-covariant']
+                    : [])
+                + (isset($parsed_docblock['specials']['phpstan-template-covariant'])
+                    ? $parsed_docblock['specials']['phpstan-template-covariant']
                     : [])
                 + (isset($parsed_docblock['specials']['psalm-template-covariant'])
                     ? $parsed_docblock['specials']['psalm-template-covariant']
@@ -796,12 +825,14 @@ class CommentAnalyzer
         if (isset($parsed_docblock['specials']['template-extends'])
             || isset($parsed_docblock['specials']['inherits'])
             || isset($parsed_docblock['specials']['extends'])
+            || isset($parsed_docblock['specials']['psalm-extends'])
+            || isset($parsed_docblock['specials']['phpstan-extends'])
         ) {
-            $all_inheritance = array_merge(
-                $parsed_docblock['specials']['template-extends'] ?? [],
-                $parsed_docblock['specials']['inherits'] ?? [],
-                $parsed_docblock['specials']['extends'] ?? []
-            );
+            $all_inheritance = ($parsed_docblock['specials']['template-extends'] ?? [])
+                + ($parsed_docblock['specials']['inherits'] ?? [])
+                + ($parsed_docblock['specials']['extends'] ?? [])
+                + ($parsed_docblock['specials']['psalm-extends'] ?? [])
+                + ($parsed_docblock['specials']['phpstan-extends'] ?? []);
 
             foreach ($all_inheritance as $template_line) {
                 $info->template_extends[] = trim(preg_replace('@^[ \t]*\*@m', '', $template_line));
@@ -810,11 +841,13 @@ class CommentAnalyzer
 
         if (isset($parsed_docblock['specials']['template-implements'])
             || isset($parsed_docblock['specials']['implements'])
+            || isset($parsed_docblock['specials']['phpstan-implements'])
+            || isset($parsed_docblock['specials']['psalm-implements'])
         ) {
-            $all_inheritance = array_merge(
-                $parsed_docblock['specials']['template-implements'] ?? [],
-                $parsed_docblock['specials']['implements'] ?? []
-            );
+            $all_inheritance = ($parsed_docblock['specials']['template-implements'] ?? [])
+                + ($parsed_docblock['specials']['implements'] ?? [])
+                + ($parsed_docblock['specials']['phpstan-implements'] ?? [])
+                + ($parsed_docblock['specials']['psalm-implements'] ?? []);
 
             foreach ($all_inheritance as $template_line) {
                 $info->template_implements[] = trim(preg_replace('@^[ \t]*\*@m', '', $template_line));
