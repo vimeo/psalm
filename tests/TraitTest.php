@@ -895,6 +895,31 @@ class TraitTest extends TestCase
                         use Feature;
                     }',
             ],
+            'renameMethodNoCrash' => [
+                '<?php
+
+                    trait HelloTrait {
+                        protected function sayHello() : string {
+                            return "Hello";
+                        }
+                    }
+
+                    class Person {
+                        use HelloTrait {
+                            sayHello as orginalSayHello;
+                        }
+
+                        protected function sayHello() : string {
+                            return $this->orginalSayHello();
+                        }
+                    }
+
+                    class BrokenPerson extends Person {
+                        protected function orginalSayHello() : string {
+                            return "bad";
+                        }
+                    }',
+            ],
         ];
     }
 

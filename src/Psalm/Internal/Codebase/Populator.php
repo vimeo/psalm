@@ -274,17 +274,14 @@ class Populator
                         = $declaring_class_storages[$declaring_class]
                         = $this->classlike_storage_provider->get($declaring_class);
 
-                    if (!isset($declaring_class_storage->overridden_method_ids[$method_name])) {
-                        throw new \UnexpectedValueException('Declaring storage should have ids');
-                    }
-
                     if ($candidate_overridden_ids === null) {
-                        $candidate_overridden_ids = $declaring_class_storage->overridden_method_ids[$method_name]
-                            + [$declaring_method_id => $declaring_method_id];
+                        $candidate_overridden_ids
+                            = ($declaring_class_storage->overridden_method_ids[$method_name] ?? [])
+                                + [$declaring_method_id => $declaring_method_id];
                     } else {
                         $candidate_overridden_ids = \array_intersect_key(
                             $candidate_overridden_ids,
-                            $declaring_class_storage->overridden_method_ids[$method_name]
+                            ($declaring_class_storage->overridden_method_ids[$method_name] ?? [])
                                 + [$declaring_method_id => $declaring_method_id]
                         );
                     }
