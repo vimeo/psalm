@@ -672,7 +672,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $all_intersection_return_type = Type::intersectUnionTypes(
                             $all_intersection_return_type,
                             $intersection_return_type
-                        );
+                        ) ?: Type::getMixed();
                     }
                 }
             }
@@ -782,7 +782,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $return_type_candidate = Type::intersectUnionTypes(
                                 $all_intersection_return_type,
                                 $return_type_candidate
-                            );
+                            ) ?: Type::getMixed();
                         }
 
                         if (!$return_type) {
@@ -913,7 +913,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $return_type_candidate = Type::intersectUnionTypes(
                             $all_intersection_return_type,
                             $return_type_candidate
-                        );
+                        ) ?: Type::getMixed();
                     }
 
                     if (!$return_type) {
@@ -1491,7 +1491,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $return_type_candidate = Type::intersectUnionTypes(
                     $all_intersection_return_type,
                     $return_type_candidate
-                );
+                ) ?: Type::getMixed();
             }
 
             if (!$return_type) {

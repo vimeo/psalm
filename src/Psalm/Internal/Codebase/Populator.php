@@ -805,9 +805,10 @@ class Populator
                         }
                     }
                 }
-                $storage->overridden_method_ids[$method_name][$interface_method_ids[0]] = $interface_method_ids[0];
-            } else {
-                $storage->interface_method_ids[$method_name] = $interface_method_ids;
+            }
+
+            foreach ($interface_method_ids as $interface_method_id) {
+                $storage->overridden_method_ids[$method_name][$interface_method_id] = $interface_method_id;
             }
         }
     }

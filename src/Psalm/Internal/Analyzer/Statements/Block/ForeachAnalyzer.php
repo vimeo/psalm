@@ -523,7 +523,7 @@ class ForeachAnalyzer
                         $intersection_value_type = Type::intersectUnionTypes(
                             $intersection_value_type,
                             $value_type_part
-                        );
+                        ) ?: Type::getMixed();
                     }
 
                     if (!$intersection_key_type) {
@@ -532,7 +532,7 @@ class ForeachAnalyzer
                         $intersection_key_type = Type::intersectUnionTypes(
                             $intersection_key_type,
                             $key_type_part
-                        );
+                        ) ?: Type::getMixed();
                     }
                 }
 

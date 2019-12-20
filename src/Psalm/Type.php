@@ -1547,12 +1547,14 @@ abstract class Type
      * @param  Union  $type_1
      * @param  Union  $type_2
      *
-     * @return Union
+     * @return ?Union
      */
     public static function intersectUnionTypes(
         Union $type_1,
         Union $type_2
     ) {
+        $intersection_performed = false;
+
         if ($type_1->isMixed() && $type_2->isMixed()) {
             $combined_type = Type::getMixed();
         } else {
@@ -1570,13 +1572,15 @@ abstract class Type
 
             if ($type_1->isMixed() && !$type_2->isMixed()) {
                 $combined_type = clone $type_2;
+                $intersection_performed = true;
             } elseif (!$type_1->isMixed() && $type_2->isMixed()) {
                 $combined_type = clone $type_1;
+                $intersection_performed = true;
             } else {
                 $combined_type = clone $type_1;
 
                 foreach ($combined_type->getTypes() as $t1_key => $type_1_atomic) {
-                    foreach ($type_2->getTypes() as $type_2_atomic) {
+                    foreach ($type_2->getTypes() as $t2_key => $type_2_atomic) {
                         if (($type_1_atomic instanceof TIterable
                                 || $type_1_atomic instanceof TNamedObject
                                 || $type_1_atomic instanceof TTemplateParam
@@ -1589,6 +1593,8 @@ abstract class Type
                             if (!$type_1_atomic->extra_types) {
                                 $type_1_atomic->extra_types = [];
                             }
+
+                            $intersection_performed = true;
 
                             $type_2_atomic_clone = clone $type_2_atomic;
 
@@ -1609,6 +1615,11 @@ abstract class Type
                         if ($type_1_atomic instanceof TObject && $type_2_atomic instanceof TNamedObject) {
                             $combined_type->removeType($t1_key);
                             $combined_type->addType(clone $type_2_atomic);
+                            $intersection_performed = true;
+                        } elseif ($type_2_atomic instanceof TObject && $type_1_atomic instanceof TNamedObject) {
+                            $combined_type->removeType($t2_key);
+                            $combined_type->addType(clone $type_1_atomic);
+                            $intersection_performed = true;
                         }
                     }
                 }
@@ -1641,6 +1652,10 @@ abstract class Type
             if ($both_failed_reconciliation) {
                 $combined_type->failed_reconciliation = true;
             }
+        }
+
+        if (!$intersection_performed && $type_1->getId() !== $type_2->getId()) {
+            return null;
         }
 
         if ($type_1->possibly_undefined && $type_2->possibly_undefined) {

@@ -1724,6 +1724,9 @@ class ClassTemplateExtendsTest extends TestCase
                         public function getIterator(): \Iterator;
                     }
 
+                    /**
+                     * @template-implements Collection<string>
+                     */
                     abstract class Set implements Collection {
                         public function forEach(callable $action): void {
                             $i = $this->getIterator();
