@@ -895,31 +895,6 @@ class TraitTest extends TestCase
                         use Feature;
                     }',
             ],
-            'inheritBad' => [
-                '<?php
-                    interface FooBarInterface
-                    {
-                        /**
-                         * @param string $parameter
-                         */
-                        public function foo($parameter): void;
-                    }
-
-                    trait FooBarTrait
-                    {
-                        /**
-                         * @param string $parameter
-                         */
-                        public function foo(string $parameter): void
-                        {
-                        }
-                    }
-
-                    class FooBar implements FooBarInterface
-                    {
-                        use FooBarTrait;
-                    }'
-            ],
         ];
     }
 
