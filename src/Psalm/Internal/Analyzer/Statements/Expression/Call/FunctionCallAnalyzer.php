@@ -42,6 +42,7 @@ use function array_map;
 use function extension_loaded;
 use function strpos;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Storage\FunctionLikeParameter;
 
 /**
  * @internal
@@ -368,20 +369,24 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                 if ($function_params === null) {
                     if (!$in_call_map || $is_stubbed) {
-                        $function_storage = $codebase_functions->getStorage(
-                            $statements_analyzer,
-                            strtolower($function_id)
-                        );
+                        try {
+                            $function_storage = $codebase_functions->getStorage(
+                                $statements_analyzer,
+                                strtolower($function_id)
+                            );
 
-                        $function_params = $function_storage->params;
+                            $function_params = $function_storage->params;
 
-                        if (!$is_predefined) {
-                            $defined_constants = $function_storage->defined_constants;
-                            $global_variables = $function_storage->global_variables;
+                            if (!$is_predefined) {
+                                $defined_constants = $function_storage->defined_constants;
+                                $global_variables = $function_storage->global_variables;
+                            }
+                        } catch (\UnexpectedValueException $e) {
+                            $function_params = [
+                                new FunctionLikeParameter('args', false, null, null, null, false, false, true)
+                            ];
                         }
-                    }
-
-                    if ($in_call_map && !$is_stubbed) {
+                    } else {
                         $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
                             $codebase,
                             $function_id,
