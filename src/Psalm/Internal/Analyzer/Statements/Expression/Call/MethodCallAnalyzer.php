@@ -1676,7 +1676,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if (!isset($class_template_params[$type_name])) {
-                    $class_template_params[$type_name][$class_storage->name] = [Type::getMixed()];
+                    $class_template_params[$type_name] = [
+                        $class_storage->name => [Type::getMixed()]
+                    ];
                 }
 
                 $i++;

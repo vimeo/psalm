@@ -88,6 +88,10 @@ class NegatedAssertionReconciler extends Reconciler
 
         if (!$is_equality) {
             if ($assertion === 'isset') {
+                if ($existing_var_type->possibly_undefined) {
+                    return Type::getEmpty();
+                }
+
                 return Type::getNull();
             } elseif ($assertion === 'array-key-exists') {
                 return Type::getEmpty();

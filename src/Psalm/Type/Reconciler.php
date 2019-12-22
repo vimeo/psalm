@@ -221,6 +221,8 @@ class Reconciler
                 }
             }
 
+            $did_type_exist = isset($existing_types[$key]);
+
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
                 : self::getValueForKey(
@@ -228,7 +230,7 @@ class Reconciler
                     $key,
                     $existing_types,
                     $code_location,
-                    $has_isset,
+                    $has_isset || $has_inverted_isset,
                     $has_empty
                 );
 
@@ -278,6 +280,10 @@ class Reconciler
 
             if (!$result_type) {
                 throw new \UnexpectedValueException('$result_type should not be null');
+            }
+
+            if (!$did_type_exist && $result_type->isEmpty()) {
+                continue;
             }
 
             $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);

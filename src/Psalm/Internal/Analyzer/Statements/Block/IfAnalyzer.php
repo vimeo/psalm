@@ -301,7 +301,10 @@ class IfAnalyzer
 
         // we calculate the vars redefined in a hypothetical else statement to determine
         // which vars of the if we can safely change
-        $pre_assignment_else_redefined_vars = $temp_else_context->getRedefinedVars($context->vars_in_scope, true);
+        $pre_assignment_else_redefined_vars = array_intersect_key(
+            $temp_else_context->getRedefinedVars($context->vars_in_scope, true),
+            $changed_var_ids
+        );
 
         // this captures statements in the if conditional
         if ($context->collect_references) {
