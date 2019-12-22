@@ -702,9 +702,21 @@ class IssetTest extends \Psalm\Tests\TestCase
                         }
 
                         if (\is_array($options["b"])) {}
-                    }
+                    }'
+            ],
+            'issetOnThing' => [
+                '<?php
+                    function foo() : void {
+                        $p = [false, false];
+                        $i = rand(0, 1);
+                        if (rand(0, 1) && isset($p[$i])) {
+                            $p[$i] = true;
+                        }
 
-                '
+                        foreach ($p as $q) {
+                            if ($q) {}
+                        }
+                    }',
             ],
         ];
     }

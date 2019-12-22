@@ -214,6 +214,8 @@ class AssignmentAnalyzer
 
         if ($array_var_id) {
             unset($context->referenced_var_ids[$array_var_id]);
+            $context->assigned_var_ids[$array_var_id] = true;
+            $context->possibly_assigned_var_ids[$array_var_id] = true;
         }
 
         if ($assign_value) {
@@ -401,8 +403,6 @@ class AssignmentAnalyzer
         if ($assign_var instanceof PhpParser\Node\Expr\Variable && is_string($assign_var->name) && $var_id) {
             $context->vars_in_scope[$var_id] = $assign_value_type;
             $context->vars_possibly_in_scope[$var_id] = true;
-            $context->assigned_var_ids[$var_id] = true;
-            $context->possibly_assigned_var_ids[$var_id] = true;
 
             $location = new CodeLocation($statements_analyzer, $assign_var);
 
@@ -874,15 +874,18 @@ class AssignmentAnalyzer
             }
         }
 
-        if ($array_var_id && $context->collect_references && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
-            $location = new CodeLocation($statements_analyzer, $stmt->var);
+        if ($array_var_id) {
             $context->assigned_var_ids[$array_var_id] = true;
             $context->possibly_assigned_var_ids[$array_var_id] = true;
-            $statements_analyzer->registerVariableAssignment(
-                $array_var_id,
-                $location
-            );
-            $context->unreferenced_vars[$array_var_id] = [$location->getHash() => $location];
+
+            if ($context->collect_references && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
+                $location = new CodeLocation($statements_analyzer, $stmt->var);
+                $statements_analyzer->registerVariableAssignment(
+                    $array_var_id,
+                    $location
+                );
+                $context->unreferenced_vars[$array_var_id] = [$location->getHash() => $location];
+            }
         }
 
         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
