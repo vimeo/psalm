@@ -291,7 +291,6 @@ class ArrayAssignmentAnalyzer
                 }
 
                 $context->vars_in_scope[$rooted_parent_id] = $array_type;
-                $context->assigned_var_ids[$rooted_parent_id] = true;
                 $context->possibly_assigned_var_ids[$rooted_parent_id] = true;
             }
 
@@ -342,8 +341,6 @@ class ArrayAssignmentAnalyzer
             }
 
             $context->vars_in_scope[$array_var_id] = clone $assignment_type;
-
-            $context->assigned_var_ids[$array_var_id] = true;
             $context->possibly_assigned_var_ids[$array_var_id] = true;
         }
 
@@ -457,7 +454,6 @@ class ArrayAssignmentAnalyzer
             if ($root_var_id) {
                 $array_var_id = $root_var_id . implode('', $var_id_additions);
                 $context->vars_in_scope[$array_var_id] = clone $child_stmt_type;
-                $context->assigned_var_ids[$array_var_id] = true;
                 $context->possibly_assigned_var_ids[$array_var_id] = true;
             }
         }
