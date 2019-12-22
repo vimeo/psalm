@@ -146,6 +146,16 @@ class NegatedAssertionReconciler extends Reconciler
             );
         }
 
+        if ($assertion === 'string' && !$existing_var_type->hasMixed() && !$is_equality) {
+            return self::reconcileString(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation
+            );
+        }
+
         if ($assertion === 'falsy' || $assertion === 'empty') {
             return self::reconcileFalsyOrEmpty(
                 $assertion,
@@ -928,7 +938,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $old_var_type_string,
                     $key,
                     '!numeric',
-                    $did_remove_type,
+                    !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -941,6 +951,64 @@ class NegatedAssertionReconciler extends Reconciler
 
         if ($non_numeric_types) {
             return new Type\Union($non_numeric_types);
+        }
+
+        $failed_reconciliation = 2;
+
+        return Type::getMixed();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileString(
+        Type\Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation
+    ) : Type\Union {
+        $old_var_type_string = $existing_var_type->getId();
+        $non_string_types = [];
+        $did_remove_type = $existing_var_type->hasScalar();
+
+        foreach ($existing_var_type->getTypes() as $type) {
+            if ($type instanceof TTemplateParam) {
+                if (!$type->as->hasString()) {
+                    if ($type->as->hasMixed()) {
+                        $did_remove_type = true;
+                    }
+
+                    $non_string_types[] = $type;
+                }
+            } elseif (!$type instanceof TString) {
+                $non_string_types[] = $type;
+            } else {
+                $did_remove_type = true;
+            }
+        }
+
+        if ((!$non_string_types || !$did_remove_type)) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    '!string',
+                    !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+
+            if (!$did_remove_type) {
+                $failed_reconciliation = 1;
+            }
+        }
+
+        if ($non_string_types) {
+            return new Type\Union($non_string_types);
         }
 
         $failed_reconciliation = 2;
