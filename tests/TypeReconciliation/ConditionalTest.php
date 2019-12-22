@@ -1132,10 +1132,8 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                             return new \ReflectionMethod($callable[0], $callable[1]);
                         } elseif ($callable instanceof \Closure || \is_string($callable)) {
                             return new \ReflectionFunction($callable);
-                        } elseif (\is_object($callable)) {
-                            return new \ReflectionMethod($callable, "__invoke");
                         } else {
-                            throw new \InvalidArgumentException("Bad");
+                            return new \ReflectionMethod($callable, "__invoke");
                         }
                     }',
             ],
