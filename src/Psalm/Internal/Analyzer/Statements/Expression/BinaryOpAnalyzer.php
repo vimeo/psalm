@@ -1019,7 +1019,7 @@ class BinaryOpAnalyzer
             if ($left_type->isFalse()) {
                 if ($statements_source && IssueBuffer::accepts(
                     new FalseOperand(
-                        'Left operand cannot be null',
+                        'Left operand cannot be false',
                         new CodeLocation($statements_source, $left)
                     ),
                     $statements_source->getSuppressedIssues()
