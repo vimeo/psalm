@@ -122,6 +122,15 @@ class TypeCombination
     /** @var ?bool */
     private $all_arrays_lists;
 
+    /** @var ?bool */
+    private $all_arrays_class_string_maps;
+
+    /** @var array<string, bool> */
+    private $class_string_map_names = [];
+
+    /** @var array<string, ?TNamedObject> */
+    private $class_string_map_as_types = [];
+
     /**
      * Combines types together
      *  - so `int + string = int|string`
@@ -437,7 +446,16 @@ class TypeCombination
                     }
                 }
             } else {
-                if ($combination->all_arrays_lists) {
+                if ($combination->all_arrays_class_string_maps
+                    && count($combination->class_string_map_as_types) === 1
+                    && count($combination->class_string_map_names) === 1
+                ) {
+                    $array_type = new Type\Atomic\TClassStringMap(
+                        array_keys($combination->class_string_map_names)[0],
+                        array_values($combination->class_string_map_as_types)[0],
+                        $generic_type_params[1]
+                    );
+                } elseif ($combination->all_arrays_lists) {
                     $array_type = new TList($generic_type_params[1]);
                 } else {
                     $array_type = new TArray($generic_type_params);
@@ -725,6 +743,7 @@ class TypeCombination
 
             if (!$type->type_params[1]->isEmpty()) {
                 $combination->all_arrays_lists = false;
+                $combination->all_arrays_class_string_maps = false;
             }
         } elseif ($type instanceof TList) {
             foreach ([Type::getInt(), $type->type_param] as $i => $type_param) {
@@ -756,6 +775,29 @@ class TypeCombination
 
             if ($combination->all_arrays_lists !== false) {
                 $combination->all_arrays_lists = true;
+            }
+
+            $combination->all_arrays_class_string_maps = false;
+        } elseif ($type instanceof Atomic\TClassStringMap) {
+            foreach ([$type->getStandinKeyParam(), $type->value_param] as $i => $type_param) {
+                if (isset($combination->array_type_params[$i])) {
+                    $combination->array_type_params[$i] = Type::combineUnionTypes(
+                        $combination->array_type_params[$i],
+                        $type_param,
+                        $codebase,
+                        $overwrite_empty_array
+                    );
+                } else {
+                    $combination->array_type_params[$i] = $type_param;
+                }
+            }
+
+            $combination->array_always_filled = false;
+
+            if ($combination->all_arrays_class_string_maps !== false) {
+                $combination->all_arrays_class_string_maps = true;
+                $combination->class_string_map_names[$type->param_name] = true;
+                $combination->class_string_map_as_types[(string) $type->as_type] = $type->as_type;
             }
         } elseif (($type instanceof TGenericObject && ($type->value === 'Traversable' || $type->value === 'Generator'))
             || ($type instanceof TIterable && $type->has_docblock_params)
@@ -854,6 +896,8 @@ class TypeCombination
             } elseif ($combination->all_arrays_lists !== false) {
                 $combination->all_arrays_lists = true;
             }
+
+            $combination->all_arrays_class_string_maps = false;
         } else {
             if ($type instanceof TObject) {
                 $combination->named_object_types = null;

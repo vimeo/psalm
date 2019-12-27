@@ -801,6 +801,14 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testClassStringMap() : void
+    {
+        $this->assertSame(
+            'class-string-map<T as Foo, T>',
+            (string)Type::parseString('class-string-map<T as Foo, T>')
+        );
+    }
+
     /**
      * @return void
      */

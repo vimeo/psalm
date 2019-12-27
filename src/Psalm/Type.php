@@ -30,6 +30,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -110,6 +111,7 @@ abstract class Type
         'non-empty-countable' => true,
         'list' => true,
         'non-empty-list' => true,
+        'class-string-map' => true,
     ];
 
     /**
@@ -230,7 +232,7 @@ abstract class Type
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
-     * @return  Atomic|TArray|TGenericObject|ObjectLike|Union
+     * @return  Atomic|Union
      */
     public static function getTypeFromTree(
         ParseTree $parse_tree,
@@ -240,17 +242,23 @@ abstract class Type
         if ($parse_tree instanceof ParseTree\GenericTree) {
             $generic_type = $parse_tree->value;
 
-            $generic_params = array_map(
-                /**
-                 * @return Union
-                 */
-                function (ParseTree $child_tree) use ($template_type_map) {
-                    $tree_type = self::getTypeFromTree($child_tree, null, $template_type_map);
+            $generic_params = [];
 
-                    return $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
-                },
-                $parse_tree->children
-            );
+            foreach ($parse_tree->children as $i => $child_tree) {
+                $tree_type = self::getTypeFromTree($child_tree, null, $template_type_map);
+
+                if ($generic_type === 'class-string-map'
+                    && $i === 0
+                ) {
+                    if ($tree_type instanceof TTemplateParam) {
+                        $template_type_map[$tree_type->param_name] = ['class-string-map' => [$tree_type->as]];
+                    } elseif ($tree_type instanceof TNamedObject) {
+                        $template_type_map[$tree_type->value] = ['class-string-map' => [self::getObject()]];
+                    }
+                }
+
+                $generic_params[] = $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
+            }
 
             $generic_type_value = self::fixScalarTerms($generic_type);
 
@@ -320,6 +328,44 @@ abstract class Type
                 }
 
                 return new TClassString($class_name, $param_union_types[0]);
+            }
+
+            if ($generic_type_value === 'class-string-map') {
+                if (count($generic_params) !== 2) {
+                    throw new TypeParseTreeException(
+                        'There should only be two params for class-string-map, '
+                            . count($generic_params) . ' provided'
+                    );
+                }
+
+                $template_marker_parts = array_values($generic_params[0]->getTypes());
+
+                $template_marker = $template_marker_parts[0];
+
+                $template_as_type = null;
+
+                if ($template_marker instanceof TNamedObject) {
+                    $template_param_name = $template_marker->value;
+                } elseif ($template_marker instanceof Atomic\TTemplateParam) {
+                    $template_param_name = $template_marker->param_name;
+                    $template_as_type = array_values($template_marker->as->getTypes())[0];
+
+                    if (!$template_as_type instanceof TNamedObject) {
+                        throw new TypeParseTreeException(
+                            'Unrecognised as type'
+                        );
+                    }
+                } else {
+                    throw new TypeParseTreeException(
+                        'Unrecognised class-string-map templated param'
+                    );
+                }
+
+                return new TClassStringMap(
+                    $template_param_name,
+                    $template_as_type,
+                    $generic_params[1]
+                );
             }
 
             if ($generic_type_value === 'key-of') {
@@ -599,16 +645,10 @@ abstract class Type
                 return $non_nullable_type;
             }
 
-            if ($non_nullable_type instanceof Atomic) {
-                return TypeCombination::combineTypes([
-                    new TNull,
-                    $non_nullable_type,
-                ]);
-            }
-
-            throw new \UnexpectedValueException(
-                'Was expecting an atomic or union type, got ' . get_class($non_nullable_type)
-            );
+            return TypeCombination::combineTypes([
+                new TNull,
+                $non_nullable_type,
+            ]);
         }
 
         if ($parse_tree instanceof ParseTree\MethodTree
@@ -658,6 +698,14 @@ abstract class Type
                 $array_param_name,
                 $offset_param_name,
                 $array_defining_class
+            );
+        }
+
+        if ($parse_tree instanceof ParseTree\TemplateAsTree) {
+            return new Atomic\TTemplateParam(
+                $parse_tree->param_name,
+                new Union([new TNamedObject($parse_tree->as)]),
+                'class-string-map'
             );
         }
 
@@ -814,6 +862,14 @@ abstract class Type
             ) {
                 $type_tokens[++$rtc] = [' ', $i - 1];
                 $type_tokens[++$rtc] = ['', $i];
+            } elseif ($was_space
+                && $char === 'a'
+                && ($chars[$i + 1] ?? null) === 's'
+                && ($chars[$i + 2] ?? null) === ' '
+            ) {
+                $type_tokens[++$rtc] = ['as', $i - 1];
+                $type_tokens[++$rtc] = ['', ++$i];
+                continue;
             } elseif ($was_char) {
                 $type_tokens[++$rtc] = ['', $i];
             }
@@ -980,7 +1036,7 @@ abstract class Type
             if (in_array(
                 $string_type_token[0],
                 [
-                    '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...',
+                    '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as',
                 ],
                 true
             )) {
@@ -1032,6 +1088,14 @@ abstract class Type
             }
 
             if (isset($template_type_map[$string_type_token[0]])) {
+                continue;
+            }
+
+            if ($i > 1
+                && ($type_tokens[$i - 2][0] === 'class-string-map')
+                && ($type_tokens[$i - 1][0] === '<')
+            ) {
+                $template_type_map[$string_type_token[0]] = true;
                 continue;
             }
 

@@ -472,6 +472,29 @@ class ParseTree
 
                     break;
 
+                case 'as':
+                    $current_parent = $current_leaf->parent;
+
+                    if (!$current_leaf instanceof ParseTree\Value
+                        || !$current_parent instanceof ParseTree\GenericTree
+                        || !$next_token
+                    ) {
+                        throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+                    }
+
+                    array_pop($current_parent->children);
+
+                    $current_leaf = new ParseTree\TemplateAsTree(
+                        $current_leaf->value,
+                        $next_token[0],
+                        $current_parent
+                    );
+
+                    $current_parent->children[] = $current_leaf;
+                    ++$i;
+
+                    break;
+
                 default:
                     $new_parent = !$current_leaf instanceof ParseTree\Root ? $current_leaf : null;
 

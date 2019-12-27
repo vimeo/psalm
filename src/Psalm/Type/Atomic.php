@@ -368,6 +368,7 @@ abstract class Atomic
         return $this instanceof TArray
             || $this instanceof ObjectLike
             || $this instanceof TList
+            || $this instanceof Atomic\TClassStringMap
             || $this->hasArrayAccessInterface($codebase)
             || ($this instanceof TNamedObject && $this->value === 'SimpleXMLElement');
     }

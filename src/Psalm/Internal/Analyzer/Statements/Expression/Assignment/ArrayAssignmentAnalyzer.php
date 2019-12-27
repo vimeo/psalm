@@ -295,6 +295,12 @@ class ArrayAssignmentAnalyzer
             }
 
             if (!$child_stmts) {
+                // we need this slight hack as the type we're putting it has to be
+                // different from the type we're getting out
+                if ($array_type->isSingle() && $array_type->hasClassStringMap()) {
+                    $assignment_type = $child_stmt_type;
+                }
+
                 $child_stmt_type = $assignment_type;
                 $statements_analyzer->node_data->setType($child_stmt, $assignment_type);
             }
@@ -535,11 +541,61 @@ class ArrayAssignmentAnalyzer
                     && $child_stmt
                     && $parent_var_id
                     && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)
-                    && $parent_type->hasList()
+
                 ) {
-                    $array_atomic_type = new TNonEmptyList(
-                        $current_type
-                    );
+                    if ($parent_type->hasList()) {
+                        $array_atomic_type = new TNonEmptyList(
+                            $current_type
+                        );
+                    } elseif ($parent_type->hasClassStringMap()
+                        && $current_dim_type
+                        && $current_dim_type->isTemplatedClassString()
+                    ) {
+                        /**
+                         * @var Type\Atomic\TClassStringMap
+                         * @psalm-suppress PossiblyUndefinedStringArrayOffset
+                         */
+                        $class_string_map = $parent_type->getTypes()['array'];
+                        /**
+                         * @var Type\Atomic\TTemplateParamClass
+                         */
+                        $offset_type_part = \array_values($current_dim_type->getTypes())[0];
+
+                        $template_result = new \Psalm\Internal\Type\TemplateResult(
+                            [],
+                            [
+                                $offset_type_part->param_name => [
+                                    ($offset_type_part->defining_class ?? '') => [
+                                        new Type\Union([
+                                            new Type\Atomic\TTemplateParam(
+                                                $class_string_map->param_name,
+                                                $offset_type_part->as_type
+                                                    ? new Type\Union([$offset_type_part->as_type])
+                                                    : Type::getObject(),
+                                                'class-string-map'
+                                            )
+                                        ])
+                                    ]
+                                ]
+                            ]
+                        );
+
+                        $current_type->replaceTemplateTypesWithArgTypes(
+                            $template_result->generic_params,
+                            $codebase
+                        );
+
+                        $array_atomic_type = new Type\Atomic\TClassStringMap(
+                            $class_string_map->param_name,
+                            $class_string_map->as_type,
+                            $current_type
+                        );
+                    } else {
+                        $array_atomic_type = new TNonEmptyArray([
+                            $array_atomic_key_type,
+                            $current_type,
+                        ]);
+                    }
                 } else {
                     $array_atomic_type = new TNonEmptyArray([
                         $array_atomic_key_type,
@@ -558,7 +614,12 @@ class ArrayAssignmentAnalyzer
                 $atomic_root_types = $root_type->getTypes();
 
                 if (isset($atomic_root_types['array'])) {
-                    if ($atomic_root_types['array'] instanceof TNonEmptyArray
+                    if ($array_atomic_type instanceof Type\Atomic\TClassStringMap) {
+                        $array_atomic_type = new TNonEmptyArray([
+                            $array_atomic_type->getStandinKeyParam(),
+                            $array_atomic_type->value_param
+                        ]);
+                    } elseif ($atomic_root_types['array'] instanceof TNonEmptyArray
                         || $atomic_root_types['array'] instanceof TNonEmptyList
                     ) {
                         $array_atomic_type->count = $atomic_root_types['array']->count;

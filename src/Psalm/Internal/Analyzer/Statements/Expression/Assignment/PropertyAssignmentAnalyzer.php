@@ -1289,8 +1289,9 @@ class PropertyAssignmentAnalyzer
             if (TypeAnalyzer::canBeContainedBy($codebase, $assignment_value_type, $class_property_type)) {
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidPropertyAssignmentValue(
-                        $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
-                            $assignment_value_type . '\'',
+                        $var_id . ' with declared type \''
+                            . $class_property_type->getId() . '\' cannot be assigned type \''
+                            . $assignment_value_type->getId() . '\'',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt
@@ -1304,8 +1305,9 @@ class PropertyAssignmentAnalyzer
             } else {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignmentValue(
-                        $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
-                            $assignment_value_type . '\'',
+                        $var_id . ' with declared type \'' . $class_property_type->getId()
+                            . '\' cannot be assigned type \''
+                            . $assignment_value_type->getId() . '\'',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt

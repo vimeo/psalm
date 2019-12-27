@@ -537,6 +537,8 @@ class Reconciler
                             }
                         } elseif ($existing_key_type_part instanceof Type\Atomic\TNull) {
                             $new_base_type_candidate = Type::getNull();
+                        } elseif ($existing_key_type_part instanceof Type\Atomic\TClassStringMap) {
+                            return Type::getMixed();
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !\is_numeric($array_key[0]))) {
@@ -778,6 +780,7 @@ class Reconciler
                     || ($base_atomic_type instanceof Type\Atomic\TArray
                         && !$base_atomic_type->type_params[1]->isEmpty())
                     || $base_atomic_type instanceof Type\Atomic\TList
+                    || $base_atomic_type instanceof Type\Atomic\TClassStringMap
                 ) {
                     $new_base_type = clone $existing_types[$base_key];
 
@@ -811,6 +814,8 @@ class Reconciler
 
                         $base_atomic_type->previous_key_type = $previous_key_type;
                         $base_atomic_type->previous_value_type = $previous_value_type;
+                    } elseif ($base_atomic_type instanceof Type\Atomic\TClassStringMap) {
+                        // do nothing
                     } else {
                         $base_atomic_type = clone $base_atomic_type;
                         $base_atomic_type->properties[$array_key_offset] = clone $result_type;

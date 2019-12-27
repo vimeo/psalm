@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TEmptyMixed;
@@ -2080,6 +2081,12 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof TList
+            && $input_type_part instanceof TClassStringMap
+        ) {
+            return false;
+        }
+
+        if ($container_type_part instanceof TList
             && $input_type_part instanceof TArray
             && $input_type_part->type_params[1]->isEmpty()
         ) {
@@ -2107,10 +2114,12 @@ class TypeAnalyzer
 
         if (($input_type_part instanceof TArray
                 || $input_type_part instanceof ObjectLike
-                || $input_type_part instanceof TList)
+                || $input_type_part instanceof TList
+                || $input_type_part instanceof TClassStringMap)
             && ($container_type_part instanceof TArray
                 || $container_type_part instanceof ObjectLike
-                || $container_type_part instanceof TList)
+                || $container_type_part instanceof TList
+                || $container_type_part instanceof TClassStringMap)
         ) {
             if ($container_type_part instanceof ObjectLike) {
                 $generic_container_type_part = $container_type_part->getGenericArrayType();
@@ -2128,8 +2137,7 @@ class TypeAnalyzer
                     false
                 );
 
-                if (!$input_type_part instanceof ObjectLike
-                    && !$input_type_part instanceof TList
+                if ($input_type_part instanceof TArray
                     && !$input_type_part->type_params[0]->hasMixed()
                     && !($input_type_part->type_params[1]->isEmpty()
                         && $container_params_can_be_undefined)
@@ -2143,6 +2151,20 @@ class TypeAnalyzer
 
             if ($input_type_part instanceof ObjectLike) {
                 $input_type_part = $input_type_part->getGenericArrayType();
+            }
+
+            if ($input_type_part instanceof TClassStringMap) {
+                $input_type_part = new TArray([
+                    $input_type_part->getStandinKeyParam(),
+                    clone $input_type_part->value_param
+                ]);
+            }
+
+            if ($container_type_part instanceof TClassStringMap) {
+                $container_type_part = new TArray([
+                    $container_type_part->getStandinKeyParam(),
+                    clone $container_type_part->value_param
+                ]);
             }
 
             if ($container_type_part instanceof TList) {
