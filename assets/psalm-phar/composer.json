@@ -8,5 +8,5 @@
 	"conflict": {
 		"vimeo/psalm" : "*"
 	},
-	"bin": ["psalm.phar", "psalm", "psalter", "psalm-language-server", "psalm-plugin"]
+	"bin": ["psalm.phar"]
 }
