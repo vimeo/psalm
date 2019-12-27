@@ -649,6 +649,16 @@ class ArrayAssignmentAnalyzer
                     return false;
                 }
             }
+        } elseif ($root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            && $root_array_expr->name instanceof PhpParser\Node\Identifier
+        ) {
+            PropertyAssignmentAnalyzer::analyzeStatic(
+                $statements_analyzer,
+                $root_array_expr,
+                null,
+                $root_type,
+                $context
+            );
         } elseif ($root_var_id) {
             $context->vars_in_scope[$root_var_id] = $root_type;
         }

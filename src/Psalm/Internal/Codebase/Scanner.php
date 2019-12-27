@@ -38,7 +38,8 @@ use function substr;
  *     snippet_from: int,
  *     snippet_to: int,
  *     column_from: int,
- *     column_to: int
+ *     column_to: int,
+ *     selected_text: string
  * }
  *
  * @psalm-type  PoolData = array{

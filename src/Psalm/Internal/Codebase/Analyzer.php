@@ -39,7 +39,8 @@ use function usort;
  *     snippet_from: int,
  *     snippet_to: int,
  *     column_from: int,
- *     column_to: int
+ *     column_to: int,
+ *     selected_text: string
  * }
  *
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>

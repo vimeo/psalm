@@ -952,9 +952,9 @@ abstract class Type
             $was_space = false;
         }
 
+        /** @var list<array{0: string, 1: int}> $type_tokens */
         self::$memoized_tokens[$string_type] = $type_tokens;
 
-        /** @var list<array{0: string, 1: int}> */
         return $type_tokens;
     }
 

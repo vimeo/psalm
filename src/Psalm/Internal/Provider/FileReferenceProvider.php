@@ -25,7 +25,8 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
  *     snippet_from: int,
  *     snippet_to: int,
  *     column_from: int,
- *     column_to: int
+ *     column_to: int,
+ *     selected_text: string
  * }
  *
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
@@ -63,14 +64,7 @@ class FileReferenceProvider
     private static $file_references_to_missing_class_members = [];
 
     /**
-     * A lookup table used for getting all the files that reference any other file
-     *
-     * @var array<string,array<string,bool>>
-     */
-    private static $referencing_files = [];
-
-    /**
-     * @var array<string, array<int,string>>
+     * @var array<string, array<string, true>>
      */
     private static $files_inheriting_classes = [];
 
@@ -187,7 +181,6 @@ class FileReferenceProvider
      */
     public function addFileReferenceToClass(string $source_file, string $fq_class_name_lc)
     {
-        self::$referencing_files[$source_file] = true;
         self::$file_references_to_classes[$fq_class_name_lc][$source_file] = true;
     }
 
@@ -310,7 +303,7 @@ class FileReferenceProvider
     /**
      * @param   string $file
      *
-     * @return  array
+     * @return  array<int, string>
      */
     private function calculateFilesReferencingFile(Codebase $codebase, $file)
     {
@@ -333,7 +326,7 @@ class FileReferenceProvider
     /**
      * @param   string $file
      *
-     * @return  array
+     * @return  array<int, string>
      */
     private function calculateFilesInheritingFile(Codebase $codebase, $file)
     {
@@ -1015,7 +1008,6 @@ class FileReferenceProvider
     public static function clearCache()
     {
         self::$file_references_to_classes = [];
-        self::$referencing_files = [];
         self::$files_inheriting_classes = [];
         self::$deleted_files = null;
         self::$file_references = [];

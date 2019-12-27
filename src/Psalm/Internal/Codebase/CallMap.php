@@ -34,7 +34,7 @@ class CallMap
     private static $loaded_php_minor_version = null;
 
     /**
-     * @var array<array<string,string>>|null
+     * @var array<array<int|string,string>>|null
      */
     private static $call_map = null;
 
