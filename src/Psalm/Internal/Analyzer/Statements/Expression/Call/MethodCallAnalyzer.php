@@ -1432,6 +1432,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $return_type_candidate = clone $context->vars_in_scope[$method_var_id];
+
+                    if ($can_memoize) {
+                        /** @psalm-suppress UndefinedPropertyAssignment */
+                        $stmt->pure = true;
+                    }
                 } elseif ($return_type_candidate) {
                     $context->vars_in_scope[$method_var_id] = $return_type_candidate;
                 }

@@ -2390,6 +2390,86 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return $collection;
                     }'
             ],
+            'memoizeChainedImmutableCallsInside' => [
+                '<?php
+                    class Assessment {
+                        private ?string $root = null;
+
+                        /** @psalm-mutation-free */
+                        public function getRoot(): ?string {
+                            return $this->root;
+                        }
+                    }
+
+                    class Project {
+                        private ?Assessment $assessment = null;
+
+                        /** @psalm-mutation-free */
+                        public function getAssessment(): ?Assessment {
+                            return $this->assessment;
+                        }
+                    }
+
+                    function f(Project $project): int {
+                        if (($project->getAssessment() !== null)
+                            && ($project->getAssessment()->getRoot() !== null)
+                        ) {
+                            return strlen($project->getAssessment()->getRoot());
+                        }
+
+                        throw new RuntimeException();
+                    }',
+            ],
+            'memoizeChainedImmutableCallsOutside' => [
+                '<?php
+                    class Assessment {
+                        private ?string $root = null;
+
+                        /** @psalm-mutation-free */
+                        public function getRoot(): ?string {
+                            return $this->root;
+                        }
+                    }
+
+                    class Project {
+                        private ?Assessment $assessment = null;
+
+                        /** @psalm-mutation-free */
+                        public function getAssessment(): ?Assessment {
+                            return $this->assessment;
+                        }
+                    }
+
+                    function f(Project $project): int {
+                        if (($project->getAssessment() === null)
+                            || ($project->getAssessment()->getRoot() === null)
+                        ) {
+                            throw new RuntimeException();
+                        }
+
+                        return strlen($project->getAssessment()->getRoot());
+                    }',
+            ],
+            'propertyChainedOutside' => [
+                '<?php
+                    class Assessment {
+                        public ?string $root = null;
+                    }
+
+                    class Project {
+                        public ?Assessment $assessment = null;
+                    }
+
+                    function f(Project $project): int {
+                        if (($project->assessment === null)
+                            || ($project->assessment->root === null)
+                        ) {
+                            throw new RuntimeException();
+                        }
+
+                        return strlen($project->assessment->root);
+                    }'
+            ],
         ];
     }
 

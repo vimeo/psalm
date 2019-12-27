@@ -600,34 +600,67 @@ class Reconciler
                             if (!$codebase->classOrInterfaceExists($existing_key_type_part->value)) {
                                 $class_property_type = Type::getMixed();
                             } else {
-                                $property_id = $existing_key_type_part->value . '::$' . $property_name;
+                                if (substr($property_name, -2) === '()') {
+                                    $method_id = $existing_key_type_part->value . '::' . substr($property_name, 0, -2);
 
-                                if (!$codebase->properties->propertyExists($property_id, true)) {
-                                    return null;
-                                }
+                                    if (!$codebase->methods->methodExists($method_id)) {
+                                        return null;
+                                    }
 
-                                $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                                    $property_id,
-                                    true
-                                );
+                                    $declaring_method_id = $codebase->methods->getDeclaringMethodId(
+                                        $method_id
+                                    );
 
-                                $class_property_type = $codebase->properties->getPropertyType(
-                                    $property_id,
-                                    false,
-                                    null,
-                                    null
-                                );
+                                    $declaring_class = explode('::', (string) $declaring_method_id)[0];
 
-                                if ($class_property_type) {
-                                    $class_property_type = ExpressionAnalyzer::fleshOutType(
-                                        $codebase,
-                                        clone $class_property_type,
-                                        $declaring_property_class,
-                                        $declaring_property_class,
+                                    $method_return_type = $codebase->methods->getMethodReturnType(
+                                        $method_id,
+                                        $declaring_class,
+                                        null,
                                         null
                                     );
+
+                                    if ($method_return_type) {
+                                        $class_property_type = ExpressionAnalyzer::fleshOutType(
+                                            $codebase,
+                                            clone $method_return_type,
+                                            $declaring_class,
+                                            $declaring_class,
+                                            null
+                                        );
+                                    } else {
+                                        $class_property_type = Type::getMixed();
+                                    }
                                 } else {
-                                    $class_property_type = Type::getMixed();
+                                    $property_id = $existing_key_type_part->value . '::$' . $property_name;
+
+                                    if (!$codebase->properties->propertyExists($property_id, true)) {
+                                        return null;
+                                    }
+
+                                    $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+                                        $property_id,
+                                        true
+                                    );
+
+                                    $class_property_type = $codebase->properties->getPropertyType(
+                                        $property_id,
+                                        false,
+                                        null,
+                                        null
+                                    );
+
+                                    if ($class_property_type) {
+                                        $class_property_type = ExpressionAnalyzer::fleshOutType(
+                                            $codebase,
+                                            clone $class_property_type,
+                                            $declaring_property_class,
+                                            $declaring_property_class,
+                                            null
+                                        );
+                                    } else {
+                                        $class_property_type = Type::getMixed();
+                                    }
                                 }
                             }
                         } else {
