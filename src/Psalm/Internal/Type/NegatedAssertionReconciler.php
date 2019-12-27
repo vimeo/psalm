@@ -826,7 +826,11 @@ class NegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_scalar_types) {
-            return new Type\Union($non_scalar_types);
+            $type = new Type\Union($non_scalar_types);
+            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
+            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
+            $type->from_docblock = $existing_var_type->from_docblock;
+            return $type;
         }
 
         $failed_reconciliation = 2;
@@ -890,7 +894,11 @@ class NegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_object_types) {
-            return new Type\Union($non_object_types);
+            $type = new Type\Union($non_object_types);
+            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
+            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
+            $type->from_docblock = $existing_var_type->from_docblock;
+            return $type;
         }
 
         $failed_reconciliation = 2;
@@ -950,7 +958,11 @@ class NegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_numeric_types) {
-            return new Type\Union($non_numeric_types);
+            $type = new Type\Union($non_numeric_types);
+            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
+            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
+            $type->from_docblock = $existing_var_type->from_docblock;
+            return $type;
         }
 
         $failed_reconciliation = 2;
@@ -1018,7 +1030,11 @@ class NegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_string_types) {
-            return new Type\Union($non_string_types);
+            $type = new Type\Union($non_string_types);
+            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
+            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
+            $type->from_docblock = $existing_var_type->from_docblock;
+            return $type;
         }
 
         $failed_reconciliation = 2;
@@ -1091,7 +1107,11 @@ class NegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_array_types) {
-            return new Type\Union($non_array_types);
+            $type = new Type\Union($non_array_types);
+            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
+            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
+            $type->from_docblock = $existing_var_type->from_docblock;
+            return $type;
         }
 
         $failed_reconciliation = 2;
