@@ -618,6 +618,7 @@ class ClassTemplateTest extends TestCase
                          */
                         public function bar(Foo $object) : void
                         {
+                            /** @psalm-suppress RedundantConditionGivenDocblockType */
                             if ($this->getType() !== get_class($object)) {
                                 return;
                             }
