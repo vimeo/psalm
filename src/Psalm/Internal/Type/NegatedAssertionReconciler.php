@@ -238,13 +238,15 @@ class NegatedAssertionReconciler extends Reconciler
         }
 
         if (strtolower($assertion) === 'traversable'
-            && isset($existing_var_type->getTypes()['iterable'])
+            && isset($existing_var_atomic_types['iterable'])
         ) {
+            /** @var Type\Atomic\TIterable */
+            $iterable = $existing_var_atomic_types['iterable'];
             $existing_var_type->removeType('iterable');
             $existing_var_type->addType(new TArray(
                 [
-                    new Type\Union([new TArrayKey]),
-                    new Type\Union([new TMixed]),
+                    $iterable->type_params[0],
+                    $iterable->type_params[1],
                 ]
             ));
         } elseif (strtolower($assertion) === 'int'
