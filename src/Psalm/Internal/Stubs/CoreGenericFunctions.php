@@ -217,3 +217,17 @@ function array_key_exists($key, array $search) : bool
 function array_merge_recursive(array $arr, array ...$arr2)
 {
 }
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey> $keys
+ * @param TValue $value
+ *
+ * @return array<TKey, TValue>
+ * @psalm-pure
+ */
+function array_fill_keys(array $keys, $value): array
+{
+}

@@ -2334,6 +2334,14 @@ class FunctionCallTest extends TestCase
                         );
                     }'
             ],
+            'arrayFillKeys' => [
+                '<?php
+                    $keys = [1, 2, 3];
+                    $result = array_fill_keys($keys, true);',
+                'assertions' => [
+                    '$result' => 'array<int, true>',
+                ],
+            ],
         ];
     }
 
