@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-use const PHP_VERSION;
-
 class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTest
 {
     /**
