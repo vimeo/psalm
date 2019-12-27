@@ -287,7 +287,6 @@ class Pool
 
         // Create an array for the content received on each stream,
         // indexed by resource id.
-        /** @var array<int, string> $content */
         $content = array_fill_keys(array_keys($streams), '');
 
         $terminationMessages = [];

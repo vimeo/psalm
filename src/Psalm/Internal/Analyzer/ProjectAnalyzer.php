@@ -1187,7 +1187,6 @@ class ProjectAnalyzer
 
     public function setAllIssuesToFix(): void
     {
-        /** @var array<string, true> $keyed_issues */
         $keyed_issues = array_fill_keys(static::getSupportedIssuesToFix(), true);
 
         $this->setIssuesToFix($keyed_issues);
