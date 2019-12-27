@@ -6,10 +6,10 @@ set -x
 cd /tmp/
 mkdir testing-with-real-projects
 cd testing-with-real-projects
-git clone git@github.com:sebastianbergmann/phpunit.git
 
+git clone git@github.com:muglug/phpunit.git
 cd phpunit
-git checkout 4db048f # small template fix
+git checkout 69a81ac # bugfix
 composer install
 ~/project/build/psalm.phar --config=.psalm/config.xml --monochrome --show-info=false
 ~/project/build/psalm.phar --config=.psalm/static-analysis.xml --monochrome
