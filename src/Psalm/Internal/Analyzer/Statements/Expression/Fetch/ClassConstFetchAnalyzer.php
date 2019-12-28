@@ -99,7 +99,7 @@ class ClassConstFetchAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context->calling_function_id,
                     false,
                     $stmt->class->parts[0] === 'self'
                 );
@@ -257,9 +257,9 @@ class ClassConstFetchAnalyzer
                 return;
             }
 
-            if ($context->calling_method_id) {
+            if ($context->calling_function_id) {
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                    $context->calling_method_id,
+                    $context->calling_function_id,
                     strtolower($fq_class_name) . '::' . $stmt->name->name
                 );
             }

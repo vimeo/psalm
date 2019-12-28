@@ -109,7 +109,7 @@ class ReturnAnalyzer
                         $statements_analyzer,
                         $comment_type,
                         $type_location,
-                        $context->calling_method_id
+                        $context->calling_function_id
                     );
                 }
 

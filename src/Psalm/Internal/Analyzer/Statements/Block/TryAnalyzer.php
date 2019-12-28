@@ -210,7 +210,7 @@ class TryAnalyzer
                         $statements_analyzer,
                         $catch_type,
                         $fq_catch_class,
-                        $context->calling_method_id
+                        $context->calling_function_id
                     );
                 }
 

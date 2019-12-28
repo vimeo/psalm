@@ -260,7 +260,7 @@ class PropertyFetchAnalyzer
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
                     '$' . $stmt->name->name,
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    $context->calling_function_id ?: $statements_analyzer->getFileName()
                 );
             }
 
@@ -324,7 +324,7 @@ class PropertyFetchAnalyzer
                     if ($type instanceof Type\Atomic\TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($type->value) . '::$',
-                            $context->calling_method_id ?: $statements_analyzer->getFileName()
+                            $context->calling_function_id ?: $statements_analyzer->getFileName()
                         );
                     }
                 }
@@ -962,11 +962,11 @@ class PropertyFetchAnalyzer
             } else {
                 $aliases = $statements_analyzer->getAliases();
 
-                if ($context->calling_method_id
+                if ($context->calling_function_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                        $context->calling_method_id,
+                        $context->calling_function_id,
                         'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
                     );
                 }
@@ -995,10 +995,10 @@ class PropertyFetchAnalyzer
 
             if ($fq_class_name
                 && $codebase->methods_to_move
-                && $context->calling_method_id
-                && isset($codebase->methods_to_move[strtolower($context->calling_method_id)])
+                && $context->calling_function_id
+                && isset($codebase->methods_to_move[strtolower($context->calling_function_id)])
             ) {
-                $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_method_id)];
+                $destination_method_id = $codebase->methods_to_move[strtolower($context->calling_function_id)];
 
                 $codebase->classlikes->airliftClassLikeReference(
                     $fq_class_name,
@@ -1031,7 +1031,7 @@ class PropertyFetchAnalyzer
             if ($fq_class_name) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($fq_class_name) . '::$',
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    $context->calling_function_id ?: $statements_analyzer->getFileName()
                 );
             }
 
@@ -1142,7 +1142,7 @@ class PropertyFetchAnalyzer
                 $statements_analyzer,
                 $stmt->class,
                 $fq_class_name,
-                $context->calling_method_id
+                $context->calling_function_id
             );
 
             if (!$moved_class) {

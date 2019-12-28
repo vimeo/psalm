@@ -85,14 +85,14 @@ class Methods
      * Whether or not a given method exists
      *
      * @param  string       $method_id
-     * @param  ?string      $calling_method_id
+     * @param  ?string      $calling_function_id
      * @param  CodeLocation|null $code_location
      *
      * @return bool
      */
     public function methodExists(
         $method_id,
-        $calling_method_id = null,
+        $calling_function_id = null,
         CodeLocation $code_location = null,
         StatementsSource $source = null,
         string $file_path = null
@@ -116,8 +116,8 @@ class Methods
             }
         }
 
-        if ($calling_method_id) {
-            $calling_method_id = strtolower($calling_method_id);
+        if ($calling_function_id) {
+            $calling_function_id = strtolower($calling_function_id);
         }
 
         $old_method_id = null;
@@ -135,7 +135,7 @@ class Methods
 
             $declaring_method_id_lc = strtolower($declaring_method_id);
 
-            if ($calling_method_id === $declaring_method_id_lc) {
+            if ($calling_function_id === $declaring_method_id_lc) {
                 return true;
             }
 
@@ -146,9 +146,9 @@ class Methods
                 && isset($class_storage->potential_declaring_method_ids[$method_name])
             ) {
                 foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
-                    if ($calling_method_id) {
+                    if ($calling_function_id) {
                         $this->file_reference_provider->addMethodReferenceToClassMember(
-                            $calling_method_id,
+                            $calling_function_id,
                             $potential_id
                         );
                     } elseif ($file_path) {
@@ -159,9 +159,9 @@ class Methods
                     }
                 }
             } else {
-                if ($calling_method_id) {
+                if ($calling_function_id) {
                     $this->file_reference_provider->addMethodReferenceToClassMember(
-                        $calling_method_id,
+                        $calling_function_id,
                         $declaring_method_id_lc
                     );
                 } elseif ($file_path) {
@@ -189,9 +189,9 @@ class Methods
                     );
                 }
 
-                if ($calling_method_id) {
+                if ($calling_function_id) {
                     $this->file_reference_provider->addMethodReferenceToClassMember(
-                        $calling_method_id,
+                        $calling_function_id,
                         $interface_method_id_lc
                     );
                 } elseif ($file_path) {
@@ -217,10 +217,10 @@ class Methods
                         );
                     }
 
-                    if ($calling_method_id) {
+                    if ($calling_function_id) {
                         // also store failures in case the method is added later
                         $this->file_reference_provider->addMethodReferenceToClassMember(
-                            $calling_method_id,
+                            $calling_function_id,
                             strtolower($overridden_method_id)
                         );
                     } elseif ($file_path) {
@@ -255,10 +255,10 @@ class Methods
         foreach ($class_storage->parent_classes + $class_storage->used_traits as $potential_future_declaring_fqcln) {
             $potential_id = strtolower($potential_future_declaring_fqcln) . '::' . $method_name;
 
-            if ($calling_method_id) {
+            if ($calling_function_id) {
                 // also store failures in case the method is added later
                 $this->file_reference_provider->addMethodReferenceToMissingClassMember(
-                    $calling_method_id,
+                    $calling_function_id,
                     $potential_id
                 );
             } elseif ($file_path) {
@@ -269,10 +269,10 @@ class Methods
             }
         }
 
-        if ($calling_method_id) {
+        if ($calling_function_id) {
             // also store failures in case the method is added later
             $this->file_reference_provider->addMethodReferenceToMissingClassMember(
-                $calling_method_id,
+                $calling_function_id,
                 strtolower($method_id)
             );
         } elseif ($file_path) {

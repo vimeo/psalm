@@ -145,7 +145,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      * @param  string       $method_id
      * @param  CodeLocation $code_location
      * @param  string[]     $suppressed_issues
-     * @param  string|null  $calling_method_id
+     * @param  string|null  $calling_function_id
      *
      * @return bool|null
      */
@@ -154,12 +154,12 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $calling_method_id = null
+        $calling_function_id = null
     ) {
         if ($codebase->methods->methodExists(
             $method_id,
-            $calling_method_id,
-            $calling_method_id !== $method_id ? $code_location : null,
+            $calling_function_id,
+            $calling_function_id !== $method_id ? $code_location : null,
             null,
             $code_location->file_path
         )) {

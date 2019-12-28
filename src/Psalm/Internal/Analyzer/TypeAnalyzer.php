@@ -668,10 +668,13 @@ class TypeAnalyzer
     ) : bool {
         if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TTemplateParam) {
             if ($container_type_part->param_name !== $input_type_part->param_name
-                || (string)$container_type_part->defining_class !== (string)$input_type_part->defining_class
+                || ((string)$container_type_part->defining_class !== (string)$input_type_part->defining_class
+                    && \substr($input_type_part->defining_class, 0, 3) !== 'fn-'
+                    && \substr($container_type_part->defining_class, 0, 3) !== 'fn-')
             ) {
                 if ($container_type_part->defining_class
                     && $input_type_part->defining_class
+                    && \substr($input_type_part->defining_class, 0, 3) !== 'fn-'
                 ) {
                     $input_class_storage = $codebase->classlike_storage_provider->get(
                         $input_type_part->defining_class
@@ -1152,6 +1155,23 @@ class TypeAnalyzer
 
         if (get_class($container_type_part) === TFloat::class && $input_type_part instanceof TLiteralFloat) {
             return true;
+        }
+
+        if ($container_type_part instanceof TNonEmptyString
+            && get_class($input_type_part) === TString::class
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        if ($container_type_part instanceof TNonEmptyString
+            && $input_type_part instanceof TLiteralString
+            && $input_type_part->value === ''
+        ) {
+            return false;
         }
 
         if ((get_class($container_type_part) === TString::class
@@ -1729,7 +1749,7 @@ class TypeAnalyzer
     public static function getCallableMethodIdFromObjectLike(
         ObjectLike $input_type_part,
         Codebase $codebase = null,
-        string $calling_method_id = null,
+        string $calling_function_id = null,
         string $file_name = null
     ) {
         if (!isset($input_type_part->properties[0])
@@ -1748,12 +1768,12 @@ class TypeAnalyzer
                 return 'not-callable';
             }
 
-            if ($codebase && ($calling_method_id || $file_name)) {
+            if ($codebase && ($calling_function_id || $file_name)) {
                 foreach ($lhs->getTypes() as $lhs_atomic_type) {
                     if ($lhs_atomic_type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($lhs_atomic_type->value) . '::',
-                            $calling_method_id ?: $file_name
+                            $calling_function_id ?: $file_name
                         );
                     }
                 }
@@ -1787,10 +1807,10 @@ class TypeAnalyzer
         }
 
         if (!$class_name) {
-            if ($codebase && ($calling_method_id || $file_name)) {
+            if ($codebase && ($calling_function_id || $file_name)) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($method_name),
-                    $calling_method_id ?: $file_name
+                    $calling_function_id ?: $file_name
                 );
             }
 

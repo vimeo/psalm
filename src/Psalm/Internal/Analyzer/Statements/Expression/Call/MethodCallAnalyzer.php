@@ -524,7 +524,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         if ($stmt->name instanceof PhpParser\Node\Identifier) {
                             $codebase->analyzer->addMixedMemberName(
                                 strtolower($stmt->name->name),
-                                $context->calling_method_id ?: $statements_analyzer->getFileName()
+                                $context->calling_function_id ?: $statements_analyzer->getFileName()
                             );
                         }
 
@@ -682,7 +682,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($fq_class_name) . '::',
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    $context->calling_function_id ?: $statements_analyzer->getFileName()
                 );
             }
 
@@ -705,7 +705,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if (!$codebase->methods->methodExists(
             $method_id,
-            $context->calling_method_id,
+            $context->calling_function_id,
             $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
             null,
             $statements_analyzer->getFilePath()
@@ -734,7 +734,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if (!$interface_has_method
                 && $codebase->methods->methodExists(
                     $fq_class_name . '::__call',
-                    $context->calling_method_id
+                    $context->calling_function_id
                 )
             ) {
                 if (isset($class_storage->pseudo_methods[$method_name_lc])) {
@@ -866,7 +866,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if (!$codebase->methods->methodExists(
             $method_id,
-            $context->calling_method_id,
+            $context->calling_function_id,
             $method_id !== $source_method_id ? new CodeLocation($source, $stmt->name) : null
         )
             || ($config->use_phpdoc_method_without_magic_or_parent
@@ -973,8 +973,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             );
         }
 
-        if ($context->collect_initializations && $context->calling_method_id) {
-            list($calling_method_class) = explode('::', $context->calling_method_id);
+        if ($context->collect_initializations && $context->calling_function_id) {
+            list($calling_method_class) = explode('::', $context->calling_function_id);
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $calling_method_class . '::__construct',
                 strtolower($method_id)

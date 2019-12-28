@@ -570,24 +570,24 @@ class FileReferenceProvider
     /**
      * @return void
      */
-    public function addMethodReferenceToClassMember(string $calling_method_id, string $referenced_member_id)
+    public function addMethodReferenceToClassMember(string $calling_function_id, string $referenced_member_id)
     {
         if (!isset(self::$method_references_to_class_members[$referenced_member_id])) {
-            self::$method_references_to_class_members[$referenced_member_id] = [$calling_method_id => true];
+            self::$method_references_to_class_members[$referenced_member_id] = [$calling_function_id => true];
         } else {
-            self::$method_references_to_class_members[$referenced_member_id][$calling_method_id] = true;
+            self::$method_references_to_class_members[$referenced_member_id][$calling_function_id] = true;
         }
     }
 
     /**
      * @return void
      */
-    public function addMethodReferenceToMissingClassMember(string $calling_method_id, string $referenced_member_id)
+    public function addMethodReferenceToMissingClassMember(string $calling_function_id, string $referenced_member_id)
     {
         if (!isset(self::$method_references_to_missing_class_members[$referenced_member_id])) {
-            self::$method_references_to_missing_class_members[$referenced_member_id] = [$calling_method_id => true];
+            self::$method_references_to_missing_class_members[$referenced_member_id] = [$calling_function_id => true];
         } else {
-            self::$method_references_to_missing_class_members[$referenced_member_id][$calling_method_id] = true;
+            self::$method_references_to_missing_class_members[$referenced_member_id][$calling_function_id] = true;
         }
     }
 

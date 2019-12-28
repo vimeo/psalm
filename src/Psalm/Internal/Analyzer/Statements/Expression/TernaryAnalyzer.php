@@ -152,7 +152,7 @@ class TernaryAnalyzer
                 $changed_var_ids,
                 $cond_referenced_var_ids,
                 $statements_analyzer,
-                [],
+                $statements_analyzer->getTemplateTypeMap() ?: [],
                 $if_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
             );
@@ -192,7 +192,7 @@ class TernaryAnalyzer
                 $changed_var_ids,
                 $cond_referenced_var_ids,
                 $statements_analyzer,
-                [],
+                $statements_analyzer->getTemplateTypeMap() ?: [],
                 $t_else_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->else)
             );

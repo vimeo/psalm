@@ -690,7 +690,9 @@ abstract class Type
 
             $array_defining_class = array_keys($template_type_map[$array_param_name])[0];
 
-            if ($offset_defining_class !== $array_defining_class) {
+            if ($offset_defining_class !== $array_defining_class
+                && substr($offset_defining_class, 0, 3) !== 'fn-'
+            ) {
                 throw new TypeParseTreeException('Template params are defined in different locations');
             }
 
@@ -762,7 +764,7 @@ abstract class Type
     private static function getGenericParamClass(
         string $param_name,
         Union $as,
-        string $defining_class = null
+        string $defining_class
     ) : Atomic\TTemplateParamClass {
         if ($as->hasMixed()) {
             return new Atomic\TTemplateParamClass(

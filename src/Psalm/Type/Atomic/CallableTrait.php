@@ -224,7 +224,7 @@ trait CallableTrait
                     $template_result,
                     $codebase,
                     $input_param_type,
-                    null,
+                    $calling_class,
                     $replace,
                     !$add_upper_bound,
                     $depth
@@ -241,7 +241,7 @@ trait CallableTrait
                 $template_result,
                 $codebase,
                 $input_type->return_type,
-                null,
+                $calling_class,
                 $replace,
                 $add_upper_bound
             );

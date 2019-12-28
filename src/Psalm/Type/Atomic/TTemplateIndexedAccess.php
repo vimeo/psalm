@@ -14,14 +14,17 @@ class TTemplateIndexedAccess extends \Psalm\Type\Atomic
     public $offset_param_name;
 
     /**
-     * @var ?string
+     * @var non-empty-string
      */
     public $defining_class;
 
+    /**
+     * @param non-empty-string $defining_class
+     */
     public function __construct(
         string $array_param_name,
         string $offset_param_name,
-        ?string $defining_class
+        string $defining_class
     ) {
         $this->array_param_name = $array_param_name;
         $this->offset_param_name = $offset_param_name;

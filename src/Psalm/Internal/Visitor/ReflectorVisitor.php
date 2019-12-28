@@ -2194,7 +2194,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $storage->has_docblock_issues = true;
                 } else {
                     $storage->template_types[$template_name] = [
-                        '' => [$template_type],
+                        'fn-' . strtolower($cased_function_id) => [$template_type],
                     ];
                 }
 
@@ -2417,7 +2417,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                     ? (string)$template_type
                                     : 'object',
                                 $template_atomic_type,
-                                $template_class
+                                $template_class ?: 'fn-' . strtolower($cased_function_id)
                             ),
                         ]);
 

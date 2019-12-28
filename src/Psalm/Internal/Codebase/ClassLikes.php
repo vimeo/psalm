@@ -1028,7 +1028,7 @@ class ClassLikes
         \Psalm\StatementsSource $source,
         PhpParser\Node $class_name_node,
         string $fq_class_name,
-        ?string $calling_method_id,
+        ?string $calling_function_id,
         bool $force_change = false,
         bool $was_self = false
     ) : bool {
@@ -1037,10 +1037,10 @@ class ClassLikes
         // if we're inside a moved class static method
         if ($codebase->methods_to_move
             && $calling_fq_class_name
-            && $calling_method_id
-            && isset($codebase->methods_to_move[strtolower($calling_method_id)])
+            && $calling_function_id
+            && isset($codebase->methods_to_move[strtolower($calling_function_id)])
         ) {
-            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_method_id)])[0];
+            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_function_id)])[0];
 
             $intended_fq_class_name = strtolower($calling_fq_class_name) === strtolower($fq_class_name)
                 && isset($codebase->classes_to_move[strtolower($calling_fq_class_name)])
@@ -1208,7 +1208,7 @@ class ClassLikes
         \Psalm\StatementsSource $source,
         Type\Union $type,
         CodeLocation $type_location,
-        ?string $calling_method_id
+        ?string $calling_function_id
     ) : void {
         $calling_fq_class_name = $source->getFQCLN();
 
@@ -1217,12 +1217,12 @@ class ClassLikes
         // if we're inside a moved class static method
         if ($codebase->methods_to_move
             && $calling_fq_class_name
-            && $calling_method_id
-            && isset($codebase->methods_to_move[strtolower($calling_method_id)])
+            && $calling_function_id
+            && isset($codebase->methods_to_move[strtolower($calling_function_id)])
         ) {
             $bounds = $type_location->getSelectionBounds();
 
-            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_method_id)])[0];
+            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_function_id)])[0];
 
             $this->airliftClassDefinedDocblockType(
                 $type,

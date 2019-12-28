@@ -1486,7 +1486,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 $this,
                                 $var_comment_type,
                                 $type_location,
-                                $context->calling_method_id
+                                $context->calling_function_id
                             );
                         }
 

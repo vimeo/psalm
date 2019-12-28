@@ -784,7 +784,7 @@ class TypeParseTest extends TestCase
                 null,
                 [
                     'T' => ['' => [Type::getArray()]],
-                    'K' => ['' => [new Type\Union([new Type\Atomic\TTemplateKeyOf('T', null)])]],
+                    'K' => ['' => [new Type\Union([new Type\Atomic\TTemplateKeyOf('T', 'fn-foo')])]],
                 ]
             )
         );

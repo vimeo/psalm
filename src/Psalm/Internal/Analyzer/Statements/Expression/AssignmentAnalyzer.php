@@ -162,7 +162,7 @@ class AssignmentAnalyzer
                                 $statements_analyzer,
                                 $var_comment_type,
                                 $type_location,
-                                $context->calling_method_id
+                                $context->calling_function_id
                             );
                         }
                     }
@@ -720,7 +720,7 @@ class AssignmentAnalyzer
                             if ($type instanceof Type\Atomic\TNamedObject) {
                                 $codebase->analyzer->addMixedMemberName(
                                     strtolower($type->value) . '::$',
-                                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                                    $context->calling_function_id ?: $statements_analyzer->getFileName()
                                 );
                             }
                         }

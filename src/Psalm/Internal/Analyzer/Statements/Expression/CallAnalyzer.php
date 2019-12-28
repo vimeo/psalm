@@ -457,7 +457,8 @@ class CallAnalyzer
                                         new Type\Union([
                                             new Type\Atomic\TTemplateParam(
                                                 'ArrayValue',
-                                                Type::getMixed()
+                                                Type::getMixed(),
+                                                $method_id
                                             )
                                         ])
                                     )
@@ -478,7 +479,7 @@ class CallAnalyzer
                         $replace_template_result,
                         $codebase,
                         null,
-                        null
+                        'fn-' . $context->calling_function_id
                     );
 
                     $replaced_type->replaceTemplateTypesWithArgTypes(
@@ -538,7 +539,7 @@ class CallAnalyzer
 
                 if (count($args) === 2
                     && (($argument_offset === 0 && $method_id === 'array_filter')
-                        || ($argument_offset === 1 || $method_id === 'array_map'))
+                        || ($argument_offset === 1 && $method_id === 'array_map'))
                 ) {
                     $generic_param_type = new Type\Union([
                         new Type\Atomic\TArray([
@@ -546,13 +547,14 @@ class CallAnalyzer
                             new Type\Union([
                                 new Type\Atomic\TTemplateParam(
                                     'ArrayValue',
-                                    Type::getMixed()
+                                    Type::getMixed(),
+                                    $method_id
                                 )
                             ])
                         ])
                     ]);
 
-                    $template_types = ['ArrayValue' => ['' => [Type::getMixed()]]];
+                    $template_types = ['ArrayValue' => [$method_id => [Type::getMixed()]]];
 
                     $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
                         $template_types,
@@ -564,7 +566,7 @@ class CallAnalyzer
                         $replace_template_result,
                         $codebase,
                         $statements_analyzer->node_data->getType($arg->value),
-                        null
+                        'fn-' . $context->calling_function_id
                     );
 
                     if ($replace_template_result->generic_params) {
@@ -718,6 +720,7 @@ class CallAnalyzer
 
         $builtin_array_functions = [
             'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
+            'uasort',
             'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
             'end', 'next', 'prev', 'array_pop', 'array_shift',
         ];
@@ -1246,7 +1249,7 @@ class CallAnalyzer
                         $template_result,
                         $codebase,
                         $arg_value_type,
-                        $context->self ?: '',
+                        $context->self ?: 'fn-' . $context->calling_function_id,
                         false
                     );
 
@@ -1431,7 +1434,7 @@ class CallAnalyzer
                         $template_result,
                         $codebase,
                         clone $param->default_type,
-                        null,
+                        'fn-' . $context->calling_function_id,
                         true
                     );
                 }
@@ -1626,7 +1629,7 @@ class CallAnalyzer
                         $template_result,
                         $codebase,
                         $statements_analyzer->node_data->getType($arg->value),
-                        null
+                        'fn-' . $context->calling_function_id
                     );
 
                     if ($template_result->generic_params) {
@@ -1646,7 +1649,7 @@ class CallAnalyzer
                         $template_result,
                         $codebase,
                         $statements_analyzer->node_data->getType($arg->value),
-                        null
+                        'fn-' . $context->calling_function_id
                     );
 
                     if ($template_result->generic_params) {
@@ -1727,7 +1730,7 @@ class CallAnalyzer
                 $empty_template_result,
                 $codebase,
                 $arg_value_type,
-                $context->self ?: ''
+                $context->self ?: 'fn-' . $context->calling_function_id
             );
 
             $arg_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
@@ -1735,7 +1738,7 @@ class CallAnalyzer
                 $empty_template_result,
                 $codebase,
                 $arg_value_type,
-                $context->self ?: ''
+                $context->self ?: 'fn-' . $context->calling_function_id
             );
         }
 
@@ -1769,17 +1772,17 @@ class CallAnalyzer
                 $template_result,
                 $codebase,
                 $arg_type_param,
-                $context->self ?: ''
+                $context->self ?: 'fn-' . $context->calling_function_id
             );
 
             foreach ($bindable_template_params as $template_type) {
                 if (!isset(
                     $template_result->generic_params
                         [$template_type->param_name]
-                        [$template_type->defining_class ?: '']
+                        [$template_type->defining_class]
                 )) {
                     $template_result->generic_params[$template_type->param_name] = [
-                        ($template_type->defining_class ?: '') => [clone $template_type->as, 0]
+                        ($template_type->defining_class) => [clone $template_type->as, 0]
                     ];
                 }
             }
@@ -2593,7 +2596,7 @@ class CallAnalyzer
                     $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
                         $input_type_part,
                         $codebase,
-                        $context->calling_method_id,
+                        $context->calling_function_id,
                         $statements_analyzer->getFilePath()
                     );
 
@@ -2609,7 +2612,7 @@ class CallAnalyzer
                 if (strpos($potential_method_id, '::')) {
                     $codebase->methods->methodExists(
                         $potential_method_id,
-                        $context->calling_method_id,
+                        $context->calling_function_id,
                         null,
                         $statements_analyzer,
                         $statements_analyzer->getFilePath()
@@ -3506,7 +3509,7 @@ class CallAnalyzer
                 $changed_var_ids,
                 $asserted_keys,
                 $statements_analyzer,
-                $template_type_map,
+                ($statements_analyzer->getTemplateTypeMap() ?: []) + $template_type_map,
                 $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $expr)
             );

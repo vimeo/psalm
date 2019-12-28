@@ -305,7 +305,7 @@ class Context
     /**
      * @var string|null
      */
-    public $calling_method_id;
+    public $calling_function_id;
 
     /**
      * @var bool

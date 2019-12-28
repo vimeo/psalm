@@ -51,7 +51,13 @@ class Assertion
                                 foreach ($template_type_map[$rule_token[0]] as list($type)) {
                                     $substitute = true;
 
-                                    $rule_token[0] = $type->getKey();
+                                    $first_type = \array_values($type->getTypes())[0];
+
+                                    if ($first_type instanceof \Psalm\Type\Atomic\TTemplateParam) {
+                                        $rule_token[0] = $first_type->param_name;
+                                    } else {
+                                        $rule_token[0] = $first_type->getKey();
+                                    }
                                 }
                             }
                         }
