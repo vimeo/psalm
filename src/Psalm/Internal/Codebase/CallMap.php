@@ -4,6 +4,7 @@ namespace Psalm\Internal\Codebase;
 use function array_shift;
 use function assert;
 use function count;
+use function file_exists;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -13,6 +14,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
 use function strtolower;
 use function substr;
+use function version_compare;
 
 /**
  * @internal
@@ -23,6 +25,7 @@ class CallMap
 {
     const PHP_MAJOR_VERSION = 7;
     const PHP_MINOR_VERSION = 3;
+    const LOWEST_AVAILABLE_DELTA = 71;
 
     /**
      * @var ?int
@@ -321,6 +324,12 @@ class CallMap
         $analyzer_major_version = $codebase->php_major_version;
         $analyzer_minor_version = $codebase->php_minor_version;
 
+        $analyzer_version = $analyzer_major_version . '.' . $analyzer_minor_version;
+        $current_version = self::PHP_MAJOR_VERSION . '.' . self::PHP_MINOR_VERSION;
+
+        $analyzer_version_int = (int) ($analyzer_major_version . $analyzer_minor_version);
+        $current_version_int = (int) (self::PHP_MAJOR_VERSION . self::PHP_MINOR_VERSION);
+
         if (self::$call_map !== null
             && $analyzer_major_version === self::$loaded_php_major_version
             && $analyzer_minor_version === self::$loaded_php_minor_version
@@ -338,8 +347,13 @@ class CallMap
             self::$call_map[$cased_key] = $value;
         }
 
-        if ($analyzer_minor_version < self::PHP_MINOR_VERSION) {
-            for ($i = self::PHP_MINOR_VERSION; $i > $analyzer_minor_version; --$i) {
+        if (version_compare($analyzer_version, $current_version, '<')) {
+            // the following assumes both minor and major versions a single digits
+            for ($i = $current_version_int; $i > $analyzer_version_int && $i >= self::LOWEST_AVAILABLE_DELTA; --$i) {
+                $delta_file = __DIR__ . '/../CallMap_' . $i . '_delta.php';
+                if (!file_exists($delta_file)) {
+                    continue;
+                }
                 /**
                  * @var array{
                  *     old: array<string, array<int|string, string>>,
@@ -347,7 +361,7 @@ class CallMap
                  * }
                  * @psalm-suppress UnresolvableInclude
                  */
-                $diff_call_map = require(__DIR__ . '/../CallMap_7' . $i . '_delta.php');
+                $diff_call_map = require($delta_file);
 
                 foreach ($diff_call_map['new'] as $key => $_) {
                     $cased_key = strtolower($key);

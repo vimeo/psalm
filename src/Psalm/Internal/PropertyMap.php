@@ -181,7 +181,7 @@ return [
     ],
     'domdocument' => [
         'actualEncoding' => 'string',
-        'config' => 'DOMConfiguration',
+        'config' => 'null',
         'doctype' => 'DOMDocumentType',
         'documentElement' => 'DOMElement',
         'documentURI' => 'string',
