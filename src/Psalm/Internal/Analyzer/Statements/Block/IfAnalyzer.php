@@ -1025,7 +1025,7 @@ class IfAnalyzer
         $elseif_clauses = Algebra::getFormula(
             \spl_object_id($elseif->cond),
             $elseif->cond,
-            $statements_analyzer->getFQCLN(),
+            $else_context->self,
             $statements_analyzer,
             $codebase
         );

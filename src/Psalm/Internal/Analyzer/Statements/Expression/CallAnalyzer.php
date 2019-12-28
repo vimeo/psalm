@@ -3464,7 +3464,7 @@ class CallAnalyzer
                     $assert_clauses = \Psalm\Type\Algebra::getFormula(
                         \spl_object_id($conditional),
                         $conditional,
-                        $statements_analyzer->getFQCLN(),
+                        $context->self,
                         $statements_analyzer,
                         $statements_analyzer->getCodebase()
                     );
@@ -3472,7 +3472,7 @@ class CallAnalyzer
                     $assert_clauses = \Psalm\Type\Algebra::getFormula(
                         \spl_object_id($arg_value),
                         $arg_value,
-                        $statements_analyzer->getFQCLN(),
+                        $context->self,
                         $statements_analyzer,
                         $statements_analyzer->getCodebase()
                     );

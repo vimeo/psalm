@@ -102,7 +102,7 @@ class BinaryOpAnalyzer
             $left_clauses = Algebra::getFormula(
                 \spl_object_id($stmt->left),
                 $stmt->left,
-                $statements_analyzer->getFQCLN(),
+                $context->self,
                 $statements_analyzer,
                 $codebase
             );
@@ -330,7 +330,7 @@ class BinaryOpAnalyzer
             $left_clauses = Algebra::getFormula(
                 \spl_object_id($stmt->left),
                 $stmt->left,
-                $statements_analyzer->getFQCLN(),
+                $context->self,
                 $statements_analyzer,
                 $codebase
             );
@@ -562,7 +562,7 @@ class BinaryOpAnalyzer
             $if_clauses = Algebra::getFormula(
                 \spl_object_id($stmt),
                 $stmt,
-                $statements_analyzer->getFQCLN(),
+                $context->self,
                 $statements_analyzer,
                 $codebase
             );

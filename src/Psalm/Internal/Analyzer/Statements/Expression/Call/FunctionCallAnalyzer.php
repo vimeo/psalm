@@ -601,7 +601,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $assert_clauses = \Psalm\Type\Algebra::getFormula(
                     \spl_object_id($stmt->args[0]->value),
                     $stmt->args[0]->value,
-                    $statements_analyzer->getFQCLN(),
+                    $context->self,
                     $statements_analyzer,
                     $codebase
                 );

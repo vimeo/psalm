@@ -65,7 +65,7 @@ class TernaryAnalyzer
         $if_clauses = \Psalm\Type\Algebra::getFormula(
             \spl_object_id($stmt->cond),
             $stmt->cond,
-            $statements_analyzer->getFQCLN(),
+            $context->self,
             $statements_analyzer,
             $codebase
         );
