@@ -231,3 +231,15 @@ function array_merge_recursive(array $arr, array ...$arr2)
 function array_fill_keys(array $keys, $value): array
 {
 }
+
+/**
+ * @template TKey
+ *
+ * @param string $pattern
+ * @param array<TKey,string> $input
+ * @param 0|1 $flags 1=PREG_GREP_INVERT
+ * @return array<TKey,string>
+ */
+function preg_grep($pattern, array $input, $flags = 0)
+{
+}
