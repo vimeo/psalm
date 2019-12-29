@@ -743,6 +743,7 @@ class CommentAnalyzer
 
         if (isset($parsed_docblock['specials']['template'])
             || isset($parsed_docblock['specials']['psalm-template'])
+            || isset($parsed_docblock['specials']['phpstan-template'])
         ) {
             $all_templates
                 = (isset($parsed_docblock['specials']['template'])
