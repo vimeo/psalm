@@ -892,6 +892,7 @@ class AssignmentAnalyzer
         $stmt_var_type = $stmt_var_type ? clone $stmt_var_type: null;
 
         $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
+        $result_type = null;
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
             || $stmt instanceof PhpParser\Node\Expr\AssignOp\Minus
@@ -967,6 +968,16 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
             }
+        }
+
+        if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            ArrayAssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->var,
+                $context,
+                null,
+                $result_type ?: Type::getEmpty()
+            );
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
