@@ -19,4 +19,4 @@ cd /tmp/testing-with-real-projects
 git clone git@github.com:doctrine/collections.git
 cd collections
 composer install
-~/project/build/psalm.phar --monochrome --show-info=false
+~/project/psalm --monochrome --show-info=false
