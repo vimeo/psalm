@@ -364,7 +364,13 @@ class CallAnalyzer
             && isset($args[0])
             && isset($args[1])
         ) {
-            if (self::handleArrayAddition($statements_analyzer, $args, $context, $method_id === 'array_push') === false) {
+            if (self::handleArrayAddition(
+                $statements_analyzer,
+                $args,
+                $context,
+                $method_id === 'array_push'
+            ) === false
+            ) {
                 return false;
             }
 
@@ -896,9 +902,9 @@ class CallAnalyzer
                 } else {
                     if ($objectlike_list) {
                         if ($is_push) {
-                            array_push($objectlike_list->properties, $arg_value_type);
+                            \array_push($objectlike_list->properties, $arg_value_type);
                         } else {
-                            array_unshift($objectlike_list->properties, $arg_value_type);
+                            \array_unshift($objectlike_list->properties, $arg_value_type);
                         }
 
                         $by_ref_type = new Type\Union([$objectlike_list]);
