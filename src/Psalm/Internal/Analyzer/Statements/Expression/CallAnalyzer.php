@@ -364,7 +364,7 @@ class CallAnalyzer
             && isset($args[0])
             && isset($args[1])
         ) {
-            if (self::handleArrayAddition($statements_analyzer, $args, $context) === false) {
+            if (self::handleArrayAddition($statements_analyzer, $args, $context, $method_id === 'array_push') === false) {
                 return false;
             }
 
@@ -822,7 +822,8 @@ class CallAnalyzer
     private static function handleArrayAddition(
         StatementsAnalyzer $statements_analyzer,
         array $args,
-        Context $context
+        Context $context,
+        bool $is_push
     ) {
         $array_arg = $args[0]->value;
 
@@ -855,7 +856,13 @@ class CallAnalyzer
              */
             $array_type = $array_arg_type->getTypes()['array'];
 
+            $objectlike_list = null;
+
             if ($array_type instanceof ObjectLike) {
+                if ($array_type->is_list) {
+                    $objectlike_list = clone $array_type;
+                }
+
                 $array_type = $array_type->getGenericArrayType();
             }
 
@@ -887,19 +894,38 @@ class CallAnalyzer
                         clone $arg_value_type
                     );
                 } else {
-                    $by_ref_type = Type::combineUnionTypes(
-                        $by_ref_type,
-                        new Type\Union(
-                            [
-                                new TArray(
-                                    [
-                                        Type::getInt(),
-                                        clone $arg_value_type
-                                    ]
-                                ),
-                            ]
-                        )
-                    );
+                    if ($objectlike_list) {
+                        if ($is_push) {
+                            array_push($objectlike_list->properties, $arg_value_type);
+                        } else {
+                            array_unshift($objectlike_list->properties, $arg_value_type);
+                        }
+
+                        $by_ref_type = new Type\Union([$objectlike_list]);
+                    } elseif ($array_type instanceof TList) {
+                        $by_ref_type = Type::combineUnionTypes(
+                            $by_ref_type,
+                            new Type\Union(
+                                [
+                                    new TNonEmptyList(clone $arg_value_type),
+                                ]
+                            )
+                        );
+                    } else {
+                        $by_ref_type = Type::combineUnionTypes(
+                            $by_ref_type,
+                            new Type\Union(
+                                [
+                                    new TNonEmptyArray(
+                                        [
+                                            Type::getInt(),
+                                            clone $arg_value_type
+                                        ]
+                                    ),
+                                ]
+                            )
+                        );
+                    }
                 }
             }
 

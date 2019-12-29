@@ -229,6 +229,20 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
+    public function testEnsureOffsetExistsAfterArrayPush() : void
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $a = [1, 2, 3];
+                array_push($a, 4);
+                echo $a[3];'
+        );
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
     /**
      * @return void
      */
