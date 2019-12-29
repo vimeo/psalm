@@ -64,6 +64,18 @@ This asserts that `$bar` is not an object of type `SomeObjectType`:
 /** @psalm-assert !SomeObjectType $bar  */
 ```
 
+## Bool assertions
+
+This asserts that `$bar` is `true`:
+```php
+/** @psalm-assert true $bar  */
+```
+
+This asserts that `$bar` is not `false`:
+```php
+/** @psalm-assert !false $bar  */
+```
+
 ## Equality assertions
 
 Psalm also supports the equivalent of `assert($some_int === $other_int)` in the form
