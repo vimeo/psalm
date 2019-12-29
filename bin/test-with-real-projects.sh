@@ -16,7 +16,7 @@ composer install
 
 cd /tmp/testing-with-real-projects
 
-git clone git@github.com:doctrine/collections.git
+git clone git@github.com:muglug/collections.git
 cd collections
 composer install
 ~/project/psalm --monochrome --show-info=false
