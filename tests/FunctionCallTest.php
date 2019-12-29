@@ -14,6 +14,17 @@ class FunctionCallTest extends TestCase
     public function providerValidCodeParse()
     {
         return [
+            'preg_grep' => [
+                '<?php
+                  /**
+                   * @param array<int,string> $strings
+                   * @return array<int,string>
+                   */
+                  function filter(array $strings): array {
+                     return preg_grep("/search/", $strings, PREG_GREP_INVERT);
+                  }
+                '
+            ],
             'arrayFilter' => [
                 '<?php
                     $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
