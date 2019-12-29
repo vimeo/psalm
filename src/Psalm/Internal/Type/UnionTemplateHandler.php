@@ -340,7 +340,7 @@ class UnionTemplateHandler
                         }
 
                         if (!$new_generic_params) {
-                            throw new \UnexpectedValueException('$new_generic_params should not be empty');
+                            return new Atomic\TNamedObject($atomic_input_type->value);
                         }
 
                         return new Atomic\TGenericObject(

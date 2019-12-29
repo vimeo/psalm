@@ -1851,7 +1851,7 @@ class TypeAnalyzer
                         }
 
                         if (!$generic_params) {
-                            throw new \UnexpectedValueException('$generic_params should not be empty');
+                            return false;
                         }
 
                         $input_type_part = new TGenericObject(
