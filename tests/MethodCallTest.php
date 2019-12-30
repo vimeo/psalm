@@ -426,6 +426,13 @@ class MethodCallTest extends TestCase
                         return $foo;
                     }'
             ],
+            'pdoStatementFetchAssoc' => [
+                '<?php
+                    $p = new \PDO("sqlite:::memory:");
+                    $sth = $p->prepare("SELECT 1");
+                    $sth->execute();
+                    while (($row = $sth->fetch(\PDO::FETCH_ASSOC)) !== false) {}'
+            ],
         ];
     }
 
