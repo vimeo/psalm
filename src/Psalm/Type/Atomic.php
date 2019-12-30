@@ -159,6 +159,7 @@ abstract class Atomic
                 return new TCallable();
 
             case 'array':
+            case 'associative-array':
                 return new TArray([new Union([new TArrayKey]), new Union([new TMixed])]);
 
             case 'non-empty-array':

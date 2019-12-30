@@ -262,7 +262,9 @@ abstract class Type
 
             $generic_type_value = self::fixScalarTerms($generic_type);
 
-            if (($generic_type_value === 'array' || $generic_type_value === 'non-empty-array')
+            if (($generic_type_value === 'array'
+                    || $generic_type_value === 'non-empty-array'
+                    || $generic_type_value === 'associative-array')
                 && count($generic_params) === 1
             ) {
                 array_unshift($generic_params, new Union([new TArrayKey]));
@@ -284,7 +286,7 @@ abstract class Type
                 throw new TypeParseTreeException('No generic params provided for type');
             }
 
-            if ($generic_type_value === 'array') {
+            if ($generic_type_value === 'array' || $generic_type_value === 'associative-array') {
                 return new TArray($generic_params);
             }
 
