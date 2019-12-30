@@ -1398,9 +1398,14 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $statements_analyzer->node_data->setIfTrueAssertions(
                                 $stmt,
                                 array_map(
-                                    function (Assertion $assertion)
-                                        use ($class_template_params, $lhs_var_id) : Assertion {
-                                        return $assertion->getUntemplatedCopy($class_template_params ?: [], $lhs_var_id);
+                                    function (Assertion $assertion) use (
+                                        $class_template_params,
+                                        $lhs_var_id
+                                    ) : Assertion {
+                                        return $assertion->getUntemplatedCopy(
+                                            $class_template_params ?: [],
+                                            $lhs_var_id
+                                        );
                                     },
                                     $method_storage->if_true_assertions
                                 )
@@ -1411,9 +1416,14 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $statements_analyzer->node_data->setIfFalseAssertions(
                                 $stmt,
                                 array_map(
-                                    function (Assertion $assertion)
-                                        use ($class_template_params, $lhs_var_id) : Assertion {
-                                        return $assertion->getUntemplatedCopy($class_template_params ?: [], $lhs_var_id);
+                                    function (Assertion $assertion) use (
+                                        $class_template_params,
+                                        $lhs_var_id
+                                    ) : Assertion {
+                                        return $assertion->getUntemplatedCopy(
+                                            $class_template_params ?: [],
+                                            $lhs_var_id
+                                        );
                                     },
                                     $method_storage->if_false_assertions
                                 )

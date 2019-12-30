@@ -33,8 +33,8 @@ class Assertion
     public function getUntemplatedCopy(array $template_type_map, ?string $this_var_id) : self
     {
         return new Assertion(
-            is_string($this->var_id) && $this_var_id
-                ? str_replace('$this->', $this_var_id . '->', $this->var_id)
+            \is_string($this->var_id) && $this_var_id
+                ? \str_replace('$this->', $this_var_id . '->', $this->var_id)
                 : $this->var_id,
             array_map(
                 /**
