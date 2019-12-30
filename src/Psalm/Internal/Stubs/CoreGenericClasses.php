@@ -1340,6 +1340,12 @@ class ReflectionClass implements Reflector {
      * @return T
      */
     public function newInstanceWithoutConstructor(): object;
+
+    /**
+     * @return ?array<string>
+     * @psalm-ignore-nullable-return
+     */
+    public function getTraitNames(): array {}
 }
 
 /**
