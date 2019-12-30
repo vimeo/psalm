@@ -199,6 +199,7 @@ trait CallableTrait
         Codebase $codebase = null,
         Atomic $input_type = null,
         ?string $calling_class = null,
+        ?string $calling_function = null,
         bool $replace = true,
         bool $add_upper_bound = false,
         int $depth = 0
@@ -225,6 +226,7 @@ trait CallableTrait
                     $codebase,
                     $input_param_type,
                     $calling_class,
+                    $calling_function,
                     $replace,
                     !$add_upper_bound,
                     $depth
@@ -242,6 +244,7 @@ trait CallableTrait
                 $codebase,
                 $input_type->return_type,
                 $calling_class,
+                $calling_function,
                 $replace,
                 $add_upper_bound
             );

@@ -816,6 +816,7 @@ abstract class Atomic
         Codebase $codebase = null,
         Type\Atomic $input_type = null,
         ?string $calling_class = null,
+        ?string $calling_function = null,
         bool $replace = true,
         bool $add_upper_bound = false,
         int $depth = 0

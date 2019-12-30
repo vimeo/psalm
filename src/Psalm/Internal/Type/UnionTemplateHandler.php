@@ -23,6 +23,7 @@ class UnionTemplateHandler
         ?Codebase $codebase,
         ?Union $input_type,
         ?string $calling_class = null,
+        ?string $calling_function = null,
         bool $replace = true,
         bool $add_upper_bound = false,
         int $depth = 0
@@ -43,6 +44,7 @@ class UnionTemplateHandler
                     $codebase,
                     $input_type,
                     $calling_class,
+                    $calling_function,
                     $replace,
                     $add_upper_bound,
                     $depth,
@@ -87,6 +89,7 @@ class UnionTemplateHandler
         ?Codebase $codebase,
         ?Union $input_type,
         ?string $calling_class,
+        ?string $calling_function,
         bool $replace,
         bool $add_upper_bound,
         int $depth,
@@ -106,6 +109,7 @@ class UnionTemplateHandler
                 $key,
                 $input_type,
                 $calling_class,
+                $calling_function,
                 $template_result,
                 $codebase,
                 $replace,
@@ -243,6 +247,7 @@ class UnionTemplateHandler
             $codebase,
             $matching_atomic_type,
             $calling_class,
+            $calling_function,
             $replace,
             $add_upper_bound,
             $depth + 1
@@ -365,6 +370,7 @@ class UnionTemplateHandler
         string $key,
         ?Union $input_type,
         ?string $calling_class,
+        ?string $calling_function,
         TemplateResult $template_result,
         ?Codebase $codebase,
         bool $replace,
@@ -432,6 +438,7 @@ class UnionTemplateHandler
 
                     if ($replacement_atomic_type instanceof Atomic\TTemplateParam
                         && $replacement_atomic_type->defining_class !== $calling_class
+                        && $replacement_atomic_type->defining_class !== 'fn-' . $calling_function
                     ) {
                         foreach ($replacement_atomic_type->as->getTypes() as $nested_type_atomic) {
                             $replacements_found = true;

@@ -1281,7 +1281,8 @@ class CallAnalyzer
                         $template_result,
                         $codebase,
                         $arg_value_type,
-                        $context->self ?: 'fn-' . $context->calling_function_id,
+                        $context->self,
+                        $context->calling_function_id,
                         false
                     );
 
@@ -1466,7 +1467,8 @@ class CallAnalyzer
                         $template_result,
                         $codebase,
                         clone $param->default_type,
-                        'fn-' . $context->calling_function_id,
+                        $context->self,
+                        $context->calling_function_id,
                         true
                     );
                 }
@@ -1804,7 +1806,8 @@ class CallAnalyzer
                 $template_result,
                 $codebase,
                 $arg_type_param,
-                $context->self ?: 'fn-' . $context->calling_function_id
+                $context->self,
+                $context->calling_function_id
             );
 
             foreach ($bindable_template_params as $template_type) {
