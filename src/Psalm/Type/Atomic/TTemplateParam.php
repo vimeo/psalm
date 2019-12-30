@@ -24,14 +24,14 @@ class TTemplateParam extends \Psalm\Type\Atomic
     public $as;
 
     /**
-     * @var string
+     * @var non-empty-string
      */
     public $defining_class;
 
     /**
-     * @param string $param_name
+     * @param non-empty-string $defining_class
      */
-    public function __construct($param_name, Union $extends, string $defining_class)
+    public function __construct(string $param_name, Union $extends, string $defining_class)
     {
         $this->param_name = $param_name;
         $this->as = $extends;
@@ -52,7 +52,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
             return $this->param_name . '&' . implode('&', $this->extra_types);
         }
 
-        return $this->param_name . ($this->defining_class ? ':' . $this->defining_class : '');
+        return $this->param_name . ':' . $this->defining_class;
     }
 
     /**
@@ -71,7 +71,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
         }
 
         return $this->param_name
-            . ($this->defining_class ? ':' . $this->defining_class : '')
+            . ':' . $this->defining_class
             . ' as ' . $this->as->getId();
     }
 
@@ -167,7 +167,6 @@ class TTemplateParam extends \Psalm\Type\Atomic
         }
 
         if ($prevent_template_covariance
-            && $this->defining_class
             && \substr($this->defining_class, 0, 3) !== 'fn-'
         ) {
             $codebase = $source->getCodebase();

@@ -1081,7 +1081,7 @@ class Union
     }
 
     /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
+     * @param  array<string, array<non-empty-string, array{Type\Union, 1?:int}>>  $template_types
      *
      * @return void
      */
@@ -1099,8 +1099,8 @@ class Union
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $template_type = null;
 
-                if (isset($template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''])) {
-                    $template_type = $template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''][0];
+                if (isset($template_types[$atomic_type->param_name][$atomic_type->defining_class])) {
+                    $template_type = $template_types[$atomic_type->param_name][$atomic_type->defining_class][0];
 
                     if (!$atomic_type->as->isMixed() && $template_type->isMixed()) {
                         $template_type = clone $atomic_type->as;
@@ -1128,10 +1128,10 @@ class Union
                             }
                         }
                     }
-                } elseif ($codebase && $atomic_type->defining_class) {
+                } elseif ($codebase) {
                     foreach ($template_types as $template_type_map) {
                         foreach ($template_type_map as $template_class => $_) {
-                            if (!$template_class) {
+                            if (substr($template_class, 0, 3) === 'fn-') {
                                 continue;
                             }
 

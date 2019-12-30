@@ -1218,11 +1218,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     && !isset(
                                         $template_result->generic_params
                                             [$template_type->param_name]
-                                            [$template_type->defining_class ?: '']
+                                            [$template_type->defining_class]
                                     )
                                 ) {
                                     $template_result->generic_params[$template_type->param_name] = [
-                                        ($template_type->defining_class ?: '') => [Type::getEmpty(), 0]
+                                        ($template_type->defining_class) => [Type::getEmpty(), 0]
                                     ];
                                 }
                             }
@@ -1635,14 +1635,12 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                         );
                                     }
                                 }
-                            } elseif ($type_extends_atomic->defining_class
-                                && isset(
-                                    $calling_class_storage
-                                        ->template_type_extends
-                                            [$type_extends_atomic->defining_class]
-                                            [$type_extends_atomic->param_name]
-                                )
-                            ) {
+                            } elseif (isset(
+                                $calling_class_storage
+                                    ->template_type_extends
+                                        [$type_extends_atomic->defining_class]
+                                        [$type_extends_atomic->param_name]
+                            )) {
                                 $mapped_offset = array_search(
                                     $type_extends_atomic->param_name,
                                     array_keys($calling_class_storage

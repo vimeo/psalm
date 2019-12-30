@@ -1134,9 +1134,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $new_bases = [];
 
                     foreach ($mapped_type->getTypes() as $mapped_atomic_type) {
-                        if ($mapped_atomic_type instanceof Type\Atomic\TTemplateParam
-                            && $mapped_atomic_type->defining_class
-                        ) {
+                        if ($mapped_atomic_type instanceof Type\Atomic\TTemplateParam) {
                             $new_bases[] = $mapped_atomic_type->defining_class;
                         }
                     }

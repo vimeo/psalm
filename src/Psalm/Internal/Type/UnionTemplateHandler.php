@@ -381,7 +381,7 @@ class UnionTemplateHandler
     ) : array {
         $template_type = $template_result->template_types
             [$atomic_type->param_name]
-            [$atomic_type->defining_class ?: '']
+            [$atomic_type->defining_class]
             [0];
 
         if ($template_type->getId() === $key) {
@@ -431,7 +431,7 @@ class UnionTemplateHandler
                                 $atomic_types[] = clone $key_type_atomic;
                             }
 
-                            $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''][0]
+                            $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class][0]
                                 = clone $key_type;
                         }
                     }
@@ -475,11 +475,11 @@ class UnionTemplateHandler
                 $generic_param->setFromDocblock();
 
                 if (isset(
-                    $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''][0]
+                    $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class][0]
                 )) {
                     $existing_depth = $template_result->generic_params
                         [$atomic_type->param_name]
-                        [$atomic_type->defining_class ?: '']
+                        [$atomic_type->defining_class]
                         [1]
                         ?? -1;
 
@@ -491,7 +491,7 @@ class UnionTemplateHandler
                         $generic_param = \Psalm\Type::combineUnionTypes(
                             $template_result->generic_params
                                 [$atomic_type->param_name]
-                                [$atomic_type->defining_class ?: '']
+                                [$atomic_type->defining_class]
                                 [0],
                             $generic_param,
                             $codebase
@@ -499,7 +499,7 @@ class UnionTemplateHandler
                     }
                 }
 
-                $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class ?: ''] = [
+                $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class] = [
                     $generic_param,
                     $depth,
                 ];
@@ -516,7 +516,7 @@ class UnionTemplateHandler
                     $replacement_type
                 )
             ) {
-                $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''][0]
+                $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class][0]
                     = clone $input_type;
             }
         }

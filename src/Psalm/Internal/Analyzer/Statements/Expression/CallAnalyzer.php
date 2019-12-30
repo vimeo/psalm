@@ -1962,7 +1962,6 @@ class CallAnalyzer
 
                             foreach ($type->getTypes() as $atomic_type) {
                                 if ($atomic_type instanceof Type\Atomic\TTemplateParam
-                                    && $atomic_type->defining_class
                                     && isset(
                                         $calling_class_storage
                                             ->template_type_extends

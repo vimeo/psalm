@@ -427,9 +427,7 @@ class Populator
         $extended_types = [];
 
         foreach ($type->getTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TTemplateParam
-                && $atomic_type->defining_class
-            ) {
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $referenced_type
                     = $storage->template_type_extends[$atomic_type->defining_class][$atomic_type->param_name]
                         ?? null;

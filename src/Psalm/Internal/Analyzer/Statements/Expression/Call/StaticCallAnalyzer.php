@@ -784,10 +784,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                             foreach ($extended_type->getTypes() as $t) {
                                 if ($t instanceof Type\Atomic\TTemplateParam
-                                    && isset($found_generic_params[$t->param_name][$t->defining_class ?: ''])
+                                    && isset($found_generic_params[$t->param_name][$t->defining_class])
                                 ) {
                                     $found_generic_params[$type_key][$template_fq_class_name] = [
-                                        $found_generic_params[$t->param_name][$t->defining_class ?: ''][0]
+                                        $found_generic_params[$t->param_name][$t->defining_class][0]
                                     ];
                                 } else {
                                     $found_generic_params[$type_key][$template_fq_class_name] = [
@@ -870,10 +870,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 if (!isset(
                                     $template_result->generic_params
                                         [$template_type->param_name]
-                                        [$template_type->defining_class ?: '']
+                                        [$template_type->defining_class]
                                 )) {
                                     $template_result->generic_params[$template_type->param_name] = [
-                                        ($template_type->defining_class ?: '') => [Type::getEmpty(), 0]
+                                        ($template_type->defining_class) => [Type::getEmpty(), 0]
                                     ];
                                 }
                             }

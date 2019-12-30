@@ -1040,25 +1040,23 @@ class ForeachAnalyzer
                     continue;
                 }
 
-                if ($extended_atomic_type->defining_class) {
-                    $candidate_type = self::getExtendedType(
-                        $extended_atomic_type->param_name,
-                        $extended_atomic_type->defining_class,
-                        $calling_class,
-                        $template_type_extends,
-                        $class_template_types,
-                        $calling_type_params
-                    );
+                $candidate_type = self::getExtendedType(
+                    $extended_atomic_type->param_name,
+                    $extended_atomic_type->defining_class,
+                    $calling_class,
+                    $template_type_extends,
+                    $class_template_types,
+                    $calling_type_params
+                );
 
-                    if ($candidate_type) {
-                        if (!$return_type) {
-                            $return_type = $candidate_type;
-                        } else {
-                            $return_type = Type::combineUnionTypes(
-                                $return_type,
-                                $candidate_type
-                            );
-                        }
+                if ($candidate_type) {
+                    if (!$return_type) {
+                        $return_type = $candidate_type;
+                    } else {
+                        $return_type = Type::combineUnionTypes(
+                            $return_type,
+                            $candidate_type
+                        );
                     }
                 }
             }

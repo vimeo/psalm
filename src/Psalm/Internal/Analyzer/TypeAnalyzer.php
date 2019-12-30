@@ -672,10 +672,7 @@ class TypeAnalyzer
                     && \substr($input_type_part->defining_class, 0, 3) !== 'fn-'
                     && \substr($container_type_part->defining_class, 0, 3) !== 'fn-')
             ) {
-                if ($container_type_part->defining_class
-                    && $input_type_part->defining_class
-                    && \substr($input_type_part->defining_class, 0, 3) !== 'fn-'
-                ) {
+                if (\substr($input_type_part->defining_class, 0, 3) !== 'fn-') {
                     $input_class_storage = $codebase->classlike_storage_provider->get(
                         $input_type_part->defining_class
                     );
