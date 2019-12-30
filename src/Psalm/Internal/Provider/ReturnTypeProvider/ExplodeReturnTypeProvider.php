@@ -28,7 +28,7 @@ class ExplodeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnType
             return Type::getMixed();
         }
 
-        if (count($call_args) >= 2) {
+        if (\count($call_args) >= 2) {
             $can_return_empty = isset($call_args[2])
                 && (
                     !$call_args[2]->value instanceof PhpParser\Node\Scalar\LNumber
