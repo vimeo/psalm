@@ -53,6 +53,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\StrReplaceReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\VersionCompareReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\MktimeReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ExplodeReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\GetObjectVarsReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\GetClassMethodsReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\FirstArgStringReturnTypeProvider::class);
