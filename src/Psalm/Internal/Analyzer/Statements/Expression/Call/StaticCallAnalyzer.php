@@ -973,7 +973,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $stmt,
                             array_map(
                                 function (Assertion $assertion) use ($generic_params) : Assertion {
-                                    return $assertion->getUntemplatedCopy($generic_params);
+                                    return $assertion->getUntemplatedCopy($generic_params, null);
                                 },
                                 $method_storage->if_true_assertions
                             )
@@ -985,7 +985,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $stmt,
                             array_map(
                                 function (Assertion $assertion) use ($generic_params) : Assertion {
-                                    return $assertion->getUntemplatedCopy($generic_params);
+                                    return $assertion->getUntemplatedCopy($generic_params, null);
                                 },
                                 $method_storage->if_false_assertions
                             )

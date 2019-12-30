@@ -30,10 +30,12 @@ class Assertion
     /**
      * @param array<string, array<string, array{0:\Psalm\Type\Union}>> $template_type_map
      */
-    public function getUntemplatedCopy(array $template_type_map) : self
+    public function getUntemplatedCopy(array $template_type_map, ?string $this_var_id) : self
     {
         return new Assertion(
-            $this->var_id,
+            is_string($this->var_id) && $this_var_id
+                ? str_replace('$this->', $this_var_id . '->', $this->var_id)
+                : $this->var_id,
             array_map(
                 /**
                  * @param array<int, string> $rules

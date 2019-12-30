@@ -130,7 +130,11 @@ class AssertionFinder
         if ($var_name) {
             $if_types[$var_name] = [['!falsy']];
 
-            return $if_types;
+            if (!$conditional instanceof PhpParser\Node\Expr\MethodCall
+                && !$conditional instanceof PhpParser\Node\Expr\StaticCall
+            ) {
+                return $if_types;
+            }
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\Assign) {
@@ -332,7 +336,7 @@ class AssertionFinder
         if ($conditional instanceof PhpParser\Node\Expr\MethodCall
             || $conditional instanceof PhpParser\Node\Expr\StaticCall
         ) {
-            $if_types = self::processCustomAssertion($conditional, $this_class_name, $source, false);
+            $if_types += self::processCustomAssertion($conditional, $this_class_name, $source, false);
 
             return $if_types;
         }
@@ -1950,7 +1954,6 @@ class AssertionFinder
                         }
                     }
                 } elseif (\is_string($assertion->var_id)
-                    && strpos($assertion->var_id, '$this->') === 0
                     && $expr instanceof PhpParser\Node\Expr\MethodCall
                 ) {
                     if ($prefix === $assertion->rule[0][0][0]) {
@@ -1999,7 +2002,6 @@ class AssertionFinder
                         }
                     }
                 } elseif (\is_string($assertion->var_id)
-                    && strpos($assertion->var_id, '$this->') === 0
                     && $expr instanceof PhpParser\Node\Expr\MethodCall
                 ) {
                     if ($prefix === $assertion->rule[0][0][0]) {
