@@ -315,7 +315,14 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 }
             }
 
-            $statements_analyzer->node_data->setType($stmt, new Type\Union([new TNamedObject($fq_class_name)]));
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                new Type\Union([
+                    $stmt->class instanceof PhpParser\Node\Stmt\Class_
+                        ? new Type\Atomic\TAnonymousClassInstance($fq_class_name)
+                        : new TNamedObject($fq_class_name)
+                ])
+            );
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 $codebase->classlikes->classExists($fq_class_name)

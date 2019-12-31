@@ -766,6 +766,35 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true
             ],
+            'missingReturnTypeAnonymousClass' => [
+                '<?php
+                    function logger() {
+                        return new class {};
+                    }',
+                '<?php
+                    function logger(): object {
+                        return new class {};
+                    }',
+                '7.4',
+                ['MissingReturnType'],
+                true
+            ],
+            'missingReturnTypeAnonymousClassPre72' => [
+                '<?php
+                    function logger() {
+                        return new class {};
+                    }',
+                '<?php
+                    /**
+                     * @return object
+                     */
+                    function logger() {
+                        return new class {};
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                true
+            ],
             'fixInvalidIntReturnType56' => [
                 '<?php
                     /**
