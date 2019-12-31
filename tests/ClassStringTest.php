@@ -660,6 +660,24 @@ class ClassStringTest extends TestCase
                     /** @param class-string<Example> $className */
                     function takesExampleClassString(string $className): void {}'
             ],
+            'noCrashOnPolyfill' => [
+                '<?php
+                    if (class_exists(My_Parent::class) && !class_exists(My_Extend::class)) {
+                        /**
+                         * Extended class
+                         */
+                        class My_Extend extends My_Parent {
+                            /**
+                             * Construct
+                             *
+                             * @return void
+                             */
+                            public function __construct() {
+                                echo "foo";
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -798,6 +816,7 @@ class ClassStringTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+
         ];
     }
 }

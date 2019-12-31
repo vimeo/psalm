@@ -276,6 +276,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             return;
         }
 
+        // this can happen when stubbing
+        if (!$this->codebase->classOrInterfaceExists($stmt->name->name)) {
+            return;
+        }
+
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             $class_analyzer = new ClassAnalyzer($stmt, $this, $stmt->name->name);
 
