@@ -656,7 +656,19 @@ class UnusedCodeTest extends TestCase
                                 break;
                         }
                     }'
-            ]
+            ],
+            'ignoreSerializerSerialize' => [
+                '<?php
+                    class Foo implements Serializable {
+                        public function serialize() : string {
+                            return "";
+                        }
+
+                        public function unserialize($_serialized) : void {}
+                    }
+
+                    new Foo();'
+            ],
         ];
     }
 

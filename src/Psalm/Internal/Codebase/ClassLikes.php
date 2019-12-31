@@ -1773,6 +1773,12 @@ class ClassLikes
 
                     $has_parent_references = false;
 
+                    if ($codebase->classImplements($classlike_storage->name, 'Serializable')
+                        && ($method_name === 'serialize' || $method_name === 'unserialize')
+                    ) {
+                        continue;
+                    }
+
                     $has_variable_calls = $codebase->analyzer->hasMixedMemberName(strtolower($method_name))
                         || $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name . '::'));
 
