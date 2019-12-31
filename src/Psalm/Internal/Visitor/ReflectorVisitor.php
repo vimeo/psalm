@@ -2659,37 +2659,42 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             return null;
         }
 
-        $assertion_type_parts = explode('|', $assertion_type);
-
         $class_template_types = !$stmt instanceof PhpParser\Node\Stmt\ClassMethod || !$stmt->isStatic()
             ? $this->class_template_types
             : [];
 
-        foreach ($assertion_type_parts as $i => $assertion_type_part) {
-            if ($assertion_type_part !== 'falsy'
-                && $assertion_type_part !== 'array'
-                && $assertion_type_part !== 'list'
-                && $assertion_type_part !== 'iterable'
+        $namespaced_type = Type::parseTokens(
+            Type::fixUpLocalType(
+                $assertion_type,
+                $this->aliases,
+                $this->function_template_types + $class_template_types,
+                $this->type_aliases,
+                null,
+                null,
+                true
+            )
+        );
+
+        $namespaced_type->queueClassLikesForScanning(
+            $this->codebase,
+            $this->file_storage,
+            $this->function_template_types + $class_template_types
+        );
+
+        foreach ($namespaced_type->getTypes() as $namespaced_type_part) {
+            if ($namespaced_type_part instanceof Type\Atomic\TAssertionFalsy
+                || ($namespaced_type_part instanceof Type\Atomic\TList
+                    && $namespaced_type_part->type_param->isMixed())
+                || ($namespaced_type_part instanceof Type\Atomic\TArray
+                    && $namespaced_type_part->type_params[0]->isArrayKey()
+                    && $namespaced_type_part->type_params[1]->isMixed())
+                || ($namespaced_type_part instanceof Type\Atomic\TIterable
+                    && $namespaced_type_part->type_params[0]->isMixed()
+                    && $namespaced_type_part->type_params[1]->isMixed())
             ) {
-                $namespaced_type = Type::parseTokens(
-                    Type::fixUpLocalType(
-                        $assertion_type_part,
-                        $this->aliases,
-                        $this->function_template_types + $class_template_types,
-                        $this->type_aliases,
-                        null
-                    )
-                );
-
-                $namespaced_type->queueClassLikesForScanning(
-                    $this->codebase,
-                    $this->file_storage,
-                    $this->function_template_types + $class_template_types
-                );
-
-                $assertion_type_parts[$i] = $prefix . $namespaced_type->getId();
+                $assertion_type_parts[] = $prefix . $namespaced_type_part->getAssertionString();
             } else {
-                $assertion_type_parts[$i] = $prefix . $assertion_type_part;
+                $assertion_type_parts[] = $prefix . $namespaced_type_part->getId();
             }
         }
 

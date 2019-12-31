@@ -209,7 +209,7 @@ class TList extends \Psalm\Type\Atomic
      */
     public function getAssertionString()
     {
-        return $this->getKey();
+        return 'list';
     }
 
     /**

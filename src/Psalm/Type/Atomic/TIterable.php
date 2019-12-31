@@ -44,6 +44,14 @@ class TIterable extends Atomic
         return 'iterable';
     }
 
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return 'iterable';
+    }
+
     public function getId()
     {
         $s = '';

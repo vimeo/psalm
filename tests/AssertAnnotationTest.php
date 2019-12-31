@@ -822,6 +822,13 @@ class AssertAnnotationTest extends TestCase
                         echo count($a->getArray());
                     }'
             ],
+            'preventErrorWhenAssertingOnArrayUnion' => [
+                '<?php
+                    /**
+                     * @psalm-assert array<string,string|object> $data
+                     */
+                    function validate(array $data): void {}'
+            ],
         ];
     }
 

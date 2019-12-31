@@ -26,6 +26,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TAssertionFalsy;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
@@ -216,6 +217,9 @@ abstract class Atomic
 
             case 'html-escaped-string':
                 return new THtmlEscapedString();
+
+            case 'false-y':
+                return new TAssertionFalsy();
 
             case '$this':
                 return new TNamedObject('static');

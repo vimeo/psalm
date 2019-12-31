@@ -1030,7 +1030,8 @@ abstract class Type
         array $template_type_map = null,
         array $type_aliases = null,
         ?string $self_fqcln = null,
-        ?string $parent_fqcln = null
+        ?string $parent_fqcln = null,
+        bool $allow_assertions = false
     ) {
         $type_tokens = self::tokenize($string_type);
 
@@ -1119,6 +1120,11 @@ abstract class Type
             }
 
             if (isset($type_tokens[$i + 1]) && $type_tokens[$i + 1][0] === '(') {
+                continue;
+            }
+
+            if ($allow_assertions && $string_type_token[0] === 'falsy') {
+                $type_tokens[$i][0] = 'false-y';
                 continue;
             }
 
