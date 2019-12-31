@@ -173,7 +173,7 @@ class ReturnTypeAnalyzer
                         . $return_type . ' expected',
                     $return_type_location
                 ),
-                $source->getSuppressedIssues()
+                $suppressed_issues
             )) {
                 return false;
             }
@@ -198,7 +198,7 @@ class ReturnTypeAnalyzer
                         . 'either implicitly or explicitly',
                     $return_type_location
                 ),
-                $source->getSuppressedIssues()
+                $suppressed_issues
             )) {
                 return false;
             }
