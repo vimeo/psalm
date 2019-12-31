@@ -2609,7 +2609,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     * @return ?array<int, string>
+     * @return ?list<string>
      */
     private function getAssertionParts(
         string $assertion_type,
@@ -2680,6 +2680,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $this->file_storage,
             $this->function_template_types + $class_template_types
         );
+
+        $assertion_type_parts = [];
 
         foreach ($namespaced_type->getTypes() as $namespaced_type_part) {
             if ($namespaced_type_part instanceof Type\Atomic\TAssertionFalsy
