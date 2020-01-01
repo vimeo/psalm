@@ -63,11 +63,11 @@ jobs:
         - vendor/bin/phpcs
 
     - stage: Ensure API BC
-      php: 7.3
+      php: 7.4
       env: DEPS="high"
       script:
-        - composer require --dev roave/backward-compatibility-check:^4.0.0
-        - ./vendor/bin/roave-backward-compatibility-check
+        - mkdir /tmp/bc-check && composer require --working-dir=/tmp/bc-check --dev roave/backward-compatibility-check:^4.0.0
+        - /tmp/bc-check/vendor/bin/roave-backward-compatibility-check
 
     - stage: Ensure no transient used dependencies
       php: 7.3
