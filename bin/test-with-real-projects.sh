@@ -23,8 +23,9 @@ composer install
 
 cd /tmp/testing-with-real-projects
 
-git clone git@github.com:Ocramius/ProxyManager.git
+git clone git@github.com:muglug/ProxyManager.git
 cd ProxyManager
+git checkout c61365d3a856d5a88f53b7c1fc8dc775f06fa25c
 composer install
 ~/project/psalm --monochrome
 
