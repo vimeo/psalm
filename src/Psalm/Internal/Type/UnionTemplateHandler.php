@@ -474,11 +474,17 @@ class UnionTemplateHandler
 
                 $generic_param->setFromDocblock();
 
+                $param_name_key = $atomic_type->param_name;
+
+                if (strpos($key, '&')) {
+                    $param_name_key = $key;
+                }
+
                 if (isset(
-                    $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class][0]
+                    $template_result->generic_params[$param_name_key][$atomic_type->defining_class][0]
                 )) {
                     $existing_depth = $template_result->generic_params
-                        [$atomic_type->param_name]
+                        [$param_name_key]
                         [$atomic_type->defining_class]
                         [1]
                         ?? -1;
@@ -490,7 +496,7 @@ class UnionTemplateHandler
                     if ($existing_depth === $depth) {
                         $generic_param = \Psalm\Type::combineUnionTypes(
                             $template_result->generic_params
-                                [$atomic_type->param_name]
+                                [$param_name_key]
                                 [$atomic_type->defining_class]
                                 [0],
                             $generic_param,
@@ -499,7 +505,7 @@ class UnionTemplateHandler
                     }
                 }
 
-                $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class] = [
+                $template_result->generic_params[$param_name_key][$atomic_type->defining_class] = [
                     $generic_param,
                     $depth,
                 ];

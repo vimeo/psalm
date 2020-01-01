@@ -49,7 +49,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
     public function getKey()
     {
         if ($this->extra_types) {
-            return $this->param_name . '&' . implode('&', $this->extra_types);
+            return $this->param_name . ':' . $this->defining_class . '&' . implode('&', $this->extra_types);
         }
 
         return $this->param_name . ':' . $this->defining_class;
