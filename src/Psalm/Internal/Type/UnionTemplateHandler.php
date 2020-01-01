@@ -102,7 +102,8 @@ class UnionTemplateHandler
         }
 
         if ($atomic_type instanceof Atomic\TTemplateParam
-            && isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])
+            && ($param_name_key = strpos($key, '&') ? $key : $atomic_type->param_name)
+            && isset($template_result->template_types[$param_name_key][$atomic_type->defining_class])
         ) {
             $a = self::handleTemplateParamStandin(
                 $atomic_type,
@@ -390,6 +391,12 @@ class UnionTemplateHandler
 
         $replacement_type = $template_type;
 
+        $param_name_key = $atomic_type->param_name;
+
+        if (strpos($key, '&')) {
+            $param_name_key = $key;
+        }
+
         if ($replace) {
             $atomic_types = [];
 
@@ -474,12 +481,6 @@ class UnionTemplateHandler
 
                 $generic_param->setFromDocblock();
 
-                $param_name_key = $atomic_type->param_name;
-
-                if (strpos($key, '&')) {
-                    $param_name_key = $key;
-                }
-
                 if (isset(
                     $template_result->generic_params[$param_name_key][$atomic_type->defining_class][0]
                 )) {
@@ -522,7 +523,7 @@ class UnionTemplateHandler
                     $replacement_type
                 )
             ) {
-                $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class][0]
+                $template_result->template_types[$param_name_key][$atomic_type->defining_class][0]
                     = clone $input_type;
             }
         }

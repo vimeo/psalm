@@ -2219,6 +2219,29 @@ class ClassTemplateTest extends TestCase
                         }
                     }'
             ],
+            'intersectOnTOfObject' => [
+                '<?php
+                    /**
+                     * @psalm-template InterceptedObjectType of object
+                     */
+                    interface AccessInterceptorInterface
+                    {
+                        /**
+                         * @psalm-param Closure(
+                         *   InterceptedObjectType&AccessInterceptorInterface
+                         * ) : mixed $prefixInterceptor
+                         */
+                        public function setMethodPrefixInterceptor(Closure $prefixInterceptor = null) : void;
+                    }
+
+                    function foo(AccessInterceptorInterface $i) : void {
+                        $i->setMethodPrefixInterceptor(
+                            function(AccessInterceptorInterface $i) : string {
+                                return "hello";
+                            }
+                        );
+                    }'
+            ]
         ];
     }
 
