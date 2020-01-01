@@ -26,12 +26,12 @@ cd /tmp/testing-with-real-projects
 git clone git@github.com:Ocramius/ProxyManager.git
 cd ProxyManager
 composer install
-~/project/build/psalm.phar --monochrome
+~/project/psalm --monochrome
 
 cd /tmp/testing-with-real-projects
 
 git clone git@github.com:roave/you-are-using-it-wrong.git
 cd you-are-using-it-wrong
 composer install
-~/project/build/psalm.phar --monochrome
+~/project/psalm --monochrome
 ./vendor/bin/phpunit
