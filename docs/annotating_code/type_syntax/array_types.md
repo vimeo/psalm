@@ -107,3 +107,9 @@ You can specify types in that format yourself, e.g.
 ```php
 /** @return array{foo: string, bar: int} */
 ```
+
+Optional keys can be denoted by a trailing `?`, e.g.:
+
+```php
+/** @return array{optional?: string, bar: int} */
+```
