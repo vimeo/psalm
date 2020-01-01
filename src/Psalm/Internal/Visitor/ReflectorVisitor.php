@@ -1064,6 +1064,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             if ($node->extends) {
                 $parent_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($node->extends, $this->aliases);
+                $parent_fqcln = $this->codebase->classlikes->getUnAliasedName($parent_fqcln);
                 $this->codebase->scanner->queueClassLikeForScanning(
                     $parent_fqcln,
                     $this->file_path,
@@ -1087,6 +1088,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             foreach ($node->extends as $interface) {
                 $interface_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($interface, $this->aliases);
+                $interface_fqcln = $this->codebase->classlikes->getUnAliasedName($interface_fqcln);
                 $this->codebase->scanner->queueClassLikeForScanning($interface_fqcln, $this->file_path);
                 $storage->parent_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
                 $this->file_storage->required_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
