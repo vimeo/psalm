@@ -303,6 +303,7 @@ trait GenericTrait
         }
 
         foreach ($this->type_params as $i => $type_param) {
+            /** @psalm-suppress RedundantCondition */
             if ($type_param->check(
                 $source,
                 $code_location,

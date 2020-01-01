@@ -211,7 +211,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     new CodeLocation($source, $stmt->class),
                     $statements_analyzer->getSuppressedIssues(),
                     $stmt->class instanceof PhpParser\Node\Name
-                        && !count($stmt->class->parts) !== 1
+                        && count($stmt->class->parts) === 1
                         && in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true)
                 )) {
                     return false;
