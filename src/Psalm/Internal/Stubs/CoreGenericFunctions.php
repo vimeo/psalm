@@ -158,9 +158,18 @@ function array_search($needle, array $haystack, bool $strict = false)
  * @template T
  *
  * @param array<mixed,T> $arr
+ * @param-out list<T> $arr
+ */
+function sort(array &$arr, callable $callback): bool
+{
+}
+
+/**
+ * @template T
+ *
+ * @param array<mixed,T> $arr
  * @param callable(T,T):int $callback
  * @param-out array<int,T> $arr
- * @psalm-pure
  */
 function usort(array &$arr, callable $callback): bool
 {
@@ -173,7 +182,6 @@ function usort(array &$arr, callable $callback): bool
  * @param array<TKey,T> $arr
  * @param callable(T,T):int $callback
  * @param-out array<TKey,T> $arr
- * @psalm-pure
  */
 function uasort(array &$arr, callable $callback): bool
 {
