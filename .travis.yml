@@ -67,7 +67,7 @@ jobs:
       env: DEPS="high"
       script:
         - composer require --dev maglnet/composer-require-checker:^2.0.0
-        - ./vendor/bin/composer-require-checker check ./composer.json
+        - ./vendor/bin/composer-require-checker check --config-file=bin/composer-require-checker-config.json ./composer.json
 
     - stage: Phar build
       php: 7.3
