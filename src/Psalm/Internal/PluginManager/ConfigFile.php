@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
-use DomDocument;
+use DOMDocument;
 use function file_get_contents;
 use function file_put_contents;
 use Psalm\Config;
@@ -106,9 +106,9 @@ class ConfigFile
         $this->saveXml($config_xml);
     }
 
-    private function readXml(): DomDocument
+    private function readXml(): DOMDocument
     {
-        $doc = new DomDocument();
+        $doc = new DOMDocument();
 
         $file_contents = file_get_contents($this->path);
 
@@ -127,7 +127,7 @@ class ConfigFile
     }
 
     /** @return void */
-    private function saveXml(DomDocument $config_xml)
+    private function saveXml(DOMDocument $config_xml)
     {
         $new_file_contents = $config_xml->saveXML($config_xml);
 
