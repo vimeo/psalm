@@ -4,6 +4,9 @@ executors:
   php-72:
     docker:
       - image: thecodingmachine/php:7.2-v2-cli
+  php-74:
+    docker:
+      - image: thecodingmachine/php:7.4-v3-cli
 jobs:
   install-and-self-analyse:
     executor: php-72
@@ -90,7 +93,7 @@ jobs:
           paths:
             - build/psalm.phar
   test-with-real-projects:
-    executor: php-72
+    executor: php-74
     steps:
       - checkout # used here just for the side effect of loading the github public ssh key so we can clone other stuff
       - attach_workspace:
