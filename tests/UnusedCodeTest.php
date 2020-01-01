@@ -669,6 +669,20 @@ class UnusedCodeTest extends TestCase
 
                     new Foo();'
             ],
+            'useIteratorMethodsWhenCallingForeach' => [
+                '<?php
+                    /** @psalm-suppress UnimplementedInterfaceMethod */
+                    class IterableResult implements \Iterator {
+                        public function current() {
+                            return $this->current;
+                        }
+                    }
+
+                    $items = new IterableResult();
+
+                    /** @psalm-suppress MixedAssignment */
+                    foreach ($items as $_item) {}'
+            ],
         ];
     }
 

@@ -860,11 +860,15 @@ class ForeachAnalyzer
                         $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
 
+                    $context->inside_call = true;
+
                     \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
                         $statements_analyzer,
                         $fake_method_call,
                         $context
                     );
+
+                    $context->inside_call = false;
 
                     if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
                         $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
