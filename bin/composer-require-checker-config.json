@@ -14,7 +14,9 @@
     "standard",
     "pcntl",
     "posix",
-    "filter"
+    "filter",
+    "curl",
+    "PDO"
   ],
   "scan-files" : []
 }
