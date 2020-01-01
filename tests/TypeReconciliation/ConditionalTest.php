@@ -1813,6 +1813,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
             ],
             'avoidOOM' => [
                 '<?php
+                    /** @psalm-suppress MixedInferredReturnType */
                     function gameOver(
                         int $b0,
                         int $b1,
@@ -2468,6 +2469,18 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
 
                         return strlen($project->assessment->root);
+                    }'
+            ],
+            'castIsType' => [
+                '<?php
+                    /**
+                     * @param string|int $s
+                     */
+                    function foo($s, int $f = 1) : void {
+                        if ($f === 1
+                            && (string) $s === $s
+                            && \strpos($s, "foo") !== false
+                        ) {}
                     }'
             ],
         ];

@@ -99,14 +99,6 @@ class BinaryOpAnalyzer
                 return null;
             }
 
-            $left_clauses = Algebra::getFormula(
-                \spl_object_id($stmt->left),
-                $stmt->left,
-                $context->self,
-                $statements_analyzer,
-                $codebase
-            );
-
             $pre_referenced_var_ids = $context->referenced_var_ids;
 
             $pre_assigned_var_ids = $context->assigned_var_ids;
@@ -122,6 +114,14 @@ class BinaryOpAnalyzer
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $left_context) === false) {
                 return false;
             }
+
+            $left_clauses = Algebra::getFormula(
+                \spl_object_id($stmt->left),
+                $stmt->left,
+                $context->self,
+                $statements_analyzer,
+                $codebase
+            );
 
             foreach ($left_context->vars_in_scope as $var_id => $type) {
                 if (isset($left_context->assigned_var_ids[$var_id])) {
