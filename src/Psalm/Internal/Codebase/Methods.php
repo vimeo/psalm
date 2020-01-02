@@ -650,7 +650,7 @@ class Methods
         $storage = $this->getStorage($declaring_method_id);
 
         if ($storage->return_type) {
-            $self_class = $appearing_fq_class_name;
+            $self_class = $appearing_fq_class_storage->name;
 
             return clone $storage->return_type;
         }
