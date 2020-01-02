@@ -86,16 +86,12 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             $context->inside_call = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
-                if (!$was_in_call) {
-                    $context->inside_call = false;
-                }
+                $context->inside_call = $was_in_call;
 
                 return;
             }
 
-            if (!$was_in_call) {
-                $context->inside_call = false;
-            }
+            $context->inside_call = $was_in_call;
 
             if ($stmt_name_type = $statements_analyzer->node_data->getType($stmt->name)) {
                 if ($stmt_name_type->isNull()) {
@@ -915,9 +911,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                     if ($fq_const_name !== null) {
                         $second_arg = $stmt->args[1];
+                        $was_in_call = $context->inside_call;
                         $context->inside_call = true;
                         ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
-                        $context->inside_call = false;
+                        $context->inside_call = $was_in_call;
 
                         $statements_analyzer->setConstType(
                             $fq_const_name,
