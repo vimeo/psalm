@@ -257,6 +257,44 @@ class E {
 
 Used to annotate a class where every property is treated by consumers as `@psalm-readonly` and every instance method is treated as `@psalm-mutation-free`.
 
+```php
+/**
+ * @psalm-immutable
+ */
+abstract class Foo
+{
+    public string $baz;
+  
+    abstract public function bar(): int;
+}
+
+/**
+ * @psalm-immutable
+ */
+final class ChildClass extends Foo
+{
+    public function __construct(string $baz)
+    {
+        $this->baz = $baz;
+    }
+  
+    public function bar(): int
+    {
+        return 0;
+    }
+}
+
+$anonymous = new /** @psalm-immutable */ class extends Foo
+{
+    public string $baz = "B";
+  
+    public function bar(): int
+    {
+        return 1;
+    }
+};
+```
+
 ### `@psalm-pure`
 
 Used to annotate a [pure function](https://en.wikipedia.org/wiki/Pure_function) - one whose output is just a function of its input.
