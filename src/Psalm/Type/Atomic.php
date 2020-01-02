@@ -202,6 +202,9 @@ abstract class Atomic
             case 'mixed':
                 return $php_version !== null ? new TNamedObject($value) : new TMixed();
 
+            case 'callable-object':
+                return new TCallableObject();
+
             case 'class-string':
             case 'interface-string':
                 return new TClassString();
