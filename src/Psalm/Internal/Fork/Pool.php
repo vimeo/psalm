@@ -106,9 +106,9 @@ class Pool
             'The pool size must be >= 2 to use the fork pool.'
         );
 
-        if (!extension_loaded('pcntl')) {
+        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
             echo
-                'The pcntl extension must be loaded in order for Psalm to be able to use multiple processes.'
+                'The pcntl & posix extensions must be loaded in order for Psalm to be able to use multiple processes.'
                 . PHP_EOL;
             exit(1);
         }
