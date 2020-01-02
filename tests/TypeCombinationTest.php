@@ -480,6 +480,48 @@ class TypeCombinationTest extends TestCase
                     'Exception::class',
                 ],
             ],
+            'combineCallableAndCallableString' => [
+                'callable',
+                [
+                    'callable',
+                    'callable-string',
+                ],
+            ],
+            'combineCallableStringAndCallable' => [
+                'callable',
+                [
+                    'callable-string',
+                    'callable'
+                ],
+            ],
+            'combineCallableAndCallableObject' => [
+                'callable',
+                [
+                    'callable',
+                    'callable-object',
+                ],
+            ],
+            'combineCallableObjectAndCallable' => [
+                'callable',
+                [
+                    'callable-object',
+                    'callable'
+                ],
+            ],
+            'combineCallableAndCallableArray' => [
+                'callable',
+                [
+                    'callable',
+                    'callable-array',
+                ],
+            ],
+            'combineCallableArrayAndCallable' => [
+                'callable',
+                [
+                    'callable-array',
+                    'callable'
+                ],
+            ],
         ];
     }
 

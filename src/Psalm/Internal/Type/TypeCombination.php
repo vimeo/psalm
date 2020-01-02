@@ -20,6 +20,11 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCallableObjectLikeArray;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
@@ -121,6 +126,9 @@ class TypeCombination
 
     /** @var ?bool */
     private $all_arrays_lists;
+
+    /** @var ?bool */
+    private $all_arrays_callable;
 
     /** @var ?bool */
     private $all_arrays_class_string_maps;
@@ -325,7 +333,11 @@ class TypeCombination
                     }
 
                     if ($combination->objectlike_entries) {
-                        $objectlike = new ObjectLike($combination->objectlike_entries);
+                        if ($combination->all_arrays_callable) {
+                            $objectlike = new TCallableObjectLikeArray($combination->objectlike_entries);
+                        } else {
+                            $objectlike = new ObjectLike($combination->objectlike_entries);
+                        }
 
                         if ($combination->objectlike_sealed && !$combination->array_type_params) {
                             $objectlike->sealed = true;
@@ -426,7 +438,9 @@ class TypeCombination
                 }
             }
 
-            if ($combination->array_always_filled
+            if ($combination->all_arrays_callable) {
+                $array_type = new TCallableArray($generic_type_params);
+            } elseif ($combination->array_always_filled
                 || ($combination->array_sometimes_filled && $overwrite_empty_array)
                 || ($combination->objectlike_entries
                     && $combination->objectlike_sealed
@@ -714,6 +728,10 @@ class TypeCombination
         }
 
         if ($type instanceof TArray && $type_key === 'array') {
+            if ($type instanceof TCallableArray && isset($combination->value_types['callable'])) {
+                return;
+            }
+
             foreach ($type->type_params as $i => $type_param) {
                 if (isset($combination->array_type_params[$i])) {
                     $combination->array_type_params[$i] = Type::combineUnionTypes(
@@ -744,6 +762,14 @@ class TypeCombination
             if (!$type->type_params[1]->isEmpty()) {
                 $combination->all_arrays_lists = false;
                 $combination->all_arrays_class_string_maps = false;
+            }
+
+            if ($type instanceof TCallableArray) {
+                if ($combination->all_arrays_callable !== false) {
+                    $combination->all_arrays_callable = true;
+                }
+            } else {
+                $combination->all_arrays_callable = false;
             }
 
             return null;
@@ -781,6 +807,7 @@ class TypeCombination
                 $combination->all_arrays_lists = true;
             }
 
+            $combination->all_arrays_callable = false;
             $combination->all_arrays_class_string_maps = false;
 
             return null;
@@ -849,6 +876,10 @@ class TypeCombination
         }
 
         if ($type instanceof ObjectLike) {
+            if ($type instanceof TCallableObjectLikeArray && isset($combination->value_types['callable'])) {
+                return;
+            }
+
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
             $possibly_undefined_entries = $combination->objectlike_entries;
             $combination->objectlike_sealed = $combination->objectlike_sealed && $type->sealed;
@@ -917,12 +948,24 @@ class TypeCombination
                 $combination->all_arrays_lists = true;
             }
 
+            if ($type instanceof TCallableObjectLikeArray) {
+                if ($combination->all_arrays_callable !== false) {
+                    $combination->all_arrays_callable = true;
+                }
+            } else {
+                $combination->all_arrays_callable = false;
+            }
+
             $combination->all_arrays_class_string_maps = false;
 
             return null;
         }
 
         if ($type instanceof TObject) {
+            if ($type instanceof TCallableObject && isset($combination->value_types['callable'])) {
+                return;
+            }
+
             $combination->named_object_types = null;
             $combination->value_types[$type_key] = $type;
 
@@ -1028,6 +1071,10 @@ class TypeCombination
         }
 
         if ($type instanceof TString) {
+            if ($type instanceof TCallableString && isset($combination->value_types['callable'])) {
+                return;
+            }
+
             if (isset($combination->value_types['array-key'])) {
                 return null;
             }
@@ -1155,6 +1202,16 @@ class TypeCombination
             }
 
             return null;
+        }
+
+        if ($type instanceof TCallable && $type_key === 'callable') {
+            if (($combination->value_types['string'] ?? null) instanceof TCallableString) {
+                unset($combination->value_types['string']);
+            } elseif (!empty($combination->array_type_params) && $combination->all_arrays_callable) {
+                $combination->array_type_params = [];
+            } elseif (isset($combination->value_types['callable-object'])) {
+                unset($combination->value_types['callable-object']);
+            }
         }
 
         $combination->value_types[$type_key] = $type;
