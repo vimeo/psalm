@@ -1634,7 +1634,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $array_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableObjectLikeArray([
-                    new Union([new TString, new TObject]),
+                    new Union([new TClassString, new TObject]),
                     Type::getString()
                 ]);
 
@@ -1722,7 +1722,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableObjectLikeArray([
-                    new Union([new TString, new TObject]),
+                    new Union([new TClassString, new TObject]),
                     Type::getString()
                 ]);
 
