@@ -1,4 +1,4 @@
-# Using Psalm's Language Server
+# Using Psalm’s Language Server
 
 Psalm now has built-in Language Server Compatibility support so you can run it in your favourite IDE.
 
