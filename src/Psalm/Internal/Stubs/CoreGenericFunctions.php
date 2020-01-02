@@ -160,7 +160,7 @@ function array_search($needle, array $haystack, bool $strict = false)
  * @param array<mixed,T> $arr
  * @param-out list<T> $arr
  */
-function sort(array &$arr): bool
+function sort(array &$arr, int $sort_flags = \SORT_REGULAR): bool
 {
 }
 
