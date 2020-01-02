@@ -1358,6 +1358,14 @@ class UnusedVariableTest extends TestCase
                         return undefined_function($s);
                     }'
             ],
+            'useVariableVariable' => [
+                '<?php
+                    $variables = ["a" => "b", "c" => "d"];
+
+                    foreach ($variables as $name => $value) {
+                        ${$name} = $value;
+                    }'
+            ],
         ];
     }
 

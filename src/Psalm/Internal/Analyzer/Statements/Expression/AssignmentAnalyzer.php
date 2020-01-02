@@ -400,31 +400,39 @@ class AssignmentAnalyzer
             }
         }
 
-        if ($assign_var instanceof PhpParser\Node\Expr\Variable && is_string($assign_var->name) && $var_id) {
-            $context->vars_in_scope[$var_id] = $assign_value_type;
-            $context->vars_possibly_in_scope[$var_id] = true;
+        if ($assign_var instanceof PhpParser\Node\Expr\Variable) {
+            if (is_string($assign_var->name)) {
+                if ($var_id) {
+                    $context->vars_in_scope[$var_id] = $assign_value_type;
+                    $context->vars_possibly_in_scope[$var_id] = true;
 
-            $location = new CodeLocation($statements_analyzer, $assign_var);
+                    $location = new CodeLocation($statements_analyzer, $assign_var);
 
-            if ($context->collect_references) {
-                $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
-            }
+                    if ($context->collect_references) {
+                        $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
+                    }
 
-            if (!$statements_analyzer->hasVariable($var_id)) {
-                $statements_analyzer->registerVariable(
-                    $var_id,
-                    $location,
-                    $context->branch_point
-                );
+                    if (!$statements_analyzer->hasVariable($var_id)) {
+                        $statements_analyzer->registerVariable(
+                            $var_id,
+                            $location,
+                            $context->branch_point
+                        );
+                    } else {
+                        $statements_analyzer->registerVariableAssignment(
+                            $var_id,
+                            $location
+                        );
+                    }
+
+                    if (isset($context->byref_constraints[$var_id]) || $assign_value_type->by_ref) {
+                        $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
+                    }
+                }
             } else {
-                $statements_analyzer->registerVariableAssignment(
-                    $var_id,
-                    $location
-                );
-            }
-
-            if (isset($context->byref_constraints[$var_id]) || $assign_value_type->by_ref) {
-                $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->name, $context) === false) {
+                    return false;
+                }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
             || $assign_var instanceof PhpParser\Node\Expr\Array_
