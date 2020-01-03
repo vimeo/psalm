@@ -440,6 +440,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 $loop_scope->unreferenced_vars[$var_id] = $locations;
                             }
                         }
+
+                        foreach ($loop_scope->unreferenced_vars as $var_id => $locations) {
+                            if (!isset($context->unreferenced_vars[$var_id])) {
+                                $this->registerVariableUses($locations);
+                            }
+                        }
                     }
                 }
 
@@ -536,6 +542,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 $loop_scope->possibly_unreferenced_vars[$var_id] += $locations;
                             } else {
                                 $loop_scope->possibly_unreferenced_vars[$var_id] = $locations;
+                            }
+                        }
+
+                        foreach ($loop_scope->unreferenced_vars as $var_id => $locations) {
+                            if (!isset($context->unreferenced_vars[$var_id])) {
+                                $this->registerVariableUses($locations);
                             }
                         }
                     }
