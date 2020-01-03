@@ -1239,6 +1239,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->internal = $docblock_info->internal;
                 $storage->psalm_internal = $docblock_info->psalm_internal;
 
+                $storage->sealed_properties = $docblock_info->sealed_properties;
+                $storage->sealed_methods = $docblock_info->sealed_methods;
+
                 if ($docblock_info->mixin) {
                     if (isset($this->class_template_types[$docblock_info->mixin])) {
                         if (IssueBuffer::accepts(
@@ -1253,11 +1256,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             $docblock_info->mixin,
                             $this->aliases
                         );
+
+                        // if there's a mixin, assume it's the reason for the __call
+                        $storage->sealed_properties = true;
+                        $storage->sealed_methods = true;
                     }
                 }
-
-                $storage->sealed_properties = $docblock_info->sealed_properties;
-                $storage->sealed_methods = $docblock_info->sealed_methods;
 
                 $storage->mutation_free = $docblock_info->mutation_free;
                 $storage->external_mutation_free = $docblock_info->external_mutation_free;
