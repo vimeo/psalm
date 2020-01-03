@@ -177,6 +177,10 @@ class Populator
 
         $this->populateDataFromTraits($storage, $storage_provider, $dependent_classlikes);
 
+        if ($storage->mixin_fqcln) {
+            $this->populateDataFromMixin($storage, $storage_provider, $dependent_classlikes, $storage->mixin_fqcln);
+        }
+
         $dependent_classlikes[$fq_classlike_name_lc] = true;
 
         if ($storage->parent_classes) {
@@ -418,6 +422,30 @@ class Populator
                 );
             }
         }
+    }
+
+    /**
+     * @return void
+     */
+    private function populateDataFromMixin(
+        ClassLikeStorage $storage,
+        ClassLikeStorageProvider $storage_provider,
+        array $dependent_classlikes,
+        string $mixin_fqcln
+    ) {
+        try {
+            $mixin_fqcln = $this->classlikes->getUnAliasedName(
+                $mixin_fqcln
+            );
+            $mixin_storage = $storage_provider->get($mixin_fqcln);
+        } catch (\InvalidArgumentException $e) {
+            return;
+        }
+
+        $this->populateClassLikeStorage($mixin_storage, $dependent_classlikes);
+
+        $this->inheritMethodsFromParent($storage, $mixin_storage);
+        $this->inheritPropertiesFromParent($storage, $mixin_storage, false);
     }
 
     private static function extendType(
@@ -1013,8 +1041,10 @@ class Populator
      *
      * @return void
      */
-    protected function inheritMethodsFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
-    {
+    protected function inheritMethodsFromParent(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage
+    ) {
         $fq_class_name = $storage->name;
 
         // register where they appear (can never be in a trait)
@@ -1119,8 +1149,11 @@ class Populator
      *
      * @return void
      */
-    private function inheritPropertiesFromParent(ClassLikeStorage $storage, ClassLikeStorage $parent_storage)
-    {
+    private function inheritPropertiesFromParent(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage,
+        bool $include_protected = true
+    ) {
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
             if (isset($storage->appearing_property_ids[$property_name])) {
@@ -1129,7 +1162,10 @@ class Populator
 
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && ($parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || (!$include_protected
+                        && $parent_storage->properties[$property_name]->visibility
+                            === ClassLikeAnalyzer::VISIBILITY_PROTECTED))
             ) {
                 continue;
             }
@@ -1148,7 +1184,10 @@ class Populator
 
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && ($parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || (!$include_protected
+                        && $parent_storage->properties[$property_name]->visibility
+                            === ClassLikeAnalyzer::VISIBILITY_PROTECTED))
             ) {
                 continue;
             }
@@ -1160,7 +1199,10 @@ class Populator
         foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && ($parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || (!$include_protected
+                        && $parent_storage->properties[$property_name]->visibility
+                            === ClassLikeAnalyzer::VISIBILITY_PROTECTED))
             ) {
                 continue;
             }

@@ -1239,6 +1239,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->internal = $docblock_info->internal;
                 $storage->psalm_internal = $docblock_info->psalm_internal;
 
+                if ($docblock_info->mixin) {
+                    if (isset($this->class_template_types[$docblock_info->mixin])) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                'Templates are not currently supported for @mixin',
+                                $name_location ?: $class_location
+                            )
+                        )) {
+                        }
+                    } else {
+                        $storage->mixin_fqcln = Type::getFQCLNFromString(
+                            $docblock_info->mixin,
+                            $this->aliases
+                        );
+                    }
+                }
+
                 $storage->sealed_properties = $docblock_info->sealed_properties;
                 $storage->sealed_methods = $docblock_info->sealed_methods;
 

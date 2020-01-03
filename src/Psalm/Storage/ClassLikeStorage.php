@@ -97,6 +97,11 @@ class ClassLikeStorage
     public $psalm_internal = null;
 
     /**
+     * @var null|string
+     */
+    public $mixin_fqcln = null;
+
+    /**
      * @var array<string, bool>
      */
     public $deprecated_constants = [];

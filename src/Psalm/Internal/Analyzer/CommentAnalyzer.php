@@ -876,6 +876,17 @@ class CommentAnalyzer
             }
         }
 
+        if (isset($parsed_docblock['specials']['mixin'])) {
+            $mixin = trim(reset($parsed_docblock['specials']['mixin']));
+            $mixin = explode(' ', $mixin)[0];
+
+            if ($mixin) {
+                $info->mixin = $mixin;
+            } else {
+                throw new DocblockParseException('@mixin annotation used without specifying class');
+            }
+        }
+
         if (isset($parsed_docblock['specials']['psalm-seal-properties'])) {
             $info->sealed_properties = true;
         }
