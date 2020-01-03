@@ -1196,6 +1196,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->implementTemplatedType($storage, $node, $implemented_class_name);
                 }
 
+                $storage->sealed_properties = $docblock_info->sealed_properties;
+                $storage->sealed_methods = $docblock_info->sealed_methods;
+
                 if ($docblock_info->properties) {
                     foreach ($docblock_info->properties as $property) {
                         $pseudo_property_type_tokens = Type::fixUpLocalType(
@@ -1233,14 +1236,26 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             $storage->has_docblock_issues = true;
                         }
                     }
+
+                    $storage->sealed_properties = true;
+                }
+
+                foreach ($docblock_info->methods as $method) {
+                    /** @var MethodStorage */
+                    $pseudo_method_storage = $this->registerFunctionLike($method, true);
+
+                    if ($pseudo_method_storage->is_static) {
+                        $storage->pseudo_static_methods[strtolower($method->name->name)] = $pseudo_method_storage;
+                    } else {
+                        $storage->pseudo_methods[strtolower($method->name->name)] = $pseudo_method_storage;
+                    }
+
+                    $storage->sealed_methods = true;
                 }
 
                 $storage->deprecated = $docblock_info->deprecated;
                 $storage->internal = $docblock_info->internal;
                 $storage->psalm_internal = $docblock_info->psalm_internal;
-
-                $storage->sealed_properties = $docblock_info->sealed_properties;
-                $storage->sealed_methods = $docblock_info->sealed_methods;
 
                 if ($docblock_info->mixin) {
                     if (isset($this->class_template_types[$docblock_info->mixin])) {
@@ -1270,17 +1285,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->override_method_visibility = $docblock_info->override_method_visibility;
 
                 $storage->suppressed_issues = $docblock_info->suppressed_issues;
-
-                foreach ($docblock_info->methods as $method) {
-                    /** @var MethodStorage */
-                    $pseudo_method_storage = $this->registerFunctionLike($method, true);
-
-                    if ($pseudo_method_storage->is_static) {
-                        $storage->pseudo_static_methods[strtolower($method->name->name)] = $pseudo_method_storage;
-                    } else {
-                        $storage->pseudo_methods[strtolower($method->name->name)] = $pseudo_method_storage;
-                    }
-                }
             }
         }
 

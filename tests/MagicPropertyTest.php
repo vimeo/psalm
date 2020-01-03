@@ -40,8 +40,7 @@ class MagicPropertyTest extends TestCase
                     }
 
                     $a = new A();
-                    $a->foo = "hello";
-                    $a->bar = "hello"; // not a property',
+                    $a->foo = "hello";',
             ],
             'propertyOfTypeClassDocblock' => [
                 '<?php
@@ -449,8 +448,7 @@ class MagicPropertyTest extends TestCase
                     }
 
                     $a = new A();
-                    $a->foo = "hello";
-                    $a->bar = "hello"; // not a property',
+                    $a->foo = "hello";',
             ],
             'overridePropertyAnnotations' => [
                 '<?php
@@ -479,8 +477,7 @@ class MagicPropertyTest extends TestCase
                     }
 
                     $a = new A();
-                    $a->foo = "hello";
-                    $a->bar = "hello"; // not a property',
+                    $a->foo = "hello";',
             ],
             'overrideWithReadWritePropertyAnnotations' => [
                 '<?php

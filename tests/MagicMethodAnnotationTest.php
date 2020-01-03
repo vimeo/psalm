@@ -187,7 +187,6 @@ class MagicMethodAnnotationTest extends TestCase
                     $b = $child->setString(5);
                     $c = $child->getBool("hello");
                     $d = $child->getArray();
-                    $child->setArray(["boo"]);
                     $e = $child->getCallable();
                     $child->setMixed("hello");
                     $child->setMixed(4);
@@ -586,7 +585,6 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /**
                      * @method string getString()
-                     * @psalm-seal-methods
                      */
                     class Child extends ParentClass {}
 
