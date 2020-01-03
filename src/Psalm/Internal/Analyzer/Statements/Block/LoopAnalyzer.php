@@ -494,10 +494,14 @@ class LoopAnalyzer
             }
 
             foreach ($loop_scope->unreferenced_vars as $var_id => $locations) {
-                if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
-                    $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;
+                if (isset($loop_scope->referenced_var_ids[$var_id])) {
+                    $statements_analyzer->registerVariableUses($locations);
                 } else {
-                    $loop_scope->loop_context->unreferenced_vars[$var_id] += $locations;
+                    if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
+                        $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;
+                    } else {
+                        $loop_scope->loop_context->unreferenced_vars[$var_id] += $locations;
+                    }
                 }
             }
         }

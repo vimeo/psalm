@@ -61,6 +61,11 @@ class LoopScope
     public $unreferenced_vars = [];
 
     /**
+     * @var array<string, bool>
+     */
+    public $referenced_var_ids = [];
+
+    /**
      * @var array<string, array<string, CodeLocation>>
      */
     public $possibly_unreferenced_vars = [];
