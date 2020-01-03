@@ -210,6 +210,8 @@ class CallAnalyzer
                     }
                 }
 
+                $old_calling_function_id = $context->calling_function_id;
+
                 if ($fq_class_name === $source->getFQCLN()) {
                     $class_analyzer->getMethodMutations(strtolower($method_name), $context);
                 } else {
@@ -225,6 +227,8 @@ class CallAnalyzer
                     );
                     $context->self = $old_self;
                 }
+
+                $context->calling_function_id = $old_calling_function_id;
 
                 foreach ($local_vars_in_scope as $var => $type) {
                     $context->vars_in_scope[$var] = $type;
