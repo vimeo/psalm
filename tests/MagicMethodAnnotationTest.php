@@ -591,7 +591,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $child = new Child();
                     $child->getString();
                     $child->foo();',
-                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:29 - Method Child::foo does not exist',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - Method Child::foo does not exist',
             ],
             'annotationInvalidArg' => [
                 '<?php
