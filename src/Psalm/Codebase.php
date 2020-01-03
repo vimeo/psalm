@@ -131,11 +131,6 @@ class Codebase
     public $find_unused_variables = false;
 
     /**
-     * @var Internal\Codebase\Reflection
-     */
-    private $reflection;
-
-    /**
      * @var Internal\Codebase\Scanner
      */
     public $scanner;
@@ -296,21 +291,21 @@ class Codebase
 
         self::$stubbed_constants = [];
 
-        $this->reflection = new Internal\Codebase\Reflection($providers->classlike_storage_provider, $this);
+        $reflection = new Internal\Codebase\Reflection($providers->classlike_storage_provider, $this);
 
         $this->scanner = new Internal\Codebase\Scanner(
             $this,
             $config,
             $providers->file_storage_provider,
             $providers->file_provider,
-            $this->reflection,
+            $reflection,
             $providers->file_reference_provider,
             $progress
         );
 
         $this->loadAnalyzer();
 
-        $this->functions = new Internal\Codebase\Functions($providers->file_storage_provider, $this->reflection);
+        $this->functions = new Internal\Codebase\Functions($providers->file_storage_provider, $reflection);
 
         $this->properties = new Internal\Codebase\Properties(
             $providers->classlike_storage_provider,
