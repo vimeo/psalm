@@ -553,8 +553,7 @@ class ExpressionAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
-            } elseif (
-                ($stmt->expr instanceof PhpParser\Node\Expr\ConstFetch) &&
+            } elseif (($stmt->expr instanceof PhpParser\Node\Expr\ConstFetch) &&
                 (
                     ['true'] === $stmt->expr->name->parts ||
                     ['false'] === $stmt->expr->name->parts
@@ -567,12 +566,8 @@ class ExpressionAnalyzer
                 }
 
                 $statements_analyzer->node_data->setType($stmt, Type::getInt(false, $int));
-            } elseif (
-                ($stmt->expr instanceof PhpParser\Node\Expr\Cast\Bool_)
-            ) {
-                if (
-                    ($stmt->expr->expr instanceof PhpParser\Node\Scalar\LNumber)
-                ) {
+            } elseif ($stmt->expr instanceof PhpParser\Node\Expr\Cast\Bool_) {
+                if ($stmt->expr->expr instanceof PhpParser\Node\Scalar\LNumber) {
                     $int = 0;
 
                     if (0 !== $stmt->expr->expr->value) {
@@ -587,7 +582,7 @@ class ExpressionAnalyzer
                     ]));
                 }
             } else {
-            $statements_analyzer->node_data->setType($stmt, Type::getInt());
+                $statements_analyzer->node_data->setType($stmt, Type::getInt());
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
