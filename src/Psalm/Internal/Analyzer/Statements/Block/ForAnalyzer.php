@@ -105,8 +105,8 @@ class ForAnalyzer
                 }
             }
 
-            if (count($stmt->init) === 1
-                && count($stmt->cond) === 1
+            if (\count($stmt->init) === 1
+                && \count($stmt->cond) === 1
                 && $cond instanceof PhpParser\Node\Expr\BinaryOp
                 && $cond->right instanceof PhpParser\Node\Scalar\LNumber
                 && $cond->left instanceof PhpParser\Node\Expr\Variable
