@@ -553,35 +553,24 @@ class ExpressionAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
-            } elseif (($stmt->expr instanceof PhpParser\Node\Expr\ConstFetch) &&
-                (
-                    ['true'] === $stmt->expr->name->parts ||
-                    ['false'] === $stmt->expr->name->parts
-                )
-            ) {
-                $int = 0;
+            }
 
-                if (['true'] === $stmt->expr->name->parts) {
-                    $int = 1;
-                }
+            $as_int = true;
+            $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
-                $statements_analyzer->node_data->setType($stmt, Type::getInt(false, $int));
-            } elseif ($stmt->expr instanceof PhpParser\Node\Expr\Cast\Bool_) {
-                if ($stmt->expr->expr instanceof PhpParser\Node\Scalar\LNumber) {
-                    $int = 0;
+            if (null !== $maybe_type) {
+                $maybe = $maybe_type->getAtomicTypes();
 
-                    if (0 !== $stmt->expr->expr->value) {
-                        $int = 1;
-                    }
-
-                    $statements_analyzer->node_data->setType($stmt, Type::getInt(false, $int));
-                } else {
+                if (1 === count($maybe) && current($maybe) instanceof Type\Atomic\TBool) {
+                    $as_int = false;
                     $statements_analyzer->node_data->setType($stmt, new Type\Union([
                         new Type\Atomic\TLiteralInt(0),
                         new Type\Atomic\TLiteralInt(1),
                     ]));
                 }
-            } else {
+            }
+
+            if ($as_int) {
                 $statements_analyzer->node_data->setType($stmt, Type::getInt());
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
