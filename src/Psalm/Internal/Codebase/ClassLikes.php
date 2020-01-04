@@ -1669,7 +1669,7 @@ class ClassLikes
             );
 
             if ($found_type) {
-                return \array_values($found_type->getTypes())[0];
+                return \array_values($found_type->getAtomicTypes())[0];
             }
         }
 
@@ -1682,7 +1682,7 @@ class ClassLikes
                 );
 
                 if ($found_type) {
-                    return \array_values($found_type->getTypes())[0];
+                    return \array_values($found_type->getAtomicTypes())[0];
                 }
             }
         }

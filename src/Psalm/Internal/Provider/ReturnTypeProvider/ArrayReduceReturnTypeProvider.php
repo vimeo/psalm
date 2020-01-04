@@ -54,7 +54,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             return Type::getMixed();
         }
 
-        $array_arg_types = $array_arg_type->getTypes();
+        $array_arg_types = $array_arg_type->getAtomicTypes();
 
         $array_arg_atomic_type = null;
 

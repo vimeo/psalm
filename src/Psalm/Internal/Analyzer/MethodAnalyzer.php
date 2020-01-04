@@ -1133,7 +1133,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 if (is_string($key)) {
                     $new_bases = [];
 
-                    foreach ($mapped_type->getTypes() as $mapped_atomic_type) {
+                    foreach ($mapped_type->getAtomicTypes() as $mapped_atomic_type) {
                         if ($mapped_atomic_type instanceof Type\Atomic\TTemplateParam) {
                             $new_bases[] = $mapped_atomic_type->defining_class;
                         }

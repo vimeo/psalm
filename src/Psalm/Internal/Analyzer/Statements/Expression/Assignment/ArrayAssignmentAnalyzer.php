@@ -382,7 +382,7 @@ class ArrayAssignmentAnalyzer
                 $has_matching_objectlike_property = false;
                 $has_matching_string = false;
 
-                foreach ($child_stmt_type->getTypes() as $type) {
+                foreach ($child_stmt_type->getAtomicTypes() as $type) {
                     if ($type instanceof ObjectLike) {
                         if (isset($type->properties[$key_value])) {
                             $has_matching_objectlike_property = true;
@@ -489,7 +489,7 @@ class ArrayAssignmentAnalyzer
         if ($key_value !== null) {
             $has_matching_objectlike_property = false;
 
-            foreach ($root_type->getTypes() as $type) {
+            foreach ($root_type->getAtomicTypes() as $type) {
                 if ($type instanceof ObjectLike) {
                     if (isset($type->properties[$key_value])) {
                         $has_matching_objectlike_property = true;
@@ -555,11 +555,11 @@ class ArrayAssignmentAnalyzer
                          * @var Type\Atomic\TClassStringMap
                          * @psalm-suppress PossiblyUndefinedStringArrayOffset
                          */
-                        $class_string_map = $parent_type->getTypes()['array'];
+                        $class_string_map = $parent_type->getAtomicTypes()['array'];
                         /**
                          * @var Type\Atomic\TTemplateParamClass
                          */
-                        $offset_type_part = \array_values($current_dim_type->getTypes())[0];
+                        $offset_type_part = \array_values($current_dim_type->getAtomicTypes())[0];
 
                         $template_result = new \Psalm\Internal\Type\TemplateResult(
                             [],
@@ -611,7 +611,7 @@ class ArrayAssignmentAnalyzer
             $new_child_type = null;
 
             if (!$current_dim && !$context->inside_loop) {
-                $atomic_root_types = $root_type->getTypes();
+                $atomic_root_types = $root_type->getAtomicTypes();
 
                 if (isset($atomic_root_types['array'])) {
                     if ($array_atomic_type instanceof Type\Atomic\TClassStringMap) {
@@ -663,7 +663,7 @@ class ArrayAssignmentAnalyzer
             }
 
             if ($from_countable_object_like) {
-                $atomic_root_types = $new_child_type->getTypes();
+                $atomic_root_types = $new_child_type->getAtomicTypes();
 
                 if (isset($atomic_root_types['array'])
                     && ($atomic_root_types['array'] instanceof TNonEmptyArray

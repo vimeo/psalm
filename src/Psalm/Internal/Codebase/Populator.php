@@ -454,14 +454,14 @@ class Populator
     ) : Type\Union {
         $extended_types = [];
 
-        foreach ($type->getTypes() as $atomic_type) {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $referenced_type
                     = $storage->template_type_extends[$atomic_type->defining_class][$atomic_type->param_name]
                         ?? null;
 
                 if ($referenced_type) {
-                    foreach ($referenced_type->getTypes() as $atomic_referenced_type) {
+                    foreach ($referenced_type->getAtomicTypes() as $atomic_referenced_type) {
                         if (!$atomic_referenced_type instanceof Type\Atomic\TTemplateParam) {
                             $extended_types[] = $atomic_referenced_type;
                         } else {
@@ -983,7 +983,7 @@ class Populator
      */
     private function convertPhpStormGenericToPsalmGeneric(Type\Union $candidate, $is_property = false)
     {
-        $atomic_types = $candidate->getTypes();
+        $atomic_types = $candidate->getAtomicTypes();
 
         if (isset($atomic_types['array']) && count($atomic_types) > 1 && !isset($atomic_types['null'])) {
             $iterator_name = null;

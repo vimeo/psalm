@@ -298,7 +298,7 @@ class TypeCombination
                     && $combination->array_type_params[0]->allStringLiterals()
                     && $combination->array_always_filled
                 ) {
-                    foreach ($combination->array_type_params[0]->getTypes() as $atomic_key_type) {
+                    foreach ($combination->array_type_params[0]->getAtomicTypes() as $atomic_key_type) {
                         if ($atomic_key_type instanceof TLiteralString) {
                             $combination->objectlike_entries[$atomic_key_type->value]
                                 = $combination->array_type_params[1];
@@ -483,7 +483,7 @@ class TypeCombination
             $combination->extra_types = self::combineTypes(
                 array_values($combination->extra_types),
                 $codebase
-            )->getTypes();
+            )->getAtomicTypes();
         }
 
         foreach ($combination->builtin_type_params as $generic_type => $generic_type_params) {
@@ -522,7 +522,7 @@ class TypeCombination
                     $codebase
                 );
 
-                foreach ($object_type->getTypes() as $object_atomic_type) {
+                foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
                     if ($object_atomic_type instanceof TNamedObject) {
                         $new_types[] = new TClassString($object_atomic_type->value, $object_atomic_type);
                     } elseif ($object_atomic_type instanceof TObject) {

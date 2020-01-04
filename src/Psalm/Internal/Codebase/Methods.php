@@ -450,7 +450,7 @@ class Methods
 
         $type = clone $type;
 
-        foreach ($type->getTypes() as $key => $atomic_type) {
+        foreach ($type->getAtomicTypes() as $key => $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 if ($atomic_type->defining_class === $base_fq_class_name) {
                     if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
@@ -471,7 +471,7 @@ class Methods
                     if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
                         $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];
 
-                        $types = \array_values($extended_param->getTypes());
+                        $types = \array_values($extended_param->getAtomicTypes());
 
                         if (count($types) === 1 && $types[0] instanceof Type\Atomic\TNamedObject) {
                             $atomic_type->as_type = $types[0];
@@ -605,7 +605,7 @@ class Methods
                 && ($first_arg_type = $source_analyzer->getNodeTypeProvider()->getType($args[0]->value))
                 && $first_arg_type->isSingle()
             ) {
-                foreach ($first_arg_type->getTypes() as $atomic_type) {
+                foreach ($first_arg_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TCallable
                         || $atomic_type instanceof Type\Atomic\TFn
                     ) {

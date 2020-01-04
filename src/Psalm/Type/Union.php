@@ -228,8 +228,18 @@ class Union
 
     /**
      * @return array<string, Atomic>
+     * @deprecated in favour of getAtomicTypes()
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public function getTypes()
+    {
+        return $this->types;
+    }
+
+    /**
+     * @return array<string, Atomic>
+     */
+    public function getAtomicTypes()
     {
         return $this->types;
     }
@@ -1109,7 +1119,7 @@ class Union
                     }
 
                     if ($atomic_type->extra_types) {
-                        foreach ($template_type->getTypes() as $template_type_key => $atomic_template_type) {
+                        foreach ($template_type->getAtomicTypes() as $template_type_key => $atomic_template_type) {
                             if ($atomic_template_type instanceof TNamedObject
                                 || $atomic_template_type instanceof TTemplateParam
                                 || $atomic_template_type instanceof TIterable
@@ -1264,7 +1274,7 @@ class Union
         $this->types = TypeCombination::combineTypes(
             array_values(array_merge($this->types, $new_types)),
             $codebase
-        )->getTypes();
+        )->getAtomicTypes();
     }
 
     /**

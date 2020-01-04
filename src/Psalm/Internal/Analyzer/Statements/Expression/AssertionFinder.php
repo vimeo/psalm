@@ -919,7 +919,7 @@ class AssertionFinder
                 $type = $source->node_data->getType($whichclass_expr);
 
                 if ($type && $var_name) {
-                    foreach ($type->getTypes() as $type_part) {
+                    foreach ($type->getAtomicTypes() as $type_part) {
                         if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
                             $if_types[$var_name] = [['=' . $type_part->param_name]];
                         }
@@ -1497,7 +1497,7 @@ class AssertionFinder
                 $type = $source->node_data->getType($whichclass_expr);
 
                 if ($type && $var_name) {
-                    foreach ($type->getTypes() as $type_part) {
+                    foreach ($type->getAtomicTypes() as $type_part) {
                         if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
                             $if_types[$var_name] = [['!=' . $type_part->param_name]];
                         }
@@ -1815,7 +1815,7 @@ class AssertionFinder
             if ($first_var_name
                 && ($second_arg_type = $source->node_data->getType($expr->args[1]->value))
             ) {
-                foreach ($second_arg_type->getTypes() as $atomic_type) {
+                foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TArray
                         || $atomic_type instanceof Type\Atomic\ObjectLike
                     ) {
@@ -1830,7 +1830,7 @@ class AssertionFinder
                         );
 
                         if ($array_literal_types
-                            && count($atomic_type->type_params[1]->getTypes())
+                            && count($atomic_type->type_params[1]->getAtomicTypes())
                         ) {
                             $literal_assertions = [];
 
@@ -2055,7 +2055,7 @@ class AssertionFinder
             if ($stmt_class_type) {
                 $literal_class_strings = [];
 
-                foreach ($stmt_class_type->getTypes() as $atomic_type) {
+                foreach ($stmt_class_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
                         $literal_class_strings[] = $atomic_type->value;
                     } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
@@ -2219,7 +2219,7 @@ class AssertionFinder
         $left_class_string_t = false;
 
         if ($left_type && $left_type->isSingle()) {
-            foreach ($left_type->getTypes() as $type_part) {
+            foreach ($left_type->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof Type\Atomic\TClassString) {
                     $left_class_string_t = true;
                 }
@@ -2250,7 +2250,7 @@ class AssertionFinder
         $right_class_string_t = false;
 
         if ($right_type && $right_type->isSingle()) {
-            foreach ($right_type->getTypes() as $type_part) {
+            foreach ($right_type->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof Type\Atomic\TClassString) {
                     $right_class_string_t = true;
                 }
@@ -2392,7 +2392,7 @@ class AssertionFinder
                 || $conditional->left instanceof PhpParser\Node\Expr\Variable
                 || $conditional->left instanceof PhpParser\Node\Expr\PropertyFetch
                 || $conditional->left instanceof PhpParser\Node\Expr\StaticPropertyFetch)
-            && count($right_type->getTypes()) === 1
+            && count($right_type->getAtomicTypes()) === 1
             && !$right_type->hasMixed()
         ) {
             return self::ASSIGNMENT_TO_RIGHT;
@@ -2402,7 +2402,7 @@ class AssertionFinder
             && !$conditional->left instanceof PhpParser\Node\Expr\Variable
             && !$conditional->left instanceof PhpParser\Node\Expr\PropertyFetch
             && !$conditional->left instanceof PhpParser\Node\Expr\StaticPropertyFetch
-            && count($left_type->getTypes()) === 1
+            && count($left_type->getAtomicTypes()) === 1
             && !$left_type->hasMixed()
         ) {
             return self::ASSIGNMENT_TO_LEFT;

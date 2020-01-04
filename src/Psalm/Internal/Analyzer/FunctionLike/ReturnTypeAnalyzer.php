@@ -673,7 +673,7 @@ class ReturnTypeAnalyzer
         }
 
         if (!$storage->signature_return_type || $storage->signature_return_type === $storage->return_type) {
-            foreach ($storage->return_type->getTypes() as $type) {
+            foreach ($storage->return_type->getAtomicTypes() as $type) {
                 if ($type instanceof Type\Atomic\TNamedObject
                     && 'parent' === $type->value
                     && null === $parent_class

@@ -170,7 +170,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         if ($assertion === 'isset') {
             $existing_var_type->removeType('null');
 
-            if (empty($existing_var_type->getTypes())) {
+            if (empty($existing_var_type->getAtomicTypes())) {
                 $failed_reconciliation = 2;
 
                 // @todo - I think there's a better way to handle this, but for the moment
@@ -465,7 +465,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                     $old_type_has_interface_string = false;
 
-                    foreach ($existing_var_type->getTypes() as $existing_type_part) {
+                    foreach ($existing_var_type->getAtomicTypes() as $existing_type_part) {
                         if ($existing_type_part instanceof TClassString
                             && $existing_type_part->as_type
                             && $codebase->interfaceExists($existing_type_part->as_type->value)
@@ -498,7 +498,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                         $acceptable_atomic_types = [];
 
-                        foreach ($existing_var_type->getTypes() as $existing_var_type_part) {
+                        foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
                             if (!$new_type_part instanceof TNamedObject
                                 || !$existing_var_type_part instanceof TClassString
                             ) {
@@ -616,7 +616,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $new_type_has_interface = false;
 
         if ($new_type->hasObjectType()) {
-            foreach ($new_type->getTypes() as $new_type_part) {
+            foreach ($new_type->getAtomicTypes() as $new_type_part) {
                 if ($new_type_part instanceof TNamedObject &&
                     $codebase->interfaceExists($new_type_part->value)
                 ) {
@@ -629,7 +629,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $old_type_has_interface = false;
 
         if ($existing_var_type->hasObjectType()) {
-            foreach ($existing_var_type->getTypes() as $existing_type_part) {
+            foreach ($existing_var_type->getAtomicTypes() as $existing_type_part) {
                 if ($existing_type_part instanceof TNamedObject &&
                     $codebase->interfaceExists($existing_type_part->value)
                 ) {
@@ -643,7 +643,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             if (strpos($assertion, '<') || strpos($assertion, '[')) {
                 $new_type_union = Type::parseString($assertion);
 
-                $new_type_part = \array_values($new_type_union->getTypes());
+                $new_type_part = \array_values($new_type_union->getAtomicTypes());
             } else {
                 $new_type_part = Atomic::create($assertion, null, $template_type_map);
             }
@@ -683,7 +683,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         ) {
             $acceptable_atomic_types = [];
 
-            foreach ($existing_var_type->getTypes() as $existing_var_type_part) {
+            foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
                 if (TypeAnalyzer::isAtomicContainedBy(
                     $codebase,
                     $existing_var_type_part,
@@ -820,7 +820,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($existing_var_type->hasType('array')) {
             /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-            $array_atomic_type = $existing_var_type->getTypes()['array'];
+            $array_atomic_type = $existing_var_type->getAtomicTypes()['array'];
             $did_remove_type = false;
 
             if ($array_atomic_type instanceof TArray
@@ -861,7 +861,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
             if (!$is_equality
                 && !$existing_var_type->hasMixed()
-                && (!$did_remove_type || empty($existing_var_type->getTypes()))
+                && (!$did_remove_type || empty($existing_var_type->getAtomicTypes()))
             ) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
@@ -894,7 +894,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         int &$failed_reconciliation
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $object_types = [];
         $did_remove_type = false;
@@ -996,7 +996,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         bool $is_equality
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $string_types = [];
         $did_remove_type = false;
@@ -1066,7 +1066,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         bool $is_equality
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $int_types = [];
         $did_remove_type = false;
@@ -1140,7 +1140,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $did_remove_type = false;
 
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TBool) {
@@ -1201,7 +1201,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $did_remove_type = false;
 
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof Scalar) {
@@ -1265,7 +1265,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $existing_var_type->addType(new TNumericString);
         }
 
-        foreach ($existing_var_type->getTypes() as $type) {
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TNumeric || $type instanceof TNumericString) {
                 // this is a workaround for a possible issue running
                 // is_numeric($a) && is_string($a)
@@ -1322,7 +1322,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         bool $is_equality
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $object_types = [];
         $did_remove_type = false;
@@ -1389,7 +1389,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
@@ -1456,7 +1456,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
             return new Type\Union([new Type\Atomic\TIterable]);
@@ -1518,7 +1518,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             );
 
             if ($class_constant_type) {
-                foreach ($class_constant_type->getTypes() as $const_type_atomic) {
+                foreach ($class_constant_type->getAtomicTypes() as $const_type_atomic) {
                     if ($const_type_atomic instanceof Type\Atomic\ObjectLike
                         || $const_type_atomic instanceof Type\Atomic\TArray
                     ) {
@@ -1552,7 +1552,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
             return new Type\Union([new Type\Atomic\TNamedObject('Traversable')]);
@@ -1620,7 +1620,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
             return Type::getArray();
@@ -1692,7 +1692,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
             return Type::getList();
@@ -1780,7 +1780,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
             return new Union([
@@ -1842,7 +1842,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed()) {
             return Type::getMixed();
@@ -1900,7 +1900,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $callable_types = [];
         $did_remove_type = false;
@@ -1988,7 +1988,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $did_remove_type = $existing_var_type->hasDefinitelyNumericType(false)
             || $existing_var_type->hasType('iterable');
@@ -2260,7 +2260,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        if (!$did_remove_type || empty($existing_var_type->getTypes())) {
+        if (!$did_remove_type || empty($existing_var_type->getAtomicTypes())) {
             if ($key && $code_location) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -2274,7 +2274,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        if ($existing_var_type->getTypes()) {
+        if ($existing_var_type->getAtomicTypes()) {
             return $existing_var_type;
         }
 
@@ -2298,10 +2298,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $has_cloned_type = false;
 
-        foreach ($new_type->getTypes() as $new_type_part) {
+        foreach ($new_type->getAtomicTypes() as $new_type_part) {
             $has_local_match = false;
 
-            foreach ($existing_type->getTypes() as $key => $existing_type_part) {
+            foreach ($existing_type->getAtomicTypes() as $key => $existing_type_part) {
                 // special workaround because PHP allows floats to contain ints, but we don’t want this
                 // behaviour here
                 if ($existing_type_part instanceof Type\Atomic\TFloat
@@ -2490,7 +2490,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $scalar_type = substr($assertion, 0, $bracket_pos);
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($scalar_type === 'int') {
             $value = (int) $value;

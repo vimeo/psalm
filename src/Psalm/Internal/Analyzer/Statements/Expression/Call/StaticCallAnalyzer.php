@@ -199,7 +199,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $has_mock = false;
         $moved_call = false;
 
-        foreach ($lhs_type->getTypes() as $lhs_type_part) {
+        foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
             $intersection_types = [];
 
             if ($lhs_type_part instanceof TNamedObject) {
@@ -242,7 +242,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 if ($lhs_type_part->as_type->hasObjectType()
                     && $lhs_type_part->as_type->isSingle()
                 ) {
-                    foreach ($lhs_type_part->as_type->getTypes() as $typeof_type_atomic) {
+                    foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
                         if ($typeof_type_atomic instanceof Type\Atomic\TNamedObject) {
                             $fq_class_name = $typeof_type_atomic->value;
                         }
@@ -266,7 +266,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             ) {
                 $fq_class_name = null;
 
-                foreach ($lhs_type_part->as->getTypes() as $generic_param_type) {
+                foreach ($lhs_type_part->as->getAtomicTypes() as $generic_param_type) {
                     if (!$generic_param_type instanceof TNamedObject) {
                         continue 2;
                     }
@@ -782,7 +782,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 continue;
                             }
 
-                            foreach ($extended_type->getTypes() as $t) {
+                            foreach ($extended_type->getAtomicTypes() as $t) {
                                 if ($t instanceof Type\Atomic\TTemplateParam
                                     && isset($found_generic_params[$t->param_name][$t->defining_class])
                                 ) {

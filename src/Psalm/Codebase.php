@@ -1340,7 +1340,7 @@ class Codebase
 
         $type = Type::parseString($type_string);
 
-        foreach ($type->getTypes() as $atomic_type) {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TNamedObject) {
                 try {
                     $class_storage = $this->classlike_storage_provider->get($atomic_type->value);

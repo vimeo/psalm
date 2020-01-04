@@ -45,7 +45,7 @@ class ReturnTypeCollector
                 if (!$stmt->expr) {
                     $return_types[] = new Atomic\TVoid();
                 } elseif ($stmt_type = $nodes->getType($stmt)) {
-                    $return_types = array_merge(array_values($stmt_type->getTypes()), $return_types);
+                    $return_types = array_merge(array_values($stmt_type->getAtomicTypes()), $return_types);
 
                     if ($stmt_type->ignore_nullable_issues) {
                         $ignore_nullable_issues = true;
@@ -348,7 +348,7 @@ class ReturnTypeCollector
             return [new Atomic\TMixed()];
         } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
             if ($stmt_expr_type = $nodes->getType($stmt->expr)) {
-                return array_values($stmt_expr_type->getTypes());
+                return array_values($stmt_expr_type->getAtomicTypes());
             }
 
             return [new Atomic\TMixed()];

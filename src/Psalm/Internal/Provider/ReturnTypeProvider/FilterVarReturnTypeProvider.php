@@ -66,13 +66,13 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
                 && ($third_arg_type = $statements_source->node_data->getType($call_args[2]->value))
                 && $filter_type
             ) {
-                foreach ($third_arg_type->getTypes() as $atomic_type) {
+                foreach ($third_arg_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\ObjectLike) {
                         $has_object_like = true;
 
                         if (isset($atomic_type->properties['options'])
                             && $atomic_type->properties['options']->hasArray()
-                            && ($options_array = $atomic_type->properties['options']->getTypes()['array'])
+                            && ($options_array = $atomic_type->properties['options']->getAtomicTypes()['array'])
                             && $options_array instanceof Type\Atomic\ObjectLike
                             && isset($options_array->properties['default'])
                         ) {

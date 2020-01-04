@@ -608,7 +608,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                          * @psalm-suppress PossiblyUndefinedStringArrayOffset
                          * @var Type\Atomic\TFn
                          */
-                        $closure_atomic = \array_values($function_type->getTypes())[0];
+                        $closure_atomic = \array_values($function_type->getAtomicTypes())[0];
                         $closure_atomic->return_type = $closure_return_type;
                     }
                 }

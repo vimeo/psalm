@@ -88,7 +88,7 @@ class ForAnalyzer
 
         foreach ($stmt->cond as $cond) {
             if ($cond_type = $statements_analyzer->node_data->getType($cond)) {
-                foreach ($cond_type->getTypes() as $iterator_type) {
+                foreach ($cond_type->getAtomicTypes() as $iterator_type) {
                     $always_enters_loop = $iterator_type instanceof Type\Atomic\TTrue;
 
                     break;

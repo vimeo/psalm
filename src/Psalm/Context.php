@@ -414,7 +414,7 @@ class Context
                 // if the type changed within the block of statements, process the replacement
                 // also never allow ourselves to remove all types from a union
                 if ((!$new_type || !$old_type->equals($new_type))
-                    && ($new_type || count($existing_type->getTypes()) > 1)
+                    && ($new_type || count($existing_type->getAtomicTypes()) > 1)
                 ) {
                     $existing_type->substitute($old_type, $new_type);
 

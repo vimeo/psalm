@@ -418,9 +418,9 @@ class ForeachAnalyzer
         $invalid_iterator_types = [];
         $raw_object_types = [];
 
-        foreach ($iterator_type->getTypes() as $iterator_atomic_type) {
+        foreach ($iterator_type->getAtomicTypes() as $iterator_atomic_type) {
             if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam) {
-                $iterator_atomic_type = array_values($iterator_atomic_type->as->getTypes())[0];
+                $iterator_atomic_type = array_values($iterator_atomic_type->as->getAtomicTypes())[0];
             }
 
             // if it's an empty array, we cannot iterate over it
@@ -749,7 +749,7 @@ class ForeachAnalyzer
                     $statements_analyzer->node_data = $old_data_provider;
 
                     if ($iterator_class_type) {
-                        foreach ($iterator_class_type->getTypes() as $array_atomic_type) {
+                        foreach ($iterator_class_type->getAtomicTypes() as $array_atomic_type) {
                             $key_type_part = null;
                             $value_type_part = null;
 
@@ -1032,7 +1032,7 @@ class ForeachAnalyzer
 
             $return_type = null;
 
-            foreach ($extended_type->getTypes() as $extended_atomic_type) {
+            foreach ($extended_type->getAtomicTypes() as $extended_atomic_type) {
                 if (!$extended_atomic_type instanceof Type\Atomic\TTemplateParam) {
                     if (!$return_type) {
                         $return_type = $extended_type;

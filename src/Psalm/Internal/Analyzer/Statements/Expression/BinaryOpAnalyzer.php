@@ -1074,8 +1074,8 @@ class BinaryOpAnalyzer
             $has_valid_right_operand = false;
             $has_string_increment = false;
 
-            foreach ($left_type->getTypes() as $left_type_part) {
-                foreach ($right_type->getTypes() as $right_type_part) {
+            foreach ($left_type->getAtomicTypes() as $left_type_part) {
+                foreach ($right_type->getAtomicTypes() as $right_type_part) {
                     $candidate_result_type = self::analyzeNonDivOperands(
                         $statements_source,
                         $codebase,
@@ -1723,7 +1723,7 @@ class BinaryOpAnalyzer
             $left_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
             $right_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
-            foreach ($left_type->getTypes() as $left_type_part) {
+            foreach ($left_type->getAtomicTypes() as $left_type_part) {
                 if ($left_type_part instanceof Type\Atomic\TTemplateParam) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(
@@ -1769,7 +1769,7 @@ class BinaryOpAnalyzer
                 }
             }
 
-            foreach ($right_type->getTypes() as $right_type_part) {
+            foreach ($right_type->getAtomicTypes() as $right_type_part) {
                 if ($right_type_part instanceof Type\Atomic\TTemplateParam) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(

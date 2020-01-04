@@ -152,7 +152,7 @@ class CallMap
                          * @psalm-suppress PossiblyUndefinedStringArrayOffset
                          * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
                          */
-                        $array_atomic_type = $arg_type->getTypes()['array'];
+                        $array_atomic_type = $arg_type->getAtomicTypes()['array'];
 
                         if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                             $arg_type = $array_atomic_type->getGenericValueType();

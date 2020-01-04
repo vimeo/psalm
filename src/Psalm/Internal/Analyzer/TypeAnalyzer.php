@@ -89,7 +89,7 @@ class TypeAnalyzer
             return false;
         }
 
-        foreach ($input_type->getTypes() as $input_type_part) {
+        foreach ($input_type->getAtomicTypes() as $input_type_part) {
             if ($input_type_part instanceof TNull && $ignore_null) {
                 continue;
             }
@@ -115,7 +115,7 @@ class TypeAnalyzer
                 continue;
             }
 
-            foreach ($container_type->getTypes() as $container_type_part) {
+            foreach ($container_type->getAtomicTypes() as $container_type_part) {
                 if ($ignore_null
                     && $container_type_part instanceof TNull
                     && !$input_type_part instanceof TNull
@@ -354,8 +354,8 @@ class TypeAnalyzer
         $container_type_not_null = clone $container_type;
         $container_type_not_null->removeType('null');
 
-        foreach ($input_type->getTypes() as $input_key => $input_type_part) {
-            foreach ($container_type->getTypes() as $container_key => $container_type_part) {
+        foreach ($input_type->getAtomicTypes() as $input_key => $input_type_part) {
+            foreach ($container_type->getAtomicTypes() as $container_key => $container_type_part) {
                 if (get_class($container_type_part) === TNamedObject::class
                     && $input_type_part instanceof TNamedObject
                     && $input_type_part->value === $container_type_part->value
@@ -401,7 +401,7 @@ class TypeAnalyzer
             return false;
         }
 
-        foreach ($container_type->getTypes() as $container_type_part) {
+        foreach ($container_type->getAtomicTypes() as $container_type_part) {
             if ($container_type_part instanceof TNull && $ignore_null) {
                 continue;
             }
@@ -410,7 +410,7 @@ class TypeAnalyzer
                 continue;
             }
 
-            foreach ($input_type->getTypes() as $input_type_part) {
+            foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 $atomic_comparison_result = new TypeComparisonResult();
                 $is_atomic_contained_by = self::isAtomicContainedBy(
                     $codebase,
@@ -448,8 +448,8 @@ class TypeAnalyzer
             return true;
         }
 
-        foreach ($type1->getTypes() as $type1_part) {
-            foreach ($type2->getTypes() as $type2_part) {
+        foreach ($type1->getAtomicTypes() as $type1_part) {
+            foreach ($type2->getAtomicTypes() as $type2_part) {
                 $first_comparison_result = new TypeComparisonResult();
                 $second_comparison_result = new TypeComparisonResult();
 
@@ -496,7 +496,7 @@ class TypeAnalyzer
         $intersection_input_types[] = $input_type_part;
 
         if ($input_type_part instanceof TTemplateParam) {
-            foreach ($input_type_part->as->getTypes() as $g) {
+            foreach ($input_type_part->as->getAtomicTypes() as $g) {
                 if ($g instanceof TNamedObject && $g->extra_types) {
                     $intersection_input_types = array_merge(
                         $intersection_input_types,
@@ -510,7 +510,7 @@ class TypeAnalyzer
         $intersection_container_types[] = $container_type_part;
 
         if ($container_type_part instanceof TTemplateParam) {
-            foreach ($container_type_part->as->getTypes() as $g) {
+            foreach ($container_type_part->as->getAtomicTypes() as $g) {
                 if ($g instanceof TNamedObject && $g->extra_types) {
                     $intersection_container_types = array_merge(
                         $intersection_container_types,
@@ -532,7 +532,7 @@ class TypeAnalyzer
 
                 $intersection_container_type_lower = null;
 
-                foreach ($intersection_container_type->as->getTypes() as $g) {
+                foreach ($intersection_container_type->as->getAtomicTypes() as $g) {
                     if ($g instanceof TNull) {
                         continue;
                     }
@@ -567,7 +567,7 @@ class TypeAnalyzer
 
                     $intersection_input_type_lower = null;
 
-                    foreach ($intersection_input_type->as->getTypes() as $g) {
+                    foreach ($intersection_input_type->as->getAtomicTypes() as $g) {
                         if ($g instanceof TNull) {
                             continue;
                         }
@@ -753,7 +753,7 @@ class TypeAnalyzer
 
             $properties = [];
 
-            foreach ($input_type_part->type_params[0]->getTypes() as $atomic_key_type) {
+            foreach ($input_type_part->type_params[0]->getAtomicTypes() as $atomic_key_type) {
                 if ($atomic_key_type instanceof TLiteralString) {
                     $properties[$atomic_key_type->value] = $input_type_part->type_params[1];
                 } else {
@@ -812,7 +812,7 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof TTemplateParam) {
-            foreach ($container_type_part->as->getTypes() as $container_as_type_part) {
+            foreach ($container_type_part->as->getAtomicTypes() as $container_as_type_part) {
                 if (self::isAtomicContainedBy(
                     $codebase,
                     $input_type_part,
@@ -849,7 +849,7 @@ class TypeAnalyzer
                 }
             }
 
-            foreach ($input_type_part->as->getTypes() as $input_as_type_part) {
+            foreach ($input_type_part->as->getAtomicTypes() as $input_as_type_part) {
                 if ($input_as_type_part instanceof TNull && $container_type_part instanceof TNull) {
                     continue;
                 }
@@ -870,7 +870,7 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof GetClassT) {
-            $first_type = array_values($container_type_part->as_type->getTypes())[0];
+            $first_type = array_values($container_type_part->as_type->getAtomicTypes())[0];
 
             $container_type_part = new TClassString(
                 'object',
@@ -879,7 +879,7 @@ class TypeAnalyzer
         }
 
         if ($input_type_part instanceof GetClassT) {
-            $first_type = array_values($input_type_part->as_type->getTypes())[0];
+            $first_type = array_values($input_type_part->as_type->getAtomicTypes())[0];
 
             $input_type_part = new TClassString(
                 'object',
@@ -1766,7 +1766,7 @@ class TypeAnalyzer
             }
 
             if ($codebase && ($calling_function_id || $file_name)) {
-                foreach ($lhs->getTypes() as $lhs_atomic_type) {
+                foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                     if ($lhs_atomic_type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($lhs_atomic_type->value) . '::',
@@ -1789,7 +1789,7 @@ class TypeAnalyzer
                 $class_name = \substr($class_name, 1);
             }
         } elseif ($lhs->isSingle()) {
-            foreach ($lhs->getTypes() as $lhs_atomic_type) {
+            foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_name = $lhs_atomic_type->value;
                 }
@@ -1914,7 +1914,7 @@ class TypeAnalyzer
                         if (is_string($key)) {
                             $new_input_param = null;
 
-                            foreach ($extended_input_param_type->getTypes() as $et) {
+                            foreach ($extended_input_param_type->getAtomicTypes() as $et) {
                                 if ($et instanceof TTemplateParam
                                     && $et->param_name
                                     && isset($input_class_storage->template_types[$et->param_name])
@@ -2420,7 +2420,7 @@ class TypeAnalyzer
      */
     public static function simplifyUnionType(Codebase $codebase, Type\Union $union)
     {
-        $union_type_count = count($union->getTypes());
+        $union_type_count = count($union->getAtomicTypes());
 
         if ($union_type_count === 1 || ($union_type_count === 2 && $union->isNullable())) {
             return $union;
@@ -2435,7 +2435,7 @@ class TypeAnalyzer
 
         $inverse_contains = [];
 
-        foreach ($union->getTypes() as $type_part) {
+        foreach ($union->getAtomicTypes() as $type_part) {
             $is_contained_by_other = false;
 
             // don't try to simplify intersection types
@@ -2447,7 +2447,7 @@ class TypeAnalyzer
                 return $union;
             }
 
-            foreach ($union->getTypes() as $container_type_part) {
+            foreach ($union->getAtomicTypes() as $container_type_part) {
                 $string_container_part = $container_type_part->getId();
                 $string_input_part = $type_part->getId();
 

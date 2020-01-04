@@ -206,7 +206,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $return_type = null;
 
-        $lhs_types = $class_type->getTypes();
+        $lhs_types = $class_type->getAtomicTypes();
 
         foreach ($lhs_types as $lhs_type_part) {
             $result = self::analyzeAtomicCall(
@@ -380,7 +380,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             $class_type = clone $class_type;
 
-            foreach ($class_type->getTypes() as $key => $type) {
+            foreach ($class_type->getAtomicTypes() as $key => $type) {
                 if (!$type instanceof TNamedObject) {
                     $keys_to_remove[] = $key;
                 } else {
@@ -446,7 +446,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $extra_types = $lhs_type_part->extra_types;
 
             $lhs_type_part = array_values(
-                $lhs_type_part->as->getTypes()
+                $lhs_type_part->as->getAtomicTypes()
             )[0];
 
             $lhs_type_part->from_docblock = true;
@@ -1623,7 +1623,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     $output_type_extends = null;
 
-                    foreach ($input_type_extends->getTypes() as $type_extends_atomic) {
+                    foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
                         if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam) {
                             if (isset($calling_class_storage->template_types[$type_extends_atomic->param_name])) {
                                 $mapped_offset = array_search(
@@ -1707,7 +1707,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                         $output_type_extends = null;
 
-                        foreach ($input_type_extends->getTypes() as $type_extends_atomic) {
+                        foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
                             if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam) {
                                 if (!$output_type_extends) {
                                     $output_type_extends = $type_extends_atomic->as;

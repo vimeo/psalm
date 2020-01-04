@@ -222,14 +222,14 @@ class PropertyAssignmentAnalyzer
 
             $has_valid_assignment_type = false;
 
-            foreach ($lhs_type->getTypes() as $lhs_type_part) {
+            foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
                 if ($lhs_type_part instanceof TNull) {
                     continue;
                 }
 
                 if ($lhs_type_part instanceof Type\Atomic\TFalse
                     && $lhs_type->ignore_falsable_issues
-                    && count($lhs_type->getTypes()) > 1
+                    && count($lhs_type->getAtomicTypes()) > 1
                 ) {
                     continue;
                 }

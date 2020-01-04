@@ -42,7 +42,7 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
 
             $codebase = $statements_source->getCodebase();
 
-            foreach ($first_arg_type->getTypes() as $call_arg_atomic_type) {
+            foreach ($first_arg_type->getAtomicTypes() as $call_arg_atomic_type) {
                 if ($call_arg_atomic_type instanceof Type\Atomic\TNamedObject
                     && TypeAnalyzer::isAtomicContainedBy(
                         $codebase,

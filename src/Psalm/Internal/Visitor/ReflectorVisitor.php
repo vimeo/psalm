@@ -1360,7 +1360,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $extended_union_type->setFromDocblock();
 
-        foreach ($extended_union_type->getTypes() as $atomic_type) {
+        foreach ($extended_union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
@@ -1459,7 +1459,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $implemented_union_type->setFromDocblock();
 
-        foreach ($implemented_union_type->getTypes() as $atomic_type) {
+        foreach ($implemented_union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
@@ -1556,7 +1556,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $used_union_type->setFromDocblock();
 
-        foreach ($used_union_type->getTypes() as $atomic_type) {
+        foreach ($used_union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
@@ -2430,7 +2430,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $template_atomic_type = null;
 
                         if ($template_type) {
-                            foreach ($template_type->getTypes() as $tat) {
+                            foreach ($template_type->getAtomicTypes() as $tat) {
                                 if ($tat instanceof Type\Atomic\TNamedObject) {
                                     $template_atomic_type = $tat;
                                 }
@@ -2504,9 +2504,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 if ($storage->signature_return_type) {
                     $all_typehint_types_match = true;
-                    $signature_return_atomic_types = $storage->signature_return_type->getTypes();
+                    $signature_return_atomic_types = $storage->signature_return_type->getAtomicTypes();
 
-                    foreach ($storage->return_type->getTypes() as $key => $type) {
+                    foreach ($storage->return_type->getAtomicTypes() as $key => $type) {
                         if (isset($signature_return_atomic_types[$key])) {
                             $type->from_docblock = false;
                         } else {
@@ -2710,7 +2710,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $assertion_type_parts = [];
 
-        foreach ($namespaced_type->getTypes() as $namespaced_type_part) {
+        foreach ($namespaced_type->getAtomicTypes() as $namespaced_type_part) {
             if ($namespaced_type_part instanceof Type\Atomic\TAssertionFalsy
                 || ($namespaced_type_part instanceof Type\Atomic\TList
                     && $namespaced_type_part->type_param->isMixed())
@@ -2988,7 +2988,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
                  */
-                $array_type = $new_param_type->getTypes()['array'];
+                $array_type = $new_param_type->getAtomicTypes()['array'];
 
                 if ($array_type instanceof Type\Atomic\ObjectLike) {
                     $new_param_type = $array_type->getGenericValueType();
@@ -3022,11 +3022,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 continue;
             }
 
-            $storage_param_atomic_types = $storage_param->type->getTypes();
+            $storage_param_atomic_types = $storage_param->type->getAtomicTypes();
 
             $all_typehint_types_match = true;
 
-            foreach ($new_param_type->getTypes() as $key => $type) {
+            foreach ($new_param_type->getAtomicTypes() as $key => $type) {
                 if (isset($storage_param_atomic_types[$key])) {
                     $type->from_docblock = false;
 
@@ -3241,9 +3241,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 if ($property_storage->signature_type) {
                     $all_typehint_types_match = true;
-                    $signature_atomic_types = $property_storage->signature_type->getTypes();
+                    $signature_atomic_types = $property_storage->signature_type->getAtomicTypes();
 
-                    foreach ($property_storage->type->getTypes() as $key => $type) {
+                    foreach ($property_storage->type->getAtomicTypes() as $key => $type) {
                         if (isset($signature_atomic_types[$key])) {
                             $type->from_docblock = false;
                         } else {

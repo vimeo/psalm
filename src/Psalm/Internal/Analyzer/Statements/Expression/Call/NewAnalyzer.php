@@ -129,7 +129,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                 $new_type = null;
 
-                foreach ($stmt_class_type->getTypes() as $lhs_type_part) {
+                foreach ($stmt_class_type->getAtomicTypes() as $lhs_type_part) {
                     if ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
                         if (!$statements_analyzer->node_data->getType($stmt)) {
                             $new_type_part = new Type\Atomic\TTemplateParam(
@@ -166,7 +166,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                 if ($lhs_type_part->as_type->hasObjectType()
                                     && $lhs_type_part->as_type->isSingle()
                                 ) {
-                                    foreach ($lhs_type_part->as_type->getTypes() as $typeof_type_atomic) {
+                                    foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
                                         if ($typeof_type_atomic instanceof Type\Atomic\TNamedObject) {
                                             $class_name = $typeof_type_atomic->value;
                                         }
@@ -538,7 +538,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
     ) {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
             if (!$mapped && isset($template_type_extends[$fq_class_name][$template_name])) {
-                foreach ($template_type_extends[$fq_class_name][$template_name]->getTypes() as $t) {
+                foreach ($template_type_extends[$fq_class_name][$template_name]->getAtomicTypes() as $t) {
                     if ($t instanceof Type\Atomic\TTemplateParam) {
                         if ($t->param_name !== $template_name) {
                             return $t->as;
@@ -552,7 +552,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
         foreach ($template_type_extends as $type_map) {
             foreach ($type_map as $extended_template_name => $extended_type) {
-                foreach ($extended_type->getTypes() as $extended_atomic_type) {
+                foreach ($extended_type->getAtomicTypes() as $extended_atomic_type) {
                     if (is_string($extended_template_name)
                         && $extended_atomic_type instanceof Type\Atomic\TTemplateParam
                         && $extended_atomic_type->param_name === $template_name

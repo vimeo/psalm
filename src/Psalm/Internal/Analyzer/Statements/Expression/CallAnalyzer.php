@@ -137,7 +137,7 @@ class CallAnalyzer
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if (isset($context->vars_in_scope['$this'])) {
-                foreach ($context->vars_in_scope['$this']->getTypes() as $atomic_type) {
+                foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof TNamedObject) {
                         if ($fq_class_name === $atomic_type->value) {
                             $alt_declaring_method_id = $declaring_method_id;
@@ -504,7 +504,7 @@ class CallAnalyzer
 
                     $closure_storage = $codebase->getClosureStorage($statements_analyzer->getFilePath(), $closure_id);
 
-                    foreach ($replaced_type->getTypes() as $replaced_type_part) {
+                    foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
                         if ($replaced_type_part instanceof Type\Atomic\TCallable
                             || $replaced_type_part instanceof Type\Atomic\TFn
                         ) {
@@ -697,7 +697,7 @@ class CallAnalyzer
                     $statements_analyzer
                 );
 
-                foreach ($context->vars_in_scope[$var_id]->getTypes() as $type) {
+                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $type) {
                     if ($type instanceof TArray && $type->type_params[1]->isEmpty()) {
                         $context->vars_in_scope[$var_id]->removeType('array');
                         $context->vars_in_scope[$var_id]->addType(
@@ -781,7 +781,7 @@ class CallAnalyzer
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var TArray|TList|ObjectLike
                  */
-                $array_type = $arg_value_type->getTypes()['array'];
+                $array_type = $arg_value_type->getAtomicTypes()['array'];
 
                 if ($array_type instanceof ObjectLike) {
                     $array_type = $array_type->getGenericArrayType();
@@ -864,7 +864,7 @@ class CallAnalyzer
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
              * @var TArray|ObjectLike|TList
              */
-            $array_type = $array_arg_type->getTypes()['array'];
+            $array_type = $array_arg_type->getAtomicTypes()['array'];
 
             $objectlike_list = null;
 
@@ -1040,7 +1040,7 @@ class CallAnalyzer
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
              * @var TArray|ObjectLike|TList
              */
-            $array_type = $array_arg_type->getTypes()['array'];
+            $array_type = $array_arg_type->getAtomicTypes()['array'];
 
             if ($array_type instanceof ObjectLike) {
                 $array_type = $array_type->getGenericArrayType();
@@ -1050,7 +1050,7 @@ class CallAnalyzer
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
              * @var TArray|ObjectLike|TList
              */
-            $replacement_array_type = $replacement_arg_type->getTypes()['array'];
+            $replacement_array_type = $replacement_arg_type->getAtomicTypes()['array'];
 
             if ($replacement_array_type instanceof ObjectLike) {
                 $replacement_array_type = $replacement_array_type->getGenericArrayType();
@@ -1102,7 +1102,7 @@ class CallAnalyzer
             if (isset($context->vars_in_scope[$var_id])) {
                 $array_type = clone $context->vars_in_scope[$var_id];
 
-                $array_atomic_types = $array_type->getTypes();
+                $array_atomic_types = $array_type->getAtomicTypes();
 
                 foreach ($array_atomic_types as $array_atomic_type) {
                     if ($array_atomic_type instanceof ObjectLike) {
@@ -1525,7 +1525,7 @@ class CallAnalyzer
                      * @psalm-suppress PossiblyUndefinedStringArrayOffset
                      * @var TList|TArray
                      */
-                    $array_type = $param_type->getTypes()['array'];
+                    $array_type = $param_type->getAtomicTypes()['array'];
 
                     if ($array_type instanceof TList) {
                         $param_type = $array_type->type_param;
@@ -1789,7 +1789,7 @@ class CallAnalyzer
                      * @psalm-suppress PossiblyUndefinedStringArrayOffset
                      * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
                      */
-                    $array_atomic_type = $arg_type->getTypes()['array'];
+                    $array_atomic_type = $arg_type->getAtomicTypes()['array'];
 
                     if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                         $arg_type_param = $array_atomic_type->getGenericValueType();
@@ -1888,7 +1888,7 @@ class CallAnalyzer
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
                  */
-                $array_atomic_type = $arg_type->getTypes()['array'];
+                $array_atomic_type = $arg_type->getAtomicTypes()['array'];
 
                 if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                     $arg_type = $array_atomic_type->getGenericValueType();
@@ -1898,7 +1898,7 @@ class CallAnalyzer
                     $arg_type = $array_atomic_type->type_params[1];
                 }
             } else {
-                foreach ($arg_type->getTypes() as $atomic_type) {
+                foreach ($arg_type->getAtomicTypes() as $atomic_type) {
                     if (!$atomic_type->isIterable($codebase)) {
                         if (IssueBuffer::accepts(
                             new InvalidArgument(
@@ -1964,7 +1964,7 @@ class CallAnalyzer
                         if (is_string($template_name) && $class_name === $class_storage->name) {
                             $output_type = null;
 
-                            foreach ($type->getTypes() as $atomic_type) {
+                            foreach ($type->getAtomicTypes() as $atomic_type) {
                                 if ($atomic_type instanceof Type\Atomic\TTemplateParam
                                     && isset(
                                         $calling_class_storage
@@ -2043,7 +2043,7 @@ class CallAnalyzer
              */
             $array_arg_type = $array_arg
                     && ($arg_value_type = $statements_analyzer->node_data->getType($array_arg))
-                    && ($types = $arg_value_type->getTypes())
+                    && ($types = $arg_value_type->getAtomicTypes())
                     && isset($types['array'])
                 ? $types['array']
                 : null;
@@ -2074,7 +2074,7 @@ class CallAnalyzer
                 $max_closure_param_count = count($args) > 2 ? 2 : 1;
             }
 
-            foreach ($closure_arg_type->getTypes() as $closure_type) {
+            foreach ($closure_arg_type->getAtomicTypes() as $closure_type) {
                 self::checkArrayFunctionClosureType(
                     $statements_analyzer,
                     $method_id,
@@ -2629,7 +2629,7 @@ class CallAnalyzer
         ) {
             $potential_method_ids = [];
 
-            foreach ($input_type->getTypes() as $input_type_part) {
+            foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 if ($input_type_part instanceof Type\Atomic\ObjectLike) {
                     $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
                         $input_type_part,
@@ -2771,7 +2771,7 @@ class CallAnalyzer
             || $input_expr instanceof PhpParser\Node\Expr\Array_
             || $input_expr instanceof PhpParser\Node\Expr\BinaryOp\Concat
         ) {
-            foreach ($param_type->getTypes() as $param_type_part) {
+            foreach ($param_type->getAtomicTypes() as $param_type_part) {
                 if ($param_type_part instanceof TClassString
                     && $input_expr instanceof PhpParser\Node\Scalar\String_
                 ) {
@@ -2787,7 +2787,7 @@ class CallAnalyzer
                 } elseif ($param_type_part instanceof TArray
                     && $input_expr instanceof PhpParser\Node\Expr\Array_
                 ) {
-                    foreach ($param_type_part->type_params[1]->getTypes() as $param_array_type_part) {
+                    foreach ($param_type_part->type_params[1]->getAtomicTypes() as $param_array_type_part) {
                         if ($param_array_type_part instanceof TClassString) {
                             foreach ($input_expr->items as $item) {
                                 if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
@@ -3154,9 +3154,9 @@ class CallAnalyzer
         if (!$input_type_changed && $param_type->from_docblock && !$input_type->hasMixed()) {
             $input_type = clone $input_type;
 
-            foreach ($param_type->getTypes() as $param_atomic_type) {
+            foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
                 if ($param_atomic_type instanceof Type\Atomic\TGenericObject) {
-                    foreach ($input_type->getTypes() as $input_atomic_type) {
+                    foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
                         if ($input_atomic_type instanceof Type\Atomic\TGenericObject
                             && $input_atomic_type->value === $param_atomic_type->value
                         ) {
@@ -3201,7 +3201,7 @@ class CallAnalyzer
 
                 $input_type->from_docblock = false;
 
-                foreach ($input_type->getTypes() as $atomic_type) {
+                foreach ($input_type->getAtomicTypes() as $atomic_type) {
                     $atomic_type->from_docblock = false;
                 }
             } elseif ($input_type->hasMixed() && $signature_param_type) {
@@ -3314,7 +3314,7 @@ class CallAnalyzer
 
         $method_ids = [];
 
-        foreach ($class_arg_type->getTypes() as $type_part) {
+        foreach ($class_arg_type->getAtomicTypes() as $type_part) {
             if ($type_part instanceof TNamedObject) {
                 $method_id = $type_part->value . '::' . $method_name_arg->value;
 
@@ -3453,7 +3453,7 @@ class CallAnalyzer
                             continue 2;
                         }
 
-                        $replacement_atomic_types = $template_map[0]->getTypes();
+                        $replacement_atomic_types = $template_map[0]->getAtomicTypes();
 
                         if (count($replacement_atomic_types) > 1) {
                             continue 2;
@@ -3556,7 +3556,7 @@ class CallAnalyzer
                 if (isset($op_vars_in_scope[$var_id])) {
                     $op_vars_in_scope[$var_id]->from_docblock = true;
 
-                    foreach ($op_vars_in_scope[$var_id]->getTypes() as $changed_atomic_type) {
+                    foreach ($op_vars_in_scope[$var_id]->getAtomicTypes() as $changed_atomic_type) {
                         $changed_atomic_type->from_docblock = true;
 
                         if ($changed_atomic_type instanceof Type\Atomic\TNamedObject

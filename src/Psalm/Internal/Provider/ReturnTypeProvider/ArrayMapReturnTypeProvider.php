@@ -70,7 +70,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         $array_arg_type = null;
 
         if ($array_arg && ($array_arg_union_type = $statements_source->node_data->getType($array_arg))) {
-            $arg_types = $array_arg_union_type->getTypes();
+            $arg_types = $array_arg_union_type->getAtomicTypes();
 
             if (isset($arg_types['array'])) {
                 $array_arg_atomic_type = $arg_types['array'];

@@ -234,7 +234,7 @@ class Reconciler
                     $has_empty
                 );
 
-            if ($result_type && empty($result_type->getTypes())) {
+            if ($result_type && empty($result_type->getAtomicTypes())) {
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
@@ -262,7 +262,7 @@ class Reconciler
                         $failed_reconciliation
                     );
 
-                    if (!$result_type_candidate->getTypes()) {
+                    if (!$result_type_candidate->getAtomicTypes()) {
                         $result_type_candidate->addType(new TEmpty);
                     }
 
@@ -514,7 +514,7 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
-                    foreach ($existing_keys[$base_key]->getTypes() as $existing_key_type_part) {
+                    foreach ($existing_keys[$base_key]->getAtomicTypes() as $existing_key_type_part) {
                         if ($existing_key_type_part instanceof Type\Atomic\TArray) {
                             if ($has_empty) {
                                 return null;
@@ -586,7 +586,7 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
-                    foreach ($existing_keys[$base_key]->getTypes() as $existing_key_type_part) {
+                    foreach ($existing_keys[$base_key]->getAtomicTypes() as $existing_key_type_part) {
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
                         } elseif ($existing_key_type_part instanceof TMixed
@@ -723,7 +723,7 @@ class Reconciler
     ) {
         $reconciliation = ' and trying to reconcile type \'' . $old_var_type_string . '\' to ' . $assertion;
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $from_docblock = $existing_var_type->from_docblock
             || (isset($existing_var_atomic_types[$assertion])
@@ -808,7 +808,7 @@ class Reconciler
         $base_key = implode($key_parts);
 
         if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
-            foreach ($existing_types[$base_key]->getTypes() as $base_atomic_type) {
+            foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
                 if ($base_atomic_type instanceof Type\Atomic\ObjectLike
                     || ($base_atomic_type instanceof Type\Atomic\TArray
                         && !$base_atomic_type->type_params[1]->isEmpty())

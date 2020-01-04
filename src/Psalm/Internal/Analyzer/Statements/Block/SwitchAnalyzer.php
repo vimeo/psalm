@@ -303,7 +303,7 @@ class SwitchAnalyzer
 
                 $type_statements = [];
 
-                foreach ($switch_var_type->getTypes() as $type) {
+                foreach ($switch_var_type->getAtomicTypes() as $type) {
                     if ($type instanceof Type\Atomic\GetClassT) {
                         $type_statements[] = new PhpParser\Node\Expr\FuncCall(
                             new PhpParser\Node\Name(['get_class']),

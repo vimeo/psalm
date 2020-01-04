@@ -71,7 +71,7 @@ class WhileAnalyzer
         if ($stmt_cond_type = $statements_analyzer->node_data->getType($stmt->cond)) {
             $always_enters_loop = true;
 
-            foreach ($stmt_cond_type->getTypes() as $iterator_type) {
+            foreach ($stmt_cond_type->getAtomicTypes() as $iterator_type) {
                 if ($iterator_type instanceof Type\Atomic\TArray
                     || $iterator_type instanceof Type\Atomic\ObjectLike
                 ) {

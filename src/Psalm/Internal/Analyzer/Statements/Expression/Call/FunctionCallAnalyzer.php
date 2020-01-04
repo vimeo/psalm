@@ -123,7 +123,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $invalid_function_call_types = [];
                 $has_valid_function_call_type = false;
 
-                foreach ($stmt_name_type->getTypes() as $var_type_part) {
+                foreach ($stmt_name_type->getAtomicTypes() as $var_type_part) {
                     if ($var_type_part instanceof Type\Atomic\TFn || $var_type_part instanceof Type\Atomic\TCallable) {
                         $function_params = $var_type_part->params;
 
@@ -657,7 +657,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 } elseif ($var_type = $statements_analyzer->node_data->getType($var)) {
                     $class_string_types = [];
 
-                    foreach ($var_type->getTypes() as $class_type) {
+                    foreach ($var_type->getAtomicTypes() as $class_type) {
                         if ($class_type instanceof Type\Atomic\TNamedObject) {
                             $class_string_types[] = new Type\Atomic\TClassString($class_type->value, clone $class_type);
                         }

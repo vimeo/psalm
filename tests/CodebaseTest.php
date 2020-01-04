@@ -96,7 +96,7 @@ class CodebaseTest extends TestCase
      */
     public function getKeyValueParamsForTraversableObject(string $input, array $expected)
     {
-        list($input) = array_values(Type::parseString($input)->getTypes());
+        list($input) = array_values(Type::parseString($input)->getAtomicTypes());
 
         $expected_key_type = Type::parseString($expected[0]);
         $expected_value_type = Type::parseString($expected[1]);

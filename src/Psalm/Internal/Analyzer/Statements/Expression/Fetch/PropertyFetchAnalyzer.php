@@ -132,7 +132,7 @@ class PropertyFetchAnalyzer
 
                 $property_id = null;
 
-                foreach ($stmt_var_type->getTypes() as $lhs_type_part) {
+                foreach ($stmt_var_type->getAtomicTypes() as $lhs_type_part) {
                     if ($lhs_type_part instanceof TNamedObject) {
                         if (!$codebase->classExists($lhs_type_part->value)) {
                             continue;
@@ -171,7 +171,7 @@ class PropertyFetchAnalyzer
                 && $stmt->name instanceof PhpParser\Node\Identifier
             ) {
                 // log the appearance
-                foreach ($stmt_var_type->getTypes() as $lhs_type_part) {
+                foreach ($stmt_var_type->getAtomicTypes() as $lhs_type_part) {
                     if ($lhs_type_part instanceof TNamedObject) {
                         if (!$codebase->classExists($lhs_type_part->value)) {
                             continue;
@@ -320,7 +320,7 @@ class PropertyFetchAnalyzer
 
         if (!$prop_name) {
             if ($stmt_var_type->hasObjectType() && !$context->ignore_variable_property) {
-                foreach ($stmt_var_type->getTypes() as $type) {
+                foreach ($stmt_var_type->getAtomicTypes() as $type) {
                     if ($type instanceof Type\Atomic\TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($type->value) . '::$',
@@ -336,7 +336,7 @@ class PropertyFetchAnalyzer
         $invalid_fetch_types = [];
         $has_valid_fetch_type = false;
 
-        foreach ($stmt_var_type->getTypes() as $lhs_type_part) {
+        foreach ($stmt_var_type->getAtomicTypes() as $lhs_type_part) {
             if ($lhs_type_part instanceof TNull) {
                 continue;
             }
@@ -345,7 +345,7 @@ class PropertyFetchAnalyzer
                 $extra_types = $lhs_type_part->extra_types;
 
                 $lhs_type_part = array_values(
-                    $lhs_type_part->as->getTypes()
+                    $lhs_type_part->as->getAtomicTypes()
                 )[0];
 
                 $lhs_type_part->from_docblock = true;

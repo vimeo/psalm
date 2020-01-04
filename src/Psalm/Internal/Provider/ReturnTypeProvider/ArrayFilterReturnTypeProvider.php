@@ -43,7 +43,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         $first_arg_array = $array_arg
             && ($first_arg_type = $statements_source->node_data->getType($array_arg))
             && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getTypes()['array'])
+            && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof Type\Atomic\TArray
                 || $array_atomic_type instanceof Type\Atomic\ObjectLike
                 || $array_atomic_type instanceof Type\Atomic\TList)
@@ -205,7 +205,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             ]);
         }
 
-        if (!$inner_type->getTypes()) {
+        if (!$inner_type->getAtomicTypes()) {
             return Type::getEmptyArray();
         }
 

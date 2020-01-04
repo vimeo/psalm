@@ -100,7 +100,7 @@ class NegatedAssertionReconciler extends Reconciler
             }
         }
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($assertion === 'object' && !$existing_var_type->hasMixed()) {
             return self::reconcileObject(
@@ -250,7 +250,7 @@ class NegatedAssertionReconciler extends Reconciler
                 ]
             ));
         } elseif (strtolower($assertion) === 'int'
-            && isset($existing_var_type->getTypes()['array-key'])
+            && isset($existing_var_type->getAtomicTypes()['array-key'])
         ) {
             $existing_var_type->removeType('array-key');
             $existing_var_type->addType(new TString);
@@ -261,7 +261,7 @@ class NegatedAssertionReconciler extends Reconciler
 
             // if there wasn't a direct hit, go deeper, eliminating subtypes
             if (!$existing_var_type->removeType($assertion)) {
-                foreach ($existing_var_type->getTypes() as $part_name => $existing_var_type_part) {
+                foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
                     if (!$existing_var_type_part->isObjectType() || strpos($assertion, '-')) {
                         continue;
                     }
@@ -320,7 +320,7 @@ class NegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (empty($existing_var_type->getTypes())) {
+        if (empty($existing_var_type->getAtomicTypes())) {
             if ($key !== '$this'
                 || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
             ) {
@@ -352,7 +352,7 @@ class NegatedAssertionReconciler extends Reconciler
     private static function reconcileCallable(
         Type\Union $existing_var_type
     ) : Type\Union {
-        foreach ($existing_var_type->getTypes() as $atomic_key => $type) {
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
             if ($type instanceof Type\Atomic\TLiteralString
                 && \Psalm\Internal\Codebase\CallMap::inCallMap($type->value)
             ) {
@@ -383,7 +383,7 @@ class NegatedAssertionReconciler extends Reconciler
         $non_bool_types = [];
         $did_remove_type = false;
 
-        foreach ($existing_var_type->getTypes() as $type) {
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
                 if (!$type->as->hasBool()) {
                     $non_bool_types[] = $type;
@@ -443,7 +443,7 @@ class NegatedAssertionReconciler extends Reconciler
         bool $is_equality
     ) : Type\Union {
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if (isset($existing_var_atomic_types['array'])) {
             $array_atomic_type = $existing_var_atomic_types['array'];
@@ -478,7 +478,7 @@ class NegatedAssertionReconciler extends Reconciler
 
             if (!$is_equality
                 && !$existing_var_type->hasMixed()
-                && (!$did_remove_type || empty($existing_var_type->getTypes()))
+                && (!$did_remove_type || empty($existing_var_type->getAtomicTypes()))
             ) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
@@ -517,7 +517,7 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType('null');
         }
 
-        if (!$did_remove_type || empty($existing_var_type->getTypes())) {
+        if (!$did_remove_type || empty($existing_var_type->getAtomicTypes())) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -535,7 +535,7 @@ class NegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if ($existing_var_type->getTypes()) {
+        if ($existing_var_type->getAtomicTypes()) {
             return $existing_var_type;
         }
 
@@ -559,7 +559,7 @@ class NegatedAssertionReconciler extends Reconciler
         bool $is_strict_equality
     ) : Type\Union {
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $did_remove_type = $existing_var_type->hasDefinitelyNumericType(false)
             || $existing_var_type->isEmpty()
@@ -573,7 +573,7 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType('false');
 
             if ($existing_var_type->hasType('array')
-                && $existing_var_type->getTypes()['array']->getId() === 'array<empty, empty>'
+                && $existing_var_type->getAtomicTypes()['array']->getId() === 'array<empty, empty>'
             ) {
                 $existing_var_type->removeType('array');
             }
@@ -608,7 +608,7 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->possibly_undefined = false;
             $existing_var_type->possibly_undefined_from_try = false;
 
-            if ($existing_var_type->getTypes()) {
+            if ($existing_var_type->getAtomicTypes()) {
                 return $existing_var_type;
             }
 
@@ -750,7 +750,7 @@ class NegatedAssertionReconciler extends Reconciler
         $existing_var_type->possibly_undefined = false;
         $existing_var_type->possibly_undefined_from_try = false;
 
-        if ((!$did_remove_type || empty($existing_var_type->getTypes())) && !$existing_var_type->hasTemplate()) {
+        if ((!$did_remove_type || empty($existing_var_type->getAtomicTypes())) && !$existing_var_type->hasTemplate()) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -768,7 +768,7 @@ class NegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if ($existing_var_type->getTypes()) {
+        if ($existing_var_type->getAtomicTypes()) {
             return $existing_var_type;
         }
 
@@ -793,7 +793,7 @@ class NegatedAssertionReconciler extends Reconciler
         $non_scalar_types = [];
         $did_remove_type = false;
 
-        foreach ($existing_var_type->getTypes() as $type) {
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
                 if (!$type->as->hasScalar()) {
                     $non_scalar_types[] = $type;
@@ -854,7 +854,7 @@ class NegatedAssertionReconciler extends Reconciler
         $non_object_types = [];
         $did_remove_type = false;
 
-        foreach ($existing_var_type->getTypes() as $type) {
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
                 if (!$type->as->hasObject()) {
                     $non_object_types[] = $type;
@@ -923,7 +923,7 @@ class NegatedAssertionReconciler extends Reconciler
         $did_remove_type = $existing_var_type->hasString()
             || $existing_var_type->hasScalar();
 
-        foreach ($existing_var_type->getTypes() as $type) {
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
                 if (!$type->as->hasNumeric()) {
                     if ($type->as->hasMixed()) {
@@ -985,7 +985,7 @@ class NegatedAssertionReconciler extends Reconciler
         $non_string_types = [];
         $did_remove_type = $existing_var_type->hasScalar();
 
-        foreach ($existing_var_type->getTypes() as $type) {
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
                 if (!$type->as->hasString()) {
                     if ($type->as->hasMixed()) {
@@ -1057,7 +1057,7 @@ class NegatedAssertionReconciler extends Reconciler
         $non_array_types = [];
         $did_remove_type = $existing_var_type->hasScalar();
 
-        foreach ($existing_var_type->getTypes() as $type) {
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
                 if (!$type->as->hasArray()) {
                     if ($type->as->hasMixed()) {
@@ -1157,7 +1157,7 @@ class NegatedAssertionReconciler extends Reconciler
         }
 
         if ($existing_var_type->hasType('array')) {
-            $array_atomic_type = $existing_var_type->getTypes()['array'];
+            $array_atomic_type = $existing_var_type->getAtomicTypes()['array'];
 
             if ($array_atomic_type instanceof Type\Atomic\TArray
                 && !$array_atomic_type instanceof Type\Atomic\TNonEmptyArray
@@ -1214,7 +1214,7 @@ class NegatedAssertionReconciler extends Reconciler
     ) {
         $scalar_type = substr($assertion, 0, $bracket_pos);
 
-        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $did_remove_type = false;
         $did_match_literal_type = false;

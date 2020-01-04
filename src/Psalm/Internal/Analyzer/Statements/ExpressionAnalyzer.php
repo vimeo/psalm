@@ -220,7 +220,7 @@ class ExpressionAnalyzer
             } else {
                 $acceptable_types = [];
 
-                foreach ($stmt_expr_type->getTypes() as $type_part) {
+                foreach ($stmt_expr_type->getAtomicTypes() as $type_part) {
                     if ($type_part instanceof TInt || $type_part instanceof TFloat) {
                         if ($type_part instanceof Type\Atomic\TLiteralInt
                             && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
@@ -272,7 +272,7 @@ class ExpressionAnalyzer
                 $unacceptable_type = null;
                 $has_valid_operand = false;
 
-                foreach ($stmt_expr_type->getTypes() as $type_string => $type_part) {
+                foreach ($stmt_expr_type->getAtomicTypes() as $type_string => $type_part) {
                     if ($type_part instanceof TInt || $type_part instanceof TString) {
                         if ($type_part instanceof Type\Atomic\TLiteralInt) {
                             $type_part->value = ~$type_part->value;
@@ -376,7 +376,7 @@ class ExpressionAnalyzer
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 $stmt_type->from_calculation = true;
 
-                foreach ($stmt_type->getTypes() as $atomic_type) {
+                foreach ($stmt_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
                         $stmt_type->addType(new Type\Atomic\TInt);
                     } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
@@ -604,7 +604,7 @@ class ExpressionAnalyzer
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
                 $all_permissible = true;
 
-                foreach ($stmt_expr_type->getTypes() as $type) {
+                foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
                         $permissible_atomic_types[] = new ObjectLike([new Type\Union([$type])]);
                     } elseif ($type instanceof TNull) {
@@ -1138,7 +1138,7 @@ class ExpressionAnalyzer
 
         $new_return_type_parts = [];
 
-        foreach ($return_type->getTypes() as $return_type_part) {
+        foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $parts = self::fleshOutAtomicType(
                 $codebase,
                 $return_type_part,
@@ -1282,7 +1282,7 @@ class ExpressionAnalyzer
                     if ($class_constant->isSingle()) {
                         $class_constant = clone $class_constant;
 
-                        return array_values($class_constant->getTypes())[0];
+                        return array_values($class_constant->getAtomicTypes())[0];
                     }
                 }
             }
@@ -1309,7 +1309,7 @@ class ExpressionAnalyzer
                 }
 
                 if ($class_constant_type) {
-                    foreach ($class_constant_type->getTypes() as $const_type_atomic) {
+                    foreach ($class_constant_type->getAtomicTypes() as $const_type_atomic) {
                         if ($const_type_atomic instanceof Type\Atomic\ObjectLike
                             || $const_type_atomic instanceof Type\Atomic\TArray
                         ) {
@@ -1318,10 +1318,10 @@ class ExpressionAnalyzer
                             }
 
                             if ($return_type instanceof Type\Atomic\TKeyOfClassConstant) {
-                                return array_values($const_type_atomic->type_params[0]->getTypes());
+                                return array_values($const_type_atomic->type_params[0]->getAtomicTypes());
                             }
 
-                            return array_values($const_type_atomic->type_params[1]->getTypes());
+                            return array_values($const_type_atomic->type_params[1]->getAtomicTypes());
                         }
                     }
                 }
@@ -1698,7 +1698,7 @@ class ExpressionAnalyzer
             $storage = $source->getFunctionLikeStorage($statements_analyzer);
 
             if ($storage->return_type) {
-                foreach ($storage->return_type->getTypes() as $atomic_return_type) {
+                foreach ($storage->return_type->getAtomicTypes() as $atomic_return_type) {
                     if ($atomic_return_type instanceof Type\Atomic\TGenericObject
                         && $atomic_return_type->value === 'Generator'
                     ) {
@@ -1734,7 +1734,7 @@ class ExpressionAnalyzer
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
             $yield_from_type = null;
 
-            foreach ($stmt_expr_type->getTypes() as $atomic_type) {
+            foreach ($stmt_expr_type->getAtomicTypes() as $atomic_type) {
                 if ($yield_from_type === null) {
                     if ($atomic_type instanceof Type\Atomic\TGenericObject
                         && strtolower($atomic_type->value) === 'generator'
@@ -1858,7 +1858,7 @@ class ExpressionAnalyzer
         $has_valid_cast = false;
         $invalid_casts = [];
 
-        foreach ($stmt_type->getTypes() as $atomic_type) {
+        foreach ($stmt_type->getAtomicTypes() as $atomic_type) {
             $atomic_type_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
             if (!$atomic_type instanceof TMixed
@@ -1982,7 +1982,7 @@ class ExpressionAnalyzer
 
             $immutable_cloned = false;
 
-            foreach ($clone_type->getTypes() as $clone_type_part) {
+            foreach ($clone_type->getAtomicTypes() as $clone_type_part) {
                 if (!$clone_type_part instanceof TNamedObject
                     && !$clone_type_part instanceof TObject
                     && !$clone_type_part instanceof TMixed

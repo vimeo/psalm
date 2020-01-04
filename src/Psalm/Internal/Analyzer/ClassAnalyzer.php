@@ -1867,7 +1867,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         if (isset($parent_storage->template_covariants[$i])
                             && !$parent_storage->template_covariants[$i]
                         ) {
-                            foreach ($extended_type->getTypes() as $t) {
+                            foreach ($extended_type->getAtomicTypes() as $t) {
                                 if ($t instanceof Type\Atomic\TTemplateParam
                                     && $storage->template_types
                                     && $storage->template_covariants

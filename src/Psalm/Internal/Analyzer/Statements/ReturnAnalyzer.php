@@ -322,7 +322,7 @@ class ReturnAnalyzer
                                 }
                             }
 
-                            foreach ($local_return_type->getTypes() as $local_type_part) {
+                            foreach ($local_return_type->getAtomicTypes() as $local_type_part) {
                                 if ($local_type_part instanceof Type\Atomic\TClassString
                                     && $stmt->expr instanceof PhpParser\Node\Scalar\String_
                                 ) {
@@ -338,7 +338,9 @@ class ReturnAnalyzer
                                 } elseif ($local_type_part instanceof Type\Atomic\TArray
                                     && $stmt->expr instanceof PhpParser\Node\Expr\Array_
                                 ) {
-                                    foreach ($local_type_part->type_params[1]->getTypes() as $local_array_type_part) {
+                                    $value_param = $local_type_part->type_params[1];
+
+                                    foreach ($value_param->getAtomicTypes() as $local_array_type_part) {
                                         if ($local_array_type_part instanceof Type\Atomic\TClassString) {
                                             foreach ($stmt->expr->items as $item) {
                                                 if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {

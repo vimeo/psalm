@@ -192,7 +192,7 @@ class ArrayFetchAnalyzer
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var TArray|ObjectLike|TList
                  */
-                $array_type = $stmt_var_type->getTypes()['array'];
+                $array_type = $stmt_var_type->getAtomicTypes()['array'];
 
                 if ($array_type instanceof TArray) {
                     $const_array_key_type = $array_type->type_params[0];
@@ -207,9 +207,9 @@ class ArrayFetchAnalyzer
                     && !$stmt_dim_type->hasMixed()
                 ) {
                     $new_offset_type = clone $stmt_dim_type;
-                    $const_array_key_atomic_types = $const_array_key_type->getTypes();
+                    $const_array_key_atomic_types = $const_array_key_type->getAtomicTypes();
 
-                    foreach ($new_offset_type->getTypes() as $offset_key => $offset_atomic_type) {
+                    foreach ($new_offset_type->getAtomicTypes() as $offset_key => $offset_atomic_type) {
                         if ($offset_atomic_type instanceof TString
                             || $offset_atomic_type instanceof TInt
                         ) {
@@ -260,7 +260,7 @@ class ArrayFetchAnalyzer
             $stmt_type->possibly_undefined = false;
         }
 
-        if ($context->inside_isset && $dim_var_id && $new_offset_type && $new_offset_type->getTypes()) {
+        if ($context->inside_isset && $dim_var_id && $new_offset_type && $new_offset_type->getAtomicTypes()) {
             $context->vars_in_scope[$dim_var_id] = $new_offset_type;
         }
 
@@ -325,7 +325,7 @@ class ArrayFetchAnalyzer
         ) {
             $key_value = $stmt->dim->value;
         } elseif ($stmt->dim && ($stmt_dim_type = $statements_analyzer->node_data->getType($stmt->dim))) {
-            foreach ($stmt_dim_type->getTypes() as $possible_value_type) {
+            foreach ($stmt_dim_type->getAtomicTypes() as $possible_value_type) {
                 if ($possible_value_type instanceof TLiteralString
                     || $possible_value_type instanceof TLiteralInt
                 ) {
@@ -386,7 +386,7 @@ class ArrayFetchAnalyzer
             }
         }
 
-        foreach ($array_type->getTypes() as $type_string => $type) {
+        foreach ($array_type->getAtomicTypes() as $type_string => $type) {
             $original_type = $type;
 
             if ($type instanceof TMixed || $type instanceof TTemplateParam || $type instanceof TEmpty) {
@@ -430,7 +430,7 @@ class ArrayFetchAnalyzer
                     break;
                 }
 
-                $type = clone array_values($type->as->getTypes())[0];
+                $type = clone array_values($type->as->getAtomicTypes())[0];
             }
 
             if ($type instanceof TNull) {
@@ -545,7 +545,7 @@ class ArrayFetchAnalyzer
 
                         $templated_offset_type = null;
 
-                        foreach ($offset_type->getTypes() as $offset_atomic_type) {
+                        foreach ($offset_type->getAtomicTypes() as $offset_atomic_type) {
                             if ($offset_atomic_type instanceof TTemplateParam) {
                                 $templated_offset_type = $offset_atomic_type;
                             }
@@ -554,7 +554,7 @@ class ArrayFetchAnalyzer
                         $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
                         if ($original_type instanceof TTemplateParam && $templated_offset_type) {
-                            foreach ($templated_offset_type->as->getTypes() as $offset_as) {
+                            foreach ($templated_offset_type->as->getAtomicTypes() as $offset_as) {
                                 if ($offset_as instanceof Type\Atomic\TTemplateKeyOf
                                     && $offset_as->param_name === $original_type->param_name
                                     && $offset_as->defining_class === $original_type->defining_class
@@ -726,7 +726,7 @@ class ArrayFetchAnalyzer
                         );
                     }
                 } elseif ($type instanceof TClassStringMap) {
-                    $offset_type_parts = array_values($offset_type->getTypes());
+                    $offset_type_parts = array_values($offset_type->getAtomicTypes());
 
                     foreach ($offset_type_parts as $offset_type_part) {
                         if ($offset_type_part instanceof Type\Atomic\TClassString) {
@@ -1372,7 +1372,7 @@ class ArrayFetchAnalyzer
         if ($offset_type->hasLiteralInt()) {
             $found_match = false;
 
-            foreach ($offset_type->getTypes() as $offset_type_part) {
+            foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
                 if ($array_var_id
                     && $offset_type_part instanceof TLiteralInt
                     && isset(
@@ -1421,7 +1421,7 @@ class ArrayFetchAnalyzer
         if ($offset_type->hasLiteralString() && !$expected_offset_type->hasLiteralClassString()) {
             $found_match = false;
 
-            foreach ($offset_type->getTypes() as $offset_type_part) {
+            foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
                 if ($array_var_id
                     && $offset_type_part instanceof TLiteralString
                     && isset(
@@ -1460,7 +1460,7 @@ class ArrayFetchAnalyzer
      */
     public static function replaceOffsetTypeWithInts(Type\Union $offset_type)
     {
-        $offset_types = $offset_type->getTypes();
+        $offset_types = $offset_type->getAtomicTypes();
 
         $cloned = false;
 

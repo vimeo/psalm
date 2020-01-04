@@ -76,7 +76,7 @@ class ArrayAnalyzer
                     continue;
                 }
 
-                foreach ($unpacked_array_type->getTypes() as $unpacked_atomic_type) {
+                foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
                     if ($unpacked_atomic_type instanceof Type\Atomic\ObjectLike) {
                         $unpacked_array_offset = 0;
                         foreach ($unpacked_atomic_type->properties as $key => $property_value) {
@@ -97,7 +97,7 @@ class ArrayAnalyzer
                             $item_key_atomic_types[] = new Type\Atomic\TLiteralInt($key);
                             $item_value_atomic_types = array_merge(
                                 $item_value_atomic_types,
-                                array_values($property_value->getTypes())
+                                array_values($property_value->getAtomicTypes())
                             );
                             $array_keys[$int_offset + $int_offset_diff + $unpacked_array_offset] = true;
                             $property_types[$int_offset + $int_offset_diff + $unpacked_array_offset] = $property_value;
@@ -126,14 +126,14 @@ class ArrayAnalyzer
 
                             $item_value_atomic_types = array_merge(
                                 $item_value_atomic_types,
-                                array_values($unpacked_atomic_type->type_params[1]->getTypes())
+                                array_values($unpacked_atomic_type->type_params[1]->getAtomicTypes())
                             );
                         } elseif ($unpacked_atomic_type instanceof Type\Atomic\TList) {
                             $item_key_atomic_types[] = new Type\Atomic\TInt();
 
                             $item_value_atomic_types = array_merge(
                                 $item_value_atomic_types,
-                                array_values($unpacked_atomic_type->type_param->getTypes())
+                                array_values($unpacked_atomic_type->type_param->getAtomicTypes())
                             );
                         }
                     }
@@ -164,7 +164,10 @@ class ArrayAnalyzer
                         $key_type = Type::getInt(false, (int) $item->key->value);
                     }
 
-                    $item_key_atomic_types = array_merge($item_key_atomic_types, array_values($key_type->getTypes()));
+                    $item_key_atomic_types = array_merge(
+                        $item_key_atomic_types,
+                        array_values($key_type->getAtomicTypes())
+                    );
 
                     if ($key_type->isSingleStringLiteral()) {
                         $item_key_literal_type = $key_type->getSingleStringLiteral();
@@ -246,7 +249,7 @@ class ArrayAnalyzer
 
                 $item_value_atomic_types = array_merge(
                     $item_value_atomic_types,
-                    array_values($item_value_type->getTypes())
+                    array_values($item_value_type->getAtomicTypes())
                 );
             } else {
                 $item_value_atomic_types[] = new Type\Atomic\TMixed();

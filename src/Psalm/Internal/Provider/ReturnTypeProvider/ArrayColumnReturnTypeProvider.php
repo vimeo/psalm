@@ -37,21 +37,21 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             && $first_arg_type->isSingle()
             && $first_arg_type->hasArray()
         ) {
-            $input_array = $first_arg_type->getTypes()['array'];
+            $input_array = $first_arg_type->getAtomicTypes()['array'];
             if ($input_array instanceof Type\Atomic\ObjectLike) {
                 $row_type = $input_array->getGenericArrayType()->type_params[1];
                 if ($row_type->isSingle() && $row_type->hasArray()) {
-                    $row_shape = $row_type->getTypes()['array'];
+                    $row_shape = $row_type->getAtomicTypes()['array'];
                 }
             } elseif ($input_array instanceof Type\Atomic\TArray) {
                 $row_type = $input_array->type_params[1];
                 if ($row_type->isSingle() && $row_type->hasArray()) {
-                    $row_shape = $row_type->getTypes()['array'];
+                    $row_shape = $row_type->getAtomicTypes()['array'];
                 }
             } elseif ($input_array instanceof Type\Atomic\TList) {
                 $row_type = $input_array->type_param;
                 if ($row_type->isSingle() && $row_type->hasArray()) {
-                    $row_shape = $row_type->getTypes()['array'];
+                    $row_shape = $row_type->getAtomicTypes()['array'];
                 }
             }
         }

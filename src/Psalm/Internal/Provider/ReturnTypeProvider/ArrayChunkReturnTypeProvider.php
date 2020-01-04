@@ -27,7 +27,7 @@ class ArrayChunkReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
             && ($array_arg_type = $statements_source->getNodeTypeProvider()->getType($call_args[0]->value))
             && $array_arg_type->isSingle()
             && $array_arg_type->hasArray()
-            && ($array_type = ArrayType::infer($array_arg_type->getTypes()['array']))
+            && ($array_type = ArrayType::infer($array_arg_type->getAtomicTypes()['array']))
         ) {
             $preserve_keys = isset($call_args[2])
                 && ($preserve_keys_arg_type = $statements_source->getNodeTypeProvider()->getType($call_args[2]->value))

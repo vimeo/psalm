@@ -110,7 +110,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                 case 'count':
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        $atomic_types = $first_arg_type->getTypes();
+                        $atomic_types = $first_arg_type->getAtomicTypes();
 
                         if (count($atomic_types) === 1) {
                             if (isset($atomic_types['array'])) {
@@ -249,7 +249,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
                             $numeric_types = [];
 
-                            foreach ($first_arg_type->getTypes() as $inner_type) {
+                            foreach ($first_arg_type->getAtomicTypes() as $inner_type) {
                                 if ($inner_type->isNumericType()) {
                                     $numeric_types[] = $inner_type;
                                 }
@@ -271,7 +271,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
                             if ($first_arg_type->hasArray()) {
                                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                                $array_type = $first_arg_type->getTypes()['array'];
+                                $array_type = $first_arg_type->getAtomicTypes()['array'];
                                 if ($array_type instanceof Type\Atomic\ObjectLike) {
                                     return $array_type->getGenericValueType();
                                 }

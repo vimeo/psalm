@@ -59,8 +59,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             $reconciled->getId()
         );
 
-        if (is_array($reconciled->getTypes())) {
-            $this->assertContainsOnlyInstancesOf('Psalm\Type\Atomic', $reconciled->getTypes());
+        if (is_array($reconciled->getAtomicTypes())) {
+            $this->assertContainsOnlyInstancesOf('Psalm\Type\Atomic', $reconciled->getAtomicTypes());
         }
     }
 

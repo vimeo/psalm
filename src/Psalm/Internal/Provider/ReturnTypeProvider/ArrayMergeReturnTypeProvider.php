@@ -45,7 +45,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                 return Type::getArray();
             }
 
-            foreach ($call_arg_type->getTypes() as $type_part) {
+            foreach ($call_arg_type->getAtomicTypes() as $type_part) {
                 if ($call_arg->unpack) {
                     if (!$type_part instanceof Type\Atomic\TArray) {
                         if ($type_part instanceof Type\Atomic\ObjectLike) {
@@ -61,7 +61,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
 
                     $unpacked_type_parts = [];
 
-                    foreach ($type_part_value_type->getTypes() as $value_type_part) {
+                    foreach ($type_part_value_type->getAtomicTypes() as $value_type_part) {
                         $unpacked_type_parts[] = $value_type_part;
                     }
                 } else {
@@ -115,13 +115,13 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                         $inner_key_types,
                         $unpacked_type_part instanceof Type\Atomic\TList
                             ? [new Type\Atomic\TInt()]
-                            : array_values($unpacked_type_part->type_params[0]->getTypes())
+                            : array_values($unpacked_type_part->type_params[0]->getAtomicTypes())
                     );
                     $inner_value_types = array_merge(
                         $inner_value_types,
                         $unpacked_type_part instanceof Type\Atomic\TList
-                            ? array_values($unpacked_type_part->type_param->getTypes())
-                            : array_values($unpacked_type_part->type_params[1]->getTypes())
+                            ? array_values($unpacked_type_part->type_param->getAtomicTypes())
+                            : array_values($unpacked_type_part->type_params[1]->getAtomicTypes())
                     );
                 }
             }

@@ -485,7 +485,7 @@ class AssignmentAnalyzer
 
                 $new_assign_type = null;
 
-                foreach ($assign_value_type->getTypes() as $assign_value_atomic_type) {
+                foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
                     if ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike
                         && !$assign_var_item->key
                         && isset($assign_value_atomic_type->properties[$offset]) // if object-like has int offsets
@@ -724,7 +724,7 @@ class AssignmentAnalyzer
                     $stmt_var_type = $assign_var_type;
 
                     if ($stmt_var_type->hasObjectType()) {
-                        foreach ($stmt_var_type->getTypes() as $type) {
+                        foreach ($stmt_var_type->getAtomicTypes() as $type) {
                             if ($type instanceof Type\Atomic\TNamedObject) {
                                 $codebase->analyzer->addMixedMemberName(
                                     strtolower($type->value) . '::$',

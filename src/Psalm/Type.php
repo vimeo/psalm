@@ -319,7 +319,7 @@ abstract class Type
                     );
                 }
 
-                $param_union_types = array_values($generic_params[0]->getTypes());
+                $param_union_types = array_values($generic_params[0]->getAtomicTypes());
 
                 if (count($param_union_types) > 1) {
                     throw new TypeParseTreeException('Union types are not allowed in class string param');
@@ -340,7 +340,7 @@ abstract class Type
                     );
                 }
 
-                $template_marker_parts = array_values($generic_params[0]->getTypes());
+                $template_marker_parts = array_values($generic_params[0]->getAtomicTypes());
 
                 $template_marker = $template_marker_parts[0];
 
@@ -350,7 +350,7 @@ abstract class Type
                     $template_param_name = $template_marker->value;
                 } elseif ($template_marker instanceof Atomic\TTemplateParam) {
                     $template_param_name = $template_marker->param_name;
-                    $template_as_type = array_values($template_marker->as->getTypes())[0];
+                    $template_as_type = array_values($template_marker->as->getAtomicTypes())[0];
 
                     if (!$template_as_type instanceof TNamedObject) {
                         throw new TypeParseTreeException(
@@ -382,7 +382,7 @@ abstract class Type
                     );
                 }
 
-                $param_union_types = array_values($generic_params[0]->getTypes());
+                $param_union_types = array_values($generic_params[0]->getAtomicTypes());
 
                 if (count($param_union_types) > 1) {
                     throw new TypeParseTreeException('Union types are not allowed in key-of type');
@@ -412,7 +412,7 @@ abstract class Type
                     );
                 }
 
-                $param_union_types = array_values($generic_params[0]->getTypes());
+                $param_union_types = array_values($generic_params[0]->getAtomicTypes());
 
                 if (count($param_union_types) > 1) {
                     throw new TypeParseTreeException('Union types are not allowed in value-of type');
@@ -454,7 +454,7 @@ abstract class Type
                 }
 
                 if ($atomic_type instanceof Union) {
-                    foreach ($atomic_type->getTypes() as $type) {
+                    foreach ($atomic_type->getAtomicTypes() as $type) {
                         $atomic_types[] = $type;
                     }
 
@@ -683,7 +683,7 @@ abstract class Type
                 && isset($offset_template_data[''])
                 && $offset_template_data[''][0]->isSingle()
             ) {
-                $offset_template_type = array_values($offset_template_data[''][0]->getTypes())[0];
+                $offset_template_type = array_values($offset_template_data[''][0]->getAtomicTypes())[0];
 
                 if ($offset_template_type instanceof Type\Atomic\TTemplateKeyOf) {
                     $offset_defining_class = (string) $offset_template_type->defining_class;
@@ -783,7 +783,7 @@ abstract class Type
             );
         }
 
-        foreach ($as->getTypes() as $t) {
+        foreach ($as->getAtomicTypes() as $t) {
             if ($t instanceof TObject) {
                 return new Atomic\TTemplateParamClass(
                     $param_name,
@@ -1552,8 +1552,8 @@ abstract class Type
 
             $combined_type = TypeCombination::combineTypes(
                 array_merge(
-                    array_values($type_1->getTypes()),
-                    array_values($type_2->getTypes())
+                    array_values($type_1->getAtomicTypes()),
+                    array_values($type_2->getAtomicTypes())
                 ),
                 $codebase,
                 $overwrite_empty_array,
@@ -1653,8 +1653,8 @@ abstract class Type
             } else {
                 $combined_type = clone $type_1;
 
-                foreach ($combined_type->getTypes() as $t1_key => $type_1_atomic) {
-                    foreach ($type_2->getTypes() as $t2_key => $type_2_atomic) {
+                foreach ($combined_type->getAtomicTypes() as $t1_key => $type_1_atomic) {
+                    foreach ($type_2->getAtomicTypes() as $t2_key => $type_2_atomic) {
                         if (($type_1_atomic instanceof TIterable
                                 || $type_1_atomic instanceof TNamedObject
                                 || $type_1_atomic instanceof TTemplateParam

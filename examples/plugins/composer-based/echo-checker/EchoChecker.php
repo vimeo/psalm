@@ -46,7 +46,7 @@ class EchoChecker implements AfterStatementAnalysisInterface
                     continue;
                 }
 
-                $types = $expr_type->getTypes();
+                $types = $expr_type->getAtomicTypes();
 
                 foreach ($types as $type) {
                     if ($type instanceof \Psalm\Type\Atomic\TString

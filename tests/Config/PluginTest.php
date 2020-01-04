@@ -656,7 +656,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->assertTrue(isset($context->vars_in_scope['$a']));
 
-        foreach ($context->vars_in_scope['$a']->getTypes() as $type) {
+        foreach ($context->vars_in_scope['$a']->getAtomicTypes() as $type) {
             $this->assertInstanceOf(\Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString::class, $type);
         }
     }
