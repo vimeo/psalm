@@ -1379,6 +1379,19 @@ class UnusedVariableTest extends TestCase
                         break;
                     }'
             ],
+            'usedForVariable' => [
+                '<?php
+                    $a = 0;
+                    for ($i = 0; $i < 1000; $i++) {
+                        if (rand(0, 1)) {
+                            $a = $a + $i;
+                            continue;
+                        }
+                        break;
+                    }
+
+                    echo $a;'
+            ],
         ];
     }
 

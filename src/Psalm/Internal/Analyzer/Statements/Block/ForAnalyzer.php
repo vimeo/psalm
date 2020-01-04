@@ -140,7 +140,9 @@ class ForAnalyzer
 
         if ($context->collect_references) {
             foreach ($for_context->unreferenced_vars as $var_id => $locations) {
-                if (isset($context->unreferenced_vars[$var_id])) {
+                if (isset($loop_scope->referenced_var_ids[$var_id])) {
+                    $statements_analyzer->registerVariableUses($locations);
+                } elseif (isset($context->unreferenced_vars[$var_id])) {
                     $context->unreferenced_vars[$var_id] += $locations;
                 } else {
                     $context->unreferenced_vars[$var_id] = $locations;
