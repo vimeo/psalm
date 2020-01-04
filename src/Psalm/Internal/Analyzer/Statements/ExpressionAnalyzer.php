@@ -72,6 +72,7 @@ use function is_array;
 use function array_merge;
 use function array_values;
 use function array_map;
+use function current;
 
 /**
  * @internal
@@ -555,7 +556,24 @@ class ExpressionAnalyzer
                 return false;
             }
 
-            $statements_analyzer->node_data->setType($stmt, Type::getInt());
+            $as_int = true;
+            $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+            if (null !== $maybe_type) {
+                $maybe = $maybe_type->getAtomicTypes();
+
+                if (1 === count($maybe) && current($maybe) instanceof Type\Atomic\TBool) {
+                    $as_int = false;
+                    $statements_analyzer->node_data->setType($stmt, new Type\Union([
+                        new Type\Atomic\TLiteralInt(0),
+                        new Type\Atomic\TLiteralInt(1),
+                    ]));
+                }
+            }
+
+            if ($as_int) {
+                $statements_analyzer->node_data->setType($stmt, Type::getInt());
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Double) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
