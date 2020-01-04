@@ -109,6 +109,14 @@ class ForTest extends \Psalm\Tests\TestCase
                     for ($i = 0; $i < 5; $i++);
                     echo $i;',
             ],
+            'nestedEchoAfterFor' => [
+                '<?php
+                    for ($i = 1; $i < 2; $i++) {
+                        for ($j = 1; $j < 2; $j++) {}
+                    }
+
+                    echo $i * $j;'
+            ],
         ];
     }
 
@@ -145,6 +153,16 @@ class ForTest extends \Psalm\Tests\TestCase
 
                     echo $a;',
                 'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'nestedEchoAfterFor' => [
+                '<?php
+                    for ($i = 1; $i < 2; $i++) {
+                        if (rand(0, 1)) break;
+                        for ($j = 1; $j < 2; $j++) {}
+                    }
+
+                    echo $i * $j;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
         ];
     }

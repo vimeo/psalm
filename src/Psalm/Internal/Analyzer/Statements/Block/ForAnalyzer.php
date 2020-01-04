@@ -32,9 +32,19 @@ class ForAnalyzer
         $pre_assigned_var_ids = $context->assigned_var_ids;
         $context->assigned_var_ids = [];
 
+        $init_var_types = [];
+
         foreach ($stmt->init as $init) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $init, $context) === false) {
                 return false;
+            }
+
+            if ($init instanceof PhpParser\Node\Expr\Assign
+                && $init->var instanceof PhpParser\Node\Expr\Variable
+                && is_string($init->var->name)
+                && ($init_var_type = $statements_analyzer->node_data->getType($init->expr))
+            ) {
+                $init_var_types[$init->var->name] = $init_var_type;
             }
         }
 
@@ -91,6 +101,37 @@ class ForAnalyzer
                 foreach ($cond_type->getAtomicTypes() as $iterator_type) {
                     $always_enters_loop = $iterator_type instanceof Type\Atomic\TTrue;
 
+                    break;
+                }
+            }
+
+            if ($cond instanceof PhpParser\Node\Expr\BinaryOp
+                && $cond->right instanceof PhpParser\Node\Scalar\LNumber
+                && $cond->left instanceof PhpParser\Node\Expr\Variable
+                && is_string($cond->left->name)
+                && isset($init_var_types[$cond->left->name])
+                && $init_var_types[$cond->left->name]->isSingleIntLiteral()
+            ) {
+                $init_value = $init_var_types[$cond->left->name]->getSingleIntLiteral()->value;
+                $cond_value = $cond->right->value;
+
+                if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller && $init_value < $cond_value) {
+                    $always_enters_loop = true;
+                    break;
+                }
+
+                if ($cond instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual && $init_value <= $cond_value) {
+                    $always_enters_loop = true;
+                    break;
+                }
+
+                if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Greater && $init_value > $cond_value) {
+                    $always_enters_loop = true;
+                    break;
+                }
+
+                if ($cond instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual && $init_value >= $cond_value) {
+                    $always_enters_loop = true;
                     break;
                 }
             }
