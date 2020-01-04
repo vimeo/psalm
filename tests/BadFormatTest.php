@@ -106,4 +106,17 @@ class BadFormatTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testBadArray()
+    {
+        $this->expectExceptionMessage('ParseError - somefile.php:2');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                [1,,2];'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }

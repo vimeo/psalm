@@ -62,7 +62,14 @@ class ArrayAnalyzer
 
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
-                continue;
+                \Psalm\IssueBuffer::add(
+                    new \Psalm\Issue\ParseError(
+                        'Array element cannot be empty',
+                        new CodeLocation($statements_analyzer, $stmt)
+                    )
+                );
+
+                return false;
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
