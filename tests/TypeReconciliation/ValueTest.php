@@ -656,6 +656,39 @@ class ValueTest extends TestCase
                         private $type = "easy";
                     }'
             ],
+            'typecastTrueToInt' => [
+                '<?php
+                /**
+                * @param 0|1 $int
+                */
+                function foo(int $int) : void {
+                    echo (string) $int;
+                }
+
+                foo((int) true);',
+            ],
+            'typecastFalseToInt' => [
+                '<?php
+                /**
+                * @param 0|1 $int
+                */
+                function foo(int $int) : void {
+                    echo (string) $int;
+                }
+
+                foo((int) false);',
+            ],
+            'typecastedBoolToInt' => [
+                '<?php
+                /**
+                * @param 0|1 $int
+                */
+                function foo(int $int) : void {
+                    echo (string) $int;
+                }
+
+                foo((int) ((bool) 2));',
+            ],
         ];
     }
 
