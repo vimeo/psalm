@@ -72,6 +72,7 @@ use function is_array;
 use function array_merge;
 use function array_values;
 use function array_map;
+use function current;
 
 /**
  * @internal
