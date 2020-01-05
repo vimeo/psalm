@@ -673,7 +673,8 @@ class PropertyFetchAnalyzer
 
             $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
                 $property_id,
-                true
+                true,
+                $statements_analyzer
             );
 
             if ($codebase->properties_to_rename) {
@@ -1131,7 +1132,8 @@ class PropertyFetchAnalyzer
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $prop_name,
-            true
+            true,
+            $statements_analyzer
         );
 
         $declaring_property_id = strtolower((string) $declaring_property_class) . '::$' . $prop_name;

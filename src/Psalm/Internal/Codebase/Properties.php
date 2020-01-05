@@ -141,7 +141,7 @@ class Properties
      *
      * @return string|null
      */
-    public function getDeclaringClassForProperty($property_id, bool $read_mode)
+    public function getDeclaringClassForProperty($property_id, bool $read_mode, StatementsSource $source = null)
     {
         list($fq_class_name, $property_name) = explode('::$', $property_id);
 
@@ -150,7 +150,7 @@ class Properties
                 $fq_class_name,
                 $property_name,
                 $read_mode,
-                null,
+                $source,
                 null
             )) {
                 return $fq_class_name;
@@ -171,7 +171,7 @@ class Properties
      *
      * @return string|null
      */
-    public function getAppearingClassForProperty($property_id, bool $read_mode)
+    public function getAppearingClassForProperty($property_id, bool $read_mode, StatementsSource $source = null)
     {
         list($fq_class_name, $property_name) = explode('::$', $property_id);
 
@@ -180,7 +180,7 @@ class Properties
                 $fq_class_name,
                 $property_name,
                 $read_mode,
-                null,
+                $source,
                 null
             )) {
                 return $fq_class_name;
