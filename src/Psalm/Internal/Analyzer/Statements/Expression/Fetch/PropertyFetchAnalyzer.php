@@ -183,7 +183,7 @@ class PropertyFetchAnalyzer
 
                         $codebase->properties->propertyExists(
                             $property_id,
-                            false,
+                            true,
                             $statements_analyzer,
                             $context,
                             $context->collect_references
@@ -484,7 +484,7 @@ class PropertyFetchAnalyzer
             $property_id = $fq_class_name . '::$' . $prop_name;
 
             if ($codebase->methodExists($fq_class_name . '::__get')
-                && (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)
+                && (!$codebase->properties->propertyExists($property_id, true, $statements_analyzer, $context)
                     || ($stmt_var_id !== '$this'
                         && $fq_class_name !== $context->self
                         && ClassLikeAnalyzer::checkPropertyVisibility(
@@ -601,7 +601,7 @@ class PropertyFetchAnalyzer
 
             if (!$codebase->properties->propertyExists(
                 $property_id,
-                false,
+                true,
                 $statements_analyzer,
                 $context,
                 $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
@@ -611,7 +611,7 @@ class PropertyFetchAnalyzer
                     && $context->self
                     && $codebase->properties->propertyExists(
                         $context->self . '::$' . $prop_name,
-                        false,
+                        true,
                         $statements_analyzer,
                         $context,
                         $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
@@ -1075,7 +1075,7 @@ class PropertyFetchAnalyzer
                 // log the appearance
                 $codebase->properties->propertyExists(
                     $property_id,
-                    false,
+                    true,
                     $statements_analyzer,
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
@@ -1099,7 +1099,7 @@ class PropertyFetchAnalyzer
 
         if (!$codebase->properties->propertyExists(
             $property_id,
-            false,
+            true,
             $statements_analyzer,
             $context,
             $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
