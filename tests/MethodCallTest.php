@@ -428,10 +428,83 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchAssoc' => [
                 '<?php
-                    $p = new \PDO("sqlite:::memory:");
-                    $sth = $p->prepare("SELECT 1");
-                    $sth->execute();
-                    while (($row = $sth->fetch(\PDO::FETCH_ASSOC)) !== false) {}'
+                    /** @return array<string,scalar> */
+                    function fetch_assoc() : array {
+                        $p = new PDO("sqlite::memory:");
+                        $sth = $p->prepare("SELECT 1");
+                        $sth->execute();
+                        return $sth->fetch(PDO::FETCH_ASSOC);
+                    }'
+            ],
+            'pdoStatementFetchBoth' => [
+                '<?php
+                    /** @return array<scalar> */
+                    function fetch_both() : array {
+                        $p = new PDO("sqlite::memory:");
+                        $sth = $p->prepare("SELECT 1");
+                        $sth->execute();
+                        return $sth->fetch(PDO::FETCH_BOTH);
+                    }'
+            ],
+            'pdoStatementFetchBound' => [
+                '<?php
+                    /** @return true */
+                    function fetch_both() : bool {
+                        $p = new PDO("sqlite::memory:");
+                        $sth = $p->prepare("SELECT 1");
+                        $sth->execute();
+                        return $sth->fetch(PDO::FETCH_BOUND);
+                    }'
+            ],
+            'pdoStatementFetchClass' => [
+                '<?php
+                    /** @return object */
+                    function fetch_class() : object {
+                        $p = new PDO("sqlite::memory:");
+                        $sth = $p->prepare("SELECT 1");
+                        $sth->execute();
+                        return $sth->fetch(PDO::FETCH_CLASS);
+                    }'
+            ],
+            'pdoStatementFetchLazy' => [
+                '<?php
+                    /** @return object */
+                    function fetch_lazy() : object {
+                        $p = new PDO("sqlite::memory:");
+                        $sth = $p->prepare("SELECT 1");
+                        $sth->execute();
+                        return $sth->fetch(PDO::FETCH_LAZY);
+                    }'
+            ],
+            'pdoStatementFetchNamed' => [
+                '<?php
+                    /** @return array<string,scalar|list<scalar>> */
+                    function fetch_named() : array {
+                        $p = new PDO("sqlite::memory:");
+                        $sth = $p->prepare("SELECT 1");
+                        $sth->execute();
+                        return $sth->fetch(PDO::FETCH_NAMED);
+                    }'
+            ],
+            'pdoStatementFetchNum' => [
+                '<?php
+                    /** @return list<scalar> */
+                    function fetch_named() : array {
+                        $p = new PDO("sqlite::memory:");
+                        $sth = $p->prepare("SELECT 1");
+                        $sth->execute();
+                        return $sth->fetch(PDO::FETCH_NUM);
+                    }'
+            ],
+            'pdoStatementFetchObj' => [
+                '<?php
+                    /** @return stdClass */
+                    function fetch_named() : object {
+                        $p = new PDO("sqlite::memory:");
+                        $sth = $p->prepare("SELECT 1");
+                        $sth->execute();
+                        return $sth->fetch(PDO::FETCH_OBJ);
+                    }'
             ],
         ];
     }
