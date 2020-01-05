@@ -548,7 +548,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                 $source,
                 $fq_class_name,
                 $property_name,
-                false,
+                true,
                 $context
             );
 
