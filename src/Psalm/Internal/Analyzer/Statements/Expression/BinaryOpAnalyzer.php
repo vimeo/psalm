@@ -386,7 +386,7 @@ class BinaryOpAnalyzer
 
             $changed_var_ids = [];
 
-            $op_context = clone $context;
+            $right_context = clone $context;
 
             if ($negated_type_assertions) {
                 // while in an or, we allow scope to boil over to support
@@ -394,7 +394,7 @@ class BinaryOpAnalyzer
                 $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
                     $negated_type_assertions,
                     $active_negated_type_assertions,
-                    $op_context->vars_in_scope,
+                    $right_context->vars_in_scope,
                     $changed_var_ids,
                     $new_referenced_var_ids,
                     $statements_analyzer,
@@ -402,15 +402,15 @@ class BinaryOpAnalyzer
                     $left_context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
-                $op_context->vars_in_scope = $op_vars_in_scope;
+                $right_context->vars_in_scope = $op_vars_in_scope;
             }
 
-            $op_context->clauses = $clauses_for_right_analysis;
+            $right_context->clauses = $clauses_for_right_analysis;
 
             if ($changed_var_ids) {
-                $partitioned_clauses = Context::removeReconciledClauses($op_context->clauses, $changed_var_ids);
-                $op_context->clauses = $partitioned_clauses[0];
-                $op_context->reconciled_expression_clauses = array_merge(
+                $partitioned_clauses = Context::removeReconciledClauses($right_context->clauses, $changed_var_ids);
+                $right_context->clauses = $partitioned_clauses[0];
+                $right_context->reconciled_expression_clauses = array_merge(
                     $context->reconciled_expression_clauses,
                     array_map(
                         function ($c) {
@@ -433,14 +433,14 @@ class BinaryOpAnalyzer
                 );
             }
 
-            $op_context->if_context = null;
+            $right_context->if_context = null;
 
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $op_context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
                 return false;
             }
 
             if (!($stmt->right instanceof PhpParser\Node\Expr\Exit_)) {
-                foreach ($op_context->vars_in_scope as $var_id => $type) {
+                foreach ($right_context->vars_in_scope as $var_id => $type) {
                     if (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
@@ -469,21 +469,21 @@ class BinaryOpAnalyzer
             }
 
             if ($context->inside_conditional) {
-                $context->updateChecks($op_context);
+                $context->updateChecks($right_context);
             }
 
             $context->referenced_var_ids = array_merge(
-                $op_context->referenced_var_ids,
+                $right_context->referenced_var_ids,
                 $context->referenced_var_ids
             );
 
             $context->assigned_var_ids = array_merge(
                 $context->assigned_var_ids,
-                $op_context->assigned_var_ids
+                $right_context->assigned_var_ids
             );
 
             if ($context->collect_references) {
-                foreach ($op_context->unreferenced_vars as $var_id => $locations) {
+                foreach ($right_context->unreferenced_vars as $var_id => $locations) {
                     if (!isset($context->unreferenced_vars[$var_id])) {
                         $context->unreferenced_vars[$var_id] = $locations;
                     } else {
@@ -502,7 +502,7 @@ class BinaryOpAnalyzer
             if ($context->if_context) {
                 $if_context = $context->if_context;
 
-                foreach ($op_context->vars_in_scope as $var_id => $type) {
+                foreach ($right_context->vars_in_scope as $var_id => $type) {
                     if (isset($if_context->vars_in_scope[$var_id])) {
                         $if_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
@@ -532,7 +532,7 @@ class BinaryOpAnalyzer
             }
 
             $context->vars_possibly_in_scope = array_merge(
-                $op_context->vars_possibly_in_scope,
+                $right_context->vars_possibly_in_scope,
                 $context->vars_possibly_in_scope
             );
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
