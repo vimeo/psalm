@@ -2091,7 +2091,7 @@ class FunctionCallTest extends TestCase
             'versionCompareAsCallable' => [
                 '<?php
                     $a = ["1.0", "2.0"];
-                    uksort($a, "version_compare");',
+                    usort($a, "version_compare");',
             ],
             'coerceToObjectAfterBeingCalled' => [
                 '<?php
