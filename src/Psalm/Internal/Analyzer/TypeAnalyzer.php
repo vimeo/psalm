@@ -1887,7 +1887,8 @@ class TypeAnalyzer
 
             if ($input_type_part->value !== $container_type_part->value
                 && $input_class_storage
-                && !$container_type_part->remapped_params
+                && (!$container_type_part instanceof TGenericObject
+                    || !$container_type_part->remapped_params)
             ) {
                 $input_template_types = $input_class_storage->template_types;
                 $i = 0;
