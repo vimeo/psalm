@@ -155,35 +155,67 @@ function array_search($needle, array $haystack, bool $strict = false)
 }
 
 /**
- * @template T
+ * @psalm-template T
  *
- * @param array<mixed,T> $arr
+ * @param T[] $arr
  * @param-out list<T> $arr
  */
-function sort(array &$arr, int $sort_flags = \SORT_REGULAR): bool
+function shuffle(array &$arr): bool
 {
 }
 
 /**
- * @template T
+ * @psalm-template T
  *
- * @param array<mixed,T> $arr
+ * @param T[] $arr
+ * @param-out list<T> $arr
+ */
+function sort(array &$arr, int $sort_flags = SORT_REGULAR): bool
+{
+}
+
+/**
+ * @psalm-template T
+ *
+ * @param T[] $arr
+ * @param-out list<T> $arr
+ */
+function rsort(array &$arr, int $sort_flags = SORT_REGULAR): bool
+{
+}
+
+/**
+ * @psalm-template T
+ *
+ * @param T[] $arr
  * @param callable(T,T):int $callback
- * @param-out array<int,T> $arr
+ * @param-out list<T> $arr
  */
 function usort(array &$arr, callable $callback): bool
 {
 }
 
 /**
- * @template TKey
- * @template T
+ * @psalm-template TKey
+ * @psalm-template T
  *
  * @param array<TKey,T> $arr
  * @param callable(T,T):int $callback
  * @param-out array<TKey,T> $arr
  */
 function uasort(array &$arr, callable $callback): bool
+{
+}
+
+/**
+ * @psalm-template TKey
+ * @psalm-template T
+ *
+ * @param array<TKey,T> $arr
+ * @param callable(TKey,TKey):int $callback
+ * @param-out array<TKey,T> $arr
+ */
+function uksort(array &$arr, callable $callback): bool
 {
 }
 
@@ -241,7 +273,7 @@ function array_fill_keys(array $keys, $value): array
 }
 
 /**
- * @template TKey
+ * @psalm-template TKey
  *
  * @param string $pattern
  * @param array<TKey,string> $input

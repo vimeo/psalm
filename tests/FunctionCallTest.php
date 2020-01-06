@@ -572,6 +572,19 @@ class FunctionCallTest extends TestCase
                     '$manifest' => 'array<string, int>'
                 ],
             ],
+            'uksort' => [
+                '<?php
+                    $array = ["b" => 1, "a" => 2];
+                    uksort(
+                        $array,
+                        function (string $a, string $b) {
+                            return $a <=> $b;
+                        }
+                    );',
+                'assertions' => [
+                    '$array' => 'array<string, int>',
+                ],
+            ],
             'byRefAfterCallable' => [
                 '<?php
                     /**
@@ -2351,6 +2364,38 @@ class FunctionCallTest extends TestCase
                     $result = array_fill_keys($keys, true);',
                 'assertions' => [
                     '$result' => 'array<int, true>',
+                ],
+            ],
+            'shuffle' => [
+                '<?php
+                    $array = ["foo" => 123, "bar" => 456];
+                    shuffle($array);',
+                'assertions' => [
+                    '$array' => 'list<int>',
+                ],
+            ],
+            'sort' => [
+                '<?php
+                    $array = ["foo" => 123, "bar" => 456];
+                    sort($array);',
+                'assertions' => [
+                    '$array' => 'list<int>',
+                ],
+            ],
+            'rsort' => [
+                '<?php
+                    $array = ["foo" => 123, "bar" => 456];
+                    sort($array);',
+                'assertions' => [
+                    '$array' => 'list<int>',
+                ],
+            ],
+            'usort' => [
+                '<?php
+                    $array = ["foo" => 123, "bar" => 456];
+                    usort($array, function (int $a, int $b) { return $a <=> $b; });',
+                'assertions' => [
+                    '$array' => 'list<int>',
                 ],
             ],
         ];
