@@ -130,12 +130,12 @@ class BinaryOpAnalyzer
             }
 
             /** @var array<string, bool> */
-            $new_referenced_var_ids = $left_context->referenced_var_ids;
-            $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+            $left_referenced_var_ids = $left_context->referenced_var_ids;
+            $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 
-            $new_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
+            $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
 
-            $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
+            $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
 
             $context_clauses = array_merge($left_context->clauses, $left_clauses);
 
@@ -166,7 +166,7 @@ class BinaryOpAnalyzer
             $left_type_assertions = Algebra::getTruthsFromFormula(
                 $simplified_clauses,
                 \spl_object_id($stmt->left),
-                $new_referenced_var_ids,
+                $left_referenced_var_ids,
                 $active_left_assertions
             );
 
@@ -182,7 +182,7 @@ class BinaryOpAnalyzer
                     $active_left_assertions,
                     $context->vars_in_scope,
                     $changed_var_ids,
-                    $new_referenced_var_ids,
+                    $left_referenced_var_ids,
                     $statements_analyzer,
                     [],
                     $context->inside_loop,
@@ -327,12 +327,12 @@ class BinaryOpAnalyzer
                 $context->unreferenced_vars = $left_context->unreferenced_vars;
             }
 
-            $new_referenced_var_ids = $left_context->referenced_var_ids;
-            $left_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+            $left_referenced_var_ids = $left_context->referenced_var_ids;
+            $left_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 
-            $new_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
+            $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
 
-            $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
+            $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
 
             $left_clauses = Algebra::getFormula(
                 \spl_object_id($stmt->left),
@@ -380,7 +380,7 @@ class BinaryOpAnalyzer
             $negated_type_assertions = Algebra::getTruthsFromFormula(
                 $clauses_for_right_analysis,
                 \spl_object_id($stmt->left),
-                $new_referenced_var_ids,
+                $left_referenced_var_ids,
                 $active_negated_type_assertions
             );
 
@@ -396,7 +396,7 @@ class BinaryOpAnalyzer
                     $active_negated_type_assertions,
                     $right_context->vars_in_scope,
                     $changed_var_ids,
-                    $new_referenced_var_ids,
+                    $left_referenced_var_ids,
                     $statements_analyzer,
                     [],
                     $left_context->inside_loop,
