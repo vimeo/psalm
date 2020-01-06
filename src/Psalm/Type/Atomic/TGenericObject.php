@@ -10,6 +10,9 @@ class TGenericObject extends TNamedObject
 {
     use GenericTrait;
 
+    /** @var bool if the parameters have been remapped to another class */
+    public $remapped_params = false;
+
     /**
      * @param string                            $value the name of the object
      * @param non-empty-list<\Psalm\Type\Union>     $type_params

@@ -217,6 +217,10 @@ trait GenericTrait
             $type_param->replaceTemplateTypesWithArgTypes($template_types, $codebase);
         }
 
+        if ($this instanceof TGenericObject) {
+            $this->remapped_params = true;
+        }
+
         if ($this instanceof TGenericObject || $this instanceof TIterable) {
             $this->replaceIntersectionTemplateTypesWithArgTypes($template_types, $codebase);
         }

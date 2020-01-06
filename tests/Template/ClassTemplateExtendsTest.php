@@ -2717,6 +2717,29 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }'
             ],
+            'extendWithArrayTemplate' => [
+                '<?php
+                    /**
+                     * @template T1
+                     */
+                    interface C {
+                        /**
+                         * @psalm-return C<array<int, T1>>
+                         */
+                        public function zip(): C;
+                    }
+
+                    /**
+                     * @template T2
+                     * @extends C<T2>
+                     */
+                    interface AC extends C {
+                        /**
+                         * @psalm-return AC<array<int, T2>>
+                         */
+                        public function zip(): C;
+                    }',
+            ],
         ];
     }
 

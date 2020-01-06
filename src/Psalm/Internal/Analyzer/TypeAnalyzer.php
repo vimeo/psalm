@@ -1885,7 +1885,10 @@ class TypeAnalyzer
                 $container_class_storage = null;
             }
 
-            if ($input_type_part->value !== $container_type_part->value && $input_class_storage) {
+            if ($input_type_part->value !== $container_type_part->value
+                && $input_class_storage
+                && !$container_type_part->remapped_params
+            ) {
                 $input_template_types = $input_class_storage->template_types;
                 $i = 0;
 
@@ -1946,6 +1949,7 @@ class TypeAnalyzer
                             }
 
                             if ($new_input_param) {
+                                $new_input_param = clone $new_input_param;
                                 $new_input_param->replaceTemplateTypesWithArgTypes(
                                     $replacement_templates
                                 );
