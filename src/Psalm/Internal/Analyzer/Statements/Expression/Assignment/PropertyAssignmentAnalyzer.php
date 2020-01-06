@@ -341,6 +341,8 @@ class PropertyAssignmentAnalyzer
                 $property_id = $fq_class_name . '::$' . $prop_name;
                 $property_ids[] = $property_id;
 
+                $has_magic_setter = false;
+
                 if ($codebase->methodExists($fq_class_name . '::__set')
                     && (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)
                         || ($lhs_var_id !== '$this'
@@ -355,6 +357,7 @@ class PropertyAssignmentAnalyzer
                             ) !== true)
                     )
                 ) {
+                    $has_magic_setter = true;
                     $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     if ($var_id) {
@@ -495,15 +498,28 @@ class PropertyAssignmentAnalyzer
                             // fall through
                         }
                     } else {
-                        if (IssueBuffer::accepts(
-                            new UndefinedPropertyAssignment(
-                                'Instance property ' . $property_id . ' is not defined',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $property_id
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
+                        if ($has_magic_setter) {
+                            if (IssueBuffer::accepts(
+                                new UndefinedMagicPropertyAssignment(
+                                    'Magic instance property ' . $property_id . ' is not defined',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $property_id
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new UndefinedPropertyAssignment(
+                                    'Instance property ' . $property_id . ' is not defined',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $property_id
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
                         }
                     }
 

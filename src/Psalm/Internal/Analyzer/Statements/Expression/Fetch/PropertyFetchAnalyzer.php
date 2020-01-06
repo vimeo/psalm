@@ -413,6 +413,8 @@ class PropertyFetchAnalyzer
 
             $override_property_visibility = false;
 
+            $has_magic_getter = false;
+
             $class_exists = false;
             $interface_exists = false;
 
@@ -498,6 +500,8 @@ class PropertyFetchAnalyzer
                         ) !== true)
                 )
             ) {
+                $has_magic_getter = true;
+
                 $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
@@ -636,15 +640,28 @@ class PropertyFetchAnalyzer
                             // fall through
                         }
                     } else {
-                        if (IssueBuffer::accepts(
-                            new UndefinedPropertyFetch(
-                                'Instance property ' . $property_id . ' is not defined',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $property_id
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
+                        if ($has_magic_getter) {
+                            if (IssueBuffer::accepts(
+                                new UndefinedMagicPropertyFetch(
+                                    'Magic instance property ' . $property_id . ' is not defined',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $property_id
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new UndefinedPropertyFetch(
+                                    'Instance property ' . $property_id . ' is not defined',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $property_id
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
                         }
                     }
 

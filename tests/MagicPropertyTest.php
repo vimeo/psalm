@@ -653,7 +653,7 @@ class MagicPropertyTest extends TestCase
 
                     $a = new A();
                     $a->bar = 5;',
-                'error_message' => 'UndefinedPropertyAssignment',
+                'error_message' => 'UndefinedMagicPropertyAssignment',
             ],
             'propertySealedDocblockDefinedPropertyAssignment' => [
                 '<?php
@@ -719,7 +719,7 @@ class MagicPropertyTest extends TestCase
 
                     $a = new A();
                     echo $a->bar;',
-                'error_message' => 'UndefinedPropertyFetch',
+                'error_message' => 'UndefinedMagicPropertyFetch',
             ],
             /**
              * The property $foo is not defined on the object, but accessed with the magic setter.

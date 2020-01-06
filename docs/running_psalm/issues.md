@@ -2304,6 +2304,39 @@ class C {}
 interface I extends C {}
 ```
 
+### UndefinedMagicPropertyAssignment
+
+Emitted when assigning a property on an object that doesn’t have that magic property defined
+
+```php
+/**
+ * @property string $bar
+ */
+class A {
+    /** @param mixed $value */
+    public function __set(string $name, $value) {}
+}
+$a = new A();
+$a->foo = "bar";
+```
+
+### UndefinedMagicPropertyFetch
+
+Emitted when getting a property on an object that doesn’t have that magic property defined
+
+```php
+/**
+ * @property string $bar
+ */
+class A {
+    public function __get(string $name) {
+        return "cool";
+    }
+}
+$a = new A();
+echo $a->foo;
+```
+
 ### UndefinedMethod
 
 Emitted when calling a method that doesn’t exist
