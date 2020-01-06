@@ -849,7 +849,7 @@ class MagicPropertyTest extends TestCase
                     function getBar(GetterSetter $o) : string {
                         return $o->bar;
                     }',
-                'error_message' => 'UndefinedPropertyFetch',
+                'error_message' => 'UndefinedMagicPropertyFetch',
             ],
             'magicInterfaceWrongPropertyWrite' => [
                 '<?php
@@ -868,7 +868,7 @@ class MagicPropertyTest extends TestCase
                     function getFoo(GetterSetter $o) : void {
                         $o->bar = "hello";
                     }',
-                'error_message' => 'UndefinedPropertyAssignment',
+                'error_message' => 'UndefinedMagicPropertyAssignment',
             ],
         ];
     }

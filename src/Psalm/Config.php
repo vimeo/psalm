@@ -1305,6 +1305,14 @@ class Config
             return 'UndefinedMethod';
         }
 
+        if ($issue_type === 'UndefinedMagicPropertyFetch') {
+            return 'UndefinedPropertyFetch';
+        }
+
+        if ($issue_type === 'UndefinedMagicPropertyAssignment') {
+            return 'UndefinedPropertyAssignment';
+        }
+
         if ($issue_type === 'PossibleRawObjectIteration') {
             return 'RawObjectIteration';
         }

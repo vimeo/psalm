@@ -22,6 +22,7 @@ use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedDocblockClass;
+use Psalm\Issue\UndefinedMagicPropertyFetch;
 use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
@@ -572,8 +573,8 @@ class PropertyFetchAnalyzer
 
                 if (!$class_exists) {
                     if (IssueBuffer::accepts(
-                        new UndefinedPropertyFetch(
-                            'Instance property ' . $property_id . ' is not defined',
+                        new UndefinedMagicPropertyFetch(
+                            'Magic instance property ' . $property_id . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $property_id
                         ),

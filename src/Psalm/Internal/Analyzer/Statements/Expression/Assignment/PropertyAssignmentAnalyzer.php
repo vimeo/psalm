@@ -32,6 +32,7 @@ use Psalm\Issue\PossiblyNullPropertyAssignmentValue;
 use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedPropertyAssignment;
+use Psalm\Issue\UndefinedMagicPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -432,8 +433,8 @@ class PropertyAssignmentAnalyzer
 
                     if (!$class_exists) {
                         if (IssueBuffer::accepts(
-                            new UndefinedPropertyAssignment(
-                                'Instance property ' . $property_id . ' is not defined',
+                            new UndefinedMagicPropertyAssignment(
+                                'Magic nstance property ' . $property_id . ' is not defined',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 $property_id
                             ),
