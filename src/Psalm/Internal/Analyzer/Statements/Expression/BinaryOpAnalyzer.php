@@ -177,7 +177,7 @@ class BinaryOpAnalyzer
             if ($left_type_assertions) {
                 // while in an and, we allow scope to boil over to support
                 // statements of the form if ($x && $x->foo())
-                $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
+                $right_vars_in_scope = Reconciler::reconcileKeyedTypes(
                     $left_type_assertions,
                     $active_left_assertions,
                     $context->vars_in_scope,
@@ -189,7 +189,7 @@ class BinaryOpAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
 
-                $right_context->vars_in_scope = $op_vars_in_scope;
+                $right_context->vars_in_scope = $right_vars_in_scope;
 
                 if ($context->if_scope) {
                     $context->if_scope->if_cond_changed_var_ids += $changed_var_ids;
@@ -391,7 +391,7 @@ class BinaryOpAnalyzer
             if ($negated_type_assertions) {
                 // while in an or, we allow scope to boil over to support
                 // statements of the form if ($x === null || $x->foo())
-                $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
+                $right_vars_in_scope = Reconciler::reconcileKeyedTypes(
                     $negated_type_assertions,
                     $active_negated_type_assertions,
                     $right_context->vars_in_scope,
@@ -402,7 +402,7 @@ class BinaryOpAnalyzer
                     $left_context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
-                $right_context->vars_in_scope = $op_vars_in_scope;
+                $right_context->vars_in_scope = $right_vars_in_scope;
             }
 
             $right_context->clauses = $clauses_for_right_analysis;
