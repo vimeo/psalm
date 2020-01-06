@@ -53,6 +53,8 @@ class MixinAnnotationTest extends TestCase
                             $this->b = new B();
                         }
 
+                        public function c(string $s) : void {}
+
                         /**
                          * @param array<mixed> $arguments
                          * @return mixed
@@ -67,6 +69,8 @@ class MixinAnnotationTest extends TestCase
                         public function b(): void {
                             echo "b";
                         }
+
+                        public function c(int $s) : void {}
                     }
 
                     $a = new A();

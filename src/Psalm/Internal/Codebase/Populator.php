@@ -444,8 +444,8 @@ class Populator
 
         $this->populateClassLikeStorage($mixin_storage, $dependent_classlikes);
 
-        $this->inheritMethodsFromParent($storage, $mixin_storage);
-        $this->inheritPropertiesFromParent($storage, $mixin_storage, false);
+        $this->inheritMethodsFromParent($storage, $mixin_storage, true);
+        $this->inheritPropertiesFromParent($storage, $mixin_storage, true);
     }
 
     private static function extendType(
@@ -1043,7 +1043,8 @@ class Populator
      */
     protected function inheritMethodsFromParent(
         ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage
+        ClassLikeStorage $parent_storage,
+        bool $is_mixin = false
     ) {
         $fq_class_name = $storage->name;
 
@@ -1090,6 +1091,10 @@ class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
+            if ($is_mixin && isset($storage->declaring_method_ids[$method_name])) {
+                continue;
+            }
+
             if ($method_name !== '__construct') {
                 if ($parent_storage->is_trait) {
                     $declaring_class = explode('::', $declaring_method_id)[0];
@@ -1152,7 +1157,7 @@ class Populator
     private function inheritPropertiesFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
-        bool $include_protected = true
+        bool $is_mixin = false
     ) {
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
@@ -1163,7 +1168,7 @@ class Populator
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
                 && ($parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    || (!$include_protected
+                    || ($is_mixin
                         && $parent_storage->properties[$property_name]->visibility
                             === ClassLikeAnalyzer::VISIBILITY_PROTECTED))
             ) {
@@ -1185,7 +1190,7 @@ class Populator
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
                 && ($parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    || (!$include_protected
+                    || ($is_mixin
                         && $parent_storage->properties[$property_name]->visibility
                             === ClassLikeAnalyzer::VISIBILITY_PROTECTED))
             ) {
@@ -1200,7 +1205,7 @@ class Populator
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
                 && ($parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    || (!$include_protected
+                    || ($is_mixin
                         && $parent_storage->properties[$property_name]->visibility
                             === ClassLikeAnalyzer::VISIBILITY_PROTECTED))
             ) {
