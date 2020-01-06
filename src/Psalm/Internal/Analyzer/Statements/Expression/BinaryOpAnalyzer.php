@@ -150,6 +150,13 @@ class BinaryOpAnalyzer
                         }
                     )
                 );
+
+                if (count($context_clauses) === 1
+                    && $context_clauses[0]->wedge
+                    && !$context_clauses[0]->possibilities
+                ) {
+                    $context_clauses = [];
+                }
             }
 
             $simplified_clauses = Algebra::simplifyCNF($context_clauses);
@@ -352,6 +359,13 @@ class BinaryOpAnalyzer
                         }
                     )
                 );
+
+                if (count($negated_left_clauses) === 1
+                    && $negated_left_clauses[0]->wedge
+                    && !$negated_left_clauses[0]->possibilities
+                ) {
+                    $negated_left_clauses = [];
+                }
             }
 
             $clauses_for_right_analysis = Algebra::simplifyCNF(
