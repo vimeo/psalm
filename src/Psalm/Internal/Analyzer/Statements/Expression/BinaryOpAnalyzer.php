@@ -151,7 +151,7 @@ class BinaryOpAnalyzer
                     )
                 );
 
-                if (count($context_clauses) === 1
+                if (\count($context_clauses) === 1
                     && $context_clauses[0]->wedge
                     && !$context_clauses[0]->possibilities
                 ) {
@@ -360,7 +360,7 @@ class BinaryOpAnalyzer
                     )
                 );
 
-                if (count($negated_left_clauses) === 1
+                if (\count($negated_left_clauses) === 1
                     && $negated_left_clauses[0]->wedge
                     && !$negated_left_clauses[0]->possibilities
                 ) {
