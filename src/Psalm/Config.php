@@ -1313,6 +1313,10 @@ class Config
             return 'UndefinedPropertyAssignment';
         }
 
+        if ($issue_type === 'UndefinedMagicMethod') {
+            return 'UndefinedMethod';
+        }
+
         if ($issue_type === 'PossibleRawObjectIteration') {
             return 'RawObjectIteration';
         }
