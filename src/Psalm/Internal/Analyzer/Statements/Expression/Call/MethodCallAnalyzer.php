@@ -27,6 +27,7 @@ use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\PossiblyUndefinedMethod;
 use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedInterfaceMethod;
+use Psalm\Issue\UndefinedMagicMethod;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
@@ -188,6 +189,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $non_existent_class_method_ids = [];
         $non_existent_interface_method_ids = [];
+        $non_existent_magic_method_ids = [];
         $existent_method_ids = [];
         $has_mixed_method_call = false;
 
@@ -228,7 +230,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $invalid_method_call_types,
                 $existent_method_ids,
                 $non_existent_class_method_ids,
-                $non_existent_interface_method_ids
+                $non_existent_interface_method_ids,
+                $non_existent_magic_method_ids
             );
 
             if ($result === false) {
@@ -258,6 +261,21 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     new InvalidMethodCall(
                         'Cannot call method on ' . $invalid_class_type . ' variable ' . $lhs_var_id,
                         new CodeLocation($source, $stmt->name)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // keep going
+                }
+            }
+        }
+
+        if ($non_existent_magic_method_ids) {
+            if ($context->check_methods) {
+                if (IssueBuffer::accepts(
+                    new UndefinedMagicMethod(
+                        'Magic method ' . $non_existent_magic_method_ids[0] . ' does not exist',
+                        new CodeLocation($source, $stmt->name),
+                        $non_existent_magic_method_ids[0]
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
@@ -417,6 +435,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
      * @param  array<string>                  &$existent_method_ids
      * @param  array<string>                  &$non_existent_class_method_ids
      * @param  array<string>                  &$non_existent_interface_method_ids
+     * @param  array<string>                  &$non_existent_magic_method_ids
      * @return null|bool
      */
     private static function analyzeAtomicCall(
@@ -436,6 +455,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         &$existent_method_ids,
         &$non_existent_class_method_ids,
         &$non_existent_interface_method_ids,
+        &$non_existent_magic_method_ids,
         bool &$check_visibility = true
     ) {
         $config = $codebase->config;
@@ -638,6 +658,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             foreach ($intersection_types as $intersection_type) {
                 $i_non_existent_class_method_ids = [];
                 $i_non_existent_interface_method_ids = [];
+                $i_non_existent_magic_method_ids = [];
 
                 $intersection_return_type = null;
 
@@ -658,6 +679,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $all_intersection_existent_method_ids,
                     $i_non_existent_class_method_ids,
                     $i_non_existent_interface_method_ids,
+                    $i_non_existent_magic_method_ids,
                     $check_visibility
                 );
 
@@ -801,7 +823,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
 
                     if ($class_storage->sealed_methods) {
-                        $non_existent_class_method_ids[] = $method_id;
+                        $non_existent_magic_method_ids[] = $method_id;
                         return true;
                     }
                 }

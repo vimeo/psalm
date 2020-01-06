@@ -2304,6 +2304,22 @@ class C {}
 interface I extends C {}
 ```
 
+### UndefinedMagicMethod
+
+Emitted when calling a magic method that doesn’t exist
+
+```php
+/**
+ * @method bar():string
+ */
+class A {
+    public function __call(string $name, array $args) {
+        return "cool";
+    }
+}
+(new A)->foo();
+```
+
 ### UndefinedMagicPropertyAssignment
 
 Emitted when assigning a property on an object that doesn’t have that magic property defined
