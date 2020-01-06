@@ -36,10 +36,56 @@ class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnT
             && ($first_arg_type = $source->getNodeTypeProvider()->getType($call_args[0]->value))
             && $first_arg_type->isSingleIntLiteral()
         ) {
-            $value = $first_arg_type->getSingleIntLiteral()->value;
+            $fetch_mode = $first_arg_type->getSingleIntLiteral()->value;
 
-            if ($value === \PDO::FETCH_ASSOC) {
-                return Type::getArray();
+            switch ($fetch_mode) {
+                case \PDO::FETCH_ASSOC: // array<string,scalar>
+                    return new Type\Union([
+                        new Type\Atomic\TArray([
+                            Type::getString(),
+                            Type::getScalar()
+                        ]),
+                    ]);
+
+                case \PDO::FETCH_BOTH: // array<array-key,scalar>
+                    return new Type\Union([
+                        new Type\Atomic\TArray([
+                            Type::getArrayKey(),
+                            Type::getScalar()
+                        ]),
+                    ]);
+
+                case \PDO::FETCH_BOUND: // true
+                    return Type::getTrue();
+
+                case \PDO::FETCH_CLASS: // object
+                    return Type::getObject();
+
+                case \PDO::FETCH_LAZY: // object
+                    // This actually returns a PDORow object, but that class is
+                    // undocumented, and its attributes are all dynamic anyway
+                    return Type::getObject();
+
+                case \PDO::FETCH_NAMED: // array<string, scalar|list<scalar>>
+                    return new Type\Union([
+                        new Type\Atomic\TArray([
+                            Type::getString(),
+                            new Type\Union([
+                                new Type\Atomic\TScalar(),
+                                new Type\Atomic\TList(Type::getScalar())
+                            ])
+                        ]),
+                    ]);
+
+                case \PDO::FETCH_NUM: // list<scalar>
+                    return new Type\Union([
+                        new Type\Atomic\TList(Type::getScalar())
+                    ]);
+
+                case \PDO::FETCH_OBJ: // stdClass
+                    return new Type\Union([
+                        new Type\Atomic\TNamedObject('stdClass')
+                    ]);
             }
         }
     }
