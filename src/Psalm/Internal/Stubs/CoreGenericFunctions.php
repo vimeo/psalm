@@ -47,6 +47,19 @@ function array_intersect_key(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
+ * @param array<TKey, TValue> $arr
+ *
+ * @return array<TKey, TValue>
+ * @psalm-pure
+ */
+function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
  * @param array<mixed, TKey> $arr
  * @param array<mixed, TValue> $arr2
  *
@@ -85,6 +98,21 @@ function array_diff(array $arr, array $arr2, array ...$arr3)
  * @psalm-pure
  */
 function array_diff_key(array $arr, array $arr2, array ...$arr3)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
+ *
+ * @return array<TKey, TValue>
+ * @psalm-pure
+ */
+function array_diff_assoc(array $arr, array $arr2, array ...$arr3)
 {
 }
 

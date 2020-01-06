@@ -307,6 +307,18 @@ class FunctionCallTest extends TestCase
                     array_diff_key([], [], [], [], []);',
                 'assertions' => [],
             ],
+            'arrayDiffAssoc' => [
+                '<?php
+                    /**
+                     * @var array<string, int> $a
+                     * @var array $b
+                     * @var array $c
+                     */
+                    $r = array_diff_assoc($a, $b, $c);',
+                'assertions' => [
+                    '$r' => 'array<string, int>',
+                ],
+            ],
             'arrayPopMixed' => [
                 '<?php
                     /** @var mixed */
@@ -1321,6 +1333,18 @@ class FunctionCallTest extends TestCase
                         $r = array_intersect_key((new C)->unknownInstance(), array_filter($s));
                         if (empty($r)) {}
                     }',
+            ],
+            'arrayIntersectAssoc' => [
+                '<?php
+                    /**
+                     * @var array<string, int> $a
+                     * @var array $b
+                     * @var array $c
+                     */
+                    $r = array_intersect_assoc($a, $b, $c);',
+                'assertions' => [
+                    '$r' => 'array<string, int>',
+                ],
             ],
             'arrayReduce' => [
                 '<?php
