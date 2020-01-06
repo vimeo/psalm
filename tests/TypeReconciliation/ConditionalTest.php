@@ -2498,7 +2498,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return 0;
                     }',
             ],
-            'SKIPPED-assertHardConditional' => [
+            'assertHardConditionalWithString' => [
                 '<?php
                     interface Convertor {
                         function maybeConvert(string $value): ?SomeObject;
@@ -2508,19 +2508,12 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         function isValid(): bool;
                     }
 
-                    /**
-                     * @param mixed $value
-                     */
-                    function exampleWithOr(Convertor $convertor, $value): SomeObject
-                    {
-                        if (!\is_string($value)
-                          || ($value = $convertor->maybeConvert($value)) === null
-                          || !$value->isValid()
-                        ) {
+                    function exampleWithOr(Convertor $convertor, string $value): SomeObject {
+                        if (($value = $convertor->maybeConvert($value)) === null || !$value->isValid()) {
                             throw new Exception();
                         }
 
-                        return $value;
+                        return $value; // $value is SomeObject here and cannot be a string
                     }'
             ],
         ];

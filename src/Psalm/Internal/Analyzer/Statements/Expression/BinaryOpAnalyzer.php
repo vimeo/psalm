@@ -295,44 +295,69 @@ class BinaryOpAnalyzer
                 return null;
             }
 
-            $pre_referenced_var_ids = $context->referenced_var_ids;
-            $context->referenced_var_ids = [];
+            if (!$stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                && !($stmt->left instanceof PhpParser\Node\Expr\BooleanNot
+                    && $stmt->left->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd)
+            ) {
+                $if_scope = new \Psalm\Internal\Scope\IfScope();
 
-            $pre_assigned_var_ids = $context->assigned_var_ids;
-
-            $left_context = clone $context;
-            $left_context->parent_context = $context;
-            $left_context->if_context = null;
-            $left_context->assigned_var_ids = [];
-
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $left_context) === false) {
-                return false;
-            }
-
-            foreach ($left_context->vars_in_scope as $var_id => $type) {
-                if (!isset($context->vars_in_scope[$var_id])) {
-                    if (isset($left_context->assigned_var_ids[$var_id])) {
-                        $context->vars_in_scope[$var_id] = clone $type;
-                    }
-                } else {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $context->vars_in_scope[$var_id],
-                        $type,
-                        $codebase
+                try {
+                    $if_conditional_scope = IfAnalyzer::analyzeIfConditional(
+                        $statements_analyzer,
+                        $stmt->left,
+                        $context,
+                        $codebase,
+                        $if_scope,
+                        $context->branch_point ?: (int) $stmt->getAttribute('startFilePos')
                     );
+
+                    $left_context = $if_conditional_scope->if_context;
+
+                    $left_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
+                    $left_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
+                } catch (\Psalm\Exception\ScopeAnalysisException $e) {
+                    return false;
                 }
+            } else {
+                $pre_referenced_var_ids = $context->referenced_var_ids;
+                $context->referenced_var_ids = [];
+
+                $pre_assigned_var_ids = $context->assigned_var_ids;
+
+                $left_context = clone $context;
+                $left_context->parent_context = $context;
+                $left_context->if_context = null;
+                $left_context->assigned_var_ids = [];
+
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $left_context) === false) {
+                    return false;
+                }
+
+                foreach ($left_context->vars_in_scope as $var_id => $type) {
+                    if (!isset($context->vars_in_scope[$var_id])) {
+                        if (isset($left_context->assigned_var_ids[$var_id])) {
+                            $context->vars_in_scope[$var_id] = clone $type;
+                        }
+                    } else {
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $context->vars_in_scope[$var_id],
+                            $type,
+                            $codebase
+                        );
+                    }
+                }
+
+                if ($context->collect_references) {
+                    $context->unreferenced_vars = $left_context->unreferenced_vars;
+                }
+
+                $left_referenced_var_ids = $left_context->referenced_var_ids;
+                $left_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
+
+                $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
+
+                $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
             }
-
-            if ($context->collect_references) {
-                $context->unreferenced_vars = $left_context->unreferenced_vars;
-            }
-
-            $left_referenced_var_ids = $left_context->referenced_var_ids;
-            $left_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
-
-            $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
-
-            $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
 
             $left_clauses = Algebra::getFormula(
                 \spl_object_id($stmt->left),
