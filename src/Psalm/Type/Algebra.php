@@ -670,6 +670,10 @@ class Algebra
                 }
 
                 foreach ($left_clause->possibilities as $var => $possible_types) {
+                    if (isset($right_clause->redefined_vars[$var])) {
+                        continue;
+                    }
+
                     if (isset($possibilities[$var])) {
                         $possibilities[$var] = array_merge($possibilities[$var], $possible_types);
                     } else {

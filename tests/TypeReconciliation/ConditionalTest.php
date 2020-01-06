@@ -2498,6 +2498,31 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return 0;
                     }',
             ],
+            'SKIPPED-assertHardConditional' => [
+                '<?php
+                    interface Convertor {
+                        function maybeConvert(string $value): ?SomeObject;
+                    }
+
+                    interface SomeObject {
+                        function isValid(): bool;
+                    }
+
+                    /**
+                     * @param mixed $value
+                     */
+                    function exampleWithOr(Convertor $convertor, $value): SomeObject
+                    {
+                        if (!\is_string($value)
+                          || ($value = $convertor->maybeConvert($value)) === null
+                          || !$value->isValid()
+                        ) {
+                            throw new Exception();
+                        }
+
+                        return $value;
+                    }'
+            ],
         ];
     }
 

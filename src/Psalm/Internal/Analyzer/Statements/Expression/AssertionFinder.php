@@ -471,6 +471,10 @@ class AssertionFinder
                 $source
             );
 
+            if ($var_name && $base_conditional instanceof PhpParser\Node\Expr\Assign) {
+                $var_name = '=' . $var_name;
+            }
+
             $var_type = $source->node_data->getType($base_conditional);
 
             if ($var_name) {
