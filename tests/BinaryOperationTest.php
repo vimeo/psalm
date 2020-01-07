@@ -335,6 +335,26 @@ class BinaryOperationTest extends TestCase
                     $a = ~true;',
                 'error_message' => 'InvalidOperand',
             ],
+            'invalidModuloIdentical' => [
+                '<?php
+                    10 % 10 === 20;',
+                'error_message' => 'TypeDoesNotContainType - src/somefile.php:2:21 - int(20) cannot be identical to int(0)',
+            ],
+            'invalidModuloLeftZero' => [
+                '<?php
+                    0 % 100 === 5;',
+                'error_message' => 'TypeDoesNotContainType - src/somefile.php:2:21 - int(5) cannot be identical to int(0)',
+            ],
+            'invalidModuloRightFive' => [
+                '<?php
+                    101 % 5 === 5;',
+                'error_message' => 'TypeDoesNotContainType - src/somefile.php:2:21 - int(5) cannot be identical to int(1)',
+            ],
+            'invalidModuloRightNegativeFive' => [
+                '<?php
+                    101 % -5 === 5;',
+                'error_message' => 'TypeDoesNotContainType - src/somefile.php:2:21 - int(5) cannot be identical to int(1)',
+            ],
         ];
     }
 }
