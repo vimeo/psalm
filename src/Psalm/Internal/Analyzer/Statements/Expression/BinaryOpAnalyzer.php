@@ -30,6 +30,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -1435,6 +1436,20 @@ class BinaryOpAnalyzer
                 return;
             }
 
+            if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod
+                && (
+                    ($right_type_part instanceof TLiteralInt && 0 === $right_type_part->value)
+                    || ($right_type_part instanceof TLiteralFloat && 0.0 === $right_type_part->value)
+                )
+            ) {
+                $invalid_right_messages[] = 'DivisionByZeroError: Modulo by zero';
+
+                $has_valid_right_operand = false;
+                $has_valid_left_operand = true;
+
+                return;
+            }
+
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                     if ($left_type_part instanceof TLiteralInt
@@ -1453,15 +1468,6 @@ class BinaryOpAnalyzer
                         $result_type = new Type\Union([new TLiteralInt(
                             $left_type_part->value % $right_type_part->value
                         )]);
-                    } elseif ($right_type_part instanceof TLiteralInt
-                        && 0 === $right_type_part->value
-                    ) {
-                        $invalid_right_messages[] = 'DivisionByZeroError: Modulo by zero';
-
-                        $has_valid_right_operand = false;
-                        $has_valid_left_operand = true;
-
-                        return;
                     }
 
                     if (!$result_type) {

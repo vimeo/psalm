@@ -360,6 +360,16 @@ class BinaryOperationTest extends TestCase
                     if(random_int(2, 100) % 0 === 5) {};',
                 'error_message' => 'InvalidOperand - src/somefile.php:2:45 - DivisionByZeroError: Modulo by zero',
             ],
+            'invalidModuloRightZeroFloatLiterals' => [
+                '<?php
+                    100 % 0.0 === 5;',
+                'error_message' => 'InvalidOperand - src/somefile.php:2:27 - DivisionByZeroError: Modulo by zero',
+            ],
+            'invalidModuloRightZeroRightFloatNonLiteralLeft' => [
+                '<?php
+                    if(random_int(2, 100) % 0.0 === 5) {};',
+                'error_message' => 'InvalidOperand - src/somefile.php:2:45 - DivisionByZeroError: Modulo by zero',
+            ],
             'invalidModuloRightFive' => [
                 '<?php
                     101 % 5 === 5;',
