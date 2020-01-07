@@ -582,32 +582,6 @@ class BinaryOpAnalyzer
             }
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
-            $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
-            $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
-
-            if ($codebase->taint) {
-                $sources = [];
-                $either_tainted = 0;
-
-                if ($stmt_left_type) {
-                    $sources = $stmt_left_type->sources ?: [];
-                    $either_tainted = $stmt_left_type->tainted;
-                }
-
-                if ($stmt_right_type) {
-                    $sources = array_merge($sources, $stmt_right_type->sources ?: []);
-                    $either_tainted = $either_tainted | $stmt_right_type->tainted;
-                }
-
-                if ($sources) {
-                    $stmt_type->sources = $sources;
-                }
-
-                if ($either_tainted) {
-                    $stmt_type->tainted = $either_tainted;
-                }
-            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
             $t_if_context = clone $context;
 
@@ -1889,6 +1863,7 @@ class BinaryOpAnalyzer
                 }
             }
         }
+
         // When concatenating two known string literals (with only one possibility),
         // put the concatenated string into $result_type
         if ($left_type && $right_type && $left_type->isSingleStringLiteral() && $right_type->isSingleStringLiteral()) {
@@ -1908,6 +1883,29 @@ class BinaryOpAnalyzer
                         && $right_type->getSingleStringLiteral()->value))
             ) {
                 $result_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
+            }
+        }
+
+        if ($codebase->taint && $result_type) {
+            $sources = [];
+            $either_tainted = 0;
+
+            if ($left_type) {
+                $sources = $left_type->sources ?: [];
+                $either_tainted = $left_type->tainted;
+            }
+
+            if ($right_type) {
+                $sources = array_merge($sources, $right_type->sources ?: []);
+                $either_tainted = $either_tainted | $right_type->tainted;
+            }
+
+            if ($sources) {
+                $result_type->sources = $sources;
+            }
+
+            if ($either_tainted) {
+                $result_type->tainted = $either_tainted;
             }
         }
     }
