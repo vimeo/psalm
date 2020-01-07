@@ -1453,6 +1453,15 @@ class BinaryOpAnalyzer
                         $result_type = new Type\Union([new TLiteralInt(
                             $left_type_part->value % $right_type_part->value
                         )]);
+                    } elseif ($right_type_part instanceof TLiteralInt
+                        && 0 === $right_type_part->value
+                    ) {
+                        $invalid_right_messages[] = 'DivisionByZeroError: Modulo by zero';
+
+                        $has_valid_right_operand = false;
+                        $has_valid_left_operand = true;
+
+                        return;
                     }
 
                     if (!$result_type) {

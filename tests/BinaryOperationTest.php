@@ -350,6 +350,16 @@ class BinaryOperationTest extends TestCase
                     if(0 % random_int(2, 100) === 5) {};',
                 'error_message' => 'TypeDoesNotContainType - src/somefile.php:2:24 - int(5) cannot be identical to int(0)',
             ],
+            'invalidModuloRightZeroLiterals' => [
+                '<?php
+                    100 % 0 === 5;',
+                'error_message' => 'InvalidOperand - src/somefile.php:2:27 - DivisionByZeroError: Modulo by zero',
+            ],
+            'invalidModuloRightZeroRightNonLiteralLeft' => [
+                '<?php
+                    if(random_int(2, 100) % 0 === 5) {};',
+                'error_message' => 'InvalidOperand - src/somefile.php:2:45 - DivisionByZeroError: Modulo by zero',
+            ],
             'invalidModuloRightFive' => [
                 '<?php
                     101 % 5 === 5;',
