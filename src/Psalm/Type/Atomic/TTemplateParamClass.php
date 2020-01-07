@@ -19,14 +19,10 @@ class TTemplateParamClass extends TClassString
     public $as_type;
 
     /**
-     * @var non-empty-string
+     * @var string
      */
     public $defining_class;
 
-    /**
-     * @param non-empty-string $defining_class
-     * @param string $param_name
-     */
     public function __construct(
         string $param_name,
         string $as,

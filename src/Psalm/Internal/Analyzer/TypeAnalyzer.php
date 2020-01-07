@@ -767,6 +767,16 @@ class TypeAnalyzer
             }
         }
 
+        if ($container_type_part instanceof TNonEmptyString
+            && get_class($input_type_part) === TString::class
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
         if ($input_type_part->shallowEquals($container_type_part)
             || ($input_type_part instanceof Type\Atomic\TCallableObjectLikeArray
                 && $container_type_part instanceof TArray)
@@ -1152,16 +1162,6 @@ class TypeAnalyzer
 
         if (get_class($container_type_part) === TFloat::class && $input_type_part instanceof TLiteralFloat) {
             return true;
-        }
-
-        if ($container_type_part instanceof TNonEmptyString
-            && get_class($input_type_part) === TString::class
-        ) {
-            if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = true;
-            }
-
-            return false;
         }
 
         if ($container_type_part instanceof TNonEmptyString

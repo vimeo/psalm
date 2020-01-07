@@ -1091,7 +1091,7 @@ class Union
     }
 
     /**
-     * @param  array<string, array<non-empty-string, array{Type\Union, 1?:int}>>  $template_types
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
      *
      * @return void
      */

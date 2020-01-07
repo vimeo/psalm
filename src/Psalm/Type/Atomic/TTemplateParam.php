@@ -24,12 +24,12 @@ class TTemplateParam extends \Psalm\Type\Atomic
     public $as;
 
     /**
-     * @var non-empty-string
+     * @var string
      */
     public $defining_class;
 
     /**
-     * @param non-empty-string $defining_class
+     * @param string $defining_class
      */
     public function __construct(string $param_name, Union $extends, string $defining_class)
     {

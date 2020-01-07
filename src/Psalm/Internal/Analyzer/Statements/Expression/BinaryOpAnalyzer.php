@@ -561,10 +561,6 @@ class BinaryOpAnalyzer
                 $context->vars_possibly_in_scope
             );
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-            $stmt_type = Type::getString();
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context) === false) {
                 return false;
             }
@@ -573,16 +569,31 @@ class BinaryOpAnalyzer
                 return false;
             }
 
+            $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
+            $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
+
+            if ($stmt_left_type
+                && $stmt_right_type
+                && $stmt_left_type->getId() === 'non-empty-string'
+                && $stmt_right_type->getId() === 'non-empty-string'
+            ) {
+                $stmt_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
+            } else {
+                $stmt_type = Type::getString();
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
             if ($codebase->taint) {
                 $sources = [];
                 $either_tainted = 0;
 
-                if ($stmt_left_type = $statements_analyzer->node_data->getType($stmt->left)) {
+                if ($stmt_left_type) {
                     $sources = $stmt_left_type->sources ?: [];
                     $either_tainted = $stmt_left_type->tainted;
                 }
 
-                if ($stmt_right_type = $statements_analyzer->node_data->getType($stmt->right)) {
+                if ($stmt_right_type) {
                     $sources = array_merge($sources, $stmt_right_type->sources ?: []);
                     $either_tainted = $either_tainted | $stmt_right_type->tainted;
                 }
