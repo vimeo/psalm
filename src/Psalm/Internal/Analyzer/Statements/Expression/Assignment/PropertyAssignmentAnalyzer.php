@@ -437,7 +437,7 @@ class PropertyAssignmentAnalyzer
                     if (!$class_exists) {
                         if (IssueBuffer::accepts(
                             new UndefinedMagicPropertyAssignment(
-                                'Magic nstance property ' . $property_id . ' is not defined',
+                                'Magic instance property ' . $property_id . ' is not defined',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 $property_id
                             ),
