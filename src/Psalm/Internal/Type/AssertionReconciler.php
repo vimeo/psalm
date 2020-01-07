@@ -1916,7 +1916,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 && $codebase->methodExists($type->value . '::__invoke')
             ) {
                 $callable_types[] = $type;
-            } elseif (get_class($type) === TString::class) {
+            } elseif (get_class($type) === TString::class
+                || get_class($type) === Type\Atomic\TNonEmptyString::class
+            ) {
                 $callable_types[] = new Type\Atomic\TCallableString();
                 $did_remove_type = true;
             } elseif (get_class($type) === Type\Atomic\TLiteralString::class
