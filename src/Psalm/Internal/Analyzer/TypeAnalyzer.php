@@ -1878,7 +1878,9 @@ class TypeAnalyzer
                             $generic_params
                         );
 
-                        $container_type_part->remapped_params = false;
+                        if ($container_type_part instanceof TGenericObject) {
+                            $container_type_part->remapped_params = false;
+                        }
                     }
                 }
 
