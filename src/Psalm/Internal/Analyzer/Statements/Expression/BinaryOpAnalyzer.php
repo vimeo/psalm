@@ -1452,7 +1452,7 @@ class BinaryOpAnalyzer
                     }
 
                     if (!$result_type) {
-                    $result_type = Type::getInt();
+                        $result_type = Type::getInt();
                     }
                 } elseif (!$result_type) {
                     $result_type = Type::getInt(true);
