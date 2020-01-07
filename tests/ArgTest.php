@@ -26,7 +26,7 @@ class ArgTest extends TestCase
                 ',
                 'assertions' => [
                     '$a' => 'array{a: int, b: int}',
-                    '$b' => 'array<int, int>',
+                    '$b' => 'list<int>',
                 ],
             ],
             'arrayModificationFunctions' => [

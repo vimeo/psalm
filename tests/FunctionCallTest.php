@@ -307,6 +307,18 @@ class FunctionCallTest extends TestCase
                     array_diff_key([], [], [], [], []);',
                 'assertions' => [],
             ],
+            'arrayDiffAssoc' => [
+                '<?php
+                    /**
+                     * @var array<string, int> $a
+                     * @var array $b
+                     * @var array $c
+                     */
+                    $r = array_diff_assoc($a, $b, $c);',
+                'assertions' => [
+                    '$r' => 'array<string, int>',
+                ],
+            ],
             'arrayPopMixed' => [
                 '<?php
                     /** @var mixed */
@@ -570,6 +582,19 @@ class FunctionCallTest extends TestCase
                     );',
                 'assertions' => [
                     '$manifest' => 'array<string, int>'
+                ],
+            ],
+            'uksort' => [
+                '<?php
+                    $array = ["b" => 1, "a" => 2];
+                    uksort(
+                        $array,
+                        function (string $a, string $b) {
+                            return $a <=> $b;
+                        }
+                    );',
+                'assertions' => [
+                    '$array' => 'array<string, int>',
                 ],
             ],
             'byRefAfterCallable' => [
@@ -1308,6 +1333,18 @@ class FunctionCallTest extends TestCase
                         $r = array_intersect_key((new C)->unknownInstance(), array_filter($s));
                         if (empty($r)) {}
                     }',
+            ],
+            'arrayIntersectAssoc' => [
+                '<?php
+                    /**
+                     * @var array<string, int> $a
+                     * @var array $b
+                     * @var array $c
+                     */
+                    $r = array_intersect_assoc($a, $b, $c);',
+                'assertions' => [
+                    '$r' => 'array<string, int>',
+                ],
             ],
             'arrayReduce' => [
                 '<?php
@@ -2054,7 +2091,7 @@ class FunctionCallTest extends TestCase
             'versionCompareAsCallable' => [
                 '<?php
                     $a = ["1.0", "2.0"];
-                    uksort($a, "version_compare");',
+                    usort($a, "version_compare");',
             ],
             'coerceToObjectAfterBeingCalled' => [
                 '<?php
@@ -2351,6 +2388,38 @@ class FunctionCallTest extends TestCase
                     $result = array_fill_keys($keys, true);',
                 'assertions' => [
                     '$result' => 'array<int, true>',
+                ],
+            ],
+            'shuffle' => [
+                '<?php
+                    $array = ["foo" => 123, "bar" => 456];
+                    shuffle($array);',
+                'assertions' => [
+                    '$array' => 'list<int>',
+                ],
+            ],
+            'sort' => [
+                '<?php
+                    $array = ["foo" => 123, "bar" => 456];
+                    sort($array);',
+                'assertions' => [
+                    '$array' => 'list<int>',
+                ],
+            ],
+            'rsort' => [
+                '<?php
+                    $array = ["foo" => 123, "bar" => 456];
+                    sort($array);',
+                'assertions' => [
+                    '$array' => 'list<int>',
+                ],
+            ],
+            'usort' => [
+                '<?php
+                    $array = ["foo" => 123, "bar" => 456];
+                    usort($array, function (int $a, int $b) { return $a <=> $b; });',
+                'assertions' => [
+                    '$array' => 'list<int>',
                 ],
             ],
         ];

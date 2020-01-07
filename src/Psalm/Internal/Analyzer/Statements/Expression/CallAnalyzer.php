@@ -729,10 +729,8 @@ class CallAnalyzer
         );
 
         $builtin_array_functions = [
-            'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
-            'uasort',
-            'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
-            'end', 'next', 'prev', 'array_pop', 'array_shift',
+            'ksort', 'asort', 'krsort', 'arsort', 'natcasesort', 'natsort',
+            'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift',
         ];
 
         if (($var_id && isset($context->vars_in_scope[$var_id]))
@@ -791,12 +789,7 @@ class CallAnalyzer
                     $array_type = new TArray([Type::getInt(), $array_type->type_param]);
                 }
 
-                if (in_array($method_id, ['shuffle', 'sort', 'rsort', 'usort'], true)) {
-                    $tvalue = $array_type->type_params[1];
-                    $by_ref_type = new Type\Union([new TArray([Type::getInt(), clone $tvalue])]);
-                } else {
-                    $by_ref_type = new Type\Union([clone $array_type]);
-                }
+                $by_ref_type = new Type\Union([clone $array_type]);
 
                 ExpressionAnalyzer::assignByRefParam(
                     $statements_analyzer,
@@ -1630,9 +1623,8 @@ class CallAnalyzer
         if (!in_array(
             $method_id,
             [
-                'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
-                'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
-                'end', 'next', 'prev', 'array_pop', 'array_shift',
+                'ksort', 'asort', 'krsort', 'arsort', 'natcasesort', 'natsort',
+                'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift',
                 'array_push', 'array_unshift', 'socket_select', 'array_splice',
             ],
             true
