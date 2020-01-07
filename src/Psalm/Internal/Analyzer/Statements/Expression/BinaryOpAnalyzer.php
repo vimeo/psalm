@@ -1445,14 +1445,14 @@ class BinaryOpAnalyzer
                             || 0 === $left_type_part->value
                         )
                     ) {
-                            $result_type = new Type\Union([new TLiteralInt(0)]);
+                        $result_type = new Type\Union([new TLiteralInt(0)]);
                     } elseif ($left_type_part instanceof TLiteralInt
                         && $right_type_part instanceof TLiteralInt
                         && 0 !== $right_type_part->value
                     ) {
-                            $result_type = new Type\Union([new TLiteralInt(
-                                $left_type_part->value % $right_type_part->value
-                            )]);
+                        $result_type = new Type\Union([new TLiteralInt(
+                            $left_type_part->value % $right_type_part->value
+                        )]);
                     }
 
                     if (!$result_type) {
