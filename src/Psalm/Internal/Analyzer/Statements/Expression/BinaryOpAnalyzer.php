@@ -30,6 +30,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -1436,7 +1437,23 @@ class BinaryOpAnalyzer
 
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                    if ($left_type_part instanceof TLiteralInt
+                        && $right_type_part instanceof TLiteralInt
+                    ) {
+                        if ($left_type_part->value === $right_type_part->value
+                            || 0 === $left_type_part->value
+                        ) {
+                            $result_type = new Type\Union([new TLiteralInt(0)]);
+                        } elseif (0 !== $right_type_part->value) {
+                            $result_type = new Type\Union([new TLiteralInt(
+                                $left_type_part->value % $right_type_part->value
+                            )]);
+                        }
+                    }
+
+                    if (!$result_type) {
                     $result_type = Type::getInt();
+                    }
                 } elseif (!$result_type) {
                     $result_type = Type::getInt(true);
                 } else {
