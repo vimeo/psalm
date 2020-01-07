@@ -175,13 +175,13 @@ class Populator
 
         $storage_provider = $this->classlike_storage_provider;
 
+        $dependent_classlikes[$fq_classlike_name_lc] = true;
+
         $this->populateDataFromTraits($storage, $storage_provider, $dependent_classlikes);
 
         if ($storage->mixin_fqcln) {
             $this->populateDataFromMixin($storage, $storage_provider, $dependent_classlikes, $storage->mixin_fqcln);
         }
-
-        $dependent_classlikes[$fq_classlike_name_lc] = true;
 
         if ($storage->parent_classes) {
             $this->populateDataFromParentClass($storage, $storage_provider, $dependent_classlikes);
