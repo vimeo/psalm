@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\GetClassT;
 use Psalm\Type\Atomic\GetTypeT;
 use Psalm\Type\Atomic\THtmlEscapedString;
@@ -891,10 +892,21 @@ class TypeAnalyzer
         if ($input_type_part instanceof GetClassT) {
             $first_type = array_values($input_type_part->as_type->getAtomicTypes())[0];
 
-            $input_type_part = new TClassString(
-                'object',
-                $first_type instanceof TNamedObject ? $first_type : null
-            );
+            if ($first_type instanceof TTemplateParam) {
+                $object_type = array_values($first_type->as->getAtomicTypes())[0];
+
+                $input_type_part = new TTemplateParamClass(
+                    $first_type->param_name,
+                    $first_type->as->getId(),
+                    $object_type instanceof TNamedObject ? $object_type : null,
+                    $first_type->defining_class
+                );
+            } else {
+                $input_type_part = new TClassString(
+                    'object',
+                    $first_type instanceof TNamedObject ? $first_type : null
+                );
+            }
         }
 
         if ($input_type_part instanceof GetTypeT) {
@@ -1217,6 +1229,16 @@ class TypeAnalyzer
                 && $input_type_part instanceof TLiteralClassString
             ) {
                 return $container_type_part->value === $input_type_part->value;
+            }
+
+            if ($container_type_part instanceof TTemplateParamClass
+                && get_class($input_type_part) === TClassString::class
+            ) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+
+                return false;
             }
 
             if ($container_type_part instanceof TClassString
