@@ -1877,6 +1877,8 @@ class TypeAnalyzer
                             $input_type_part->value,
                             $generic_params
                         );
+
+                        $container_type_part->remapped_params = false;
                     }
                 }
 
