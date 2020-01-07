@@ -2516,6 +2516,22 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return $value; // $value is SomeObject here and cannot be a string
                     }'
             ],
+            'nonEmptyStringFromConcat' => [
+                '<?php
+                    /**
+                     * @psalm-param non-empty-string $name
+                     */
+                    function sayHello(string $name) : void {
+                        echo "Hello " . $name;
+                    }
+
+                    function takeInput() : void {
+                        if (isset($_GET["name"]) && is_string($_GET["name"])) {
+                            $name = trim($_GET["name"]);
+                            sayHello("a" . $name);
+                        }
+                    }',
+            ],
         ];
     }
 

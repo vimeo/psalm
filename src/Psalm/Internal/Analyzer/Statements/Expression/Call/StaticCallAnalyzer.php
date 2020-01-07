@@ -1061,7 +1061,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if ($return_type_candidate) {
-                    if ($codebase->taint && $method_id) {
+                    if ($codebase->taint) {
                         if ($method_storage && $method_storage->pure) {
                             $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 

@@ -980,7 +980,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         if ($codebase->store_node_types
-            && $method_id
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {

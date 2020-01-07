@@ -72,8 +72,6 @@ class BinaryOpAnalyzer
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
-        $stmt_type = null;
-
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 20) {
             // ignore deeply-nested string concatenation
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
@@ -569,24 +567,24 @@ class BinaryOpAnalyzer
                 return false;
             }
 
-            $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
-            $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
+            $stmt_type = Type::getString();
 
-            if ($stmt_left_type
-                && $stmt_right_type
-                && ($stmt_left_type->getId() === 'non-empty-string'
-                    || $stmt_right_type->getId() === 'non-empty-string'
-                    || ($stmt_left_type->isSingleStringLiteral()
-                        && $stmt_left_type->getSingleStringLiteral()->value)
-                    || ($stmt_right_type->isSingleStringLiteral()
-                        && $stmt_right_type->getSingleStringLiteral()->value))
-            ) {
-                $stmt_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
-            } else {
-                $stmt_type = Type::getString();
+            self::analyzeConcatOp(
+                $statements_analyzer,
+                $stmt->left,
+                $stmt->right,
+                $context,
+                $result_type
+            );
+
+            if ($result_type) {
+                $stmt_type = $result_type;
             }
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+            $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
+            $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
 
             if ($codebase->taint) {
                 $sources = [];
@@ -920,36 +918,6 @@ class BinaryOpAnalyzer
                     }
 
                     $statements_analyzer->node_data->setType($stmt, $result_type);
-                }
-            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-                self::analyzeConcatOp(
-                    $statements_analyzer,
-                    $stmt->left,
-                    $stmt->right,
-                    $context,
-                    $result_type
-                );
-
-                if ($result_type) {
-                    $stmt_type = $result_type;
-
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
-                }
-
-                if ($codebase->taint && $stmt_type) {
-                    $sources = $stmt_left_type->sources ?: [];
-                    $either_tainted = $stmt_left_type->tainted;
-
-                    $sources = array_merge($sources, $stmt_right_type->sources ?: []);
-                    $either_tainted = $either_tainted | $stmt_right_type->tainted;
-
-                    if ($sources) {
-                        $stmt_type->sources = $sources;
-                    }
-
-                    if ($either_tainted) {
-                        $stmt_type->tainted = $either_tainted;
-                    }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
                 self::analyzeNonDivArithmeticOp(
@@ -1928,6 +1896,18 @@ class BinaryOpAnalyzer
             if (strlen($literal) <= 1000) {
                 // Limit these to 10000 bytes to avoid extremely large union types from repeated concatenations, etc
                 $result_type = Type::getString($literal);
+            }
+        } else {
+            if ($left_type
+                && $right_type
+                && ($left_type->getId() === 'non-empty-string'
+                    || $right_type->getId() === 'non-empty-string'
+                    || ($left_type->isSingleStringLiteral()
+                        && $left_type->getSingleStringLiteral()->value)
+                    || ($right_type->isSingleStringLiteral()
+                        && $right_type->getSingleStringLiteral()->value))
+            ) {
+                $result_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
             }
         }
     }
