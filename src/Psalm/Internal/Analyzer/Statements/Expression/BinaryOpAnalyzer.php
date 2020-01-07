@@ -574,8 +574,8 @@ class BinaryOpAnalyzer
 
             if ($stmt_left_type
                 && $stmt_right_type
-                && $stmt_left_type->getId() === 'non-empty-string'
-                && $stmt_right_type->getId() === 'non-empty-string'
+                && ($stmt_left_type->getId() === 'non-empty-string'
+                    || $stmt_right_type->getId() === 'non-empty-string')
             ) {
                 $stmt_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
             } else {
