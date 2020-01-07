@@ -1438,17 +1438,21 @@ class BinaryOpAnalyzer
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                     if ($left_type_part instanceof TLiteralInt
-                        && $right_type_part instanceof TLiteralInt
-                    ) {
-                        if ($left_type_part->value === $right_type_part->value
+                        && (
+                            ($right_type_part instanceof TLiteralInt
+                                && $left_type_part->value === $right_type_part->value
+                            )
                             || 0 === $left_type_part->value
-                        ) {
+                        )
+                    ) {
                             $result_type = new Type\Union([new TLiteralInt(0)]);
-                        } elseif (0 !== $right_type_part->value) {
+                    } elseif ($left_type_part instanceof TLiteralInt
+                        && $right_type_part instanceof TLiteralInt
+                        && 0 !== $right_type_part->value
+                    ) {
                             $result_type = new Type\Union([new TLiteralInt(
                                 $left_type_part->value % $right_type_part->value
                             )]);
-                        }
                     }
 
                     if (!$result_type) {

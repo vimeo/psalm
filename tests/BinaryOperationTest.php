@@ -340,10 +340,15 @@ class BinaryOperationTest extends TestCase
                     10 % 10 === 20;',
                 'error_message' => 'TypeDoesNotContainType - src/somefile.php:2:21 - int(20) cannot be identical to int(0)',
             ],
-            'invalidModuloLeftZero' => [
+            'invalidModuloLeftZeroLiterals' => [
                 '<?php
                     0 % 100 === 5;',
                 'error_message' => 'TypeDoesNotContainType - src/somefile.php:2:21 - int(5) cannot be identical to int(0)',
+            ],
+            'invalidModuloLeftZeroRightNonLiteral' => [
+                '<?php
+                    if(0 % random_int(2, 100) === 5) {};',
+                'error_message' => 'TypeDoesNotContainType - src/somefile.php:2:24 - int(5) cannot be identical to int(0)',
             ],
             'invalidModuloRightFive' => [
                 '<?php
