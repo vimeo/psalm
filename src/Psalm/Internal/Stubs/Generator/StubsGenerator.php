@@ -21,7 +21,7 @@ class StubsGenerator
         $psalm_base = dirname(__DIR__, 5);
 
         foreach ($all_class_storage as $storage) {
-            if (strpos($storage->name, 'Psalm\\')) {
+            if (\strpos($storage->name, 'Psalm\\') === 0) {
                 continue;
             }
 
