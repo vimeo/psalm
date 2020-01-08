@@ -1877,10 +1877,6 @@ class TypeAnalyzer
                             $input_type_part->value,
                             $generic_params
                         );
-
-                        if ($container_type_part instanceof TGenericObject) {
-                            $container_type_part->remapped_params = false;
-                        }
                     }
                 }
 
@@ -1913,15 +1909,15 @@ class TypeAnalyzer
 
             if ($input_type_part->value !== $container_type_part->value
                 && $input_class_storage
-                && (!$container_type_part instanceof TGenericObject
-                    || !$container_type_part->remapped_params)
             ) {
                 $input_template_types = $input_class_storage->template_types;
                 $i = 0;
 
                 $replacement_templates = [];
 
-                if ($input_template_types) {
+                if ($input_template_types
+                    && (!$input_type_part instanceof TGenericObject || !$input_type_part->remapped_params)
+                ) {
                     foreach ($input_template_types as $template_name => $_) {
                         if (!isset($input_type_params[$i])) {
                             break;
