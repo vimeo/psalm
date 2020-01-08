@@ -76,7 +76,7 @@ class StubsGenerator
 
             $namespace_name = implode('\\', $name_parts);
 
-            $namespaced_nodes[$namespace_name][] = self::getFunctionNode(
+            $namespaced_nodes[$namespace_name][$fq_name] = self::getFunctionNode(
                 $function_storage,
                 $function_name,
                 $namespace_name
@@ -106,7 +106,7 @@ class StubsGenerator
 
                 $namespace_name = implode('\\', $name_parts);
 
-                $namespaced_nodes[$namespace_name][] = self::getFunctionNode(
+                $namespaced_nodes[$namespace_name][$fq_name] = self::getFunctionNode(
                     $function_storage,
                     $function_name,
                     $namespace_name
@@ -119,7 +119,7 @@ class StubsGenerator
         $namespace_stmts = [];
 
         foreach ($namespaced_nodes as $namespace_name => $stmts) {
-            ksort($namespace_stmts);
+            ksort($stmts);
 
             $namespace_stmts[] = new PhpParser\Node\Stmt\Namespace_(
                 $namespace_name ? new PhpParser\Node\Name($namespace_name) : null,
