@@ -154,6 +154,14 @@ class Functions
     }
 
     /**
+     * @return array<string, FunctionLikeStorage>
+     */
+    public function getAllStubbedFunctions()
+    {
+        return self::$stubbed_functions;
+    }
+
+    /**
      * @return bool
      */
     public function functionExists(

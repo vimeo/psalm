@@ -25,7 +25,7 @@
             <file name="tests/ErrorBaselineTest.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
             <file name="src/spl_object_id.php"/>
-            <directory name="src/Psalm/Internal/Stubs"/>
+            <file name="src/Psalm/Internal/Stubs/*.php"/>
             <directory name="tests/fixtures"/>
             <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
             <directory name="vendor/netresearch/jsonmapper" />
@@ -72,6 +72,9 @@
         <PossiblyUnusedParam>
             <errorLevel type="suppress">
                 <directory name="examples"/>
+            </errorLevel>
+            <errorLevel type="info">
+                <directory name="src/Psalm/Type/Atomic"/>
             </errorLevel>
         </PossiblyUnusedParam>
 

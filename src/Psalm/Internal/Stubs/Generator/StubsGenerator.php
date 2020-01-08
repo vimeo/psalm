@@ -1,0 +1,259 @@
+<?php
+
+namespace Psalm\Internal\Stubs\Generator;
+
+use PhpParser;
+use Psalm\Internal\Provider;
+use Psalm\Storage\MethodStorage;
+use Psalm\Type;
+
+class StubsGenerator
+{
+    public static function getAll(
+        \Psalm\Codebase $codebase,
+        \Psalm\Internal\Provider\ClassLikeStorageProvider $class_provider
+    ) : string {
+        $all_class_storage = $class_provider->getAll();
+
+        $namespaced_nodes = [];
+
+        $psalm_base = dirname(__DIR__, 5);
+
+        foreach ($all_class_storage as $storage) {
+            if (strpos($storage->name, 'Psalm\\')) {
+                continue;
+            }
+
+            if ($storage->location
+                && strpos($storage->location->file_path, $psalm_base) === 0
+            ) {
+                continue;
+            }
+
+            if ($storage->stubbed) {
+                continue;
+            }
+
+            $name_parts = explode('\\', $storage->name);
+
+            $classlike_name = array_pop($name_parts);
+            $namespace_name = implode('\\', $name_parts);
+
+            if (!isset($namespaced_nodes[$namespace_name])) {
+                $namespaced_nodes[$namespace_name] = [];
+            }
+
+            $namespaced_nodes[$namespace_name][$classlike_name] = ClassLikeStubGenerator::getClassLikeNode(
+                $codebase,
+                $storage,
+                $classlike_name
+            );
+        }
+
+        unset($all_class_storage);
+        $all_stubbed_functions = $codebase->functions->getAllStubbedFunctions();
+
+        foreach ($all_stubbed_functions as $function_storage) {
+            if (!$function_storage->cased_name) {
+                throw new \UnexpectedValueException('very bad');
+            }
+
+            $fq_name = $function_storage->cased_name;
+
+            if ($function_storage->location
+                && strpos($function_storage->location->file_path, $psalm_base) === 0
+            ) {
+                continue;
+            }
+
+            $name_parts = explode('\\', $fq_name);
+            $function_name = array_pop($name_parts);
+
+            $namespace_name = implode('\\', $name_parts);
+
+            $docblock = ['description' => '', 'specials' => []];
+
+            foreach ($function_storage->template_types ?: [] as $template_name => $map) {
+                $type = array_values($map)[0][0];
+
+                $docblock['specials']['template'][] = $template_name . ' as ' . $type->toNamespacedString(
+                    $namespace_name,
+                    [],
+                    null,
+                    false
+                );
+            }
+
+            foreach ($function_storage->params as $param) {
+                if ($param->type && $param->type !== $param->signature_type) {
+                    $docblock['specials']['param'][] = $param->type->toNamespacedString(
+                        $namespace_name,
+                        [],
+                        null,
+                        false
+                    ) . ' $' . $param->name;
+                }
+            }
+
+            if ($function_storage->return_type
+                && $function_storage->signature_return_type !== $function_storage->return_type
+            ) {
+                $docblock['specials']['return'][] = $function_storage->return_type->toNamespacedString(
+                    $namespace_name,
+                    [],
+                    null,
+                    false
+                );
+            }
+
+            foreach ($function_storage->throws ?: [] as $exception_name => $_) {
+                $docblock['specials']['throws'][] = Type::getStringFromFQCLN(
+                    $exception_name,
+                    $namespace_name,
+                    [],
+                    null,
+                    false
+                );
+            }
+
+            $namespaced_nodes[$namespace_name][] = new PhpParser\Node\Stmt\Function_(
+                $function_name,
+                [
+                    'params' => self::getFunctionParamNodes($function_storage),
+                    'returnType' => $function_storage->signature_return_type
+                        ? self::getParserTypeFromPsalmType($function_storage->signature_return_type)
+                        : null,
+                    'stmts' => [],
+                ],
+                [
+                    'comments' => $docblock['specials']
+                        ? [
+                            new PhpParser\Comment\Doc(
+                                \rtrim(\Psalm\DocComment::render($docblock, '        '))
+                            )
+                        ]
+                        : []
+                ]
+            );
+        }
+
+        ksort($namespaced_nodes);
+
+        $namespace_stmts = [];
+
+        foreach ($namespaced_nodes as $namespace_name => $stmts) {
+            ksort($namespace_stmts);
+
+            $namespace_stmts[] = new PhpParser\Node\Stmt\Namespace_(
+                $namespace_name ? new PhpParser\Node\Name($namespace_name) : null,
+                array_values($stmts),
+                ['kind' => PhpParser\Node\Stmt\Namespace_::KIND_BRACED]
+            );
+        }
+
+        $prettyPrinter = new PhpParser\PrettyPrinter\Standard;
+        return $prettyPrinter->prettyPrintFile($namespace_stmts);
+    }
+
+    /**
+     * @return list<PhpParser\Node\Param>
+     */
+    public static function getFunctionParamNodes(\Psalm\Storage\FunctionLikeStorage $method_storage)
+    {
+        $param_nodes = [];
+
+        foreach ($method_storage->params as $param) {
+            $param_nodes[] = new PhpParser\Node\Param(
+                new PhpParser\Node\Expr\Variable($param->name),
+                $param->default_type
+                    ? self::getExpressionFromType($param->default_type)
+                    : null,
+                $param->signature_type
+                    ? self::getParserTypeFromPsalmType($param->signature_type)
+                    : null
+            );
+        }
+
+        return $param_nodes;
+    }
+
+    /**
+     * @return PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType|null
+     */
+    public static function getParserTypeFromPsalmType(Type\Union $type)
+    {
+        $nullable = $type->isNullable();
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\TNull) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\Scalar
+                || $atomic_type instanceof Type\Atomic\TObject
+                || $atomic_type instanceof Type\Atomic\TArray
+                || $atomic_type instanceof Type\Atomic\TIterable
+            ) {
+                $identifier_string = $atomic_type->toPhpString(null, [], null, 8, 0);
+
+                if ($identifier_string === null) {
+                    throw new \UnexpectedValueException(
+                        $atomic_type->getId() . ' could not be converted to an identifier'
+                    );
+                }
+                $identifier = new PhpParser\Node\Identifier($identifier_string);
+
+                if ($nullable) {
+                    return new PhpParser\Node\NullableType($identifier);
+                }
+
+                return $identifier;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TNamedObject) {
+                $name_node = new PhpParser\Node\Name\FullyQualified($atomic_type->value);
+
+                if ($nullable) {
+                    return new PhpParser\Node\NullableType($name_node);
+                }
+
+                return $name_node;
+            }
+        }
+    }
+
+    public static function getExpressionFromType(Type\Union $type) : PhpParser\Node\Expr
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\TLiteralString) {
+                return new PhpParser\Node\Scalar\String_($atomic_type->value);
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                return new PhpParser\Node\Scalar\LNumber($atomic_type->value);
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
+                return new PhpParser\Node\Scalar\DNumber($atomic_type->value);
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TFalse) {
+                return new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('false'));
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TTrue) {
+                return new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('true'));
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TNull) {
+                return new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('null'));
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TArray) {
+                return new PhpParser\Node\Expr\Array_([]);
+            }
+        }
+
+        return new PhpParser\Node\Scalar\String_('Psalm could not infer this type');
+    }
+}

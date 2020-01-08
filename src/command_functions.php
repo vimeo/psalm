@@ -390,6 +390,9 @@ Miscellaneous:
     --generate-json-map=PATH
         Generate a map of node references and types in JSON format, saved to the given path.
 
+    --generate-stubs=PATH
+        Generate stubs for the project and dump the file in the given path
+
     --shepherd[=host]
         Send data to Shepherd, Psalm's GitHub integration tool.
 

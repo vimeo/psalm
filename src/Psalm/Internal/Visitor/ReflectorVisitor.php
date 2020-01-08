@@ -1008,6 +1008,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $storage->populated = false;
                     $storage->class_implements = []; // we do this because reflection reports
                     $storage->parent_interfaces = [];
+                    $storage->stubbed = true;
                     $storage->aliases = $this->aliases;
 
                     foreach ($storage->dependent_classlikes as $dependent_name_lc => $_) {
@@ -1081,6 +1082,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $interface_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($interface, $this->aliases);
                 $this->codebase->scanner->queueClassLikeForScanning($interface_fqcln, $this->file_path);
                 $storage->class_implements[strtolower($interface_fqcln)] = $interface_fqcln;
+                $storage->direct_class_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
                 $this->file_storage->required_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Interface_) {
@@ -1092,6 +1094,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $interface_fqcln = $this->codebase->classlikes->getUnAliasedName($interface_fqcln);
                 $this->codebase->scanner->queueClassLikeForScanning($interface_fqcln, $this->file_path);
                 $storage->parent_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
+                $storage->direct_interface_parents[strtolower($interface_fqcln)] = $interface_fqcln;
                 $this->file_storage->required_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Trait_) {

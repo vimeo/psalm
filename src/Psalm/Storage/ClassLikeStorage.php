@@ -144,11 +144,25 @@ class ClassLikeStorage
     public $user_defined = false;
 
     /**
-     * Interfaces this class implements
+     * Interfaces this class implements directly
+     *
+     * @var array<string, string>
+     */
+    public $direct_class_interfaces = [];
+
+    /**
+     * Interfaces this class implements explicitly and implicitly
      *
      * @var array<string, string>
      */
     public $class_implements = [];
+
+    /**
+     * Parent interfaces listed explicitly
+     *
+     * @var array<string, string>
+     */
+    public $direct_interface_parents = [];
 
     /**
      * Parent interfaces

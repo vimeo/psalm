@@ -32,7 +32,10 @@ class TObject extends \Psalm\Type\Atomic
         $php_major_version,
         $php_minor_version
     ) {
-        return $php_major_version >= 7 && $php_minor_version >= 2 ? $this->getKey() : null;
+        return $php_major_version > 7
+            || ($php_major_version === 7 && $php_minor_version >= 2)
+            ? $this->getKey()
+            : null;
     }
 
     public function canBeFullyExpressedInPhp()

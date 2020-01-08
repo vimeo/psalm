@@ -58,6 +58,7 @@ $valid_long_options = [
     'version',
     'php-version:',
     'generate-json-map:',
+    'generate-stubs:',
     'alter',
     'language-server',
     'refactor',
@@ -322,6 +323,12 @@ if (isset($options['generate-json-map']) && is_string($options['generate-json-ma
     $type_map_location = $options['generate-json-map'];
 }
 
+$stubs_location = null;
+
+if (isset($options['generate-stubs']) && is_string($options['generate-stubs'])) {
+    $stubs_location = $options['generate-stubs'];
+}
+
 // If Xdebug is enabled, restart without it
 $ini_handler->check();
 
@@ -499,7 +506,6 @@ $project_analyzer->getCodebase()->diff_methods = isset($options['diff-methods'])
 if ($type_map_location) {
     $project_analyzer->getCodebase()->store_node_types = true;
 }
-
 
 $start_time = microtime(true);
 
@@ -694,6 +700,16 @@ if ($type_map_location) {
     $providers->file_provider->setContents(
         $type_map_location,
         $type_map_string
+    );
+}
+
+if ($stubs_location) {
+    $providers->file_provider->setContents(
+        $stubs_location,
+        \Psalm\Internal\Stubs\Generator\StubsGenerator::getAll(
+            $project_analyzer->getCodebase(),
+            $providers->classlike_storage_provider
+        )
     );
 }
 
