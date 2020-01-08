@@ -708,7 +708,8 @@ if ($stubs_location) {
         $stubs_location,
         \Psalm\Internal\Stubs\Generator\StubsGenerator::getAll(
             $project_analyzer->getCodebase(),
-            $providers->classlike_storage_provider
+            $providers->classlike_storage_provider,
+            $providers->file_storage_provider
         )
     );
 }

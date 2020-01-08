@@ -11,7 +11,8 @@ class StubsGenerator
 {
     public static function getAll(
         \Psalm\Codebase $codebase,
-        \Psalm\Internal\Provider\ClassLikeStorageProvider $class_provider
+        \Psalm\Internal\Provider\ClassLikeStorageProvider $class_provider,
+        \Psalm\Internal\Provider\FileStorageProvider $file_provider
     ) : string {
         $all_class_storage = $class_provider->getAll();
 
@@ -53,88 +54,64 @@ class StubsGenerator
         unset($all_class_storage);
         $all_stubbed_functions = $codebase->functions->getAllStubbedFunctions();
 
+        $all_function_names = [];
+
         foreach ($all_stubbed_functions as $function_storage) {
+            if ($function_storage->location
+                && \strpos($function_storage->location->file_path, $psalm_base) === 0
+            ) {
+                continue;
+            }
+
             if (!$function_storage->cased_name) {
                 throw new \UnexpectedValueException('very bad');
             }
 
             $fq_name = $function_storage->cased_name;
 
-            if ($function_storage->location
-                && strpos($function_storage->location->file_path, $psalm_base) === 0
-            ) {
-                continue;
-            }
+            $all_function_names[$fq_name] = true;
 
             $name_parts = explode('\\', $fq_name);
             $function_name = array_pop($name_parts);
 
             $namespace_name = implode('\\', $name_parts);
 
-            $docblock = ['description' => '', 'specials' => []];
-
-            foreach ($function_storage->template_types ?: [] as $template_name => $map) {
-                $type = array_values($map)[0][0];
-
-                $docblock['specials']['template'][] = $template_name . ' as ' . $type->toNamespacedString(
-                    $namespace_name,
-                    [],
-                    null,
-                    false
-                );
-            }
-
-            foreach ($function_storage->params as $param) {
-                if ($param->type && $param->type !== $param->signature_type) {
-                    $docblock['specials']['param'][] = $param->type->toNamespacedString(
-                        $namespace_name,
-                        [],
-                        null,
-                        false
-                    ) . ' $' . $param->name;
-                }
-            }
-
-            if ($function_storage->return_type
-                && $function_storage->signature_return_type !== $function_storage->return_type
-            ) {
-                $docblock['specials']['return'][] = $function_storage->return_type->toNamespacedString(
-                    $namespace_name,
-                    [],
-                    null,
-                    false
-                );
-            }
-
-            foreach ($function_storage->throws ?: [] as $exception_name => $_) {
-                $docblock['specials']['throws'][] = Type::getStringFromFQCLN(
-                    $exception_name,
-                    $namespace_name,
-                    [],
-                    null,
-                    false
-                );
-            }
-
-            $namespaced_nodes[$namespace_name][] = new PhpParser\Node\Stmt\Function_(
+            $namespaced_nodes[$namespace_name][] = self::getFunctionNode(
+                $function_storage,
                 $function_name,
-                [
-                    'params' => self::getFunctionParamNodes($function_storage),
-                    'returnType' => $function_storage->signature_return_type
-                        ? self::getParserTypeFromPsalmType($function_storage->signature_return_type)
-                        : null,
-                    'stmts' => [],
-                ],
-                [
-                    'comments' => $docblock['specials']
-                        ? [
-                            new PhpParser\Comment\Doc(
-                                \rtrim(\Psalm\DocComment::render($docblock, '        '))
-                            )
-                        ]
-                        : []
-                ]
+                $namespace_name
             );
+        }
+
+        foreach ($file_provider->getAll() as $file_storage) {
+            if (\strpos($file_storage->file_path, $psalm_base) === 0) {
+                continue;
+            }
+
+            foreach ($file_storage->functions as $function_storage) {
+                if (!$function_storage->cased_name) {
+                    continue;
+                }
+
+                $fq_name = $function_storage->cased_name;
+
+                if (isset($all_function_names[$fq_name])) {
+                    continue;
+                }
+
+                $all_function_names[$fq_name] = true;
+
+                $name_parts = explode('\\', $fq_name);
+                $function_name = array_pop($name_parts);
+
+                $namespace_name = implode('\\', $name_parts);
+
+                $namespaced_nodes[$namespace_name][] = self::getFunctionNode(
+                    $function_storage,
+                    $function_name,
+                    $namespace_name
+                );
+            }
         }
 
         ksort($namespaced_nodes);
@@ -153,6 +130,77 @@ class StubsGenerator
 
         $prettyPrinter = new PhpParser\PrettyPrinter\Standard;
         return $prettyPrinter->prettyPrintFile($namespace_stmts);
+    }
+
+    private static function getFunctionNode(
+        \Psalm\Storage\FunctionLikeStorage $function_storage,
+        string $function_name,
+        string $namespace_name
+    ) : PhpParser\Node\Stmt\Function_ {
+        $docblock = ['description' => '', 'specials' => []];
+
+        foreach ($function_storage->template_types ?: [] as $template_name => $map) {
+            $type = array_values($map)[0][0];
+
+            $docblock['specials']['template'][] = $template_name . ' as ' . $type->toNamespacedString(
+                $namespace_name,
+                [],
+                null,
+                false
+            );
+        }
+
+        foreach ($function_storage->params as $param) {
+            if ($param->type && $param->type !== $param->signature_type) {
+                $docblock['specials']['param'][] = $param->type->toNamespacedString(
+                    $namespace_name,
+                    [],
+                    null,
+                    false
+                ) . ' $' . $param->name;
+            }
+        }
+
+        if ($function_storage->return_type
+            && $function_storage->signature_return_type !== $function_storage->return_type
+        ) {
+            $docblock['specials']['return'][] = $function_storage->return_type->toNamespacedString(
+                $namespace_name,
+                [],
+                null,
+                false
+            );
+        }
+
+        foreach ($function_storage->throws ?: [] as $exception_name => $_) {
+            $docblock['specials']['throws'][] = Type::getStringFromFQCLN(
+                $exception_name,
+                $namespace_name,
+                [],
+                null,
+                false
+            );
+        }
+
+        return new PhpParser\Node\Stmt\Function_(
+            $function_name,
+            [
+                'params' => self::getFunctionParamNodes($function_storage),
+                'returnType' => $function_storage->signature_return_type
+                    ? self::getParserTypeFromPsalmType($function_storage->signature_return_type)
+                    : null,
+                'stmts' => [],
+            ],
+            [
+                'comments' => $docblock['specials']
+                    ? [
+                        new PhpParser\Comment\Doc(
+                            \rtrim(\Psalm\DocComment::render($docblock, '        '))
+                        )
+                    ]
+                    : []
+            ]
+        );
     }
 
     /**
