@@ -14,13 +14,11 @@ class StubsGenerator
         \Psalm\Internal\Provider\ClassLikeStorageProvider $class_provider,
         \Psalm\Internal\Provider\FileStorageProvider $file_provider
     ) : string {
-        $all_class_storage = $class_provider->getAll();
-
         $namespaced_nodes = [];
 
         $psalm_base = dirname(__DIR__, 5);
 
-        foreach ($all_class_storage as $storage) {
+        foreach ($class_provider->getAll() as $storage) {
             if (\strpos($storage->name, 'Psalm\\') === 0) {
                 continue;
             }
@@ -51,12 +49,9 @@ class StubsGenerator
             );
         }
 
-        unset($all_class_storage);
-        $all_stubbed_functions = $codebase->functions->getAllStubbedFunctions();
-
         $all_function_names = [];
 
-        foreach ($all_stubbed_functions as $function_storage) {
+        foreach ($codebase->functions->getAllStubbedFunctions() as $function_storage) {
             if ($function_storage->location
                 && \strpos($function_storage->location->file_path, $psalm_base) === 0
             ) {
@@ -80,6 +75,26 @@ class StubsGenerator
                 $function_storage,
                 $function_name,
                 $namespace_name
+            );
+        }
+
+        foreach ($codebase->getAllStubbedConstants() as $fq_name => $type) {
+            if ($type->isMixed()) {
+                continue;
+            }
+
+            $name_parts = explode('\\', $fq_name);
+            $constant_name = array_pop($name_parts);
+
+            $namespace_name = implode('\\', $name_parts);
+
+            $namespaced_nodes[$namespace_name][$fq_name] = new PhpParser\Node\Stmt\Const_(
+                [
+                    new PhpParser\Node\Const_(
+                        $constant_name,
+                        self::getExpressionFromType($type)
+                    )
+                ]
             );
         }
 
@@ -110,6 +125,30 @@ class StubsGenerator
                     $function_storage,
                     $function_name,
                     $namespace_name
+                );
+            }
+
+            foreach ($file_storage->constants as $fq_name => $type) {
+                if ($type->isMixed()) {
+                    continue;
+                }
+
+                if ($type->isMixed()) {
+                    continue;
+                }
+
+                $name_parts = explode('\\', $fq_name);
+                $constant_name = array_pop($name_parts);
+
+                $namespace_name = implode('\\', $name_parts);
+
+                $namespaced_nodes[$namespace_name][$fq_name] = new PhpParser\Node\Stmt\Const_(
+                    [
+                        new PhpParser\Node\Const_(
+                            $constant_name,
+                            self::getExpressionFromType($type)
+                        )
+                    ]
                 );
             }
         }

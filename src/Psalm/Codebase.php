@@ -666,6 +666,14 @@ class Codebase
     }
 
     /**
+     * @return array<string, Type\Union>
+     */
+    public function getAllStubbedConstants()
+    {
+        return self::$stubbed_constants;
+    }
+
+    /**
      * @param  string $file_path
      *
      * @return bool
