@@ -1180,14 +1180,19 @@ class CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($method_id) {
-            if ($in_call_map || !strpos($method_id, '::')) {
+            if (!$in_call_map && strpos($method_id, '::')) {
+                $fq_class_name = explode('::', $method_id)[0];
+            }
+
+            if ($function_storage) {
+                $is_variadic = $function_storage->variadic;
+            } elseif ($fq_class_name === null) {
                 $is_variadic = $codebase->functions->isVariadic(
                     $codebase,
                     strtolower($method_id),
                     $statements_analyzer->getRootFilePath()
                 );
             } else {
-                $fq_class_name = explode('::', $method_id)[0];
                 $is_variadic = $codebase->methods->isVariadic($method_id);
             }
         }

@@ -1,7 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
 use Psalm\Context;
+use Psalm\Tests\Internal\Provider;
+use function dirname;
+use function getcwd;
 
 class VariadicTest extends TestCase
 {
@@ -27,6 +31,38 @@ class VariadicTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @throws \Psalm\Exception\ConfigException
+     * @return void
+     */
+    public function testVariadicFunctionFromAutoloadFile()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    autoloader="tests/fixtures/stubs/custom_functions.php"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                variadic2(16, 30);
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context());
     }
 
     /**
@@ -90,5 +126,26 @@ class VariadicTest extends TestCase
                     }',
             ],
         ];
+    }
+
+    /**
+     * @param  Config $config
+     *
+     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
+     */
+    private function getProjectAnalyzerWithConfig(Config $config)
+    {
+        $project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+            $config,
+            new \Psalm\Internal\Provider\Providers(
+                $this->file_provider,
+                new Provider\FakeParserCacheProvider()
+            )
+        );
+        $project_analyzer->setPhpVersion('7.3');
+
+        $config->visitComposerAutoloadFiles($project_analyzer, null);
+
+        return $project_analyzer;
     }
 }
