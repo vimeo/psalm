@@ -412,6 +412,14 @@ class ExpressionAnalyzer
                         );
                         $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
                     }
+
+                    // removes dependent vars from $context
+                    $context->removeDescendents(
+                        $var_id,
+                        $context->vars_in_scope[$var_id],
+                        $return_type,
+                        $statements_analyzer
+                    );
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());

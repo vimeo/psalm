@@ -283,7 +283,7 @@ class AssignmentAnalyzer
                 $assign_value_type->by_ref = true;
             }
 
-            // removes dependennt vars from $context
+            // removes dependent vars from $context
             $context->removeDescendents(
                 $array_var_id,
                 $context->vars_in_scope[$array_var_id],
@@ -975,6 +975,34 @@ class AssignmentAnalyzer
             if ($result_type && $array_var_id) {
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
+            }
+        }
+
+        if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
+            if ($result_type && $context->vars_in_scope[$array_var_id]->by_ref) {
+                $result_type->by_ref = true;
+            }
+
+            // removes dependent vars from $context
+            $context->removeDescendents(
+                $array_var_id,
+                $context->vars_in_scope[$array_var_id],
+                $result_type,
+                $statements_analyzer
+            );
+        } else {
+            $root_var_id = ExpressionAnalyzer::getRootVarId(
+                $stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
+            );
+
+            if ($root_var_id && isset($context->vars_in_scope[$root_var_id])) {
+                $context->removeVarFromConflictingClauses(
+                    $root_var_id,
+                    $context->vars_in_scope[$root_var_id],
+                    $statements_analyzer
+                );
             }
         }
 
