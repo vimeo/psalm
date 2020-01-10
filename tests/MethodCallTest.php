@@ -506,6 +506,11 @@ class MethodCallTest extends TestCase
                         return $sth->fetch(PDO::FETCH_OBJ);
                     }'
             ],
+            'dateTimeSecondArg' => [
+                '<?php
+                    $date = new DateTime(null, new DateTimeZone("Pacific/Nauru"));
+                    echo $date->format("Y-m-d H:i:sP") . "\n";'
+            ],
         ];
     }
 
@@ -820,6 +825,11 @@ class MethodCallTest extends TestCase
                     $p = new A();
                     $p->foo()->bar();',
                 'error_message' => 'NullReference'
+            ],
+            'dateTimeNullFirstArg' => [
+                '<?php
+                    $date = new DateTime(null);',
+                'error_message' => 'NullArgument'
             ],
         ];
     }
