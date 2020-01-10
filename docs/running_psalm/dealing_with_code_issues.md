@@ -75,6 +75,8 @@ function (int $a) : string {
 }
 ```
 
+If you wish to suppress all issues, you can use `@psalm-suppress all` instead of multiple annotations.
+
 ## Using a baseline file
 
 If you have a bunch of errors and you don't want to fix them all at once, Psalm can now grandfather-in errors in existing code, while ensuring that new code doesn't have those same sorts of errors.
