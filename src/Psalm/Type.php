@@ -1074,9 +1074,12 @@ abstract class Type
                 $string_type_token[0] = preg_replace('/(.+)\$.*/', '$1', $string_type_token[0]);
             }
 
-            $type_tokens[$i][0]
-                = $string_type_token[0]
-                = self::fixScalarTerms($string_type_token[0]);
+            $fixed_token = !isset($type_tokens[$i + 1]) || $type_tokens[$i + 1][0] !== '('
+                ? self::fixScalarTerms($string_type_token[0])
+                : $string_type_token[0];
+
+            $type_tokens[$i][0] = $fixed_token;
+            $string_type_token[0] = $fixed_token;
 
             if ($string_type_token[0] === 'self' && $self_fqcln) {
                 $type_tokens[$i][0] = $self_fqcln;
