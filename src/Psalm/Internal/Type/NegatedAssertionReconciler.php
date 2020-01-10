@@ -1004,6 +1004,9 @@ class NegatedAssertionReconciler extends Reconciler
                 ]);
                 $non_string_types[] = new Atomic\TCallableObject();
                 $did_remove_type = true;
+            } elseif ($type instanceof TNumeric) {
+                $non_string_types[] = $type;
+                $did_remove_type = true;
             } elseif (!$type instanceof TString) {
                 $non_string_types[] = $type;
             } else {
