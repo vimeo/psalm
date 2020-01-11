@@ -657,16 +657,14 @@ class Context
             return;
         }
 
-        if ($this->clauses) {
-            $this->removeVarFromConflictingClauses(
-                $remove_var_id,
-                $existing_type->hasMixed()
-                    || ($new_type && $existing_type->from_docblock !== $new_type->from_docblock)
-                    ? null
-                    : $new_type,
-                $statements_analyzer
-            );
-        }
+        $this->removeVarFromConflictingClauses(
+            $remove_var_id,
+            $existing_type->hasMixed()
+                || ($new_type && $existing_type->from_docblock !== $new_type->from_docblock)
+                ? null
+                : $new_type,
+            $statements_analyzer
+        );
 
         $vars_to_remove = [];
 
