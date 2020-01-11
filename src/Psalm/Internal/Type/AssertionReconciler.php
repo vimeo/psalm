@@ -173,14 +173,16 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             if (empty($existing_var_type->getAtomicTypes())) {
                 $failed_reconciliation = 2;
 
-                if (IssueBuffer::accepts(
-                    new TypeDoesNotContainType(
-                        'Cannot resolve types for ' . $key . ' on null var',
-                        $code_location
-                    ),
-                    $suppressed_issues
-                )) {
-                    // fall through
+                if ($code_location) {
+                    if (IssueBuffer::accepts(
+                        new TypeDoesNotContainType(
+                            'Cannot resolve types for ' . $key . ' on null var',
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
                 }
 
                 return Type::getEmpty();
