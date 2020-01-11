@@ -55,6 +55,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -635,9 +636,10 @@ class ExpressionAnalyzer
                         $permissible_atomic_types[] = new ObjectLike([new Type\Union([$type])]);
                     } elseif ($type instanceof TNull) {
                         $permissible_atomic_types[] = new TArray([Type::getEmpty(), Type::getEmpty()]);
-                    } elseif ($type instanceof TArray) {
-                        $permissible_atomic_types[] = clone $type;
-                    } elseif ($type instanceof ObjectLike) {
+                    } elseif ($type instanceof TArray
+                        || $type instanceof TList
+                        || $type instanceof ObjectLike
+                    ) {
                         $permissible_atomic_types[] = clone $type;
                     } else {
                         $all_permissible = false;
