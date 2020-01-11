@@ -778,6 +778,15 @@ class IssetTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'UndefinedVariable'
             ],
+            'issetNullVar' => [
+                '<?php
+                    function four(?string $s) : void {
+                        if ($s === null) {
+                            if (isset($s)) {}
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }

@@ -173,9 +173,17 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             if (empty($existing_var_type->getAtomicTypes())) {
                 $failed_reconciliation = 2;
 
-                // @todo - I think there's a better way to handle this, but for the moment
-                // mixed will have to do.
-                return Type::getMixed();
+                if (IssueBuffer::accepts(
+                    new TypeDoesNotContainType(
+                        'Cannot resolve types for ' . $key . ' on null var',
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
+                }
+
+                return Type::getEmpty();
             }
 
             if ($existing_var_type->hasType('empty')) {
