@@ -84,7 +84,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             ) {
                 return new Type\Union([
                     new Type\Atomic\TList(
-                        $inner_type,
+                        $inner_type
                     ),
                 ]);
             }
