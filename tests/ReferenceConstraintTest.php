@@ -224,6 +224,14 @@ class ReferenceConstraintTest extends TestCase
                     $v = 8;',
                 'error_message' => 'ConflictingReferenceConstraint',
             ],
+            'invalidDocblockForBadAnnotation' => [
+                '<?php
+                    /**
+                     * @param-out array<a(),bool> $ar
+                     */
+                    function foo(array &$ar) : void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

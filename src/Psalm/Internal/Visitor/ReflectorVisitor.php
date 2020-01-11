@@ -2371,25 +2371,39 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         foreach ($docblock_info->params_out as $docblock_param_out) {
             $param_name = substr($docblock_param_out['name'], 1);
 
+            try {
+                $out_type = Type::parseTokens(
+                    Type::fixUpLocalType(
+                        $docblock_param_out['type'],
+                        $this->aliases,
+                        $this->function_template_types + $class_template_types,
+                        $this->type_aliases
+                    ),
+                    null,
+                    $this->function_template_types + $class_template_types
+                );
+            } catch (TypeParseTreeException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    )
+                )) {
+                }
+
+                $storage->has_docblock_issues = true;
+
+                continue;
+            }
+
+            $out_type->queueClassLikesForScanning(
+                $this->codebase,
+                $this->file_storage,
+                $storage->template_types ?: []
+            );
+
             foreach ($storage->params as $i => $param_storage) {
                 if ($param_storage->name === $param_name) {
-                    $out_type = Type::parseTokens(
-                        Type::fixUpLocalType(
-                            $docblock_param_out['type'],
-                            $this->aliases,
-                            $this->function_template_types + $class_template_types,
-                            $this->type_aliases
-                        ),
-                        null,
-                        $this->function_template_types + $class_template_types
-                    );
-
-                    $out_type->queueClassLikesForScanning(
-                        $this->codebase,
-                        $this->file_storage,
-                        $storage->template_types ?: []
-                    );
-
                     $storage->param_out_types[$i] = $out_type;
                 }
             }
