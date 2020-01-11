@@ -60,7 +60,6 @@
         "phpmyadmin/sql-parser": "^5.0",
         "symfony/process": "^4.3",
         "slevomat/coding-standard": "^5.0",
-        "friendsofphp/php-cs-fixer": "^2.15",
         "ext-curl": "*"
     },
     "suggest": {
