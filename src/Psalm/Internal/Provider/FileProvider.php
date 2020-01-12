@@ -6,6 +6,7 @@ use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function in_array;
+use function is_dir;
 use function strtolower;
 
 class FileProvider
@@ -37,6 +38,10 @@ class FileProvider
 
         if (!file_exists($file_path)) {
             throw new \UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
+        }
+
+        if (is_dir($file_path)) {
+            throw new \UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
         return (string)file_get_contents($file_path);
