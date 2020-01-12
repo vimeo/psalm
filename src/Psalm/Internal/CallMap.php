@@ -1190,7 +1190,7 @@ return [
 'connection_aborted' => ['int'],
 'connection_status' => ['int'],
 'connection_timeout' => ['int'],
-'constant' => ['mixed', 'const_name'=>'string'],
+'constant' => ['scalar|array<scalar>|null', 'const_name'=>'string'],
 'convert_cyr_string' => ['string', 'str'=>'string', 'from'=>'string', 'to'=>'string'],
 'convert_uudecode' => ['string', 'data'=>'string'],
 'convert_uuencode' => ['string', 'data'=>'string'],
