@@ -10,3 +10,8 @@ function barBar(string $a) : string
 function variadic()
 {
 }
+
+function variadic2() : array
+{
+    return func_get_args();
+}
