@@ -10,7 +10,9 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install dependencies
-      run: export COMPOSER_ROOT_VERSION=dev-master && composer install --prefer-dist --no-progress --no-suggest
-      
+      run: composer install --prefer-dist --no-progress --no-suggest
+      env:
+        COMPOSER_ROOT_VERSION: dev-master
+
     - name: Run Psalm
       run: ./psalm --threads=2 --shepherd
