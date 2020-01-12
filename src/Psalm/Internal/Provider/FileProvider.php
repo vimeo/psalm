@@ -6,6 +6,7 @@ use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function in_array;
+use function is_dir;
 use function strtolower;
 
 class FileProvider
