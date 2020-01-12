@@ -11046,7 +11046,7 @@ return [
 'ReflectionClassConstant::getDocComment' => ['string|false'],
 'ReflectionClassConstant::getModifiers' => ['int'],
 'ReflectionClassConstant::getName' => ['string'],
-'ReflectionClassConstant::getValue' => ['mixed'],
+'ReflectionClassConstant::getValue' => ['scalar|array<scalar>|null'],
 'ReflectionClassConstant::isPrivate' => ['bool'],
 'ReflectionClassConstant::isProtected' => ['bool'],
 'ReflectionClassConstant::isPublic' => ['bool'],
