@@ -22,7 +22,7 @@ composer install
 
 cd /tmp/testing-with-real-projects
 
-git clone git@github.com:ocramius/ProxyManager.git
+git clone git@github.com:muglug/ProxyManager.git
 cd ProxyManager
 composer install
 ~/project/psalm --monochrome
