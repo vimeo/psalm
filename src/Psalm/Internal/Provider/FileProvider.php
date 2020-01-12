@@ -39,6 +39,10 @@ class FileProvider
             throw new \UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
         }
 
+        if (is_dir($file_path)) {
+            throw new \UnexpectedValueException('File ' . $file_path . ' is a directory');
+        }
+
         return (string)file_get_contents($file_path);
     }
 
