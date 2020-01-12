@@ -58,6 +58,44 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
+    public function testUnusedSuppressAllOnFunction()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-suppress all */
+                function foo(): string {
+                    return "foo";
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUnusedSuppressAllOnStatement()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-suppress all */
+                print("foo");'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testMissingThrowsDocblockSuppressed()
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -240,6 +278,19 @@ class IssueSuppressionTest extends TestCase
                         unknown_function_call();
 
                         return new DateTime();
+                    }',
+            ],
+            'suppressAllStatementIssues' => [
+                '<?php
+                    /** @psalm-suppress all */
+                    strlen(123, 456, 789);',
+            ],
+            'suppressAllFunctionIssues' => [
+                '<?php
+                    /** @psalm-suppress all */
+                    function foo($a)
+                    {
+                        strlen(123, 456, 789);
                     }',
             ],
         ];
