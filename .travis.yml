@@ -37,6 +37,7 @@ before_install:
     - echo memory_limit = 2G >> $INI
     - if [[ "$XDEBUG" = 'false' && -f $INI_DIR/xdebug.ini ]]; then phpenv config-rm xdebug.ini; fi
     - if [[ $TRAVIS_PHP_VERSION = nightly ]]; then export DEFAULT_COMPOSER_FLAGS="$DEFAULT_COMPOSER_FLAGS --ignore-platform-reqs"; fi
+    - composer validate
     - composer clear-cache
 
 install:

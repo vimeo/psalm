@@ -7,6 +7,7 @@
          beStrictAboutOutputDuringTests="true"
          beStrictAboutTestsThatDoNotTestAnything="false"
          beStrictAboutTodoAnnotatedTests="true"
+         colors="true"
          verbose="true"
          executionOrder="default"
 >

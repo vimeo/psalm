@@ -145,6 +145,16 @@ class IssueBuffer
             }
         }
 
+        $suppress_all_position = array_search('all', $suppressed_issues);
+
+        if ($suppress_all_position !== false) {
+            if (\is_int($suppress_all_position)) {
+                self::$used_suppressions[$file_path][$suppress_all_position] = true;
+            }
+
+            return true;
+        }
+
         $reporting_level = $config->getReportingLevelForIssue($e);
 
         if ($reporting_level === Config::REPORT_SUPPRESS) {
