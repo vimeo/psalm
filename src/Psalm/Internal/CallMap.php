@@ -11735,7 +11735,7 @@ return [
 'SessionUpdateTimestampHandler::validateId' => ['char', 'id'=>'string'],
 'SessionUpdateTimestampHandlerInterface::updateTimestamp' => ['bool', 'key'=>'string', 'val'=>'string'],
 'SessionUpdateTimestampHandlerInterface::validateId' => ['bool', 'key'=>'string'],
-'set_error_handler' => ['?callable', 'error_handler'=>'null|callable(int,string,string=,int=,array=):bool', 'error_types='=>'int'],
+'set_error_handler' => ['null|callable(int,string,string=,int=,array=):bool', 'error_handler'=>'null|callable(int,string,string=,int=,array=):bool', 'error_types='=>'int'],
 'set_exception_handler' => ['null|callable(Throwable):void', 'exception_handler'=>'null|callable(Throwable):void'],
 'set_file_buffer' => ['int', 'fp'=>'resource', 'buffer'=>'int'],
 'set_include_path' => ['string|false', 'new_include_path'=>'string'],
