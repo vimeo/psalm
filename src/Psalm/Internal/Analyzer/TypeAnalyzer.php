@@ -293,13 +293,13 @@ class TypeAnalyzer
     /**
      * Used for comparing signature typehints, uses PHP's light contravariance rules
      *
-     * @param  Type\Union   $input_type
+     * @param  ?Type\Union  $input_type
      * @param  Type\Union   $container_type
      *
      * @return bool
      */
     public static function isContainedByInPhp(
-        Type\Union $input_type = null,
+        ?Type\Union $input_type,
         Type\Union $container_type
     ) {
         if (!$input_type) {
