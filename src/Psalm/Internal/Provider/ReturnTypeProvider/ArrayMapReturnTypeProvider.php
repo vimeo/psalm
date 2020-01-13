@@ -90,6 +90,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
             if ($closure_types = $function_call_type->getClosureTypes()) {
                 $closure_atomic_type = \reset($closure_types);
+
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
                 if ($closure_return_type->isVoid()) {

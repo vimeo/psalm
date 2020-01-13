@@ -592,7 +592,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
 
             if ($closure_return_types) {
-                $closure_return_type = new Type\Union($closure_return_types);
+                $closure_return_type = \Psalm\Internal\Type\TypeCombination::combineTypes(
+                    $closure_return_types,
+                    $codebase
+                );
 
                 if (($storage->return_type === $storage->signature_return_type)
                     && (!$storage->return_type
