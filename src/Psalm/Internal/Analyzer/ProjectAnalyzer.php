@@ -320,10 +320,10 @@ class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        if (ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
+        if (\ini_get('pcre.jit') === '1'
+            && \PHP_OS === 'Darwin'
+            && \version_compare(\PHP_VERSION, '7.3.0') >= 0
+            && \version_compare(\PHP_VERSION, '7.4.0') < 0
         ) {
             // do nothing
         } else {
