@@ -72,7 +72,7 @@ class Pool
     public const MAC_PCRE_MESSAGE = 'Mac users: pcre.jit is set to 1 in your PHP config.' . PHP_EOL
         . 'The pcre jit is known to cause segfaults in PHP 7.3 on Macs, and Psalm' . PHP_EOL
         . 'will not execute in threaded mode to avoid indecipherable errors.' . PHP_EOL
-        . 'Consider adding pcre.jit=0 to your PHP config.' . PHP_EOL
+        . 'Consider adding pcre.jit=0 to your PHP config, or upgrade to PHP 7.4.' . PHP_EOL
         . 'Relevant info: https://bugs.php.net/bug.php?id=77260';
 
     /**

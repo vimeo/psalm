@@ -185,14 +185,6 @@ if (array_key_exists('v', $options)) {
     exit;
 }
 
-if (ini_get('pcre.jit') === '1'
-    && PHP_OS === 'Darwin'
-    && version_compare(PHP_VERSION, '7.3.0') >= 0
-    && version_compare(PHP_VERSION, '7.4.0') < 0
-) {
-    die(\Psalm\Internal\Fork\Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL);
-}
-
 $ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
 
 $ini_handler->disableExtension('grpc');

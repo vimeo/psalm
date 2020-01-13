@@ -320,13 +320,21 @@ class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        $cpu_count = self::getCpuCount();
+        if (ini_get('pcre.jit') === '1'
+            && PHP_OS === 'Darwin'
+            && version_compare(PHP_VERSION, '7.3.0') >= 0
+            && version_compare(PHP_VERSION, '7.4.0') < 0
+        ) {
+            // do nothing
+        } else {
+            $cpu_count = self::getCpuCount();
 
-        // let's not go crazy
-        $usable_cpus = $cpu_count - 2;
+            // let's not go crazy
+            $usable_cpus = $cpu_count - 2;
 
-        if ($usable_cpus > 1) {
-            $this->threads = $usable_cpus;
+            if ($usable_cpus > 1) {
+                $this->threads = $usable_cpus;
+            }
         }
 
         $this->config->initializePlugins($this);
