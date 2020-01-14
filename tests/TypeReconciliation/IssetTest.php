@@ -742,6 +742,30 @@ class IssetTest extends \Psalm\Tests\TestCase
                         return "bar";
                     }',
             ],
+            'issetOnMethodCallInsideFunctionCall' => [
+                '<?php
+                    class C {
+                        public function foo() : ?string {
+                            return null;
+                        }
+                    }
+
+                    function foo(C $c) : void {
+                        strlen($c->foo() ?? "");
+                    }'
+            ],
+            'issetOnMethodCallInsideMethodCall' => [
+                '<?php
+                    class C {
+                        public function foo() : ?string {
+                            return null;
+                        }
+                    }
+
+                    function foo(C $c) : void {
+                        new DateTime($c->foo() ?? "");
+                    }'
+            ],
         ];
     }
 

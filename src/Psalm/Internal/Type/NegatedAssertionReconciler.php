@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -104,14 +105,28 @@ class NegatedAssertionReconciler extends Reconciler
                             $failed_reconciliation = 2;
 
                             if ($code_location) {
-                                if (IssueBuffer::accepts(
-                                    new TypeDoesNotContainType(
-                                        'Cannot resolve types for ' . $key . ' and !isset assertion',
-                                        $code_location
-                                    ),
-                                    $suppressed_issues
-                                )) {
-                                    // fall through
+                                if ($existing_var_type->from_docblock) {
+                                    if (IssueBuffer::accepts(
+                                        new DocblockTypeContradiction(
+                                            'Cannot resolve types for ' . $key . ' with docblock-defined type '
+                                                . $existing_var_type . ' and !isset assertion',
+                                            $code_location
+                                        ),
+                                        $suppressed_issues
+                                    )) {
+                                        // fall through
+                                    }
+                                } else {
+                                    if (IssueBuffer::accepts(
+                                        new TypeDoesNotContainType(
+                                            'Cannot resolve types for ' . $key . ' with type '
+                                                . $existing_var_type . ' and !isset assertion',
+                                            $code_location
+                                        ),
+                                        $suppressed_issues
+                                    )) {
+
+                                    }
                                 }
                             }
 
