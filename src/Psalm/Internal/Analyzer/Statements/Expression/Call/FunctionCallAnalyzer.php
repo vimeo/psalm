@@ -941,7 +941,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             $context
                         );
 
-                        $statements_analyzer->node_data->setType($stmt, $const_type);
+                        if ($const_type) {
+                            $statements_analyzer->node_data->setType($stmt, $const_type);
+                        }
                     }
                 } else {
                     $context->check_consts = false;
