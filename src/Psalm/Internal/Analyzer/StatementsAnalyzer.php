@@ -2273,7 +2273,13 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($this->isSuperGlobal($var_id)) {
-            return Type::getArray();
+            $type = Type::getArray();
+
+            if ($var_id === '$_SESSION') {
+                $type->possibly_undefined = true;
+            }
+
+            return $type;
         }
 
         return Type::getMixed();

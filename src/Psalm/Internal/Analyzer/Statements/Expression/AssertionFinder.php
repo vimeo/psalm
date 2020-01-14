@@ -393,32 +393,21 @@ class AssertionFinder
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
-            $var_name = ExpressionAnalyzer::getArrayVarId(
-                $conditional->left,
+            return self::scrapeAssertions(
+                new PhpParser\Node\Expr\Ternary(
+                    new PhpParser\Node\Expr\Isset_(
+                        [$conditional->left]
+                    ),
+                    $conditional->left,
+                    $conditional->right,
+                    $conditional->getAttributes()
+                ),
                 $this_class_name,
-                $source
+                $source,
+                $codebase,
+                $inside_negation,
+                false
             );
-
-            if ($var_name) {
-                $if_types[$var_name] = [['isset']];
-            } else {
-                // look for any variables we *can* use for an isset assertion
-                $array_root = $conditional->left;
-
-                while ($array_root instanceof PhpParser\Node\Expr\ArrayDimFetch && !$var_name) {
-                    $array_root = $array_root->var;
-
-                    $var_name = ExpressionAnalyzer::getArrayVarId(
-                        $array_root,
-                        $this_class_name,
-                        $source
-                    );
-                }
-
-                if ($var_name) {
-                    $if_types[$var_name] = [['=isset']];
-                }
-            }
 
             return $if_types;
         }

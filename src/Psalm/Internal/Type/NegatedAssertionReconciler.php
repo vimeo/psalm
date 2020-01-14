@@ -96,7 +96,6 @@ class NegatedAssertionReconciler extends Reconciler
                 if (!$existing_var_type->isNullable()
                     && $key
                     && strpos($key, '[') === false
-                    && strpos($key, '->') === false
                 ) {
                     foreach ($existing_var_type->getAtomicTypes() as $atomic) {
                         if (!$atomic instanceof TMixed

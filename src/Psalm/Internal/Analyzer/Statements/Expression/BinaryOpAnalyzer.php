@@ -674,6 +674,7 @@ class BinaryOpAnalyzer
                 $naive_type = $statements_analyzer->node_data->getType($stmt->left);
 
                 if ($naive_type
+                    && !$naive_type->possibly_undefined
                     && !$naive_type->hasMixed()
                     && !$naive_type->isNullable()
                 ) {
