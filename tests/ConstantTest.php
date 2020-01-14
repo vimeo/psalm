@@ -477,6 +477,11 @@ class ConstantTest extends TestCase
 
                     test(Test::VALUES);'
             ],
+            'resolveConstantFetchViaFunction' => [
+                '<?php
+                    const FOO = 1;
+                    echo \constant("FOO");'
+            ],
         ];
     }
 

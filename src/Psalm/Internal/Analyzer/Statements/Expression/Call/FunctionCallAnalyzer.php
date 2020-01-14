@@ -925,6 +925,27 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 } else {
                     $context->check_consts = false;
                 }
+            } elseif ($function->parts === ['constant']) {
+                if ($first_arg) {
+                    $fq_const_name = StatementsAnalyzer::getConstName(
+                        $first_arg->value,
+                        $statements_analyzer->node_data,
+                        $codebase,
+                        $statements_analyzer->getAliases()
+                    );
+
+                    if ($fq_const_name !== null) {
+                        $const_type = $statements_analyzer->getConstType(
+                            $fq_const_name,
+                            true,
+                            $context
+                        );
+
+                        $statements_analyzer->node_data->setType($stmt, $const_type);
+                    }
+                } else {
+                    $context->check_consts = false;
+                }
             } elseif ($first_arg
                 && $function_id
                 && strpos($function_id, 'is_') === 0
