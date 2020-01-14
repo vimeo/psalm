@@ -408,8 +408,6 @@ class AssertionFinder
                 $inside_negation,
                 false
             );
-
-            return $if_types;
         }
 
         return [];
