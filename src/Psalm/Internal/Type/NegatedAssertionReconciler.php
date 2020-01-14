@@ -125,7 +125,7 @@ class NegatedAssertionReconciler extends Reconciler
                                         ),
                                         $suppressed_issues
                                     )) {
-
+                                        // fall through
                                     }
                                 }
                             }
