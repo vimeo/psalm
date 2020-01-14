@@ -1298,6 +1298,28 @@ class ArrayAssignmentTest extends TestCase
                         }
                     }',
             ],
+            'propertyAssignmentToObjectLikeIntKeys' => [
+                '<?php
+                    class Bar {
+                        /** @var array{0: string, 1:string} */
+                        private array $baz = ["a", "b"];
+
+                        public function append(string $str) : void {
+                            $this->baz[rand(0, 1) ? 0 : 1] = $str;
+                        }
+                    }'
+            ],
+            'propertyAssignmentToObjectLikeStringKeys' => [
+                '<?php
+                    class Bar {
+                        /** @var array{a: string, b:string} */
+                        private array $baz = ["a" => "c", "b" => "d"];
+
+                        public function append(string $str) : void {
+                            $this->baz[rand(0, 1) ? "a" : "b"] = $str;
+                        }
+                    }',
+            ],
         ];
     }
 
