@@ -2156,6 +2156,8 @@ class TypeAnalyzer
                 || !$container_type_part instanceof TNonEmptyList;
         }
 
+        $prior_input_type_part = $input_type_part;
+
         if (($input_type_part instanceof TArray
                 || $input_type_part instanceof ObjectLike
                 || $input_type_part instanceof TList
@@ -2293,8 +2295,16 @@ class TypeAnalyzer
 
         if ($container_type_part instanceof Type\Atomic\TNonEmptyArray
             && !$input_type_part instanceof Type\Atomic\TNonEmptyArray
-            && !($input_type_part instanceof ObjectLike
-                && ($input_type_part->sealed || $input_type_part->previous_value_type)
+            && !($prior_input_type_part instanceof ObjectLike
+                && ($prior_input_type_part->sealed
+                    || $prior_input_type_part->previous_value_type
+                    || \array_filter(
+                        $prior_input_type_part->properties,
+                        function ($prop_type) {
+                            return !$prop_type->possibly_undefined;
+                        }
+                    )
+                )
             )
         ) {
             if ($all_types_contain) {
