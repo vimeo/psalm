@@ -7,7 +7,7 @@ cd /tmp/
 mkdir testing-with-real-projects
 cd testing-with-real-projects
 
-git clone git@github.com:sebastianbergmann/phpunit.git
+git clone git@github.com:muglug/phpunit.git
 cd phpunit
 composer install
 ~/project/build/psalm.phar --config=.psalm/config.xml --monochrome --show-info=false
