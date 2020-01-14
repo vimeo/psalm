@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -90,6 +91,34 @@ class NegatedAssertionReconciler extends Reconciler
             if ($assertion === 'isset') {
                 if ($existing_var_type->possibly_undefined) {
                     return Type::getEmpty();
+                }
+
+                if (!$existing_var_type->isNullable()
+                    && $key
+                    && strpos($key, '[') === false
+                    && strpos($key, '->') === false
+                ) {
+                    foreach ($existing_var_type->getAtomicTypes() as $atomic) {
+                        if (!$atomic instanceof TMixed
+                            || $atomic instanceof Type\Atomic\TNonEmptyMixed
+                        ) {
+                            $failed_reconciliation = 2;
+
+                            if ($code_location) {
+                                if (IssueBuffer::accepts(
+                                    new TypeDoesNotContainType(
+                                        'Cannot resolve types for ' . $key . ' and !isset assertion',
+                                        $code_location
+                                    ),
+                                    $suppressed_issues
+                                )) {
+                                    // fall through
+                                }
+                            }
+
+                            return Type::getEmpty();
+                        }
+                    }
                 }
 
                 return Type::getNull();

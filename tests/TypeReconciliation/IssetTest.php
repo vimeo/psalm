@@ -787,6 +787,16 @@ class IssetTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'stringIsAlwaysSet' => [
+                '<?php
+                    function foo(string $s) : string {
+                        if (!isset($s)) {
+                            return "foo";
+                        }
+                        return "bar";
+                    }',
+                'error_message' => 'TypeDoesNotContainType'
+            ],
         ];
     }
 }

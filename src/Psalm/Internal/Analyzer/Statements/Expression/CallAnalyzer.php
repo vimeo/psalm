@@ -2032,14 +2032,11 @@ class CallAnalyzer
                 break;
             }
 
-            $array_arg = isset($arg->value) ? $arg->value : null;
-
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
              * @var ObjectLike|TArray|TList|null
              */
-            $array_arg_type = $array_arg
-                    && ($arg_value_type = $statements_analyzer->node_data->getType($array_arg))
+            $array_arg_type = ($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     && ($types = $arg_value_type->getAtomicTypes())
                     && isset($types['array'])
                 ? $types['array']
