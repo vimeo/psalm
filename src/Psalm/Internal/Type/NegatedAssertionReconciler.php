@@ -99,7 +99,7 @@ class NegatedAssertionReconciler extends Reconciler
                     && strpos($key, '[') === false
                 ) {
                     foreach ($existing_var_type->getAtomicTypes() as $atomic) {
-                        if (!$atomic instanceof TMixed
+                        if (!$existing_var_type->hasMixed()
                             || $atomic instanceof Type\Atomic\TNonEmptyMixed
                         ) {
                             $failed_reconciliation = 2;
