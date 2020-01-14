@@ -459,6 +459,24 @@ class ConstantTest extends TestCase
                         public const BAR = "bar";
                     }'
             ],
+            'resolveConstArrayAsList' => [
+                '<?php
+                    class Test {
+                        public const VALUES = [
+                            "all",
+                            "own"
+                        ];
+                    }
+
+                    /**
+                     * @psalm-param list<"all"|"own"|"mine"> $value
+                     */
+                    function test($value): void {
+                        print_r($value);
+                    }
+
+                    test(Test::VALUES);'
+            ],
         ];
     }
 

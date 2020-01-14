@@ -1811,6 +1811,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             $can_create_objectlike = true;
 
+            $is_list = true;
+
             foreach ($stmt->items as $int_offset => $item) {
                 if ($item === null) {
                     continue;
@@ -1874,7 +1876,15 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     } else {
                         $can_create_objectlike = false;
                     }
+
+                    if ($item->key
+                        && (!$item->key instanceof PhpParser\Node\Scalar\LNumber
+                            || $item->key->value !== $int_offset)
+                    ) {
+                        $is_list = false;
+                    }
                 } else {
+                    $is_list = false;
                     $dim_type = $single_item_key_type;
 
                     if (!$dim_type) {
@@ -1924,6 +1934,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             ) {
                 $objectlike = new Type\Atomic\ObjectLike($property_types, $class_strings);
                 $objectlike->sealed = true;
+                $objectlike->is_list = $is_list;
                 return new Type\Union([$objectlike]);
             }
 
