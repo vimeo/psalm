@@ -750,22 +750,19 @@ class TypeAnalyzer
         if ($container_type_part instanceof ObjectLike
             && $input_type_part instanceof TArray
         ) {
-            $all_string_literals = true;
-            $all_int_literals = true;
+            $all_string_int_literals = true;
 
             $properties = [];
 
             foreach ($input_type_part->type_params[0]->getAtomicTypes() as $atomic_key_type) {
                 if ($atomic_key_type instanceof TLiteralString || $atomic_key_type instanceof TLiteralInt) {
                     $properties[$atomic_key_type->value] = $input_type_part->type_params[1];
-                } elseif ($atomic_key_type instanceof TLiteralInt) {
-                    $all_string_literals = false;
                 } else {
-                    $all_int_literals = false;
+                    $all_string_int_literals = false;
                 }
             }
 
-            if ($all_string_literals || $all_int_literals) {
+            if ($all_string_int_literals) {
                 $input_type_part = new ObjectLike($properties);
             }
         }
