@@ -680,7 +680,9 @@ class BinaryOpAnalyzer
                 ) {
                     $var_id = ExpressionAnalyzer::getVarId($stmt->left, $context->self);
 
-                    if (!$var_id || !isset($changed_var_ids[$var_id])) {
+                    if (!$var_id
+                        || ($var_id !== '$_SESSION' && $var_id !== '$_SERVER' && !isset($changed_var_ids[$var_id]))
+                    ) {
                         if ($naive_type->from_docblock) {
                             if (IssueBuffer::accepts(
                                 new \Psalm\Issue\DocblockTypeContradiction(

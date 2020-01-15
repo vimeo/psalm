@@ -525,6 +525,10 @@ class IssetTest extends \Psalm\Tests\TestCase
                 '<?php
                     $a = $_SESSION ?? [];',
             ],
+            'sessionIssetNull' => [
+                '<?php
+                    $a = isset($_SESSION) ? $_SESSION : [];',
+            ],
             'issetSeparateNegated' => [
                 '<?php
                     function foo(?string $a, ?string $b): string {

@@ -310,6 +310,7 @@ class Reconciler
                 && !$result_type->hasType('iterable')
                 && (!$has_isset || substr($key, -1, 1) !== ']')
                 && !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
+                && $key !== '$_SESSION'
             ) {
                 $reconciled_parts = array_map(
                     function (array $new_type_part_parts): string {
