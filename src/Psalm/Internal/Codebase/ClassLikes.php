@@ -1624,6 +1624,8 @@ class ClassLikes
                 return new Type\Atomic\TArray([Type::getEmpty(), Type::getEmpty()]);
             }
 
+            $is_list = true;
+
             foreach ($c->entries as $i => $entry) {
                 if ($entry->key) {
                     $key_type = $this->resolveConstantType(
@@ -1631,6 +1633,12 @@ class ClassLikes
                         $statements_analyzer,
                         $visited_constant_ids + [$c_id => true]
                     );
+
+                    if (!$key_type instanceof Type\Atomic\TLiteralInt
+                        || $key_type->value !== $i
+                    ) {
+                        $is_list = false;
+                    }
                 } else {
                     $key_type = new Type\Atomic\TLiteralInt($i);
                 }
@@ -1652,7 +1660,11 @@ class ClassLikes
                 $properties[$key_value] = $value_type;
             }
 
-            return new Type\Atomic\ObjectLike($properties);
+            $objectlike = new Type\Atomic\ObjectLike($properties);
+
+            $objectlike->is_list = $is_list;
+
+            return $objectlike;
         }
 
         if ($c instanceof UnresolvedConstant\ClassConstant) {

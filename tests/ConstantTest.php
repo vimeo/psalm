@@ -461,10 +461,23 @@ class ConstantTest extends TestCase
             ],
             'resolveConstArrayAsList' => [
                 '<?php
-                    class Test {
-                        public const VALUES = [
+                    class Test1 {
+                        const VALUES = [
                             "all",
                             "own"
+                        ];
+                    }
+
+                    class Credentials {
+                        const ALL  = "all";
+                        const OWN  = "own";
+                        const NONE = "none";
+                    }
+
+                    class Test2 {
+                        const VALUES = [
+                            Credentials::ALL,
+                            Credentials::OWN
                         ];
                     }
 
@@ -475,7 +488,8 @@ class ConstantTest extends TestCase
                         print_r($value);
                     }
 
-                    test(Test::VALUES);'
+                    test(Test1::VALUES);
+                    test(Test2::VALUES);'
             ],
             'resolveConstantFetchViaFunction' => [
                 '<?php
