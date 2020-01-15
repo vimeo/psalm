@@ -152,7 +152,8 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                 }
             }
 
-            if ($second_arg_value instanceof PhpParser\Node\Expr\Closure
+            if (($second_arg_value instanceof PhpParser\Node\Expr\Closure
+                    || $second_arg_value instanceof PhpParser\Node\Expr\ArrowFunction)
                 && ($second_arg_type = $statements_source->node_data->getType($second_arg_value))
                 && ($closure_types = $second_arg_type->getClosureTypes())
             ) {
@@ -171,9 +172,9 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     return Type::getArray();
                 }
 
-                if (count($second_arg_value->stmts) === 1 && count($second_arg_value->params)) {
+                if (count($second_arg_value->getStmts()) === 1 && count($second_arg_value->params)) {
                     $first_param = $second_arg_value->params[0];
-                    $stmt = $second_arg_value->stmts[0];
+                    $stmt = $second_arg_value->getStmts()[0];
 
                     if ($first_param->variadic === false
                         && $first_param->var instanceof PhpParser\Node\Expr\Variable
