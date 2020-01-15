@@ -15163,7 +15163,7 @@ return [
 'VarnishStat::__construct' => ['void', 'args='=>'array'],
 'VarnishStat::getSnapshot' => ['array'],
 'version_compare' => ['bool', 'ver1'=>'string', 'ver2'=>'string', 'oper'=>'\'\x3c\'|\'lt\'|\'\x3c=\'|\'le\'|\'\x3e\'|\'gt\'|\'\x3e=\'|\'ge\'|\'==\'|\'=\'|\'eq\'|\'!=\'|\'\x3c\x3e\'|\'ne\''],
-'version_compare\'1' => ['int', 'ver1'=>'string', 'ver2'=>'string', 'oper='=>''],
+'version_compare\'1' => ['int', 'ver1'=>'string', 'ver2'=>'string'],
 'vfprintf' => ['int', 'stream'=>'resource', 'format'=>'string', 'args'=>'array'],
 'virtual' => ['bool', 'uri'=>'string'],
 'vpopmail_add_alias_domain' => ['bool', 'domain'=>'string', 'aliasdomain'=>'string'],
