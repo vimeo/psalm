@@ -111,7 +111,7 @@ class TList extends \Psalm\Type\Atomic
     public function setFromDocblock()
     {
         $this->from_docblock = true;
-        $this->type_param->from_docblock = true;
+        $this->type_param->setFromDocblock();
     }
 
     public function replaceTemplateTypesWithStandins(
