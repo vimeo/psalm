@@ -1836,7 +1836,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $item_key_type = Type::combineUnionTypes(
                                 $single_item_key_type,
                                 $item_key_type,
-                                $codebase,
+                                null,
                                 false,
                                 true,
                                 30
@@ -1916,7 +1916,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $item_value_type = Type::combineUnionTypes(
                         $single_item_value_type,
                         $item_value_type,
-                        $codebase,
+                        null,
                         false,
                         true,
                         30
