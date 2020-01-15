@@ -1399,6 +1399,7 @@ class FunctionCallTest extends TestCase
             ],
             'versionCompare' => [
                 '<?php
+                    /** @return "==="|"==" */
                     function getString() : string {
                         return rand(0, 1) ? "===" : "==";
                     }
