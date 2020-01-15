@@ -2,7 +2,7 @@
 namespace Psalm\Progress;
 
 use const PHP_EOL;
-use function round;
+use function floor;
 use function sprintf;
 use function str_repeat;
 use function strlen;
@@ -87,7 +87,8 @@ class LongProgress extends Progress
         }
 
         $leadingSpaces = 1 + strlen((string) $this->number_of_tasks) - strlen((string) $this->progress);
-        $percentage = round($this->progress / $this->number_of_tasks * 100);
+        // Don't show 100% unless this is the last line of the progress bar.
+        $percentage = floor($this->progress / $this->number_of_tasks * 100);
 
         return sprintf(
             '%s%s / %s (%s%%)',
