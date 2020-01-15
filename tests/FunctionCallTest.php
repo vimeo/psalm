@@ -1413,6 +1413,7 @@ class FunctionCallTest extends TestCase
                     '$b' => 'bool',
                     '$c' => 'bool|null',
                 ],
+                'error_levels' => ['PossiblyInvalidArgument'],
             ],
             'getTimeOfDay' => [
                 '<?php
