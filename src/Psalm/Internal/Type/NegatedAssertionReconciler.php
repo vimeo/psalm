@@ -131,7 +131,9 @@ class NegatedAssertionReconciler extends Reconciler
                                 }
                             }
 
-                            return Type::getEmpty();
+                            return $existing_var_type->from_docblock
+                                ? Type::getNull()
+                                : Type::getEmpty();
                         }
                     }
                 }

@@ -515,6 +515,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 case Type\Atomic\TTemplateParam::class:
                 case Type\Atomic\TEmptyMixed::class:
+                case Type\Atomic\TEmpty::class:
                 case Type\Atomic\TMixed::class:
                 case Type\Atomic\TNonEmptyMixed::class:
                 case Type\Atomic\TObject::class:
