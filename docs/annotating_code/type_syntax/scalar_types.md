@@ -39,8 +39,8 @@ Psalm also supports a `trait-string` annotation denote a trait that exists.
 
 ### callable-string
 
-`callable-string` denotes the a string value that has passed an `is_callable`  check.
+`callable-string` denotes a string value that has passed an `is_callable` check.
 
 ### numeric-string
 
-`numeric-string` denotes the a string value that has passed an `is_numeric`  check.
+`numeric-string` denotes a string value that has passed an `is_numeric` check.
