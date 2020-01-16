@@ -21,6 +21,7 @@ use function get_defined_functions;
 use function in_array;
 use function intval;
 use function is_dir;
+use function is_file;
 use function json_decode;
 use function libxml_clear_errors;
 use const LIBXML_ERR_ERROR;
