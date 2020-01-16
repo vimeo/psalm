@@ -1195,6 +1195,20 @@ class ConfigTest extends \Psalm\Tests\TestCase
         }
     }
 
+    /** @return void */
+    public function testModularConfig()
+    {
+        $root = __DIR__ . '/../fixtures/ModularConfig';
+        $config = Config::loadFromXMLFile($root . '/psalm.xml', $root);
+        $this->assertEquals(
+            [
+                realpath($root . '/Bar.php'),
+                realpath($root . '/Bat.php')
+            ],
+            $config->getProjectFiles()
+        );
+    }
+
     public function tearDown(): void
     {
         parent::tearDown();

@@ -11,6 +11,29 @@ Psalm uses an XML config file (by default, `psalm.xml`). A barebones example loo
 </psalm>
 ```
 
+Configuration file may be split into several files using [XInclude](https://www.w3.org/TR/xinclude/) tags (c.f. previous example):
+#### psalm.xml
+```xml
+<?xml version="1.0"?>
+<psalm
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    xmlns:xi="http://www.w3.org/2001/XInclude"
+>
+    <xi:include href="files.xml"/>
+</psalm>
+```
+#### files.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<projectFiles xmlns="https://getpsalm.org/schema/config">
+    <file name="Bar.php" />
+    <file name="Bat.php" />
+</projectFiles>
+```
+
+
 ## Optional `<psalm />` attributes
 
 ### Coding style
