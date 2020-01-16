@@ -1560,8 +1560,10 @@ class Config
 
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
 
-        if (file_exists($phpstorm_meta_path)) {
+        if (is_file($phpstorm_meta_path)) {
             $stub_files[] = $phpstorm_meta_path;
+        } elseif (is_dir($phpstorm_meta_path)) {
+            $progress->debug('phpstorm meta path not included in stub files list as it is a directory' . "\n");
         }
 
         if ($this->load_xdebug_stub) {
