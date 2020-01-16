@@ -18,6 +18,7 @@ use function filetype;
 use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
+use function glob;
 use function in_array;
 use function intval;
 use function is_dir;
@@ -1564,7 +1565,13 @@ class Config
         if (is_file($phpstorm_meta_path)) {
             $stub_files[] = $phpstorm_meta_path;
         } elseif (is_dir($phpstorm_meta_path)) {
-            $progress->debug('phpstorm meta path not included in stub files list as it is a directory' . "\n");
+            $phpstorm_meta_path = realpath($phpstorm_meta_path);
+
+            foreach (glob($phpstorm_meta_path . '/*.meta.php') as $glob) {
+                if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
+                    $stub_files[] = $glob;
+                }
+            }
         }
 
         if ($this->load_xdebug_stub) {
