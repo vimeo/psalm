@@ -39,34 +39,42 @@ class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnT
             $fetch_mode = $first_arg_type->getSingleIntLiteral()->value;
 
             switch ($fetch_mode) {
-                case \PDO::FETCH_ASSOC: // array<string,scalar>
+                case \PDO::FETCH_ASSOC: // array<string,scalar>|false
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             Type::getString(),
-                            Type::getScalar()
+                            Type::getScalar(),
                         ]),
+                        new Type\Atomic\TFalse(),
                     ]);
 
-                case \PDO::FETCH_BOTH: // array<array-key,scalar>
+                case \PDO::FETCH_BOTH: // array<array-key,scalar>|false
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             Type::getArrayKey(),
                             Type::getScalar()
                         ]),
+                        new Type\Atomic\TFalse(),
                     ]);
 
-                case \PDO::FETCH_BOUND: // true
-                    return Type::getTrue();
+                case \PDO::FETCH_BOUND: // bool
+                    return Type::getBool();
 
-                case \PDO::FETCH_CLASS: // object
-                    return Type::getObject();
+                case \PDO::FETCH_CLASS: // object|false
+                    return new Type\Union([
+                        new Type\Atomic\TObject(),
+                        new Type\Atomic\TFalse(),
+                    ]);
 
-                case \PDO::FETCH_LAZY: // object
+                case \PDO::FETCH_LAZY: // object|false
                     // This actually returns a PDORow object, but that class is
                     // undocumented, and its attributes are all dynamic anyway
-                    return Type::getObject();
+                    return new Type\Union([
+                        new Type\Atomic\TObject(),
+                        new Type\Atomic\TFalse(),
+                    ]);
 
-                case \PDO::FETCH_NAMED: // array<string, scalar|list<scalar>>
+                case \PDO::FETCH_NAMED: // array<string, scalar|list<scalar>>|false
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             Type::getString(),
@@ -75,16 +83,19 @@ class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnT
                                 new Type\Atomic\TList(Type::getScalar())
                             ])
                         ]),
+                        new Type\Atomic\TFalse(),
                     ]);
 
-                case \PDO::FETCH_NUM: // list<scalar>
+                case \PDO::FETCH_NUM: // list<scalar>|false
                     return new Type\Union([
-                        new Type\Atomic\TList(Type::getScalar())
+                        new Type\Atomic\TList(Type::getScalar()),
+                        new Type\Atomic\TFalse(),
                     ]);
 
-                case \PDO::FETCH_OBJ: // stdClass
+                case \PDO::FETCH_OBJ: // stdClass|false
                     return new Type\Union([
-                        new Type\Atomic\TNamedObject('stdClass')
+                        new Type\Atomic\TNamedObject('stdClass'),
+                        new Type\Atomic\TFalse(),
                     ]);
             }
         }

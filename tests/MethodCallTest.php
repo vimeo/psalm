@@ -428,8 +428,8 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchAssoc' => [
                 '<?php
-                    /** @return array<string,scalar> */
-                    function fetch_assoc() : array {
+                    /** @return array<string,scalar>|false */
+                    function fetch_assoc() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
@@ -438,8 +438,8 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchBoth' => [
                 '<?php
-                    /** @return array<scalar> */
-                    function fetch_both() : array {
+                    /** @return array<scalar>|false */
+                    function fetch_both() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
@@ -448,7 +448,7 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchBound' => [
                 '<?php
-                    /** @return true */
+                    /** @return bool */
                     function fetch_both() : bool {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
@@ -458,8 +458,8 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchClass' => [
                 '<?php
-                    /** @return object */
-                    function fetch_class() : object {
+                    /** @return object|false */
+                    function fetch_class() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
@@ -468,8 +468,8 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchLazy' => [
                 '<?php
-                    /** @return object */
-                    function fetch_lazy() : object {
+                    /** @return object|false */
+                    function fetch_lazy() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
@@ -478,8 +478,8 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchNamed' => [
                 '<?php
-                    /** @return array<string,scalar|list<scalar>> */
-                    function fetch_named() : array {
+                    /** @return array<string,scalar|list<scalar>>|false */
+                    function fetch_named() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
@@ -488,8 +488,8 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchNum' => [
                 '<?php
-                    /** @return list<scalar> */
-                    function fetch_named() : array {
+                    /** @return list<scalar>|false */
+                    function fetch_named() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
@@ -498,8 +498,8 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchObj' => [
                 '<?php
-                    /** @return stdClass */
-                    function fetch_named() : object {
+                    /** @return stdClass|false */
+                    function fetch_named() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
