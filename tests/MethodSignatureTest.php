@@ -885,7 +885,7 @@ class MethodSignatureTest extends TestCase
                     class B extends A {
                         use T;
                     }',
-                'error_message' => 'TraitMethodSignatureMismatch',
+                'error_message' => 'MethodSignatureMismatch',
             ],
             'abstractTraitMethodWithDifferentReturnType' => [
                 '<?php
@@ -918,7 +918,7 @@ class MethodSignatureTest extends TestCase
                     class B extends A {
                         use T;
                     }',
-                'error_message' => 'TraitMethodSignatureMismatch',
+                'error_message' => 'MethodSignatureMismatch',
             ],
             'abstractTraitMethodWithDifferentParamType' => [
                 '<?php
@@ -1167,6 +1167,36 @@ class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'InvalidReturnType',
                 2 => ['InvalidParent'],
+            ],
+            'regularMethodMismatchFromParentUse' => [
+                '<?php
+                    trait T2 {
+                        abstract public function test(int $x) : void;
+                    }
+
+                    abstract class P2 {
+                        use T2;
+                    }
+
+                    class C2 extends P2 {
+                        public function test(string $x) : void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'regularMethodMismatchFromChildUse' => [
+                '<?php
+                    trait T3 {
+                        abstract public function test(int $x) : void;
+                    }
+
+                    class P3 {
+                        public function test(string $x) : void {}
+                    }
+
+                    class C3 extends P3 {
+                        use T3;
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
             ],
         ];
     }

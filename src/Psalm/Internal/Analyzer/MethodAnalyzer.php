@@ -594,6 +594,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
             if (!$is_contained_by) {
                 if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+                    || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
+                    || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
                     || (!$implementer_method_storage->abstract
                         && !$guide_method_storage->abstract)
                 ) {
@@ -912,6 +914,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     );
                 if (!$is_contained_by) {
                     if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+                        || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
+                        || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
                         || (!$implementer_method_storage->abstract
                             && !$guide_method_storage->abstract)
                     ) {
