@@ -532,17 +532,34 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $cased_guide_method_id = $guide_classlike_storage->name . '::' . $guide_method_storage->cased_name;
 
         if ($implementer_visibility > $guide_method_storage->visibility) {
+            if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+                || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
+                || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
+                || (!$implementer_method_storage->abstract
+                    && !$guide_method_storage->abstract)
+            ) {
+                if (IssueBuffer::accepts(
+                    new OverriddenMethodAccess(
+                        'Method ' . $cased_implementer_method_id . ' has different access level than '
+                            . $cased_guide_method_id,
+                        $code_location
+                    )
+                )) {
+                    // fall through
+                }
+
+                return null;
+            }
+
             if (IssueBuffer::accepts(
-                new OverriddenMethodAccess(
+                new TraitMethodSignatureMismatch(
                     'Method ' . $cased_implementer_method_id . ' has different access level than '
                         . $cased_guide_method_id,
                     $code_location
                 )
             )) {
-                return false;
+                // fall through
             }
-
-            return null;
         }
 
         if ($prevent_abstract_override
