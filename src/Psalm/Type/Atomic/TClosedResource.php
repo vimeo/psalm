@@ -16,7 +16,7 @@ class TClosedResource extends \Psalm\Type\Atomic
      */
     public function getKey()
     {
-        return 'resource';
+        return 'closed-resource';
     }
 
     /**

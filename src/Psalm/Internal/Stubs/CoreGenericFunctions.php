@@ -311,3 +311,11 @@ function array_fill_keys(array $keys, $value): array
 function preg_grep($pattern, array $input, $flags = 0)
 {
 }
+
+/**
+ * @param resource $handle
+ * @param-out closed-resource $handle
+ */
+function fclose(&$handle) : bool
+{
+}

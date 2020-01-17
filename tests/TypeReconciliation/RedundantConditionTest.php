@@ -760,7 +760,7 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                 '<?php
                     $fp = tmpfile();
 
-                    if ($fp && is_resource($fp)) {
+                    if ($fp) {
                         echo "foo", "\n";
                     } else {
                         echo "bar", "\n";
@@ -768,15 +768,10 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
 
                     echo var_export([$fp, is_resource($fp), !! $fp], true);
 
-                    fclose($fp);
-
-                    if ($fp && is_resource($fp)) {
-                        echo "baz", "\n";
-                    } else {
-                        echo "bat", "\n";
-                    }
-
-                    echo var_export([$fp, is_resource($fp), !! $fp], true);'
+                    fclose($fp);',
+                [
+                    '$fp' => 'closed-resource',
+                ]
             ],
         ];
     }

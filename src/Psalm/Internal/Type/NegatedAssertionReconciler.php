@@ -159,12 +159,6 @@ class NegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion === 'resource' && !$existing_var_type->hasMixed()) {
-            return self::reconcileResource(
-                $existing_var_type
-            );
-        }
-
         if ($assertion === 'scalar' && !$existing_var_type->hasMixed()) {
             return self::reconcileScalar(
                 $existing_var_type,
@@ -956,26 +950,6 @@ class NegatedAssertionReconciler extends Reconciler
         $failed_reconciliation = 2;
 
         return Type::getMixed();
-    }
-
-    private static function reconcileResource(
-        Type\Union $existing_var_type
-    ) : Type\Union {
-        $non_resource_types = [];
-
-        foreach ($existing_var_type->getAtomicTypes() as $type) {
-            if (!$type instanceof Type\Atomic\TResource) {
-                $non_resource_types[] = $type;
-            } else {
-                $non_resource_types[] = new Type\Atomic\TClosedResource();
-            }
-        }
-
-        $type = new Type\Union($non_resource_types);
-        $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
-        $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
-        $type->from_docblock = $existing_var_type->from_docblock;
-        return $type;
     }
 
     /**

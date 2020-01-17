@@ -1415,11 +1415,6 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TResource) {
-                if (!$type instanceof Type\Atomic\TOpenResource) {
-                    $did_remove_type = true;
-                    $type = new Type\Atomic\TOpenResource();
-                }
-
                 $resource_types[] = $type;
             } else {
                 $did_remove_type = true;
