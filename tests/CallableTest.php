@@ -713,6 +713,24 @@ class CallableTest extends TestCase
                         }
                     }'
             ],
+            'destructureCallableArray' => [
+                '<?php
+                    function getCallable(): callable {
+                        return [DateTimeImmutable::class, "createFromFormat"];
+                    }
+
+                    $callable = getCallable();
+
+                    if (!is_array($callable)) {
+                      exit;
+                    }
+
+                    [$classOrObject, $method] = $callable;',
+                [
+                    '$classOrObject' => 'class-string|object',
+                    '$method' => 'string'
+                ]
+            ],
         ];
     }
 

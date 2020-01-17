@@ -625,7 +625,7 @@ class Union
      */
     public function hasArray()
     {
-        return isset($this->types['array']);
+        return isset($this->types['array']) || isset($this->types['callable-array']);
     }
 
     /**
