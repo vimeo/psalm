@@ -848,6 +848,25 @@ class AssertAnnotationTest extends TestCase
                      */
                     function validate(array $data): void {}'
             ],
+            'nonEmptyList' => [
+                '<?php
+                    /**
+                     * @psalm-assert non-empty-list $array
+                     *
+                     * @param mixed  $array
+                     */
+                    function isNonEmptyList($array): void {}
+
+                    /**
+                     * @psalm-param mixed $value
+                     *
+                     * @psalm-return non-empty-list<mixed>
+                     */
+                    function consume($value): array {
+                        isNonEmptyList($value);
+                        return $value;
+                    }'
+            ],
         ];
     }
 
