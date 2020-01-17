@@ -170,10 +170,10 @@ class Creator
             if (count($parts) === 1) {
                 $nodes[] = '<file name="' . $php_file . '" />';
             } else {
-                $nodes[] = '<file name="' . $parts[0] . '" />';
+                $nodes[] = '<directory name="' . $parts[0] . '" />';
             }
         }
 
-        return $nodes;
+        return \array_unique($nodes);
     }
 }
