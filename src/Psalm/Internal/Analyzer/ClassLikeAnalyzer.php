@@ -58,6 +58,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         'array' => true,
         'object' => true,
         'resource' => true,
+        'resource (closed)' => true,
         'NULL' => true,
         'unknown type' => true,
     ];

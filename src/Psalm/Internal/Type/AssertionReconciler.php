@@ -235,6 +235,17 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
+        if ($assertion === 'resource' && !$existing_var_type->hasMixed()) {
+            return self::reconcileResource(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality
+            );
+        }
+
         if ($assertion === 'callable' && !$existing_var_type->hasMixed()) {
             return self::reconcileCallable(
                 $codebase,
@@ -1375,6 +1386,62 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($object_types) {
             return new Type\Union($object_types);
+        }
+
+        $failed_reconciliation = 2;
+
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getEmpty();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileResource(
+        Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ) : Union {
+        $old_var_type_string = $existing_var_type->getId();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
+
+        $resource_types = [];
+        $did_remove_type = false;
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type instanceof TResource) {
+                if (!$type instanceof Type\Atomic\TOpenResource) {
+                    $did_remove_type = true;
+                    $type = new Type\Atomic\TOpenResource();
+                }
+
+                $resource_types[] = $type;
+            } else {
+                $did_remove_type = true;
+            }
+        }
+
+        if ((!$resource_types || !$did_remove_type) && !$is_equality) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    'resource',
+                    !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+        }
+
+        if ($resource_types) {
+            return new Type\Union($resource_types);
         }
 
         $failed_reconciliation = 2;
