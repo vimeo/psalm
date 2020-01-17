@@ -101,6 +101,24 @@ class ConstFetchAnalyzer
             return Type::getResource();
         }
 
+        if ($fq_const_name) {
+            $stubbed_const_type = $codebase->getStubbedConstantType(
+                $fq_const_name
+            );
+
+            if ($stubbed_const_type) {
+                return $stubbed_const_type;
+            }
+        }
+
+        $stubbed_const_type = $codebase->getStubbedConstantType(
+            $const_name
+        );
+
+        if ($stubbed_const_type) {
+            return $stubbed_const_type;
+        }
+
         $predefined_constants = $codebase->config->getPredefinedConstants();
 
         if (($fq_const_name && array_key_exists($fq_const_name, $predefined_constants))
@@ -154,14 +172,6 @@ class ConstFetchAnalyzer
             }
 
             return ClassLikeAnalyzer::getTypeFromValue($predefined_constants[$const_name]);
-        }
-
-        $stubbed_const_type = $codebase->getStubbedConstantType(
-            $fq_const_name ?: $const_name
-        );
-
-        if ($stubbed_const_type) {
-            return $stubbed_const_type;
         }
 
         return null;
