@@ -258,6 +258,7 @@ class TryAnalyzer
 
                         if ($exception_fqcln_lower === $fq_catch_class_lower) {
                             unset($context->possibly_thrown_exceptions[$exception_fqcln]);
+                            unset($catch_context->possibly_thrown_exceptions[$exception_fqcln]);
                             continue;
                         }
 
@@ -268,6 +269,7 @@ class TryAnalyzer
                             )
                         ) {
                             unset($context->possibly_thrown_exceptions[$exception_fqcln]);
+                            unset($catch_context->possibly_thrown_exceptions[$exception_fqcln]);
                             continue;
                         }
 
@@ -278,10 +280,13 @@ class TryAnalyzer
                             )
                         ) {
                             unset($context->possibly_thrown_exceptions[$exception_fqcln]);
+                            unset($catch_context->possibly_thrown_exceptions[$exception_fqcln]);
                             continue;
                         }
                     }
                 }
+
+                $context->mergeExceptions($catch_context);
             }
 
             $catch_var_id = '$' . $catch_var_name;
@@ -397,6 +402,10 @@ class TryAnalyzer
                         $context->unreferenced_vars[$var_id] = $newly_unreferenced_vars[$var_id];
                     }
                 }
+            }
+
+            if ($catch_context->collect_exceptions) {
+                $context->mergeExceptions($catch_context);
             }
 
             if ($catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]

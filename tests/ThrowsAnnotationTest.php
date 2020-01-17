@@ -627,4 +627,35 @@ class ThrowsAnnotationTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
     }
+
+    /**
+     * @return void
+     */
+    public function testDocumentedThrowInsideCatch()
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @return void
+                 */
+                function foo() : void {
+                    try {
+                        throw new Exception("foo");
+                    } catch (Exception $e) {
+                        throw new RuntimeException("bar");
+                    }
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+
 }
