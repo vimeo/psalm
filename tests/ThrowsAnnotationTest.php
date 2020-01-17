@@ -656,6 +656,4 @@ class ThrowsAnnotationTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
     }
-
-
 }
