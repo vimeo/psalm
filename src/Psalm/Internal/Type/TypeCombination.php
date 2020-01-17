@@ -1214,24 +1214,6 @@ class TypeCombination
             }
         }
 
-        if ($type instanceof Type\Atomic\TOpenResource) {
-            $existing_resource = $combination->value_types['resource'] ?? null;
-
-            if ($existing_resource instanceof Type\Atomic\TClosedResource
-                || ($existing_resource && get_class($existing_resource) === Type\Atomic\TResource::class)
-            ) {
-                $type = new Type\Atomic\TResource();
-            }
-        }
-
-        if ($type instanceof Type\Atomic\TClosedResource) {
-            $existing_resource = $combination->value_types['resource'] ?? null;
-
-            if ($existing_resource instanceof Type\Atomic\TResource) {
-                $type = new Type\Atomic\TResource();
-            }
-        }
-
         $combination->value_types[$type_key] = $type;
     }
 

@@ -181,9 +181,6 @@ abstract class Atomic
             case 'resource':
                 return $php_version !== null ? new TNamedObject($value) : new TResource();
 
-            case 'open-resource':
-                return new Type\Atomic\TOpenResource();
-
             case 'resource (closed)':
             case 'closed-resource':
                 return new Type\Atomic\TClosedResource();
