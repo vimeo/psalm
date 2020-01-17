@@ -349,6 +349,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->registerClassMapFunctionCall($function_id, $node);
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
+            if ($this->skip_if_descendants) {
+                return;
+            }
+
             if (!$this->classlike_storages) {
                 throw new \LogicException('$this->classlike_storages should not be empty');
             }

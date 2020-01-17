@@ -2037,6 +2037,11 @@ class AssertionFinder
                     $source->getAliases()
                 );
 
+                if ($source instanceof StatementsAnalyzer) {
+                    $codebase = $source->getCodebase();
+                    $instanceof_class = $codebase->classlikes->getUnAliasedName($instanceof_class);
+                }
+
                 return [$instanceof_class];
             } elseif ($this_class_name
                 && (in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true))
