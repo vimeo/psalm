@@ -136,6 +136,15 @@ class TTemplateParam extends \Psalm\Type\Atomic
     }
 
     /**
+     * @return void
+     */
+    public function setFromDocblock()
+    {
+        $this->from_docblock = true;
+        $this->as->setFromDocblock();
+    }
+
+    /**
      * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
      *
      * @return void
