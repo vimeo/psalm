@@ -78,6 +78,10 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                                 );
                             }
 
+                            if (!$unpacked_type_part->is_list) {
+                                $all_nonempty_lists = false;
+                            }
+
                             $unpacked_type_part = $unpacked_type_part->getGenericArrayType();
                         } elseif ($unpacked_type_part instanceof Type\Atomic\TList) {
                             $generic_properties = null;
@@ -99,6 +103,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                         }
                     } elseif (!$unpacked_type_part->type_params[0]->isEmpty()) {
                         $generic_properties = null;
+                        $all_nonempty_lists = false;
                     }
 
                     if ($unpacked_type_part instanceof Type\Atomic\TArray) {
@@ -128,9 +133,13 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         }
 
         if ($generic_properties) {
-            return new Type\Union([
-                new Type\Atomic\ObjectLike($generic_properties),
-            ]);
+            $objectlike = new Type\Atomic\ObjectLike($generic_properties);
+
+            if ($all_nonempty_lists) {
+                $objectlike->is_list = true;
+            }
+
+            return new Type\Union([$objectlike]);
         }
 
         if ($inner_value_types) {
