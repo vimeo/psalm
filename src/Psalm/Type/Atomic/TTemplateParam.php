@@ -141,7 +141,10 @@ class TTemplateParam extends \Psalm\Type\Atomic
     public function setFromDocblock()
     {
         $this->from_docblock = true;
-        $this->as->setFromDocblock();
+
+        if (!$this->as->isMixed()) {
+            $this->as->setFromDocblock();
+        }
     }
 
     /**
