@@ -38,7 +38,7 @@ PHPDoc [allows you to specify](https://phpdoc.org/docs/latest/references/phpdoc/
 /** @return ValueType[] */
 ```
 
-In Psalm this annotation is equivalent to `array<int|string, ValueType>`.
+In Psalm this annotation is equivalent to `@psalm-return array<array-key, ValueType>`.
 
 Generic arrays encompass both _associative arrays_ and _lists_.
 
