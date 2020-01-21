@@ -663,6 +663,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
+            && !$implementer_method_storage->inherited_return_type
             && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
                 || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
