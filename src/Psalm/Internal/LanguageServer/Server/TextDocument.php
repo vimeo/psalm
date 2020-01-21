@@ -247,7 +247,14 @@ class TextDocument
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
-        $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
+        try {
+            $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
+        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+            $this->codebase->file_provider->openFile($file_path);
+            $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+
+            return new Success([]);
+        }
 
         if (!$completion_data) {
             error_log('completion not found at ' . $position->line . ':' . $position->character);
@@ -270,7 +277,14 @@ class TextDocument
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
-        $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
+        try {
+            $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
+        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+            $this->codebase->file_provider->openFile($file_path);
+            $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+
+            return new Success(new \LanguageServerProtocol\SignatureHelp());
+        }
 
         if ($argument_location === null) {
             return new Success(new \LanguageServerProtocol\SignatureHelp());
