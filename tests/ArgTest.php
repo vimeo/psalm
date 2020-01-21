@@ -94,6 +94,12 @@ class ArgTest extends TestCase
                     /** @psalm-suppress InvalidScalarArgument */
                     foo(bar());',
             ],
+            'unpackObjectlikeListArgs' => [
+                '<?php
+                    $a = [new DateTime(), 1];
+                    function f(DateTime $d, int $a): void {}
+                    f(...$a);',
+            ],
         ];
     }
 
