@@ -488,149 +488,147 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $class_interfaces = $storage->class_implements;
 
-        if (!$class->isAbstract()) {
-            foreach ($class_interfaces as $interface_name) {
-                try {
-                    $interface_storage = $classlike_storage_provider->get($interface_name);
-                } catch (\InvalidArgumentException $e) {
-                    continue;
+        foreach ($class_interfaces as $interface_name) {
+            try {
+                $interface_storage = $classlike_storage_provider->get($interface_name);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            $code_location = new CodeLocation(
+                $this,
+                $class->name ? $class->name : $class,
+                $class_context ? $class_context->include_location : null,
+                true
+            );
+
+            if ($interface_storage->deprecated) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedInterface(
+                        $interface_name . ' is marked deprecated',
+                        $code_location,
+                        $interface_name
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
+            }
 
-                $code_location = new CodeLocation(
-                    $this,
-                    $class->name ? $class->name : $class,
-                    $class_context ? $class_context->include_location : null,
-                    true
-                );
-
-                if ($interface_storage->deprecated) {
-                    if (IssueBuffer::accepts(
-                        new DeprecatedInterface(
-                            $interface_name . ' is marked deprecated',
-                            $code_location,
-                            $interface_name
-                        ),
-                        $storage->suppressed_issues + $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+            if ($interface_storage->external_mutation_free
+                && !$storage->external_mutation_free
+            ) {
+                if (IssueBuffer::accepts(
+                    new MissingImmutableAnnotation(
+                        $interface_name . ' is marked immutable, but '
+                            . $fq_class_name . ' is not marked immutable',
+                        $code_location
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
+            }
 
-                if ($interface_storage->external_mutation_free
-                    && !$storage->external_mutation_free
-                ) {
-                    if (IssueBuffer::accepts(
-                        new MissingImmutableAnnotation(
-                            $interface_name . ' is marked immutable, but '
-                                . $fq_class_name . ' is not marked immutable',
-                            $code_location
-                        ),
-                        $storage->suppressed_issues + $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
+            foreach ($interface_storage->methods as $method_name => $interface_method_storage) {
+                if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
+                    $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
+                        $this->fq_class_name . '::' . $method_name
+                    );
 
-                foreach ($interface_storage->methods as $method_name => $interface_method_storage) {
-                    if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
-                        $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
-                            $this->fq_class_name . '::' . $method_name
+                    $implementer_method_storage = null;
+                    $implementer_classlike_storage = null;
+
+                    if ($implementer_declaring_method_id) {
+                        list($implementer_fq_class_name) = explode('::', $implementer_declaring_method_id);
+                        $implementer_method_storage = $codebase->methods->getStorage(
+                            $implementer_declaring_method_id
                         );
-
-                        $implementer_method_storage = null;
-                        $implementer_classlike_storage = null;
-
-                        if ($implementer_declaring_method_id) {
-                            list($implementer_fq_class_name) = explode('::', $implementer_declaring_method_id);
-                            $implementer_method_storage = $codebase->methods->getStorage(
-                                $implementer_declaring_method_id
-                            );
-                            $implementer_classlike_storage = $classlike_storage_provider->get(
-                                $implementer_fq_class_name
-                            );
-                        }
-
-                        if (!$implementer_method_storage) {
-                            if (IssueBuffer::accepts(
-                                new UnimplementedInterfaceMethod(
-                                    'Method ' . $method_name . ' is not defined on class ' .
-                                    $storage->name,
-                                    $code_location
-                                ),
-                                $storage->suppressed_issues + $this->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
-
-                            return null;
-                        }
-
-                        $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId(
-                            $this->fq_class_name . '::' . $method_name
-                        );
-
-                        $implementer_visibility = $implementer_method_storage->visibility;
-
-                        if ($implementer_appearing_method_id
-                            && $implementer_appearing_method_id !== $implementer_declaring_method_id
-                        ) {
-                            list($appearing_fq_class_name, $appearing_method_name) = explode(
-                                '::',
-                                $implementer_appearing_method_id
-                            );
-
-                            $appearing_class_storage = $classlike_storage_provider->get(
-                                $appearing_fq_class_name
-                            );
-
-                            if (isset($appearing_class_storage->trait_visibility_map[$appearing_method_name])) {
-                                $implementer_visibility
-                                    = $appearing_class_storage->trait_visibility_map[$appearing_method_name];
-                            }
-                        }
-
-                        if ($implementer_visibility !== self::VISIBILITY_PUBLIC) {
-                            if (IssueBuffer::accepts(
-                                new InaccessibleMethod(
-                                    'Interface-defined method ' . $implementer_method_storage->cased_name
-                                        . ' must be public in ' . $storage->name,
-                                    $code_location
-                                ),
-                                $storage->suppressed_issues + $this->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
-
-                            return null;
-                        }
-
-                        if ($interface_method_storage->is_static && !$implementer_method_storage->is_static) {
-                            if (IssueBuffer::accepts(
-                                new MethodSignatureMismatch(
-                                    'Method ' . $implementer_method_storage->cased_name
-                                    . ' should be static like '
-                                    . $storage->name . '::' . $interface_method_storage->cased_name,
-                                    $code_location
-                                ),
-                                $implementer_method_storage->suppressed_issues
-                            )) {
-                                return false;
-                            }
-                        }
-
-                        MethodAnalyzer::compareMethods(
-                            $codebase,
-                            $implementer_classlike_storage ?: $storage,
-                            $interface_storage,
-                            $implementer_method_storage,
-                            $interface_method_storage,
-                            $this->fq_class_name,
-                            $implementer_visibility,
-                            $code_location,
-                            $implementer_method_storage->suppressed_issues,
-                            false
+                        $implementer_classlike_storage = $classlike_storage_provider->get(
+                            $implementer_fq_class_name
                         );
                     }
+
+                    if (!$implementer_method_storage) {
+                        if (IssueBuffer::accepts(
+                            new UnimplementedInterfaceMethod(
+                                'Method ' . $method_name . ' is not defined on class ' .
+                                $storage->name,
+                                $code_location
+                            ),
+                            $storage->suppressed_issues + $this->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+
+                        return null;
+                    }
+
+                    $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId(
+                        $this->fq_class_name . '::' . $method_name
+                    );
+
+                    $implementer_visibility = $implementer_method_storage->visibility;
+
+                    if ($implementer_appearing_method_id
+                        && $implementer_appearing_method_id !== $implementer_declaring_method_id
+                    ) {
+                        list($appearing_fq_class_name, $appearing_method_name) = explode(
+                            '::',
+                            $implementer_appearing_method_id
+                        );
+
+                        $appearing_class_storage = $classlike_storage_provider->get(
+                            $appearing_fq_class_name
+                        );
+
+                        if (isset($appearing_class_storage->trait_visibility_map[$appearing_method_name])) {
+                            $implementer_visibility
+                                = $appearing_class_storage->trait_visibility_map[$appearing_method_name];
+                        }
+                    }
+
+                    if ($implementer_visibility !== self::VISIBILITY_PUBLIC) {
+                        if (IssueBuffer::accepts(
+                            new InaccessibleMethod(
+                                'Interface-defined method ' . $implementer_method_storage->cased_name
+                                    . ' must be public in ' . $storage->name,
+                                $code_location
+                            ),
+                            $storage->suppressed_issues + $this->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+
+                        return null;
+                    }
+
+                    if ($interface_method_storage->is_static && !$implementer_method_storage->is_static) {
+                        if (IssueBuffer::accepts(
+                            new MethodSignatureMismatch(
+                                'Method ' . $implementer_method_storage->cased_name
+                                . ' should be static like '
+                                . $storage->name . '::' . $interface_method_storage->cased_name,
+                                $code_location
+                            ),
+                            $implementer_method_storage->suppressed_issues
+                        )) {
+                            return false;
+                        }
+                    }
+
+                    MethodAnalyzer::compareMethods(
+                        $codebase,
+                        $implementer_classlike_storage ?: $storage,
+                        $interface_storage,
+                        $implementer_method_storage,
+                        $interface_method_storage,
+                        $this->fq_class_name,
+                        $implementer_visibility,
+                        $code_location,
+                        $implementer_method_storage->suppressed_issues,
+                        false
+                    );
                 }
             }
         }

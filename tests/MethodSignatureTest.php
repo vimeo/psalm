@@ -1214,6 +1214,28 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'TraitMethodSignatureMismatch',
             ],
+            'abstractClassReturnMismatch' => [
+                '<?php
+                    interface I {
+                        function foo(): array;
+                    }
+
+                    abstract class C implements I {
+                        public function foo(): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'abstractClassParamMismatch' => [
+                '<?php
+                    interface I {
+                        function foo(int $s): void;
+                    }
+
+                    abstract class C implements I {
+                        public function foo(string $s): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
         ];
     }
 }
