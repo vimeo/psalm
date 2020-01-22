@@ -621,7 +621,7 @@ class IssueBuffer
         $total_expression_count = $mixed_counts[0] + $mixed_counts[1];
         $mixed_expression_count = $mixed_counts[0];
 
-        $normalized_data = 0 === count(self::$issues_data) ? [] : array_merge(...array_values(self::$issues_data));
+        $normalized_data = self::$issues_data === [] ? [] : array_merge(...array_values(self::$issues_data));
 
         switch ($report_options->format) {
             case Report::TYPE_COMPACT:

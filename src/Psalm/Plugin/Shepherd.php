@@ -59,7 +59,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
         unset($build_info['git']);
 
         if ($build_info) {
-            $normalized_data = 0 === count($issues) ? [] : array_filter(
+            $normalized_data = $issues === [] ? [] : array_filter(
                 array_merge(...array_values($issues)),
                 /**
                  * @param array{severity: string} $i
