@@ -29,6 +29,8 @@ use function sha1;
 use function str_repeat;
 use function str_replace;
 use function usort;
+use function array_merge;
+use function array_values;
 
 class IssueBuffer
 {
@@ -619,13 +621,7 @@ class IssueBuffer
         $total_expression_count = $mixed_counts[0] + $mixed_counts[1];
         $mixed_expression_count = $mixed_counts[0];
 
-        $normalized_data = [];
-
-        foreach (self::$issues_data as $file_issues) {
-            foreach ($file_issues as $issue_data) {
-                $normalized_data[] = $issue_data;
-            }
-        }
+        $normalized_data = 0 === count(self::$issues_data) ? [] : array_merge(...array_values(self::$issues_data));
 
         switch ($report_options->format) {
             case Report::TYPE_COMPACT:

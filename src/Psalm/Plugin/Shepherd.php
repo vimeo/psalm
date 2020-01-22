@@ -23,6 +23,9 @@ use Psalm\SourceControl\SourceControlInfo;
 use const STDERR;
 use function strlen;
 use function var_export;
+use function count;
+use function array_merge;
+use function array_values;
 
 class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 {
@@ -56,15 +59,15 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
         unset($build_info['git']);
 
         if ($build_info) {
-            $normalized_data = [];
-
-            foreach ($issues as $file_issues) {
-                foreach ($file_issues as $issue_data) {
-                    if ($issue_data['severity'] === 'error') {
-                        $normalized_data[] = $issue_data;
-                    }
+            $normalized_data = 0 === count($issues) ? [] : array_filter(
+                array_merge(...array_values($issues)),
+                /**
+                 * @param array{severity: string} $i
+                 */
+                static function (array $i) : bool {
+                    return $i['severity'] === 'error';
                 }
-            }
+            );
 
             $data = [
                 'build' => $build_info,

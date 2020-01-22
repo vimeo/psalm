@@ -20,6 +20,8 @@ use RuntimeException;
 use function str_replace;
 use function strpos;
 use function usort;
+use function count;
+use function array_values;
 
 class ErrorBaseline
 {
@@ -198,16 +200,11 @@ class ErrorBaseline
      */
     private static function countIssueTypesByFile(array $issues): array
     {
-        $normalized_data = [];
-
-        foreach ($issues as $file_issues) {
-            foreach ($file_issues as $issue_data) {
-                $normalized_data[] = $issue_data;
-            }
+        if (0 === count($issues)) {
+            return [];
         }
-
         $groupedIssues = array_reduce(
-            $normalized_data,
+            array_merge(...array_values($issues)),
             /**
              * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
              * @param array{type: string, file_name: string, severity: string, selected_text: string} $issue
