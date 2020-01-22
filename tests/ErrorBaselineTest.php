@@ -136,62 +136,71 @@ class ErrorBaselineTest extends TestCase
             })
         )->willReturn(null);
 
-        ErrorBaseline::create($this->fileProvider->reveal(), $baselineFile, [
+        ErrorBaseline::create(
+            $this->fileProvider->reveal(),
+            $baselineFile,
             [
-                'file_name' => 'sample/sample-file.php',
-                'type' => 'MixedAssignment',
-                'severity' => 'error',
-                'selected_text' => 'foo',
+                'sample/sample-file.php' => [
+                    [
+                        'file_name' => 'sample/sample-file.php',
+                        'type' => 'MixedAssignment',
+                        'severity' => 'error',
+                        'selected_text' => 'foo',
+                    ],
+                    [
+                        'file_name' => 'sample\sample-file.php',
+                        'type' => 'MixedAssignment',
+                        'severity' => 'error',
+                        'selected_text' => 'bar',
+                    ],
+                    [
+                        'file_name' => 'sample/sample-file.php',
+                        'type' => 'MixedAssignment',
+                        'severity' => 'error',
+                        'selected_text' => 'bat',
+                    ],
+                    [
+                        'file_name' => 'sample\sample-file.php',
+                        'type' => 'MixedOperand',
+                        'severity' => 'error',
+                        'selected_text' => 'bing',
+                    ],
+                    [
+                        'file_name' => 'sample/sample-file.php',
+                        'type' => 'AssignmentToVoid',
+                        'severity' => 'info',
+                        'selected_text' => 'bong',
+                    ],
+                    [
+                        'file_name' => 'sample\sample-file.php',
+                        'type' => 'CircularReference',
+                        'severity' => 'suppress',
+                        'selected_text' => 'birdy',
+                    ],
+                ],
+                'sample/sample-file2.php' => [
+                    [
+                        'file_name' => 'sample/sample-file2.php',
+                        'type' => 'MixedAssignment',
+                        'severity' => 'error',
+                        'selected_text' => 'boardy',
+                    ],
+                    [
+                        'file_name' => 'sample\sample-file2.php',
+                        'type' => 'MixedAssignment',
+                        'severity' => 'error',
+                        'selected_text' => 'bardy',
+                    ],
+                    [
+                        'file_name' => 'sample/sample-file2.php',
+                        'type' => 'TypeCoercion',
+                        'severity' => 'error',
+                        'selected_text' => 'hardy' . "\n",
+                    ],
+                ],
             ],
-            [
-                'file_name' => 'sample\sample-file.php',
-                'type' => 'MixedAssignment',
-                'severity' => 'error',
-                'selected_text' => 'bar',
-            ],
-            [
-                'file_name' => 'sample/sample-file.php',
-                'type' => 'MixedAssignment',
-                'severity' => 'error',
-                'selected_text' => 'bat',
-            ],
-            [
-                'file_name' => 'sample\sample-file.php',
-                'type' => 'MixedOperand',
-                'severity' => 'error',
-                'selected_text' => 'bing',
-            ],
-            [
-                'file_name' => 'sample/sample-file.php',
-                'type' => 'AssignmentToVoid',
-                'severity' => 'info',
-                'selected_text' => 'bong',
-            ],
-            [
-                'file_name' => 'sample\sample-file.php',
-                'type' => 'CircularReference',
-                'severity' => 'suppress',
-                'selected_text' => 'birdy',
-            ],
-            [
-                'file_name' => 'sample/sample-file2.php',
-                'type' => 'MixedAssignment',
-                'severity' => 'error',
-                'selected_text' => 'boardy',
-            ],
-            [
-                'file_name' => 'sample\sample-file2.php',
-                'type' => 'MixedAssignment',
-                'severity' => 'error',
-                'selected_text' => 'bardy',
-            ],
-            [
-                'file_name' => 'sample/sample-file2.php',
-                'type' => 'TypeCoercion',
-                'severity' => 'error',
-                'selected_text' => 'hardy' . "\n",
-            ],
-        ], false);
+            false
+        );
 
         $baselineDocument = new \DOMDocument();
         $baselineDocument->loadXML($documentContent, LIBXML_NOBLANKS);
@@ -250,35 +259,39 @@ class ErrorBaselineTest extends TestCase
         $this->fileProvider->setContents(Argument::cetera())->willReturn(null);
 
         $newIssues = [
-            [
-                'file_name' => 'sample/sample-file.php',
-                'type' => 'MixedAssignment',
-                'severity' => 'error',
-                'selected_text' => 'foo',
+            'sample/sample-file.php' => [
+                [
+                    'file_name' => 'sample/sample-file.php',
+                    'type' => 'MixedAssignment',
+                    'severity' => 'error',
+                    'selected_text' => 'foo',
+                ],
+                [
+                    'file_name' => 'sample/sample-file.php',
+                    'type' => 'MixedAssignment',
+                    'severity' => 'error',
+                    'selected_text' => 'bar',
+                ],
+                [
+                    'file_name' => 'sample/sample-file.php',
+                    'type' => 'MixedOperand',
+                    'severity' => 'error',
+                    'selected_text' => 'bat',
+                ],
+                [
+                    'file_name' => 'sample/sample-file.php',
+                    'type' => 'MixedOperand',
+                    'severity' => 'error',
+                    'selected_text' => 'bam',
+                ],
             ],
-            [
-                'file_name' => 'sample/sample-file.php',
-                'type' => 'MixedAssignment',
-                'severity' => 'error',
-                'selected_text' => 'bar',
-            ],
-            [
-                'file_name' => 'sample/sample-file.php',
-                'type' => 'MixedOperand',
-                'severity' => 'error',
-                'selected_text' => 'bat',
-            ],
-            [
-                'file_name' => 'sample/sample-file.php',
-                'type' => 'MixedOperand',
-                'severity' => 'error',
-                'selected_text' => 'bam',
-            ],
-            [
-                'file_name' => 'sample/sample-file2.php',
-                'type' => 'TypeCoercion',
-                'severity' => 'error',
-                'selected_text' => 'tar',
+            'sample/sample-file2.php' => [
+                [
+                    'file_name' => 'sample/sample-file2.php',
+                    'type' => 'TypeCoercion',
+                    'severity' => 'error',
+                    'selected_text' => 'tar',
+                ],
             ],
         ];
 
