@@ -20,9 +20,11 @@ use function filetype;
 use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
+use function glob;
 use function in_array;
 use function intval;
 use function is_dir;
+use function is_file;
 use function json_decode;
 use function libxml_clear_errors;
 use const LIBXML_ERR_ERROR;
@@ -1581,8 +1583,16 @@ class Config
 
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
 
-        if (file_exists($phpstorm_meta_path)) {
+        if (is_file($phpstorm_meta_path)) {
             $stub_files[] = $phpstorm_meta_path;
+        } elseif (is_dir($phpstorm_meta_path)) {
+            $phpstorm_meta_path = realpath($phpstorm_meta_path);
+
+            foreach (glob($phpstorm_meta_path . '/*.meta.php') as $glob) {
+                if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
+                    $stub_files[] = $glob;
+                }
+            }
         }
 
         if ($this->load_xdebug_stub) {
