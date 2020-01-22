@@ -85,9 +85,15 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
+            $expected_count = 0;
+
             $data = \Psalm\IssueBuffer::clear();
 
-            $this->assertSame($error_counts[$i], count($data));
+            foreach ($data as $file_issues) {
+                $expected_count += count($file_issues);
+            }
+
+            $this->assertSame($error_counts[$i], $expected_count);
         }
     }
 

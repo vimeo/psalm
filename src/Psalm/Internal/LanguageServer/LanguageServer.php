@@ -325,16 +325,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $data = \Psalm\IssueBuffer::clear();
 
         foreach ($uris as $file_path => $uri) {
-            $data = array_values(array_filter(
-                $data,
-                /**
-                 * @param array{file_path: string} $issue_data
-                 */
-                function (array $issue_data) use ($file_path) : bool {
-                    return $issue_data['file_path'] === $file_path;
-                }
-            ));
-
             $diagnostics = array_map(
                 /**
                  * @param array{
@@ -378,7 +368,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                         'Psalm'
                     );
                 },
-                $data
+                $data[$file_path] ?? []
             );
 
             $this->client->textDocument->publishDiagnostics($uri, $diagnostics);

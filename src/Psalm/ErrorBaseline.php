@@ -51,7 +51,12 @@ class ErrorBaseline
     /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
-     * @param array<array{file_name: string, type: string, severity: string, selected_text: string}> $issues
+     * @param array<string, list<array{
+     *         file_name: string,
+     *         type: string,
+     *         severity: string,
+     *         selected_text: string
+     * }>> $issues
      *
      * @return void
      */
@@ -129,7 +134,12 @@ class ErrorBaseline
     /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
-     * @param array<array{file_name: string, type: string, severity: string, selected_text: string}> $issues
+     * @param array<string, list<array{
+     *         file_name: string,
+     *         type: string,
+     *         severity: string,
+     *         selected_text: string
+     * }>> $issues
      *
      * @throws Exception\ConfigException
      *
@@ -177,14 +187,27 @@ class ErrorBaseline
     }
 
     /**
-     * @param array<array{file_name: string, type: string, severity: string, selected_text: string}> $issues
+     * @param array<string, list<array{
+     *         file_name: string,
+     *         type: string,
+     *         severity: string,
+     *         selected_text: string
+     * }>> $issues
      *
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     private static function countIssueTypesByFile(array $issues): array
     {
+        $normalized_data = [];
+
+        foreach ($issues as $file_issues) {
+            foreach ($file_issues as $issue_data) {
+                $normalized_data[] = $issue_data;
+            }
+        }
+
         $groupedIssues = array_reduce(
-            $issues,
+            $normalized_data,
             /**
              * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
              * @param array{type: string, file_name: string, severity: string, selected_text: string} $issue

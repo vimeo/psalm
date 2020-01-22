@@ -1115,7 +1115,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
 
                 if ($existing_issues) {
-                    IssueBuffer::addIssues($existing_issues);
+                    IssueBuffer::addIssues([$this->getFilePath() => $existing_issues]);
                     continue;
                 }
             }
@@ -1623,7 +1623,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $end
             );
 
-            IssueBuffer::addIssues($existing_issues);
+            IssueBuffer::addIssues([$source->getFilePath() => $existing_issues]);
 
             return $method_analyzer;
         }

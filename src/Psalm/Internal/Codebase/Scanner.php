@@ -65,7 +65,7 @@ use function substr;
  *         7:array<string, bool>,
  *         8:array<string, bool>
  *     },
- *     issues:array<int, IssueData>,
+ *     issues:array<string, list<IssueData>>,
  *     changed_members:array<string, array<string, bool>>,
  *     unchanged_signature_members:array<string, array<string, bool>>,
  *     diff_map:array<string, array<int, array{0:int, 1:int, 2:int, 3:int}>>,

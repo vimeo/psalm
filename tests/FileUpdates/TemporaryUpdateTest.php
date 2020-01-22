@@ -88,13 +88,13 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
         $data = \Psalm\IssueBuffer::clear();
 
-        $found_positions = array_map(
-            /** @param array{from: int} $a */
-            function (array $a) : int {
-                return $a['from'];
-            },
-            $data
-        );
+        $found_positions = [];
+
+        foreach ($data as $file_issues) {
+            foreach ($file_issues as $issue_data) {
+                $found_positions[] = $issue_data['from'];
+            }
+        }
 
         $this->assertSame($error_positions[0], $found_positions);
 
@@ -112,13 +112,13 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
             $data = \Psalm\IssueBuffer::clear();
 
-            $found_positions = array_map(
-                /** @param array{from: int} $a */
-                function (array $a) : int {
-                    return $a['from'];
-                },
-                $data
-            );
+            $found_positions = [];
+
+            foreach ($data as $file_issues) {
+                foreach ($file_issues as $issue_data) {
+                    $found_positions[] = $issue_data['from'];
+                }
+            }
 
             $this->assertSame($error_positions[$i + 1], $found_positions);
         }
@@ -140,13 +140,13 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
             $data = \Psalm\IssueBuffer::clear();
 
-            $found_positions = array_map(
-                /** @param array{from: int} $a */
-                function (array $a) : int {
-                    return $a['from'];
-                },
-                $data
-            );
+            $found_positions = [];
+
+            foreach ($data as $file_issues) {
+                foreach ($file_issues as $issue_data) {
+                    $found_positions[] = $issue_data['from'];
+                }
+            }
 
             $this->assertSame($error_positions[count($file_stages)], $found_positions);
         }

@@ -46,7 +46,7 @@ use function usort;
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
  *
  * @psalm-type  WorkerData = array{
- *      issues: array<int, IssueData>,
+ *      issues: array<string, list<IssueData>>,
  *      fixable_issue_counts: array<string, int>,
  *      file_references_to_classes: array<string, array<string,bool>>,
  *      file_references_to_class_members: array<string, array<string,bool>>,
@@ -337,7 +337,7 @@ class Analyzer
                 $file_analyzer->clearSourceBeforeDestruction();
                 unset($file_analyzer);
 
-                return $this->getFileIssues($file_path);
+                return IssueBuffer::getIssuesDataForFile($file_path);
             };
 
         $task_done_closure =
@@ -479,8 +479,10 @@ class Analyzer
                     continue;
                 }
 
-                foreach ($pool_data['issues'] as $issue_data) {
-                    $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
+                foreach ($pool_data['issues'] as $file_path => $file_issues) {
+                    foreach ($file_issues as $issue_data) {
+                        $codebase->file_reference_provider->addIssue($file_path, $issue_data);
+                    }
                 }
 
                 $codebase->file_reference_provider->addFileReferencesToClasses(
@@ -567,30 +569,16 @@ class Analyzer
                 $analysis_worker($i, $file_path);
                 ++$i;
 
-                $issues = $this->getFileIssues($file_path);
+                $issues = IssueBuffer::getIssuesDataForFile($file_path);
                 $task_done_closure($issues);
             }
 
-            foreach (IssueBuffer::getIssuesData() as $issue_data) {
-                $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
+            foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
+                foreach ($file_issues as $issue_data) {
+                    $codebase->file_reference_provider->addIssue($file_path, $issue_data);
+                }
             }
         }
-    }
-
-    /**
-     * @return array<IssueData>
-     */
-    private function getFileIssues(string $file_path): array
-    {
-        return array_filter(
-            IssueBuffer::getIssuesData(),
-            /**
-             * @param array{file_path: string} $issue
-             */
-            function (array $issue) use ($file_path): bool {
-                return $issue['file_path'] === $file_path;
-            }
-        );
     }
 
     /**
@@ -1352,7 +1340,7 @@ class Analyzer
      * @param int $start
      * @param int $end
      *
-     * @return array<int, IssueData>
+     * @return list<IssueData>
      */
     public function getExistingIssuesForFile($file_path, $start, $end, ?string $issue_type = null)
     {

@@ -52,7 +52,7 @@ class JsonOutputTest extends TestCase
     {
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());
-        $issue_data = IssueBuffer::getIssuesData()[0];
+        $issue_data = IssueBuffer::getIssuesData()['somefile.php'][0];
 
         $this->assertSame('somefile.php', $issue_data['file_path']);
         $this->assertSame('error', $issue_data['severity']);
@@ -94,7 +94,8 @@ echo $a;';
 
         $this->analyzeFile('somefile.php', new Context());
 
-        $issue_data = IssueBuffer::getIssuesData();
+        $issue_data = IssueBuffer::getIssuesData()['somefile.php'];
+
         $this->assertSame(
             [
                 [
