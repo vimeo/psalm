@@ -847,6 +847,21 @@ class ExpressionAnalyzer
         bool $constrain_type = true,
         bool $prevent_null = false
     ) {
+        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
+            $prop_name = $stmt->name->name;
+
+            Expression\Assignment\PropertyAssignmentAnalyzer::analyzeInstance(
+                $statements_analyzer,
+                $stmt,
+                $prop_name,
+                null,
+                $by_ref_out_type,
+                $context
+            );
+
+            return;
+        }
+
         $var_id = self::getVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),

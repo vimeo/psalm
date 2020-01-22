@@ -379,7 +379,7 @@ class Context
      * @param  bool        $has_leaving_statements   whether or not the parent scope is abandoned between
      *                                               $start_context and $end_context
      * @param  array       $vars_to_update
-     * @param  array       $updated_vars
+     * @param  array<string, bool>  $updated_vars
      *
      * @return void
      */

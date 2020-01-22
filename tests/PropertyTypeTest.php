@@ -1813,6 +1813,22 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
+            'allowGoodArrayPushOnArrayValue' => [
+                '<?php
+                    class MyClass {
+                        /**
+                         * @var int[]
+                         */
+                        private $prop = [];
+
+                        /**
+                         * @return void
+                         */
+                        public function foo() {
+                            array_push($this->prop, 5);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2833,6 +2849,23 @@ class PropertyTypeTest extends TestCase
                          */
                         public function get(string $class) : void {
                             $this->map[$class] = 5;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue'
+            ],
+            'preventArrayPushOnArrayValue' => [
+                '<?php
+                    class MyClass {
+                        /**
+                         * @var int[]
+                         */
+                        private $prop = [];
+
+                        /**
+                         * @return void
+                         */
+                        public function foo() {
+                            array_push($this->prop, "bad");
                         }
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue'
