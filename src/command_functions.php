@@ -284,10 +284,10 @@ Basic configuration:
         If greater than one, Psalm will run analysis on multiple threads, speeding things up.
 
     --diff
-        Runs Psalm in diff mode, only checking files that have changed (and their dependents)
+        Runs Psalm in diff mode, only checking files that have changed since last run (and their dependents)
 
     --diff-methods
-        Only checks methods that have changed (and their dependents)
+        Only checks methods that have changed since last run (and their dependents)
 
 Surfacing issues:
     --show-info[=BOOLEAN]
