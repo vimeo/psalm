@@ -332,6 +332,20 @@ function takesString(string $s) : void {}
 takesString(new A);
 ```
 
+### ImpureByReferenceAssignment
+
+Emitted when assigning a passed-by-reference variable inside a function or method marked as mutation-free.
+
+```php
+/**
+ * @psalm-pure
+ */
+function foo(string &$a): string {
+    $a = "B";
+    return $a;
+}
+```
+
 ### ImpureFunctionCall
 
 Emitted when calling an impure function from a function or method marked as pure.
