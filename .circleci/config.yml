@@ -18,14 +18,21 @@ jobs:
             - composer-v2-{{ checksum "/tmp/cachekey" }}
             # fallback to using the latest cache if no exact match is found (See https://circleci.com/docs/2.0/caching/)
             - composer-v2-
+      - restore_cache:
+          keys:
+            - psalm-cache-{{ checksum "/tmp/cachekey" }} # speeds up run with --diff and --diff-methods
       - run: composer update
       - save_cache:
           key: composer-v2-{{ checksum "/tmp/cachekey" }}
           paths:
             - vendor
+      - save_cache:
+          key: psalm-cache-{{ checksum "/tmp/cachekey" }}
+          paths:
+            - /tmp/psalm
       - run:
           name: Static analysis
-          command: php -dextension=pcntl.so ./psalm --threads=10
+          command: php -dextension=pcntl.so ./psalm --threads=10 --diff --diff-methods
       - persist_to_workspace:
           root: /home/docker/project/
           paths:
