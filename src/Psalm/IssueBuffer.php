@@ -18,6 +18,7 @@ use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CompactReport;
 use Psalm\Report\ConsoleReport;
 use Psalm\Report\EmacsReport;
+use Psalm\Report\GithubActionsReport;
 use Psalm\Report\JsonReport;
 use Psalm\Report\JsonSummaryReport;
 use Psalm\Report\JunitReport;
@@ -672,6 +673,10 @@ class IssueBuffer
 
             case Report::TYPE_CONSOLE:
                 $output = new ConsoleReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                break;
+
+            case Report::TYPE_GITHUB_ACTIONS:
+                $output = new GithubActionsReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
         }
 

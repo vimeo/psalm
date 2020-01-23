@@ -15,4 +15,4 @@ jobs:
         COMPOSER_ROOT_VERSION: dev-master
 
     - name: Run Psalm
-      run: ./psalm --threads=2 --shepherd
+      run: ./psalm --threads=2 --output-format=github --shepherd
