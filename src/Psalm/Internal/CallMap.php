@@ -357,7 +357,7 @@ return [
 'ArithmeticError::getTrace' => ['array<int,array<string,mixed>>'],
 'ArithmeticError::getTraceAsString' => ['string'],
 'array_change_key_case' => ['array|false', 'input'=>'array', 'case='=>'int'],
-'array_chunk' => ['array[]', 'input'=>'array', 'size'=>'int', 'preserve_keys='=>'bool'],
+'array_chunk' => ['list<array[]>', 'input'=>'array', 'size'=>'int', 'preserve_keys='=>'bool'],
 'array_column' => ['array', 'array'=>'array', 'column_key'=>'mixed', 'index_key='=>'mixed'],
 'array_combine' => ['array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
 'array_count_values' => ['int[]', 'input'=>'array'],
