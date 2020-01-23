@@ -981,6 +981,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ];
             }
 
+            if ($function_param->by_ref) {
+                $context->vars_in_scope['$' . $function_param->name]->by_ref = true;
+            }
+
             $parser_param = $this->function->getParams()[$offset];
 
             if (!$function_param->type_location || !$function_param->location) {

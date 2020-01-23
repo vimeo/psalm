@@ -342,6 +342,17 @@ class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall',
             ],
+            'impureByRef' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo(string &$a): string {
+                        $a = "B";
+                        return $a;
+                    }',
+                'error_message' => 'ImpureByReferenceAssignment'
+            ],
         ];
     }
 }

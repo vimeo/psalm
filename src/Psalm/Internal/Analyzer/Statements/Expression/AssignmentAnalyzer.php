@@ -15,6 +15,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\AssignmentToVoid;
+use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidDocblock;
@@ -280,6 +281,17 @@ class AssignmentAnalyzer
 
         if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
             if ($context->vars_in_scope[$array_var_id]->by_ref) {
+                if ($context->mutation_free) {
+                    if (IssueBuffer::accepts(
+                        new ImpureByReferenceAssignment(
+                            'Variable ' . $array_var_id . ' cannot be assigned to as it is passed by reference',
+                            new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
+
                 $assign_value_type->by_ref = true;
             }
 
