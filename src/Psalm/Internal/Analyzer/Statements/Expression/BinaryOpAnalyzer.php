@@ -778,7 +778,7 @@ class BinaryOpAnalyzer
 
             if ($stmt_left_type = $statements_analyzer->node_data->getType($stmt->left)) {
                 $if_return_type_reconciled = AssertionReconciler::reconcile(
-                    '!null',
+                    'isset',
                     clone $stmt_left_type,
                     '',
                     $statements_analyzer,

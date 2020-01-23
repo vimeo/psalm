@@ -1061,6 +1061,16 @@ class AnnotationTest extends TestCase
                     /** @param list<scalar|array|object|resource|null> $_s */
                     function foo(array $_s) : void { }'
             ],
+            'possiblyUndefinedObjectProperty' => [
+                '<?php
+                    function consume(string $value): void {
+                      echo $value;
+                    }
+
+                    /** @var object{value?: string} $data */
+                    $data = json_decode("{}", false);
+                    consume($data->value ?? "");'
+            ],
         ];
     }
 
