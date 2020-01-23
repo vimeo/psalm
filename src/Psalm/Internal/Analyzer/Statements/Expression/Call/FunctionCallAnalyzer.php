@@ -707,7 +707,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 ? $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args, $must_use)
                 : null;
 
-            if (($function_storage
+            if ((!$in_call_map
+                    && $function_storage
                     && !$function_storage->pure)
                 || ($callmap_function_pure === false)
             ) {
