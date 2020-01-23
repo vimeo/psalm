@@ -354,7 +354,7 @@ class Functions
 
             // session
             'session_id', 'session_name', 'session_set_cookie_params', 'session_set_save_handler',
-            'session_regenerate_id', 'mb_internal_encoding',
+            'session_regenerate_id', 'mb_internal_encoding', 'session_start',
 
             // ldap
             'ldap_set_option',
