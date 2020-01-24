@@ -198,6 +198,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TString
                         || $var_type_part instanceof Type\Atomic\TArray
+                        || $var_type_part instanceof Type\Atomic\TList
                         || ($var_type_part instanceof Type\Atomic\ObjectLike
                             && count($var_type_part->properties) === 2)
                     ) {
