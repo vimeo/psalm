@@ -106,20 +106,20 @@ interface OuterIterator extends Iterator {
     /**
      * @return Iterator<TKey, TValue>
      */
-    public function getInnerIterator() : Iterator;
+    public function getInnerIterator();
 }
 
 /**
  * @template-covariant TKey
  * @template-covariant TValue
  *
- * @template-extends OuterIterator<TKey, TValue>
+ * @template-implements OuterIterator<TKey, TValue>
  */
 class IteratorIterator implements OuterIterator {
     /**
      * @return Iterator<TKey, TValue>
      */
-    public function getInnerIterator() : Iterator {}
+    public function getInnerIterator() {}
 
     /**
      * Return the current element
@@ -169,6 +169,17 @@ class IteratorIterator implements OuterIterator {
      */
     public function rewind() {}
 }
+
+/**
+ * @template-covariant TKey
+ * @template-covariant TValue
+ *
+ * @template-extends IteratorIterator<TKey, TValue>
+ */
+class FilterIterator extends IteratorIterator {
+     public abstract function accept () : bool {}
+ }
+
 
 /**
  * @template-covariant TKey
