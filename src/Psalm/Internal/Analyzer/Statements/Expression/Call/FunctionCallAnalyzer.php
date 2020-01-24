@@ -216,7 +216,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                                 $potential_method_id = null;
                             }
                         } elseif ($var_type_part instanceof Type\Atomic\TLiteralString) {
-                            $potential_method_ids[] = $var_type_part->value;
+                            $potential_method_id = $var_type_part->value;
                         }
 
                         if ($potential_method_id && strpos($potential_method_id, '::')) {
