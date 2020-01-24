@@ -299,11 +299,7 @@ class ForeachAnalyzer
 
         $loop_scope = new LoopScope($foreach_context, $context);
 
-        $protected_var_ids = $context->protected_var_ids;
-        if ($var_id) {
-            $protected_var_ids[$var_id] = true;
-        }
-        $loop_scope->protected_var_ids = $protected_var_ids;
+        $loop_scope->protected_var_ids = $context->protected_var_ids;
 
         LoopAnalyzer::analyze($statements_analyzer, $stmt->stmts, [], [], $loop_scope, $inner_loop_context);
 

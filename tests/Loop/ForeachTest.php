@@ -978,6 +978,13 @@ class ForeachTest extends \Psalm\Tests\TestCase
                         foreach ($arr as $a) {}
                     }'
             ],
+            'foreachLoopInvalidation' => [
+                '<?php
+                    $list = [1, 2, 3];
+                    foreach ($list as $i) {
+                      $list = [4, 5, 6];
+                    }',
+            ],
         ];
     }
 
@@ -1107,14 +1114,6 @@ class ForeachTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-            ],
-            'foreachLoopInvalidation' => [
-                '<?php
-                    $list = [1, 2, 3];
-                    foreach ($list as $i) {
-                      $list = [4, 5, 6];
-                    }',
-                'error_message' => 'LoopInvalidation',
             ],
             'possiblyUndefinedVariableInForeachDueToBreakBefore' => [
                 '<?php
