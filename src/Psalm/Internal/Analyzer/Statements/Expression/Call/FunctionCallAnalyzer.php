@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\FunctionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -200,6 +201,33 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         || ($var_type_part instanceof Type\Atomic\ObjectLike
                             && count($var_type_part->properties) === 2)
                     ) {
+                        $potential_method_id = null;
+
+                        if ($var_type_part instanceof Type\Atomic\ObjectLike) {
+                            $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
+                                $var_type_part,
+                                $codebase,
+                                $context->calling_function_id,
+                                $statements_analyzer->getFilePath()
+                            );
+
+                            if ($potential_method_id === 'not-callable') {
+                                $potential_method_id = null;
+                            }
+                        } elseif ($var_type_part instanceof Type\Atomic\TLiteralString) {
+                            $potential_method_ids[] = $var_type_part->value;
+                        }
+
+                        if ($potential_method_id && strpos($potential_method_id, '::')) {
+                            $codebase->methods->methodExists(
+                                $potential_method_id,
+                                $context->calling_function_id,
+                                null,
+                                $statements_analyzer,
+                                $statements_analyzer->getFilePath()
+                            );
+                        }
+
                         // this is also kind of fine
                         $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TNull) {
