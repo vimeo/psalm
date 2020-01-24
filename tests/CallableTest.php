@@ -987,6 +987,15 @@ class CallableTest extends TestCase
                     }',
                 'error_message' => 'MixedArgumentTypeCoercion'
             ],
+            'undefinedVarInBareCallable' => [
+                '<?php
+                    $fn = function(int $a): void{};
+                    function a(callable $fn): void{
+                      $fn(++$a);
+                    }
+                    a($fn);',
+                'error_message' => 'UndefinedVariable',
+            ],
         ];
     }
 }

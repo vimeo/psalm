@@ -644,6 +644,10 @@ class CallAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
             || $arg->value instanceof PhpParser\Node\Scalar\Encapsed
+            || $arg->value instanceof PhpParser\Node\Expr\PostInc
+            || $arg->value instanceof PhpParser\Node\Expr\PostDec
+            || $arg->value instanceof PhpParser\Node\Expr\PreInc
+            || $arg->value instanceof PhpParser\Node\Expr\PreDec
         ) {
             $was_inside_call = $context->inside_call;
             $context->inside_call = true;
