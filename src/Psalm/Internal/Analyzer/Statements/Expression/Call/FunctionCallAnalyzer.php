@@ -90,7 +90,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             $original_function_id = implode('\\', $stmt->name->parts);
 
             if ($original_function_id === 'call_user_func') {
-                $other_args = array_slice($stmt->args, 1);
+                $other_args = \array_slice($stmt->args, 1);
 
                 $stmt = new PhpParser\Node\Expr\FuncCall(
                     $stmt->args[0]->value,
@@ -100,7 +100,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
 
             if ($original_function_id === 'call_user_func_array' && isset($stmt->args[1])) {
-                $other_args = array_slice($stmt->args, 1);
+                $other_args = \array_slice($stmt->args, 1);
 
                 $stmt = new PhpParser\Node\Expr\FuncCall(
                     $stmt->args[0]->value,

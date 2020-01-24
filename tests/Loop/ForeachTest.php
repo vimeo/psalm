@@ -982,7 +982,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                 '<?php
                     $list = [1, 2, 3];
                     foreach ($list as $i) {
-                      $list = [4, 5, 6];
+                        $list = [4, 5, 6];
                     }',
             ],
         ];
