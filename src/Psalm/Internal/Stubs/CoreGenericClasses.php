@@ -117,6 +117,11 @@ interface OuterIterator extends Iterator {
  */
 class IteratorIterator implements OuterIterator {
     /**
+     * @param Traversable<TKey, TValue> $iterator
+     */
+    public function __construct(Traversable $iterator) {}
+
+    /**
      * @return Iterator<TKey, TValue>
      */
     public function getInnerIterator() {}
