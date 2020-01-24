@@ -2067,7 +2067,6 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $did_remove_type = $existing_var_type->hasDefinitelyNumericType(false)
             || $existing_var_type->hasType('iterable');
 
-
         if ($existing_var_type->hasMixed()) {
             if ($existing_var_type->isMixed()
                 && $existing_var_atomic_types['mixed'] instanceof Type\Atomic\TNonEmptyMixed
@@ -2334,7 +2333,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        if (!$did_remove_type || empty($existing_var_type->getAtomicTypes())) {
+        if ((!$did_remove_type || empty($existing_var_type->getAtomicTypes()))
+            && ($assertion !== 'empty' || !$existing_var_type->possibly_undefined)
+        ) {
             if ($key && $code_location) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -2354,7 +2355,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return $assertion === 'empty' && $existing_var_type->possibly_undefined
+            ? Type::getEmpty()
+            : Type::getMixed();
     }
 
     /**
