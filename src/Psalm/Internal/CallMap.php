@@ -3926,7 +3926,7 @@ return [
 'gmp_random_range' => ['GMP', 'min'=>'GMP|string|int', 'max'=>'GMP|string|int'],
 'gmp_random_seed' => ['void|false', 'seed'=>'GMP|string|int'],
 'gmp_root' => ['GMP', 'a'=>'GMP|string|int', 'nth'=>'int'],
-'gmp_rootrem' => ['array{0: GMP, 1: GMP}>', 'a'=>'GMP|string|int', 'nth'=>'int'],
+'gmp_rootrem' => ['array{0: GMP, 1: GMP}', 'a'=>'GMP|string|int', 'nth'=>'int'],
 'gmp_scan0' => ['int', 'a'=>'GMP|string|int', 'start'=>'int'],
 'gmp_scan1' => ['int', 'a'=>'GMP|string|int', 'start'=>'int'],
 'gmp_setbit' => ['void', 'a'=>'GMP|string|int', 'index'=>'int', 'set_clear='=>'bool'],
