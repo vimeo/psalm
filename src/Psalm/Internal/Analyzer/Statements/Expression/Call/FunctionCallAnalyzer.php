@@ -81,6 +81,35 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
         $function_exists = false;
 
+        $real_stmt = $stmt;
+
+        if ($stmt->name instanceof PhpParser\Node\Name
+            && isset($stmt->args[0])
+            && !$stmt->args[0]->unpack
+        ) {
+            $original_function_id = implode('\\', $stmt->name->parts);
+
+            if ($original_function_id === 'call_user_func') {
+                $other_args = array_slice($stmt->args, 1);
+
+                $stmt = new PhpParser\Node\Expr\FuncCall(
+                    $stmt->args[0]->value,
+                    $other_args,
+                    $stmt->getAttributes()
+                );
+            }
+
+            if ($original_function_id === 'call_user_func_array' && isset($stmt->args[1])) {
+                $other_args = array_slice($stmt->args, 1);
+
+                $stmt = new PhpParser\Node\Expr\FuncCall(
+                    $stmt->args[0]->value,
+                    [new PhpParser\Node\Arg($stmt->args[1]->value, false, true)],
+                    $stmt->getAttributes()
+                );
+            }
+        }
+
         if ($stmt->name instanceof PhpParser\Node\Expr) {
             $was_in_call = $context->inside_call;
             $context->inside_call = true;
@@ -127,11 +156,11 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     if ($var_type_part instanceof Type\Atomic\TFn || $var_type_part instanceof Type\Atomic\TCallable) {
                         $function_params = $var_type_part->params;
 
-                        if (($stmt_type = $statements_analyzer->node_data->getType($stmt))
+                        if (($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
                             && $var_type_part->return_type
                         ) {
                             $statements_analyzer->node_data->setType(
-                                $stmt,
+                                $real_stmt,
                                 Type::combineUnionTypes(
                                     $stmt_type,
                                     $var_type_part->return_type
@@ -139,7 +168,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             );
                         } else {
                             $statements_analyzer->node_data->setType(
-                                $stmt,
+                                $real_stmt,
                                 $var_type_part->return_type ?: Type::getMixed()
                             );
                         }
@@ -222,9 +251,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                         $statements_analyzer->node_data = $old_data_provider;
 
-                        if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
+                        if ($stmt_type = $statements_analyzer->node_data->getType($real_stmt)) {
                             $statements_analyzer->node_data->setType(
-                                $stmt,
+                                $real_stmt,
                                 Type::combineUnionTypes(
                                     $fake_method_call_type ?: Type::getMixed(),
                                     $stmt_type
@@ -232,7 +261,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             );
                         } else {
                             $statements_analyzer->node_data->setType(
-                                $stmt,
+                                $real_stmt,
                                 $fake_method_call_type ?: Type::getMixed()
                             );
                         }
@@ -266,8 +295,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 }
             }
 
-            if (!$statements_analyzer->node_data->getType($stmt)) {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            if (!$statements_analyzer->node_data->getType($real_stmt)) {
+                $statements_analyzer->node_data->setType($real_stmt, Type::getMixed());
             }
         } else {
             $original_function_id = implode('\\', $stmt->name->parts);
@@ -537,7 +566,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                                     throw new \UnexpectedValueException('$return_type shouldn’t be null here');
                                 }
 
-                                $statements_analyzer->node_data->setType($stmt, $return_type);
+                                $statements_analyzer->node_data->setType($real_stmt, $return_type);
                                 $return_type->by_ref = $function_storage->returns_by_ref;
 
                                 // only check the type locally if it's defined externally
@@ -555,7 +584,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             }
                         } catch (\InvalidArgumentException $e) {
                             // this can happen when the function was defined in the Config startup script
-                            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+                            $statements_analyzer->node_data->setType($real_stmt, Type::getMixed());
                         }
                     } else {
                         $stmt_type = FunctionAnalyzer::getReturnTypeFromCallMapWithArgs(
@@ -577,7 +606,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 }
 
                 if ($stmt_type) {
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                    $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
                 }
             }
 
@@ -652,7 +681,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             ? new Type\Atomic\GetClassT($var_id, $context->vars_in_scope[$var_id])
                             : new Type\Atomic\GetTypeT($var_id);
 
-                        $statements_analyzer->node_data->setType($stmt, new Type\Union([$atomic_type]));
+                        $statements_analyzer->node_data->setType($real_stmt, new Type\Union([$atomic_type]));
                     }
                 } elseif ($var_type = $statements_analyzer->node_data->getType($var)) {
                     $class_string_types = [];
@@ -664,14 +693,14 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     }
 
                     if ($class_string_types) {
-                        $statements_analyzer->node_data->setType($stmt, new Type\Union($class_string_types));
+                        $statements_analyzer->node_data->setType($real_stmt, new Type\Union($class_string_types));
                     }
                 }
             } elseif ($stmt->name->parts === ['get_class']
                 && ($get_class_name = $statements_analyzer->getFQCLN())
             ) {
                 $statements_analyzer->node_data->setType(
-                    $stmt,
+                    $real_stmt,
                     new Type\Union([
                         new Type\Atomic\TClassString(
                             $get_class_name,
@@ -685,7 +714,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         if ($codebase->store_node_types
             && !$context->collect_initializations
             && !$context->collect_mutations
-            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+            && ($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
         ) {
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
@@ -943,7 +972,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         );
 
                         if ($const_type) {
-                            $statements_analyzer->node_data->setType($stmt, $const_type);
+                            $statements_analyzer->node_data->setType($real_stmt, $const_type);
                         }
                     }
                 } else {
@@ -996,7 +1025,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             && $function_id
             && $in_call_map
             && $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args)
-            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+            && ($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
         ) {
             if ($function_id === 'substr'
                 && isset($stmt->args[0])
@@ -1021,8 +1050,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
         }
 
-        if (!$statements_analyzer->node_data->getType($stmt)) {
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+        if (!$statements_analyzer->node_data->getType($real_stmt)) {
+            $statements_analyzer->node_data->setType($real_stmt, Type::getMixed());
         }
 
         return null;

@@ -2486,6 +2486,28 @@ class FunctionCallTest extends TestCase
                     $foo2 = [1, 4, 5];
                     foo(array_merge($foo1, $foo2));'
             ],
+            'callUserFunc' => [
+                '<?php
+                    $func = function(int $arg1, int $arg2) : int {
+                        return $arg1 * $arg2;
+                    };
+
+                    $a = call_user_func($func, 2, 4);',
+                [
+                    '$a' => 'int',
+                ]
+            ],
+            'callUserFuncArray' => [
+                '<?php
+                    $func = function(int $arg1, int $arg2) : int {
+                        return $arg1 * $arg2;
+                    };
+
+                    $a = call_user_func_array($func, [2, 4]);',
+                [
+                    '$a' => 'int',
+                ]
+            ],
         ];
     }
 
