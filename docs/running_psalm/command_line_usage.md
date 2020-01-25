@@ -29,7 +29,11 @@ Currently, Shepherd tracks type coverage (the percentage of types Psalm can infe
 Psalm has a couple of command-line options that will result in faster builds:
 
 - `--threads=[n]` to run Psalm’s analysis in a number of threads
-- `--diff` which only checks files you’ve updated (and their dependents).
-- `--diff-methods` which remembers Psalm’s output when scanning particular methods.
+- `--diff` which only checks files you’ve updated since the last run (and their dependents).
+- `--diff-methods` which only checks methods you’ve updated since the last run (and their dependents).
+
+Data from the last run is stored in the *cache directory*, which may be set in [configuration](./configuration.md).
+If you are running Psalm on a build server, you may want to configure the server to ensure that the cache directory
+is preserved between runs.
 
 Running them together (e.g. `--threads=8 --diff --diff-methods`) will result in the fastest possible Psalm run.
