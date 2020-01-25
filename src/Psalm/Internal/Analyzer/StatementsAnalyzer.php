@@ -1849,10 +1849,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $item_key_type = Type::getInt();
                 }
 
-                if ($item_value_type && !$can_create_objectlike) {
-                    continue;
-                }
-
                 $single_item_value_type = self::getSimpleType(
                     $codebase,
                     $nodes,
