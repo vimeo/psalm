@@ -541,6 +541,14 @@ abstract class Atomic
             }
         }
 
+        if ($this instanceof Type\Atomic\TList) {
+            $this->type_param->queueClassLikesForScanning(
+                $codebase,
+                $file_storage,
+                $phantom_classes
+            );
+        }
+
         if ($this instanceof Type\Atomic\TFn
             || $this instanceof Type\Atomic\TCallable
         ) {
