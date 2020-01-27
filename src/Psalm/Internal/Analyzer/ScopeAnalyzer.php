@@ -338,7 +338,7 @@ class ScopeAnalyzer
 
         $control_actions[] = self::ACTION_NONE;
 
-        return array_values(array_unique($control_actions));
+        return \array_values(array_unique($control_actions));
     }
 
     /**
