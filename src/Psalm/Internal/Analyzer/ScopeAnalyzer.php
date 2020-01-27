@@ -22,6 +22,15 @@ class ScopeAnalyzer
     const ACTION_NONE = 'NONE';
     const ACTION_RETURN = 'RETURN';
 
+    private const ACTIONS = [
+        self::ACTION_END,
+        self::ACTION_BREAK,
+        self::ACTION_CONTINUE,
+        self::ACTION_LEAVE_SWITCH,
+        self::ACTION_NONE,
+        self::ACTION_RETURN
+    ];
+
     /**
      * @param   array<PhpParser\Node\Stmt>   $stmts
      *
@@ -62,16 +71,16 @@ class ScopeAnalyzer
 
     /**
      * @param   array<PhpParser\Node> $stmts
-     * @param   bool $in_switch when checking inside a switch statement, continue is an alias of break
      * @param   bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
+     * @param   list<'loop'|'switch'> $break_types
      *
-     * @return  string[] one or more of 'LEAVE', 'CONTINUE', 'BREAK' (or empty if no single action is found)
+     * @return  list<value-of<self::ACTIONS>>
      */
     public static function getFinalControlActions(
         array $stmts,
         ?\Psalm\Internal\Provider\NodeDataProvider $nodes,
         array $exit_functions,
-        $in_switch = false,
+        array $break_types = [],
         $return_is_exit = true
     ) {
         if (empty($stmts)) {
@@ -146,7 +155,8 @@ class ScopeAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
-                if ($in_switch
+                if ($break_types
+                    && end($break_types) === 'switch'
                     && (!$stmt->num || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber || $stmt->num->value < 2)
                 ) {
                     return [self::ACTION_LEAVE_SWITCH];
@@ -156,7 +166,8 @@ class ScopeAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-                if ($in_switch
+                if ($break_types
+                    && end($break_types) === 'switch'
                     && (!$stmt->num || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber || $stmt->num->value < 2)
                 ) {
                     return [self::ACTION_LEAVE_SWITCH];
@@ -166,9 +177,15 @@ class ScopeAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $if_statement_actions = self::getFinalControlActions($stmt->stmts, $nodes, $exit_functions, $in_switch);
+                $if_statement_actions = self::getFinalControlActions(
+                    $stmt->stmts,
+                    $nodes,
+                    $exit_functions,
+                    $break_types
+                );
+
                 $else_statement_actions = $stmt->else
-                    ? self::getFinalControlActions($stmt->else->stmts, $nodes, $exit_functions, $in_switch)
+                    ? self::getFinalControlActions($stmt->else->stmts, $nodes, $exit_functions, $break_types)
                     : [];
 
                 $all_same = count($if_statement_actions) === 1
@@ -183,7 +200,7 @@ class ScopeAnalyzer
                             $elseif->stmts,
                             $nodes,
                             $exit_functions,
-                            $in_switch
+                            $break_types
                         );
 
                         $all_same = $all_same && $elseif_control_actions == $if_statement_actions;
@@ -215,7 +232,7 @@ class ScopeAnalyzer
                 for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
                     $case = $stmt->cases[$d];
 
-                    $case_actions = self::getFinalControlActions($case->stmts, $nodes, $exit_functions, true);
+                    $case_actions = self::getFinalControlActions($case->stmts, $nodes, $exit_functions, ['switch']);
 
                     if (array_intersect([
                         self::ACTION_LEAVE_SWITCH,
@@ -252,8 +269,15 @@ class ScopeAnalyzer
 
             if ($stmt instanceof PhpParser\Node\Stmt\Do_
                 || $stmt instanceof PhpParser\Node\Stmt\While_
+                || $stmt instanceof PhpParser\Node\Stmt\Foreach_
+                || $stmt instanceof PhpParser\Node\Stmt\For_
             ) {
-                $do_actions = self::getFinalControlActions($stmt->stmts, $nodes, $exit_functions);
+                $do_actions = self::getFinalControlActions(
+                    $stmt->stmts,
+                    $nodes,
+                    $exit_functions,
+                    array_merge($break_types, ['loop'])
+                );
 
                 $control_actions = array_merge($control_actions, $do_actions);
             }
@@ -263,7 +287,7 @@ class ScopeAnalyzer
                     $stmt->stmts,
                     $nodes,
                     $exit_functions,
-                    $in_switch
+                    $break_types
                 );
 
                 if ($stmt->catches) {
@@ -274,7 +298,7 @@ class ScopeAnalyzer
                             $catch->stmts,
                             $nodes,
                             $exit_functions,
-                            $in_switch
+                            $break_types
                         );
 
                         $all_same = $all_same && $try_statement_actions == $catch_actions;
@@ -295,7 +319,7 @@ class ScopeAnalyzer
                             $stmt->finally->stmts,
                             $nodes,
                             $exit_functions,
-                            $in_switch
+                            $break_types
                         );
 
                         if (!in_array(self::ACTION_NONE, $finally_statement_actions, true)) {
@@ -308,13 +332,13 @@ class ScopeAnalyzer
                     }
                 }
 
-                $control_actions = array_merge($control_actions, $try_statement_actions);
+                $control_actions = \array_merge($control_actions, $try_statement_actions);
             }
         }
 
         $control_actions[] = self::ACTION_NONE;
 
-        return array_unique($control_actions);
+        return array_values(array_unique($control_actions));
     }
 
     /**

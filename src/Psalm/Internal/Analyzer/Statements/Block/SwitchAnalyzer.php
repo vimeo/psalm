@@ -77,7 +77,7 @@ class SwitchAnalyzer
                 $case->stmts,
                 $statements_analyzer->node_data,
                 $config->exit_functions,
-                true
+                ['switch']
             );
 
             if (!in_array(ScopeAnalyzer::ACTION_NONE, $case_actions, true)) {
@@ -428,7 +428,7 @@ class SwitchAnalyzer
             );
         }
 
-        $case_context->inside_case = true;
+        $case_context->break_types[] = 'switch';
 
         $switch_scope->leftover_statements = [];
         $switch_scope->leftover_case_equality_expr = null;

@@ -391,10 +391,21 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 SwitchAnalyzer::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 $loop_scope = $context->loop_scope;
+
+                $leaving_switch = true;
+
                 if ($loop_scope && $original_context) {
-                    if ($context->inside_case && !$stmt->num) {
+                    if ($context->break_types
+                        && \end($context->break_types) === 'switch'
+                        && (!$stmt->num
+                            || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber
+                            || $stmt->num->value < 2
+                        )
+                    ) {
                         $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
                     } else {
+                        $leaving_switch = false;
+
                         $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_BREAK;
                     }
 
@@ -432,7 +443,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         }
                     }
 
-                    if ($context->collect_references && (!$context->case_scope || $stmt->num)) {
+                    if ($context->collect_references && !$leaving_switch) {
                         foreach ($context->unreferenced_vars as $var_id => $locations) {
                             if (isset($loop_scope->unreferenced_vars[$var_id])) {
                                 $loop_scope->unreferenced_vars[$var_id] += $locations;
@@ -446,7 +457,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
 
                 $case_scope = $context->case_scope;
-                if ($case_scope) {
+                if ($case_scope && $leaving_switch) {
                     foreach ($context->vars_in_scope as $var_id => $type) {
                         if ($case_scope->parent_context !== $context) {
                             if ($case_scope->break_vars === null) {
@@ -477,8 +488,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 $has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 $loop_scope = $context->loop_scope;
+
+                $leaving_switch = true;
+
                 if ($loop_scope === null) {
-                    if (!$context->inside_case) {
+                    if (!$context->break_types) {
                         if (IssueBuffer::accepts(
                             new ContinueOutsideLoop(
                                 'Continue call outside loop context',
@@ -490,9 +504,16 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         }
                     }
                 } elseif ($original_context) {
-                    if ($context->inside_case && !$stmt->num) {
+                    if ($context->break_types
+                        && \end($context->break_types) === 'switch'
+                        && (!$stmt->num
+                            || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber
+                            || $stmt->num->value < 2
+                        )
+                    ) {
                         $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
                     } else {
+                        $leaving_switch = false;
                         $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_CONTINUE;
                     }
 
@@ -546,7 +567,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
 
                 $case_scope = $context->case_scope;
-                if ($case_scope && $context->collect_references) {
+                if ($case_scope && $context->collect_references && $leaving_switch) {
                     foreach ($context->unreferenced_vars as $var_id => $locations) {
                         if (isset($case_scope->unreferenced_vars[$var_id])) {
                             $case_scope->unreferenced_vars[$var_id] += $locations;

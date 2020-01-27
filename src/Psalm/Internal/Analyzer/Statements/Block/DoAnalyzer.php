@@ -32,8 +32,7 @@ class DoAnalyzer
         Context $context
     ) {
         $do_context = clone $context;
-
-        $do_context->inside_case = false;
+        $do_context->break_types[] = 'loop';
 
         $codebase = $statements_analyzer->getCodebase();
 

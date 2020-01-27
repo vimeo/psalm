@@ -188,7 +188,7 @@ class ReturnTypeAnalyzer
                 $function_stmts,
                 $type_provider,
                 $codebase->config->exit_functions,
-                false,
+                [],
                 false
             ) !== [ScopeAnalyzer::ACTION_END]
         ) {

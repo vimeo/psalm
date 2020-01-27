@@ -66,7 +66,7 @@ class ForAnalyzer
         $for_context = clone $context;
 
         $for_context->inside_loop = true;
-        $for_context->inside_case = false;
+        $for_context->break_types[] = 'loop';
 
         $codebase = $statements_analyzer->getCodebase();
 

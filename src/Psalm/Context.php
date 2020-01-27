@@ -266,11 +266,14 @@ class Context
     public $branch_point;
 
     /**
-     * If we're inside case statements we allow continue; statements as an alias of break;
+     * What does break mean in this context?
      *
-     * @var bool
+     * 'loop' means we're breaking out of a loop,
+     * 'switch' means we're breaking out of a switch
+     *
+     * @var list<'loop'|'switch'>
      */
-    public $inside_case = false;
+    public $break_types = [];
 
     /**
      * @var bool

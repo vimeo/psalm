@@ -1919,7 +1919,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             $function_stmt->stmts,
                             null,
                             $this->config->exit_functions,
-                            false,
+                            [],
                             false
                         );
 

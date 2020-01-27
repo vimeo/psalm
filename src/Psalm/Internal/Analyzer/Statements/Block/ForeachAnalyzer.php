@@ -226,7 +226,7 @@ class ForeachAnalyzer
         }
 
         $foreach_context->inside_loop = true;
-        $foreach_context->inside_case = false;
+        $foreach_context->break_types[] = 'loop';
 
         if ($codebase->alter_code) {
             $foreach_context->branch_point =

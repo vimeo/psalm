@@ -40,7 +40,7 @@ class WhileAnalyzer
         $while_context = clone $context;
 
         $while_context->inside_loop = true;
-        $while_context->inside_case = false;
+        $while_context->break_types[] = 'loop';
 
         $codebase = $statements_analyzer->getCodebase();
 
