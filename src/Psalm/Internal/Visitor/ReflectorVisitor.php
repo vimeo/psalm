@@ -2680,42 +2680,21 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $is_union = true;
         }
 
-        if (strpos($assertion_type, '\'') !== false || strpos($assertion_type, '"') !== false) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    'Docblock assertions cannot contain quotes',
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                )
-            )) {
-            }
-
-            return null;
-        }
-
         $prefix = '';
+
         if ($assertion_type[0] === '!') {
             $prefix = '!';
             $assertion_type = substr($assertion_type, 1);
         }
+
         if ($assertion_type[0] === '~') {
             $prefix .= '~';
             $assertion_type = substr($assertion_type, 1);
         }
+
         if ($assertion_type[0] === '=') {
             $prefix .= '=';
             $assertion_type = substr($assertion_type, 1);
-        }
-
-        if ($prefix && $is_union) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    'Docblock assertions cannot contain | characters together with ' . $prefix,
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                )
-            )) {
-            }
-
-            return null;
         }
 
         $class_template_types = !$stmt instanceof PhpParser\Node\Stmt\ClassMethod || !$stmt->isStatic()
@@ -2733,6 +2712,19 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 true
             )
         );
+
+        if ($prefix && count($namespaced_type->getAtomicTypes()) > 1) {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    'Docblock assertions cannot contain | characters together with ' . $prefix,
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                )
+            )) {
+                // do nothing
+            }
+
+            return null;
+        }
 
         $namespaced_type->queueClassLikesForScanning(
             $this->codebase,

@@ -1038,7 +1038,7 @@ class AssertAnnotationTest extends TestCase
 
                     $a = "";
                     assertFooBar($a);',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'sortOfReplacementForAssert' => [
                 '<?php
@@ -1082,6 +1082,19 @@ class AssertAnnotationTest extends TestCase
                         if ($bar) {}
                     }',
                 'error_message' => 'RedundantCondition - src/somefile.php:19:29',
+            ],
+            'assertOneOfStrings' => [
+                '<?php
+                    /**
+                     * @psalm-assert "a"|"b" $s
+                     */
+                    function foo(string $s) : void {}
+
+                    function takesString(string $s) : void {
+                        foo($s);
+                        if ($s === "c") {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }
