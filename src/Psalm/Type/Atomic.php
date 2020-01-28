@@ -458,7 +458,8 @@ abstract class Atomic
                     $this->value,
                     $file_storage ? $file_storage->file_path : null,
                     false,
-                    !$this->from_docblock
+                    !$this->from_docblock,
+                    $phantom_classes
                 );
 
                 if ($file_storage) {
@@ -487,7 +488,8 @@ abstract class Atomic
                 $this->fq_classlike_name,
                 $file_storage ? $file_storage->file_path : null,
                 false,
-                !$this->from_docblock
+                !$this->from_docblock,
+                $phantom_classes
             );
             if ($file_storage) {
                 $file_storage->referenced_classlikes[strtolower($this->fq_classlike_name)] = $this->fq_classlike_name;
@@ -500,7 +502,8 @@ abstract class Atomic
                     $this->as,
                     $file_storage ? $file_storage->file_path : null,
                     false,
-                    !$this->from_docblock
+                    !$this->from_docblock,
+                    $phantom_classes
                 );
                 if ($file_storage) {
                     $file_storage->referenced_classlikes[strtolower($this->as)] = $this->as;
@@ -521,7 +524,8 @@ abstract class Atomic
                 $this->value,
                 $file_storage ? $file_storage->file_path : null,
                 false,
-                !$this->from_docblock
+                !$this->from_docblock,
+                $phantom_classes
             );
             if ($file_storage) {
                 $file_storage->referenced_classlikes[strtolower($this->value)] = $this->value;
