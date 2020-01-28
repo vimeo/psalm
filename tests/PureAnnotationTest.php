@@ -353,6 +353,36 @@ class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureByReferenceAssignment'
             ],
+            'staticPropertyFetch' => [
+                '<?php
+                    final class Number1 {
+                        public static ?string $zero = null;
+
+                        /**
+                         * @psalm-pure
+                         */
+                        public static function zero(): ?string {
+                            return self::$zero;
+                        }
+                    }',
+                'error_message' => 'ImpureStaticProperty',
+            ],
+            'staticPropertyAssignment' => [
+                '<?php
+                    final class Number1 {
+                        /** @var string|null */
+                        private static $zero;
+
+                        /**
+                         * @psalm-pure
+                         */
+                        public static function zero(): string {
+                            self::$zero = "Zero";
+                            return "hello";
+                        }
+                    }',
+                'error_message' => 'ImpureStaticProperty',
+            ],
         ];
     }
 }

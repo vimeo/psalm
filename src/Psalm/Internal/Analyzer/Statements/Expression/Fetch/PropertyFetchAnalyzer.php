@@ -1084,6 +1084,18 @@ class PropertyFetchAnalyzer
             );
         }
 
+        if ($context->mutation_free) {
+            if (IssueBuffer::accepts(
+                new \Psalm\Issue\ImpureStaticProperty(
+                    'Cannot use a static property in a mutation-free context',
+                    new CodeLocation($statements_analyzer, $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
         if ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
             $stmt_type = $context->vars_in_scope[$var_id];
 
