@@ -2674,12 +2674,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         string $assertion_type,
         PhpParser\Node\FunctionLike $stmt
     ) : ?array {
-        $is_union = false;
-
-        if (strpos($assertion_type, '|') !== false) {
-            $is_union = true;
-        }
-
         $prefix = '';
 
         if ($assertion_type[0] === '!') {
