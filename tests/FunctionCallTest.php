@@ -1399,9 +1399,9 @@ class FunctionCallTest extends TestCase
             ],
             'versionCompare' => [
                 '<?php
-                    /** @return "=="|"===" */
+                    /** @return "="|"==" */
                     function getString() : string {
-                        return rand(0, 1) ? "===" : "==";
+                        return rand(0, 1) ? "==" : "=";
                     }
 
                     $a = version_compare("5.0.0", "7.0.0");
@@ -1411,7 +1411,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'bool',
-                    '$c' => 'bool|null',
+                    '$c' => 'bool',
                 ],
             ],
             'getTimeOfDay' => [
