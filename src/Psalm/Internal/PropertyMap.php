@@ -268,7 +268,7 @@ return [
     'domelement' => [
         'schemaTypeInfo' => 'bool',
         'tagName' => 'string',
-        'attributes' => 'DOMNamedNodeMap',
+        'attributes' => 'DOMNamedNodeMap<DOMAttr>',
     ],
     'tidynode' => [
         'value' => 'string',

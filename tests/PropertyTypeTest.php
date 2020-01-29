@@ -344,6 +344,12 @@ class PropertyTypeTest extends TestCase
                         echo $e->attributes->length;
                     }',
             ],
+            'genericTypeFromPropertyMap' => [
+                '<?php
+                    function foo(DOMElement $e) : ?DOMAttr {
+                        return $e->attributes->item(0);
+                    }'
+            ],
             'goodArrayProperties' => [
                 '<?php
                     interface I1 {}

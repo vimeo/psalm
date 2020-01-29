@@ -947,6 +947,32 @@ class DOMNodeList implements Traversable, Countable {
 }
 
 /**
+ * @template-covariant TNode as DOMNode
+ * @template-implements Traversable<string, TNode>
+ */
+class DOMNamedNodeMap implements Traversable, Countable {
+    /**
+     * @var int
+     */
+    public $length;
+
+    /**
+     * @return TNode|null
+     */
+    public function getNamedItem(string $name): ?DOMNode {}
+
+    /**
+     * @return TNode|null
+     */
+    public function getNamedItemNS(string $namespaceURI, string $localName): ?DOMNode {}
+
+    /**
+     * @return TNode|null
+     */
+    public function item(int $index): ?DOMNode {}
+}
+
+/**
  * The SplDoublyLinkedList class provides the main functionalities of a doubly linked list.
  * @link https://php.net/manual/en/class.spldoublylinkedlist.php
  *
