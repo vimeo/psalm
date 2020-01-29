@@ -447,6 +447,7 @@ class IssueBuffer
                         return $d1['file_path'] > $d2['file_path'] ? 1 : -1;
                     }
                 );
+                unset($file_issues);
             }
 
             if (!empty($issue_baseline)) {
