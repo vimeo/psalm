@@ -424,7 +424,7 @@ class IssueBuffer
         if (self::$issues_data) {
             \ksort(self::$issues_data);
 
-            foreach (self::$issues_data as &$file_issues) {
+            foreach (self::$issues_data as $file_path => $file_issues) {
                 usort(
                     $file_issues,
                     /**
@@ -447,7 +447,7 @@ class IssueBuffer
                         return $d1['file_path'] > $d2['file_path'] ? 1 : -1;
                     }
                 );
-                unset($file_issues);
+                self::$issues_data[$file_path] = $file_issues;
             }
 
             if (!empty($issue_baseline)) {
