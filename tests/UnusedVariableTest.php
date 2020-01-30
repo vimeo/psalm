@@ -1408,6 +1408,21 @@ class UnusedVariableTest extends TestCase
                         }
                     }'
             ],
+            'passedByRefArrayOffset' => [
+                '<?php
+                    $a = [
+                        "a" => [1],
+                        "b" => [2]
+                    ];
+
+                    foreach (["a"] as $e){
+                        takes_ref($a[$e]);
+                    }
+
+                    function takes_ref(array &$p): void {
+                        echo implode(",", $p);
+                    }'
+            ],
         ];
     }
 

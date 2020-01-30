@@ -430,7 +430,9 @@ class CallAnalyzer
                         return false;
                     }
 
-                    continue;
+                    if ($arg->value instanceof PhpParser\Node\Expr\Variable) {
+                        continue;
+                    }
                 }
 
                 $toggled_class_exists = false;
