@@ -13,7 +13,7 @@ class TypeCombinationTest extends TestCase
      * @dataProvider providerTestValidTypeCombination
      *
      * @param string $expected
-     * @param list<string> $types
+     * @param non-empty-list<string> $types
      *
      * @return void
      */
@@ -26,8 +26,6 @@ class TypeCombinationTest extends TestCase
             $converted_type->setFromDocblock();
             $converted_types[] = $converted_type;
         }
-
-        $this->assertNotEmpty($converted_types);
 
         $this->assertSame(
             $expected,
@@ -62,7 +60,7 @@ class TypeCombinationTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,list<string>}>
+     * @return array<string,array{string,non-empty-list<string>}>
      */
     public function providerTestValidTypeCombination()
     {
