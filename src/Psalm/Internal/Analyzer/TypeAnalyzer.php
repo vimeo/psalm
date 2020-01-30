@@ -1429,7 +1429,7 @@ class TypeAnalyzer
                 || $input_type_part instanceof TList
                 || (
                     $input_type_part instanceof TNamedObject &&
-                    $codebase->classExists($input_type_part->value) &&
+                    $codebase->classOrInterfaceExists($input_type_part->value) &&
                     $codebase->methodExists($input_type_part->value . '::__invoke')
                 )
             )
