@@ -244,6 +244,16 @@ Setting to `false` prevents the stub from loading.
 ```
 When `true`, Psalm will complain when referencing an explicit string offset on an array e.g. `$arr['foo']` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
 
+#### phpVersion
+```xml
+<psalm
+  phpVersion="[string]"
+>
+```
+Set the php version psalm should assume when checking and/or fixing the project. If this attribute is not set, psalm uses the declaration in `composer.json` if one is present. It will check against the earliest version of PHP that satisfies the declared `php` dependency
+
+This can be overridden on the command-line using the `--php-version=` flag which takes the highest precedence over both the `phpVersion` setting and the version derived from `composer.json`.
+
 ### Running Psalm
 
 #### autoloader
