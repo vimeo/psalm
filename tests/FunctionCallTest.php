@@ -2487,6 +2487,16 @@ class FunctionCallTest extends TestCase
                     $foo2 = [1, 4, 5];
                     foo(array_merge($foo1, $foo2));'
             ],
+            'arrayMergeTwoPossiblyFalse' => [
+                '<?php
+                    $a = array_merge(
+                        glob(__DIR__ . \'/stubs/*.php\'),
+                        glob(__DIR__ . \'/stubs/DBAL/*.php\'),
+                    );',
+                [
+                    '$a' => 'list<string>'
+                ],
+            ],
             'callUserFunc' => [
                 '<?php
                     $func = function(int $arg1, int $arg2) : int {

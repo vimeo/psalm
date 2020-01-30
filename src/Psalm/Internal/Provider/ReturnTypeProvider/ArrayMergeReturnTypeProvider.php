@@ -70,6 +70,14 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
 
                 foreach ($unpacked_type_parts as $unpacked_type_part) {
                     if (!$unpacked_type_part instanceof Type\Atomic\TArray) {
+                        if (($unpacked_type_part instanceof Type\Atomic\TFalse
+                                && $call_arg_type->ignore_falsable_issues)
+                            || ($unpacked_type_part instanceof Type\Atomic\TNull
+                                && $call_arg_type->ignore_nullable_issues)
+                        ) {
+                            continue;
+                        }
+
                         if ($unpacked_type_part instanceof Type\Atomic\ObjectLike) {
                             if ($generic_properties !== null) {
                                 $generic_properties = array_merge(
