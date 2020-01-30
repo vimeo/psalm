@@ -114,6 +114,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 $call_map = CallMap::getCallMap();
 
                 $mapping_return_type = null;
+                $closure_param_type = null;
 
                 $codebase = $statements_source->getCodebase();
 
@@ -171,6 +172,15 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
                                 $part_match_found = true;
 
+                                $params = $codebase->methods->getMethodParams(
+                                    $mapping_function_id_part,
+                                    $statements_source
+                                );
+
+                                if (isset($params[0]->type)) {
+                                    $closure_param_type = $params[0]->type;
+                                }
+
                                 $self_class = 'self';
 
                                 $return_type = $codebase->methods->getMethodReturnType(
@@ -217,6 +227,10 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     $mapping_function_id_part
                                 );
 
+                                if (isset($function_storage->params[0]->type)) {
+                                    $closure_param_type = $function_storage->params[0]->type;
+                                }
+
                                 $return_type = $function_storage->return_type ?: Type::getMixed();
 
                                 if ($mapping_return_type) {
@@ -234,6 +248,40 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     if ($part_match_found === false) {
                         $mapping_return_type = Type::getMixed();
                     }
+                }
+
+                if ($mapping_return_type
+                    && $closure_param_type
+                    && $mapping_return_type->hasTemplate()
+                    && $array_arg_type
+                ) {
+                    $mapping_return_type = clone $mapping_return_type;
+
+                    $template_types = [];
+
+                    foreach ($closure_param_type->getTemplateTypes() as $template_type) {
+                        $template_types[$template_type->param_name] = [
+                            ($template_type->defining_class) => [$template_type->as]
+                        ];
+                    }
+
+                    $template_result = new \Psalm\Internal\Type\TemplateResult(
+                        $template_types,
+                        []
+                    );
+
+                    \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                        $closure_param_type,
+                        $template_result,
+                        $codebase,
+                        $array_arg_type->value,
+                        $context->self,
+                        $context->calling_function_id
+                    );
+
+                    $mapping_return_type->replaceTemplateTypesWithArgTypes(
+                        $template_result->generic_params
+                    );
                 }
             }
         }

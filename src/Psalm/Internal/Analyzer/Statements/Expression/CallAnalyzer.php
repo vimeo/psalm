@@ -2328,8 +2328,6 @@ class CallAnalyzer
             return;
         }
 
-        $i = 0;
-
         foreach ($closure_params as $i => $closure_param) {
             if (!isset($array_arg_types[$i])) {
                 continue;
