@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Composer\Semver\Semver;
 use Webmozart\PathUtil\Path;
 use function array_merge;
 use function array_pop;
@@ -181,6 +182,13 @@ class Config
      * @var string
      */
     public $base_dir;
+
+    /**
+     * The PHP version to assume as declared in the config file
+     *
+     * @var string|null
+     */
+    private $configured_php_version;
 
     /**
      * @var array<int, string>
@@ -743,6 +751,10 @@ class Config
         } else {
             $config->base_dir = $current_dir;
             $base_dir = $current_dir;
+        }
+
+        if (isset($config_xml['phpVersion'])) {
+            $config->configured_php_version = (string) $config_xml['phpVersion'];
         }
 
         if (isset($config_xml['autoloader'])) {
@@ -1861,8 +1873,42 @@ class Config
         $this->stub_files[] = $stub_file;
     }
 
+    public function getPhpVersion(): ?string
+    {
+        if (isset($this->configured_php_version)) {
+            return $this->configured_php_version;
+        }
+
+        return $this->getPHPVersionFromComposerJson();
+    }
+
     private function setBooleanAttribute(string $name, bool $value): void
     {
         $this->$name = $value;
+    }
+
+    /**
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedArrayAccess
+     */
+    private function getPHPVersionFromComposerJson(): ?string
+    {
+        $composer_json_path = $this->base_dir . DIRECTORY_SEPARATOR. 'composer.json';
+
+        if (file_exists($composer_json_path)) {
+            if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+                throw new \UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+            }
+            $php_version = $composer_json['require']['php'] ?? null;
+
+            if ($php_version) {
+                foreach (['5.4', '5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0'] as $candidate) {
+                    if (Semver::satisfies($candidate, (string)$php_version)) {
+                        return $candidate;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
