@@ -942,6 +942,7 @@ class DOMNodeList implements Traversable, Countable {
     /**
      * @param int $index
      * @return TNode|null
+     * @psalm-ignore-nullable-return
      */
     public function item($index) {}
 }
@@ -968,6 +969,7 @@ class DOMNamedNodeMap implements Traversable, Countable {
 
     /**
      * @return TNode|null
+     * @psalm-ignore-nullable-return
      */
     public function item(int $index): ?DOMNode {}
 }
