@@ -9,6 +9,7 @@ cd testing-with-real-projects
 
 git clone git@github.com:muglug/phpunit.git
 cd phpunit
+git checkout 4494070
 composer install
 ~/project/build/psalm.phar --config=.psalm/config.xml --monochrome --show-info=false
 ~/project/build/psalm.phar --config=.psalm/static-analysis.xml --monochrome
