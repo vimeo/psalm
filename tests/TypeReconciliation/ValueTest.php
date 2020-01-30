@@ -689,6 +689,16 @@ class ValueTest extends TestCase
 
                 foo((int) ((bool) 2));',
             ],
+            'notEqualToEachOther' => [
+                '<?php
+                    function example(object $a, object $b): bool {
+                        if ($a !== $b && \get_class($a) === \get_class($b)) {
+                            return true;
+                        }
+
+                        return false;
+                    }'
+            ],
         ];
     }
 
