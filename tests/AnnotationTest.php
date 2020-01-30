@@ -1071,6 +1071,18 @@ class AnnotationTest extends TestCase
                     $data = json_decode("{}", false);
                     consume($data->value ?? "");'
             ],
+            'throwSelf' => [
+                '<?php
+                    class MyException extends \Exception {
+                        /**
+                         * @throws self
+                         */
+                        public static function create(): void
+                        {
+                          throw new self();
+                        }
+                    }'
+            ],
         ];
     }
 

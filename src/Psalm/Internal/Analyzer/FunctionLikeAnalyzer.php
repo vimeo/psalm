@@ -632,6 +632,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         foreach ($storage->throws as $expected_exception => $_) {
+            if (($expected_exception === 'self'
+                    || $expected_exception === 'static')
+                && $context->self
+            ) {
+                $expected_exception = $context->self;
+            }
+
             if (isset($storage->throw_locations[$expected_exception])) {
                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $statements_analyzer,
