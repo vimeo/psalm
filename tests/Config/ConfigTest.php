@@ -1451,4 +1451,30 @@ class ConfigTest extends \Psalm\Tests\TestCase
             $config->getPotentialComposerFilePathForClassLike('Psalm\\Tests\\Foo')
         );
     }
+
+    /**
+     * @return void
+     */
+    public function testTakesPhpVersionFromConfigFile()
+    {
+        $cfg = Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?><psalm phpVersion="7.1"></psalm>'
+        );
+        $this->assertSame('7.1', $cfg->getPhpVersion());
+    }
+
+    /**
+     * @return void
+     */
+    public function testReadsComposerJsonForPhpVersion()
+    {
+
+        $root = __DIR__ . '/../fixtures/ComposerPhpVersion';
+        $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
+        $this->assertSame('7.2', $cfg->getPhpVersion());
+
+        $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm phpVersion='8.0'></psalm>");
+        $this->assertSame('8.0', $cfg->getPhpVersion());
+    }
 }
