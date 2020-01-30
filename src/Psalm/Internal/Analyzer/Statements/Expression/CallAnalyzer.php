@@ -1996,7 +1996,7 @@ class CallAnalyzer
                                 }
                             }
 
-                            $template_types[$template_name][$class_storage->name] = [$output_type ?: Type::getMixed()];
+                            $template_types[$template_name][$class_storage->name] = [$output_type];
                         }
                     }
                 }

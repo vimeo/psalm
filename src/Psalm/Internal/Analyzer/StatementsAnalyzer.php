@@ -1948,6 +1948,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 && $item_key_type
                 && ($item_key_type->hasString() || $item_key_type->hasInt())
                 && $can_create_objectlike
+                && $property_types
             ) {
                 $objectlike = new Type\Atomic\ObjectLike($property_types, $class_strings);
                 $objectlike->sealed = true;

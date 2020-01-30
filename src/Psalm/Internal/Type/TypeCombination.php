@@ -148,7 +148,7 @@ class TypeCombination
      *  - and `array<string> + array<empty> = array<string>`
      *  - and `array + array<string> = array<mixed>`
      *
-     * @param  list<Atomic>    $types
+     * @param  non-empty-list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
      *
@@ -174,10 +174,6 @@ class TypeCombination
             }
 
             return $union_type;
-        }
-
-        if (!$types) {
-            throw new \InvalidArgumentException('You must pass at least one type to combineTypes');
         }
 
         $combination = new TypeCombination();

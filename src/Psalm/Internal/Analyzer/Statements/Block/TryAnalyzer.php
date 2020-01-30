@@ -198,6 +198,10 @@ class TryAnalyzer
                 throw new \UnexpectedValueException('Catch var name must be a string');
             }
 
+            if (!$catch->types) {
+                throw new \UnexpectedValueException('Very bad');
+            }
+
             foreach ($catch->types as $catch_type) {
                 $fq_catch_class = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $catch_type,

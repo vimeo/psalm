@@ -52,9 +52,9 @@ class Union
         | self::TAINTED_SYSTEM_SECRET;
 
     /**
-     * @var array<string, Atomic>
+     * @var non-empty-array<string, Atomic>
      */
-    private $types = [];
+    private $types;
 
     /**
      * Whether the type originated in a docblock
@@ -196,19 +196,17 @@ class Union
     /**
      * Constructs an Union instance
      *
-     * @param array<int, Atomic>     $types
+     * @param non-empty-array<int, Atomic>     $types
      */
     public function __construct(array $types)
     {
         $from_docblock = false;
 
-        if (!$types) {
-            throw new \UnexpectedValueException('Cannot construct a union with empty types');
-        }
+        $keyed_types = [];
 
         foreach ($types as $type) {
             $key = $type->getKey();
-            $this->types[$key] = $type;
+            $keyed_types[$key] = $type;
 
             if ($type instanceof TLiteralInt) {
                 $this->literal_int_types[$key] = $type;
@@ -222,6 +220,8 @@ class Union
 
             $from_docblock = $from_docblock || $type->from_docblock;
         }
+
+        $this->types = $keyed_types;
 
         $this->from_docblock = $from_docblock;
     }
@@ -237,7 +237,7 @@ class Union
     }
 
     /**
-     * @return array<string, Atomic>
+     * @return non-empty-array<string, Atomic>
      */
     public function getAtomicTypes()
     {
@@ -486,13 +486,13 @@ class Union
         $types = $this->types;
 
         if (isset($types['null'])) {
+            if (count($types) === 1) {
+                return null;
+            }
+
             unset($types['null']);
 
             $nullable = true;
-        }
-
-        if (!$types) {
-            return null;
         }
 
         $atomic_type = array_values($types)[0];
@@ -524,11 +524,11 @@ class Union
         $types = $this->types;
 
         if (isset($types['null'])) {
-            unset($types['null']);
-        }
-
-        if (!$types) {
-            return false;
+            if (count($types) > 1) {
+                unset($types['null']);
+            } else {
+                return false;
+            }
         }
 
         $atomic_type = array_values($types)[0];
@@ -1252,6 +1252,10 @@ class Union
         $this->id = null;
 
         if ($is_mixed) {
+            if (!$new_types) {
+                throw new \UnexpectedValueException('This array should be full');
+            }
+
             $this->types = $new_types;
 
             return;
@@ -1271,10 +1275,14 @@ class Union
             }
         }
 
-        $this->types = TypeCombination::combineTypes(
-            array_values(array_merge($this->types, $new_types)),
-            $codebase
-        )->getAtomicTypes();
+        $atomic_types = array_values(array_merge($this->types, $new_types));
+
+        if ($atomic_types) {
+            $this->types = TypeCombination::combineTypes(
+                $atomic_types,
+                $codebase
+            )->getAtomicTypes();
+        }
     }
 
     /**

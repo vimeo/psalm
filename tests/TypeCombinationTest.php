@@ -27,6 +27,8 @@ class TypeCombinationTest extends TestCase
             $converted_types[] = $converted_type;
         }
 
+        $this->assertNotEmpty($converted_types);
+
         $this->assertSame(
             $expected,
             (string) TypeCombination::combineTypes($converted_types)

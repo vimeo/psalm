@@ -470,6 +470,12 @@ abstract class Type
                 $atomic_types[] = new TNull;
             }
 
+            if (!$atomic_types) {
+                throw new TypeParseTreeException(
+                    'No atomic types found'
+                );
+            }
+
             return TypeCombination::combineTypes($atomic_types);
         }
 

@@ -61,7 +61,11 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 }
             }
 
-            return new Type\Union([new Type\Atomic\ObjectLike($array_arg_types)]);
+            if ($array_arg_types) {
+                return new Type\Union([new Type\Atomic\ObjectLike($array_arg_types)]);
+            }
+
+            return Type::getArray();
         }
 
         $array_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;

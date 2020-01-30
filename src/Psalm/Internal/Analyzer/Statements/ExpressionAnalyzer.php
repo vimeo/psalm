@@ -299,7 +299,7 @@ class ExpressionAnalyzer
                     }
                 }
 
-                if ($unacceptable_type) {
+                if ($unacceptable_type || !$acceptable_types) {
                     $message = 'Cannot negate a non-numeric non-string type ' . $unacceptable_type;
                     if ($has_valid_operand) {
                         if (IssueBuffer::accepts(
@@ -648,7 +648,7 @@ class ExpressionAnalyzer
                 }
             }
 
-            if ($all_permissible) {
+            if ($permissible_atomic_types && $all_permissible) {
                 $statements_analyzer->node_data->setType(
                     $stmt,
                     TypeCombination::combineTypes($permissible_atomic_types)
@@ -1218,7 +1218,7 @@ class ExpressionAnalyzer
      * @param  string|null  $self_class
      * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
      *
-     * @return Type\Atomic|array<int, Type\Atomic>
+     * @return Type\Atomic|non-empty-array<int, Type\Atomic>
      */
     private static function fleshOutAtomicType(
         Codebase $codebase,
@@ -1974,8 +1974,14 @@ class ExpressionAnalyzer
             // todo: emit error here
         }
 
+        $valid_types = array_merge($valid_strings, $castable_types);
+
+        if (!$valid_types) {
+            return Type::getString();
+        }
+
         return \Psalm\Internal\Type\TypeCombination::combineTypes(
-            array_merge($valid_strings, $castable_types),
+            $valid_types,
             $codebase
         );
     }

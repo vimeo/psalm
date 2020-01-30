@@ -298,6 +298,7 @@ class ArrayAnalyzer
             && $item_key_type
             && ($item_key_type->hasString() || $item_key_type->hasInt())
             && $can_create_objectlike
+            && $property_types
         ) {
             $object_like = new Type\Atomic\ObjectLike($property_types, $class_strings);
             $object_like->sealed = true;

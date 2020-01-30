@@ -1051,6 +1051,10 @@ class ArrayFetchAnalyzer
                             $valid_offsets[] = new TLiteralInt($i);
                         }
 
+                        if (!$valid_offsets) {
+                            throw new \UnexpectedValueException('This is weird');
+                        }
+
                         $valid_offset_type = new Type\Union($valid_offsets);
                     } else {
                         $valid_offset_type = Type::getInt();
