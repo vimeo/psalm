@@ -855,7 +855,7 @@ class NegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$did_remove_type && $is_equality) {
+        if ($is_equality && !$non_scalar_types) {
             return $existing_var_type;
         }
 
@@ -922,12 +922,12 @@ class NegatedAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif (!$type->isObjectType()) {
                 $non_object_types[] = $type;
-            } elseif (!$is_equality) {
+            } else {
                 $did_remove_type = true;
             }
         }
 
-        if (!$did_remove_type && $is_equality) {
+        if ($is_equality && !$non_object_types) {
             return $existing_var_type;
         }
 
@@ -990,12 +990,12 @@ class NegatedAssertionReconciler extends Reconciler
                 }
             } elseif (!$type->isNumericType()) {
                 $non_numeric_types[] = $type;
-            } elseif (!$is_equality) {
+            } else {
                 $did_remove_type = true;
             }
         }
 
-        if (!$did_remove_type && $is_equality) {
+        if ($is_equality && !$non_numeric_types) {
             return $existing_var_type;
         }
 
@@ -1070,12 +1070,12 @@ class NegatedAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif (!$type instanceof TString) {
                 $non_string_types[] = $type;
-            } elseif (!$is_equality) {
+            } else {
                 $did_remove_type = true;
             }
         }
 
-        if (!$did_remove_type && $is_equality) {
+        if ($is_equality && !$non_string_types) {
             return $existing_var_type;
         }
 
@@ -1152,12 +1152,12 @@ class NegatedAssertionReconciler extends Reconciler
                 && !$type instanceof Atomic\TList
             ) {
                 $non_array_types[] = $type;
-            } elseif (!$is_equality) {
+            } else {
                 $did_remove_type = true;
             }
         }
 
-        if (!$did_remove_type && $is_equality) {
+        if ($is_equality && !$non_array_types) {
             return $existing_var_type;
         }
 
