@@ -852,15 +852,15 @@ class NegatedAssertionReconciler extends Reconciler
                 $non_scalar_types[] = $type;
             } else {
                 $did_remove_type = true;
+
+                if ($is_equality) {
+                    $non_scalar_types[] = $type;
+                }
             }
         }
 
-        if ($is_equality && !$non_scalar_types) {
-            return $existing_var_type;
-        }
-
         if (!$did_remove_type || !$non_scalar_types) {
-            if ($key && $code_location && !$is_equality) {
+            if ($key && $code_location) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
                     $old_var_type_string,
@@ -924,15 +924,15 @@ class NegatedAssertionReconciler extends Reconciler
                 $non_object_types[] = $type;
             } else {
                 $did_remove_type = true;
+
+                if ($is_equality) {
+                    $non_object_types[] = $type;
+                }
             }
         }
 
-        if ($is_equality && !$non_object_types) {
-            return $existing_var_type;
-        }
-
-        if (!$non_object_types) {
-            if ($key && $code_location && !$is_equality) {
+        if (!$non_object_types || !$did_remove_type) {
+            if ($key && $code_location) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
                     $old_var_type_string,
@@ -992,14 +992,14 @@ class NegatedAssertionReconciler extends Reconciler
                 $non_numeric_types[] = $type;
             } else {
                 $did_remove_type = true;
+
+                if ($is_equality) {
+                    $non_numeric_types[] = $type;
+                }
             }
         }
 
-        if ($is_equality && !$non_numeric_types) {
-            return $existing_var_type;
-        }
-
-        if ((!$non_numeric_types || !$did_remove_type)) {
+        if (!$non_numeric_types || !$did_remove_type) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -1072,14 +1072,14 @@ class NegatedAssertionReconciler extends Reconciler
                 $non_string_types[] = $type;
             } else {
                 $did_remove_type = true;
+
+                if ($is_equality) {
+                    $non_string_types[] = $type;
+                }
             }
         }
 
-        if ($is_equality && !$non_string_types) {
-            return $existing_var_type;
-        }
-
-        if ((!$non_string_types || !$did_remove_type)) {
+        if (!$non_string_types || !$did_remove_type) {
             if ($key && $code_location) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -1154,11 +1154,11 @@ class NegatedAssertionReconciler extends Reconciler
                 $non_array_types[] = $type;
             } else {
                 $did_remove_type = true;
-            }
-        }
 
-        if ($is_equality && !$non_array_types) {
-            return $existing_var_type;
+                if ($is_equality) {
+                    $non_array_types[] = $type;
+                }
+            }
         }
 
         if ((!$non_array_types || !$did_remove_type)) {
