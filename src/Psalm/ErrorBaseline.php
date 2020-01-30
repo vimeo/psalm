@@ -125,7 +125,7 @@ class ErrorBaseline
                 $codeSamples = $issue->getElementsByTagName('code');
 
                 foreach ($codeSamples as $codeSample) {
-                    $files[$fileName][$issueType]['s'][] = (string) $codeSample->textContent;
+                    $files[$fileName][$issueType]['s'][] = $codeSample->textContent;
                 }
             }
         }

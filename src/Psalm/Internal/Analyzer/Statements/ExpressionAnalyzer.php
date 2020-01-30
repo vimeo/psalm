@@ -601,10 +601,10 @@ class ExpressionAnalyzer
             }
 
             if ($statements_analyzer->node_data->getType($stmt->expr)) {
-                self::castStringAttempt($statements_analyzer, $stmt->expr);
+                $stmt_type = self::castStringAttempt($statements_analyzer, $stmt->expr, true);
+            } else {
+                $stmt_type = Type::getString();
             }
-
-            $stmt_type = Type::getString();
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -1887,44 +1887,66 @@ class ExpressionAnalyzer
         return null;
     }
 
-    /**
-     * @return  void
-     */
     private static function castStringAttempt(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $stmt
-    ) {
+        PhpParser\Node\Expr $stmt,
+        bool $explicit_cast = false
+    ) : Type\Union {
+        $codebase = $statements_analyzer->getCodebase();
+
         if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))) {
-            return;
+            return Type::getString();
         }
 
-        $has_valid_cast = false;
         $invalid_casts = [];
+        $valid_strings = [];
+        $castable_types = [];
 
         foreach ($stmt_type->getAtomicTypes() as $atomic_type) {
-            $atomic_type_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
-
-            if (!$atomic_type instanceof TMixed
-                && !$atomic_type instanceof Type\Atomic\TResource
-                && !$atomic_type instanceof TNull
-                && !TypeAnalyzer::isAtomicContainedBy(
-                    $statements_analyzer->getCodebase(),
-                    $atomic_type,
-                    new TString(),
-                    false,
-                    true,
-                    $atomic_type_results
-                )
-                && !$atomic_type_results->scalar_type_match_found
-            ) {
-                $invalid_casts[] = $atomic_type->getId();
-            } else {
-                $has_valid_cast = true;
+            if ($atomic_type instanceof TString) {
+                $valid_strings[] = $atomic_type;
+                continue;
             }
+
+            if ($atomic_type instanceof TMixed
+                || $atomic_type instanceof Type\Atomic\TResource
+                || $atomic_type instanceof Type\Atomic\TNull
+                || $atomic_type instanceof Type\Atomic\Scalar
+            ) {
+                $castable_types[] = new TString();
+                continue;
+            }
+
+            if ($atomic_type instanceof TNamedObject
+                && $codebase->methods->methodExists($atomic_type->value . '::__tostring')
+            ) {
+                $return_type = $codebase->methods->getMethodReturnType($atomic_type->value . '::__tostring', $self_class);
+
+                if ($return_type) {
+                    $castable_types = array_merge(
+                        $castable_types,
+                        array_values($return_type->getAtomicTypes())
+                    );
+                } else {
+                    $castable_types[] = new TString();
+                }
+
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TObjectWithProperties
+                && isset($atomic_type->methods['__toString'])
+            ) {
+                $castable_types[] = new TString();
+
+                continue;
+            }
+
+            $invalid_casts[] = $atomic_type->getId();
         }
 
         if ($invalid_casts) {
-            if ($has_valid_cast) {
+            if ($valid_strings || $castable_types) {
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidCast(
                         $invalid_casts[0] . ' cannot be cast to string',
@@ -1945,7 +1967,14 @@ class ExpressionAnalyzer
                     // fall through
                 }
             }
+        } elseif ($explicit_cast && !$castable_types) {
+            // todo: emit error here
         }
+
+        return \Psalm\Internal\Type\TypeCombination::combineTypes(
+            array_merge($valid_strings, $castable_types),
+            $codebase
+        );
     }
 
     /**
