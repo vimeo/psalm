@@ -1920,7 +1920,10 @@ class ExpressionAnalyzer
             if ($atomic_type instanceof TNamedObject
                 && $codebase->methods->methodExists($atomic_type->value . '::__tostring')
             ) {
-                $return_type = $codebase->methods->getMethodReturnType($atomic_type->value . '::__tostring', $self_class);
+                $return_type = $codebase->methods->getMethodReturnType(
+                    $atomic_type->value . '::__tostring',
+                    $self_class
+                );
 
                 if ($return_type) {
                     $castable_types = array_merge(
