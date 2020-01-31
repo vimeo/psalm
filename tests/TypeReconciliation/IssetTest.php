@@ -810,7 +810,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         return "hello";
                     }',
             ],
-            'issetOnArrayOfArraysReturningStringInElse' => [
+            'SKIPPED-issetOnArrayOfArraysReturningStringInElse' => [
                 '<?php
                     function foo(int $i) : string {
                         /** @var array<int, array<string, string>> */
