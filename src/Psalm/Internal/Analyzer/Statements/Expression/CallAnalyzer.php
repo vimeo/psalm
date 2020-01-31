@@ -2386,8 +2386,8 @@ class CallAnalyzer
                 $codebase,
                 $input_type,
                 $closure_param_type,
-                false,
-                false,
+                $input_type->ignore_nullable_issues,
+                $input_type->ignore_falsable_issues,
                 $union_comparison_results
             );
 
