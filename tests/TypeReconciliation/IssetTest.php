@@ -796,6 +796,33 @@ class IssetTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'issetOnArrayOfArraysReturningString' => [
+                '<?php
+                    function foo(int $i) : ?string {
+                        /** @var array<array> */
+                        $tokens = [];
+
+                        if (!isset($tokens[$i]["a"])) {
+                            /** @psalm-suppress PossiblyUndefinedArrayOffset */
+                            return $tokens[$i]["a"];
+                        }
+
+                        return "hello";
+                    }',
+            ],
+            'issetOnArrayOfArraysReturningString' => [
+                '<?php
+                    function foo(int $i) : string {
+                        /** @var array<int, array<string, string>> */
+                        $tokens = [];
+
+                        if (isset($tokens[$i]["a"])) {
+                            return "hello";
+                        } else {
+                            return $tokens[$i]["b"];
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -874,6 +901,50 @@ class IssetTest extends \Psalm\Tests\TestCase
                         return "bar";
                     }',
                 'error_message' => 'TypeDoesNotContainType'
+            ],
+            'issetOnArrayOfMixed' => [
+                '<?php
+                    /**
+                     * @psalm-suppress PossiblyUndefinedStringArrayOffset
+                     * @psalm-suppress MixedArrayAccess
+                     * @psalm-suppress MixedArgument
+                     */
+                    function foo(int $i) : void {
+                        /** @var array */
+                        $tokens = [];
+
+                        if (!isset($tokens[$i]["a"])) {
+                            echo $tokens[$i]["b"];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'SKIPPED-issetOnArrayOfArrays' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedArgument
+                     */
+                    function foo(int $i) : void {
+                        /** @var array<array> */
+                        $tokens = [];
+
+                        if (!isset($tokens[$i]["a"])) {
+                            echo $tokens[$i]["b"];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'SKIPPED-issetOnArrayOfArrayOfStrings' => [
+                '<?php
+                    function foo(int $i) : void {
+                        /** @var array<int, array<string, string>> */
+                        $tokens = [];
+
+                        if (!isset($tokens[$i]["a"])) {
+                            echo $tokens[$i]["b"];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
         ];
     }
