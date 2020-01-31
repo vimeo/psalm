@@ -890,41 +890,6 @@ class AssertAnnotationTest extends TestCase
                         return $value;
                     }'
             ],
-            'allowEmptyAssertionOnCountableObject' => [
-                '<?php
-                    class Foo implements \Countable
-                    {
-                        /** @var array */
-                        protected $data;
-
-                        public function __construct()
-                        {
-                            $this->data = [];
-                        }
-
-                        public function count() : int
-                        {
-                            return count($this->data);
-                        }
-                    }
-
-                    class Test
-                    {
-                        /**
-                         * @param mixed $actual
-                         *
-                         * @psalm-assert empty $actual
-                         */
-                        public static function assertEmpty($actual): void {}
-
-                        public function test() : void
-                        {
-                            $foo = new Foo();
-
-                            $this->assertEmpty($foo);
-                        }
-                    }',
-            ]
         ];
     }
 

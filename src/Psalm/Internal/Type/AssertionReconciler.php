@@ -2327,14 +2327,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             ) {
                 $did_remove_type = true;
 
-                if ($type instanceof TNamedObject
-                    && $codebase->classlikes->classExists($type->value)
-                    && $codebase->classlikes->classImplements($type->value, 'Countable')
-                ) {
-                    // do nothing
-                } else {
-                    $existing_var_type->removeType($type_key);
-                }
+                $existing_var_type->removeType($type_key);
             }
 
             if ($type instanceof TTemplateParam) {
