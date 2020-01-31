@@ -226,8 +226,7 @@ class Reconciler
                     $key,
                     $existing_types,
                     $code_location,
-                    $has_isset,
-                    $has_inverted_isset,
+                    $has_isset || $has_inverted_isset,
                     $has_empty
                 );
 
@@ -433,7 +432,6 @@ class Reconciler
         array &$existing_keys,
         ?CodeLocation $code_location,
         bool $has_isset,
-        bool $has_inverted_isset,
         bool $has_empty
     ) {
         $key_parts = self::breakUpPathIntoParts($key);
@@ -490,11 +488,7 @@ class Reconciler
 
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
 
-                            if ($has_isset || $has_inverted_isset) {
-                                if ($has_inverted_isset) {
-                                    $new_base_type_candidate = Type::getNull();
-                                }
-
+                            if ($has_isset) {
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
                         } elseif ($existing_key_type_part instanceof Type\Atomic\TList) {
@@ -504,11 +498,7 @@ class Reconciler
 
                             $new_base_type_candidate = clone $existing_key_type_part->type_param;
 
-                            if ($has_isset || $has_inverted_isset) {
-                                if ($has_inverted_isset) {
-                                    $new_base_type_candidate = Type::getNull();
-                                }
-
+                            if ($has_isset) {
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
                         } elseif ($existing_key_type_part instanceof Type\Atomic\TNull) {
