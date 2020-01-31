@@ -215,7 +215,6 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($assertion === 'falsy' || $assertion === 'empty') {
             return self::reconcileFalsyOrEmpty(
-                $codebase,
                 $assertion,
                 $existing_var_type,
                 $key,
@@ -2054,7 +2053,6 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
      * @param   0|1|2    $failed_reconciliation
      */
     private static function reconcileFalsyOrEmpty(
-        Codebase $codebase,
         string $assertion,
         Union $existing_var_type,
         ?string $key,
