@@ -215,6 +215,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($assertion === 'falsy' || $assertion === 'empty') {
             return self::reconcileFalsyOrEmpty(
+                $codebase,
                 $assertion,
                 $existing_var_type,
                 $key,
@@ -981,7 +982,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        if (!$object_types) {
+        if (!$object_types || !$did_remove_type) {
             if ($key && $code_location) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -2053,6 +2054,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
      * @param   0|1|2    $failed_reconciliation
      */
     private static function reconcileFalsyOrEmpty(
+        Codebase $codebase,
         string $assertion,
         Union $existing_var_type,
         ?string $key,
@@ -2325,7 +2327,14 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             ) {
                 $did_remove_type = true;
 
-                $existing_var_type->removeType($type_key);
+                if ($type instanceof TNamedObject
+                    && $codebase->classlikes->classExists($type->value)
+                    && $codebase->classlikes->classImplements($type->value, 'Countable')
+                ) {
+                    // do nothing
+                } else {
+                    $existing_var_type->removeType($type_key);
+                }
             }
 
             if ($type instanceof TTemplateParam) {

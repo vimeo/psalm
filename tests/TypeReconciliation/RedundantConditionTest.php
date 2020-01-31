@@ -1167,7 +1167,7 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'secondInterfaceAssertionIsRedundant' => [
+            'SKIPPED-secondInterfaceAssertionIsRedundant' => [
                 '<?php
                     interface One {}
                     interface Two {}

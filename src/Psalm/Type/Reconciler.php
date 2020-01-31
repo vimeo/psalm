@@ -185,7 +185,6 @@ class Reconciler
 
         foreach ($new_types as $key => $new_type_parts) {
             $has_negation = false;
-            $has_equality = false;
             $has_isset = false;
             $has_inverted_isset = false;
             $has_falsyish = false;
@@ -198,9 +197,6 @@ class Reconciler
                         case '!':
                             $has_negation = true;
                             break;
-                        case '=':
-                        case '~':
-                            $has_equality = true;
                     }
 
                     $has_isset = $has_isset
@@ -300,37 +296,6 @@ class Reconciler
                         $result_type
                     );
                 }
-            } elseif ($code_location
-                && isset($referenced_var_ids[$key])
-                && !$has_negation
-                && !$has_equality
-                && !$has_count_check
-                && !$result_type->hasMixed()
-                && !$result_type->hasTemplate()
-                && !$result_type->hasType('iterable')
-                && (!$has_isset || substr($key, -1, 1) !== ']')
-                && !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
-                && $key !== '$_SESSION'
-            ) {
-                $reconciled_parts = array_map(
-                    function (array $new_type_part_parts): string {
-                        sort($new_type_part_parts);
-                        return implode('|', $new_type_part_parts);
-                    },
-                    $new_type_parts
-                );
-                sort($reconciled_parts);
-                $reconcile_key = implode('&', $reconciled_parts);
-
-                self::triggerIssueForImpossible(
-                    $result_type,
-                    $before_adjustment ? $before_adjustment->getId() : '',
-                    $key,
-                    $reconcile_key,
-                    !$type_changed,
-                    $code_location,
-                    $suppressed_issues
-                );
             } elseif (!$has_negation && !$has_falsyish && !$has_isset) {
                 $changed_var_ids[$key] = true;
             }
