@@ -117,12 +117,27 @@ class ArrayFetchAnalyzer
 
         if ($keyed_array_var_id
             && $context->hasVariable($keyed_array_var_id)
-            && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
+            && !($context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
+                && ($context->inside_isset || $context->inside_unset))
             && !$context->vars_in_scope[$keyed_array_var_id]->isVanillaMixed()
         ) {
+            $stmt_type = $context->vars_in_scope[$keyed_array_var_id];
+
+            if ($stmt_type->possibly_undefined) {
+                if (IssueBuffer::accepts(
+                    new PossiblyUndefinedArrayOffset(
+                        'Possibly undefined array key ' . $keyed_array_var_id,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
             $statements_analyzer->node_data->setType(
                 $stmt,
-                clone $context->vars_in_scope[$keyed_array_var_id]
+                clone $stmt_type
             );
 
             return;
