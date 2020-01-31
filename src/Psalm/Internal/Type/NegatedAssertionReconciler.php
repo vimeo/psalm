@@ -245,7 +245,20 @@ class NegatedAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
+                null
+            );
+        }
+
+        if (substr($assertion, 0, 13) === 'has-at-least-') {
+            return self::reconcileNonEmptyCountable(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+                (int) substr($assertion, 13)
             );
         }
 
@@ -488,7 +501,8 @@ class NegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
+        ?int $min_count
     ) : Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -497,9 +511,10 @@ class NegatedAssertionReconciler extends Reconciler
             $array_atomic_type = $existing_var_atomic_types['array'];
             $did_remove_type = false;
 
-            if ($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
-                || $array_atomic_type instanceof Type\Atomic\TNonEmptyList
-                || ($array_atomic_type instanceof Type\Atomic\ObjectLike && $array_atomic_type->sealed)
+            if (($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
+                    || $array_atomic_type instanceof Type\Atomic\TNonEmptyList)
+                && ($min_count === null
+                    || $array_atomic_type->count >= $min_count)
             ) {
                 $did_remove_type = true;
 
