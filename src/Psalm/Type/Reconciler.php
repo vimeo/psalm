@@ -225,8 +225,10 @@ class Reconciler
                     $codebase,
                     $key,
                     $existing_types,
+                    $new_types,
                     $code_location,
-                    $has_isset || $has_inverted_isset,
+                    $has_isset,
+                    $has_inverted_isset,
                     $has_empty
                 );
 
@@ -422,6 +424,7 @@ class Reconciler
      *
      * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
+     * @param  array<string,mixed>       $new_assertions
      * @param  string[][]                $new_type_parts
      *
      * @return Type\Union|null
@@ -430,8 +433,10 @@ class Reconciler
         Codebase $codebase,
         string $key,
         array &$existing_keys,
+        array $new_assertions,
         ?CodeLocation $code_location,
         bool $has_isset,
+        bool $has_inverted_isset,
         bool $has_empty
     ) {
         $key_parts = self::breakUpPathIntoParts($key);
@@ -488,7 +493,11 @@ class Reconciler
 
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
 
-                            if ($has_isset) {
+                            if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
+                                if ($has_inverted_isset && $new_base_key === $key) {
+                                    $new_base_type_candidate->addType(new Type\Atomic\TNull);
+                                }
+
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
                         } elseif ($existing_key_type_part instanceof Type\Atomic\TList) {
@@ -498,7 +507,11 @@ class Reconciler
 
                             $new_base_type_candidate = clone $existing_key_type_part->type_param;
 
-                            if ($has_isset) {
+                            if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
+                                if ($has_inverted_isset && $new_base_key === $key) {
+                                    $new_base_type_candidate->addType(new Type\Atomic\TNull);
+                                }
+
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
                         } elseif ($existing_key_type_part instanceof Type\Atomic\TNull) {

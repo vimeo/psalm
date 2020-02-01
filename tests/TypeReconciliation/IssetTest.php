@@ -796,20 +796,6 @@ class IssetTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
-            'SKIPPED-issetOnArrayOfArraysReturningString' => [
-                '<?php
-                    function foo(int $i) : ?string {
-                        /** @var array<array> */
-                        $tokens = [];
-
-                        if (!isset($tokens[$i]["a"])) {
-                            /** @psalm-suppress PossiblyUndefinedArrayOffset */
-                            return $tokens[$i]["a"];
-                        }
-
-                        return "hello";
-                    }',
-            ],
             'issetOnArrayOfArraysReturningStringInElse' => [
                 '<?php
                     function foo(int $i) : string {
@@ -820,6 +806,84 @@ class IssetTest extends \Psalm\Tests\TestCase
                             return "hello";
                         } else {
                             return $tokens[$i]["b"];
+                        }
+                    }',
+            ],
+            'issetOnArrayOfObjectsAssertingOnIssetValue' => [
+                '<?php
+                    class A {
+                        public ?string $name = null;
+                    }
+
+                    function foo(int $i) : void {
+                        /** @var array<int, A> */
+                        $tokens = [];
+
+                        if (isset($tokens[$i]->name) && $tokens[$i]->name === "hello") {}
+                    }',
+            ],
+            'issetOnArrayOfObjectsAssertingOnNotIssetValue' => [
+                '<?php
+                    class A {
+                        public ?string $name = null;
+                    }
+
+                    function foo(int $i) : void {
+                        /** @var array<int, A> */
+                        $tokens = [];
+
+                        if (!isset($tokens[$i])) {
+                            if (rand(0, 1)) {
+                                if (rand(0, 1)) {
+                                    $tokens[$i] = new A();
+                                } else {
+                                    return;
+                                }
+                            } else {
+                                return;
+                            }
+                        }
+
+                        echo $tokens[$i]->name;
+                    }',
+            ],
+            'issetOnArrayOfMixed' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedArrayAccess
+                     * @psalm-suppress MixedArgument
+                     */
+                    function foo(int $i) : void {
+                        /** @var array */
+                        $tokens = [];
+
+                        if (!isset($tokens[$i]["a"])) {
+                            echo $tokens[$i]["b"];
+                        }
+                    }',
+            ],
+            'issetOnArrayOfArrays' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedArgument
+                     */
+                    function foo(int $i) : void {
+                        /** @var array<array> */
+                        $tokens = [];
+
+                        if (!isset($tokens[$i]["a"])) {
+                            echo $tokens[$i]["b"];
+                        }
+                    }',
+            ],
+            'issetOnArrayOfArrayOfStrings' => [
+                '<?php
+                    function foo(int $i) : void {
+                        /** @var array<int, array<string, string>> */
+                        $tokens = [];
+
+                        if (!isset($tokens[$i]["a"])) {
+                            echo $tokens[$i]["b"];
                         }
                     }',
             ],
@@ -902,47 +966,17 @@ class IssetTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType'
             ],
-            'issetOnArrayOfMixed' => [
+            'issetOnArrayOfArraysReturningString' => [
                 '<?php
-                    /**
-                     * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                     * @psalm-suppress MixedArrayAccess
-                     * @psalm-suppress MixedArgument
-                     */
-                    function foo(int $i) : void {
-                        /** @var array */
-                        $tokens = [];
-
-                        if (!isset($tokens[$i]["a"])) {
-                            echo $tokens[$i]["b"];
-                        }
-                    }',
-                'error_message' => 'PossiblyUndefinedArrayOffset',
-            ],
-            'SKIPPED-issetOnArrayOfArrays' => [
-                '<?php
-                    /**
-                     * @psalm-suppress MixedArgument
-                     */
-                    function foo(int $i) : void {
+                    function foo(int $i) : ?string {
                         /** @var array<array> */
                         $tokens = [];
 
                         if (!isset($tokens[$i]["a"])) {
-                            echo $tokens[$i]["b"];
+                            return $tokens[$i]["a"];
                         }
-                    }',
-                'error_message' => 'PossiblyUndefinedArrayOffset',
-            ],
-            'SKIPPED-issetOnArrayOfArrayOfStrings' => [
-                '<?php
-                    function foo(int $i) : void {
-                        /** @var array<int, array<string, string>> */
-                        $tokens = [];
 
-                        if (!isset($tokens[$i]["a"])) {
-                            echo $tokens[$i]["b"];
-                        }
+                        return "hello";
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
