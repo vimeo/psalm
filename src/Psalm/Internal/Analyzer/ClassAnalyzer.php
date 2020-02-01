@@ -972,7 +972,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        foreach ($storage->pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
+        $pseudo_methods = $storage->pseudo_methods + $storage->pseudo_static_methods;
+
+        foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
             $pseudo_method_id = $this->fq_class_name . '::' . $pseudo_method_name;
 
             $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);

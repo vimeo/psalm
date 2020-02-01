@@ -398,6 +398,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
+                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
                 if (!$codebase->methods->methodExists(
                     $method_id,
                     $context->calling_function_id,
@@ -410,6 +412,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $context,
                         $statements_analyzer->getSource()
                     )
+                    || (isset($class_storage->pseudo_static_methods[$method_name_lc])
+                        && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class))
                 ) {
                     if ($codebase->methods->methodExists(
                         $fq_class_name . '::__callStatic',
@@ -418,60 +422,24 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         null,
                         $statements_analyzer->getFilePath()
                     )) {
-                        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
                         if (isset($class_storage->pseudo_static_methods[$method_name_lc])) {
                             $pseudo_method_storage = $class_storage->pseudo_static_methods[$method_name_lc];
 
-                            if (self::checkFunctionArguments(
+                            if (self::checkPseudoMethod(
                                 $statements_analyzer,
-                                $args,
-                                $pseudo_method_storage->params,
+                                $stmt,
                                 $method_id,
-                                $context
-                            ) === false) {
-                                return false;
-                            }
-
-                            if (self::checkFunctionLikeArgumentsMatch(
-                                $statements_analyzer,
+                                $fq_class_name,
                                 $args,
-                                null,
-                                $pseudo_method_storage->params,
+                                $class_storage,
                                 $pseudo_method_storage,
-                                null,
-                                null,
-                                new CodeLocation($source, $stmt),
                                 $context
-                            ) === false) {
+                            ) === false
+                            ) {
                                 return false;
                             }
 
                             if ($pseudo_method_storage->return_type) {
-                                $return_type_candidate = clone $pseudo_method_storage->return_type;
-
-                                $return_type_candidate = ExpressionAnalyzer::fleshOutType(
-                                    $codebase,
-                                    $return_type_candidate,
-                                    $fq_class_name,
-                                    $fq_class_name,
-                                    $class_storage->parent_class
-                                );
-
-                                $stmt_type = $statements_analyzer->node_data->getType($stmt);
-
-                                if (!$stmt_type) {
-                                    $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
-                                } else {
-                                    $statements_analyzer->node_data->setType(
-                                        $stmt,
-                                        Type::combineUnionTypes(
-                                            $return_type_candidate,
-                                            $stmt_type
-                                        )
-                                    );
-                                }
-
                                 return;
                             }
                         } else {
@@ -502,6 +470,28 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         ];
 
                         $method_id = $fq_class_name . '::__callstatic';
+                    } elseif (isset($class_storage->pseudo_static_methods[$method_name_lc])
+                        && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class)
+                    ) {
+                        $pseudo_method_storage = $class_storage->pseudo_static_methods[$method_name_lc];
+
+                        if (self::checkPseudoMethod(
+                            $statements_analyzer,
+                            $stmt,
+                            $method_id,
+                            $fq_class_name,
+                            $args,
+                            $class_storage,
+                            $pseudo_method_storage,
+                            $context
+                        ) === false
+                        ) {
+                            return false;
+                        }
+
+                        if ($pseudo_method_storage->return_type) {
+                            return;
+                        }
                     }
 
                     if (!$context->check_methods) {
@@ -1177,6 +1167,70 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if (!$statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+        }
+    }
+
+    /**
+     * @return false|null
+     */
+    private static function checkPseudoMethod(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        string $method_id,
+        string $fq_class_name,
+        array $args,
+        \Psalm\Storage\ClassLikeStorage $class_storage,
+        \Psalm\Storage\MethodStorage $pseudo_method_storage,
+        Context $context
+    ) {
+        if (self::checkFunctionArguments(
+            $statements_analyzer,
+            $args,
+            $pseudo_method_storage->params,
+            $method_id,
+            $context
+        ) === false) {
+            return false;
+        }
+
+        if (self::checkFunctionLikeArgumentsMatch(
+            $statements_analyzer,
+            $args,
+            null,
+            $pseudo_method_storage->params,
+            $pseudo_method_storage,
+            null,
+            null,
+            new CodeLocation($statements_analyzer, $stmt),
+            $context
+        ) === false) {
+            return false;
+        }
+
+        if ($pseudo_method_storage->return_type) {
+            $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+            $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                $statements_analyzer->getCodebase(),
+                $return_type_candidate,
+                $fq_class_name,
+                $fq_class_name,
+                $class_storage->parent_class
+            );
+
+            $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+            if (!$stmt_type) {
+                $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
+            } else {
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::combineUnionTypes(
+                        $return_type_candidate,
+                        $stmt_type
+                    )
+                );
+            }
         }
     }
 }
