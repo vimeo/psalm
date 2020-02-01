@@ -578,19 +578,30 @@ class UnionTemplateHandler
                 }
             }
 
+            $generic_param = null;
+
             if ($valid_input_atomic_types) {
                 $generic_param = new Union($valid_input_atomic_types);
                 $generic_param->setFromDocblock();
-
-                $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class] = [
-                    $generic_param,
-                    $depth,
-                ];
             } elseif ($was_single) {
-                $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class] = [
-                    \Psalm\Type::getMixed(),
-                    $depth,
-                ];
+                $generic_param = \Psalm\Type::getMixed();
+            }
+
+            if ($generic_param) {
+                if (isset($template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class])) {
+                    $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class] = [
+                        \Psalm\Type::combineUnionTypes(
+                            $generic_param,
+                            $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class][0]
+                        ),
+                        $depth
+                    ];
+                } else {
+                    $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class] = [
+                        $generic_param,
+                        $depth,
+                    ];
+                }
             }
         }
 
