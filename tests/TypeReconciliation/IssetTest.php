@@ -796,7 +796,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
-            'issetOnArrayOfArraysReturningString' => [
+            'SKIPPED-issetOnArrayOfArraysReturningString' => [
                 '<?php
                     function foo(int $i) : ?string {
                         /** @var array<array> */
@@ -810,7 +810,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         return "hello";
                     }',
             ],
-            'SKIPPED-issetOnArrayOfArraysReturningStringInElse' => [
+            'issetOnArrayOfArraysReturningStringInElse' => [
                 '<?php
                     function foo(int $i) : string {
                         /** @var array<int, array<string, string>> */
