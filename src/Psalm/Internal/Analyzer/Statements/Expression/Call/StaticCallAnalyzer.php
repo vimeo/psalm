@@ -1171,6 +1171,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     }
 
     /**
+     * @param  array<int, PhpParser\Node\Arg> $args
      * @return false|null
      */
     private static function checkPseudoMethod(
