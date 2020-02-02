@@ -461,4 +461,13 @@ return [
     'phpparser\\node\\stmt\\interface_' => [
         'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
+    'phpparser\\node\\stmt\\classlike' => [
+        'namespacedName' => 'PhpParser\Node\Name',
+    ],
+    'phpparser\\node\\const_' => [
+        'namespacedName' => 'PhpParser\Node\Name',
+    ],
+    'phpparser\\node\\function_' => [
+        'namespacedName' => 'PhpParser\Node\Name',
+    ],
 ];
