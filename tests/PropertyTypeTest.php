@@ -2837,7 +2837,7 @@ class PropertyTypeTest extends TestCase
                     $a->bar = "goodbye";',
                 'error_message' => 'InaccessibleProperty',
             ],
-            'readonlyPropertySetInConstructorAndAlsoOutsideClass' => [
+            'readonlyPropertySetInConstructorAndAlsoOutsideClassWithAllowPrivate' => [
                 '<?php
                     class A {
                         /**
