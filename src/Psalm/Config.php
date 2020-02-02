@@ -280,6 +280,11 @@ class Config
     /**
      * @var bool
      */
+    public $use_phpdoc_property_without_magic_or_parent = false;
+
+    /**
+     * @var bool
+     */
     public $memoize_method_calls = false;
 
     /**
@@ -722,6 +727,7 @@ class Config
             'allowPhpStormGenerics' => 'allow_phpstorm_generics',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
             'usePhpDocMethodsWithoutMagicCall' => 'use_phpdoc_method_without_magic_or_parent',
+            'usePhpDocPropertiesWithoutMagicCall' => 'use_phpdoc_properties_without_magic_or_parent',
             'memoizeMethodCallResults' => 'memoize_method_calls',
             'hoistConstants' => 'hoist_constants',
             'addParamDefaultToDocblockType' => 'add_param_default_to_docblock_type',

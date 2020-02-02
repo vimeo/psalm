@@ -1,12 +1,37 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
+use Psalm\Context;
 use const DIRECTORY_SEPARATOR;
 
 class MagicPropertyTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
+
+    /**
+     * @return void
+     */
+    public function testPhpDocPropertyWithoutGet()
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @property string $hello
+                 */
+                class Child {}
+
+                $child = new Child();
+
+                $a = $child->hello;'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>

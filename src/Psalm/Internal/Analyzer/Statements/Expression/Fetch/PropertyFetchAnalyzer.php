@@ -604,6 +604,9 @@ class PropertyFetchAnalyzer
                 );
             }
 
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+            $config = $statements_analyzer->getProjectAnalyzer()->getConfig();
+
             if (!$codebase->properties->propertyExists(
                 $property_id,
                 true,
@@ -612,6 +615,17 @@ class PropertyFetchAnalyzer
                 $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
             )
             ) {
+                if ($config->use_phpdoc_property_without_magic_or_parent
+                    && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
+                ) {
+                    $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+                    self::processTaints($statements_analyzer, $stmt, $stmt_type, $property_id);
+                    continue;
+                }
+
                 if ($fq_class_name !== $context->self
                     && $context->self
                     && $codebase->properties->propertyExists(
@@ -797,8 +811,6 @@ class PropertyFetchAnalyzer
                 );
 
                 if ($lhs_type_part instanceof TGenericObject) {
-                    $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
                     if ($class_storage->template_types) {
                         $class_template_params = [];
 
