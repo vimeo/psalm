@@ -37,7 +37,7 @@ class TList extends \Psalm\Type\Atomic
         return static::KEY . '<' . $this->type_param . '>';
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
         /** @psalm-suppress MixedOperand */
         return static::KEY . '<' . $this->type_param->getId() . '>';

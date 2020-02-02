@@ -8,6 +8,7 @@ use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use function substr;
+use function array_map;
 
 class TNamedObject extends Atomic
 {
@@ -47,9 +48,21 @@ class TNamedObject extends Atomic
         return $this->value;
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
-        return $this->getKey();
+        if ($this->extra_types) {
+            return $this->value . '&' . implode(
+                '&',
+                array_map(
+                    function ($type) {
+                        return $type->getId(true);
+                    },
+                    $this->extra_types
+                )
+            );
+        }
+
+        return $this->value;
     }
 
     /**

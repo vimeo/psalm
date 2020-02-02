@@ -11,7 +11,7 @@ class TCallableString extends TString
         return 'callable-string';
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return $this->getKey();
     }

@@ -6,7 +6,7 @@ class TNonEmptyScalar extends TScalar
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return 'non-empty-scalar';
     }

@@ -918,6 +918,18 @@ class FunctionTemplateTest extends TestCase
                         return array_map("from_other", $a);
                     }'
             ],
+            'templateFlipIntersection' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     * @template S as object
+                     * @param S&T $item
+                     * @return T&S
+                     */
+                    function filter(object $item) {
+                        return $item;
+                    }',
+            ],
         ];
     }
 

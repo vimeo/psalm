@@ -37,7 +37,7 @@ class TLiteralString extends TString
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         $no_newline_value = preg_replace("/\n/m", '\n', $this->value);
         if (strlen($this->value) > 80) {

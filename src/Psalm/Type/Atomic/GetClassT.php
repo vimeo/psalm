@@ -30,7 +30,7 @@ class GetClassT extends TString
         $this->as_type = $as_type;
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return 'class-string';
     }

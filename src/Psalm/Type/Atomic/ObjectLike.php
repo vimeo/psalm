@@ -91,7 +91,7 @@ class ObjectLike extends \Psalm\Type\Atomic
         return static::KEY . '{' . implode(', ', $union_type_parts) . '}';
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
         $union_type_parts = array_map(
             /**

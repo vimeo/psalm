@@ -57,7 +57,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
             . '>';
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
         /** @psalm-suppress MixedOperand */
         return static::KEY

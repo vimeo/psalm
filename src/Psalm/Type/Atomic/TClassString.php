@@ -42,7 +42,7 @@ class TClassString extends TString
         return $this->getKey();
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return $this->getKey();
     }

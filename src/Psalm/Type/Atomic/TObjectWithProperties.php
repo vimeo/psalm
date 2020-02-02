@@ -82,7 +82,7 @@ class TObjectWithProperties extends TObject
             . '}' . $extra_types;
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
         $extra_types = '';
 

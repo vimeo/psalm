@@ -52,7 +52,7 @@ class TIterable extends Atomic
         return 'iterable';
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
         $s = '';
         foreach ($this->type_params as $type_param) {

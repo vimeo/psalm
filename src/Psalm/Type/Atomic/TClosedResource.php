@@ -22,7 +22,7 @@ class TClosedResource extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return 'closed-resource';
     }

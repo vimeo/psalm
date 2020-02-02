@@ -47,7 +47,7 @@ class TTemplateIndexedAccess extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return $this->getKey();
     }

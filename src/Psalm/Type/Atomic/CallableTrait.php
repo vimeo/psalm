@@ -162,7 +162,7 @@ trait CallableTrait
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         $param_string = '';
         $return_type_string = '';

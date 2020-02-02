@@ -6,7 +6,7 @@ class TEmptyNumeric extends TNumeric
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return 'empty-numeric';
     }

@@ -25,7 +25,7 @@ class TLiteralInt extends TInt
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return 'int(' . $this->value . ')';
     }

@@ -215,7 +215,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         $d->faa();
                     }',
             ],
-            'templateArrayIntersection' => [
+            'templateFilterArrayWithIntersection' => [
                 '<?php
                     /**
                      * @template T as object
@@ -242,6 +242,34 @@ class FunctionClassStringTemplateTest extends TestCase
                     $y = filter($x, B::class);',
                 [
                     '$y' => 'array<array-key, A&B>',
+                ],
+            ],
+            'templateFilterWithIntersection' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     * @template S as object
+                     * @param T $item
+                     * @param class-string<S> $type
+                     * @return T&S
+                     */
+                    function filter($item, string $type) {
+                        if (is_a($item, $type)) {
+                            return $item;
+                        };
+
+                        throw new \UnexpectedValueException("bad");
+                    }
+
+                    interface A {}
+                    interface B {}
+
+                    /** @var A */
+                    $x = null;
+
+                    $y = filter($x, B::class);',
+                [
+                    '$y' => 'A&B',
                 ],
             ],
             'unionTOrClassStringTPassedClassString' => [

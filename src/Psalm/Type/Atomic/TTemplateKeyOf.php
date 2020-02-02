@@ -40,7 +40,7 @@ class TTemplateKeyOf extends TArrayKey
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return $this->getKey();
     }

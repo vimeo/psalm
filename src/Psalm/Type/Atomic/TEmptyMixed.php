@@ -6,7 +6,7 @@ class TEmptyMixed extends TMixed
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return 'empty-mixed';
     }

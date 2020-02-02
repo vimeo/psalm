@@ -214,7 +214,9 @@ class Union
                 $this->literal_string_types[$key] = $type;
             } elseif ($type instanceof TLiteralFloat) {
                 $this->literal_float_types[$key] = $type;
-            } elseif ($type instanceof Type\Atomic\TClassString && $type->as_type) {
+            } elseif ($type instanceof Type\Atomic\TClassString
+                && ($type->as_type || $type instanceof Type\Atomic\TTemplateParamClass)
+            ) {
                 $this->typed_class_strings[$key] = $type;
             }
 
@@ -262,7 +264,7 @@ class Union
                 unset($this->literal_string_types[$key], $this->types[$key]);
             }
             if (!$type instanceof Type\Atomic\TClassString
-                || !$type->as_type
+                || (!$type->as_type && !$type instanceof Type\Atomic\TTemplateParamClass)
             ) {
                 foreach ($this->typed_class_strings as $key => $_) {
                     unset($this->typed_class_strings[$key], $this->types[$key]);
@@ -297,7 +299,9 @@ class Union
                 $this->literal_string_types[$key] = $type;
             } elseif ($type instanceof TLiteralFloat) {
                 $this->literal_float_types[$key] = $type;
-            } elseif ($type instanceof Type\Atomic\TClassString && $type->as_type) {
+            } elseif ($type instanceof Type\Atomic\TClassString
+                && ($type->as_type || $type instanceof Type\Atomic\TTemplateParamClass)
+            ) {
                 $this->typed_class_strings[$key] = $type;
             }
         }

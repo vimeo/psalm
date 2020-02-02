@@ -8,6 +8,7 @@ use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Union;
 use Psalm\Storage\MethodStorage;
+use function array_map;
 
 class TTemplateParam extends \Psalm\Type\Atomic
 {
@@ -63,16 +64,18 @@ class TTemplateParam extends \Psalm\Type\Atomic
         return $this->as->getId();
     }
 
-    public function getId()
+    public function getId(bool $nested = false)
     {
         if ($this->extra_types) {
-            return '(' . $this->param_name . ' as ' . $this->as->getId()
-                . ')&' . implode('&', $this->extra_types);
+            return '(' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId()
+                . ')&' . implode('&', array_map(function ($type) {
+                    return $type->getId(true);
+                }, $this->extra_types));
         }
 
-        return $this->param_name
+        return ($nested ? '(' : '') . $this->param_name
             . ':' . $this->defining_class
-            . ' as ' . $this->as->getId();
+            . ' as ' . $this->as->getId() . ($nested ? ')' : '');
     }
 
     /**

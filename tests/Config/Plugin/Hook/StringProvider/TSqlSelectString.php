@@ -14,7 +14,7 @@ class TSqlSelectString extends \Psalm\Type\Atomic\TLiteralString
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = true)
     {
         return 'sql-select-string(' . $this->value . ')';
     }

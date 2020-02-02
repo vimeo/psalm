@@ -25,7 +25,7 @@ class TLiteralFloat extends TFloat
     /**
      * @return string
      */
-    public function getId()
+    public function getId(bool $nested = false)
     {
         return 'float(' . $this->value . ')';
     }
