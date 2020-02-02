@@ -2454,6 +2454,19 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     }
                 }
 
+                if ($new_type_part instanceof Type\Atomic\TTemplateParam
+                    && $existing_type_part instanceof Type\Atomic\TTemplateParam
+                    && $new_type_part->param_name !== $existing_type_part->param_name
+                    && $new_type_part->as->hasObject()
+                    && $existing_type_part->as->hasObject()
+                ) {
+                    $new_type_part->extra_types[$existing_type_part->getKey()] = $existing_type_part;
+                    $matching_atomic_types[] = $new_type_part;
+                    $has_local_match = true;
+
+                    continue;
+                }
+
                 if (($new_type_part instanceof Type\Atomic\TGenericObject
                         || $new_type_part instanceof Type\Atomic\TArray
                         || $new_type_part instanceof Type\Atomic\TIterable)

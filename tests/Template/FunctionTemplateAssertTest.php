@@ -619,6 +619,18 @@ class FunctionTemplateAssertTest extends TestCase
                         }
                     }',
             ],
+            'castClassStringWithIsA' => [
+                '<?php
+                    /**
+                     * @psalm-template RequestedClass of object
+                     * @psalm-param class-string<RequestedClass> $expectedType
+                     * @psalm-return class-string<RequestedClass>
+                     */
+                    function castStringToClassString(string $expectedType, string $anyString): string {
+                        \assert(\is_a($anyString, $expectedType, true));
+                        return $anyString;
+                    }'
+            ],
         ];
     }
 

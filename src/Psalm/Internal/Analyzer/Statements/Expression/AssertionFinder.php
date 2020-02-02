@@ -1645,7 +1645,7 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'null']];
             }
-        } elseif (self::hasIsACheck($expr) && $source instanceof StatementsAnalyzer) {
+        } elseif ($source instanceof StatementsAnalyzer && self::hasIsACheck($expr, $source)) {
             if ($expr->args[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $expr->args[0]->value->name instanceof PhpParser\Node\Identifier
                 && strtolower($expr->args[0]->value->name->name) === 'class'
@@ -1657,8 +1657,8 @@ class AssertionFinder
             }
 
             if ($first_var_name) {
+                $first_arg = $expr->args[0]->value;
                 $second_arg = $expr->args[1]->value;
-
                 $third_arg = isset($expr->args[2]->value) ? $expr->args[2]->value : null;
 
                 if ($third_arg instanceof PhpParser\Node\Expr\ConstFetch) {
@@ -1676,39 +1676,26 @@ class AssertionFinder
 
                 $is_a_prefix = $third_arg_value === 'true' ? 'isa-string-' : 'isa-';
 
-                if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
-                    $fq_class_name = $second_arg->value;
-                    if ($fq_class_name[0] === '\\') {
-                        $fq_class_name = substr($fq_class_name, 1);
-                    }
-
-                    $first_arg = $expr->args[0]->value;
-
-                    if ($first_arg
-                        && ($first_arg_type = $source->node_data->getType($first_arg))
-                        && $first_arg_type->isSingleStringLiteral()
-                        && $source->getSource()->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
-                        && $first_arg_type->getSingleStringLiteral()->value === $this_class_name
-                    ) {
-                        // do nothing
-                    } else {
-                        $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $fq_class_name]];
-                    }
-                } elseif ($second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $second_arg->class instanceof PhpParser\Node\Name
-                    && $second_arg->name instanceof PhpParser\Node\Identifier
-                    && strtolower($second_arg->name->name) === 'class'
+                if ($first_arg
+                    && ($first_arg_type = $source->node_data->getType($first_arg))
+                    && $first_arg_type->isSingleStringLiteral()
+                    && $source->getSource()->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+                    && $first_arg_type->getSingleStringLiteral()->value === $this_class_name
                 ) {
-                    $first_arg = $expr->args[0]->value;
+                    // do nothing
+                } else {
+                    if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
+                        $fq_class_name = $second_arg->value;
+                        if ($fq_class_name[0] === '\\') {
+                            $fq_class_name = substr($fq_class_name, 1);
+                        }
 
-                    if ($first_arg
-                        && ($first_arg_type = $source->node_data->getType($first_arg))
-                        && $first_arg_type->isSingleStringLiteral()
-                        && $source->getSource()->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
-                        && $first_arg_type->getSingleStringLiteral()->value === $this_class_name
+                        $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $fq_class_name]];
+                    } elseif ($second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                        && $second_arg->class instanceof PhpParser\Node\Name
+                        && $second_arg->name instanceof PhpParser\Node\Identifier
+                        && strtolower($second_arg->name->name) === 'class'
                     ) {
-                        // do nothing
-                    } else {
                         $class_node = $second_arg->class;
 
                         if ($class_node->parts === ['static'] || $class_node->parts === ['self']) {
@@ -1725,6 +1712,20 @@ class AssertionFinder
                                         $source->getAliases()
                                     )
                             ]];
+                        }
+                    } elseif (($second_arg_type = $source->node_data->getType($second_arg))
+                        && $second_arg_type->hasString()
+                    ) {
+                        $vals = [];
+
+                        foreach ($second_arg_type->getAtomicTypes() as $second_arg_atomic_type) {
+                            if ($second_arg_atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                                $vals[] = [$prefix . $is_a_prefix . $second_arg_atomic_type->param_name];
+                            }
+                        }
+
+                        if ($vals) {
+                            $if_types[$first_var_name] = $vals;
                         }
                     }
                 }
@@ -2433,8 +2434,10 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasIsACheck(PhpParser\Node\Expr\FuncCall $stmt)
-    {
+    protected static function hasIsACheck(
+        PhpParser\Node\Expr\FuncCall $stmt,
+        StatementsAnalyzer $source
+    ) {
         if ($stmt->name instanceof PhpParser\Node\Name
             && (strtolower($stmt->name->parts[0]) === 'is_a'
                 || strtolower($stmt->name->parts[0]) === 'is_subclass_of')
@@ -2449,6 +2452,8 @@ class AssertionFinder
                     && $second_arg->name instanceof PhpParser\Node\Identifier
                     && strtolower($second_arg->name->name) === 'class'
                 )
+                || (($second_arg_type = $source->node_data->getType($second_arg))
+                    && $second_arg_type->hasString())
             ) {
                 return true;
             }
