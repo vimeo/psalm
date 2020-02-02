@@ -324,13 +324,16 @@ echo Arithmetic::addCumulative(3); // outputs 3
 echo Arithmetic::addCumulative(3); // outputs 6
 ```
 
-### `@psalm-private-mutate`
+### `@psalm-allow-private-mutation`
 
-Used to annotate properties which can only be mutated in a private context. With this, public properties can be read from another class but only be mutated within a method of its own class.
+Used to annotate readonly properties that can be mutated in a private context. With this, public properties can be read from another class but only be mutated within a method of its own class.
 
 ```php
 class Counter {
-  /** @psalm-private-mutate */  
+  /**
+   * @readonly
+   * @psalm-allow-private-mutation
+   */  
   public int $count = 0;
     
   public function increment() : void {
@@ -342,7 +345,7 @@ $counter = new Counter();
 echo $counter->count; // outputs 0
 $counter->increment(); // Method can mutate property
 echo $counter->count; // outputs 1
-$counter->count = 5; // This will fail as it's mutating a property directly
+$counter->count = 5; // This will fail, as it's mutating a property directly
 ```
 
 ## Type Syntax
