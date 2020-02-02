@@ -67,6 +67,13 @@ class VarDocblockComment
     public $readonly = false;
 
     /**
+     * Whether or not to allow mutation by internal methods
+     *
+     * @var bool
+     */
+    public $allow_private_mutation = false;
+
+    /**
      * @var bool
      */
     public $remove_taint = false;

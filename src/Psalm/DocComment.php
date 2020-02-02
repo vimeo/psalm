@@ -151,7 +151,7 @@ class DocComment
                         'ignore-variable-method', 'ignore-variable-property', 'internal',
                         'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
                         'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
-                        'remove-taint',
+                        'remove-taint', 'allow-private-mutation',
                     ],
                     true
                 )) {
@@ -275,7 +275,7 @@ class DocComment
                         'ignore-variable-method', 'ignore-variable-property', 'internal',
                         'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
                         'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
-                        'remove-taint',
+                        'remove-taint', 'allow-private-mutation',
                     ],
                     true
                 )) {

@@ -659,6 +659,7 @@ class PropertyAssignmentAnalyzer
                                 && (!$context->calling_function_id
                                     || \strpos($context->calling_function_id, '::__construct')
                                     || \strpos($context->calling_function_id, '::unserialize')
+                                    || $property_storage->allow_private_mutation
                                     || $property_pure_compatible)
                             )
                         ) {

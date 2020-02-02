@@ -182,6 +182,8 @@ class CommentAnalyzer
                 $var_comment->internal = isset($parsed_docblock['specials']['internal']);
                 $var_comment->readonly = isset($parsed_docblock['specials']['readonly'])
                     || isset($parsed_docblock['specials']['psalm-readonly']);
+                $var_comment->allow_private_mutation
+                    = isset($parsed_docblock['specials']['psalm-allow-private-mutation']);
                 $var_comment->remove_taint = isset($parsed_docblock['specials']['psalm-remove-taint']);
 
                 if (isset($parsed_docblock['specials']['psalm-internal'])) {
@@ -214,6 +216,7 @@ class CommentAnalyzer
             $var_comment->internal = isset($parsed_docblock['specials']['internal']);
             $var_comment->readonly = isset($parsed_docblock['specials']['readonly'])
                 || isset($parsed_docblock['specials']['psalm-readonly']);
+            $var_comment->allow_private_mutation = isset($parsed_docblock['specials']['psalm-allow-private-mutation']);
             $var_comment->remove_taint = isset($parsed_docblock['specials']['psalm-remove-taint']);
 
             $var_comments[] = $var_comment;

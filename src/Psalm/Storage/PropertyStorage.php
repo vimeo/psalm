@@ -75,6 +75,13 @@ class PropertyStorage
     public $readonly = false;
 
     /**
+     * Whether or not to allow mutation by internal methods
+     *
+     * @var bool
+     */
+    public $allow_private_mutation = false;
+
+    /**
      * @var null|string
      */
     public $psalm_internal = null;
