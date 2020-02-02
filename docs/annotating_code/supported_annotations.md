@@ -348,6 +348,29 @@ echo $counter->count; // outputs 1
 $counter->count = 5; // This will fail, as it's mutating a property directly
 ```
 
+### `@psalm-readonly-allow-private-mutation`
+
+This is a shorthand for the property annotations `@readonly` and `@psalm-allow-private-mutation`.
+
+```php
+class Counter {
+  /**
+   * @psalm-readonly-allow-private-mutation
+   */  
+  public int $count = 0;
+    
+  public function increment() : void {
+    $this->count++;
+  }
+}
+
+$counter = new Counter();
+echo $counter->count; // outputs 0
+$counter->increment(); // Method can mutate property
+echo $counter->count; // outputs 1
+$counter->count = 5; // This will fail, as it's mutating a property directly
+```
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).

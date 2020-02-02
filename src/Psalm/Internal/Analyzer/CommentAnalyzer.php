@@ -181,9 +181,11 @@ class CommentAnalyzer
                 $var_comment->deprecated = isset($parsed_docblock['specials']['deprecated']);
                 $var_comment->internal = isset($parsed_docblock['specials']['internal']);
                 $var_comment->readonly = isset($parsed_docblock['specials']['readonly'])
-                    || isset($parsed_docblock['specials']['psalm-readonly']);
+                    || isset($parsed_docblock['specials']['psalm-readonly'])
+                    || isset($parsed_docblock['specials']['psalm-readonly-allow-private-mutation']);
                 $var_comment->allow_private_mutation
-                    = isset($parsed_docblock['specials']['psalm-allow-private-mutation']);
+                    = isset($parsed_docblock['specials']['psalm-allow-private-mutation'])
+                    || isset($parsed_docblock['specials']['psalm-readonly-allow-private-mutation']);
                 $var_comment->remove_taint = isset($parsed_docblock['specials']['psalm-remove-taint']);
 
                 if (isset($parsed_docblock['specials']['psalm-internal'])) {
@@ -209,14 +211,18 @@ class CommentAnalyzer
                 || isset($parsed_docblock['specials']['internal'])
                 || isset($parsed_docblock['specials']['readonly'])
                 || isset($parsed_docblock['specials']['psalm-readonly'])
+                || isset($parsed_docblock['specials']['psalm-readonly-allow-private-mutation'])
                 || isset($parsed_docblock['specials']['psalm-remove-taint']))
         ) {
             $var_comment = new VarDocblockComment();
             $var_comment->deprecated = isset($parsed_docblock['specials']['deprecated']);
             $var_comment->internal = isset($parsed_docblock['specials']['internal']);
             $var_comment->readonly = isset($parsed_docblock['specials']['readonly'])
-                || isset($parsed_docblock['specials']['psalm-readonly']);
-            $var_comment->allow_private_mutation = isset($parsed_docblock['specials']['psalm-allow-private-mutation']);
+                || isset($parsed_docblock['specials']['psalm-readonly'])
+                || isset($parsed_docblock['specials']['psalm-readonly-allow-private-mutation']);
+            $var_comment->allow_private_mutation
+                = isset($parsed_docblock['specials']['psalm-allow-private-mutation'])
+                || isset($parsed_docblock['specials']['psalm-readonly-allow-private-mutation']);
             $var_comment->remove_taint = isset($parsed_docblock['specials']['psalm-remove-taint']);
 
             $var_comments[] = $var_comment;

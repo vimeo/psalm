@@ -1714,6 +1714,21 @@ class PropertyTypeTest extends TestCase
 
                     echo (new A)->bar;'
             ],
+            'readonlyPublicPropertySetInAnotherMEthod' => [
+                '<?php
+                    class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public ?string $bar = null;
+
+                        public function setBar(string $s) : void {
+                            $this->bar = $s;
+                        }
+                    }
+
+                    echo (new A)->bar;'
+            ],
             'readonlyPropertySetChildClass' => [
                 '<?php
                     abstract class A {
@@ -2858,6 +2873,27 @@ class PropertyTypeTest extends TestCase
                     $a = new A();
                     $a->bar = "goodbye";',
                 'error_message' => 'InaccessibleProperty - src/somefile.php:19:21',
+            ],
+            'readonlyPublicPropertySetInConstructorAndAlsoOutsideClass' => [
+                '<?php
+                    class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public string $bar;
+
+                        public function __construct() {
+                            $this->bar = "hello";
+                        }
+
+                        public function setAgain() : void {
+                            $this->bar = "hello";
+                        }
+                    }
+
+                    $a = new A();
+                    $a->bar = "goodbye";',
+                'error_message' => 'InaccessibleProperty - src/somefile.php:18:21',
             ],
             'addNullToMixedAfterNullablePropertyFetch' => [
                 '<?php
