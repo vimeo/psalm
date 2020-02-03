@@ -98,6 +98,8 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
         $this->assertSame($error_positions[0], $found_positions);
 
+        $i = 0;
+
         foreach ($file_stages as $i => $file_stage) {
             foreach ($file_stage as $file_path => $contents) {
                 $codebase->addTemporaryFileChanges(
@@ -120,7 +122,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 }
             }
 
-            $this->assertSame($error_positions[$i + 1], $found_positions);
+            $this->assertSame($error_positions[$i + 1], $found_positions, 'stage ' . ($i + 2));
         }
 
         if ($test_save) {
@@ -148,7 +150,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 }
             }
 
-            $this->assertSame($error_positions[count($file_stages)], $found_positions);
+            $this->assertSame($error_positions[count($file_stages)], $found_positions, 'stage ' . ($i + 2));
         }
     }
 
@@ -1250,6 +1252,43 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                     ],
                 ],
                 'error_positions' => [[230], [230]],
+            ],
+            'requiredFileWithConstructorInitialisation' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            require_once("B.php");',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                public function __construct() {
+                                    //$this->foo = "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            require_once("B.php");',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            class B
+                            {
+                                /**
+                                 * @var string
+                                 */
+                                public $foo;
+
+                                public function __construct() {
+                                    $this->foo = "hello";
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[230], []],
             ],
             'updatePropertyInitialization' => [
                 [

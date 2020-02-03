@@ -1368,12 +1368,14 @@ class Analyzer
      *
      * @return void
      */
-    public function removeExistingDataForFile($file_path, $start, $end)
+    public function removeExistingDataForFile($file_path, $start, $end, ?string $issue_type = null)
     {
         if (isset($this->existing_issues[$file_path])) {
             foreach ($this->existing_issues[$file_path] as $i => $issue_data) {
                 if ($issue_data['from'] >= $start && $issue_data['from'] <= $end) {
-                    unset($this->existing_issues[$file_path][$i]);
+                    if ($issue_type === null || $issue_type === $issue_data['type']) {
+                        unset($this->existing_issues[$file_path][$i]);
+                    }
                 }
             }
         }

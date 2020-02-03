@@ -1122,6 +1122,15 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
+            if ($property->location) {
+                $codebase->analyzer->removeExistingDataForFile(
+                    $this->getFilePath(),
+                    $property->location->raw_file_start,
+                    $property->location->raw_file_end,
+                    'PropertyNotSetInConstructor'
+                );
+            }
+
             $codebase->file_reference_provider->addMethodReferenceToMissingClassMember(
                 strtolower($fq_class_name) . '::__construct',
                 strtolower($property_class_name) . '::$' . $property_name
@@ -1298,7 +1307,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {
-                        continue;
+                        // do nothing
                     }
                 }
             }
