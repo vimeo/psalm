@@ -135,3 +135,26 @@ function foo(string $s) : string {
   }
 }
 ```
+
+If the class constants share a common prefix, you can specify them all using a wildcard:
+
+```php
+class A {
+  const STATUS_FOO = 'foo';
+  const STATUS_BAR = 'bar';
+}
+
+/**
+ * @param A::STATUS_* $s
+ */
+function foo(string $s) : string {
+  switch ($s) {
+    case A::STATUS_FOO:
+      return 'hello';
+
+    default:
+      // any other status
+      return 'goodbye';
+  }
+}
+```
