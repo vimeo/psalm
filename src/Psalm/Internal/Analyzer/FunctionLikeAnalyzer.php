@@ -175,11 +175,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $appearing_class_storage = $classlike_storage_provider->get($fq_class_name);
 
             if ($add_mutations) {
-                $hash = md5($real_method_id . '::' . $context->getScopeSummary());
+                if (!$context->collect_initializations) {
+                    $hash = md5($real_method_id . '::' . $context->getScopeSummary());
 
-                // if we know that the function has no effects on vars, we don't bother rechecking
-                if (isset(self::$no_effects_hashes[$hash])) {
-                    return null;
+                    // if we know that the function has no effects on vars, we don't bother rechecking
+                    if (isset(self::$no_effects_hashes[$hash])) {
+                        return null;
+                    }
                 }
             } elseif ($context->self) {
                 if ($appearing_class_storage->template_types) {
@@ -735,7 +737,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             }
 
-            if ($hash && $real_method_id && $this instanceof MethodAnalyzer) {
+            if ($hash
+                && $real_method_id
+                && $this instanceof MethodAnalyzer
+                && !$context->collect_initializations
+            ) {
                 $new_hash = md5($real_method_id . '::' . $context->getScopeSummary());
 
                 if ($new_hash === $hash) {
