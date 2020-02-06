@@ -699,9 +699,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $var = $stmt->args[0]->value;
 
                 if ($var instanceof PhpParser\Node\Expr\Variable
-                    && is_string($var->name)
+                    && $var->name instanceof PhpParser\Node\Identifier
                 ) {
-                    $var_id = '$' . $var->name;
+                    $var_id = '$' . $var->name->name;
 
                     if (isset($context->vars_in_scope[$var_id])) {
                         $atomic_type = $stmt->name->parts === ['get_class']
@@ -716,6 +716,26 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     foreach ($var_type->getAtomicTypes() as $class_type) {
                         if ($class_type instanceof Type\Atomic\TNamedObject) {
                             $class_string_types[] = new Type\Atomic\TClassString($class_type->value, clone $class_type);
+                        } elseif ($class_type instanceof Type\Atomic\TTemplateParam
+                            && $class_type->as->isSingle()
+                        ) {
+                            $as_atomic_type = array_values($class_type->as->getAtomicTypes())[0];
+
+                            if ($as_atomic_type instanceof Type\Atomic\TObject) {
+                                $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                                    $class_type->param_name,
+                                    'object',
+                                    null,
+                                    $class_type->defining_class
+                                );
+                            } elseif ($as_atomic_type instanceof TNamedObject) {
+                                $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                                    $class_type->param_name,
+                                    $as_atomic_type->value,
+                                    $as_atomic_type,
+                                    $class_type->defining_class
+                                );
+                            }
                         }
                     }
 

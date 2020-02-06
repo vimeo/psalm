@@ -205,7 +205,7 @@ class ReturnAnalyzer
                             $fq_class_name,
                             strtolower($method_name),
                             null,
-                            null
+                            '$this'
                         );
 
                         if ($found_generic_params) {

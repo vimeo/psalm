@@ -617,6 +617,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
 
+                    if ($storage->abstract && $implementer_method_storage === $interface_method_storage) {
+                        continue;
+                    }
+
                     MethodAnalyzer::compareMethods(
                         $codebase,
                         $implementer_classlike_storage ?: $storage,
