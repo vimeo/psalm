@@ -429,7 +429,7 @@ class EmptyTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'MixedReturnTypeCoercion'
             ],
-            'secondEmptyTwice' => [
+            'SKIPPED-secondEmptyTwice' => [
                 '<?php
                     /**
                      * @param array{a?:int,b?:string} $p
