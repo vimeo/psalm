@@ -696,42 +696,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             );
 
             $guide_class_name = $guide_classlike_storage->name;
-            $implementer_class_name = $implementer_classlike_storage->name;
-
-            $implementer_called_class_storage = $implementer_classlike_storage;
-
-            if ($implementer_called_class_name !== $implementer_class_name) {
-                $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
-                    $implementer_called_class_name
-                );
-            }
-
-            if ($implementer_called_class_storage !== $implementer_classlike_storage
-                && $implementer_called_class_storage->template_type_extends
-            ) {
-                self::transformTemplates(
-                    $implementer_called_class_storage->template_type_extends,
-                    $implementer_class_name,
-                    $implementer_method_storage_return_type,
-                    $codebase
-                );
-
-                self::transformTemplates(
-                    $implementer_called_class_storage->template_type_extends,
-                    $guide_class_name,
-                    $guide_method_storage_return_type,
-                    $codebase
-                );
-            }
 
             if ($implementer_classlike_storage->template_type_extends) {
-                self::transformTemplates(
-                    $implementer_classlike_storage->template_type_extends,
-                    $guide_class_name,
-                    $implementer_method_storage_return_type,
-                    $codebase
-                );
-
                 self::transformTemplates(
                     $implementer_classlike_storage->template_type_extends,
                     $guide_class_name,
@@ -1016,30 +982,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 );
 
                 $guide_class_name = $guide_classlike_storage->name;
-                $implementer_class_name = $implementer_classlike_storage->name;
 
-                $implementer_called_class_storage = $implementer_classlike_storage;
-
-                if ($implementer_called_class_name !== $implementer_class_name) {
-                    $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
-                        $implementer_called_class_name
-                    );
-                }
-
-                if ($implementer_called_class_storage !== $implementer_classlike_storage
-                    && $implementer_called_class_storage->template_type_extends
-                ) {
+                if ($implementer_classlike_storage->template_type_extends) {
                     self::transformTemplates(
-                        $implementer_called_class_storage->template_type_extends,
-                        $implementer_class_name,
-                        $implementer_method_storage_param_type,
-                        $codebase
-                    );
-                }
-
-                if ($implementer_called_class_storage->template_type_extends) {
-                    self::transformTemplates(
-                        $implementer_called_class_storage->template_type_extends,
+                        $implementer_classlike_storage->template_type_extends,
                         $guide_class_name,
                         $guide_method_storage_param_type,
                         $codebase

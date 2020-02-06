@@ -2747,29 +2747,6 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }'
             ],
-            'extendWithArrayTemplate' => [
-                '<?php
-                    /**
-                     * @template T1
-                     */
-                    interface C {
-                        /**
-                         * @psalm-return C<array<int, T1>>
-                         */
-                        public function zip(): C;
-                    }
-
-                    /**
-                     * @template T2
-                     * @extends C<T2>
-                     */
-                    interface AC extends C {
-                        /**
-                         * @psalm-return AC<array<int, T2>>
-                         */
-                        public function zip(): C;
-                    }',
-            ],
             'implementsParameterisedIterator' => [
                 '<?php
                     /**
@@ -2917,6 +2894,41 @@ class ClassTemplateExtendsTest extends TestCase
                             return DeliveryTimeAggregated::class;
                         }
                     }'
+            ],
+            'allowExplicitMethodClassTemplateReturn' => [
+                '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface I
+                    {
+                        /**
+                         * @return class-string<T>
+                         */
+                        public function m(): string;
+                    }
+
+                    /**
+                     * @template T2 of object
+                     * @template-implements I<T2>
+                     */
+                    class C implements I
+                    {
+                        /** @var T2 */
+                        private object $o;
+
+                        /** @param T2 $o */
+                        public function __construct(object $o) {
+                            $this->o = $o;
+                        }
+
+                        /**
+                         * @return class-string<T2>
+                         */
+                        public function m(): string {
+                            return get_class($this->o);
+                        }
+                    }',
             ],
         ];
     }
@@ -3967,6 +3979,75 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnType'
+            ],
+            'preventExplicitMethodClassTemplateReturn' => [
+                '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface I
+                    {
+                        /**
+                         * @return class-string<T>
+                         */
+                        public function m(): string;
+                    }
+
+                    /**
+                     * @template T2 of object
+                     * @template-implements I<T2>
+                     */
+                    class C implements I
+                    {
+                        /** @var T2 */
+                        private object $o;
+
+                        /** @param T2 $o */
+                        public function __construct(object $o) {
+                            $this->o = $o;
+                        }
+
+                        /**
+                         * @return class-string<T2>
+                         */
+                        public function m(): string {
+                            return static::class;
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement'
+            ],
+            'preventImplicitMethodClassTemplateReturn' => [
+                '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface I
+                    {
+                        /**
+                         * @return class-string<T>
+                         */
+                        public function m(): string;
+                    }
+
+                    /**
+                     * @template T2 of object
+                     * @template-implements I<T2>
+                     */
+                    class C implements I
+                    {
+                        /** @var T2 */
+                        private object $o;
+
+                        /** @param T2 $o */
+                        public function __construct(object $o) {
+                            $this->o = $o;
+                        }
+
+                        public function m(): string {
+                            return static::class;
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement'
             ],
         ];
     }

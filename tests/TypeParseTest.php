@@ -779,12 +779,14 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'T[K]',
-            (string)Type::parseString(
+            (string) Type::parseString(
                 'T[K]',
                 null,
                 [
                     'T' => ['' => [Type::getArray()]],
-                    'K' => ['' => [new Type\Union([new Type\Atomic\TTemplateKeyOf('T', 'fn-foo')])]],
+                    'K' => ['' => [new Type\Union([
+                        new Type\Atomic\TTemplateKeyOf('T', 'fn-foo', Type::getMixed())
+                    ])]],
                 ]
             )
         );

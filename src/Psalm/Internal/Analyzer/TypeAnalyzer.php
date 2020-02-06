@@ -1021,6 +1021,27 @@ class TypeAnalyzer
             return true;
         }
 
+        if ($input_type_part instanceof Type\Atomic\TTemplateKeyOf) {
+            foreach ($input_type_part->as->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TArray) {
+                    foreach ($atomic_type->type_params[0]->getAtomicTypes() as $array_key_atomic) {
+                        if (!self::isAtomicContainedBy(
+                            $codebase,
+                            $array_key_atomic,
+                            $container_type_part,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
+                            $atomic_comparison_result
+                        )) {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
         if ($input_type_part instanceof TArrayKey &&
             ($container_type_part instanceof TInt || $container_type_part instanceof TString)
         ) {

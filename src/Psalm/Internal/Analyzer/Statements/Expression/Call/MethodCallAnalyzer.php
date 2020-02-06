@@ -1543,22 +1543,22 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     public static function getClassTemplateParams(
         Codebase $codebase,
         ClassLikeStorage $class_storage,
-        string $fq_class_name,
+        string $static_fq_class_name,
         string $method_name = null,
         Type\Atomic $lhs_type_part = null,
         string $lhs_var_id = null
     ) {
-        $calling_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+        $static_class_storage = $codebase->classlike_storage_provider->get($static_fq_class_name);
 
         $non_trait_class_storage = $class_storage->is_trait
-            ? $calling_class_storage
+            ? $static_class_storage
             : $class_storage;
 
         $template_types = $class_storage->template_types;
 
         $candidate_class_storages = [$class_storage];
 
-        if ($calling_class_storage->template_type_extends
+        if ($static_class_storage->template_type_extends
             && $method_name
             && !empty($non_trait_class_storage->overridden_method_ids[$method_name])
             && isset($class_storage->methods[$method_name])
@@ -1606,17 +1606,19 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         $class_template_params = [];
-        $e = $calling_class_storage->template_type_extends;
+        $e = $static_class_storage->template_type_extends;
 
         if ($lhs_type_part instanceof TGenericObject) {
-            if ($class_storage === $calling_class_storage && $calling_class_storage->template_types) {
+            if ($class_storage === $static_class_storage && $static_class_storage->template_types) {
                 $i = 0;
 
-                foreach ($calling_class_storage->template_types as $type_name => $_) {
+                foreach ($static_class_storage->template_types as $type_name => $_) {
                     if (isset($lhs_type_part->type_params[$i])) {
-                        $class_template_params[$type_name][$calling_class_storage->name] = [
-                            $lhs_type_part->type_params[$i]
-                        ];
+                        if ($lhs_var_id !== '$this' || $static_fq_class_name !== $static_class_storage->name) {
+                            $class_template_params[$type_name][$static_class_storage->name] = [
+                                $lhs_type_part->type_params[$i]
+                            ];
+                        }
                     }
 
                     $i++;
@@ -1630,7 +1632,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     continue;
                 }
 
-                if ($class_storage !== $calling_class_storage
+                if ($class_storage !== $static_class_storage
                     && isset($e[$class_storage->name][$type_name])
                 ) {
                     $input_type_extends = $e[$class_storage->name][$type_name];
@@ -1639,10 +1641,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
                         if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam) {
-                            if (isset($calling_class_storage->template_types[$type_extends_atomic->param_name])) {
+                            if (isset($static_class_storage->template_types[$type_extends_atomic->param_name])) {
                                 $mapped_offset = array_search(
                                     $type_extends_atomic->param_name,
-                                    array_keys($calling_class_storage->template_types)
+                                    array_keys($static_class_storage->template_types)
                                 );
 
                                 if (isset($lhs_type_part->type_params[(int) $mapped_offset])) {
@@ -1658,14 +1660,14 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     }
                                 }
                             } elseif (isset(
-                                $calling_class_storage
+                                $static_class_storage
                                     ->template_type_extends
                                         [$type_extends_atomic->defining_class]
                                         [$type_extends_atomic->param_name]
                             )) {
                                 $mapped_offset = array_search(
                                     $type_extends_atomic->param_name,
-                                    array_keys($calling_class_storage
+                                    array_keys($static_class_storage
                                     ->template_type_extends
                                         [$type_extends_atomic->defining_class])
                                 );
@@ -1695,12 +1697,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
                     }
 
-                    $class_template_params[$type_name][$class_storage->name] = [
-                        $output_type_extends ?: Type::getMixed()
-                    ];
+                    if ($lhs_var_id !== '$this' || $static_fq_class_name !== $class_storage->name) {
+                        $class_template_params[$type_name][$class_storage->name] = [
+                            $output_type_extends ?: Type::getMixed()
+                        ];
+                    }
                 }
 
-                if (!isset($class_template_params[$type_name])) {
+                if (($lhs_var_id !== '$this' || $static_fq_class_name !== $class_storage->name)
+                    && !isset($class_template_params[$type_name])
+                ) {
                     $class_template_params[$type_name] = [
                         $class_storage->name => [Type::getMixed()]
                     ];
@@ -1710,10 +1716,12 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         }
 
+        $static_template_types = $static_class_storage->template_types;
+
         foreach ($template_types as $type_name => $type_map) {
             foreach ($type_map as list($type)) {
                 foreach ($candidate_class_storages as $candidate_class_storage) {
-                    if ($candidate_class_storage !== $calling_class_storage
+                    if ($candidate_class_storage !== $static_class_storage
                         && isset($e[$candidate_class_storage->name][$type_name])
                         && !isset($class_template_params[$type_name][$candidate_class_storage->name])
                     ) {
@@ -1723,7 +1731,18 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
                             if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam) {
-                                if (!$output_type_extends) {
+                                if ($static_class_storage->name === $type_extends_atomic->defining_class
+                                    && isset($static_template_types[$type_extends_atomic->param_name])
+                                ) {
+                                    if (!$output_type_extends) {
+                                        $output_type_extends = new Type\Union([$type_extends_atomic]);
+                                    } else {
+                                        $output_type_extends = Type::combineUnionTypes(
+                                            new Type\Union([$type_extends_atomic]),
+                                            $output_type_extends
+                                        );
+                                    }
+                                } elseif (!$output_type_extends) {
                                     $output_type_extends = $type_extends_atomic->as;
                                 } else {
                                     $output_type_extends = Type::combineUnionTypes(

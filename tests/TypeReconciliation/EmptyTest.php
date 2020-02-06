@@ -429,6 +429,20 @@ class EmptyTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'MixedReturnTypeCoercion'
             ],
+            'secondEmptyTwice' => [
+                '<?php
+                    /**
+                     * @param array{a?:int,b?:string} $p
+                     * @return non-empty-array
+                     */
+                    function f(array $p):array {
+                        if (empty($p)) {
+                            throw new RuntimeException("");
+                        }
+                        assert(!empty($p));
+                    }',
+                'error_message' => 'RedundantCondition'
+            ],
         ];
     }
 }

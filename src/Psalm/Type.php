@@ -380,7 +380,8 @@ abstract class Type
 
                     return new Atomic\TTemplateKeyOf(
                         $param_name,
-                        $defining_class
+                        $defining_class,
+                        $template_type_map[$param_name][$defining_class][0]
                     );
                 }
 
@@ -410,7 +411,8 @@ abstract class Type
 
                     return new Atomic\TTemplateKeyOf(
                         $param_name,
-                        $defining_class
+                        $defining_class,
+                        $template_type_map[$param_name][$defining_class][0]
                     );
                 }
 
