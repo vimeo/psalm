@@ -687,7 +687,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         if ($new_type_part instanceof Type\Atomic\TTemplateParam
             && $new_type_part->as->isSingle()
         ) {
-            $new_as_atomic = array_values($new_type_part->as->getAtomicTypes())[0];
+            $new_as_atomic = \array_values($new_type_part->as->getAtomicTypes())[0];
             $acceptable_atomic_types = [];
 
             foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
