@@ -684,6 +684,30 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
+        if ($new_type_part instanceof Type\Atomic\TTemplateParam
+            && $new_type_part->as->isSingle()
+        ) {
+            $new_as_atomic = array_values($new_type_part->as->getAtomicTypes())[0];
+            $acceptable_atomic_types = [];
+
+            foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
+                if (TypeAnalyzer::isAtomicContainedBy(
+                    $codebase,
+                    $existing_var_type_part,
+                    $new_as_atomic
+                )) {
+                    $acceptable_atomic_types[] = clone $existing_var_type_part;
+                    continue;
+                }
+            }
+
+            if ($acceptable_atomic_types) {
+                $new_type_part->as = new Type\Union($acceptable_atomic_types);
+
+                return new Type\Union([$new_type_part]);
+            }
+        }
+
         if ($new_type_part instanceof TNamedObject
             && ((
                 $new_type_has_interface
