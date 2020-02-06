@@ -699,9 +699,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $var = $stmt->args[0]->value;
 
                 if ($var instanceof PhpParser\Node\Expr\Variable
-                    && $var->name instanceof PhpParser\Node\Identifier
+                    && is_string($var->name)
                 ) {
-                    $var_id = '$' . $var->name->name;
+                    $var_id = '$' . $var->name;
 
                     if (isset($context->vars_in_scope[$var_id])) {
                         $atomic_type = $stmt->name->parts === ['get_class']
