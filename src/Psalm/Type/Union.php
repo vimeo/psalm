@@ -1204,6 +1204,18 @@ class Union
 
                         $new_types[$literal_class_string->getKey()] = $literal_class_string;
                         $keys_to_unset[] = $key;
+                    } elseif ($template_type_part instanceof Type\Atomic\TTemplateParam) {
+                        $first_atomic_type = array_values($template_type_part->as->types)[0];
+
+                        $mapped_template_class = new Type\Atomic\TTemplateParamClass(
+                            $template_type_part->param_name,
+                            $template_type_part->as->getId(),
+                            $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
+                            $template_type_part->defining_class
+                        );
+
+                        $new_types[$mapped_template_class->getKey()] = $mapped_template_class;
+                        $keys_to_unset[] = $key;
                     }
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TTemplateIndexedAccess) {
