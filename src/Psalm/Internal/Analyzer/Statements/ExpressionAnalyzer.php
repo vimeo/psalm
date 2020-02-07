@@ -1311,22 +1311,53 @@ class ExpressionAnalyzer
                     return new Type\Atomic\TLiteralClassString($return_type->fq_classlike_name);
                 }
 
-                try {
-                    $class_constant = $codebase->classlikes->getConstantForClass(
-                        $return_type->fq_classlike_name,
-                        $return_type->const_name,
-                        \ReflectionProperty::IS_PRIVATE
-                    );
-                } catch (\Psalm\Exception\CircularReferenceException $e) {
-                    $class_constant = null;
+                if (strpos($return_type->const_name, '*') !== false) {
+                    $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
+
+                    $matching_constants = \array_keys($class_storage->class_constant_locations);
+
+                    $const_name_part = \substr($return_type->const_name, 0, -1);
+
+                    if ($const_name_part) {
+                        $matching_constants = \array_filter(
+                            $matching_constants,
+                            function ($constant_name) use ($const_name_part) {
+                                return $constant_name !== $const_name_part
+                                    && \strpos($constant_name, $const_name_part) === 0;
+                            }
+                        );
+                    }
+                } else {
+                    $matching_constants = [$return_type->const_name];
                 }
 
-                if ($class_constant) {
-                    if ($class_constant->isSingle()) {
-                        $class_constant = clone $class_constant;
+                $matching_constant_types = [];
 
-                        return array_values($class_constant->getAtomicTypes())[0];
+                foreach ($matching_constants as $matching_constant) {
+                    try {
+                        $class_constant = $codebase->classlikes->getConstantForClass(
+                            $return_type->fq_classlike_name,
+                            $matching_constant,
+                            \ReflectionProperty::IS_PRIVATE
+                        );
+                    } catch (\Psalm\Exception\CircularReferenceException $e) {
+                        $class_constant = null;
                     }
+
+                    if ($class_constant) {
+                        if ($class_constant->isSingle()) {
+                            $class_constant = clone $class_constant;
+
+                            $matching_constant_types = \array_merge(
+                                \array_values($class_constant->getAtomicTypes()),
+                                $matching_constant_types
+                            );
+                        }
+                    }
+                }
+
+                if ($matching_constant_types) {
+                    return $matching_constant_types;
                 }
             }
 

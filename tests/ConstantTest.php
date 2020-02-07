@@ -622,6 +622,42 @@ class ConstantTest extends TestCase
                         public $foo = "a";
                     }',
             ],
+            'wildcardEnum' => [
+                '<?php
+                    class A {
+                        const C_1 = 1;
+                        const C_2 = 2;
+                        const C_3 = 3;
+
+                        /**
+                         * @param self::C_* $i
+                         */
+                        public static function foo(int $i) : void {}
+                    }
+
+                    A::foo(1);
+                    A::foo(2);
+                    A::foo(3);',
+            ],
+            'wildcardEnumAnyConstant' => [
+                '<?php
+                    class A {
+                        const C_1 = 1;
+                        const C_2 = 2;
+                        const C_3 = 3;
+                        const D_4 = 4;
+
+                        /**
+                         * @param self::* $i
+                         */
+                        public static function foo(int $i) : void {}
+                    }
+
+                    A::foo(1);
+                    A::foo(2);
+                    A::foo(3);
+                    A::foo(A::D_4);',
+            ],
         ];
     }
 
@@ -789,6 +825,23 @@ class ConstantTest extends TestCase
 
                     A::bar("d");',
                 'error_message' => 'InvalidArgument',
+            ],
+            'wildcardEnumBadValue' => [
+                '<?php
+                    class A {
+                        const C_1 = 1;
+                        const C_2 = 2;
+                        const C_3 = 3;
+                        const D_4 = 4;
+
+                        /**
+                         * @param self::C_* $i
+                         */
+                        public static function foo(int $i) : void {}
+                    }
+
+                    A::foo(A::D_4);',
+                'error_message' => 'InvalidArgument'
             ],
         ];
     }
