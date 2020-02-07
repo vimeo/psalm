@@ -48,14 +48,10 @@ script:
   - vendor/bin/phpunit
   - ./psalm
 
-# Base test matrix (php/env)
-matrix:
+jobs:
   fast_finish: true
   allow_failures:
     - php: nightly
-
-# Additional stages
-jobs:
   include:
     - stage: Code style analysis
       php: 7.3
