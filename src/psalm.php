@@ -80,17 +80,17 @@ $args = array_slice($argv, 1);
 $options = getopt(implode('', $valid_short_options), $valid_long_options);
 
 if (isset($options['alter'])) {
-    include 'psalter.php';
+    require_once __DIR__ . '/psalter.php';
     exit;
 }
 
 if (isset($options['language-server'])) {
-    include 'psalm-language-server.php';
+    require_once __DIR__ . '/psalm-language-server.php';
     exit;
 }
 
 if (isset($options['refactor'])) {
-    include 'psalm-refactor.php';
+    require_once __DIR__ . '/psalm-refactor.php';
     exit;
 }
 
