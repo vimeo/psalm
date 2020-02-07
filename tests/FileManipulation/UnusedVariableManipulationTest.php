@@ -587,6 +587,51 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 ['UnusedVariable'],
                 true,
             ],
+            'dontRemoveUsedToStringCall' => [
+                '<?php
+                    class S {
+                        /**
+                         * @throws Exception
+                         */
+                        public function __toString() {
+                            if(rand(0,1)){
+                                throw new exception();
+                            }
+                            return "";
+                        }
+                    }
+
+                    function foo(S $a) {
+                        try {
+                            $b = (string) $a;
+                        } catch(Exception $e){
+                            // this class is not stringable
+                        }
+                    }',
+                '<?php
+                    class S {
+                        /**
+                         * @throws Exception
+                         */
+                        public function __toString() {
+                            if(rand(0,1)){
+                                throw new exception();
+                            }
+                            return "";
+                        }
+                    }
+
+                    function foo(S $a) {
+                        try {
+                            (string) $a;
+                        } catch(Exception $e){
+                            // this class is not stringable
+                        }
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
         ];
     }
 }
