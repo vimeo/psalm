@@ -182,7 +182,8 @@ class IteratorIterator implements OuterIterator {
  * @template-extends IteratorIterator<TKey, TValue>
  */
 class FilterIterator extends IteratorIterator {
-     public abstract function accept () : bool {}
+     /** @return bool */
+     public abstract function accept () {}
  }
 
 
