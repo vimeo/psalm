@@ -1186,37 +1186,37 @@ class Union
             } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
                 $template_type = isset($template_types[$atomic_type->param_name][$atomic_type->defining_class])
                     ? clone $template_types[$atomic_type->param_name][$atomic_type->defining_class][0]
-                    : Type::getMixed();
+                    : null;
 
-                foreach ($template_type->types as $template_type_part) {
-                    if ($template_type_part instanceof Type\Atomic\TMixed
-                        || $template_type_part instanceof Type\Atomic\TObject
-                    ) {
-                        $unknown_class_string = new Type\Atomic\TClassString();
+                $class_template_type = null;
 
-                        $new_types[$unknown_class_string->getKey()] = $unknown_class_string;
-                        $keys_to_unset[] = $key;
-                    } elseif ($template_type_part instanceof Type\Atomic\TNamedObject) {
-                        $literal_class_string = new Type\Atomic\TClassString(
-                            $template_type_part->value,
-                            $template_type_part
-                        );
+                if ($template_type) {
+                    foreach ($template_type->types as $template_type_part) {
+                        if ($template_type_part instanceof Type\Atomic\TMixed
+                            || $template_type_part instanceof Type\Atomic\TObject
+                        ) {
+                            $class_template_type = new Type\Atomic\TClassString();
+                        } elseif ($template_type_part instanceof Type\Atomic\TNamedObject) {
+                            $class_template_type = new Type\Atomic\TClassString(
+                                $template_type_part->value,
+                                $template_type_part
+                            );
+                        } elseif ($template_type_part instanceof Type\Atomic\TTemplateParam) {
+                            $first_atomic_type = array_values($template_type_part->as->types)[0];
 
-                        $new_types[$literal_class_string->getKey()] = $literal_class_string;
-                        $keys_to_unset[] = $key;
-                    } elseif ($template_type_part instanceof Type\Atomic\TTemplateParam) {
-                        $first_atomic_type = array_values($template_type_part->as->types)[0];
-
-                        $mapped_template_class = new Type\Atomic\TTemplateParamClass(
-                            $template_type_part->param_name,
-                            $template_type_part->as->getId(),
-                            $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
-                            $template_type_part->defining_class
-                        );
-
-                        $new_types[$mapped_template_class->getKey()] = $mapped_template_class;
-                        $keys_to_unset[] = $key;
+                            $class_template_type = new Type\Atomic\TTemplateParamClass(
+                                $template_type_part->param_name,
+                                $template_type_part->as->getId(),
+                                $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
+                                $template_type_part->defining_class
+                            );
+                        }
                     }
+                }
+
+                if ($class_template_type) {
+                    $keys_to_unset[] = $key;
+                    $new_types[$class_template_type->getKey()] = $class_template_type;
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TTemplateIndexedAccess) {
                 $keys_to_unset[] = $key;
