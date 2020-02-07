@@ -136,7 +136,6 @@ class TestCase extends BaseTestCase
     {
         $name = parent::getName($withDataSet);
         /**
-         * @psalm-suppress DocblockTypeContradiction PHPUnit 7 introduced nullable name
          * @psalm-suppress TypeDoesNotContainNull PHPUnit 8.2 made it non-nullable again
          */
         if (null === $name) {

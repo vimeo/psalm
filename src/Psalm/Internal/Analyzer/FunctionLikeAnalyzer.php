@@ -523,6 +523,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'PossiblyUndefinedMethod',
                 ]);
             }
+        } elseif ($cased_method_id && strpos($cased_method_id, '__destruct')) {
+            $statements_analyzer->addSuppressedIssues([
+                'InvalidPropertyAssignmentValue',
+                'PossiblyNullPropertyAssignmentValue',
+            ]);
         }
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
@@ -610,7 +615,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ) {
                     if ($function_type = $statements_analyzer->node_data->getType($this->function)) {
                         /**
-                         * @psalm-suppress PossiblyUndefinedStringArrayOffset
                          * @var Type\Atomic\TFn
                          */
                         $closure_atomic = \array_values($function_type->getAtomicTypes())[0];

@@ -194,7 +194,6 @@ class FileDiffTest extends TestCase
                 $this->assertTrue(isset($b_stmt->stmts));
 
                 /**
-                 * @psalm-suppress UndefinedPropertyFetch
                  * @psalm-suppress MixedArgument
                  */
                 $this->assertTreesEqual($a_stmt->stmts, $b_stmt->stmts);

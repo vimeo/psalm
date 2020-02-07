@@ -746,9 +746,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 )
                 : $property_type;
 
-            /**
-             * @psalm-suppress ReferenceConstraintViolation
-             */
             $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
                 $codebase,
                 $property_class_storage,

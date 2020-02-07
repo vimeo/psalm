@@ -83,9 +83,7 @@ class LoopScope
 
     public function __destruct()
     {
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $this->loop_context = null;
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $this->loop_parent_context = null;
     }
 }
