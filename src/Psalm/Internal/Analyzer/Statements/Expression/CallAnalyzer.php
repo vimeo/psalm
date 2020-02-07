@@ -430,9 +430,7 @@ class CallAnalyzer
                         return false;
                     }
 
-                    if ($arg->value instanceof PhpParser\Node\Expr\Variable) {
-                        continue;
-                    }
+                    continue;
                 }
 
                 $toggled_class_exists = false;
@@ -816,6 +814,12 @@ class CallAnalyzer
                 $arg->value,
                 $context
             ) === false) {
+                return false;
+            }
+        }
+
+        if (!$arg->value instanceof PhpParser\Node\Expr\Variable) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                 return false;
             }
         }
