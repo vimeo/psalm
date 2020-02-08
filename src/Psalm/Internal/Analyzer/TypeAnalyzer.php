@@ -714,7 +714,7 @@ class TypeAnalyzer
             return true;
         }
 
-        if ($input_type_part instanceof TNever) {
+        if ($input_type_part instanceof TNever || $input_type_part instanceof Type\Atomic\TEmpty) {
             return true;
         }
 

@@ -2274,22 +2274,12 @@ class ClassTemplateTest extends TestCase
                         }
                     }'
             ],
-            'newGenericBecomesPropertyType' => [
+            'createEmptyArrayCollection' => [
                 '<?php
-                    class B {}
-
-                    class A {
-                        /** @var ArrayCollection<int, B> */
-                        public ArrayCollection $b_collection;
-
-                        public function __construct() {
-                            $this->b_collection = new ArrayCollection([]);
-                            $this->b_collection->add(5, new B());
-                        }
-                    }
+                    $a = new ArrayCollection([]);
 
                     /**
-                     * @psalm-template TKey
+                     * @psalm-template TKey of array-key
                      * @psalm-template T
                      */
                     class ArrayCollection
@@ -2320,6 +2310,128 @@ class ClassTemplateTest extends TestCase
                          */
                         public function add($key, $t) : void {
                             $this->elements[$key] = $t;
+                        }
+                    }',
+                [
+                    '$a' => 'ArrayCollection<empty, empty>'
+                ]
+            ],
+            'newGenericBecomesPropertyTypeValidArg' => [
+                '<?php
+                    class B {}
+
+                    class A {
+                        /** @var ArrayCollection<int, B> */
+                        public ArrayCollection $b_collection;
+
+                        public function __construct() {
+                            $this->b_collection = new ArrayCollection([]);
+                            $this->b_collection->add(5, new B());
+                        }
+                    }
+
+                    /**
+                     * @psalm-template TKey of array-key
+                     * @psalm-template T
+                     */
+                    class ArrayCollection
+                    {
+                        /**
+                         * An array containing the entries of this collection.
+                         *
+                         * @psalm-var array<TKey,T>
+                         * @var array
+                         */
+                        private $elements = [];
+
+                        /**
+                         * Initializes a new ArrayCollection.
+                         *
+                         * @param array $elements
+                         *
+                         * @psalm-param array<TKey,T> $elements
+                         */
+                        public function __construct(array $elements = [])
+                        {
+                            $this->elements = $elements;
+                        }
+
+                        /**
+                         * @param TKey $key
+                         * @param T $t
+                         */
+                        public function add($key, $t) : void {
+                            $this->elements[$key] = $t;
+                        }
+                    }'
+            ],
+            'allowPropertyCoercion' => [
+                '<?php
+                    class Test
+                    {
+                        /**
+                         * @var ArrayCollection<int, DateTime>
+                         */
+                        private $c;
+
+                        public function __construct()
+                        {
+                            $this->c = new ArrayCollection();
+                            $this->c->filter(function (DateTime $dt): bool {
+                                return $dt === $dt;
+                            });
+                        }
+                    }
+
+                    /**
+                     * @psalm-template TKey of array-key
+                     * @psalm-template T
+                     */
+                    interface Collection
+                    {
+                        /**
+                         * @param Closure $p
+                         *
+                         * @return Collection A
+                         *
+                         * @psalm-param Closure(T=):bool $p
+                         * @psalm-return Collection<TKey, T>
+                         */
+                        public function filter(Closure $p);
+                    }
+
+
+                    /**
+                     * @psalm-template TKey of array-key
+                     * @psalm-template T
+                     * @template-implements Collection<TKey,T>
+                     */
+                    class ArrayCollection implements Collection
+                    {
+                        /**
+                         * @psalm-var array<TKey,T>
+                         * @var array
+                         */
+                        private $elements;
+
+                        /**
+                         * @param array $elements
+                         *
+                         * @psalm-param array<TKey,T> $elements
+                         */
+                        public function __construct(array $elements = [])
+                        {
+                            $this->elements = $elements;
+                        }
+
+                        /**
+                         * {@inheritDoc}
+                         *
+                         * @return static
+                         */
+                        public function filter(Closure $p)
+                        {
+                            return $this;
                         }
                     }'
             ],
@@ -2770,7 +2882,7 @@ class ClassTemplateTest extends TestCase
                     }',
                 'error_message' => 'UndefinedDocblockClass'
             ],
-            'newGenericBecomesPropertyType' => [
+            'newGenericBecomesPropertyTypeInvalidArg' => [
                 '<?php
                     class B {}
                     class C {}
