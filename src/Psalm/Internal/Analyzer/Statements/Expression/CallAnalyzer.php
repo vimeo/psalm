@@ -389,7 +389,7 @@ class CallAnalyzer
             return;
         }
 
-        if ($method_id === 'array_map' && count($args) === 2) {
+        if ($method_id === 'array_map') {
             $args = array_reverse($args, true);
         }
 
@@ -453,26 +453,29 @@ class CallAnalyzer
                     && $param->type
                     && !$arg->value->getDocComment()
                 ) {
-                    if (count($args) === 2
-                        && (($argument_offset === 1 && $method_id === 'array_filter')
-                            || ($argument_offset === 0 && $method_id === 'array_map'))
+                    if (($argument_offset === 1 && $method_id === 'array_filter' && count($args) === 2)
+                        || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
                     ) {
+                        $function_like_params = [];
+
+                        foreach ($template_result->generic_params as $template_name => $_) {
+                            $function_like_params[] = new \Psalm\Storage\FunctionLikeParameter(
+                                'function',
+                                false,
+                                new Type\Union([
+                                    new Type\Atomic\TTemplateParam(
+                                        $template_name,
+                                        Type::getMixed(),
+                                        $method_id
+                                    )
+                                ])
+                            );
+                        }
+
                         $replaced_type = new Type\Union([
                             new Type\Atomic\TCallable(
                                 'callable',
-                                [
-                                    new \Psalm\Storage\FunctionLikeParameter(
-                                        'function',
-                                        false,
-                                        new Type\Union([
-                                            new Type\Atomic\TTemplateParam(
-                                                'ArrayValue',
-                                                Type::getMixed(),
-                                                $method_id
-                                            )
-                                        ])
-                                    )
-                                ]
+                                array_reverse($function_like_params)
                             )
                         ]);
                     } else {
@@ -547,16 +550,15 @@ class CallAnalyzer
                     $context->inside_call = false;
                 }
 
-                if (count($args) === 2
-                    && (($argument_offset === 0 && $method_id === 'array_filter')
-                        || ($argument_offset === 1 && $method_id === 'array_map'))
+                if (($argument_offset === 0 && $method_id === 'array_filter' && count($args) === 2)
+                    || ($argument_offset > 0 && $method_id === 'array_map' && count($args) >= 2)
                 ) {
                     $generic_param_type = new Type\Union([
                         new Type\Atomic\TArray([
                             Type::getArrayKey(),
                             new Type\Union([
                                 new Type\Atomic\TTemplateParam(
-                                    'ArrayValue',
+                                    'ArrayValue' . $argument_offset,
                                     Type::getMixed(),
                                     $method_id
                                 )
@@ -564,7 +566,7 @@ class CallAnalyzer
                         ])
                     ]);
 
-                    $template_types = ['ArrayValue' => [$method_id => [Type::getMixed()]]];
+                    $template_types = ['ArrayValue' . $argument_offset => [$method_id => [Type::getMixed()]]];
 
                     $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
                         $template_types,

@@ -1290,6 +1290,13 @@ class ArrayFunctionCallTest extends TestCase
                     takesString($a[0]);
                     array_map("takesString", $a);',
             ],
+            'arrayMapExplicitZip' => [
+                '<?php
+                    $as = ["key"];
+                    $bs = ["value"];
+
+                    return array_map(fn ($a, $b) => [$a => $b], $as, $bs);'
+            ],
         ];
     }
 
