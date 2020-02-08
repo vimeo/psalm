@@ -2014,6 +2014,16 @@ class TypeAnalyzer
                 $container_param = $container_type_part->type_params[$i];
 
                 if ($input_param->isEmpty()) {
+                    if (!$atomic_comparison_result->replacement_atomic_type) {
+                        $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
+                    }
+
+                    if ($atomic_comparison_result->replacement_atomic_type instanceof TGenericObject) {
+                        /** @psalm-suppress PropertyTypeCoercion */
+                        $atomic_comparison_result->replacement_atomic_type->type_params[$i]
+                            = clone $container_param;
+                    }
+
                     continue;
                 }
 
