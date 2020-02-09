@@ -50,8 +50,6 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
                         new Type\Atomic\TIterable([Type::getMixed(), Type::getMixed()])
                     )
                 ) {
-                    assert($statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer);
-
                     $has_valid_iterator = true;
                     ForeachAnalyzer::handleIterable(
                         $statements_source,
