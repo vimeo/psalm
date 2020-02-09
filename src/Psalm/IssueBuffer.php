@@ -240,6 +240,23 @@ class IssueBuffer
         return true;
     }
 
+    public static function remove(string $file_path, string $issue_type, int $file_offset) : void
+    {
+        if (!isset(self::$issues_data[$file_path])) {
+            return;
+        }
+
+        $filtered_issues = [];
+
+        foreach (self::$issues_data[$file_path] as $issue) {
+            if ($issue['type'] !== $issue_type || $issue['from'] !== $file_offset) {
+                $filtered_issues[] = $issue;
+            }
+        }
+
+        self::$issues_data[$file_path] = $filtered_issues;
+    }
+
     public static function addFixableIssue(string $issue_type) : void
     {
         if (isset(self::$fixable_issue_counts[$issue_type])) {

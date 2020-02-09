@@ -682,6 +682,14 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     );
 
                     foreach ($changed_var_ids as $var_id => $_) {
+                        if ($first_appearance = $statements_analyzer->getFirstAppearance($var_id)) {
+                            IssueBuffer::remove(
+                                $statements_analyzer->getFilePath(),
+                                'MixedAssignment',
+                                $first_appearance->raw_file_start
+                            );
+                        }
+
                         if (isset($op_vars_in_scope[$var_id])) {
                             $op_vars_in_scope[$var_id]->from_docblock = true;
                         }

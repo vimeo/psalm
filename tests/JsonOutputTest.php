@@ -242,6 +242,15 @@ echo $a;';
                 'line' => 6,
                 'error' => '"hello"',
             ],
+            'assertCancelsMixedAssignment' => [
+                '<?php
+                    $a = $_GET["hello"];
+                    assert(is_int($a));
+                    if (is_int($a)) {}',
+                'message' => "Found a redundant condition when evaluating docblock-defined type \$a and trying to reconcile type 'int' to int",
+                'line' => 4,
+                'error' => 'is_int($a)',
+            ],
         ];
     }
 }

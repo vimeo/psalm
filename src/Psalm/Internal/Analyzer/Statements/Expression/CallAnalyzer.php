@@ -3596,6 +3596,14 @@ class CallAnalyzer
 
             foreach ($changed_var_ids as $var_id => $_) {
                 if (isset($op_vars_in_scope[$var_id])) {
+                    if ($first_appearance = $statements_analyzer->getFirstAppearance($var_id)) {
+                        IssueBuffer::remove(
+                            $statements_analyzer->getFilePath(),
+                            'MixedAssignment',
+                            $first_appearance->raw_file_start
+                        );
+                    }
+
                     $op_vars_in_scope[$var_id]->from_docblock = true;
 
                     foreach ($op_vars_in_scope[$var_id]->getAtomicTypes() as $changed_atomic_type) {
