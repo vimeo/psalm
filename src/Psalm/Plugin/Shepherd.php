@@ -121,7 +121,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             } else {
                 $short_address = \str_replace('https://', '', $base_address);
 
-                echo "🐑 results sent to $short_address 🐑" . PHP_EOL;
+                fwrite(STDERR, "🐑 results sent to $short_address 🐑" . PHP_EOL);
             }
 
             // Close cURL session handle
