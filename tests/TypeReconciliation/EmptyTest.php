@@ -429,13 +429,12 @@ class EmptyTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'MixedReturnTypeCoercion'
             ],
-            'SKIPPED-secondEmptyTwice' => [
+            'secondEmptyTwice' => [
                 '<?php
                     /**
                      * @param array{a?:int,b?:string} $p
-                     * @return non-empty-array
                      */
-                    function f(array $p):array {
+                    function f(array $p) : void {
                         if (empty($p)) {
                             throw new RuntimeException("");
                         }

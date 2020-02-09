@@ -660,6 +660,16 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $codebase
                 );
 
+                $cond_assigned_var_ids = [];
+
+                \Psalm\Internal\Analyzer\AlgebraAnalyzer::checkForParadox(
+                    $context->clauses,
+                    $assert_clauses,
+                    $statements_analyzer,
+                    $stmt,
+                    $cond_assigned_var_ids
+                );
+
                 $simplified_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $assert_clauses));
 
                 $assert_type_assertions = Algebra::getTruthsFromFormula($simplified_clauses);
@@ -674,7 +684,12 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $assert_type_assertions,
                         $context->vars_in_scope,
                         $changed_var_ids,
-                        [],
+                        array_map(
+                            function ($v) {
+                                return true;
+                            },
+                            $assert_type_assertions
+                        ),
                         $statements_analyzer,
                         $statements_analyzer->getTemplateTypeMap() ?: [],
                         $context->inside_loop,
