@@ -2435,7 +2435,14 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $existing_type_part->type_params
                         );
                     }
-                } elseif ($atomic_comparison_results->type_coerced) {
+                } elseif (TypeAnalyzer::isAtomicContainedBy(
+                    $codebase,
+                    $existing_type_part,
+                    $new_type_part,
+                    true,
+                    false,
+                    null
+                )) {
                     $has_local_match = true;
                     $matching_atomic_types[] = $existing_type_part;
                 }
