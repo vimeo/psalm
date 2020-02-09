@@ -607,4 +607,40 @@ class UnionTemplateHandler
 
         return $atomic_types;
     }
+
+    /**
+     * @param  array<string, array<string, array{Union, 1?:int}>>  $template_types
+     *
+     * @return array{Union, 1?:int}|null
+     */
+    public static function getRootTemplateType(
+        array $template_types,
+        string $param_name,
+        string $defining_class,
+        array $visited_classes = []
+    ) : ?array {
+        if (isset($template_types[$param_name][$defining_class])) {
+            $mapped_type = $template_types[$param_name][$defining_class][0];
+
+            $mapped_type_atomic_types = array_values($mapped_type->getAtomicTypes());
+
+            if (count($mapped_type_atomic_types) > 1
+                || !$mapped_type_atomic_types[0] instanceof Atomic\TTemplateParam
+                || isset($visited_classes[$defining_class])
+            ) {
+                return $template_types[$param_name][$defining_class];
+            }
+
+            $first_template = $mapped_type_atomic_types[0];
+
+            return self::getRootTemplateType(
+                $template_types,
+                $first_template->param_name,
+                $first_template->defining_class,
+                $visited_classes + [$defining_class => true]
+            ) ?? $template_types[$param_name][$defining_class];
+        }
+
+        return null;
+    }
 }

@@ -1113,8 +1113,14 @@ class Union
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $template_type = null;
 
-                if (isset($template_types[$atomic_type->param_name][$atomic_type->defining_class])) {
-                    $template_type = $template_types[$atomic_type->param_name][$atomic_type->defining_class][0];
+                $traversed_type = \Psalm\Internal\Type\UnionTemplateHandler::getRootTemplateType(
+                    $template_types,
+                    $atomic_type->param_name,
+                    $atomic_type->defining_class
+                );
+
+                if ($traversed_type) {
+                    $template_type = $traversed_type[0];
 
                     if (!$atomic_type->as->isMixed() && $template_type->isMixed()) {
                         $template_type = clone $atomic_type->as;
