@@ -61,6 +61,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
             }
 
             $has_object_like = false;
+            $filter_null = false;
 
             if (isset($call_args[2])
                 && ($third_arg_type = $statements_source->node_data->getType($call_args[2]->value))
@@ -97,14 +98,15 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
                             }
                         }
                     } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                        if ($filter_type->hasBool() && $atomic_type->value === \FILTER_NULL_ON_FAILURE) {
+                        if ($atomic_type->value === \FILTER_NULL_ON_FAILURE) {
+                            $filter_null = true;
                             $filter_type->addType(new Type\Atomic\TNull);
                         }
                     }
                 }
             }
 
-            if (!$has_object_like && $filter_type) {
+            if (!$has_object_like && !$filter_null && $filter_type) {
                 $filter_type->addType(new Type\Atomic\TFalse);
             }
 
