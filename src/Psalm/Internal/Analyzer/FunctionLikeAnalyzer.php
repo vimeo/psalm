@@ -320,7 +320,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
 
-            $context->calling_function_id = strtolower($method_id);
+            if (!$context->calling_function_id || !$context->collect_initializations) {
+                $context->calling_function_id = strtolower($method_id);
+            }
         } elseif ($this->function instanceof Function_) {
             $cased_method_id = $this->function->name->name;
             $context->calling_function_id = strtolower($cased_method_id);

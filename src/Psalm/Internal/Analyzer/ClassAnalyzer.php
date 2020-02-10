@@ -1252,6 +1252,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->self = $fq_class_name;
             $method_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
             $method_context->vars_possibly_in_scope['$this'] = true;
+            $method_context->calling_function_id = strtolower($fq_class_name) . '::__construct';
 
             $constructor_analyzer->analyze(
                 $method_context,

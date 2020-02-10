@@ -348,6 +348,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         $call_context->collect_initializations = $this_context->collect_initializations;
         $call_context->initialized_methods = $this_context->initialized_methods;
         $call_context->include_location = $this_context->include_location;
+        $call_context->calling_function_id = $this_context->calling_function_id;
 
         foreach ($this_context->vars_possibly_in_scope as $var => $_) {
             if (strpos($var, '$this->') === 0) {

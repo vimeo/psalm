@@ -86,7 +86,8 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
 
         $this->assertSame(
             $initial_analyzed_methods,
-            $codebase->analyzer->getAnalyzedMethods()
+            $codebase->analyzer->getAnalyzedMethods(),
+            'initial analyzed methods are not the same'
         );
 
         foreach ($end_files as $file_path => $contents) {
@@ -99,7 +100,8 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
 
         $this->assertSame(
             $unaffected_analyzed_methods,
-            $codebase->analyzer->getAnalyzedMethods()
+            $codebase->analyzer->getAnalyzedMethods(),
+            'unaffected analyzed methods are not the same'
         );
     }
 
@@ -1108,6 +1110,66 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 1,
                     ],
+                ],
+            ],
+            'modifyPropertyOfChildClass' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        abstract class A {
+                            protected $arr = [1, 2, 3];
+
+                            protected string $b;
+
+                            public function __construct(int $a, string $b) {
+                                echo $this->arr[$a];
+                                $this->b = $b;
+                                parent::__construct($a, $b);
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                        namespace Foo;
+
+                        class AChild extends A {
+                            public $arr = [1, 2, 3, 4];
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        abstract class A {
+                            protected $arr = [1, 2, 3];
+
+                            protected string $b;
+
+                            public function __construct(int $a, string $b) {
+                                echo $this->arr[$a];
+                                $this->b = $b;
+                                parent::__construct($a, $b);
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                        namespace Foo;
+
+                        class AChild extends A {
+                            protected $arr;
+                        }',
+                ],
+                'initial_analyzed_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 2,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
+                        'foo\achild::__construct' => 2,
+                    ],
+                ],
+                'unaffected_analyzed_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 2,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => []
                 ],
             ],
         ];
