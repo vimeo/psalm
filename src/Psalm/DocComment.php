@@ -186,7 +186,7 @@ class DocComment
         $docblock = trim($docblock);
 
         $docblock = preg_replace('@^/\*\*@', '', $docblock);
-        $docblock = preg_replace('@\*/$@', '', $docblock);
+        $docblock = preg_replace('@\*\*?/$@', '', $docblock);
 
         // Normalize multi-line @specials.
         $lines = explode("\n", $docblock);
@@ -219,7 +219,7 @@ class DocComment
                 list($data, $data_offset) = $data_info;
 
                 if (strpos($data, '*')) {
-                    $data = rtrim(preg_replace('/[ \t]*\*\s*$/', '', $data));
+                    $data = rtrim(preg_replace('/^[ \t]*\*\s*$/', '', $data));
                 }
 
                 $docblock = str_replace($full_match, '', $docblock);

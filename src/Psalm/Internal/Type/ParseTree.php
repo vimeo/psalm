@@ -551,7 +551,7 @@ class ParseTree
                                     && strtolower($nexter_token[0]) !== 'class')
                             ) {
                                 throw new TypeParseTreeException(
-                                    'Invalid class constant'
+                                    'Invalid class constant ' . ($nexter_token[0] ?? '<empty>')
                                 );
                             }
 

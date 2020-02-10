@@ -569,7 +569,7 @@ class ConstantTest extends TestCase
                         }
                     }'
             ],
-                        'keyOf' => [
+            'keyOf' => [
                 '<?php
                     class A {
                         const C = [
@@ -657,6 +657,34 @@ class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);
                     A::foo(A::D_4);',
+            ],
+            'wildcardVarAndReturn' => [
+                '<?php
+                    class Numbers {
+                        public const ONE = 1;
+                        public const TWO = 2;
+                    }
+
+                    class Number {
+                        /**
+                         * @var Numbers::*
+                         */
+                        private $number;
+
+                        /**
+                         * @param Numbers::* $number
+                         */
+                        public function __construct($number) {
+                            $this->number = $number;
+                        }
+
+                        /**
+                         * @return Numbers::*
+                         */
+                        public function get(): int {
+                            return $this->number;
+                        }
+                    }'
             ],
         ];
     }
