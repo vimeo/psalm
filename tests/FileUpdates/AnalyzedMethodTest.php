@@ -1125,7 +1125,6 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                             public function __construct(int $a, string $b) {
                                 echo $this->arr[$a];
                                 $this->b = $b;
-                                parent::__construct($a, $b);
                             }
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
@@ -1147,7 +1146,6 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                             public function __construct(int $a, string $b) {
                                 echo $this->arr[$a];
                                 $this->b = $b;
-                                parent::__construct($a, $b);
                             }
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
