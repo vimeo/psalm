@@ -558,6 +558,13 @@ final class Vector implements Sequence
     public function filter(callable $callback = null): Vector
     {
     }
+
+    /**
+     * @template TNewValue
+     * @param callable(TValue): TNewValue $callback
+     * @return Vector<TNewValue>
+     */
+    public function map(callable $callback): Vector;
 }
 
 /**
