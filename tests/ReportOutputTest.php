@@ -1,17 +1,21 @@
 <?php
+
 namespace Psalm\Tests;
+
+use Psalm\Context;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\IssueBuffer;
+use Psalm\Report;
+use Psalm\Report\JsonReport;
+use Psalm\Tests\Internal\Provider;
 
 use function file_get_contents;
 use function json_decode;
 use function ob_end_clean;
 use function ob_start;
 use function preg_replace;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\IssueBuffer;
-use Psalm\Report;
-use Psalm\Tests\Internal\Provider;
+use function array_values;
 use function unlink;
 
 class ReportOutputTest extends TestCase
@@ -176,9 +180,42 @@ echo $a;';
         $json_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json'])[0];
 
         $this->assertSame(
-            $issue_data,
+            array_values($issue_data),
             json_decode(IssueBuffer::getOutput($json_report_options), true)
         );
+    }
+
+    public function testFilteredJsonReportIsStillArray(): void
+    {
+        $issues_data = [
+            22 => [
+                'severity' => 'info',
+                'line_from' => 15,
+                'line_to' => 15,
+                'type' => 'PossiblyUndefinedGlobalVariable',
+                'message' => 'Possibly undefined global variable $a, first seen on line 10',
+                'file_name' => 'somefile.php',
+                'file_path' => 'somefile.php',
+                'snippet' => 'echo $a',
+                'selected_text' => '$a',
+                'from' => 201,
+                'to' => 203,
+                'snippet_from' => 196,
+                'snippet_to' => 203,
+                'column_from' => 6,
+                'column_to' => 8,
+            ],
+        ];
+
+        $report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json'])[0];
+        $fixable_issue_counts = ['MixedInferredReturnType' => 1];
+
+        $report = new JsonReport(
+            $issues_data,
+            $fixable_issue_counts,
+            $report_options
+        );
+        $this->assertIsArray(json_decode($report->create()));
     }
 
     /**
