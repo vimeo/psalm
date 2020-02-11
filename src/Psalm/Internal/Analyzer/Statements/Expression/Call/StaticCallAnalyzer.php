@@ -150,6 +150,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $statements_analyzer,
                         $fq_class_name,
                         new CodeLocation($source, $stmt->class),
+                        $context->self,
                         $statements_analyzer->getSuppressedIssues(),
                         false,
                         false,
@@ -209,6 +210,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $statements_analyzer,
                     $fq_class_name,
                     new CodeLocation($source, $stmt->class),
+                    $context->self,
                     $statements_analyzer->getSuppressedIssues(),
                     $stmt->class instanceof PhpParser\Node\Name
                         && count($stmt->class->parts) === 1
@@ -227,6 +229,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $statements_analyzer,
                     $fq_class_name,
                     new CodeLocation($source, $stmt->class),
+                    $context->self,
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 )) {
@@ -255,6 +258,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $statements_analyzer,
                     $fq_class_name,
                     new CodeLocation($source, $stmt->class),
+                    $context->self,
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 )) {

@@ -134,6 +134,7 @@ class TScalarClassConstant extends Scalar
             $source,
             $fq_classlike_name,
             $code_location,
+            null,
             $suppressed_issues,
             $inferred,
             false,

@@ -633,6 +633,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $statements_analyzer,
                 $fq_class_name,
                 new CodeLocation($source, $stmt->var),
+                $context->self,
                 $statements_analyzer->getSuppressedIssues(),
                 true,
                 false,

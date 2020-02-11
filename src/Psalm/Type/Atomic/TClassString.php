@@ -148,6 +148,7 @@ class TClassString extends TString
                     $source,
                     $this->as,
                     $code_location,
+                    null,
                     $suppressed_issues,
                     $inferred,
                     false,

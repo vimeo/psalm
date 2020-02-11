@@ -223,6 +223,7 @@ class TryAnalyzer
                         $statements_analyzer,
                         $fq_catch_class,
                         new CodeLocation($statements_analyzer->getSource(), $catch_type, $context->include_location),
+                        $context->self,
                         $statements_analyzer->getSuppressedIssues(),
                         false
                     ) === false) {

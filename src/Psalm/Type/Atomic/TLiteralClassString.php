@@ -140,6 +140,7 @@ class TLiteralClassString extends TLiteralString
             $source,
             $this->value,
             $code_location,
+            null,
             $suppressed_issues,
             $inferred,
             false,

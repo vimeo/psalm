@@ -163,6 +163,7 @@ trait HasIntersectionTrait
                         $source,
                         $extra_type->value,
                         $code_location,
+                        null,
                         $suppressed_issues,
                         $inferred,
                         false,

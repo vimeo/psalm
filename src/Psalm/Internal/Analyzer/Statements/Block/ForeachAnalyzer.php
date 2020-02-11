@@ -557,6 +557,7 @@ class ForeachAnalyzer
                         $statements_analyzer,
                         $iterator_atomic_type->value,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
+                        $context->self,
                         $statements_analyzer->getSuppressedIssues()
                     ) === false) {
                         return false;

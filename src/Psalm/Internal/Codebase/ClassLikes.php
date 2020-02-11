@@ -303,8 +303,11 @@ class ClassLikes
      *
      * @return bool
      */
-    public function hasFullyQualifiedClassName($fq_class_name, CodeLocation $code_location = null)
-    {
+    public function hasFullyQualifiedClassName(
+        $fq_class_name,
+        CodeLocation $code_location = null,
+        ?string $calling_fq_class_name = null
+    ) {
         $fq_class_name_lc = strtolower($fq_class_name);
 
         if (isset($this->classlike_aliases[$fq_class_name_lc])) {
@@ -338,6 +341,19 @@ class ClassLikes
                 $code_location->file_path,
                 $fq_class_name_lc
             );
+
+            if ($calling_fq_class_name) {
+                $class_storage = $this->classlike_storage_provider->get($calling_fq_class_name);
+
+                if ($class_storage->location
+                    && $class_storage->location->file_path !== $code_location->file_path
+                ) {
+                    $this->file_reference_provider->addFileReferenceToClass(
+                        $class_storage->location->file_path,
+                        $fq_class_name_lc
+                    );
+                }
+            }
         }
 
         if ($this->collect_locations && $code_location) {
@@ -355,8 +371,11 @@ class ClassLikes
      *
      * @return bool
      */
-    public function hasFullyQualifiedInterfaceName($fq_class_name, CodeLocation $code_location = null)
-    {
+    public function hasFullyQualifiedInterfaceName(
+        $fq_class_name,
+        CodeLocation $code_location = null,
+        ?string $calling_fq_class_name = null
+    ) {
         $fq_class_name_lc = strtolower($fq_class_name);
 
         if (isset($this->classlike_aliases[$fq_class_name_lc])) {
@@ -390,6 +409,19 @@ class ClassLikes
                 $code_location->file_path,
                 $fq_class_name_lc
             );
+
+            if ($calling_fq_class_name) {
+                $class_storage = $this->classlike_storage_provider->get($calling_fq_class_name);
+
+                if ($class_storage->location
+                    && $class_storage->location->file_path !== $code_location->file_path
+                ) {
+                    $this->file_reference_provider->addFileReferenceToClass(
+                        $class_storage->location->file_path,
+                        $fq_class_name_lc
+                    );
+                }
+            }
         }
 
         if ($this->collect_locations && $code_location) {
@@ -441,10 +473,11 @@ class ClassLikes
      */
     public function classOrInterfaceExists(
         $fq_class_name,
-        CodeLocation $code_location = null
+        CodeLocation $code_location = null,
+        ?string $calling_fq_class_name = null
     ) {
-        if (!$this->classExists($fq_class_name, $code_location)
-            && !$this->interfaceExists($fq_class_name, $code_location)
+        if (!$this->classExists($fq_class_name, $code_location, $calling_fq_class_name)
+            && !$this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name)
         ) {
             return false;
         }
@@ -459,8 +492,11 @@ class ClassLikes
      *
      * @return bool
      */
-    public function classExists($fq_class_name, CodeLocation $code_location = null)
-    {
+    public function classExists(
+        $fq_class_name,
+        CodeLocation $code_location = null,
+        ?string $calling_fq_class_name = null
+    ) {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
             return false;
         }
@@ -469,7 +505,7 @@ class ClassLikes
             return true;
         }
 
-        return $this->hasFullyQualifiedClassName($fq_class_name, $code_location);
+        return $this->hasFullyQualifiedClassName($fq_class_name, $code_location, $calling_fq_class_name);
     }
 
     /**
@@ -548,13 +584,20 @@ class ClassLikes
      *
      * @return bool
      */
-    public function interfaceExists($fq_interface_name, CodeLocation $code_location = null)
-    {
+    public function interfaceExists(
+        $fq_interface_name,
+        CodeLocation $code_location = null,
+        ?string $calling_fq_class_name = null
+    ) {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
         }
 
-        return $this->hasFullyQualifiedInterfaceName($fq_interface_name, $code_location);
+        return $this->hasFullyQualifiedInterfaceName(
+            $fq_interface_name,
+            $code_location,
+            $calling_fq_class_name
+        );
     }
 
     /**

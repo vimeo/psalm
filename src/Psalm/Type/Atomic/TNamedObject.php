@@ -181,6 +181,7 @@ class TNamedObject extends Atomic
                 $source,
                 $this->value,
                 $code_location,
+                null,
                 $suppressed_issues,
                 $inferred,
                 false,

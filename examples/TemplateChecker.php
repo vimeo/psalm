@@ -82,6 +82,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             $this,
             $class,
             new CodeLocation($this, $stmt),
+            null,
             [],
             true
         ) === false

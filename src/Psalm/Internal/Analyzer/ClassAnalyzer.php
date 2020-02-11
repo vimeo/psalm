@@ -225,6 +225,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $this->getSource(),
                 $parent_fq_class_name,
                 $parent_reference_location,
+                null,
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
                 false
             ) === false) {
@@ -379,6 +380,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $this,
                 $fq_interface_name,
                 $interface_location,
+                null,
                 $this->getSuppressedIssues(),
                 false
             ) === false) {

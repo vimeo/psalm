@@ -313,9 +313,11 @@ class FileReferenceProvider
 
         foreach ($file_classes as $file_class_lc => $_) {
             if (isset(self::$file_references_to_classes[$file_class_lc])) {
+                $new_files = array_keys(self::$file_references_to_classes[$file_class_lc]);
+
                 $referenced_files = array_merge(
                     $referenced_files,
-                    array_keys(self::$file_references_to_classes[$file_class_lc])
+                    $new_files
                 );
             }
         }

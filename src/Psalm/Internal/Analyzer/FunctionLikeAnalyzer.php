@@ -652,6 +652,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $statements_analyzer,
                     $expected_exception,
                     $storage->throw_locations[$expected_exception],
+                    $context->self,
                     $statements_analyzer->getSuppressedIssues(),
                     false,
                     false,

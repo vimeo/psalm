@@ -2821,6 +2821,7 @@ class CallAnalyzer
                         $statements_analyzer,
                         $input_expr->value,
                         $code_location,
+                        $context->self,
                         $statements_analyzer->getSuppressedIssues()
                     ) === false
                     ) {
@@ -2837,6 +2838,7 @@ class CallAnalyzer
                                         $statements_analyzer,
                                         $item->value->value,
                                         $code_location,
+                                        $context->self,
                                         $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
@@ -2885,6 +2887,7 @@ class CallAnalyzer
                                     $statements_analyzer,
                                     $callable_fq_class_name,
                                     $code_location,
+                                    $context->self,
                                     $statements_analyzer->getSuppressedIssues()
                                 ) === false
                                 ) {

@@ -295,6 +295,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $statements_analyzer,
                     $fq_class_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                    $context->self,
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 ) === false) {
