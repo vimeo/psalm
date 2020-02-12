@@ -320,7 +320,7 @@ return [
         'nodeName' => 'string',
         'nodeValue' => 'string',
         'nodeType' => 'int',
-        'parentNode' => 'DOMNode',
+        'parentNode' => 'DOMNode|null',
         'childNodes' => 'DOMNodeList',
         'firstChild' => 'DOMNode|null',
         'lastChild' => 'DOMNode|null',
