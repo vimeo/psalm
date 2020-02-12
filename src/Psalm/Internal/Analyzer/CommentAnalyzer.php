@@ -718,9 +718,11 @@ class CommentAnalyzer
                 $start = $offset + $comment->getFilePos();
                 $end = $start + strlen($line_parts[0]);
 
-                $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                $line_parts[0] = preg_replace('@^[ \t]*\*@m', '', $line_parts[0]);
+                $line_parts[0] = preg_replace('/,\n\s+\}/', '}', $line_parts[0]);
+                $line_parts[0] = str_replace("\n", '', $line_parts[0]);
 
-                $info->return_type = str_replace("\n", '', array_shift($line_parts));
+                $info->return_type = array_shift($line_parts);
                 $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
 
                 $info->return_type_line_number
