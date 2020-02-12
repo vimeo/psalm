@@ -141,7 +141,9 @@ class AssignmentAnalyzer
                     $var_comment_type->check(
                         $statements_analyzer,
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
+                        [],
+                        false
                     );
 
                     $type_location = null;
