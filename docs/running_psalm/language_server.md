@@ -29,7 +29,7 @@ This is the config I used:
 
 ## PhpStorm
 
-I've got it working with [this plugin](https://plugins.jetbrains.com/plugin/10209-lsp-support).
+I've got it working with `gtache/intellij-lsp` plugin ([Jetbrains-approved version](https://plugins.jetbrains.com/plugin/10209-lsp-support), [latest version](https://github.com/gtache/intellij-lsp/releases/tag/v1.6.0)).
 
 Setup is done via a GUI.
 
