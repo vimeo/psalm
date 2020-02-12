@@ -206,7 +206,6 @@ abstract class Type
             case 'iterable':
             case 'array':
             case 'object':
-            case 'numeric':
             case 'true':
             case 'false':
             case 'null':

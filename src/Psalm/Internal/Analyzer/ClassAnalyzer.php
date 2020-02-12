@@ -119,7 +119,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         if ($class->name
             && (preg_match(
-                '/(^|\\\)(int|float|bool|string|void|null|false|true|object|numeric|mixed)$/i',
+                '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
                 $fq_class_name
             ) || strtolower($fq_class_name) === 'resource')
         ) {
