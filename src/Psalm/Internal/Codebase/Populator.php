@@ -794,7 +794,7 @@ class Populator
 
             foreach ($implemented_interface_storage->methods as $method_name => $method) {
                 if ($method->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
-                    $mentioned_method_id = $implemented_interface . '::' . $method_name;
+                    $mentioned_method_id = strtolower($implemented_interface) . '::' . $method_name;
                     $interface_method_implementers[$method_name][] = $mentioned_method_id;
                 }
             }
@@ -1096,6 +1096,8 @@ class Populator
             }
 
             if ($method_name !== '__construct') {
+                $id_lc = strtolower($declaring_method_id);
+
                 if ($parent_storage->is_trait) {
                     $declaring_class = explode('::', $declaring_method_id)[0];
                     $declaring_class_storage = $this->classlike_storage_provider->get($declaring_class);
@@ -1103,10 +1105,10 @@ class Populator
                     if (isset($declaring_class_storage->methods[$method_name])
                         && $declaring_class_storage->methods[$method_name]->abstract
                     ) {
-                        $storage->overridden_method_ids[$method_name][$declaring_method_id] = $declaring_method_id;
+                        $storage->overridden_method_ids[$method_name][$id_lc] = $id_lc;
                     }
                 } else {
-                    $storage->overridden_method_ids[$method_name][$declaring_method_id] = $declaring_method_id;
+                    $storage->overridden_method_ids[$method_name][$id_lc] = $id_lc;
                 }
 
                 if (isset($parent_storage->overridden_method_ids[$method_name])
