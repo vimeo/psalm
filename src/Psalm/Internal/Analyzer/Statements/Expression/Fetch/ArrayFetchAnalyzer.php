@@ -930,6 +930,13 @@ class ArrayFetchAnalyzer
                                 $offset_type,
                                 true,
                                 $offset_type->ignore_falsable_issues
+                            )
+                            || TypeAnalyzer::canBeContainedBy(
+                                $codebase,
+                                $offset_type,
+                                $key_type,
+                                true,
+                                $offset_type->ignore_falsable_issues
                             );
                         }
 

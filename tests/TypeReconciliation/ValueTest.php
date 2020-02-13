@@ -471,7 +471,7 @@ class ValueTest extends TestCase
                                 A::BAM => 1,
                             ];
 
-                            if (isset($map[$this->s])) {}
+                            if ($this->s !== null && isset($map[$this->s])) {}
                         }
                     }',
             ],
