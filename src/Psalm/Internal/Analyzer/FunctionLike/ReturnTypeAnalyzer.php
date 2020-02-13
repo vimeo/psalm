@@ -743,7 +743,8 @@ class ReturnTypeAnalyzer
             $function_like_analyzer,
             $storage->return_type_location,
             $storage->suppressed_issues,
-            []
+            [],
+            false
         ) === false) {
             return false;
         }
