@@ -29,6 +29,14 @@ class ExplodeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnType
         }
 
         if (\count($call_args) >= 2) {
+            $second_arg_type = $statements_source->node_data->getType($call_args[1]->value);
+
+            $inner_type = new Type\Union([
+                $second_arg_type && $second_arg_type->hasLowercaseString()
+                    ? new Type\Atomic\TLowercaseString()
+                    : new Type\Atomic\TString
+            ]);
+
             $can_return_empty = isset($call_args[2])
                 && (
                     !$call_args[2]->value instanceof PhpParser\Node\Scalar\LNumber
@@ -42,16 +50,16 @@ class ExplodeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnType
 
                 return new Type\Union([
                     $can_return_empty
-                        ? new Type\Atomic\TList(Type::getString())
-                        : new Type\Atomic\TNonEmptyList(Type::getString())
+                        ? new Type\Atomic\TList($inner_type)
+                        : new Type\Atomic\TNonEmptyList($inner_type)
                 ]);
             } elseif (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
                 && $first_arg_type->hasString()
             ) {
                 $falsable_array = new Type\Union([
                     $can_return_empty
-                        ? new Type\Atomic\TList(Type::getString())
-                        : new Type\Atomic\TNonEmptyList(Type::getString()),
+                        ? new Type\Atomic\TList($inner_type)
+                        : new Type\Atomic\TNonEmptyList($inner_type),
                     new Type\Atomic\TFalse
                 ]);
 

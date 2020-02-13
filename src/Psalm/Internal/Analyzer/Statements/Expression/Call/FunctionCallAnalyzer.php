@@ -1105,6 +1105,37 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     );
                 }
+            } elseif ($first_arg && $function_id === 'strtolower') {
+                $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
+
+                if ($first_arg_type
+                    && TypeAnalyzer::isContainedBy(
+                    $codebase,
+                    $first_arg_type,
+                    new Type\Union([new Type\Atomic\TLowercaseString()])
+                )) {
+                    if ($first_arg_type->from_docblock) {
+                        if (IssueBuffer::accepts(
+                            new \Psalm\Issue\RedundantConditionGivenDocblockType(
+                                'The call to strtolower is unnecessary given the docblock type',
+                                new CodeLocation($statements_analyzer, $stmt->name)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new \Psalm\Issue\RedundantCondition(
+                                'The call to strtolower is unnecessary',
+                                new CodeLocation($statements_analyzer, $stmt->name)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
             }
         }
 

@@ -779,6 +779,38 @@ class TypeAnalyzer
             return false;
         }
 
+        if ($input_type_part instanceof Type\Atomic\TLowercaseString
+            && get_class($container_type_part) === TString::class
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof Type\Atomic\TLowercaseString
+            && $input_type_part instanceof TString
+        ) {
+            if ($input_type_part instanceof Type\Atomic\TLowercaseString) {
+                return true;
+            }
+
+            if ($input_type_part instanceof TLiteralString) {
+                if (strtolower($input_type_part->value) === $input_type_part->value) {
+                    return true;
+                }
+
+                return false;
+            }
+
+            if ($input_type_part instanceof TClassString) {
+                return false;
+            }
+
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
         if ($input_type_part->shallowEquals($container_type_part)
             || ($input_type_part instanceof Type\Atomic\TCallableObjectLikeArray
                 && $container_type_part instanceof TArray)

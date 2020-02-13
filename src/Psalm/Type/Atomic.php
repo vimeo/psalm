@@ -178,6 +178,9 @@ abstract class Atomic
             case 'non-empty-string':
                 return new Type\Atomic\TNonEmptyString();
 
+            case 'lowercase-string':
+                return new Type\Atomic\TLowercaseString();
+
             case 'resource':
                 return $php_version !== null ? new TNamedObject($value) : new TResource();
 

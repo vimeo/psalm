@@ -792,6 +792,14 @@ class Union
     /**
      * @return bool
      */
+    public function hasLowercaseString()
+    {
+        return isset($this->types['string']) && $this->types['string'] instanceof Atomic\TLowercaseString;
+    }
+
+    /**
+     * @return bool
+     */
     public function hasLiteralClassString()
     {
         return count($this->typed_class_strings) > 0;

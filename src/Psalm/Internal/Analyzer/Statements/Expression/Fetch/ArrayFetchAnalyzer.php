@@ -924,10 +924,10 @@ class ArrayFetchAnalyzer
                         );
 
                         if ($context->inside_isset && !$is_contained) {
-                            $is_contained = TypeAnalyzer::canBeContainedBy(
+                            $is_contained = TypeAnalyzer::isContainedBy(
                                 $codebase,
-                                $offset_type,
                                 $key_type,
+                                $offset_type,
                                 true,
                                 $offset_type->ignore_falsable_issues
                             );

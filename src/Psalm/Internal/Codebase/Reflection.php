@@ -217,13 +217,13 @@ class Reflection
 
         $class_storage = $this->storage_provider->get($method->class);
 
-        if (isset($class_storage->methods[strtolower($method_name)])) {
+        if (isset($class_storage->methods[$method_name])) {
             return;
         }
 
         $method_id = $method->class . '::' . $method_name;
 
-        $storage = $class_storage->methods[strtolower($method_name)] = new MethodStorage();
+        $storage = $class_storage->methods[$method_name] = new MethodStorage();
 
         $storage->cased_name = $method->name;
         $storage->defining_fqcln = $method->class;

@@ -764,9 +764,11 @@ class NegatedAssertionReconciler extends Reconciler
         if (isset($existing_var_atomic_types['string'])) {
             if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonEmptyString) {
                 $did_remove_type = true;
-                $existing_var_type->removeType('string');
+                if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TLowercaseString) {
+                    $existing_var_type->removeType('string');
 
-                $existing_var_type->addType(new Type\Atomic\TNonEmptyString);
+                    $existing_var_type->addType(new Type\Atomic\TNonEmptyString);
+                }
             } elseif ($existing_var_type->isSingle() && !$is_equality) {
                 if ($code_location
                     && $key
