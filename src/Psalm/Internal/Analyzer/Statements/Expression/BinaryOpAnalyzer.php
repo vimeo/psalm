@@ -1903,7 +1903,6 @@ class BinaryOpAnalyzer
                     $result_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
                 }
             }
-
         }
 
         if ($codebase->taint && $result_type) {
