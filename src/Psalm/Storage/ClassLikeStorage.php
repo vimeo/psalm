@@ -246,7 +246,7 @@ class ClassLikeStorage
     public $mutation_free = false;
 
     /**
-     * @var array<string, MethodStorage>
+     * @var array<lowercase-string, MethodStorage>
      */
     public $methods = [];
 
@@ -271,7 +271,7 @@ class ClassLikeStorage
     public $appearing_method_ids = [];
 
     /**
-     * @var array<string, array<string, string>>
+     * @var array<string, array<lowercase-string, lowercase-string>>
      */
     public $overridden_method_ids = [];
 

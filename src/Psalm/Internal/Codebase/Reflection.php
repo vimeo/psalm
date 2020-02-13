@@ -425,7 +425,9 @@ class Reflection
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
             $storage->inheritable_method_ids[$method_name] = $declaring_method_id;
 
-            $storage->overridden_method_ids[$method_name][$declaring_method_id] = $declaring_method_id;
+            $id_lc = strtolower($declaring_method_id);
+
+            $storage->overridden_method_ids[$method_name][$id_lc] = $id_lc;
         }
     }
 

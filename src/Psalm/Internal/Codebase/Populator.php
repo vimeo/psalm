@@ -193,6 +193,7 @@ class Populator
             && !$storage->is_interface
             && !$storage->is_trait
         ) {
+            /** @psalm-suppress PropertyTypeCoercion */
             $storage->methods['__construct'] = $storage->methods[$fq_classlike_name_lc];
         }
 
@@ -295,7 +296,7 @@ class Populator
                     list($declaring_class, $declaring_method_name) = explode('::', $declaring_method_id);
                     $declaring_class_storage = $declaring_class_storages[$declaring_class];
 
-                    $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
+                    $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name];
 
                     if ($declaring_method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_param_types
@@ -1139,6 +1140,7 @@ class Populator
 
                     $implementing_class_storage = $this->classlike_storage_provider->get($implementing_fq_class_name);
 
+                    /** @psalm-suppress PossiblyInvalidArrayOffset */
                     if (!$implementing_class_storage->methods[$implementing_method_name]->abstract) {
                         continue;
                     }

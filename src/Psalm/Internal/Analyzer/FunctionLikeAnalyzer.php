@@ -865,7 +865,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
                         $codebase->file_reference_provider->addMethodParamUse(
-                            strtolower($parent_method_id),
+                            $parent_method_id,
                             $i,
                             $method_id_lc
                         );

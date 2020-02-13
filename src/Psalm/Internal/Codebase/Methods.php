@@ -213,7 +213,7 @@ class Methods
                     if ($this->collect_locations && $code_location) {
                         $this->file_reference_provider->addCallingLocationForClassMethod(
                             $code_location,
-                            strtolower($overridden_method_id)
+                            $overridden_method_id
                         );
                     }
 
@@ -221,12 +221,12 @@ class Methods
                         // also store failures in case the method is added later
                         $this->file_reference_provider->addMethodReferenceToClassMember(
                             $calling_function_id,
-                            strtolower($overridden_method_id)
+                            $overridden_method_id
                         );
                     } elseif ($file_path) {
                         $this->file_reference_provider->addFileReferenceToClassMember(
                             $file_path,
-                            strtolower($overridden_method_id)
+                            $overridden_method_id
                         );
                     }
                 }

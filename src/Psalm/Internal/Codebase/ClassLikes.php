@@ -1802,6 +1802,7 @@ class ClassLikes
                     continue;
                 }
 
+                /** @var lowercase-string $declaring_method_name */
                 $method_storage = $declaring_classlike_storage->methods[$declaring_method_name];
                 $method_id = $declaring_method_id;
             }
@@ -1850,7 +1851,7 @@ class ClassLikes
                             }
 
                             $parent_method_referenced = $this->file_reference_provider->isClassMethodReferenced(
-                                strtolower($parent_method_id)
+                                $parent_method_id
                             );
 
                             if (!$parent_method_storage->abstract || $parent_method_referenced) {
@@ -2016,6 +2017,7 @@ class ClassLikes
                     continue;
                 }
 
+                /** @var lowercase-string $declaring_method_name */
                 $method_storage = $declaring_classlike_storage->methods[$declaring_method_name];
                 $method_id = $declaring_method_id;
             }
