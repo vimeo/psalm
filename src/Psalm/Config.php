@@ -398,11 +398,27 @@ class Config
     public $after_method_checks = [];
 
     /**
-     * Static methods to be called after function checks have completed
+     * Static methods to be called after project function checks have completed
+     *
+     * Called after function calls to functions defined in the project.
+     *
+     * Allows influencing the return type and adding of modifications.
      *
      * @var class-string<Hook\AfterFunctionCallAnalysisInterface>[]
      */
     public $after_function_checks = [];
+
+    /**
+     * Static methods to be called after every function call
+     *
+     * Called after each function call, including php internal functions.
+     *
+     * Cannot change the call or influence its return type
+     *
+     * @var class-string<Hook\AfterEveryFunctionCallAnalysisInterface>[]
+     */
+    public $after_every_function_checks = [];
+
 
     /**
      * Static methods to be called after expression checks have completed

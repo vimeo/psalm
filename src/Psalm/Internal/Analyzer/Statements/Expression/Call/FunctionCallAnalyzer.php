@@ -635,6 +635,18 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 if ($stmt_type) {
                     $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
                 }
+
+                if ($config->after_every_function_checks) {
+                    foreach ($config->after_every_function_checks as $plugin_fq_class_name) {
+                        $plugin_fq_class_name::afterEveryFunctionCallAnalysis(
+                            $stmt,
+                            $function_id,
+                            $context,
+                            $statements_analyzer->getSource(),
+                            $codebase
+                        );
+                    }
+                }
             }
 
             foreach ($defined_constants as $const_name => $const_type) {

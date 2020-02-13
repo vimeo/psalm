@@ -16,8 +16,9 @@ class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
 - `AfterClassLikeExistenceCheckInterface` - called after Psalm analyzes a reference to a class, interface or trait.
 - `AfterClassLikeVisitInterface` - called after Psalm crawls the parsed Abstract Syntax Tree for a class-like (class, interface, trait). Due to caching the AST is crawled the first time Psalm sees the file, and is only re-crawled if the file changes, the cache is cleared, or you're disabling cache with `--no-cache`/`--no-reflection-cache`. Use this if you want to collect or modify information about a class before Psalm begins its analysis.
 - `AfterCodebasePopulatedInterface` - called after Psalm has scanned necessary files and populated codebase data.
+- `AfterEveryFunctionCallAnalysisInterface` - called after Psalm evaluates any function call. Cannot influence the call further.
 - `AfterExpressionAnalysisInterface` - called after Psalm evaluates an expression.
-- `AfterFunctionCallAnalysisInterface` - called after Psalm evaluates an function call.
+- `AfterFunctionCallAnalysisInterface` - called after Psalm evaluates a function call to any function defined within the project itself. Can alter the return type or perform modifications of the call.
 - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
 - `AfterStatementAnalysisInterface` - called after Psalm evaluates an statement.
 - `FunctionExistenceProviderInterface` - can be used to override Psalm's builtin function existence checks for one or more functions.
