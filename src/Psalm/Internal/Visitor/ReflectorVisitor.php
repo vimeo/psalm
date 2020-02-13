@@ -2160,10 +2160,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             );
 
             foreach (\array_map('trim', explode('|', $throw)) as $throw_class) {
-                $exception_fqcln = Type::getFQCLNFromString(
-                    $throw_class,
-                    $this->aliases
-                );
+                if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
+                    $exception_fqcln = Type::getFQCLNFromString(
+                        $throw_class,
+                        $this->aliases
+                    );
+                } else {
+                    $exception_fqcln = $throw_class;
+                }
 
                 $this->codebase->scanner->queueClassLikeForScanning($exception_fqcln, $this->file_path);
                 $this->file_storage->referenced_classlikes[strtolower($exception_fqcln)] = $exception_fqcln;

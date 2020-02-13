@@ -1073,6 +1073,8 @@ class AnnotationTest extends TestCase
             ],
             'throwSelf' => [
                 '<?php
+                    namespace Foo;
+
                     class MyException extends \Exception {
                         /**
                          * @throws self
