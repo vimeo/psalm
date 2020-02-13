@@ -1878,15 +1878,32 @@ class BinaryOpAnalyzer
         } else {
             if ($left_type
                 && $right_type
-                && ($left_type->getId() === 'non-empty-string'
-                    || $right_type->getId() === 'non-empty-string'
-                    || ($left_type->isSingleStringLiteral()
-                        && $left_type->getSingleStringLiteral()->value)
-                    || ($right_type->isSingleStringLiteral()
-                        && $right_type->getSingleStringLiteral()->value))
             ) {
-                $result_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
+                $left_type_literal_value = $left_type->isSingleStringLiteral()
+                    ? $left_type->getSingleStringLiteral()->value
+                    : null;
+
+                $right_type_literal_value = $right_type->isSingleStringLiteral()
+                    ? $right_type->getSingleStringLiteral()->value
+                    : null;
+
+                if (($left_type->getId() === 'lowercase-string'
+                        || ($left_type_literal_value !== null
+                            && strtolower($left_type_literal_value) === $left_type_literal_value))
+                    && ($right_type->getId() === 'lowercase-string'
+                        || ($right_type_literal_value !== null
+                            && strtolower($right_type_literal_value) === $right_type_literal_value))
+                ) {
+                    $result_type = new Type\Union([new Type\Atomic\TLowercaseString()]);
+                } elseif ($left_type->getId() === 'non-empty-string'
+                    || $right_type->getId() === 'non-empty-string'
+                    || $left_type_literal_value
+                    || $right_type_literal_value
+                ) {
+                    $result_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
+                }
             }
+
         }
 
         if ($codebase->taint && $result_type) {
