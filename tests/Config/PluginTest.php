@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use PhpParser\Node\Expr\FuncCall;
+use PHPUnit\Framework\MockObject\MockObject;
+use Psalm\Plugin\Hook\AfterEveryFunctionCallAnalysisInterface;
+use Psalm\StatementsSource;
 use function define;
 use function defined;
 use const DIRECTORY_SEPARATOR;
@@ -864,5 +868,65 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+    }
+
+    public function testAfterEveryFunctionPluginIsCalledInAllCases(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm></psalm>'
+            )
+        );
+
+        $mock = $this->getMockBuilder(\stdClass::class)->setMethods(['check'])->getMock();
+        $mock->expects($this->exactly(3))
+            ->method('check')
+            ->withConsecutive(
+                [$this->equalTo('array_map')],
+                [$this->equalTo('fopen')],
+                [$this->equalTo('a')]
+            );
+        $plugin = new class($mock) implements AfterEveryFunctionCallAnalysisInterface {
+            /** @var MockObject */
+            private static $m;
+
+            public function __construct(MockObject $m)
+            {
+                self::$m = $m;
+            }
+
+            public static function afterEveryFunctionCallAnalysis(
+                FuncCall $expr,
+                string $function_id,
+                Context $context,
+                StatementsSource $statements_source,
+                Codebase $codebase
+            ): void {
+                /** @psalm-suppress UndefinedInterfaceMethod */
+                self::$m->check($function_id);
+            }
+        };
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->project_analyzer->getCodebase()->config->after_every_function_checks[] = get_class($plugin);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+
+            function a(): void {}
+            function b(int $e): int { return $e; }
+
+            array_map("b", [1,3,3]);
+            fopen("/tmp/foo.dat", "r");
+            a();
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context());
     }
 }

@@ -46,6 +46,10 @@ class PluginRegistrationSocket implements RegistrationInterface
             $this->config->after_function_checks[$handler] = $handler;
         }
 
+        if (is_subclass_of($handler, Hook\AfterEveryFunctionCallAnalysisInterface::class)) {
+            $this->config->after_every_function_checks[$handler] = $handler;
+        }
+
         if (is_subclass_of($handler, Hook\AfterExpressionAnalysisInterface::class)) {
             $this->config->after_expression_checks[$handler] = $handler;
         }
