@@ -92,6 +92,7 @@ abstract class Type
         'trait-string' => true,
         'mysql-escaped-string' => true,
         'html-escaped-string' => true,
+        'lowercase-string' => true,
         'boolean' => true,
         'integer' => true,
         'double' => true,
