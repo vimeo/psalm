@@ -1110,9 +1110,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                 if ($first_arg_type
                     && TypeAnalyzer::isContainedBy(
-                    $codebase,
-                    $first_arg_type,
-                    new Type\Union([new Type\Atomic\TLowercaseString()])
+                        $codebase,
+                        $first_arg_type,
+                        new Type\Union([new Type\Atomic\TLowercaseString()])
                 )) {
                     if ($first_arg_type->from_docblock) {
                         if (IssueBuffer::accepts(
