@@ -779,6 +779,25 @@ class IncludeTest extends TestCase
                 ],
                 'error_message' => 'UndefinedConstant',
             ],
+            'undefinedMethodAfterInvalidRequire' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        /** @psalm-suppress MissingFile */
+                        require("doesnotexist.php");
+                        require("file1.php");
+
+                        foo();
+                        bar();
+                        ',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function bar(): void {}
+                        ',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'error_message' => 'UndefinedFunction',
+            ],
         ];
     }
 }

@@ -160,9 +160,6 @@ class IncludeAnalyzer
                         $global_context
                     );
                 } catch (\Psalm\Exception\UnpreparedAnalysisException $e) {
-                    $context->check_classes = false;
-                    $context->check_variables = false;
-                    $context->check_functions = false;
                 }
 
                 foreach ($include_file_analyzer->getRequiredFilePaths() as $required_file_path) {
@@ -202,10 +199,6 @@ class IncludeAnalyzer
                 }
             }
         }
-
-        $context->check_classes = false;
-        $context->check_variables = false;
-        $context->check_functions = false;
 
         return null;
     }
