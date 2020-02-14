@@ -116,9 +116,7 @@
 
         <MoreSpecificImplementedParamType errorLevel="info" />
         <LessSpecificImplementedReturnType errorLevel="info" />
-
-        <InvalidReturnStatement errorLevel="info" />
-        <InvalidReturnType errorLevel="info" />
+        
         <UndefinedThisPropertyAssignment errorLevel="info" />
         <UndefinedInterfaceMethod errorLevel="info" />
 
