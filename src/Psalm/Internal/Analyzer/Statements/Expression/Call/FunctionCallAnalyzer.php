@@ -1113,7 +1113,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $codebase,
                         $first_arg_type,
                         new Type\Union([new Type\Atomic\TLowercaseString()])
-                )) {
+                    )
+                ) {
                     if ($first_arg_type->from_docblock) {
                         if (IssueBuffer::accepts(
                             new \Psalm\Issue\RedundantConditionGivenDocblockType(
