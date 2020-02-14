@@ -360,7 +360,7 @@ if (isset($options['plugin'])) {
 
 $show_info = isset($options['show-info'])
     ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
-    : true;
+    : false;
 
 $is_diff = isset($options['diff']);
 
