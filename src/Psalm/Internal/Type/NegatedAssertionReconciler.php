@@ -47,6 +47,7 @@ class NegatedAssertionReconciler extends Reconciler
      * @param  string     $assertion
      * @param  bool       $is_strict_equality
      * @param  bool       $is_loose_equality
+     * @param   array<string, array<string, array{Type\Union}>> $template_type_map
      * @param  string     $old_var_type_string
      * @param  string|null $key
      * @param  CodeLocation|null $code_location
@@ -61,6 +62,7 @@ class NegatedAssertionReconciler extends Reconciler
         $is_strict_equality,
         $is_loose_equality,
         Type\Union $existing_var_type,
+        array $template_type_map,
         $old_var_type_string,
         $key,
         $code_location,
@@ -359,7 +361,7 @@ class NegatedAssertionReconciler extends Reconciler
             && ($key !== '$this'
                 || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer))
         ) {
-            $assertion = Type::parseString($assertion);
+            $assertion = Type::parseString($assertion, null, $template_type_map);
 
             if ($key
                 && $code_location

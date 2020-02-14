@@ -155,6 +155,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $is_strict_equality,
                 $is_loose_equality,
                 $existing_var_type,
+                $template_type_map,
                 $old_var_type_string,
                 $key,
                 $code_location,

@@ -60,6 +60,14 @@ class TTemplateParamClass extends TClassString
     }
 
     /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return 'class-string<' . $this->param_name . '>';
+    }
+
+    /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
