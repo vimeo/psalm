@@ -395,9 +395,7 @@ class Populator
                     if ($trait_storage->template_type_extends) {
                         foreach ($trait_storage->template_type_extends as $t_storage_class => $type_map) {
                             foreach ($type_map as $i => $type) {
-                                if (isset($storage->template_type_extends[$t_storage_class][$i])
-                                    || is_int($i)
-                                ) {
+                                if (is_int($i)) {
                                     continue;
                                 }
 
@@ -530,9 +528,7 @@ class Populator
                     if ($parent_storage->template_type_extends) {
                         foreach ($parent_storage->template_type_extends as $t_storage_class => $type_map) {
                             foreach ($type_map as $i => $type) {
-                                if (isset($storage->template_type_extends[$t_storage_class][$i])
-                                    || is_int($i)
-                                ) {
+                                if (is_int($i)) {
                                     continue;
                                 }
 
@@ -665,9 +661,7 @@ class Populator
                     if ($parent_interface_storage->template_type_extends) {
                         foreach ($parent_interface_storage->template_type_extends as $t_storage_class => $type_map) {
                             foreach ($type_map as $i => $type) {
-                                if (isset($storage->template_type_extends[$t_storage_class][$i])
-                                    || is_int($i)
-                                ) {
+                                if (is_int($i)) {
                                     continue;
                                 }
 
