@@ -46,7 +46,8 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
         }
 
         try {
-            $function_storage = $codebase->methods->getStorage($declaring_method_id);
+            $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $declaring_method_id));
+            $function_storage = $codebase->methods->getStorage($method_id);
 
             if ($function_storage->cased_name === '__call') {
                 return;

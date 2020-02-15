@@ -14,6 +14,11 @@ use function count;
  */
 class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
+    /**
+     * @var PhpParser\Node\Stmt\Function_
+     */
+    protected $function;
+
     public function __construct(PhpParser\Node\Stmt\Function_ $function, SourceAnalyzer $source)
     {
         $codebase = $source->getCodebase();
@@ -428,5 +433,15 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 }
                 break;
         }
+    }
+
+    /**
+     * @return string
+     */
+    public function getFunctionId()
+    {
+        $namespace = $this->source->getNamespace();
+
+        return ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($this->function->name->name);
     }
 }

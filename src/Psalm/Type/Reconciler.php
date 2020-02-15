@@ -580,7 +580,10 @@ class Reconciler
                                 $class_property_type = Type::getMixed();
                             } else {
                                 if (substr($property_name, -2) === '()') {
-                                    $method_id = $existing_key_type_part->value . '::' . substr($property_name, 0, -2);
+                                    $method_id = new \Psalm\Internal\MethodIdentifier(
+                                        $existing_key_type_part->value,
+                                        strtolower(substr($property_name, 0, -2))
+                                    );
 
                                     if (!$codebase->methods->methodExists($method_id)) {
                                         return null;
@@ -590,7 +593,11 @@ class Reconciler
                                         $method_id
                                     );
 
-                                    $declaring_class = explode('::', (string) $declaring_method_id)[0];
+                                    if ($declaring_method_id === null) {
+                                        return null;
+                                    }
+
+                                    $declaring_class = $declaring_method_id->fq_class_name;
 
                                     $method_return_type = $codebase->methods->getMethodReturnType(
                                         $method_id,
@@ -622,6 +629,10 @@ class Reconciler
                                         true
                                     );
 
+                                    if ($declaring_property_class === null) {
+                                        return null;
+                                    }
+
                                     $class_property_type = $codebase->properties->getPropertyType(
                                         $property_id,
                                         false,
@@ -629,12 +640,16 @@ class Reconciler
                                         null
                                     );
 
+                                    $declaring_class_storage = $codebase->classlike_storage_provider->get(
+                                        $declaring_property_class
+                                    );
+
                                     if ($class_property_type) {
                                         $class_property_type = ExpressionAnalyzer::fleshOutType(
                                             $codebase,
                                             clone $class_property_type,
-                                            $declaring_property_class,
-                                            $declaring_property_class,
+                                            $declaring_class_storage->name,
+                                            $declaring_class_storage->name,
                                             null
                                         );
                                     } else {

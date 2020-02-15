@@ -406,8 +406,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 null
             );
 
+            $fq_interface_name_lc = strtolower($fq_interface_name);
+
             try {
-                $interface_storage = $classlike_storage_provider->get($fq_interface_name);
+                $interface_storage = $classlike_storage_provider->get($fq_interface_name_lc);
             } catch (\InvalidArgumentException $e) {
                 continue;
             }
@@ -432,8 +434,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            if (isset($storage->template_type_implements_count[strtolower($fq_interface_name)])) {
-                $expected_param_count = $storage->template_type_implements_count[strtolower($fq_interface_name)];
+            if (isset($storage->template_type_implements_count[$fq_interface_name_lc])) {
+                $expected_param_count = $storage->template_type_implements_count[$fq_interface_name_lc];
 
                 $this->checkTemplateParams(
                     $codebase,
@@ -532,17 +534,20 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            foreach ($interface_storage->methods as $method_name => $interface_method_storage) {
+            foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
                 if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
                     $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
-                        $this->fq_class_name . '::' . $method_name
+                        new \Psalm\Internal\MethodIdentifier(
+                            $this->fq_class_name,
+                            $interface_method_name_lc
+                        )
                     );
 
                     $implementer_method_storage = null;
                     $implementer_classlike_storage = null;
 
                     if ($implementer_declaring_method_id) {
-                        list($implementer_fq_class_name) = explode('::', $implementer_declaring_method_id);
+                        $implementer_fq_class_name = $implementer_declaring_method_id->fq_class_name;
                         $implementer_method_storage = $codebase->methods->getStorage(
                             $implementer_declaring_method_id
                         );
@@ -554,7 +559,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (!$implementer_method_storage) {
                         if (IssueBuffer::accepts(
                             new UnimplementedInterfaceMethod(
-                                'Method ' . $method_name . ' is not defined on class ' .
+                                'Method ' . $interface_method_name_lc . ' is not defined on class ' .
                                 $storage->name,
                                 $code_location
                             ),
@@ -567,7 +572,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
 
                     $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId(
-                        $this->fq_class_name . '::' . $method_name
+                        new \Psalm\Internal\MethodIdentifier(
+                            $this->fq_class_name,
+                            $interface_method_name_lc
+                        )
                     );
 
                     $implementer_visibility = $implementer_method_storage->visibility;
@@ -575,10 +583,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if ($implementer_appearing_method_id
                         && $implementer_appearing_method_id !== $implementer_declaring_method_id
                     ) {
-                        list($appearing_fq_class_name, $appearing_method_name) = explode(
-                            '::',
-                            $implementer_appearing_method_id
-                        );
+                        $appearing_fq_class_name = $implementer_appearing_method_id->fq_class_name;
+                        $appearing_method_name = $implementer_appearing_method_id->method_name;
 
                         $appearing_class_storage = $classlike_storage_provider->get(
                             $appearing_fq_class_name
@@ -663,12 +669,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             foreach ($storage->declaring_method_ids as $declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                list($declaring_class_name, $method_name) = explode('::', $declaring_method_id);
+                $declaring_class_name = $declaring_method_id->fq_class_name;
+                $method_name_lc = $declaring_method_id->method_name;
 
                 if ($method_storage->abstract) {
                     if (IssueBuffer::accepts(
                         new UnimplementedAbstractMethod(
-                            'Method ' . $method_name . ' is not defined on class ' .
+                            'Method ' . $method_name_lc . ' is not defined on class ' .
                             $this->fq_class_name . ', defined abstract in ' . $declaring_class_name,
                             new CodeLocation(
                                 $this,
@@ -690,7 +697,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $appearing_property_id,
                 true
             );
-            $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
+
+            if ($property_class_name === null) {
+                continue;
+            }
+
+            $property_class_storage = $classlike_storage_provider->get($property_class_name);
 
             $property_storage = $property_class_storage->properties[$property_name];
 
@@ -948,9 +960,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $trait_aliases
                     );
 
-                    if (isset($storage->template_type_uses_count[strtolower($fq_trait_name)])) {
-                        $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
-                        $expected_param_count = $storage->template_type_uses_count[strtolower($fq_trait_name)];
+                    $fq_trait_name_lc = strtolower($fq_trait_name);
+
+                    if (isset($storage->template_type_uses_count[$fq_trait_name_lc])) {
+                        $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_lc);
+                        $expected_param_count = $storage->template_type_uses_count[$fq_trait_name_lc];
 
                         $this->checkTemplateParams(
                             $codebase,
@@ -978,7 +992,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $pseudo_methods = $storage->pseudo_methods + $storage->pseudo_static_methods;
 
         foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
-            $pseudo_method_id = $this->fq_class_name . '::' . $pseudo_method_name;
+            $pseudo_method_id = new \Psalm\Internal\MethodIdentifier(
+                $this->fq_class_name,
+                $pseudo_method_name
+            );
 
             $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
 
@@ -989,7 +1006,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 foreach ($overridden_method_ids as $overridden_method_id) {
                     $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
 
-                    list($overridden_fq_class_name) = explode('::', $overridden_method_id);
+                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
 
                     $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
 
@@ -1058,6 +1075,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         $fq_class_name = $class_context->self ? $class_context->self : $this->fq_class_name;
+        $fq_class_name_lc = strtolower($fq_class_name);
 
         $included_file_path = $this->getFilePath();
 
@@ -1067,7 +1085,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $method_already_analyzed = $codebase->analyzer->isMethodAlreadyAnalyzed(
             $included_file_path,
-            strtolower($fq_class_name) . '::__construct',
+            $fq_class_name_lc . '::__construct',
             true
         );
 
@@ -1079,18 +1097,24 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         /** @var PhpParser\Node\Stmt\Class_ */
         $class = $this->class;
         $classlike_storage_provider = $codebase->classlike_storage_provider;
+        $class_storage = $classlike_storage_provider->get($fq_class_name_lc);
 
-        $constructor_appearing_fqcln = $fq_class_name;
+        $constructor_appearing_fqcln = $fq_class_name_lc;
 
         $uninitialized_variables = [];
         $uninitialized_properties = [];
         $uninitialized_typed_properties = [];
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-            $property_class_name = (string) $codebase->properties->getDeclaringClassForProperty(
+            $property_class_name = $codebase->properties->getDeclaringClassForProperty(
                 $appearing_property_id,
                 true
             );
+
+            if ($property_class_name === null) {
+                continue;
+            }
+
             $property_class_storage = $classlike_storage_provider->get($property_class_name);
 
             $property = $property_class_storage->properties[$property_name];
@@ -1135,7 +1159,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             $codebase->file_reference_provider->addMethodReferenceToMissingClassMember(
-                strtolower($fq_class_name) . '::__construct',
+                $fq_class_name_lc . '::__construct',
                 strtolower($property_class_name) . '::$' . $property_name
             );
 
@@ -1157,8 +1181,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             && isset($storage->appearing_method_ids['__construct'])
             && $class->extends
         ) {
-            list($constructor_declaring_fqcln) = explode('::', $storage->declaring_method_ids['__construct']);
-            list($constructor_appearing_fqcln) = explode('::', $storage->appearing_method_ids['__construct']);
+            $constructor_declaring_fqcln = $storage->declaring_method_ids['__construct']->fq_class_name;
+            $constructor_appearing_fqcln = $storage->appearing_method_ids['__construct']->fq_class_name;
 
             $constructor_class_storage = $classlike_storage_provider->get($constructor_declaring_fqcln);
 
@@ -1281,7 +1305,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $error_location = $storage->location ?: $storage->stmt_location;
                 }
 
-                if ($fq_class_name !== $constructor_appearing_fqcln
+                if ($fq_class_name_lc !== $constructor_appearing_fqcln
                     && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                 ) {
                     $a_class_storage = $classlike_storage_provider->get(
@@ -1304,7 +1328,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 ) {
                     if (IssueBuffer::accepts(
                         new PropertyNotSetInConstructor(
-                            'Property ' . $property_id . ' is not defined in constructor of ' .
+                            'Property ' . $class_storage->name . '::$' . $property_name
+                                . ' is not defined in constructor of ' .
                                 $this->fq_class_name . ' and in any methods called in the constructor',
                             $error_location,
                             $property_id
@@ -1318,7 +1343,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $codebase->analyzer->setAnalyzedMethod(
                 $included_file_path,
-                strtolower($fq_class_name) . '::__construct',
+                $fq_class_name_lc . '::__construct',
                 true
             );
 
@@ -1331,7 +1356,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if ($first_uninitialized_property->location) {
                 if (IssueBuffer::accepts(
                     new MissingConstructor(
-                        $fq_class_name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
+                        $class_storage->name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
                             ', but no constructor',
                         $first_uninitialized_property->location
                     ),
@@ -1551,7 +1576,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $method_analyzer = new MethodAnalyzer($stmt, $source);
 
-        $actual_method_id = (string)$method_analyzer->getMethodId();
+        $actual_method_id = $method_analyzer->getMethodId();
 
         $project_analyzer = $source->getProjectAnalyzer();
         $codebase = $source->getCodebase();
@@ -1564,12 +1589,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $included_file_path = $class_context->include_location->file_path;
         }
 
-        if ($class_context->self && $class_context->self !== $source->getFQCLN()) {
-            $analyzed_method_id = (string)$method_analyzer->getMethodId($class_context->self);
+        if ($class_context->self && strtolower($class_context->self) !== strtolower((string) $source->getFQCLN())) {
+            $analyzed_method_id = $method_analyzer->getMethodId($class_context->self);
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
-            if ($actual_method_id !== $declaring_method_id) {
+            if ((string) $actual_method_id !== (string) $declaring_method_id) {
                 // the method is an abstract trait method
 
                 $declaring_method_storage = $method_analyzer->getFunctionLikeStorage();
@@ -1581,7 +1606,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if ($declaring_method_id && $declaring_method_storage->abstract) {
                     $implementer_method_storage = $codebase->methods->getStorage($declaring_method_id);
                     $declaring_storage = $codebase->classlike_storage_provider->get(
-                        explode('::', $actual_method_id)[0]
+                        $actual_method_id->fq_class_name
                     );
 
                     MethodAnalyzer::compareMethods(
@@ -1602,10 +1627,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $trait_safe_method_id = strtolower($analyzed_method_id);
+        $trait_safe_method_id = strtolower((string) $analyzed_method_id);
 
-        if (strtolower($actual_method_id) !== $trait_safe_method_id) {
-            $trait_safe_method_id .= '&' . strtolower($actual_method_id);
+        $actual_method_id_str = strtolower((string) $actual_method_id);
+
+        if ($actual_method_id_str !== $trait_safe_method_id) {
+            $trait_safe_method_id .= '&' . $actual_method_id_str;
         }
 
         $method_already_analyzed = $codebase->analyzer->isMethodAlreadyAnalyzed(
@@ -1699,20 +1726,17 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Codebase $codebase,
         ClassLikeStorage $class_storage,
         string $fq_classlike_name,
-        string $analyzed_method_id,
-        string $actual_method_id
+        \Psalm\Internal\MethodIdentifier $analyzed_method_id,
+        \Psalm\Internal\MethodIdentifier $actual_method_id
     ) : void {
-        $return_type_location = null;
         $secondary_return_type_location = null;
 
         $actual_method_storage = $codebase->methods->getStorage($actual_method_id);
 
-        if ($actual_method_id) {
-            $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
-                $actual_method_id,
-                $secondary_return_type_location
-            );
-        }
+        $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+            $actual_method_id,
+            $secondary_return_type_location
+        );
 
         $original_fq_classlike_name = $fq_classlike_name;
 
@@ -1726,7 +1750,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
             if ($declaring_method_id) {
-                $declaring_class_name = explode('::', $declaring_method_id)[0];
+                $declaring_class_name = $declaring_method_id->fq_class_name;
 
                 $class_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
             }
@@ -1780,16 +1804,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             ? $class_storage->overridden_method_ids[strtolower($stmt->name->name)]
             : [];
 
-        if ($actual_method_storage->overridden_downstream) {
-            $overridden_method_ids['overridden::downstream'] = 'overridden::downstream';
-        }
-
         if (!$return_type
             && !$class_storage->is_interface
             && $overridden_method_ids
         ) {
             foreach ($overridden_method_ids as $interface_method_id) {
-                list($interface_class) = explode('::', $interface_method_id);
+                $interface_class = $interface_method_id->fq_class_name;
 
                 if (!$codebase->classlikes->interfaceExists($interface_class)) {
                     continue;
@@ -1816,6 +1836,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     [$analyzed_method_id]
                 );
             }
+        }
+
+        if ($actual_method_storage->overridden_downstream) {
+            $overridden_method_ids['overridden::downstream'] = 'overridden::downstream';
         }
 
         FunctionLike\ReturnTypeAnalyzer::verifyReturnType(

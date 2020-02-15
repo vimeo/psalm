@@ -2,6 +2,7 @@
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Type;
 
 class ClassLikeStorage
@@ -153,21 +154,21 @@ class ClassLikeStorage
     /**
      * Interfaces this class implements explicitly and implicitly
      *
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $class_implements = [];
 
     /**
      * Parent interfaces listed explicitly
      *
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $direct_interface_parents = [];
 
     /**
      * Parent interfaces
      *
-     * @var  array<string, string>
+     * @var  array<lowercase-string, string>
      */
     public $parent_interfaces = [];
 
@@ -211,12 +212,12 @@ class ClassLikeStorage
     public $final = false;
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $used_traits = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, lowercase-string>
      */
     public $trait_alias_map = [];
 
@@ -251,42 +252,42 @@ class ClassLikeStorage
     public $methods = [];
 
     /**
-     * @var array<string, MethodStorage>
+     * @var array<lowercase-string, MethodStorage>
      */
     public $pseudo_methods = [];
 
     /**
-     * @var array<string, MethodStorage>
+     * @var array<lowercase-string, MethodStorage>
      */
     public $pseudo_static_methods = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, MethodIdentifier>
      */
     public $declaring_method_ids = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, MethodIdentifier>
      */
     public $appearing_method_ids = [];
 
     /**
-     * @var array<string, array<lowercase-string, lowercase-string>>
+     * @var array<lowercase-string, array<string, MethodIdentifier>>
      */
     public $overridden_method_ids = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, MethodIdentifier>
      */
     public $documenting_method_ids = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, MethodIdentifier>
      */
     public $inheritable_method_ids = [];
 
     /**
-     * @var array<string, array<string, bool>>
+     * @var array<lowercase-string, array<string, bool>>
      */
     public $potential_declaring_method_ids = [];
 
@@ -366,7 +367,7 @@ class ClassLikeStorage
     public $invalid_dependencies = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<lowercase-string, bool>
      */
     public $dependent_classlikes = [];
 

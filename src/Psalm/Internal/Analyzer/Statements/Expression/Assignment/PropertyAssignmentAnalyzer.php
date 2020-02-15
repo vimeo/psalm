@@ -102,8 +102,8 @@ class PropertyAssignmentAnalyzer
                 $class_property_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
                     $class_property_type,
-                    $context->self,
-                    $context->self,
+                    $class_storage->name,
+                    $class_storage->name,
                     $class_storage->parent_class
                 );
             }
@@ -288,7 +288,9 @@ class PropertyAssignmentAnalyzer
                 if (!$codebase->classExists($lhs_type_part->value)) {
                     if ($codebase->interfaceExists($lhs_type_part->value)) {
                         $interface_exists = true;
-                        $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+                        $interface_storage = $codebase->classlike_storage_provider->get(
+                            strtolower($lhs_type_part->value)
+                        );
 
                         $override_property_visibility = $interface_storage->override_property_visibility;
 
@@ -314,7 +316,12 @@ class PropertyAssignmentAnalyzer
                                 return null;
                             }
 
-                            if (!$codebase->methodExists($fq_class_name . '::__set')) {
+                            if (!$codebase->methods->methodExists(
+                                new \Psalm\Internal\MethodIdentifier(
+                                    $fq_class_name,
+                                    '__set'
+                                )
+                            )) {
                                 return null;
                             }
                         }
@@ -343,7 +350,9 @@ class PropertyAssignmentAnalyzer
 
                 $has_magic_setter = false;
 
-                if ($codebase->methodExists($fq_class_name . '::__set')
+                $set_method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__set');
+
+                if ($codebase->methods->methodExists($set_method_id)
                     && (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)
                         || ($lhs_var_id !== '$this'
                             && $fq_class_name !== $context->self
@@ -1139,7 +1148,7 @@ class PropertyAssignmentAnalyzer
             return false;
         }
 
-        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+        $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $prop_name->name,
             false
         );
@@ -1188,7 +1197,7 @@ class PropertyAssignmentAnalyzer
             }
         }
 
-        $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
+        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
         $property_storage = $class_storage->properties[$prop_name->name];
 

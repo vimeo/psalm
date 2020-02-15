@@ -110,6 +110,7 @@ class ClassConstFetchAnalyzer
                 if ($codebase->classExists($fq_class_name)) {
                     $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
                     $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+                    $fq_class_name = $class_const_storage->name;
 
                     if ($class_const_storage->deprecated && $fq_class_name !== $context->self) {
                         if (IssueBuffer::accepts(

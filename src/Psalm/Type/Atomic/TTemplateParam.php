@@ -9,6 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Union;
 use Psalm\Storage\MethodStorage;
 use function array_map;
+use function strtolower;
 
 class TTemplateParam extends \Psalm\Type\Atomic
 {

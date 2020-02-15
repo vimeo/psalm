@@ -72,10 +72,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 );
 
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-            } else {
+            } elseif ($context->self !== null) {
                 switch ($stmt->class->parts[0]) {
                     case 'self':
-                        $fq_class_name = $context->self;
+                        $class_storage = $codebase->classlike_storage_provider->get($context->self);
+                        $fq_class_name = $class_storage->name;
                         break;
 
                     case 'parent':
@@ -84,7 +85,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                     case 'static':
                         // @todo maybe we can do better here
-                        $fq_class_name = $context->self;
+                        $class_storage = $codebase->classlike_storage_provider->get($context->self);
+                        $fq_class_name = $class_storage->name;
                         $can_extend = true;
                         break;
                 }
@@ -343,7 +345,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
-                if ($storage->deprecated && $fq_class_name !== $context->self) {
+                if ($storage->deprecated && strtolower($fq_class_name) !== strtolower((string) $context->self)) {
                     if (IssueBuffer::accepts(
                         new DeprecatedClass(
                             $fq_class_name . ' is marked deprecated',
@@ -387,15 +389,15 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
+                $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__construct');
+
                 if ($codebase->methods->methodExists(
-                    $fq_class_name . '::__construct',
+                    $method_id,
                     $context->calling_function_id,
                     $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
                     null,
                     $statements_analyzer->getFilePath()
                 )) {
-                    $method_id = $fq_class_name . '::__construct';
-
                     if ($codebase->store_node_types
                         && !$context->collect_initializations
                         && !$context->collect_mutations
@@ -404,7 +406,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             $statements_analyzer,
                             $stmt,
                             $codebase,
-                            $method_id
+                            (string) $method_id
                         );
                     }
 
@@ -457,7 +459,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                         $declaring_fq_class_name = $declaring_method_id
-                            ? explode('::', $declaring_method_id)[0]
+                            ? $declaring_method_id->fq_class_name
                             : $fq_class_name;
 
                         foreach ($storage->template_types as $template_name => $base_type) {

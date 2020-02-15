@@ -144,7 +144,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                             }
                         } else {
                             if (strpos($mapping_function_id_part, '::') !== false) {
-                                list($callable_fq_class_name) = explode('::', $mapping_function_id_part);
+                                $method_id_parts = explode('::', $mapping_function_id_part);
+                                $callable_fq_class_name = $method_id_parts[0];
 
                                 if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
                                     continue;
@@ -156,8 +157,13 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
                                 $class_storage = $codebase->classlike_storage_provider->get($callable_fq_class_name);
 
+                                $method_id = new \Psalm\Internal\MethodIdentifier(
+                                    $callable_fq_class_name,
+                                    $method_id_parts[1]
+                                );
+
                                 if (!$codebase->methods->methodExists(
-                                    $mapping_function_id_part,
+                                    $method_id,
                                     $context->calling_function_id,
                                     $codebase->collect_references
                                         ? new CodeLocation(
@@ -173,7 +179,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                 $part_match_found = true;
 
                                 $params = $codebase->methods->getMethodParams(
-                                    $mapping_function_id_part,
+                                    $method_id,
                                     $statements_source
                                 );
 
@@ -184,7 +190,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                 $self_class = 'self';
 
                                 $return_type = $codebase->methods->getMethodReturnType(
-                                    $mapping_function_id_part,
+                                    new \Psalm\Internal\MethodIdentifier(...$method_id_parts),
                                     $self_class
                                 ) ?: Type::getMixed();
 

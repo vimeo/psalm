@@ -674,7 +674,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         );
 
                         if ($config->reportIssueInFile('InvalidReturnType', $this->getFilePath())) {
-                            $method_id = $this->function_analyzers[$function_id]->getMethodId();
+                            $method_id = $this->function_analyzers[$function_id]->getId();
 
                             $function_storage = $codebase->functions->getStorage(
                                 $this,

@@ -638,8 +638,18 @@ class ProjectAnalyzer
                 continue;
             }
 
-            if ($this->codebase->methods->methodExists($source)) {
-                if ($this->codebase->methods->methodExists($destination)) {
+            $source_method_id = new \Psalm\Internal\MethodIdentifier(
+                $source_parts[0],
+                strtolower($source_parts[1])
+            );
+
+            if ($this->codebase->methods->methodExists($source_method_id)) {
+                if ($this->codebase->methods->methodExists(
+                    new \Psalm\Internal\MethodIdentifier(
+                        $destination_parts[0],
+                        strtolower($destination_parts[1])
+                    )
+                )) {
                     throw new \Psalm\Exception\RefactorException(
                         'Destination method ' . $destination . ' already exists'
                     );
@@ -652,12 +662,14 @@ class ProjectAnalyzer
                 }
 
                 if (strtolower($source_parts[0]) !== strtolower($destination_parts[0])) {
-                    $source_method_storage = $this->codebase->methods->getStorage($source);
+                    $source_method_storage = $this->codebase->methods->getStorage($source_method_id);
                     $destination_class_storage
                         = $this->codebase->classlike_storage_provider->get($destination_parts[0]);
 
                     if (!$source_method_storage->is_static
-                        && !isset($destination_class_storage->parent_classes[strtolower($source_parts[0])])
+                        && !isset(
+                            $destination_class_storage->parent_classes[strtolower($source_method_id->fq_class_name)]
+                        )
                     ) {
                         throw new \Psalm\Exception\RefactorException(
                             'Cannot move non-static method ' . $source
@@ -665,7 +677,7 @@ class ProjectAnalyzer
                         );
                     }
 
-                    $this->codebase->methods_to_move[strtolower($source)] = $destination;
+                    $this->codebase->methods_to_move[strtolower($source)]= $destination;
                 } else {
                     $this->codebase->methods_to_rename[strtolower($source)] = $destination_parts[1];
                 }
@@ -1237,18 +1249,17 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  string   $original_method_id
      * @param  Context  $this_context
      *
      * @return void
      */
     public function getMethodMutations(
-        $original_method_id,
+        \Psalm\Internal\MethodIdentifier $original_method_id,
         Context $this_context,
         string $root_file_path,
         string $root_file_name
     ) {
-        list($fq_class_name) = explode('::', $original_method_id);
+        $fq_class_name = $original_method_id->fq_class_name;
 
         $appearing_method_id = $this->codebase->methods->getAppearingMethodId($original_method_id);
 
@@ -1257,7 +1268,7 @@ class ProjectAnalyzer
             return;
         }
 
-        list($appearing_fq_class_name) = explode('::', $appearing_method_id);
+        $appearing_fq_class_name = $appearing_method_id->fq_class_name;
 
         $appearing_class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
 
@@ -1269,7 +1280,7 @@ class ProjectAnalyzer
 
         $file_analyzer->setRootFilePath($root_file_path, $root_file_name);
 
-        if (strtolower($appearing_fq_class_name) !== strtolower($fq_class_name)) {
+        if ($appearing_fq_class_name !== $fq_class_name) {
             $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
         }
 
@@ -1291,8 +1302,10 @@ class ProjectAnalyzer
         $file_analyzer->clearSourceBeforeDestruction();
     }
 
-    public function getFunctionLikeAnalyzer(string $method_id, string $file_path) : ?FunctionLikeAnalyzer
-    {
+    public function getFunctionLikeAnalyzer(
+        \Psalm\Internal\MethodIdentifier $method_id,
+        string $file_path
+    ) : ?FunctionLikeAnalyzer {
         $file_analyzer = new FileAnalyzer(
             $this,
             $file_path,

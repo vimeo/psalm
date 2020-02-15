@@ -690,11 +690,12 @@ class ReturnTypeAnalyzer
                     return null;
                 }
             }
+
             $fleshed_out_return_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $storage->return_type,
-                $context->self,
-                $context->self,
+                $classlike_storage ? $classlike_storage->name : null,
+                $classlike_storage ? $classlike_storage->name : null,
                 $parent_class
             );
 
@@ -712,8 +713,8 @@ class ReturnTypeAnalyzer
         $fleshed_out_signature_type = ExpressionAnalyzer::fleshOutType(
             $codebase,
             $storage->signature_return_type,
-            $context->self,
-            $context->self,
+            $classlike_storage ? $classlike_storage->name : null,
+            $classlike_storage ? $classlike_storage->name : null,
             $parent_class
         );
 
@@ -734,8 +735,8 @@ class ReturnTypeAnalyzer
         $fleshed_out_return_type = ExpressionAnalyzer::fleshOutType(
             $codebase,
             $storage->return_type,
-            $context->self,
-            $context->self,
+            $classlike_storage ? $classlike_storage->name : null,
+            $classlike_storage ? $classlike_storage->name : null,
             $parent_class
         );
 
@@ -829,7 +830,7 @@ class ReturnTypeAnalyzer
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
             $source->getFilePath(),
-            $function_like_analyzer->getMethodId(),
+            $function_like_analyzer->getId(),
             $function
         );
 

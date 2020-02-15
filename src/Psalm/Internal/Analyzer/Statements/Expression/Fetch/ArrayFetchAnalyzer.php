@@ -1001,7 +1001,7 @@ class ArrayFetchAnalyzer
                             if (!$context->inside_isset
                                 || ($type->sealed && !$union_comparison_results->type_coerced)
                             ) {
-                                $expected_offset_types[] = (string)$generic_key_type->getId();
+                                $expected_offset_types[] = $generic_key_type->getId();
                             }
 
                             $array_access_type = Type::getMixed();

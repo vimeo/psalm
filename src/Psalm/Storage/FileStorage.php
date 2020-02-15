@@ -8,7 +8,7 @@ class FileStorage
     use CustomMetadataTrait;
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $classlikes_in_file = [];
 
@@ -87,7 +87,7 @@ class FileStorage
     public $type_aliases = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $classlike_aliases = [];
 

@@ -551,7 +551,7 @@ class TypeAnalyzer
             } else {
                 $intersection_container_type_lower = strtolower(
                     $codebase->classlikes->getUnAliasedName(
-                        strtolower($intersection_container_type->value)
+                        $intersection_container_type->value
                     )
                 );
             }
@@ -586,7 +586,7 @@ class TypeAnalyzer
                 } else {
                     $intersection_input_type_lower = strtolower(
                         $codebase->classlikes->getUnAliasedName(
-                            strtolower($intersection_input_type->value)
+                            $intersection_input_type->value
                         )
                     );
                 }
@@ -1437,7 +1437,12 @@ class TypeAnalyzer
         ) {
             // check whether the object has a __toString method
             if ($codebase->classOrInterfaceExists($input_type_part->value)
-                && $codebase->methodExists($input_type_part->value . '::__toString')
+                && $codebase->methods->methodExists(
+                    new \Psalm\Internal\MethodIdentifier(
+                        $input_type_part->value,
+                        '__tostring'
+                    )
+                )
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->to_string_cast = true;
@@ -1775,7 +1780,7 @@ class TypeAnalyzer
             if ($method_id && $method_id !== 'not-callable') {
                 try {
                     $method_storage = $codebase->methods->getStorage($method_id);
-                    list($method_fqcln) = \explode('::', $method_id);
+                    $method_fqcln = $method_id->fq_class_name;
 
                     $converted_return_type = null;
 
@@ -1800,25 +1805,28 @@ class TypeAnalyzer
             }
         } elseif ($input_type_part instanceof TNamedObject
             && $codebase->classExists($input_type_part->value)
-            && $codebase->methodExists($input_type_part->value . '::__invoke')
         ) {
-            return new TCallable(
-                'callable',
-                $codebase->getMethodParams(
-                    $input_type_part->value . '::__invoke'
-                ),
-                $codebase->getMethodReturnType(
-                    $input_type_part->value . '::__invoke',
-                    $input_type_part->value,
-                    []
-                )
+            $invoke_id = new \Psalm\Internal\MethodIdentifier(
+                $input_type_part->value,
+                '__invoke'
             );
+
+            if ($codebase->methods->methodExists($invoke_id)) {
+                return new TCallable(
+                    'callable',
+                    $codebase->methods->getMethodParams($invoke_id),
+                    $codebase->methods->getMethodReturnType(
+                        $invoke_id,
+                        $input_type_part->value
+                    )
+                );
+            }
         }
 
         return null;
     }
 
-    /** @return ?string */
+    /** @return null|'not-callable'|\Psalm\Internal\MethodIdentifier */
     public static function getCallableMethodIdFromObjectLike(
         ObjectLike $input_type_part,
         Codebase $codebase = null,
@@ -1890,7 +1898,10 @@ class TypeAnalyzer
             return null;
         }
 
-        return $class_name . '::' . $method_name;
+        return new \Psalm\Internal\MethodIdentifier(
+            $class_name,
+            strtolower($method_name)
+        );
     }
 
     private static function isMatchingTypeContainedBy(

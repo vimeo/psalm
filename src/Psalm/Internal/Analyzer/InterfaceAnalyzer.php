@@ -103,7 +103,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 $method_analyzer->analyze(new \Psalm\Context($this->getFQCLN()), $type_provider);
 
-                $actual_method_id = (string)$method_analyzer->getMethodId();
+                $actual_method_id = $method_analyzer->getMethodId();
 
                 if ($stmt->name->name !== '__construct'
                     && $config->reportIssueInFile('InvalidReturnType', $this->getFilePath())

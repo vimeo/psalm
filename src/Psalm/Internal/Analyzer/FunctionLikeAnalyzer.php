@@ -134,6 +134,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $hash = null;
         $real_method_id = null;
+        $method_id = null;
 
         $cased_method_id = null;
 
@@ -163,13 +164,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $overridden_method_ids = [];
 
         if ($this->function instanceof ClassMethod) {
-            if (!$storage instanceof MethodStorage) {
+            if (!$storage instanceof MethodStorage || !$this instanceof MethodAnalyzer) {
                 throw new \UnexpectedValueException('$storage must be MethodStorage');
             }
 
-            $real_method_id = (string)$this->getMethodId();
+            $real_method_id = $this->getMethodId();
 
-            $method_id = (string)$this->getMethodId($context->self);
+            $method_id = $this->getMethodId($context->self);
 
             $fq_class_name = (string)$context->self;
             $appearing_class_storage = $classlike_storage_provider->get($fq_class_name);
@@ -249,13 +250,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 foreach ($overridden_method_ids as $overridden_method_id) {
                     $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
 
-                    list($overridden_fq_class_name) = explode('::', $overridden_method_id);
+                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
 
                     $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
 
                     $implementer_visibility = $storage->visibility;
 
-                    $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId($cased_method_id);
+                    $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
                     $implementer_declaring_method_id = $real_method_id;
 
                     $declaring_class_storage = $appearing_class_storage;
@@ -263,15 +264,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     if ($implementer_appearing_method_id
                         && $implementer_appearing_method_id !== $implementer_declaring_method_id
                     ) {
-                        list($appearing_fq_class_name, $appearing_method_name) = explode(
-                            '::',
-                            $implementer_appearing_method_id
-                        );
+                        $appearing_fq_class_name = $implementer_appearing_method_id->fq_class_name;
+                        $appearing_method_name = $implementer_appearing_method_id->method_name;
 
-                        list($declaring_fq_class_name) = explode(
-                            '::',
-                            $implementer_declaring_method_id
-                        );
+                        $declaring_fq_class_name = $implementer_declaring_method_id->fq_class_name;
 
                         $appearing_class_storage = $classlike_storage_provider->get(
                             $appearing_fq_class_name
@@ -321,7 +317,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
 
             if (!$context->calling_function_id || !$context->collect_initializations) {
-                $context->calling_function_id = strtolower($method_id);
+                $context->calling_function_id = strtolower((string) $method_id);
             }
         } elseif ($this->function instanceof Function_) {
             $cased_method_id = $this->function->name->name;
@@ -412,7 +408,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($storage instanceof MethodStorage
-            && is_string($cased_method_id)
+            && $method_id instanceof \Psalm\Internal\MethodIdentifier
             && $overridden_method_ids
         ) {
             $types_without_docblocks = array_filter(
@@ -424,7 +420,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
 
             if ($types_without_docblocks) {
-                $params = $codebase->methods->getMethodParams($cased_method_id, $this);
+                $params = $codebase->methods->getMethodParams(
+                    $method_id,
+                    $this
+                );
             }
         }
 
@@ -434,7 +433,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         foreach ($codebase->methods_to_rename as $original_method_id => $new_method_name) {
             if ($this->function instanceof ClassMethod
-                && strtolower($this->getMethodId()) === $original_method_id
+                && $this instanceof MethodAnalyzer
+                && strtolower((string) $this->getMethodId()) === $original_method_id
             ) {
                 $file_manipulations = [
                     new \Psalm\FileManipulation(
@@ -843,11 +843,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($storage instanceof MethodStorage
+            && $this instanceof MethodAnalyzer
             && $class_storage
             && $storage->cased_name
             && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
         ) {
-            $method_id_lc = strtolower($this->getMethodId());
+            $method_id_lc = strtolower((string) $this->getMethodId());
 
             foreach ($storage->params as $i => $_) {
                 if (!isset($unused_params[$i])) {
@@ -865,7 +866,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
                         $codebase->file_reference_provider->addMethodParamUse(
-                            $parent_method_id,
+                            strtolower((string) $parent_method_id),
                             $i,
                             $method_id_lc
                         );
@@ -1331,7 +1332,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
             $this->source->getFilePath(),
-            $this->getMethodId(),
+            $this->getId(),
             $this->function
         );
 
@@ -1471,31 +1472,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      *
      * @return string
      */
-    public function getMethodId($context_self = null)
-    {
-        if ($this->function instanceof ClassMethod) {
-            $function_name = (string)$this->function->name;
-
-            return ($context_self ?: $this->source->getFQCLN()) . '::' . strtolower($function_name);
-        }
-
-        if ($this->function instanceof Function_) {
-            $namespace = $this->source->getNamespace();
-
-            return ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($this->function->name->name);
-        }
-
-        return strtolower($this->getFilePath())
-            . ':' . $this->function->getLine()
-            . ':' . (int)$this->function->getAttribute('startFilePos')
-            . ':-:closure';
-    }
-
-    /**
-     * @param string|null $context_self
-     *
-     * @return string
-     */
     public function getCorrectlyCasedMethodId($context_self = null)
     {
         if ($this->function instanceof ClassMethod) {
@@ -1510,7 +1486,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             return ($namespace ? $namespace . '\\' : '') . $this->function->name;
         }
 
-        return $this->getMethodId();
+        if (!$this instanceof ClosureAnalyzer) {
+            throw new \UnexpectedValueException('This is weird');
+        }
+
+        return $this->getClosureId();
     }
 
     /**
@@ -1520,8 +1500,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     {
         $codebase = $this->codebase;
 
-        if ($this->function instanceof ClassMethod) {
-            $method_id = (string) $this->getMethodId();
+        if ($this->function instanceof ClassMethod && $this instanceof MethodAnalyzer) {
+            $method_id = $this->getMethodId();
             $codebase_methods = $codebase->methods;
 
             try {
@@ -1529,7 +1509,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             } catch (\UnexpectedValueException $e) {
                 $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
-                if (!$declaring_method_id) {
+                if ($declaring_method_id === null) {
                     throw new \UnexpectedValueException('Cannot get storage for function that doesn‘t exist');
                 }
 
@@ -1538,7 +1518,32 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        return $codebase->functions->getStorage($statements_analyzer, (string) $this->getMethodId());
+        if ($this instanceof FunctionAnalyzer) {
+            $function_id = $this->getFunctionId();
+        } elseif ($this instanceof ClosureAnalyzer) {
+            $function_id = $this->getClosureId();
+        } else {
+            throw new \UnexpectedValueException('This is weird');
+        }
+
+        return $codebase->functions->getStorage($statements_analyzer, $function_id);
+    }
+
+    public function getId() : string
+    {
+        if ($this instanceof MethodAnalyzer) {
+            return (string) $this->getMethodId();
+        }
+
+        if ($this instanceof FunctionAnalyzer) {
+            return $this->getFunctionId();
+        }
+
+        if ($this instanceof ClosureAnalyzer) {
+            return $this->getClosureId();
+        }
+
+        throw new \UnexpectedValueException('This is weird');
     }
 
     /**

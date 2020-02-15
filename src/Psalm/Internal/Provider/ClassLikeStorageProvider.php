@@ -34,7 +34,6 @@ class ClassLikeStorageProvider
 
     /**
      * @param  string $fq_classlike_name
-     *
      * @throws \InvalidArgumentException when class does not exist
      *
      * @return ClassLikeStorage
@@ -42,9 +41,8 @@ class ClassLikeStorageProvider
     public function get($fq_classlike_name)
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
-
         if (!isset(self::$storage[$fq_classlike_name_lc])) {
-            throw new \InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name);
+            throw new \InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name_lc);
         }
 
         return self::$storage[$fq_classlike_name_lc];
@@ -141,13 +139,15 @@ class ClassLikeStorageProvider
     }
 
     /**
-     * @param  string $fq_classlike_name
+     * @param string $fq_classlike_name
      *
      * @return void
      */
     public function remove($fq_classlike_name)
     {
-        unset(self::$storage[strtolower($fq_classlike_name)]);
+        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+        unset(self::$storage[$fq_classlike_name_lc]);
     }
 
     /**

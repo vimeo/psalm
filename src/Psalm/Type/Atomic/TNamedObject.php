@@ -9,6 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use function substr;
 use function array_map;
+use function strtolower;
 
 class TNamedObject extends Atomic
 {
@@ -192,10 +193,12 @@ class TNamedObject extends Atomic
             return false;
         }
 
-        if ($codebase->classlike_storage_provider->has($this->value)
+        $fq_class_name_lc = strtolower($this->value);
+
+        if ($codebase->classlike_storage_provider->has($fq_class_name_lc)
             && $source->getFQCLN() !== $this->value
         ) {
-            $class_storage = $codebase->classlike_storage_provider->get($this->value);
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
 
             if ($class_storage->deprecated) {
                 if (\Psalm\IssueBuffer::accepts(

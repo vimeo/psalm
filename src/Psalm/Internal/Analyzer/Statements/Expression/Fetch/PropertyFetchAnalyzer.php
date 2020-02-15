@@ -486,7 +486,8 @@ class PropertyFetchAnalyzer
 
             $property_id = $fq_class_name . '::$' . $prop_name;
 
-            if ($codebase->methodExists($fq_class_name . '::__get')
+            $get_method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__get');
+            if ($codebase->methods->methodExists($get_method_id)
                 && (!$codebase->properties->propertyExists($property_id, true, $statements_analyzer, $context)
                     || ($stmt_var_id !== '$this'
                         && $fq_class_name !== $context->self
@@ -703,11 +704,15 @@ class PropertyFetchAnalyzer
                 }
             }
 
-            $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
+            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
                 $property_id,
                 true,
                 $statements_analyzer
             );
+
+            if ($declaring_property_class === null) {
+                continue;
+            }
 
             if ($codebase->properties_to_rename) {
                 $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
@@ -805,8 +810,8 @@ class PropertyFetchAnalyzer
                 $class_property_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
                     clone $class_property_type,
-                    $declaring_property_class,
-                    $declaring_property_class,
+                    $declaring_class_storage->name,
+                    $declaring_class_storage->name,
                     $declaring_class_storage->parent_class
                 );
 
@@ -1179,7 +1184,11 @@ class PropertyFetchAnalyzer
             $statements_analyzer
         );
 
-        $declaring_property_id = strtolower((string) $declaring_property_class) . '::$' . $prop_name;
+        if ($declaring_property_class === null) {
+            return false;
+        }
+
+        $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
 
         if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
             $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
@@ -1223,7 +1232,7 @@ class PropertyFetchAnalyzer
             }
         }
 
-        $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
+        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
         $property = $class_storage->properties[$prop_name];
 
         if ($var_id) {
@@ -1231,8 +1240,8 @@ class PropertyFetchAnalyzer
                 $context->vars_in_scope[$var_id] = ExpressionAnalyzer::fleshOutType(
                     $codebase,
                     clone $property->type,
-                    $declaring_property_class,
-                    $declaring_property_class,
+                    $class_storage->name,
+                    $class_storage->name,
                     $class_storage->parent_class
                 );
             } else {

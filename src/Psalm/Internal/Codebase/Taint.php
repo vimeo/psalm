@@ -354,8 +354,8 @@ class Taint
         foreach ($new_source_file_paths as $file_path) {
             $classlikes = $file_storage_provider->get($file_path)->classlikes_in_file;
 
-            foreach ($classlikes as $classlike) {
-                $class_storage = $classlike_storage_provider->get($classlike);
+            foreach ($classlikes as $classlike_lc => $_) {
+                $class_storage = $classlike_storage_provider->get($classlike_lc);
 
                 if ($class_storage->location) {
                     $files[] = $class_storage->location->file_path;

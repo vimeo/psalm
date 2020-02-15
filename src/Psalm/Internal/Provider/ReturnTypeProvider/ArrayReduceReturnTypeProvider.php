@@ -214,14 +214,19 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                         }
                     } else {
                         if (strpos($mapping_function_id_part, '::') !== false) {
-                            list($callable_fq_class_name) = explode('::', $mapping_function_id_part);
+                            list($callable_fq_class_name, $method_name) = explode('::', $mapping_function_id_part);
 
                             if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
                                 continue;
                             }
 
+                            $method_id = new \Psalm\Internal\MethodIdentifier(
+                                $callable_fq_class_name,
+                                $method_name
+                            );
+
                             if (!$codebase->methods->methodExists(
-                                $mapping_function_id_part,
+                                $method_id,
                                 $context->calling_function_id,
                                 $codebase->collect_references
                                     ? new CodeLocation(
@@ -239,7 +244,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                             $self_class = 'self';
 
                             $return_type = $codebase->methods->getMethodReturnType(
-                                $mapping_function_id_part,
+                                $method_id,
                                 $self_class
                             ) ?: Type::getMixed();
 

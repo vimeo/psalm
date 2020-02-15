@@ -160,13 +160,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                         ) {
                             $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
 
-                            $actual_method_id = (string)$method_analyzer->getMethodId();
+                            $actual_method_id = $method_analyzer->getMethodId();
 
                             if ($context->self && $context->self !== $this->fq_class_name) {
-                                $analyzed_method_id = (string)$method_analyzer->getMethodId($context->self);
+                                $analyzed_method_id = $method_analyzer->getMethodId($context->self);
                                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
-                                if ($actual_method_id !== $declaring_method_id) {
+                                if ((string) $actual_method_id !== (string) $declaring_method_id) {
                                     break;
                                 }
                             }
@@ -313,12 +313,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             }
         }
 
-        $aliased_name_lc = $codebase->classlikes->getUnAliasedName(
-            strtolower($fq_class_name)
+        $aliased_name = $codebase->classlikes->getUnAliasedName(
+            $fq_class_name
         );
 
         try {
-            $class_storage = $codebase->classlike_storage_provider->get($aliased_name_lc);
+            $class_storage = $codebase->classlike_storage_provider->get($aliased_name);
         } catch (\InvalidArgumentException $e) {
             if (!$inferred) {
                 throw $e;
@@ -347,19 +347,21 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             }
         }
 
-        if (($class_exists && !$codebase->classHasCorrectCasing($fq_class_name)) ||
-            ($interface_exists && !$codebase->interfaceHasCorrectCasing($fq_class_name))
-        ) {
-            if ($codebase->classlikes->isUserDefined($aliased_name_lc)) {
-                if (IssueBuffer::accepts(
-                    new InvalidClass(
-                        'Class or interface ' . $fq_class_name . ' has wrong casing',
-                        $code_location,
-                        $fq_class_name
-                    ),
-                    $suppressed_issues
-                )) {
-                    // fall through here
+        if (!$inferred) {
+            if (($class_exists && !$codebase->classHasCorrectCasing($fq_class_name)) ||
+                ($interface_exists && !$codebase->interfaceHasCorrectCasing($fq_class_name))
+            ) {
+                if ($codebase->classlikes->isUserDefined(strtolower($aliased_name))) {
+                    if (IssueBuffer::accepts(
+                        new InvalidClass(
+                            'Class or interface ' . $fq_class_name . ' has wrong casing',
+                            $code_location,
+                            $fq_class_name
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through here
+                    }
                 }
             }
         }
@@ -579,7 +581,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             return $emit_issues ? null : true;
         }
 
-        if ($source->getSource() instanceof TraitAnalyzer && $declaring_property_class === $source->getFQCLN()) {
+        if ($source->getSource() instanceof TraitAnalyzer
+            && strtolower($declaring_property_class) === strtolower((string) $source->getFQCLN())
+        ) {
             return $emit_issues ? null : true;
         }
 

@@ -78,7 +78,7 @@ class Functions
             $function_analyzers = $statements_analyzer->getFunctionAnalyzers();
 
             if (isset($function_analyzers[$function_id])) {
-                $function_id = $function_analyzers[$function_id]->getMethodId();
+                $function_id = $function_analyzers[$function_id]->getFunctionId();
 
                 if (isset($file_storage->functions[$function_id])) {
                     return $file_storage->functions[$function_id];

@@ -44,6 +44,7 @@ use function extension_loaded;
 use function strpos;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\FunctionLikeParameter;
+use function explode;
 
 /**
  * @internal
@@ -215,11 +216,14 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             if ($potential_method_id === 'not-callable') {
                                 $potential_method_id = null;
                             }
-                        } elseif ($var_type_part instanceof Type\Atomic\TLiteralString) {
-                            $potential_method_id = $var_type_part->value;
+                        } elseif ($var_type_part instanceof Type\Atomic\TLiteralString
+                            && strpos($var_type_part->value, '::')
+                        ) {
+                            $parts = explode('::', strtolower($var_type_part->value));
+                            $potential_method_id = new \Psalm\Internal\MethodIdentifier($parts[0], $parts[1]);
                         }
 
-                        if ($potential_method_id && strpos($potential_method_id, '::')) {
+                        if ($potential_method_id) {
                             $codebase->methods->methodExists(
                                 $potential_method_id,
                                 $context->calling_function_id,
@@ -235,7 +239,12 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         // handled above
                     } elseif (!$var_type_part instanceof TNamedObject
                         || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value)
-                        || !$codebase->methods->methodExists($var_type_part->value . '::__invoke')
+                        || !$codebase->methods->methodExists(
+                            new \Psalm\Internal\MethodIdentifier(
+                                $var_type_part->value,
+                                '__invoke'
+                            )
+                        )
                     ) {
                         $invalid_function_call_types[] = (string)$var_type_part;
                     } else {

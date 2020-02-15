@@ -203,13 +203,13 @@ class CallMap
      */
     public static function getCallablesFromCallMap($function_id)
     {
-        if (isset(self::$call_map_callables[$function_id])) {
-            return self::$call_map_callables[$function_id];
+        $call_map_key = strtolower($function_id);
+
+        if (isset(self::$call_map_callables[$call_map_key])) {
+            return self::$call_map_callables[$call_map_key];
         }
 
         $call_map = self::getCallMap();
-
-        $call_map_key = strtolower($function_id);
 
         if (!isset($call_map[$call_map_key])) {
             return null;
@@ -278,19 +278,19 @@ class CallMap
                 );
 
                 if ($arg_offset === 0
-                    && ($function_id === 'exec'
-                        || $function_id === 'shell_exec'
-                        || $function_id === 'passthru'
-                        || $function_id === 'system'
-                        || $function_id === 'pcntl_exec'
-                        || $function_id === 'file_put_contents'
-                        || $function_id === 'fopen')
+                    && ($call_map_key === 'exec'
+                        || $call_map_key === 'shell_exec'
+                        || $call_map_key === 'passthru'
+                        || $call_map_key === 'system'
+                        || $call_map_key === 'pcntl_exec'
+                        || $call_map_key === 'file_put_contents'
+                        || $call_map_key === 'fopen')
                 ) {
                     $function_param->sink = Type\Union::TAINTED_INPUT_SHELL;
                 }
 
                 if ($arg_offset === 0
-                    && ($function_id === 'print_r')
+                    && ($call_map_key === 'print_r')
                 ) {
                     $function_param->sink = Type\Union::TAINTED_INPUT_HTML;
                 }
@@ -305,7 +305,7 @@ class CallMap
             $possible_callables[] = new TCallable('callable', $function_params, $return_type);
         }
 
-        self::$call_map_callables[$function_id] = $possible_callables;
+        self::$call_map_callables[$call_map_key] = $possible_callables;
 
         return $possible_callables;
     }
