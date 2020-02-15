@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\FunctionLike;
 
 use PhpParser;
+use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use function array_merge;
@@ -262,29 +263,9 @@ class ReturnTypeCollector
                         $type = new Type\Atomic\TArray([Type::getInt(), $type->type_param]);
                     }
 
-                    if ($type instanceof Type\Atomic\TArray
-                        || $type instanceof Type\Atomic\TIterable
-                        || ($type instanceof Type\Atomic\TGenericObject
-                            && ($codebase->classImplements(
-                                $type->value,
-                                'Iterator'
-                            )
-                                || $codebase->classImplements(
-                                    $type->value,
-                                    'IteratorAggregate'
-                                )
-                                || $type->value === 'Generator'))
-                    ) {
-                        switch (count($type->type_params)) {
-                            case 1:
-                                $key_type_param = Type::getMixed();
-                                $value_type_param = $type->type_params[0];
-                                break;
-
-                            default:
-                                $key_type_param = $type->type_params[0];
-                                $value_type_param = $type->type_params[1];
-                        }
+                    if ($type instanceof Type\Atomic\TArray) {
+                        $key_type_param = $type->type_params[0];
+                        $value_type_param = $type->type_params[1];
 
                         if (!$key_type) {
                             $key_type = clone $key_type_param;
@@ -297,6 +278,15 @@ class ReturnTypeCollector
                         } else {
                             $value_type = Type::combineUnionTypes($value_type_param, $value_type);
                         }
+                    } elseif ($type instanceof Type\Atomic\TIterable
+                        || $type instanceof Type\Atomic\TNamedObject
+                    ) {
+                        ForeachAnalyzer::getKeyValueParamsForTraversableObject(
+                            $type,
+                            $codebase,
+                            $key_type,
+                            $value_type
+                        );
                     }
                 }
 
