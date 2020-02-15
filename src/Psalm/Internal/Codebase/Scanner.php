@@ -764,7 +764,7 @@ class Scanner
         $new_fq_class_name_lc = strtolower($new_fq_class_name);
 
         if ($new_fq_class_name_lc !== $fq_class_name_lc) {
-            $classlikes->addClassAlias($new_fq_class_name_lc, $fq_class_name_lc);
+            $classlikes->addClassAlias($new_fq_class_name, $fq_class_name_lc);
             $fq_class_name_lc = $new_fq_class_name_lc;
         }
 
