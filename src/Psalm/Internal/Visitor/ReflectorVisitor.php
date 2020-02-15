@@ -1778,14 +1778,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             ) {
                 $this->codebase->methods->setDeclaringMethodId(
                     $fq_classlike_name,
-                    '::__construct',
+                    '__construct',
                     $fq_classlike_name,
                     $method_name_lc
                 );
 
                 $this->codebase->methods->setAppearingMethodId(
                     $fq_classlike_name,
-                    '::__construct',
+                    '__construct',
                     $fq_classlike_name,
                     $method_name_lc
                 );

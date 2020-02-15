@@ -1863,6 +1863,7 @@ class CallAnalyzer
         if ($self_fq_class_name) {
             $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
             $parent_class = $classlike_storage->parent_class;
+            $static_classlike_storage = $classlike_storage;
 
             if ($static_fq_class_name && $static_fq_class_name !== $self_fq_class_name) {
                 $static_classlike_storage = $codebase->classlike_storage_provider->get($static_fq_class_name);
