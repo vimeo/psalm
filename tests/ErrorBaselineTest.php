@@ -156,7 +156,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0,
+                        0
                     ),
                     new \Psalm\Internal\Analyzer\IssueData(
                         'error',
@@ -173,7 +173,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0,
+                        0
                     ),
                     new \Psalm\Internal\Analyzer\IssueData(
                         'error',
@@ -190,7 +190,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0,
+                        0
                     ),
                     new \Psalm\Internal\Analyzer\IssueData(
                         'error',
@@ -207,7 +207,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0,
+                        0
                     ),
                     new \Psalm\Internal\Analyzer\IssueData(
                         'info',
@@ -224,7 +224,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0,
+                        0
                     ),
                 ],
                 'sample/sample-file2.php' => [
@@ -243,7 +243,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0,
+                        0
                     ),
                     new \Psalm\Internal\Analyzer\IssueData(
                         'error',
@@ -260,7 +260,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0,
+                        0
                     ),
                     new \Psalm\Internal\Analyzer\IssueData(
                         'error',
@@ -277,7 +277,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0,
+                        0
                     ),
                 ],
             ],
@@ -357,7 +357,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0,
+                    0
                 ),
                 new \Psalm\Internal\Analyzer\IssueData(
                     'error',
@@ -374,7 +374,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0,
+                    0
                 ),
                 new \Psalm\Internal\Analyzer\IssueData(
                     'error',
@@ -391,7 +391,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0,
+                    0
                 ),
                 new \Psalm\Internal\Analyzer\IssueData(
                     'error',
@@ -408,7 +408,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0,
+                    0
                 ),
             ],
             'sample/sample-file2.php' => [
@@ -427,7 +427,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0,
+                    0
                 ),
             ],
         ];
