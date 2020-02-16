@@ -7,28 +7,12 @@ use function file_get_contents;
 use function file_put_contents;
 use function is_array;
 use function is_readable;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Config;
 use function serialize;
 use function unserialize;
 
 /**
- * @psalm-type  IssueData = array{
- *     severity: string,
- *     line_from: int,
- *     line_to: int,
- *     type: string,
- *     message: string,
- *     file_name: string,
- *     file_path: string,
- *     snippet: string,
- *     from: int,
- *     to: int,
- *     snippet_from: int,
- *     snippet_to: int,
- *     column_from: int,
- *     column_to: int
- * }
- *
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
  */
 /**

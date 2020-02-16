@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use function array_filter;
+use Psalm\Internal\Analyzer\IssueData;
 
 abstract class Report
 {
@@ -34,9 +35,7 @@ abstract class Report
     ];
 
     /**
-     * @var array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     * file_name: string, file_path: string, snippet: string, from: int, to: int,
-     * snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}>
+     * @var array<int, IssueData>
      */
     protected $issues_data;
 
@@ -59,9 +58,7 @@ abstract class Report
     protected $total_expression_count;
 
     /**
-     * @param array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int,
-     *  snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}> $issues_data
+     * @param array<int, IssueData> $issues_data
      * @param array<string, int> $fixable_issue_counts
      * @param bool $use_color
      * @param bool $show_snippet
@@ -77,11 +74,8 @@ abstract class Report
         if (!$report_options->show_info) {
             $this->issues_data = array_filter(
                 $issues_data,
-                /**
-                 * @param array{severity: string} $issue_data
-                 */
-                function (array $issue_data) : bool {
-                    return $issue_data['severity'] !== Config::REPORT_INFO;
+                function ($issue_data) : bool {
+                    return $issue_data->severity !== Config::REPORT_INFO;
                 }
             );
         } else {

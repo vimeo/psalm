@@ -15,6 +15,7 @@ use function min;
 use const PHP_VERSION;
 use function phpversion;
 use function preg_replace_callback;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\FileProvider;
 use RuntimeException;
 use function str_replace;
@@ -53,12 +54,7 @@ class ErrorBaseline
     /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
-     * @param array<string, list<array{
-     *         file_name: string,
-     *         type: string,
-     *         severity: string,
-     *         selected_text: string
-     * }>> $issues
+     * @param array<string, list<IssueData>> $issues
      *
      * @return void
      */
@@ -136,12 +132,7 @@ class ErrorBaseline
     /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
-     * @param array<string, list<array{
-     *         file_name: string,
-     *         type: string,
-     *         severity: string,
-     *         selected_text: string
-     * }>> $issues
+     * @param array<string, list<IssueData>> $issues
      *
      * @throws Exception\ConfigException
      *
@@ -189,12 +180,7 @@ class ErrorBaseline
     }
 
     /**
-     * @param array<string, list<array{
-     *         file_name: string,
-     *         type: string,
-     *         severity: string,
-     *         selected_text: string
-     * }>> $issues
+     * @param array<string, list<IssueData>> $issues
      *
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
@@ -207,18 +193,17 @@ class ErrorBaseline
             array_merge(...array_values($issues)),
             /**
              * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
-             * @param array{type: string, file_name: string, severity: string, selected_text: string} $issue
              *
              * @return array<string,array<string,array{o:int, s:array<int, string>}>>
              */
-            function (array $carry, array $issue): array {
-                if ($issue['severity'] !== Config::REPORT_ERROR) {
+            function (array $carry, IssueData $issue): array {
+                if ($issue->severity !== Config::REPORT_ERROR) {
                     return $carry;
                 }
 
-                $fileName = $issue['file_name'];
+                $fileName = $issue->file_name;
                 $fileName = str_replace('\\', '/', $fileName);
-                $issueType = $issue['type'];
+                $issueType = $issue->type;
 
                 if (!isset($carry[$fileName])) {
                     $carry[$fileName] = [];
@@ -230,8 +215,8 @@ class ErrorBaseline
 
                 ++$carry[$fileName][$issueType]['o'];
 
-                if (!strpos($issue['selected_text'], "\n")) {
-                    $carry[$fileName][$issueType]['s'][] = $issue['selected_text'];
+                if (!strpos($issue->selected_text, "\n")) {
+                    $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
                 }
 
                 return $carry;

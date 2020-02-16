@@ -21,21 +21,17 @@ class PylintReport extends Report
     }
 
     /**
-     * @param  array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int,
-     *  snippet_from: int, snippet_to: int, column_from: int, column_to: int} $issue_data
-     *
      * @return string
      */
-    private function format(array $issue_data): string
+    private function format(\Psalm\Internal\Analyzer\IssueData $issue_data): string
     {
         $message = sprintf(
             '%s: %s',
-            $issue_data['type'],
-            $issue_data['message']
+            $issue_data->type,
+            $issue_data->message
         );
 
-        if ($issue_data['severity'] === Config::REPORT_ERROR) {
+        if ($issue_data->severity === Config::REPORT_ERROR) {
             $code = 'E0001';
         } else {
             $code = 'W0001';
@@ -44,11 +40,11 @@ class PylintReport extends Report
         // https://docs.pylint.org/en/1.6.0/output.html doesn't mention what to do about 'column',
         // but it's still useful for users.
         // E.g. jenkins can't parse %s:%d:%d.
-        $message = sprintf('%s (column %d)', $message, $issue_data['column_from']);
+        $message = sprintf('%s (column %d)', $message, $issue_data->column_from);
         $issue_string = sprintf(
             '%s:%d: [%s] %s',
-            $issue_data['file_name'],
-            $issue_data['line_from'],
+            $issue_data->file_name,
+            $issue_data->line_from,
             $code,
             $message
         );

@@ -29,6 +29,7 @@ use LanguageServerProtocol\TextDocumentSyncKind;
 use LanguageServerProtocol\TextDocumentSyncOptions;
 use function max;
 use function parse_url;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\Server\TextDocument;
 use function rawurlencode;
@@ -326,25 +327,15 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
         foreach ($uris as $file_path => $uri) {
             $diagnostics = array_map(
-                /**
-                 * @param array{
-                 *     severity: string,
-                 *     message: string,
-                 *     line_from: int,
-                 *     line_to: int,
-                 *     column_from: int,
-                 *     column_to: int
-                 * } $issue_data
-                 */
-                function (array $issue_data) use ($file_path) : Diagnostic {
-                    //$check_name = $issue['check_name'];
-                    $description = $issue_data['message'];
-                    $severity = $issue_data['severity'];
+                function (IssueData $issue_data) use ($file_path) : Diagnostic {
+                    //$check_name = $issue->check_name;
+                    $description = $issue_data->message;
+                    $severity = $issue_data->severity;
 
-                    $start_line = max($issue_data['line_from'], 1);
-                    $end_line = $issue_data['line_to'];
-                    $start_column = $issue_data['column_from'];
-                    $end_column = $issue_data['column_to'];
+                    $start_line = max($issue_data->line_from, 1);
+                    $end_line = $issue_data->line_to;
+                    $start_column = $issue_data->column_from;
+                    $end_column = $issue_data->column_to;
                     // Language server has 0 based lines and columns, phan has 1-based lines and columns.
                     $range = new Range(
                         new Position($start_line - 1, $start_column - 1),

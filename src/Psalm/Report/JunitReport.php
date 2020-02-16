@@ -30,8 +30,8 @@ class JunitReport extends Report
         $ndata = [];
 
         foreach ($this->issues_data as $error) {
-            $is_error = $error['severity'] === Config::REPORT_ERROR;
-            $is_warning = $error['severity'] === Config::REPORT_INFO;
+            $is_error = $error->severity === Config::REPORT_ERROR;
+            $is_warning = $error->severity === Config::REPORT_INFO;
 
             if ($is_error) {
                 $errors++;
@@ -44,7 +44,7 @@ class JunitReport extends Report
 
             $tests++;
 
-            $fname = $error['file_name'];
+            $fname = $error->file_name;
 
             if (!isset($ndata[$fname])) {
                 $ndata[$fname] = [
@@ -160,16 +160,6 @@ class JunitReport extends Report
     }
 
     /**
-     * @param  array{
-     *     line_from: int,
-     *     type: string,
-     *     message: string,
-     *     selected_text: string,
-     *     snippet: string,
-     *     column_from: int,
-     *     column_to: int
-     *  } $issue_data
-     *
      * @return array{
      *     data: array{
      *         column_from: int,
@@ -183,18 +173,18 @@ class JunitReport extends Report
      *     type: string
      * }
      */
-    private function createFailure(array $issue_data) : array
+    private function createFailure(\Psalm\Internal\Analyzer\IssueData $issue_data) : array
     {
         return [
-            'type' => $issue_data['type'],
+            'type' => $issue_data->type,
             'data' => [
-                'message'       => $issue_data['message'],
-                'type'          => $issue_data['type'],
-                'snippet'       => $issue_data['snippet'],
-                'selected_text' => $issue_data['selected_text'],
-                'line'          => $issue_data['line_from'],
-                'column_from'   => $issue_data['column_from'],
-                'column_to'     => $issue_data['column_to'],
+                'message'       => $issue_data->message,
+                'type'          => $issue_data->type,
+                'snippet'       => $issue_data->snippet,
+                'selected_text' => $issue_data->selected_text,
+                'line'          => $issue_data->line_from,
+                'column_from'   => $issue_data->column_from,
+                'column_to'     => $issue_data->column_to,
             ],
         ];
     }

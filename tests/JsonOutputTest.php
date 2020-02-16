@@ -54,13 +54,13 @@ class JsonOutputTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
         $issue_data = IssueBuffer::getIssuesData()['somefile.php'][0];
 
-        $this->assertSame('somefile.php', $issue_data['file_path']);
-        $this->assertSame('error', $issue_data['severity']);
-        $this->assertSame($message, $issue_data['message']);
-        $this->assertSame($line_number, $issue_data['line_from']);
+        $this->assertSame('somefile.php', $issue_data->file_path);
+        $this->assertSame('error', $issue_data->severity);
+        $this->assertSame($message, $issue_data->message);
+        $this->assertSame($line_number, $issue_data->line_from);
         $this->assertSame(
             $error,
-            substr($code, $issue_data['from'], $issue_data['to'] - $issue_data['from'])
+            substr($code, $issue_data->from, $issue_data->to - $issue_data->from)
         );
     }
 
@@ -184,7 +184,12 @@ echo $a;';
                     'column_to' => 8,
                 ],
             ],
-            $issue_data
+            \array_map(
+                function ($d) {
+                    return (array) $d;
+                },
+                $issue_data
+            )
         );
     }
 

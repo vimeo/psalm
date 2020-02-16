@@ -12,6 +12,7 @@ use PhpParser;
 use function preg_replace;
 use Psalm\Config;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -25,24 +26,6 @@ use function substr;
 use function usort;
 
 /**
- * @psalm-type  IssueData = array{
- *     severity: string,
- *     line_from: int,
- *     line_to: int,
- *     type: string,
- *     message: string,
- *     file_name: string,
- *     file_path: string,
- *     snippet: string,
- *     from: int,
- *     to: int,
- *     snippet_from: int,
- *     snippet_to: int,
- *     column_from: int,
- *     column_to: int,
- *     selected_text: string
- * }
- *
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
  *
  * @psalm-type  WorkerData = array{
@@ -349,12 +332,12 @@ class Analyzer
                 $has_info = false;
 
                 foreach ($issues as $issue) {
-                    if ($issue['severity'] === 'error') {
+                    if ($issue->severity === 'error') {
                         $has_error = true;
                         break;
                     }
 
-                    if ($issue['severity'] === 'info') {
+                    if ($issue->severity === 'info') {
                         $has_info = true;
                     }
                 }
@@ -865,7 +848,7 @@ class Analyzer
             $last_diff_offset = $file_diff_map[count($file_diff_map) - 1][1];
 
             foreach ($file_issues as $i => &$issue_data) {
-                if ($issue_data['to'] < $first_diff_offset || $issue_data['from'] > $last_diff_offset) {
+                if ($issue_data->to < $first_diff_offset || $issue_data->from > $last_diff_offset) {
                     unset($file_issues[$i]);
                     continue;
                 }
@@ -873,16 +856,16 @@ class Analyzer
                 $matched = false;
 
                 foreach ($file_diff_map as list($from, $to, $file_offset, $line_offset)) {
-                    if ($issue_data['from'] >= $from
-                        && $issue_data['from'] <= $to
+                    if ($issue_data->from >= $from
+                        && $issue_data->from <= $to
                         && !$matched
                     ) {
-                        $issue_data['from'] += $file_offset;
-                        $issue_data['to'] += $file_offset;
-                        $issue_data['snippet_from'] += $file_offset;
-                        $issue_data['snippet_to'] += $file_offset;
-                        $issue_data['line_from'] += $line_offset;
-                        $issue_data['line_to'] += $line_offset;
+                        $issue_data->from += $file_offset;
+                        $issue_data->to += $file_offset;
+                        $issue_data->snippet_from += $file_offset;
+                        $issue_data->snippet_to += $file_offset;
+                        $issue_data->line_from += $line_offset;
+                        $issue_data->line_to += $line_offset;
                         $matched = true;
                     }
                 }
@@ -1351,8 +1334,8 @@ class Analyzer
         $applicable_issues = [];
 
         foreach ($this->existing_issues[$file_path] as $issue_data) {
-            if ($issue_data['from'] >= $start && $issue_data['from'] <= $end) {
-                if ($issue_type === null || $issue_type === $issue_data['type']) {
+            if ($issue_data->from >= $start && $issue_data->from <= $end) {
+                if ($issue_type === null || $issue_type === $issue_data->type) {
                     $applicable_issues[] = $issue_data;
                 }
             }
@@ -1372,8 +1355,8 @@ class Analyzer
     {
         if (isset($this->existing_issues[$file_path])) {
             foreach ($this->existing_issues[$file_path] as $i => $issue_data) {
-                if ($issue_data['from'] >= $start && $issue_data['from'] <= $end) {
-                    if ($issue_type === null || $issue_type === $issue_data['type']) {
+                if ($issue_data->from >= $start && $issue_data->from <= $end) {
+                    if ($issue_type === null || $issue_type === $issue_data->type) {
                         unset($this->existing_issues[$file_path][$i]);
                     }
                 }

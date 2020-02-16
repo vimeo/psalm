@@ -92,7 +92,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
         foreach ($data as $file_issues) {
             foreach ($file_issues as $issue_data) {
-                $found_positions[] = $issue_data['from'];
+                $found_positions[] = $issue_data->from;
             }
         }
 
@@ -118,7 +118,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
             foreach ($data as $file_issues) {
                 foreach ($file_issues as $issue_data) {
-                    $found_positions[] = $issue_data['from'];
+                    $found_positions[] = $issue_data->from;
                 }
             }
 
@@ -146,7 +146,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
             foreach ($data as $file_issues) {
                 foreach ($file_issues as $issue_data) {
-                    $found_positions[] = $issue_data['from'];
+                    $found_positions[] = $issue_data->from;
                 }
             }
 

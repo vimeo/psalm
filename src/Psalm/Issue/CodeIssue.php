@@ -93,11 +93,9 @@ abstract class CodeIssue
     /**
      * @param  string          $severity
      *
-     * @return array{severity: string, line_from: int, line_to: int, type: string, message: string, file_name: string,
-     *  file_path: string, snippet: string, selected_text: string, from: int, to: int, snippet_from: int,
-     *  snippet_to: int, column_from: int, column_to: int}
+     * @return \Psalm\Internal\Analyzer\IssueData
      */
-    public function toArray($severity = Config::REPORT_ERROR)
+    public function toIssueData($severity = Config::REPORT_ERROR)
     {
         $location = $this->getLocation();
         $selection_bounds = $location->getSelectionBounds();
@@ -106,22 +104,22 @@ abstract class CodeIssue
         $fqcn_parts = explode('\\', get_called_class());
         $issue_type = array_pop($fqcn_parts);
 
-        return [
-            'severity' => $severity,
-            'line_from' => $location->getLineNumber(),
-            'line_to' => $location->getEndLineNumber(),
-            'type' => $issue_type,
-            'message' => $this->getMessage(),
-            'file_name' => $location->file_name,
-            'file_path' => $location->file_path,
-            'snippet' => $location->getSnippet(),
-            'selected_text' => $location->getSelectedText(),
-            'from' => $selection_bounds[0],
-            'to' => $selection_bounds[1],
-            'snippet_from' => $snippet_bounds[0],
-            'snippet_to' => $snippet_bounds[1],
-            'column_from' => $location->getColumn(),
-            'column_to' => $location->getEndColumn(),
-        ];
+        return new \Psalm\Internal\Analyzer\IssueData(
+            $severity,
+            $location->getLineNumber(),
+            $location->getEndLineNumber(),
+            $issue_type,
+            $this->getMessage(),
+            $location->file_name,
+            $location->file_path,
+            $location->getSnippet(),
+            $location->getSelectedText(),
+            $selection_bounds[0],
+            $selection_bounds[1],
+            $snippet_bounds[0],
+            $snippet_bounds[1],
+            $location->getColumn(),
+            $location->getEndColumn(),
+        );
     }
 }

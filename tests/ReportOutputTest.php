@@ -188,23 +188,23 @@ echo $a;';
     public function testFilteredJsonReportIsStillArray(): void
     {
         $issues_data = [
-            22 => [
-                'severity' => 'info',
-                'line_from' => 15,
-                'line_to' => 15,
-                'type' => 'PossiblyUndefinedGlobalVariable',
-                'message' => 'Possibly undefined global variable $a, first seen on line 10',
-                'file_name' => 'somefile.php',
-                'file_path' => 'somefile.php',
-                'snippet' => 'echo $a',
-                'selected_text' => '$a',
-                'from' => 201,
-                'to' => 203,
-                'snippet_from' => 196,
-                'snippet_to' => 203,
-                'column_from' => 6,
-                'column_to' => 8,
-            ],
+            22 => new \Psalm\Internal\Analyzer\IssueData(
+                'info',
+                15,
+                15,
+                'PossiblyUndefinedGlobalVariable',
+                'Possibly undefined global variable $a, first seen on line 10',
+                'somefile.php',
+                'somefile.php',
+                'echo $a',
+                '$a',
+                201,
+                203,
+                196,
+                203,
+                6,
+                8,
+            ),
         ];
 
         $report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json'])[0];

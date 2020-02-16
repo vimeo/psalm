@@ -11,6 +11,7 @@ use function get_class;
 use function memory_get_peak_usage;
 use function microtime;
 use function number_format;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\UnusedPsalmSuppress;
@@ -36,9 +37,7 @@ use function array_values;
 class IssueBuffer
 {
     /**
-     * @var array<string, list<array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     * file_name: string, file_path: string, snippet: string, from: int, to: int,
-     * snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}>>
+     * @var array<string, list<IssueData>>
      */
     protected static $issues_data = [];
 
@@ -211,7 +210,7 @@ class IssueBuffer
 
         if ($reporting_level === Config::REPORT_INFO) {
             if (!self::alreadyEmitted($emitted_key)) {
-                self::$issues_data[$e->getFilePath()][] = $e->toArray(Config::REPORT_INFO);
+                self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_INFO);
             }
 
             return false;
@@ -230,7 +229,7 @@ class IssueBuffer
 
         if (!self::alreadyEmitted($emitted_key)) {
             ++self::$error_count;
-            self::$issues_data[$e->getFilePath()][] = $e->toArray(Config::REPORT_ERROR);
+            self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_ERROR);
         }
 
         if ($is_fixable) {
@@ -249,7 +248,7 @@ class IssueBuffer
         $filtered_issues = [];
 
         foreach (self::$issues_data[$file_path] as $issue) {
-            if ($issue['type'] !== $issue_type || $issue['from'] !== $file_offset) {
+            if ($issue->type !== $issue_type || $issue->from !== $file_offset) {
                 $filtered_issues[] = $issue;
             }
         }
@@ -267,9 +266,7 @@ class IssueBuffer
     }
 
     /**
-     * @return array<string, list<array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
-     *  column_from: int, column_to: int, selected_text: string}>>
+     * @return array<string, list<IssueData>>
      */
     public static function getIssuesData()
     {
@@ -277,9 +274,7 @@ class IssueBuffer
     }
 
     /**
-     * @return list<array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
-     *  column_from: int, column_to: int, selected_text: string}>
+     * @return list<IssueData>
      */
     public static function getIssuesDataForFile(string $file_path)
     {
@@ -387,9 +382,7 @@ class IssueBuffer
     }
 
     /**
-     * @param array<string, list<array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int,
-     *  snippet_to: int, column_from: int, column_to: int, selected_text: string}>> $issues_data
+     * @param array<string, list<IssueData>> $issues_data
      *
      * @return void
      */
@@ -397,10 +390,10 @@ class IssueBuffer
     {
         foreach ($issues_data as $file_path => $file_issues) {
             foreach ($file_issues as $issue) {
-                $emitted_key = $issue['type']
-                    . '-' . $issue['file_name']
-                    . ':' . $issue['line_from']
-                    . ':' . $issue['column_from'];
+                $emitted_key = $issue->type
+                    . '-' . $issue->file_name
+                    . ':' . $issue->line_from
+                    . ':' . $issue->column_from;
 
                 if (!self::alreadyEmitted($emitted_key)) {
                     self::$issues_data[$file_path][] = $issue;
@@ -444,24 +437,20 @@ class IssueBuffer
             foreach (self::$issues_data as $file_path => $file_issues) {
                 usort(
                     $file_issues,
-                    /**
-                     * @param array{file_path: string, line_from: int, column_from: int} $d1
-                     * @param array{file_path: string, line_from: int, column_from: int} $d2
-                     */
-                    function (array $d1, array $d2) : int {
-                        if ($d1['file_path'] === $d2['file_path']) {
-                            if ($d1['line_from'] === $d2['line_from']) {
-                                if ($d1['column_from'] === $d2['column_from']) {
+                    function (IssueData $d1, IssueData $d2) : int {
+                        if ($d1->file_path === $d2->file_path) {
+                            if ($d1->line_from === $d2->line_from) {
+                                if ($d1->column_from === $d2->column_from) {
                                     return 0;
                                 }
 
-                                return $d1['column_from'] > $d2['column_from'] ? 1 : -1;
+                                return $d1->column_from > $d2->column_from ? 1 : -1;
                             }
 
-                            return $d1['line_from'] > $d2['line_from'] ? 1 : -1;
+                            return $d1->line_from > $d2->line_from ? 1 : -1;
                         }
 
-                        return $d1['file_path'] > $d2['file_path'] ? 1 : -1;
+                        return $d1->file_path > $d2->file_path ? 1 : -1;
                     }
                 );
                 self::$issues_data[$file_path] = $file_issues;
@@ -471,26 +460,26 @@ class IssueBuffer
                 // Set severity for issues in baseline to INFO
                 foreach (self::$issues_data as $file_path => $file_issues) {
                     foreach ($file_issues as $key => $issue_data) {
-                        $file = $issue_data['file_name'];
+                        $file = $issue_data->file_name;
                         $file = str_replace('\\', '/', $file);
-                        $type = $issue_data['type'];
+                        $type = $issue_data->type;
 
                         if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
                             if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
                                 $position = array_search(
-                                    $issue_data['selected_text'],
+                                    $issue_data->selected_text,
                                     $issue_baseline[$file][$type]['s'],
                                     true
                                 );
 
                                 if ($position !== false) {
-                                    $issue_data['severity'] = Config::REPORT_INFO;
+                                    $issue_data->severity = Config::REPORT_INFO;
                                     array_splice($issue_baseline[$file][$type]['s'], $position, 1);
                                     $issue_baseline[$file][$type]['o'] = $issue_baseline[$file][$type]['o'] - 1;
                                 }
                             } else {
                                 $issue_baseline[$file][$type]['s'] = [];
-                                $issue_data['severity'] = Config::REPORT_INFO;
+                                $issue_data->severity = Config::REPORT_INFO;
                                 $issue_baseline[$file][$type]['o'] = $issue_baseline[$file][$type]['o'] - 1;
                             }
                         }
@@ -509,7 +498,7 @@ class IssueBuffer
 
         foreach (self::$issues_data as $file_issues) {
             foreach ($file_issues as $issue_data) {
-                if ($issue_data['severity'] === Config::REPORT_ERROR) {
+                if ($issue_data->severity === Config::REPORT_ERROR) {
                     ++$error_count;
                 } else {
                     ++$info_count;
@@ -735,9 +724,7 @@ class IssueBuffer
     }
 
     /**
-     * @return array<string, list<array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
-     *  column_from: int, column_to: int}>>
+     * @return array<string, list<IssueData>>
      */
     public static function clear()
     {

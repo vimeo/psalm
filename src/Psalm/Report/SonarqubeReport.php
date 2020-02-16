@@ -24,20 +24,20 @@ class SonarqubeReport extends Report
         foreach ($this->issues_data as $issue_data) {
             $report['issues'][] = [
                 'engineId' => 'Psalm',
-                'ruleId' => $issue_data['type'],
+                'ruleId' => $issue_data->type,
                 'primaryLocation' => [
-                    'message' => $issue_data['message'],
-                    'filePath' => $issue_data['file_name'],
+                    'message' => $issue_data->message,
+                    'filePath' => $issue_data->file_name,
                     'textRange' => [
-                        'startLine' => $issue_data['line_from'],
-                        'endLine' => $issue_data['line_to'],
+                        'startLine' => $issue_data->line_from,
+                        'endLine' => $issue_data->line_to,
                         // Columns in external issue reports are indexed from 0
-                        'startColumn' => max(0, $issue_data['column_from'] - 1),
-                        'endColumn' => max(0, $issue_data['column_to'] - 1),
+                        'startColumn' => max(0, $issue_data->column_from - 1),
+                        'endColumn' => max(0, $issue_data->column_to - 1),
                     ],
                 ],
                 'type' => 'CODE_SMELL',
-                'severity' => $issue_data['severity'] == Config::REPORT_ERROR ? 'CRITICAL' : 'MINOR',
+                'severity' => $issue_data->severity == Config::REPORT_ERROR ? 'CRITICAL' : 'MINOR',
             ];
         }
 

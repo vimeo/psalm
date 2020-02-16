@@ -20,42 +20,42 @@ class IssueBufferTest extends TestCase
         IssueBuffer::clear();
         IssueBuffer::addIssues([
             '/path/one.php' => [
-                [
-                    "severity" => "error",
-                    "type" =>  "MissingPropertyType",
-                    "message" => 'Message',
-                    "file_name" =>"one.php",
-                    "file_path" =>  "/path/one.php",
-                    "snippet" => "snippet-1",
-                    "selected_text" => "snippet-1",
-                    "from"=> 0,
-                    "to"=> 0,
-                    "snippet_from" => 0,
-                    "snippet_to" => 0,
-                    "column_from" => 0,
-                    "column_to" => 0,
-                    "line_from" => 0,
-                    "line_to" => 0,
-                ]
+                new \Psalm\Internal\Analyzer\IssueData(
+                    "error",
+                    0,
+                    0,
+                    "MissingPropertyType",
+                    'Message',
+                    "one.php",
+                    "/path/one.php",
+                    "snippet-1",
+                    "snippet-1",
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                )
             ],
             '/path/two.php' => [
-                [
-                    "severity" => "error",
-                    "type" =>  "MissingPropertyType",
-                    "message" => 'Message',
-                    "file_name" =>"two.php",
-                    "file_path" =>  "/path/two.php",
-                    "snippet" => "snippet-2",
-                    "selected_text" => "snippet-2",
-                    "from"=> 0,
-                    "to"=> 0,
-                    "snippet_from" => 0,
-                    "snippet_to" => 0,
-                    "column_from" => 0,
-                    "column_to" => 0,
-                    "line_from" => 0,
-                    "line_to" => 0,
-                ]
+                new \Psalm\Internal\Analyzer\IssueData(
+                    "error",
+                    0,
+                    0,
+                    "MissingPropertyType",
+                    'Message',
+                    "two.php",
+                    "/path/two.php",
+                    "snippet-2",
+                    "snippet-2",
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                )
             ]
         ]);
         $baseline = [

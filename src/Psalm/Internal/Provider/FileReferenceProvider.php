@@ -8,27 +8,10 @@ use function array_unique;
 use function file_exists;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 
 /**
- * @psalm-type  IssueData = array{
- *     severity: string,
- *     line_from: int,
- *     line_to: int,
- *     type: string,
- *     message: string,
- *     file_name: string,
- *     file_path: string,
- *     snippet: string,
- *     from: int,
- *     to: int,
- *     snippet_from: int,
- *     snippet_to: int,
- *     column_from: int,
- *     column_to: int,
- *     selected_text: string
- * }
- *
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
  */
 /**
@@ -924,10 +907,10 @@ class FileReferenceProvider
      *
      * @return void
      */
-    public function addIssue($file_path, array $issue)
+    public function addIssue($file_path, IssueData $issue)
     {
         // don’t save parse errors ever, as they're not responsive to AST diffing
-        if ($issue['type'] === 'ParseError') {
+        if ($issue->type === 'ParseError') {
             return;
         }
 

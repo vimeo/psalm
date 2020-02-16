@@ -19,6 +19,7 @@ use function parse_url;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\SourceControl\SourceControlInfo;
 use const STDERR;
 use function strlen;
@@ -32,9 +33,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
     /**
      * Called after analysis is complete
      *
-     * @param array<string, list<array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     * file_name: string, file_path: string, snippet: string, from: int, to: int,
-     * snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}>> $issues
+     * @param array<string, list<IssueData>> $issues
      *
      * @return void
      */
@@ -61,11 +60,8 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
         if ($build_info) {
             $normalized_data = $issues === [] ? [] : array_filter(
                 array_merge(...array_values($issues)),
-                /**
-                 * @param array{severity: string} $i
-                 */
-                static function (array $i) : bool {
-                    return $i['severity'] === 'error';
+                static function (IssueData $i) : bool {
+                    return $i->severity === 'error';
                 }
             );
 

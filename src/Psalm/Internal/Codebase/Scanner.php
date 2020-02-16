@@ -14,6 +14,7 @@ use function min;
 use const PHP_EOL;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -24,24 +25,6 @@ use function strtolower;
 use function substr;
 
 /**
- * @psalm-type  IssueData = array{
- *     severity: string,
- *     line_from: int,
- *     line_to: int,
- *     type: string,
- *     message: string,
- *     file_name: string,
- *     file_path: string,
- *     snippet: string,
- *     from: int,
- *     to: int,
- *     snippet_from: int,
- *     snippet_to: int,
- *     column_from: int,
- *     column_to: int,
- *     selected_text: string
- * }
- *
  * @psalm-type  PoolData = array{
  *     classlikes_data:array{
  *         0:array<lowercase-string, bool>,

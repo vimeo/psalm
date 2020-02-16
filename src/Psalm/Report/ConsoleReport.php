@@ -20,18 +20,11 @@ class ConsoleReport extends Report
         return $output;
     }
 
-    /**
-     * @param  array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int,
-     *  snippet_from: int, snippet_to: int, column_from: int, column_to: int} $issue_data
-     *
-     * @return string
-     */
-    private function format(array $issue_data): string
+    private function format(\Psalm\Internal\Analyzer\IssueData $issue_data): string
     {
         $issue_string = '';
 
-        $is_error = $issue_data['severity'] === Config::REPORT_ERROR;
+        $is_error = $issue_data->severity === Config::REPORT_ERROR;
 
         if ($is_error) {
             $issue_string .= ($this->use_color ? "\e[0;31mERROR\e[0m" : 'ERROR');
@@ -39,17 +32,17 @@ class ConsoleReport extends Report
             $issue_string .= 'INFO';
         }
 
-        $issue_string .= ': ' . $issue_data['type'] . ' - ' . $issue_data['file_name'] . ':' .
-            $issue_data['line_from'] . ':' . $issue_data['column_from'] . ' - ' . $issue_data['message'] . "\n";
+        $issue_string .= ': ' . $issue_data->type . ' - ' . $issue_data->file_name . ':' .
+            $issue_data->line_from . ':' . $issue_data->column_from . ' - ' . $issue_data->message . "\n";
 
         if ($this->show_snippet) {
-            $snippet = $issue_data['snippet'];
+            $snippet = $issue_data->snippet;
 
             if (!$this->use_color) {
                 $issue_string .= $snippet;
             } else {
-                $selection_start = $issue_data['from'] - $issue_data['snippet_from'];
-                $selection_length = $issue_data['to'] - $issue_data['from'];
+                $selection_start = $issue_data->from - $issue_data->snippet_from;
+                $selection_length = $issue_data->to - $issue_data->from;
 
                 $issue_string .= substr($snippet, 0, $selection_start)
                     . ($is_error ? "\e[97;41m" : "\e[30;47m") . substr($snippet, $selection_start, $selection_length)
