@@ -35,7 +35,7 @@ class IssueBufferTest extends TestCase
                     0,
                     0,
                     0,
-                    0,
+                    0
                 )
             ],
             '/path/two.php' => [
@@ -54,7 +54,7 @@ class IssueBufferTest extends TestCase
                     0,
                     0,
                     0,
-                    0,
+                    0
                 )
             ]
         ]);
