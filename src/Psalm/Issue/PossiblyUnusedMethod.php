@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class PossiblyUnusedMethod extends MethodIssue
 {
-    const ERROR_LEVEL = 3;
+    const ERROR_LEVEL = -2;
 }

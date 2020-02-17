@@ -119,7 +119,8 @@ abstract class CodeIssue
             $snippet_bounds[0],
             $snippet_bounds[1],
             $location->getColumn(),
-            $location->getEndColumn()
+            $location->getEndColumn(),
+            (int) static::ERROR_LEVEL
         );
     }
 }

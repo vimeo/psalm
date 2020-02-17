@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class PossiblyUnusedProperty extends CodeIssue
 {
-    const ERROR_LEVEL = 3;
+    const ERROR_LEVEL = -2;
 }

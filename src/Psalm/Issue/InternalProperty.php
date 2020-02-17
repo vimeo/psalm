@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class InternalProperty extends PropertyIssue
 {
-    const ERROR_LEVEL = 2;
+    const ERROR_LEVEL = 4;
 }

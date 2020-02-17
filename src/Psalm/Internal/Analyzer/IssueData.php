@@ -94,6 +94,11 @@ class IssueData
     public $column_to;
 
     /**
+     * @var int
+     */
+    public $error_level;
+
+    /**
      * @param string $severity
      * @param int $line_from
      * @param int $line_to
@@ -109,6 +114,7 @@ class IssueData
      * @param int $snippet_to
      * @param int $column_from
      * @param int $column_to
+     * @param int $error_level
      */
     public function __construct(
         $severity,
@@ -125,7 +131,8 @@ class IssueData
         $snippet_from,
         $snippet_to,
         $column_from,
-        $column_to
+        $column_to,
+        $error_level = -1
     ) {
         $this->severity = $severity;
         $this->line_from = $line_from;
@@ -142,5 +149,6 @@ class IssueData
         $this->snippet_to = $snippet_to;
         $this->column_from = $column_from;
         $this->column_to = $column_to;
+        $this->error_level = $error_level;
     }
 }

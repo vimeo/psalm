@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class UnusedParam extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
+    const ERROR_LEVEL = -2;
 }
