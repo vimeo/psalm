@@ -242,9 +242,6 @@ class Config
     /** @var bool */
     public $allow_includes = true;
 
-    /** @var bool */
-    public $totally_typed = false;
-
     /** @var 1|2|3|4|5|6|7|8 */
     public $level = 1;
 
@@ -742,7 +739,6 @@ class Config
             'hideExternalErrors' => 'hide_external_errors',
             'resolveFromConfigFile' => 'resolve_from_config_file',
             'allowFileIncludes' => 'allow_includes',
-            'totallyTyped' => 'totally_typed',
             'strictBinaryOperands' => 'strict_binary_operands',
             'requireVoidReturnType' => 'add_void_docblocks',
             'useAssertForType' => 'use_assert_for_type',
@@ -841,8 +837,14 @@ class Config
             $config->level = $attribute_text;
         }
 
-        if ($config->totally_typed) {
-            $config->level = 1;
+        if (isset($config_xml['totallyTyped'])) {
+            $totally_typed = $config_xml['totallyTyped'];
+
+            if ($totally_typed === 'true' || $totally_typed === '1') {
+                $config->level = 1;
+            } else {
+                $config->level = 2;
+            }
         }
 
         if (isset($config_xml['errorBaseline'])) {
