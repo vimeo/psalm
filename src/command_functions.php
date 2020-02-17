@@ -291,7 +291,7 @@ Basic configuration:
 
 Surfacing issues:
     --show-info[=BOOLEAN]
-        Show non-exception parser findings
+        Show non-exception parser findings (defaults to false).
 
     --show-snippet[=true]
         Show code snippets with errors. Options are 'true' or 'false'
