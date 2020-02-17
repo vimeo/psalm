@@ -77,7 +77,7 @@ class PsalmEndToEndTest extends TestCase
 
     public function testInit(): void
     {
-        $this->assertStringStartsWith('Config file created', $this->runPsalmInit()['STDOUT']);
+        $this->assertStringStartsWith('Calculating best config level based on project files', $this->runPsalmInit()['STDOUT']);
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
     }
 
@@ -102,7 +102,7 @@ class PsalmEndToEndTest extends TestCase
 
     public function testPsalm(): void
     {
-        $this->runPsalmInit();
+        $this->runPsalmInit(1);
         $result = $this->runPsalm([], self::$tmpDir, true);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
@@ -112,7 +112,7 @@ class PsalmEndToEndTest extends TestCase
 
     public function testLegacyConfigWithoutresolveFromConfigFile(): void
     {
-        $this->runPsalmInit();
+        $this->runPsalmInit(1);
         $psalmXmlContent = file_get_contents(self::$tmpDir . '/psalm.xml');
         $count = 0;
         $psalmXmlContent = preg_replace('/resolveFromConfigFile="true"/', '', $psalmXmlContent, -1, $count);
@@ -129,9 +129,15 @@ class PsalmEndToEndTest extends TestCase
     /**
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
-    private function runPsalmInit(): array
+    private function runPsalmInit(?int $level = null): array
     {
-        return $this->runPsalm(['--init'], self::$tmpDir, false, false);
+        $args = ['--init'];
+
+        if ($level) {
+            $args[] = 'src';
+            $args[] = (string) $level;
+        }
+        return $this->runPsalm($args, self::$tmpDir, false, false);
     }
 
     /** from comment by itay at itgoldman dot com at

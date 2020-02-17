@@ -1178,23 +1178,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testTemplatedFiles()
-    {
-        foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {
-            $project_root = dirname(__DIR__, 2);
-            $file_path = realpath($project_root . '/assets/config_levels/' . $file_name);
-            symlink($file_path, $project_root . DIRECTORY_SEPARATOR . $file_name);
-
-            Config::loadFromXMLFile(
-                $project_root . DIRECTORY_SEPARATOR . $file_name,
-                $project_root
-            );
-        }
-    }
-
     /** @return void */
     public function testModularConfig()
     {

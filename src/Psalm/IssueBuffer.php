@@ -563,11 +563,11 @@ class IssueBuffer
 
                 echo $info_count . ' other issues found.' . "\n";
 
-                if ($show_info) {
-                    echo 'You can hide them with ' .
+                if (!$show_info) {
+                    echo 'You can display them with ' .
                         ($project_analyzer->stdout_report_options->use_color
-                            ? "\e[30;48;5;195m--show-info=false\e[0m"
-                            : '--show-info=false') . "\n";
+                            ? "\e[30;48;5;195m--show-info=true\e[0m"
+                            : '--show-info=true') . "\n";
                 }
             }
 
@@ -579,7 +579,7 @@ class IssueBuffer
                 $command .= ' --dry-run';
 
                 echo 'Psalm can automatically fix ' . $total_count
-                    . ($show_info ? ' issues' : ' of them') . ".\n"
+                    . ($show_info ? ' issues' : ' of these issues') . ".\n"
                     . 'Run Psalm again with ' . "\n"
                     . ($project_analyzer->stdout_report_options->use_color
                         ? "\e[30;48;5;195m" . $command . "\e[0m"

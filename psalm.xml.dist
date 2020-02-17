@@ -4,7 +4,7 @@
     xmlns="https://getpsalm.org/schema/config"
     name="Psalm for Psalm"
     useDocblockTypes="true"
-    totallyTyped="true"
+    level="1"
     strictBinaryOperands="false"
     rememberPropertyAssignmentsAfterCall="true"
     checkForThrowsDocblock="false"
@@ -127,12 +127,6 @@
                 <referencedMethod name="Psalm\Codebase::getMethodReturnsByRef"/>
             </errorLevel>
         </PossiblyUnusedMethod>
-
-        <PropertyNotSetInConstructor>
-            <errorLevel type="suppress">
-                <file name="src/Psalm/Config.php"/>
-            </errorLevel>
-        </PropertyNotSetInConstructor>
 
         <InternalMethod>
             <errorLevel type="suppress">

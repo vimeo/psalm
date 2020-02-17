@@ -38,6 +38,15 @@ Configuration file may be split into several files using [XInclude](https://www.
 
 ### Coding style
 
+#### level
+
+```xml
+<psalm
+  level="[int]"
+/>
+```
+This corresponds to Psalm‘s [error-detection level](error_levels.md).
+
 #### totallyTyped
 
 ```xml

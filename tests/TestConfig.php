@@ -19,7 +19,7 @@ class TestConfig extends Config
 
         $this->throw_exception = true;
         $this->use_docblock_types = true;
-        $this->totally_typed = true;
+        $this->level = 1;
         $this->cache_directory = null;
 
         $this->base_dir = getcwd() . DIRECTORY_SEPARATOR;

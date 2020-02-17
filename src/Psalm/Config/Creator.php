@@ -19,15 +19,145 @@ use function preg_replace;
 use Psalm\Exception\ConfigCreationException;
 use function sort;
 use function str_replace;
+use function strpos;
+use function ksort;
+use function array_filter;
+use function array_sum;
+use function array_keys;
+use function max;
 
 class Creator
 {
+    const TEMPLATE = '<?xml version="1.0"?>
+<psalm
+    totallyTyped="true"
+    level="1"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+>
+    <projectFiles>
+        <directory name="src" />
+        <ignoreFiles>
+            <directory name="vendor" />
+        </ignoreFiles>
+    </projectFiles>
+</psalm>
+';
+
     public static function getContents(
         string $current_dir,
-        string $suggested_dir = null,
-        int $level = 3,
-        string $vendor_dir = 'vendor'
+        ?string $suggested_dir,
+        int $level,
+        string $vendor_dir
     ) : string {
+        $paths = self::getPaths($current_dir, $suggested_dir);
+
+        $template = str_replace(
+            '<directory name="src" />',
+            implode("\n        ", $paths),
+            self::TEMPLATE
+        );
+
+        $template = str_replace(
+            '<directory name="vendor" />',
+            '<directory name="' . $vendor_dir . '" />',
+            $template
+        );
+
+        if ($level > 1) {
+            $template = str_replace(
+                'totallyTyped="true"',
+                'totallyTyped="false"',
+                $template
+            );
+        }
+
+        $template = str_replace(
+            'level="1"',
+            'level="' . $level . '"',
+            $template
+        );
+
+        return $template;
+    }
+
+    public static function createBareConfig(
+        string $current_dir,
+        ?string $suggested_dir,
+        string $vendor_dir
+    ) : void {
+        $config_contents = self::getContents($current_dir, $suggested_dir, 1, $vendor_dir);
+
+        \Psalm\Config::loadFromXML($current_dir, $config_contents);
+    }
+
+    /**
+     * @param  array<\Psalm\Internal\Analyzer\IssueData>  $issues
+     */
+    public static function getLevel(array $issues, int $counted_types) : int
+    {
+        if ($counted_types === 0) {
+            $counted_types = 1;
+        }
+
+        $issues_at_level = [];
+
+        foreach ($issues as $issue) {
+            $issue_type = $issue->type;
+            $issue_level = $issue->error_level;
+
+            if ($issue_level < 1) {
+                continue;
+            }
+
+            // exclude some directories that are probably ignorable
+            if (strpos($issue->file_path, 'vendor') || strpos($issue->file_path, 'stub')) {
+                continue;
+            }
+
+            if (!isset($issues_at_level[$issue_level][$issue_type])) {
+                $issues_at_level[$issue_level][$issue_type] = 0;
+            }
+
+            $issues_at_level[$issue_level][$issue_type] += 100/$counted_types;
+        }
+
+        foreach ($issues_at_level as $level => $issues) {
+            ksort($issues);
+
+            // remove any issues where < 0.1% of expressions are affected
+            $filtered_issues = array_filter(
+                $issues,
+                function ($amount) {
+                    return $amount > 0.1;
+                }
+            );
+
+            if (array_sum($filtered_issues) > 0.5) {
+                $issues_at_level[$level] = $filtered_issues;
+            } else {
+                unset($issues_at_level[$level]);
+            }
+        }
+
+        if (!$issues_at_level) {
+            return 1;
+        }
+
+        if (count($issues_at_level) === 1) {
+            return array_keys($issues_at_level)[0] + 1;
+        }
+
+        return max(...array_keys($issues_at_level)) + 1;
+    }
+
+    /**
+     * @return non-empty-list<string>
+     */
+    public static function getPaths(string $current_dir, ?string $suggested_dir)
+    {
         $replacements = [];
 
         if ($suggested_dir) {
@@ -69,31 +199,11 @@ class Creator
             }
         }
 
-        $template_file_name = dirname(__DIR__, 3) . '/assets/config_levels/' . $level . '.xml';
-
-        if (!file_exists($template_file_name)) {
-            throw new ConfigCreationException('Could not open config template ' . $template_file_name);
-        }
-
-        $template = (string)file_get_contents($template_file_name);
-
-        $template = str_replace(
-            '<directory name="src" />',
-            implode("\n        ", $replacements),
-            $template
-        );
-
-        $template = str_replace(
-            '<directory name="vendor" />',
-            '<directory name="' . $vendor_dir . '" />',
-            $template
-        );
-
-        return $template;
+        return $replacements;
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
      */
@@ -141,7 +251,7 @@ class Creator
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     private static function guessPhpFileDirs(string $current_dir) : array
     {
@@ -174,6 +284,6 @@ class Creator
             }
         }
 
-        return \array_unique($nodes);
+        return \array_values(\array_unique($nodes));
     }
 }

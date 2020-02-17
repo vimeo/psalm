@@ -1348,6 +1348,14 @@ class ProjectAnalyzer
             return 1;
         }
 
+        if (\ini_get('pcre.jit') === '1'
+            && \PHP_OS === 'Darwin'
+            && \version_compare(\PHP_VERSION, '7.3.0') >= 0
+            && \version_compare(\PHP_VERSION, '7.4.0') < 0
+        ) {
+            return 1;
+        }
+
         if (!extension_loaded('pcntl')) {
             return 1;
         }

@@ -74,7 +74,11 @@ use function getcwd;
 use function chdir;
 use function simplexml_import_dom;
 use const LIBXML_NONET;
+use function is_a;
 
+/**
+ * @psalm-suppress PropertyNotSetInConstructor
+ */
 class Config
 {
     const DEFAULT_FILE_NAME = 'psalm.xml';
@@ -240,6 +244,9 @@ class Config
 
     /** @var bool */
     public $totally_typed = false;
+
+    /** @var 1|2|3|4|5|6|7|8 */
+    public $level = 1;
 
     /** @var bool */
     public $strict_binary_operands = false;
@@ -822,6 +829,22 @@ class Config
             $config->find_unused_variables = $attribute_text === 'true' || $attribute_text === '1';
         }
 
+        if (isset($config_xml['level'])) {
+            $attribute_text = (int) $config_xml['level'];
+
+            if (!in_array($attribute_text, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
+                throw new Exception\ConfigException(
+                    'Invalid error level ' . $config_xml['level']
+                );
+            }
+
+            $config->level = $attribute_text;
+        }
+
+        if ($config->totally_typed) {
+            $config->level = 1;
+        }
+
         if (isset($config_xml['errorBaseline'])) {
             $attribute_text = (string) $config_xml['errorBaseline'];
             $config->error_baseline = $attribute_text;
@@ -1229,10 +1252,6 @@ class Config
      */
     public function reportIssueInFile($issue_type, $file_path)
     {
-        if (!$this->totally_typed && in_array($issue_type, self::MIXED_ISSUES, true)) {
-            return false;
-        }
-
         if ($this->mustBeIgnored($file_path)) {
             return false;
         }
@@ -1344,6 +1363,18 @@ class Config
             return 'PossiblyUndefinedArrayOffset';
         }
 
+        if ($issue_type === 'PossiblyNullReference') {
+            return 'NullReference';
+        }
+
+        if ($issue_type === 'PossiblyFalseReference') {
+            return null;
+        }
+
+        if ($issue_type === 'PossiblyUndefinedArrayOffset') {
+            return null;
+        }
+
         if (strpos($issue_type, 'Possibly') === 0) {
             $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type);
 
@@ -1354,7 +1385,7 @@ class Config
             return $stripped_issue_type;
         }
 
-        if (preg_match('/^(False|Null)[A-Z]/', $issue_type)) {
+        if (preg_match('/^(False|Null)[A-Z]/', $issue_type) && !strpos($issue_type, 'Reference')) {
             return preg_replace('/^(False|Null)/', 'Invalid', $issue_type);
         }
 
@@ -1434,6 +1465,19 @@ class Config
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForFile($file_path);
+        }
+
+        $issue_class = 'Psalm\\Issue\\' . $issue_type;
+
+        if (!class_exists($issue_class) || !is_a($issue_class, \Psalm\Issue\CodeIssue::class, true)) {
+            return self::REPORT_ERROR;
+        }
+
+        /** @var int */
+        $issue_level = $issue_class::ERROR_LEVEL;
+
+        if ($issue_level > 0 && $issue_level < $this->level) {
+            return self::REPORT_INFO;
         }
 
         return self::REPORT_ERROR;

@@ -516,7 +516,14 @@ class CallAnalyzer
                         . ':' . (int)$arg->value->getAttribute('startFilePos')
                         . ':-:closure';
 
-                    $closure_storage = $codebase->getClosureStorage($statements_analyzer->getFilePath(), $closure_id);
+                    try {
+                        $closure_storage = $codebase->getClosureStorage(
+                            $statements_analyzer->getFilePath(),
+                            $closure_id
+                        );
+                    } catch (\UnexpectedValueException $e) {
+                        continue;
+                    }
 
                     foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
                         if ($replaced_type_part instanceof Type\Atomic\TCallable
