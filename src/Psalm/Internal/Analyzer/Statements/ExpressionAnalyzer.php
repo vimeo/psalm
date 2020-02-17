@@ -1097,7 +1097,7 @@ class ExpressionAnalyzer
                     $resolved_name = $stmt->dim->class->getAttribute('resolvedName');
 
                     if ($resolved_name) {
-                        $offset = strtolower($resolved_name) . '::' . $stmt->dim->name;
+                        $offset = $resolved_name . '::' . $stmt->dim->name;
                     }
                 }
 
