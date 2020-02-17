@@ -294,11 +294,30 @@ if ($config->resolve_from_config_file) {
     chdir($current_dir);
 }
 
-$threads = isset($options['threads'])
-    ? (int)$options['threads']
-    : max(1, ProjectAnalyzer::getCpuCount() - 2);
+$in_ci = isset($_SERVER['TRAVIS'])
+    || isset($_SERVER['CIRCLECI'])
+    || isset($_SERVER['APPVEYOR'])
+    || isset($_SERVER['JENKINS_URL'])
+    || isset($_SERVER['SCRUTINIZER'])
+    || isset($_SERVER['GITLAB_CI'])
+    || isset($_SERVER['GITHUB_WORKFLOW']);
 
-if ($threads === 1
+// disable progressbar on CI
+if ($in_ci) {
+    $options['long-progress'] = true;
+}
+
+if (isset($options['threads'])) {
+    $threads = (int)$options['threads'];
+} elseif (isset($options['debug']) || $in_ci) {
+    $threads = 1;
+} else {
+    $threads = max(1, ProjectAnalyzer::getCpuCount() - 2);
+}
+
+if (!isset($options['threads'])
+    && !isset($options['debug'])
+    && $threads === 1
     && ini_get('pcre.jit') === '1'
     && PHP_OS === 'Darwin'
     && version_compare(PHP_VERSION, '7.3.0') >= 0
@@ -431,18 +450,6 @@ if (isset($options['clear-global-cache'])) {
     }
 
     exit;
-}
-
-// disable progressbar on CI
-if (isset($_SERVER['TRAVIS'])
-    || isset($_SERVER['CIRCLECI'])
-    || isset($_SERVER['APPVEYOR'])
-    || isset($_SERVER['JENKINS_URL'])
-    || isset($_SERVER['SCRUTINIZER'])
-    || isset($_SERVER['GITLAB_CI'])
-    || isset($_SERVER['GITHUB_WORKFLOW'])
-) {
-    $options['long-progress'] = true;
 }
 
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
