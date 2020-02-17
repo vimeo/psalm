@@ -1276,6 +1276,18 @@ class TypeAnalyzer
             return false;
         }
 
+        if ($input_type_part instanceof Type\Atomic\TLowercaseString
+            && $container_type_part instanceof TLiteralString
+            && strtolower($container_type_part->value) === $container_type_part->value
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_scalar = true;
+            }
+
+            return false;
+        }
+
         if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
             && ($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
         ) {
