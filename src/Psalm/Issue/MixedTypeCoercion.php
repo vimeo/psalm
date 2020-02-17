@@ -7,4 +7,5 @@ namespace Psalm\Issue;
  */
 class MixedTypeCoercion extends ArgumentIssue
 {
+    const LEVEL = -1;
 }

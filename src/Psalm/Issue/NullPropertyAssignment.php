@@ -7,4 +7,5 @@ namespace Psalm\Issue;
  */
 class NullPropertyAssignment extends CodeIssue
 {
+    const LEVEL = -1;
 }

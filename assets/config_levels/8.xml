@@ -122,7 +122,6 @@
 
         <!-- level 7 issues - even worse -->
 
-        <UndefinedThisPropertyAssignment errorLevel="info" />
         <UndefinedPropertyAssignment errorLevel="info" />
         <UndefinedThisPropertyFetch errorLevel="info" />
         <UndefinedPropertyFetch errorLevel="info" />

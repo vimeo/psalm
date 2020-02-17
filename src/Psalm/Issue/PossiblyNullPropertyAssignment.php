@@ -7,4 +7,5 @@ namespace Psalm\Issue;
  */
 class PossiblyNullPropertyAssignment extends CodeIssue
 {
+    const LEVEL = 4;
 }

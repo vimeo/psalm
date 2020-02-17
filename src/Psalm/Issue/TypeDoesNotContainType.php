@@ -3,4 +3,5 @@ namespace Psalm\Issue;
 
 class TypeDoesNotContainType extends CodeIssue
 {
+    const LEVEL = 5;
 }
