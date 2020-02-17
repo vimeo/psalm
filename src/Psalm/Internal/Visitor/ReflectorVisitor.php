@@ -579,6 +579,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Cast\Object_) {
             $this->codebase->scanner->queueClassLikeForScanning('stdClass', null, false, false);
+            $this->file_storage->referenced_classlikes['stdclass'] = 'stdClass';
         }
     }
 
