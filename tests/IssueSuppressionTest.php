@@ -255,6 +255,13 @@ class IssueSuppressionTest extends TestCase
                      */
                     new B();',
             ],
+            'duplicateCoreFunction' => [
+                '<?php
+                    /**
+                     * @psalm-suppress DuplicateFunction
+                     */
+                    function fopen() {}',
+            ],
             'excludeIssue' => [
                 '<?php
                     fooFoo();',
