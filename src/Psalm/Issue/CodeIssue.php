@@ -9,7 +9,7 @@ use function array_pop;
 
 abstract class CodeIssue
 {
-    const LEVEL = -1;
+    const ERROR_LEVEL = -1;
 
     /**
      * @var CodeLocation

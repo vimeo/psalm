@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class PossiblyInvalidArrayAssignment extends CodeIssue
 {
-    const LEVEL = 4;
+    const ERROR_LEVEL = 3;
 }

@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class DeprecatedFunction extends FunctionIssue
 {
-    const LEVEL = 3;
+    const ERROR_LEVEL = 2;
 }

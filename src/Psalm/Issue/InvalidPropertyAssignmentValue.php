@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class InvalidPropertyAssignmentValue extends PropertyIssue
 {
-    const LEVEL = 7;
+    const ERROR_LEVEL = 6;
 }

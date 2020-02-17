@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class UninitializedProperty extends PropertyIssue
 {
-    const LEVEL = 8;
+    const ERROR_LEVEL = 7;
 }

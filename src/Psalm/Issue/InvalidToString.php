@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class InvalidToString extends CodeIssue
 {
-    const LEVEL = 5;
+    const ERROR_LEVEL = 4;
 }

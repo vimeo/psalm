@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class InvalidScalarArgument extends ArgumentIssue
 {
-    const LEVEL = 5;
+    const ERROR_LEVEL = 4;
 }

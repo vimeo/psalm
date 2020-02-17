@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class PossiblyUndefinedVariable extends CodeIssue
 {
-    const LEVEL = 4;
+    const ERROR_LEVEL = 3;
 }

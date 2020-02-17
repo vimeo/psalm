@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class UndefinedMagicPropertyAssignment extends PropertyIssue
 {
-    const LEVEL = 5;
+    const ERROR_LEVEL = 4;
 }

@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class NullArgument extends ArgumentIssue
 {
-    const LEVEL = 7;
+    const ERROR_LEVEL = 6;
 }

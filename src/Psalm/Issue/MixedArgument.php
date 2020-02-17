@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class MixedArgument extends ArgumentIssue
 {
-    const LEVEL = -1;
+    const ERROR_LEVEL = 1;
 }

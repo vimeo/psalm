@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class NoInterfaceProperties extends ClassIssue
 {
-    const LEVEL = 5;
+    const ERROR_LEVEL = 4;
 }

@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class UnusedClass extends ClassIssue
 {
-    const LEVEL = -1;
+    const ERROR_LEVEL = -1;
 }

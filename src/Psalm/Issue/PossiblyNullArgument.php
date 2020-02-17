@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class PossiblyNullArgument extends ArgumentIssue
 {
-    const LEVEL = 4;
+    const ERROR_LEVEL = 3;
 }

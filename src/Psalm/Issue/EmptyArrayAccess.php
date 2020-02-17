@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class EmptyArrayAccess extends CodeIssue
 {
-    const LEVEL = -1;
+    const ERROR_LEVEL = -1;
 }

@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class PossiblyFalseReference extends CodeIssue
 {
-    const LEVEL = 4;
+    const ERROR_LEVEL = 3;
 }

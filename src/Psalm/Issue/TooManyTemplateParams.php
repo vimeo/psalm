@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class TooManyTemplateParams extends CodeIssue
 {
-    const LEVEL = 7;
+    const ERROR_LEVEL = 6;
 }

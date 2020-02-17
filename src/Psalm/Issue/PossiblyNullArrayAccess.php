@@ -7,5 +7,5 @@ namespace Psalm\Issue;
  */
 class PossiblyNullArrayAccess extends CodeIssue
 {
-    const LEVEL = 4;
+    const ERROR_LEVEL = 3;
 }

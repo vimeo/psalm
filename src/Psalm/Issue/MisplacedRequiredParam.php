@@ -6,5 +6,5 @@ namespace Psalm\Issue;
  */
 class MisplacedRequiredParam extends CodeIssue
 {
-    const LEVEL = 3;
+    const ERROR_LEVEL = 2;
 }

@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class InternalMethod extends MethodIssue
 {
-    const LEVEL = 3;
+    const ERROR_LEVEL = 2;
 }

@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class PossiblyNullReference extends CodeIssue
 {
-    const LEVEL = 4;
+    const ERROR_LEVEL = 3;
 }
