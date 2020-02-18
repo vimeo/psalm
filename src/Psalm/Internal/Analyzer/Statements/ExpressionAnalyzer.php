@@ -1802,7 +1802,13 @@ class ExpressionAnalyzer
         PhpParser\Node\Expr\YieldFrom $stmt,
         Context $context
     ) {
+        $was_inside_call = $context->inside_call;
+
+        $context->inside_call = true;
+
         if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
+            $context->inside_call = $was_inside_call;
+
             return false;
         }
 
@@ -1829,6 +1835,8 @@ class ExpressionAnalyzer
             // this should be whatever the generator above returns, but *not* the return type
             $statements_analyzer->node_data->setType($stmt, $yield_from_type ?: Type::getMixed());
         }
+
+        $context->inside_call = $was_inside_call;
 
         return null;
     }
