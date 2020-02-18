@@ -825,12 +825,12 @@ class Config
             $config->find_unused_variables = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml['level'])) {
-            $attribute_text = (int) $config_xml['level'];
+        if (isset($config_xml['errorLevel'])) {
+            $attribute_text = (int) $config_xml['errorLevel'];
 
             if (!in_array($attribute_text, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
                 throw new Exception\ConfigException(
-                    'Invalid error level ' . $config_xml['level']
+                    'Invalid error level ' . $config_xml['errorLevel']
                 );
             }
 

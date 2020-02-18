@@ -4,7 +4,7 @@
     xmlns="https://getpsalm.org/schema/config"
     name="Psalm for Psalm"
     useDocblockTypes="true"
-    level="1"
+    errorLevel="1"
     strictBinaryOperands="false"
     rememberPropertyAssignmentsAfterCall="true"
     checkForThrowsDocblock="false"

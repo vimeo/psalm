@@ -69,6 +69,7 @@ $valid_long_options = [
     'include-php-versions', // used for baseline
     'track-tainted-input',
     'find-unused-psalm-suppress',
+    'error-level:',
 ];
 
 gc_collect_cycles();
@@ -217,8 +218,8 @@ $output_format = isset($options['output-format']) && is_string($options['output-
     ? $options['output-format']
     : \Psalm\Report::TYPE_CONSOLE;
 
-$level = null;
-$inferred_source_dir = null;
+$init_level = null;
+$init_source_dir = null;
 
 if (isset($options['i'])) {
     if (file_exists($current_dir . 'psalm.xml')) {
@@ -255,24 +256,24 @@ if (isset($options['i'])) {
                 die('Config strictness must be a number between 1 and 8 inclusive' . PHP_EOL);
             }
 
-            $level = (int)$args[1];
+            $init_level = (int)$args[1];
         }
 
-        $inferred_source_dir = $args[0];
+        $init_source_dir = $args[0];
     }
 
     $vendor_dir = getVendorDir($current_dir);
 
-    if ($level === null) {
+    if ($init_level === null) {
         echo "Calculating best config level based on project files\n";
-        Psalm\Config\Creator::createBareConfig($current_dir, $inferred_source_dir, $vendor_dir);
+        Psalm\Config\Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
         $config = \Psalm\Config::getInstance();
     } else {
         try {
             $template_contents = Psalm\Config\Creator::getContents(
                 $current_dir,
-                $inferred_source_dir,
-                $level,
+                $init_source_dir,
+                $init_level,
                 $vendor_dir
             );
         } catch (Psalm\Exception\ConfigCreationException $e) {
@@ -287,6 +288,20 @@ if (isset($options['i'])) {
     }
 } else {
     $config = initialiseConfig($path_to_config, $current_dir, $output_format, $first_autoloader);
+
+    if (isset($options['error-level'])
+        && is_numeric($options['error-level'])
+    ) {
+        $config_level = (int) $options['error-level'];
+
+        if (!in_array($config_level, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
+            throw new \Psalm\Exception\ConfigException(
+                'Invalid error level ' . $config_level
+            );
+        }
+
+        $config->level = $config_level;
+    }
 }
 
 if ($config->resolve_from_config_file) {
@@ -752,24 +767,24 @@ if (!isset($options['i'])) {
     $issues_by_file = IssueBuffer::getIssuesData();
 
     if (!$issues_by_file) {
-        $level = 1;
+        $init_level = 1;
     } else {
         $codebase = $project_analyzer->getCodebase();
         $mixed_counts = $codebase->analyzer->getTotalTypeCoverage($codebase);
 
-        $level = \Psalm\Config\Creator::getLevel(
+        $init_level = \Psalm\Config\Creator::getLevel(
             array_merge(...array_values($issues_by_file)),
             (int) array_sum($mixed_counts)
         );
     }
 
-    echo "\n" . 'Detected level ' . $level . ' as a suitable initial default' . "\n";
+    echo "\n" . 'Detected level ' . $init_level . ' as a suitable initial default' . "\n";
 
     try {
         $template_contents = Psalm\Config\Creator::getContents(
             $current_dir,
-            $inferred_source_dir,
-            $level,
+            $init_source_dir,
+            $init_level,
             $vendor_dir
         );
     } catch (Psalm\Exception\ConfigCreationException $e) {

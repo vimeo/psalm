@@ -31,7 +31,7 @@ class Creator
     const TEMPLATE = '<?xml version="1.0"?>
 <psalm
     totallyTyped="true"
-    level="1"
+    errorLevel="1"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
@@ -75,8 +75,8 @@ class Creator
         }
 
         $template = str_replace(
-            'level="1"',
-            'level="' . $level . '"',
+            'errorLevel="1"',
+            'errorLevel="' . $level . '"',
             $template
         );
 
