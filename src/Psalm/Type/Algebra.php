@@ -705,6 +705,10 @@ class Algebra
                     }
                 }
 
+                $creating_object_id = $right_clause->creating_object_id === $left_clause->creating_object_id
+                    ? $right_clause->creating_object_id
+                    : null;
+
                 $clauses[] = new Clause(
                     $possibilities,
                     false,
@@ -712,7 +716,9 @@ class Algebra
                     $right_clause->generated
                         || $left_clause->generated
                         || count($left_clauses) > 1
-                        || count($right_clauses) > 1
+                        || count($right_clauses) > 1,
+                    [],
+                    $creating_object_id
                 );
             }
         }
