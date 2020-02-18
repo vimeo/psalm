@@ -245,6 +245,11 @@ class Config
     /** @var 1|2|3|4|5|6|7|8 */
     public $level = 1;
 
+    /**
+     * @var bool
+     */
+    public $suppress_mixed_issues = false;
+
     /** @var bool */
     public $strict_binary_operands = false;
 
@@ -759,6 +764,7 @@ class Config
             'loadXdebugStub' => 'load_xdebug_stub',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
+            'suppressMixedIssues' => 'suppress_mixed_issues',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -1254,6 +1260,10 @@ class Config
      */
     public function reportIssueInFile($issue_type, $file_path)
     {
+        if ($this->suppress_mixed_issues && in_array($issue_type, self::MIXED_ISSUES, true)) {
+            return false;
+        }
+
         if ($this->mustBeIgnored($file_path)) {
             return false;
         }
