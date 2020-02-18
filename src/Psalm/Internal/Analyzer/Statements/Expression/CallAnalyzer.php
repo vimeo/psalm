@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
@@ -1808,21 +1809,33 @@ class CallAnalyzer
             $arg_type_param = $arg_type;
 
             if ($arg->unpack) {
-                if ($arg_type->hasArray()) {
-                    /**
-                     * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                     * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
-                     */
-                    $array_atomic_type = $arg_type->getAtomicTypes()['array'];
+                $arg_type_param = null;
 
-                    if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                        $arg_type_param = $array_atomic_type->getGenericValueType();
-                    } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
-                        $arg_type_param = $array_atomic_type->type_param;
-                    } else {
-                        $arg_type_param = $array_atomic_type->type_params[1];
+                foreach ($arg_type->getAtomicTypes() as $arg_atomic_type) {
+                    if ($arg_atomic_type instanceof Type\Atomic\TArray
+                        || $arg_atomic_type instanceof Type\Atomic\TList
+                        || $arg_atomic_type instanceof Type\Atomic\ObjectLike
+                    ) {
+                        if ($arg_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            $arg_type_param = $arg_atomic_type->getGenericValueType();
+                        } elseif ($arg_atomic_type instanceof Type\Atomic\TList) {
+                            $arg_type_param = $arg_atomic_type->type_param;
+                        } else {
+                            $arg_type_param = $arg_atomic_type->type_params[1];
+                        }
+                    } elseif ($arg_atomic_type instanceof Type\Atomic\TIterable) {
+                        $arg_type_param = $arg_atomic_type->type_params[1];
+                    } elseif ($arg_atomic_type instanceof Type\Atomic\TNamedObject) {
+                        ForeachAnalyzer::getKeyValueParamsForTraversableObject(
+                            $arg_atomic_type,
+                            $codebase,
+                            $key_type,
+                            $arg_type_param
+                        );
                     }
-                } else {
+                }
+
+                if (!$arg_type_param) {
                     $arg_type_param = Type::getMixed();
                 }
             }
