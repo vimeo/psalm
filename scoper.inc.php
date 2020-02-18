@@ -28,8 +28,8 @@ return [
         function ($filePath, $prefix, $contents) {
             if ($filePath === 'src/Psalm/Config.php') {
                 return str_replace(
-                    $prefix . '\Composer\Autoload\ClassLoader',
-                    'Composer\Autoload\ClassLoader',
+                    [$prefix . '\Composer\Autoload\ClassLoader', '\'Psalm\\\\Issue\\\\\''],
+                    ['Composer\Autoload\ClassLoader', '\'' . $prefix . '\\\\Psalm\\\\Issue\\\\\''],
                     $contents
                 );
             }

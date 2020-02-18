@@ -1469,6 +1469,7 @@ class Config
             return $this->issue_handlers[$issue_type]->getReportingLevelForFile($file_path);
         }
 
+        // this string is replaced by scoper for Phars, so be careful
         $issue_class = 'Psalm\\Issue\\' . $issue_type;
 
         if (!class_exists($issue_class) || !is_a($issue_class, \Psalm\Issue\CodeIssue::class, true)) {
