@@ -98,11 +98,19 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MixedReturnTypeCoercion](issues.md#mixedreturntypecoercion)
  - [MixedStringOffsetAssignment](issues.md#mixedstringoffsetassignment)
  - [MixedTypeCoercion](issues.md#mixedtypecoercion)
+ - [PossiblyNullOperand](issues.md#possiblynulloperand)
 
 ## Errors ignored at level 3 and higher
 
 These issues are treated as errors at level 2 and below.
 
+ - [DeprecatedClass](issues.md#deprecatedclass)
+ - [DeprecatedConstant](issues.md#deprecatedconstant)
+ - [DeprecatedFunction](issues.md#deprecatedfunction)
+ - [DeprecatedInterface](issues.md#deprecatedinterface)
+ - [DeprecatedMethod](issues.md#deprecatedmethod)
+ - [DeprecatedProperty](issues.md#deprecatedproperty)
+ - [DeprecatedTrait](issues.md#deprecatedtrait)
  - [DocblockTypeContradiction](issues.md#docblocktypecontradiction)
  - [InvalidDocblockParamName](issues.md#invaliddocblockparamname)
  - [InvalidFalsableReturnType](issues.md#invalidfalsablereturntype)
@@ -151,7 +159,6 @@ These issues are treated as errors at level 3 and below.
  - [PossiblyNullArrayOffset](issues.md#possiblynullarrayoffset)
  - [PossiblyNullFunctionCall](issues.md#possiblynullfunctioncall)
  - [PossiblyNullIterator](issues.md#possiblynulliterator)
- - [PossiblyNullOperand](issues.md#possiblynulloperand)
  - [PossiblyNullPropertyAssignment](issues.md#possiblynullpropertyassignment)
  - [PossiblyNullPropertyAssignmentValue](issues.md#possiblynullpropertyassignmentvalue)
  - [PossiblyNullPropertyFetch](issues.md#possiblynullpropertyfetch)
@@ -167,13 +174,6 @@ These issues are treated as errors at level 3 and below.
 
 These issues are treated as errors at level 4 and below.
 
- - [DeprecatedClass](issues.md#deprecatedclass)
- - [DeprecatedConstant](issues.md#deprecatedconstant)
- - [DeprecatedFunction](issues.md#deprecatedfunction)
- - [DeprecatedInterface](issues.md#deprecatedinterface)
- - [DeprecatedMethod](issues.md#deprecatedmethod)
- - [DeprecatedProperty](issues.md#deprecatedproperty)
- - [DeprecatedTrait](issues.md#deprecatedtrait)
  - [FalseOperand](issues.md#falseoperand)
  - [ForbiddenCode](issues.md#forbiddencode)
  - [ImplementedParamTypeMismatch](issues.md#implementedparamtypemismatch)
