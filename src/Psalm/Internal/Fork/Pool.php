@@ -204,6 +204,7 @@ class Pool
             // Serialize this child's produced results and send them to the parent.
             $process_done_message = new ForkProcessDoneMessage($results ?: []);
         } catch (\Throwable $t) {
+            /** @psalm-suppress MixedArgument on Windows, for some reason */
             $process_done_message = new ForkProcessErrorMessage($t->getMessage());
         }
 
