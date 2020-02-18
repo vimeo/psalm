@@ -895,6 +895,12 @@ class ArrayAccessTest extends TestCase
                         }
                     }'
             ],
+            'simpleXmlArrayFetch' => [
+                '<?php
+                    function foo(SimpleXMLElement $s) : SimpleXMLElement {
+                        return $s["a"];
+                    }',
+            ],
         ];
     }
 

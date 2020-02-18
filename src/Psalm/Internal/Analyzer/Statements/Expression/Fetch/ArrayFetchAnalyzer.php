@@ -1111,7 +1111,7 @@ class ArrayFetchAnalyzer
 
             if ($type instanceof TNamedObject) {
                 if (strtolower($type->value) === 'simplexmlelement') {
-                    $array_access_type = Type::getMixed();
+                    $array_access_type = new Type\Union([new TNamedObject('SimpleXMLElement')]);
                 } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
                     $old_data_provider = $statements_analyzer->node_data;
 

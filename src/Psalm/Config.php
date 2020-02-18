@@ -962,7 +962,7 @@ class Config
                         $plugin_config = $plugin->children();
                     }
 
-                    $config->addPluginClass($plugin_class_name, $plugin_config);
+                    $config->addPluginClass((string) $plugin_class_name, $plugin_config);
                 }
             }
         }
