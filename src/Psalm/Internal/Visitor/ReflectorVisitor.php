@@ -3273,8 +3273,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             if ($property_storage->type
                 && $property_storage->type !== $property_storage->signature_type
-                && (!$property_storage->signature_type
-                    || $doc_var_group_type !== $property_storage->signature_type->getId())
             ) {
                 if (!$property_storage->signature_type) {
                     $property_storage->type_location = $doc_var_location;

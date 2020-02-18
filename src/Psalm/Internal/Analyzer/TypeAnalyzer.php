@@ -454,21 +454,27 @@ class TypeAnalyzer
                 $first_comparison_result = new TypeComparisonResult();
                 $second_comparison_result = new TypeComparisonResult();
 
-                $either_contains = self::isAtomicContainedBy(
+                $either_contains = (self::isAtomicContainedBy(
                     $codebase,
                     $type1_part,
                     $type2_part,
                     true,
                     false,
                     $first_comparison_result
-                ) || self::isAtomicContainedBy(
+                )
+                    && !$first_comparison_result->to_string_cast
+                ) || (self::isAtomicContainedBy(
                     $codebase,
                     $type2_part,
                     $type1_part,
                     true,
                     false,
                     $second_comparison_result
-                ) || ($first_comparison_result->type_coerced && $second_comparison_result->type_coerced);
+                )
+                    && !$second_comparison_result->to_string_cast
+                ) || ($first_comparison_result->type_coerced
+                    && $second_comparison_result->type_coerced
+                );
 
                 if ($either_contains) {
                     return true;

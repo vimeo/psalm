@@ -2594,7 +2594,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     }
 
     /**
-* @param  string[]   $suppressed_issues
+     * @param  string[]   $suppressed_issues
      */
     private static function handleLiteralEquality(
         string $assertion,

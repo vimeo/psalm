@@ -170,7 +170,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         if ($codebase->methods->methodExists(
             $method_id,
             $calling_function_id,
-            $calling_function_id !== $method_id ? $code_location : null,
+            !$calling_function_id
+                || strtolower($calling_function_id) !== strtolower((string) $method_id)
+                ? $code_location
+                : null,
             null,
             $code_location->file_path
         )) {
@@ -319,8 +322,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         if (!$declaring_method_id) {
             if ($method_name === '__construct'
-                || $method_id === 'Closure::__invoke'
-                || $method_id === 'Closure::fromcallable'
+                || ($method_id->fq_class_name === 'Closure'
+                    && ($method_id->method_name === 'fromcallable'
+                        || $method_id->method_name === '__invoke'))
             ) {
                 return null;
             }

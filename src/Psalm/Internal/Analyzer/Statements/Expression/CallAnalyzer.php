@@ -107,7 +107,7 @@ class CallAnalyzer
 
             if ((string) $method_id !== $source->getId()) {
                 if ($context->collect_initializations) {
-                    if (isset($context->initialized_methods[$method_id])) {
+                    if (isset($context->initialized_methods[(string) $method_id])) {
                         return;
                     }
 
@@ -115,7 +115,7 @@ class CallAnalyzer
                         $context->initialized_methods = [];
                     }
 
-                    $context->initialized_methods[$method_id] = true;
+                    $context->initialized_methods[(string) $method_id] = true;
                 }
 
                 $project_analyzer->getMethodMutations(

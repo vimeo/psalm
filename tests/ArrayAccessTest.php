@@ -1135,6 +1135,15 @@ class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
+            'simpleXmlArrayFetchResultCannotEqualString' => [
+                '<?php
+                    function foo(SimpleXMLElement $s) : void {
+                        $b = $s["a"];
+
+                        if ($b === "hello" || $b === "1") {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }
