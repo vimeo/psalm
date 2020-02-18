@@ -836,7 +836,7 @@ class Config
 
             $config->level = $attribute_text;
         } elseif (isset($config_xml['totallyTyped'])) {
-            $totally_typed = $config_xml['totallyTyped'];
+            $totally_typed = (string) $config_xml['totallyTyped'];
 
             if ($totally_typed === 'true' || $totally_typed === '1') {
                 $config->level = 1;
