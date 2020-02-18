@@ -59,8 +59,6 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [OverriddenPropertyAccess](issues.md#overriddenpropertyaccess)
  - [ParadoxicalCondition](issues.md#paradoxicalcondition)
  - [ParentNotFound](issues.md#parentnotfound)
- - [PossiblyUndefinedIntArrayOffset](issues.md#possiblyundefinedintarrayoffset)
- - [PossiblyUndefinedStringArrayOffset](issues.md#possiblyundefinedstringarrayoffset)
  - [TooFewArguments](issues.md#toofewarguments)
  - [UndefinedClass](issues.md#undefinedclass)
  - [UndefinedConstant](issues.md#undefinedconstant)
@@ -260,6 +258,8 @@ These issues are treated as errors at level 7 and below.
 ## Feature-specific errors
 
  - [ForbiddenEcho](issues.md#forbiddenecho)
+ - [PossiblyUndefinedIntArrayOffset](issues.md#possiblyundefinedintarrayoffset)
+ - [PossiblyUndefinedStringArrayOffset](issues.md#possiblyundefinedstringarrayoffset)
  - [PossiblyUnusedMethod](issues.md#possiblyunusedmethod)
  - [PossiblyUnusedParam](issues.md#possiblyunusedparam)
  - [PossiblyUnusedProperty](issues.md#possiblyunusedproperty)

@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class PossiblyUndefinedIntArrayOffset extends CodeIssue
 {
-    const LEVEL = -2;
+    const ERROR_LEVEL = -2;
 }
