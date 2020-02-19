@@ -47,6 +47,15 @@ Configuration file may be split into several files using [XInclude](https://www.
 ```
 This corresponds to Psalm‘s [error-detection level](error_levels.md).
 
+#### reportMixedIssues
+
+```xml
+<psalm
+  reportMixedIssues="[bool]"
+/>
+```
+Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s output. If not given, this defaults to `"false"` when `errorLevel` is 3 or higher, and `"true"` when the error level is 1 or 2.
+
 #### totallyTyped
 
 ```xml
@@ -54,7 +63,10 @@ This corresponds to Psalm‘s [error-detection level](error_levels.md).
   totallyTyped="[bool]"
 />
 ```
-Enabling this will make Psalm very strict, such that it needs to be able to evaluate the type of every single statement, and emitting a bevy of `Mixed*` issues if the types cannot be determined. Defaults to `false`.
+
+\(Deprecated\) Setting `totallyTyped` to `"true"` is equivalent to setting `errorLevel` to `"1"`. Setting `totallyTyped` to `"false"` is equivalent to setting `errorLevel` to `"2"` and `reportMixedIssues` to `"false"`
+
+
 
 #### resolveFromConfigFile
 
