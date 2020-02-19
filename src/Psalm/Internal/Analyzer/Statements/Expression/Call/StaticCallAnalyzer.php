@@ -145,7 +145,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
-                if (!$does_class_exist) {
+                if (!isset($context->phantom_classes[strtolower($fq_class_name)])
+                    && !$does_class_exist
+                ) {
                     $does_class_exist = ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,
                         $fq_class_name,

@@ -74,7 +74,9 @@ class ClassConstFetchAnalyzer
                 );
 
                 if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                    if (!$context->inside_class_exists || $stmt->name->name !== 'class') {
+                    if ((!$context->inside_class_exists || $stmt->name->name !== 'class')
+                        && !isset($context->phantom_classes[strtolower($fq_class_name)])
+                    ) {
                         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                             $statements_analyzer,
                             $fq_class_name,
