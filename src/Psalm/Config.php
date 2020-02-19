@@ -1260,7 +1260,7 @@ class Config
      */
     public function reportIssueInFile($issue_type, $file_path)
     {
-        if ($this->suppress_mixed_issues && in_array($issue_type, self::MIXED_ISSUES, true)) {
+        if (($this->suppress_mixed_issues || $this->level > 2) && in_array($issue_type, self::MIXED_ISSUES, true)) {
             return false;
         }
 
