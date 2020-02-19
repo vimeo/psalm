@@ -246,9 +246,9 @@ class Config
     public $level = 1;
 
     /**
-     * @var bool
+     * @var ?bool
      */
-    public $suppress_mixed_issues = false;
+    public $suppress_mixed_issues = null;
 
     /** @var bool */
     public $strict_binary_operands = false;
@@ -848,6 +848,10 @@ class Config
                 $config->level = 1;
             } else {
                 $config->level = 2;
+
+                if ($config->suppress_mixed_issues === null) {
+                    $config->suppress_mixed_issues = true;
+                }
             }
         } else {
             $config->level = 2;
