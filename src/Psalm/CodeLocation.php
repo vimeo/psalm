@@ -324,6 +324,7 @@ class CodeLocation
     }
 
     /**
+     * @psalm-suppress PossiblyUnusedMethod for convenience
      * @return PhpParser\Comment\Doc|null
      */
     public function getDocComment()
