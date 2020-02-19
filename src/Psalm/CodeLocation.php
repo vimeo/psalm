@@ -77,6 +77,9 @@ class CodeLocation
     /** @var int|null */
     private $docblock_line_number;
 
+    /** @var PhpParser\Comment\Doc|null */
+    private $doc_comment;
+
     /** @var null|int */
     private $regex_type;
 
@@ -121,6 +124,7 @@ class CodeLocation
         $this->text = $selected_text;
 
         $doc_comment = $stmt->getDocComment();
+        $this->doc_comment = $doc_comment;
         $this->preview_start = $doc_comment ? $doc_comment->getFilePos() : $this->file_start;
         $this->docblock_start_line_number = $doc_comment ? $doc_comment->getLine() : null;
         $this->raw_line_number = $stmt->getLine();
@@ -317,6 +321,14 @@ class CodeLocation
         }
 
         $this->end_line_number = $this->getLineNumber() + $newlines;
+    }
+
+    /**
+     * @return PhpParser\Comment\Doc|null
+     */
+    public function getDocComment()
+    {
+        return $this->doc_comment;
     }
 
     /**
