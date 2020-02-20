@@ -45,6 +45,11 @@ Some issue types allow the use of `referencedMethod` and `referencedClass` to is
       <referencedClass name="Bar\Bat\Baz" />
     </errorLevel>
   </UndefinedClass>
+  <PropertyNotSetInConstructor>
+    <errorLevel type="suppress">
+        <referencedProperty name="Symfony\Component\Validator\ConstraintValidator::$context" />
+    </errorLevel>
+  </PropertyNotSetInConstructor>
 </issueHandlers>
 ```
 
