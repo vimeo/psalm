@@ -29,8 +29,3 @@ composer install
 
 cd /tmp/testing-with-real-projects
 
-git clone git@github.com:muglug/you-are-using-it-wrong.git
-cd you-are-using-it-wrong
-git checkout 5d29951fd0c49570e566c3dd5118eb18dc9c67bb
-composer install
-~/project/psalm --monochrome
