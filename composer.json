@@ -44,7 +44,7 @@
         "brianium/paratest": "^4.0.0",
         "phpmyadmin/sql-parser": "5.1.0",
         "phpspec/prophecy": ">=1.9.0",
-        "phpunit/phpunit": "^7.5.16 || ^8.0",
+        "phpunit/phpunit": "^7.5.16 || ^8.5",
         "psalm/plugin-phpunit": "^0.9",
         "slevomat/coding-standard": "^5.0",
         "squizlabs/php_codesniffer": "^3.5",
