@@ -13,10 +13,10 @@ class XmlReport extends Report
      */
     public function create(): string
     {
-        $items = Array2XML::createXML(
+        $xml = Array2XML::createXML(
             'report',
             [
-                'item' => 
+                'item' => array_map(
                     function (IssueData $issue_data) {
                         return (array) $issue_data;
                     },
