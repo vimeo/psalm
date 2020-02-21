@@ -2022,6 +2022,50 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             return $type_to_invert;
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            if ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch) {
+                $array_type = self::getSimpleType(
+                    $codebase,
+                    $nodes,
+                    $stmt->var,
+                    $aliases,
+                    $file_source,
+                    $existing_class_constants,
+                    $fq_classlike_name
+                );
+
+                $dim_type = self::getSimpleType(
+                    $codebase,
+                    $nodes,
+                    $stmt->dim,
+                    $aliases,
+                    $file_source,
+                    $existing_class_constants,
+                    $fq_classlike_name
+                );
+
+                if ($array_type !== null && $dim_type !== null) {
+                    if ($dim_type->isSingleStringLiteral()) {
+                        $dim_value = $dim_type->getSingleStringLiteral()->value;
+                    } elseif ($dim_type->isSingleIntLiteral()) {
+                        $dim_value = $dim_type->getSingleIntLiteral()->value;
+                    } else {
+                        return null;
+                    }
+
+                    foreach ($array_type->getAtomicTypes() as $array_atomic_type) {
+                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            if (isset($array_atomic_type->properties[$dim_value])) {
+                                return clone $array_atomic_type->properties[$dim_value];
+                            }
+
+                            return null;
+                        }
+                    }
+                }
+            }
+        }
+
         return null;
     }
 
