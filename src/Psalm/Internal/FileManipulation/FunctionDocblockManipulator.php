@@ -131,7 +131,7 @@ class FunctionDocblockManipulator
             if ($param->var instanceof PhpParser\Node\Expr\Variable
                 && \is_string($param->var->name)
             ) {
-                $this->param_offsets[$param->var->name] = (int) $param->var->getAttribute('startFilePos');
+                $this->param_offsets[$param->var->name] = (int) $param->getAttribute('startFilePos');
 
                 if ($param->type) {
                     $this->param_typehint_offsets[$param->var->name] = [

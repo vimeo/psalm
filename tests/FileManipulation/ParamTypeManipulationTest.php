@@ -211,6 +211,29 @@ class ParamTypeManipulationTest extends FileManipulationTest
                 ['MissingParamType'],
                 true,
             ],
+            'addMissingByRefParamType' => [
+                '<?php
+                    class C {
+                        public function foo(&$bar) : void {
+                            $bar .= " me";
+                        }
+                    }
+
+                    $a = "hello";
+                    (new C)->foo($a);',
+                '<?php
+                    class C {
+                        public function foo(string &$bar) : void {
+                            $bar .= " me";
+                        }
+                    }
+
+                    $a = "hello";
+                    (new C)->foo($a);',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
         ];
     }
 }
