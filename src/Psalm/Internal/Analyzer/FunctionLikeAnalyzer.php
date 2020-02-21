@@ -321,7 +321,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         } elseif ($this->function instanceof Function_) {
             $cased_method_id = $this->function->name->name;
-            $context->calling_function_id = strtolower($cased_method_id);
+            $namespace_prefix = $this->getNamespace();
+            $context->calling_function_id = strtolower(
+                ($namespace_prefix !== null ? $namespace_prefix . '\\' : '') . $cased_method_id
+            );
         } else { // Closure
             if ($storage->return_type) {
                 $closure_return_type = ExpressionAnalyzer::fleshOutType(
