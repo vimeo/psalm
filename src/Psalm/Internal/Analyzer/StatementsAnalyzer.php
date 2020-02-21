@@ -2023,7 +2023,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            if ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch) {
+            if ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $stmt->dim
+            ) {
                 $array_type = self::getSimpleType(
                     $codebase,
                     $nodes,
