@@ -260,7 +260,8 @@ class Reflection
 
         $storage->is_static = $method->isStatic();
         $storage->abstract = $method->isAbstract();
-        $storage->mutation_free = $storage->external_mutation_free = $method_name_lc === '__construct';
+        $storage->mutation_free = $storage->external_mutation_free
+            = $method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone';
 
         $declaring_method_id = $declaring_class->name . '::' . $method_name_lc;
 

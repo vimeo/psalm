@@ -183,6 +183,7 @@
             <xs:element name="ImplementedParamTypeMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementedReturnTypeMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplicitToStringCast" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ImpureArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureByReferenceAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureMethodCall" type="IssueHandlerType" minOccurs="0" />

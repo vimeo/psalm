@@ -297,6 +297,42 @@ class ImmutableAnnotationTest extends TestCase
                         private function test(): void {}
                     }'
             ],
+            'canPassImmutableIntoImmutable' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Item {
+                        private int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function get(): int {
+                            return $this->i;
+                        }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Immutable {
+                        private $item;
+
+                        public function __construct(Item $item) {
+                            $this->item = $item;
+                        }
+
+                        public function get(): int {
+                            return $this->item->get();
+                        }
+                    }
+
+                    $item = new Item(5);
+                    new Immutable($item);',
+            ],
         ];
     }
 
@@ -458,6 +494,40 @@ class ImmutableAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'MissingImmutableAnnotation',
+            ],
+            'preventPassingMutableIntoImmutable' => [
+                '<?php
+                    class Item {
+                        private int $i = 0;
+
+                        public function mutate(): void {
+                            $this->i++;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function get(): int {
+                            return $this->i;
+                        }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Immutable {
+                        private $item;
+
+                        public function __construct(Item $item) {
+                            $this->item = $item;
+                        }
+
+                        public function get(): int {
+                            return $this->item->get();
+                        }
+                    }
+
+                    $item = new Item();
+                    new Immutable($item);',
+                'error_message' => 'ImpureArgument',
             ],
         ];
     }
