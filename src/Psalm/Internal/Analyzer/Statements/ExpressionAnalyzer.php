@@ -1945,7 +1945,7 @@ class ExpressionAnalyzer
         $atomic_types = $stmt_type->getAtomicTypes();
 
         while ($atomic_types) {
-            $atomic_type = array_pop($atomic_types);
+            $atomic_type = \array_pop($atomic_types);
 
             if ($atomic_type instanceof TString) {
                 $valid_strings[] = $atomic_type;
