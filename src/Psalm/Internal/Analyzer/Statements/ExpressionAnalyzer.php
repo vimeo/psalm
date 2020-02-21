@@ -1942,7 +1942,11 @@ class ExpressionAnalyzer
         $valid_strings = [];
         $castable_types = [];
 
-        foreach ($stmt_type->getAtomicTypes() as $atomic_type) {
+        $atomic_types = $stmt_type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
             if ($atomic_type instanceof TString) {
                 $valid_strings[] = $atomic_type;
                 continue;
@@ -1989,6 +1993,12 @@ class ExpressionAnalyzer
                 && isset($atomic_type->methods['__toString'])
             ) {
                 $castable_types[] = new TString();
+
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
 
                 continue;
             }
