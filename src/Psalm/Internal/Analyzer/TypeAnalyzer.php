@@ -874,6 +874,7 @@ class TypeAnalyzer
                     if ($allow_interface_equality
                         || ($input_type_part instanceof TArray
                             && !$input_type_part->type_params[1]->isEmpty())
+                        || $input_type_part instanceof ObjectLike
                     ) {
                         return true;
                     }
