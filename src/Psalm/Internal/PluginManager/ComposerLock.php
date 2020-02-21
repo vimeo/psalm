@@ -69,7 +69,7 @@ class ComposerLock
     }
 
     /**
-     * @return array<mixed,array{name:string,type:string,extra:array{psalm:array{pluginClass:string}}}>
+     * @return array<array{name:string,type:string,extra:array{psalm:array{pluginClass:string}}}>
      */
     private function getAllPluginPackages(): array
     {

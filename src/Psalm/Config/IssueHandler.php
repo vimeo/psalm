@@ -146,7 +146,7 @@ class IssueHandler
 
     /**
      * @return       string[]
-     * @psalm-return array<mixed, string>
+     * @psalm-return array<string>
      */
     public static function getAllIssueTypes()
     {
