@@ -143,14 +143,14 @@ class FunctionTemplateTest extends TestCase
                     /**
                      * @template TValue
                      *
-                     * @param array<mixed, TValue> $arr
+                     * @param array<TValue> $arr
                      */
                     function byRef(array &$arr) : void {}
 
                     $b = ["a" => 5, "c" => 6];
                     byRef($b);',
                 'assertions' => [
-                    '$b' => 'array<mixed, int>',
+                    '$b' => 'array<array-key, int>',
                 ],
             ],
             'mixedArrayPop' => [

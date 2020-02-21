@@ -1737,6 +1737,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof Atomic\TIterable) {
                 $clone_type = clone $type;
+                if ($clone_type->type_params[0]->isMixed()) {
+                    $clone_type->type_params[0] = Type::getArrayKey();
+                }
                 $array_types[] = new TArray($clone_type->type_params);
 
                 $did_remove_type = true;
@@ -2708,7 +2711,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             || $scalar_type === 'callable-string'
             || $scalar_type === 'trait-string'
         ) {
-            if ($existing_var_type->hasMixed() || $existing_var_type->hasScalar()) {
+            if ($existing_var_type->hasMixed()
+                || $existing_var_type->hasScalar()
+                || $existing_var_type->hasArrayKey()
+            ) {
                 if ($is_loose_equality) {
                     return $existing_var_type;
                 }

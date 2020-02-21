@@ -77,13 +77,19 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
                     ]);
                 }
 
+                $key_type = $key_type
+                    && (!isset($call_args[1])
+                        || ($second_arg_type && ((string) $second_arg_type === 'true')))
+                    ? $key_type
+                    : Type::getArrayKey();
+
+                if ($key_type->isMixed()) {
+                    $key_type = Type::getArrayKey();
+                }
+
                 return new Type\Union([
                     new Type\Atomic\TArray([
-                        $key_type
-                            && (!isset($call_args[1])
-                                || ($second_arg_type && ((string) $second_arg_type === 'true')))
-                            ? $key_type
-                            : Type::getArrayKey(),
+                        $key_type,
                         $value_type,
                     ]),
                 ]);

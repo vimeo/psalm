@@ -308,8 +308,8 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType('iterable');
             $existing_var_type->addType(new TArray(
                 [
-                    $iterable->type_params[0],
-                    $iterable->type_params[1],
+                    $iterable->type_params[0]->isMixed() ? Type::getArrayKey() : clone $iterable->type_params[0],
+                    clone $iterable->type_params[1],
                 ]
             ));
         } elseif (strtolower($assertion) === 'int'

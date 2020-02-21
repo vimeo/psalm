@@ -465,7 +465,7 @@ class FunctionCallTest extends TestCase
 
                     $a = iterator_to_array(generator());',
                 'assertions' => [
-                    '$a' => 'array<mixed, stdClass>',
+                    '$a' => 'array<array-key, stdClass>',
                 ],
             ],
             'iteratorToArrayWithGetIterator' => [

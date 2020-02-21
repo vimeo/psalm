@@ -222,8 +222,12 @@ trait GenericTrait
      */
     public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
     {
-        foreach ($this->type_params as $type_param) {
+        foreach ($this->type_params as $offset => $type_param) {
             $type_param->replaceTemplateTypesWithArgTypes($template_types, $codebase);
+
+            if ($this instanceof Atomic\TArray && $offset === 0 && $type_param->isMixed()) {
+                $this->type_params[0] = \Psalm\Type::getArrayKey();
+            }
         }
 
         if ($this instanceof TGenericObject) {
