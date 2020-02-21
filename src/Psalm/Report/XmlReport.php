@@ -15,9 +15,9 @@ class XmlReport extends Report
     {
         $items = array_map(
             /**
-             * @return array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
+             * @return array{severity: string, line_from: int, line_to: int, type: string, message: string,
              * file_name: string, file_path: string, snippet: string, from: int, to: int,
-             * snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}>
+             * snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}
              */
             function (IssueData $issue_data) {
                 return [
