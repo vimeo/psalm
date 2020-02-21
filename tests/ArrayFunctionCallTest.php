@@ -1297,6 +1297,22 @@ class ArrayFunctionCallTest extends TestCase
 
                     return array_map(fn ($a, $b) => [$a => $b], $as, $bs);'
             ],
+            'allowUnpackWithArrayKey' => [
+                '<?php
+                    class Foo {
+                        protected function one(): array {
+                            return [];
+                        }
+
+                        protected function two(): array {
+                            return [];
+                        }
+
+                        public function three(): array {
+                            return [...$this->one(), ...$this->two()];
+                        }
+                    }'
+            ],
         ];
     }
 
