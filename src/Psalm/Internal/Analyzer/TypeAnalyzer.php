@@ -1053,6 +1053,12 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof TArrayKey
+            && $input_type_part instanceof TNumeric
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TArrayKey
             && ($input_type_part instanceof TInt
                 || $input_type_part instanceof TString
                 || $input_type_part instanceof Type\Atomic\TTemplateKeyOf)
