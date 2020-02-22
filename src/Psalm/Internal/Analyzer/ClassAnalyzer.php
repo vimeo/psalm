@@ -22,6 +22,7 @@ use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MissingTemplateParam;
+use Psalm\Issue\MutableDependency;
 use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\ReservedWord;
@@ -321,6 +322,20 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         new MissingImmutableAnnotation(
                             $parent_fq_class_name . ' is marked immutable, but '
                                 . $fq_class_name . ' is not marked immutable',
+                            $code_location
+                        ),
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if ($storage->mutation_free
+                    && !$parent_class_storage->mutation_free
+                ) {
+                    if (IssueBuffer::accepts(
+                        new MutableDependency(
+                            $fq_class_name . ' is marked immutable but ' . $parent_fq_class_name . ' is not',
                             $code_location
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
@@ -1425,6 +1440,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new DeprecatedTrait(
                             'Trait ' . $fq_trait_name . ' is deprecated',
+                            new CodeLocation($this, $trait_name)
+                        ),
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if ($storage->mutation_free && !$trait_storage->mutation_free) {
+                    if (IssueBuffer::accepts(
+                        new MutableDependency(
+                            $storage->name . ' is marked immutable but ' . $fq_trait_name . ' is not',
                             new CodeLocation($this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()

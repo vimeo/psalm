@@ -333,6 +333,44 @@ class ImmutableAnnotationTest extends TestCase
                     $item = new Item(5);
                     new Immutable($item);',
             ],
+            'preventNonImmutableTraitInImmutableClass' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    trait ImmutableTrait {
+                        public int $i = 0;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    final class NotReallyImmutableClass {
+                        use ImmutableTrait;
+                    }',
+            ],
+            'preventImmutableClassInheritingMutableParent' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class ImmutableParent {
+                        public int $i = 0;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    final class ImmutableClass extends ImmutableParent {}',
+            ],
         ];
     }
 
@@ -528,6 +566,40 @@ class ImmutableAnnotationTest extends TestCase
                     $item = new Item();
                     new Immutable($item);',
                 'error_message' => 'ImpureArgument',
+            ],
+            'preventNonImmutableTraitInImmutableClass' => [
+                '<?php
+                    trait MutableTrait {
+                        public int $i = 0;
+
+                        public function increment() : void {
+                            $this->i++;
+                        }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    final class NotReallyImmutableClass {
+                        use MutableTrait;
+                    }',
+                'error_message' => 'MutableDependency'
+            ],
+            'preventImmutableClassInheritingMutableParent' => [
+                '<?php
+                    class MutableParent {
+                        public int $i = 0;
+
+                        public function increment() : void {
+                            $this->i++;
+                        }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    final class NotReallyImmutableClass extends MutableParent {}',
+                'error_message' => 'MutableDependency'
             ],
         ];
     }

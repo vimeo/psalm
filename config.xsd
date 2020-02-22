@@ -271,6 +271,7 @@
             <xs:element name="MixedPropertyTypeCoercion" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificImplementedParamType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MutableDependency" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="NoInterfaceProperties" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullableReturnStatement" type="IssueHandlerType" minOccurs="0" />
