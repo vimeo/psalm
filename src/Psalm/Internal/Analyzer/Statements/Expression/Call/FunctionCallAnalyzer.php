@@ -1088,6 +1088,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $stmt,
                         $context->self,
                         $statements_analyzer,
+                        $codebase,
                         $context->inside_negation
                     );
                 }

@@ -1251,6 +1251,15 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'preventAlwaysReturningInt' => [
+                '<?php
+                    function returnsInt(): int {
+                        return 3;
+                    }
+
+                    if (is_int(returnsInt())) {}',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }
