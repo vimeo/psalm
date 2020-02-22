@@ -2012,6 +2012,10 @@ class AssertionFinder
         Codebase $codebase,
         bool $negate
     ) : void {
+        if ($first_var_type->hasMixed()) {
+            return;
+        }
+
         $always_contains = TypeAnalyzer::isContainedBy(
             $codebase,
             $expected_type,
