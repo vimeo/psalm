@@ -188,7 +188,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayMixedOrStringKeys' => [
-                'array<int|mixed|string, string>',
+                'array<array-key, string>',
                 [
                     'array<int|string,string>',
                     'array<mixed,string>',

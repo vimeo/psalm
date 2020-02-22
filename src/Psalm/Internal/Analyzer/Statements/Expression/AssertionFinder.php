@@ -2016,22 +2016,15 @@ class AssertionFinder
             return;
         }
 
-        $always_contains = TypeAnalyzer::isContainedBy(
-            $codebase,
-            $expected_type,
-            $first_var_type
-        );
-
-        $never_contains = !TypeAnalyzer::isContainedBy(
+        if (!TypeAnalyzer::isContainedBy(
             $codebase,
             $first_var_type,
             $expected_type
-        );
+        )) {
+            return;
+        }
 
-        /** @psalm-suppress ParadoxicalCondition */
-        if (($always_contains && !$negate)
-            || ($never_contains && $negate)
-        ) {
+        if (!$negate) {
             if ($first_var_type->from_docblock) {
                 if (IssueBuffer::accepts(
                     new RedundantConditionGivenDocblockType(
@@ -2053,9 +2046,7 @@ class AssertionFinder
                     // fall through
                 }
             }
-        } elseif (($always_contains && $negate)
-            || ($never_contains && !$negate)
-        ) {
+        } else {
             if ($first_var_type->from_docblock) {
                 if (IssueBuffer::accepts(
                     new DocblockTypeContradiction(

@@ -1047,7 +1047,7 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof TNumeric &&
-            ($input_type_part->isNumericType() || $input_type_part instanceof TString)
+            $input_type_part->isNumericType()
         ) {
             return true;
         }
