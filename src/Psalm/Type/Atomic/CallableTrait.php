@@ -334,6 +334,7 @@ trait CallableTrait
         array $suppressed_issues,
         array $phantom_classes = [],
         bool $inferred = true,
+        bool $inherited = false,
         bool $prevent_template_covariance = false
     ) {
         if ($this->params) {
@@ -345,6 +346,7 @@ trait CallableTrait
                         $suppressed_issues,
                         $phantom_classes,
                         $inferred,
+                        $inherited,
                         $prevent_template_covariance
                     );
                 }
@@ -358,6 +360,7 @@ trait CallableTrait
                 $suppressed_issues,
                 $phantom_classes,
                 $inferred,
+                $inherited,
                 $prevent_template_covariance
             );
         }

@@ -950,6 +950,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $storage->suppressed_issues,
                         [],
                         false,
+                        false,
                         $this->function instanceof ClassMethod
                             && strtolower($this->function->name->name) !== '__construct'
                     ) === false) {

@@ -38,6 +38,37 @@ class DeprecatedAnnotationTest extends TestCase
                     /** @deprecated */
                     $a = "A";'
             ],
+            'noNoticeOnInheritance' => [
+                '<?php
+                    /**
+                     * @deprecated
+                     */
+                    class Foo {}
+
+                    interface Iface {
+                        /**
+                         * @psalm-suppress DeprecatedClass
+                         * @return Foo[]
+                         */
+                        public function getFoos();
+
+                        /**
+                         * @psalm-suppress DeprecatedClass
+                         * @return Foo[]
+                         */
+                        public function getDifferentFoos();
+                    }
+
+                    class Impl implements Iface {
+                        public function getFoos(): array {
+                            return [];
+                        }
+
+                        public function getDifferentFoos() {
+                            return [];
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -96,11 +127,11 @@ class DeprecatedAnnotationTest extends TestCase
             'deprecatedPropertyGet' => [
                 '<?php
                     class A{
-                      /**
-                       * @deprecated
-                       * @var ?int
-                       */
-                      public $foo;
+                        /**
+                         * @deprecated
+                         * @var ?int
+                         */
+                        public $foo;
                     }
                     echo (new A)->foo;',
                 'error_message' => 'DeprecatedProperty',
@@ -108,11 +139,11 @@ class DeprecatedAnnotationTest extends TestCase
             'deprecatedPropertySet' => [
                 '<?php
                     class A{
-                      /**
-                       * @deprecated
-                       * @var ?int
-                       */
-                      public $foo;
+                        /**
+                         * @deprecated
+                         * @var ?int
+                         */
+                        public $foo;
                     }
                     $a = new A;
                     $a->foo = 5;',

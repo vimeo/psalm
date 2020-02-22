@@ -430,6 +430,7 @@ class ObjectLike extends \Psalm\Type\Atomic
         array $suppressed_issues,
         array $phantom_classes = [],
         bool $inferred = true,
+        bool $inherited = false,
         bool $prevent_template_covariance = false
     ) {
         if ($this->checked) {
@@ -443,6 +444,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                 $suppressed_issues,
                 $phantom_classes,
                 $inferred,
+                $inherited,
                 $prevent_template_covariance
             );
         }

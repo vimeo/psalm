@@ -745,7 +745,8 @@ class ReturnTypeAnalyzer
             $storage->return_type_location,
             $storage->suppressed_issues,
             [],
-            false
+            false,
+            $storage instanceof MethodStorage && $storage->inherited_return_type
         ) === false) {
             return false;
         }

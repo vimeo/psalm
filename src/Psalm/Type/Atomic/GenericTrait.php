@@ -268,6 +268,7 @@ trait GenericTrait
         array $suppressed_issues,
         array $phantom_classes = [],
         bool $inferred = true,
+        bool $inherited = false,
         bool $prevent_template_covariance = false
     ) {
         $codebase = $source->getCodebase();
@@ -327,6 +328,7 @@ trait GenericTrait
                 $suppressed_issues,
                 $phantom_classes,
                 $inferred,
+                $inherited,
                 $source instanceof \Psalm\Internal\Analyzer\MethodAnalyzer
                     && $source->getMethodName() !== '__construct'
                     && empty($expected_param_covariants[$i])

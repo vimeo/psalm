@@ -156,6 +156,7 @@ class TNamedObject extends Atomic
         array $suppressed_issues,
         array $phantom_classes = [],
         bool $inferred = true,
+        bool $inherited = false,
         bool $prevent_template_covariance = false
     ) {
         if ($this->checked) {
@@ -195,7 +196,8 @@ class TNamedObject extends Atomic
 
         $fq_class_name_lc = strtolower($this->value);
 
-        if ($codebase->classlike_storage_provider->has($fq_class_name_lc)
+        if (!$inherited
+            && $codebase->classlike_storage_provider->has($fq_class_name_lc)
             && $source->getFQCLN() !== $this->value
         ) {
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
@@ -220,6 +222,7 @@ class TNamedObject extends Atomic
             $suppressed_issues,
             $phantom_classes,
             $inferred,
+            $inherited,
             $prevent_template_covariance
         );
 
@@ -230,6 +233,7 @@ class TNamedObject extends Atomic
                 $suppressed_issues,
                 $phantom_classes,
                 $inferred,
+                $inherited,
                 $prevent_template_covariance
             );
         }
