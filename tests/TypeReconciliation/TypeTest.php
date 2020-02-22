@@ -1032,6 +1032,15 @@ class TypeTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'arrayKeyCanBeNumeric' => [
+                '<?php
+                    /** @param array<string> $arr */
+                    function foo(array $arr) : void {
+                        foreach ($arr as $k => $_) {
+                            if (is_numeric($k)) {}
+                        }
+                    }'
+            ],
         ];
     }
 

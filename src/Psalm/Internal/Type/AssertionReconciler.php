@@ -1321,6 +1321,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             } elseif ($type instanceof TScalar) {
                 $did_remove_type = true;
                 $numeric_types[] = new TNumeric();
+            } elseif ($type instanceof TArrayKey) {
+                $did_remove_type = true;
+                $numeric_types[] = $type;
             } elseif ($type instanceof TTemplateParam) {
                 $numeric_types[] = $type;
                 $did_remove_type = true;
