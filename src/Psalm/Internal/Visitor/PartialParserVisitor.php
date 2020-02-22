@@ -66,7 +66,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
      */
     public function enterNode(PhpParser\Node $node, &$traverseChildren = true)
     {
-        /** @var array{startFilePos: int, endFilePos: int} */
+        /** @var array{startFilePos: int, endFilePos: int, startLine: int} */
         $attrs = $node->getAttributes();
 
         if ($cs = $node->getComments()) {

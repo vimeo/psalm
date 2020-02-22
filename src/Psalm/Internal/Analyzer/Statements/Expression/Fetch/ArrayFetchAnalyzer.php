@@ -891,7 +891,7 @@ class ArrayFetchAnalyzer
 
                             $array_access_type = clone $type->previous_value_type;
                         } else {
-                            if ($type->sealed) {
+                            if ($type->sealed || !$context->inside_isset) {
                                 $object_like_keys = array_keys($type->properties);
 
                                 if (count($object_like_keys) === 1) {

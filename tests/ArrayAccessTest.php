@@ -1144,6 +1144,18 @@ class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'undefinedObjectLikeArrayOffset' => [
+                '<?php
+                    class Example {
+                        /**
+                         * @param array{a: string, b: int} $context
+                         */
+                        function foo(array $context): void {
+                            $context["c"];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset'
+            ],
         ];
     }
 }

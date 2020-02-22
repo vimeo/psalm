@@ -1405,7 +1405,7 @@ class TypeAnalyzer
                 || $container_type_part instanceof THtmlEscapedString)
         ) {
             if ($input_type_part instanceof TLiteralString) {
-                return is_numeric($input_type_part->value);
+                return \is_numeric($input_type_part->value);
             }
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
