@@ -289,10 +289,18 @@ abstract class Type
             }
 
             if ($generic_type_value === 'array' || $generic_type_value === 'associative-array') {
+                if ($generic_params[0]->isMixed()) {
+                    $generic_params[0] = Type::getArrayKey();
+                }
+
                 return new TArray($generic_params);
             }
 
             if ($generic_type_value === 'non-empty-array') {
+                if ($generic_params[0]->isMixed()) {
+                    $generic_params[0] = Type::getArrayKey();
+                }
+
                 return new Type\Atomic\TNonEmptyArray($generic_params);
             }
 
