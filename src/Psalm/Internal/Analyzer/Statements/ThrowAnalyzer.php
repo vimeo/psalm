@@ -24,9 +24,11 @@ class ThrowAnalyzer
         PhpParser\Node\Stmt\Throw_ $stmt,
         Context $context
     ) {
+        $context->inside_throw = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
+        $context->inside_throw = false;
 
         if ($context->check_classes
             && ($throw_type = $statements_analyzer->node_data->getType($stmt->expr))

@@ -1397,14 +1397,12 @@ class CallAnalyzer
                 return false;
             }
 
-            if ((($function_storage
-                        && $function_storage->mutation_free
-                        && (!$function_storage instanceof \Psalm\Storage\MethodStorage
-                            || !$function_storage->mutation_free_inferred))
-                    || ($class_storage
-                        && $class_storage->mutation_free))
-                && !$statements_analyzer->node_data->isPureCompatible($arg->value)
+            if ($class_storage
+                && $class_storage->mutation_free
+                && $function_storage
+                && $function_storage->cased_name === '__construct'
                 && ($node_type = $statements_analyzer->node_data->getType($arg->value))
+                && !$context->inside_throw
             ) {
                 foreach ($node_type->getAtomicTypes() as $atomic_arg_type) {
                     if ($atomic_arg_type instanceof Type\Atomic\TNamedObject) {

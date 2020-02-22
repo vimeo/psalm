@@ -80,6 +80,13 @@ class Context
     public $inside_call = false;
 
     /**
+     * Whether or not we're inside a throw
+     *
+     * @var bool
+     */
+    public $inside_throw = false;
+
+    /**
      * Whether or not we're inside an assignment
      *
      * @var bool
