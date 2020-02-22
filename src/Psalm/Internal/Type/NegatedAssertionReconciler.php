@@ -1007,6 +1007,9 @@ class NegatedAssertionReconciler extends Reconciler
 
                     $non_numeric_types[] = $type;
                 }
+            } elseif ($type instanceof TArrayKey) {
+                $did_remove_type = true;
+                $non_numeric_types[] = new TString();
             } elseif (!$type->isNumericType()) {
                 $non_numeric_types[] = $type;
             } else {

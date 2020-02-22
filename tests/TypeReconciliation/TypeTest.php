@@ -1038,6 +1038,7 @@ class TypeTest extends \Psalm\Tests\TestCase
                     function foo(array $arr) : void {
                         foreach ($arr as $k => $_) {
                             if (is_numeric($k)) {}
+                            if (!is_numeric($k)) {}
                         }
                     }'
             ],
