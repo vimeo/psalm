@@ -949,7 +949,7 @@ class BinaryOpAnalyzer
                         ) {
                             if (IssueBuffer::accepts(
                                 new ImpureMethodCall(
-                                    'Cannot call an mutation-free method '
+                                    'Cannot call a possibly-mutating method '
                                         . $atomic_type->value . '::__toString from a pure context',
                                     new CodeLocation($statements_analyzer, $stmt)
                                 ),
@@ -979,7 +979,7 @@ class BinaryOpAnalyzer
                         ) {
                             if (IssueBuffer::accepts(
                                 new ImpureMethodCall(
-                                    'Cannot call an mutation-free method '
+                                    'Cannot call a possibly-mutating method '
                                         . $atomic_type->value . '::__toString from a pure context',
                                     new CodeLocation($statements_analyzer, $stmt)
                                 ),
