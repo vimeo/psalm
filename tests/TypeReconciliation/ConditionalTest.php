@@ -823,21 +823,47 @@ class ConditionalTest extends \Psalm\Tests\TestCase
             ],
             'scalarToBool' => [
                 '<?php
-                    /** @param mixed $s */
-                    function foo($s) : void {
-                        if (!is_scalar($s)) {
-                            return;
-                        }
+                    /** @var scalar */
+                    $s = 1;
 
-                        if (is_bool($s)) {}
-                        if (!is_bool($s)) {}
-                        if (is_string($s)) {}
-                        if (!is_string($s)) {}
-                        if (is_int($s)) {}
-                        if (!is_int($s)) {}
-                        if (is_float($s)) {}
-                        if (!is_float($s)) {}
-                    }',
+                    if (is_bool($s)) {}
+                    if (!is_bool($s)) {}',
+                [
+                    '$s' => 'scalar'
+                ]
+            ],
+            'scalarToString' => [
+                '<?php
+                    /** @var scalar */
+                    $s = 1;
+
+                    if (is_string($s)) {}
+                    if (!is_string($s)) {}',
+                [
+                    '$s' => 'scalar'
+                ]
+            ],
+            'scalarToInt' => [
+                '<?php
+                    /** @var scalar */
+                    $s = 1;
+
+                    if (is_int($s)) {}
+                    if (!is_int($s)) {}',
+                [
+                    '$s' => 'scalar'
+                ]
+            ],
+            'scalarToFloat' => [
+                '<?php
+                    /** @var scalar */
+                    $s = 1;
+
+                    if (is_float($s)) {}
+                    if (!is_float($s)) {}',
+                [
+                    '$s' => 'scalar'
+                ]
             ],
             'removeFromArray' => [
                 '<?php
@@ -2751,7 +2777,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                             if (is_bool($s)) {}
                         }
                     }',
-                'error_message' => 'ParadoxicalCondition',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'noCrashWhenCastingArray' => [
                 '<?php

@@ -540,6 +540,20 @@ class TypeCombination
             $new_types = array_merge($new_types, array_values($combination->floats));
         }
 
+        if (isset($combination->value_types['string'])
+            && isset($combination->value_types['int'])
+            && isset($combination->value_types['bool'])
+            && isset($combination->value_types['float'])
+        ) {
+            unset(
+                $combination->value_types['string'],
+                $combination->value_types['int'],
+                $combination->value_types['bool'],
+                $combination->value_types['float']
+            );
+            $combination->value_types['scalar'] = new TScalar;
+        }
+
         if ($combination->named_object_types !== null) {
             $combination->value_types += $combination->named_object_types;
         }
