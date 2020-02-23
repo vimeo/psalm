@@ -5,6 +5,7 @@ Psalm supports a wide range of docblock annotations.
 ## PHPDoc tags
 
 Psalm uses the following PHPDoc tags to understand your code:
+
 - [`@var`](https://docs.phpdoc.org/references/phpdoc/tags/var.html)
   Used for specifying the types of properties and variables
 - [`@return`](https://docs.phpdoc.org/references/phpdoc/tags/return.html)
