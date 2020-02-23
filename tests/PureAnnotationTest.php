@@ -182,6 +182,23 @@ class PureAnnotationTest extends TestCase
                         return $ar[0] ?? 0;
                     }',
             ],
+            'allowPureToString' => [
+                '<?php
+                    class A {
+                        /** @psalm-pure */
+                        public function __toString() {
+                            return "bar";
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo(string $s, A $a) : string {
+                        if ($a == $s) {}
+                        return $s;
+                    }',
+            ],
         ];
     }
 
@@ -382,6 +399,24 @@ class PureAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpureStaticProperty',
+            ],
+            'preventImpureToString' => [
+                '<?php
+                    class A {
+                        public function __toString() {
+                            echo "hi";
+                            return "bar";
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo(string $s, A $a) : string {
+                        if ($a == $s) {}
+                        return $s;
+                    }',
+                'error_message' => 'ImpureMethodCall'
             ],
         ];
     }
