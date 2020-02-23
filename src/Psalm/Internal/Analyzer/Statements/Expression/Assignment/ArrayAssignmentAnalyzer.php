@@ -534,7 +534,7 @@ class ArrayAssignmentAnalyzer
         } elseif (!$root_is_string) {
             if ($current_dim) {
                 if ($current_dim_type = $statements_analyzer->node_data->getType($current_dim)) {
-                    if ($current_dim_type->isMixed()) {
+                    if ($current_dim_type->hasMixed()) {
                         $current_dim_type = Type::getArrayKey();
                     }
 
