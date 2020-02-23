@@ -693,48 +693,10 @@ if ($type_map_location) {
         $name_file_map[$file_name] = $map;
     }
 
-    $reference_dictionary = [];
-
-    foreach ($providers->classlike_storage_provider->getAll() as $storage) {
-        if (!$storage->location) {
-            continue;
-        }
-
-        $fq_classlike_name = $storage->name;
-
-        if (isset($expected_references[$fq_classlike_name])) {
-            $reference_dictionary[$fq_classlike_name]
-                = $storage->location->file_name
-                    . ':' . $storage->location->getLineNumber()
-                    . ':' . $storage->location->getColumn();
-        }
-
-        foreach ($storage->methods as $method_name => $method_storage) {
-            if (!$method_storage->location) {
-                continue;
-            }
-
-            if (isset($expected_references[$fq_classlike_name . '::' . $method_name . '()'])) {
-                $reference_dictionary[$fq_classlike_name . '::' . $method_name . '()']
-                    = $method_storage->location->file_name
-                        . ':' . $method_storage->location->getLineNumber()
-                        . ':' . $method_storage->location->getColumn();
-            }
-        }
-
-        foreach ($storage->properties as $property_name => $property_storage) {
-            if (!$property_storage->location) {
-                continue;
-            }
-
-            if (isset($expected_references[$fq_classlike_name . '::$' . $property_name])) {
-                $reference_dictionary[$fq_classlike_name . '::$' . $property_name]
-                    = $property_storage->location->file_name
-                        . ':' . $property_storage->location->getLineNumber()
-                        . ':' . $property_storage->location->getColumn();
-            }
-        }
-    }
+    $reference_dictionary = \Psalm\Internal\Codebase\ReferenceMapGenerator::getReferenceMap(
+        $providers->classlike_storage_provider,
+        $expected_references
+    );
 
     $type_map_string = json_encode(['files' => $name_file_map, 'references' => $reference_dictionary]);
 
