@@ -948,7 +948,7 @@ class BinaryOpAnalyzer
                                 new ImpureMethodCall(
                                     'Cannot call an mutation-free method '
                                         . $atomic_type->value . '::__toString from a pure context',
-                                    new CodeLocation($source, $stmt)
+                                    new CodeLocation($statements_analyzer, $stmt)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
