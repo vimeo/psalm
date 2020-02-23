@@ -926,7 +926,10 @@ class BinaryOpAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getBool());
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            && $stmt_left_type
+            && $stmt_right_type
+        ) {
             if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
                 foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof TNamedObject) {
