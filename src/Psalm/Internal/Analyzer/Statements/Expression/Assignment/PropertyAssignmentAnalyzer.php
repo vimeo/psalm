@@ -812,7 +812,7 @@ class PropertyAssignmentAnalyzer
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                (string) $class_property_types[0]
+                $class_property_types[0]->getId()
             );
         }
 

@@ -367,7 +367,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                (string) $stmt_type,
+                $stmt_type->getId(),
                 $stmt
             );
         }

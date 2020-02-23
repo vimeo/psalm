@@ -118,7 +118,7 @@ class PropertyFetchAnalyzer
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    (string) $stmt_type
+                    $stmt_type->getId()
                 );
             }
 
@@ -275,21 +275,17 @@ class PropertyFetchAnalyzer
                 // fall through
             }
 
-            if ($stmt_var_type->hasMixed()) {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
-                if ($codebase->store_node_types
-                    && !$context->collect_initializations
-                    && !$context->collect_mutations
-                ) {
-                    $codebase->analyzer->addNodeType(
-                        $statements_analyzer->getFilePath(),
-                        $stmt->name,
-                        (string) $stmt_type
-                    );
-                }
-
-                return null;
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                $codebase->analyzer->addNodeType(
+                    $statements_analyzer->getFilePath(),
+                    $stmt->name,
+                    $stmt_var_type->getId()
+                );
             }
         }
 
@@ -886,7 +882,7 @@ class PropertyFetchAnalyzer
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                (string) $stmt_type
+                $stmt_type->getId()
             );
         }
 
@@ -1139,7 +1135,7 @@ class PropertyFetchAnalyzer
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    (string) $stmt_type
+                    $stmt_type->getId()
                 );
             }
 
@@ -1259,7 +1255,7 @@ class PropertyFetchAnalyzer
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    (string) $stmt_type
+                    $stmt_type->getId()
                 );
             }
         } else {
