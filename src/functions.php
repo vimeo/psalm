@@ -20,11 +20,11 @@ function getMemoryLimitInBytes(): int
     $limit = ini_get('memory_limit');
     // for unlimited = -1
     if ($limit < 0) {
-        return $limit;
+        return -1;
     }
 
     if (preg_match('/^(\d+)(\D?)$/', $limit, $matches)) {
-        $limit = $matches[1];
+        $limit = (int)$matches[1];
         switch (strtoupper($matches[2] ?? '')) {
             case 'G': {
                 $limit *= 1024 * 1024 * 1024;
@@ -41,5 +41,5 @@ function getMemoryLimitInBytes(): int
         }
     }
 
-    return $limit;
+    return (int)$limit;
 }
