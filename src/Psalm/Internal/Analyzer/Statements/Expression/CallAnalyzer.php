@@ -3408,6 +3408,7 @@ class CallAnalyzer
             return [];
         }
 
+        /** @psalm-suppress PossiblyNullPropertyFetch */
         if ($callable_arg->items[0]->key || $callable_arg->items[1]->key) {
             return [];
         }
