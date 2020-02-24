@@ -3,6 +3,8 @@ namespace Psalm;
 
 use Webmozart\PathUtil\Path;
 use function preg_match;
+use function ini_get;
+use function strtoupper;
 
 /**
  * @param string $path
@@ -26,18 +28,15 @@ function getMemoryLimitInBytes(): int
     if (preg_match('/^(\d+)(\D?)$/', $limit, $matches)) {
         $limit = (int)$matches[1];
         switch (strtoupper($matches[2] ?? '')) {
-            case 'G': {
+            case 'G':
                 $limit *= 1024 * 1024 * 1024;
                 break;
-            }
-            case 'M': {
+            case 'M':
                 $limit *= 1024 * 1024;
                 break;
-            }
-            case 'K': {
+            case 'K':
                 $limit *= 1024;
                 break;
-            }
         }
     }
 

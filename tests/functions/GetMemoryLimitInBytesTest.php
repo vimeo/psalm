@@ -2,6 +2,7 @@
 namespace Psalm\Tests\Functions;
 
 use function Psalm\getMemoryLimitInBytes;
+use function ini_set;
 
 class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
 {
