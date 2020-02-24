@@ -1,11 +1,17 @@
 <?php
 namespace Psalm\Tests\Functions;
 
-use function Psalm\getMemoryLimitInBytes;
+use function getMemoryLimitInBytes;
 use function ini_set;
 
 class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
 {
+    public function setUp(): void
+    {
+        require_once 'src/command_functions.php';
+        parent::setUp();
+    }
+
     /**
      * @return array<int,array<string|int>>
      */

@@ -6,12 +6,17 @@ use Psalm\Config;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use function getMemoryLimitInBytes;
 
 // show all errors
 error_reporting(-1);
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-ini_set('memory_limit', '4096M');
+$memLimit = getMemoryLimitInBytes();
+// Magic number is 4096M in bytes
+if ($memLimit > 0 && $memLimit < 4294967296) {
+    ini_set('memory_limit', '4096M');
+}
 
 gc_collect_cycles();
 gc_disable();
