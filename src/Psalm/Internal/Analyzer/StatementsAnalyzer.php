@@ -30,6 +30,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ForbiddenEcho;
+use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\UnevaluatedCode;
@@ -636,6 +637,24 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         $this->source->getSuppressedIssues()
                     )) {
                         // continue
+                    }
+                }
+
+                if (!$context->collect_initializations
+                    && !$context->collect_mutations
+                    && ($context->mutation_free
+                        || $context->external_mutation_free)
+                ) {
+                    if ($context->mutation_free || $context->external_mutation_free) {
+                        if (IssueBuffer::accepts(
+                            new ImpureFunctionCall(
+                                'Cannot call echo from a mutation-free context',
+                                new CodeLocation($this, $stmt)
+                            ),
+                            $this->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
