@@ -3408,6 +3408,10 @@ class CallAnalyzer
             return [];
         }
 
+        if ($callable_arg->items[0]->key || $callable_arg->items[1]->key) {
+            return [];
+        }
+
         if (!isset($callable_arg->items[0]) || !isset($callable_arg->items[1])) {
             throw new \UnexpectedValueException('These should never be unset');
         }
