@@ -1,10 +1,8 @@
 <?php
 namespace Psalm;
 
-use InvalidArgumentException;
 use Webmozart\PathUtil\Path;
 use function preg_match;
-use function sprintf;
 
 /**
  * @param string $path
@@ -15,4 +13,33 @@ use function sprintf;
 function isAbsolutePath($path)
 {
     return Path::isAbsolute($path);
+}
+
+function getMemoryLimitInBytes(): int
+{
+    $limit = ini_get('memory_limit');
+    // for unlimited = -1
+    if ($limit < 0) {
+        return $limit;
+    }
+
+    if (preg_match('/^(\d+)(\D?)$/', $limit, $matches)) {
+        $limit = $matches[1];
+        switch (strtoupper($matches[2] ?? '')) {
+            case 'G': {
+                $limit *= 1024 * 1024 * 1024;
+                break;
+            }
+            case 'M': {
+                $limit *= 1024 * 1024;
+                break;
+            }
+            case 'K': {
+                $limit *= 1024;
+                break;
+            }
+        }
+    }
+
+    return $limit;
 }
