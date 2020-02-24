@@ -400,7 +400,7 @@ class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureStaticProperty',
             ],
-            'preventImpureToString' => [
+            'preventImpureToStringViaComparison' => [
                 '<?php
                     class A {
                         public function __toString() {
@@ -415,6 +415,23 @@ class PureAnnotationTest extends TestCase
                     function foo(string $s, A $a) : string {
                         if ($a == $s) {}
                         return $s;
+                    }',
+                'error_message' => 'ImpureMethodCall'
+            ],
+            'preventImpureToStringViaConcatenation' => [
+                '<?php
+                    class A {
+                        public function __toString() {
+                            echo "hi";
+                            return "bar";
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo(string $s, A $a) : string {
+                        return $a . $s;
                     }',
                 'error_message' => 'ImpureMethodCall'
             ],
