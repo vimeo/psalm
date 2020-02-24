@@ -753,12 +753,17 @@ class Populator
                     }
 
                     if ($implemented_interface_storage->template_type_extends) {
-                        foreach ($implemented_interface_storage->template_type_extends as $e_i => $type) {
-                            if (isset($storage->template_type_extends[$e_i])) {
-                                continue;
-                            }
+                        foreach ($implemented_interface_storage->template_type_extends as $e_i => $type_map) {
+                            foreach ($type_map as $i => $type) {
+                                if (is_int($i)) {
+                                    continue;
+                                }
 
-                            $storage->template_type_extends[$e_i] = $type;
+                                $storage->template_type_extends[$e_i][$i] = self::extendType(
+                                    $type,
+                                    $storage
+                                );
+                            }
                         }
                     }
                 } else {
