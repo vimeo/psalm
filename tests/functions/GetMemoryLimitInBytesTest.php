@@ -5,7 +5,10 @@ use function Psalm\getMemoryLimitInBytes;
 
 class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
 {
-    public function memoryLimitSettingProvider()
+    /**
+     * @return array<int,array<string|int>>
+     */
+    public function memoryLimitSettingProvider(): array
     {
         return [
             // unlimited
@@ -34,8 +37,8 @@ class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
     /**
      * @dataProvider memoryLimitSettingProvider
      *
-     * @param $setting
-     * @param $expectedBytes
+     * @param int|string $setting
+     * @param int|string $expectedBytes
      *
      * @return void
      */
@@ -43,7 +46,7 @@ class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
         $setting,
         $expectedBytes
     ) {
-        ini_set('memory_limit', $setting);
+        ini_set('memory_limit', (string)$setting);
         $this->assertSame($expectedBytes, getMemoryLimitInBytes(), 'Memory limit in bytes does not fit setting');
     }
 }
