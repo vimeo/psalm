@@ -3,12 +3,19 @@ namespace Psalm\Tests\Functions;
 
 use function getMemoryLimitInBytes;
 use function ini_set;
+use function ini_get;
 
 class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
 {
+    /**
+     * @var string
+     */
+    private $previousLimit;
+
     public function setUp(): void
     {
         require_once 'src/command_functions.php';
+        $this->previousLimit = (string)ini_get('memory_limit');
         parent::setUp();
     }
 
@@ -55,5 +62,11 @@ class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
     ) {
         ini_set('memory_limit', (string)$setting);
         $this->assertSame($expectedBytes, getMemoryLimitInBytes(), 'Memory limit in bytes does not fit setting');
+    }
+
+    public function tearDown(): void
+    {
+        ini_set('memory_limit', $this->previousLimit);
+        parent::tearDown();
     }
 }
