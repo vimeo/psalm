@@ -17,37 +17,11 @@ It's able to find a [large number of issues](https://github.com/vimeo/psalm/blob
 
 Documentation is available on [Psalm’s website](https://psalm.dev/docs), generated from the [docs](https://github.com/vimeo/psalm/blob/master/docs) folder.
 
-## Quickstart Guide
+To get started, check out the [installation guide](docs/running_psalm/installation.md)
 
-Install via [Composer](https://getcomposer.org/):
+## Interested in contributing?
 
-```bash
-composer require --dev vimeo/psalm
-```
-
-Add a config:
-
-```bash
-./vendor/bin/psalm --init
-```
-
-Then run Psalm:
-
-```bash
-./vendor/bin/psalm
-```
-
-The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config, you can specify the level with
-
-```bash
-./vendor/bin/psalm --init [source_dir] [level]
-```
-
-You can also [learn how to suppress certain issues](https://github.com/vimeo/psalm/blob/master/docs/running_psalm/dealing_with_code_issues.md).
-
-## How Psalm Works
-
-A basic rundown of Psalm’s internals can be found in [docs/how_psalm_works.md](https://github.com/vimeo/psalm/blob/master/docs/how_psalm_works.md).
+Have a look at [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Acknowledgements
 
