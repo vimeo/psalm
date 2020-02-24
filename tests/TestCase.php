@@ -47,7 +47,7 @@ class TestCase extends BaseTestCase
     /**
      * @return Config
      */
-    protected function getConfig() : Config
+    protected function makeConfig() : Config
     {
         return new TestConfig();
     }
@@ -63,7 +63,7 @@ class TestCase extends BaseTestCase
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
-        $config = $this->getConfig();
+        $config = $this->makeConfig();
 
         $providers = new Providers(
             $this->file_provider,
