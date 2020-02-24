@@ -7,6 +7,7 @@ use const DIRECTORY_SEPARATOR;
 use function getcwd;
 use function ini_set;
 use PHPUnit\Framework\TestCase as BaseTestCase;
+use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
@@ -44,6 +45,14 @@ class TestCase extends BaseTestCase
     }
 
     /**
+     * @return Config
+     */
+    protected function getConfig() : Config
+    {
+        return new TestConfig();
+    }
+
+    /**
      * @return void
      */
     public function setUp() : void
@@ -54,7 +63,7 @@ class TestCase extends BaseTestCase
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
-        $config = new TestConfig();
+        $config = $this->getConfig();
 
         $providers = new Providers(
             $this->file_provider,

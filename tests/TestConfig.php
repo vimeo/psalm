@@ -26,15 +26,7 @@ class TestConfig extends Config
 
         if (!self::$cached_project_files) {
             self::$cached_project_files = Config\ProjectFileFilter::loadFromXMLElement(
-                new \SimpleXMLElement(
-                    '<?xml version="1.0"?>
-                    <projectFiles>
-                        <directory name="src" />
-                        <ignoreFiles>
-                            <directory name="src/Psalm/Internal/Stubs" />
-                        </ignoreFiles>
-                    </projectFiles>'
-                ),
+                new \SimpleXMLElement($this->getContents()),
                 $this->base_dir,
                 true
             );
@@ -44,6 +36,17 @@ class TestConfig extends Config
 
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
+    }
+
+    protected function getContents() : string
+    {
+        return '<?xml version="1.0"?>
+                <projectFiles>
+                    <directory name="src" />
+                    <ignoreFiles>
+                        <directory name="src/Psalm/Internal/Stubs" />
+                    </ignoreFiles>
+                </projectFiles>';
     }
 
     public function getComposerFilePathForClassLike($fq_classlike_name)
