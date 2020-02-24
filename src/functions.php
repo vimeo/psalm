@@ -2,9 +2,6 @@
 namespace Psalm;
 
 use Webmozart\PathUtil\Path;
-use function preg_match;
-use function ini_get;
-use function strtoupper;
 
 /**
  * @param string $path
@@ -15,30 +12,4 @@ use function strtoupper;
 function isAbsolutePath($path)
 {
     return Path::isAbsolute($path);
-}
-
-function getMemoryLimitInBytes(): int
-{
-    $limit = ini_get('memory_limit');
-    // for unlimited = -1
-    if ($limit < 0) {
-        return -1;
-    }
-
-    if (preg_match('/^(\d+)(\D?)$/', $limit, $matches)) {
-        $limit = (int)$matches[1];
-        switch (strtoupper($matches[2] ?? '')) {
-            case 'G':
-                $limit *= 1024 * 1024 * 1024;
-                break;
-            case 'M':
-                $limit *= 1024 * 1024;
-                break;
-            case 'K':
-                $limit *= 1024;
-                break;
-        }
-    }
-
-    return (int)$limit;
 }
