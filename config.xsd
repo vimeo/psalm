@@ -68,6 +68,7 @@
         <xs:attribute name="useDocblockPropertyTypes" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpDocMethodsWithoutMagicCall" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpDocPropertiesWithoutMagicCall" type="xs:boolean" default="false" />
+        <xs:attribute name="skipChecksOnUnresolvableIncludes" type="xs:boolean" default="true" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

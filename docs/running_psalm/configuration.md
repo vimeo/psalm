@@ -275,6 +275,17 @@ Set the php version psalm should assume when checking and/or fixing the project.
 
 This can be overridden on the command-line using the `--php-version=` flag which takes the highest precedence over both the `phpVersion` setting and the version derived from `composer.json`.
 
+#### skipChecksOnUnresolvableIncludes
+```xml
+<psalm
+  skipChecksOnUnresolvableIncludes="[bool]"
+>
+```
+
+When `true`, Psalm will skip checking classes, variables and functions after it comes across an `include` or `require` it cannot resolve. This allows code to reference functions and classes unknown to Psalm.
+
+For backwards compatibility, this defaults to `true`, but if you do not rely on dynamically generated includes to cause classes otherwise unknown to psalm to come into existence, it's recommended you set this to `false` in order to reliably detect errors that would be fatal to PHP at runtime.
+
 ### Running Psalm
 
 #### autoloader

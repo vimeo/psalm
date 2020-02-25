@@ -294,6 +294,11 @@ class Config
     /**
      * @var bool
      */
+    public $skip_checks_on_unresolvable_includes = true;
+
+    /**
+     * @var bool
+     */
     public $memoize_method_calls = false;
 
     /**
@@ -765,6 +770,7 @@ class Config
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'reportMixedIssues' => 'show_mixed_issues',
+            'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes'
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
