@@ -826,11 +826,11 @@ class TypeAnalyzer
                 && $container_type_part instanceof Type\Atomic\TFn)
             || (($input_type_part instanceof TNamedObject
                     || ($input_type_part instanceof TTemplateParam
-                        && $input_type_part->as->hasObjectType())
+                        && $input_type_part->as->hasNamedObjectType())
                     || $input_type_part instanceof TIterable)
                 && ($container_type_part instanceof TNamedObject
                     || ($container_type_part instanceof TTemplateParam
-                        && $container_type_part->as->hasObjectType())
+                        && $container_type_part->isNamedObjectType())
                     || $container_type_part instanceof TIterable)
                 && self::isObjectContainedByObject(
                     $codebase,

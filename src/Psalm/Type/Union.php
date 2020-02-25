@@ -754,6 +754,20 @@ class Union
     /**
      * @return bool
      */
+    public function hasNamedObjectType()
+    {
+        foreach ($this->types as $type) {
+            if ($type->isNamedObjectType()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
     public function isNullable()
     {
         return isset($this->types['null']);

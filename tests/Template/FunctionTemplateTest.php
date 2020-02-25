@@ -1446,6 +1446,20 @@ class FunctionTemplateTest extends TestCase
                     function f():void {}',
                 'error_message' => 'MissingDocblockType'
             ],
+            'returnNamedObjectWhereTemplateIsExpected' => [
+                '<?php
+                    class Bar {}
+
+                    /**
+                     * @template T as object
+                     * @param T $t
+                     * @return T
+                     */
+                    function shouldComplain(object $t) {
+                        return new Bar();
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

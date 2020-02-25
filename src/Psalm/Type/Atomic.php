@@ -286,6 +286,24 @@ abstract class Atomic
     /**
      * @return bool
      */
+    public function isNamedObjectType()
+    {
+        return $this instanceof TNamedObject
+            || ($this instanceof TTemplateParam
+                && ($this->as->hasNamedObjectType()
+                    || array_filter(
+                        $this->extra_types ?: [],
+                        function ($extra_type) {
+                            return $extra_type->isNamedObjectType();
+                        }
+                    )
+                )
+            );
+    }
+
+    /**
+     * @return bool
+     */
     public function isCallableType()
     {
         return $this instanceof TCallable
