@@ -37,6 +37,7 @@ class IncludeTest extends TestCase
         }
 
         $config = $codebase->config;
+        $config->skip_checks_on_unresolvable_includes = true;
 
         foreach ($error_levels as $error_level) {
             $config->setCustomErrorLevel($error_level, \Psalm\Config::REPORT_SUPPRESS);
@@ -83,6 +84,7 @@ class IncludeTest extends TestCase
         }
 
         $config = $codebase->config;
+        $config->skip_checks_on_unresolvable_includes = false;
 
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
@@ -569,6 +571,25 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'b' . DIRECTORY_SEPARATOR . 'c' . DIRECTORY_SEPARATOR . 'd' . DIRECTORY_SEPARATOR . 'script.php',
                 ],
             ],
+            'undefinedMethodAfterInvalidRequire' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        /** @psalm-suppress MissingFile */
+                        require("doesnotexist.php");
+                        require("file1.php");
+
+                        foo();
+                        bar();
+                        ',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function bar(): void {}
+                        ',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+            ],
+
         ];
     }
 

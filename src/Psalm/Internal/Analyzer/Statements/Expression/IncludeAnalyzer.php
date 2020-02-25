@@ -160,6 +160,11 @@ class IncludeAnalyzer
                         $global_context
                     );
                 } catch (\Psalm\Exception\UnpreparedAnalysisException $e) {
+                    if ($config->skip_checks_on_unresolvable_includes) {
+                        $context->check_classes = false;
+                        $context->check_variables = false;
+                        $context->check_functions = false;
+                    }
                 }
 
                 foreach ($include_file_analyzer->getRequiredFilePaths() as $required_file_path) {
@@ -198,6 +203,12 @@ class IncludeAnalyzer
                     // fall through
                 }
             }
+        }
+
+        if ($config->skip_checks_on_unresolvable_includes) {
+            $context->check_classes = false;
+            $context->check_variables = false;
+            $context->check_functions = false;
         }
 
         return null;
