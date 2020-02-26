@@ -78,6 +78,7 @@ class Properties
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
         list($fq_class_name, $property_name) = explode('::$', $property_id);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
         if ($this->property_existence_provider->has($fq_class_name)) {
             $property_exists = $this->property_existence_provider->doesPropertyExist(
@@ -95,6 +96,13 @@ class Properties
         }
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        if ($source && $context && $context->self !== $fq_class_name) {
+            $this->file_reference_provider->addFileReferenceToClass(
+                $source->getFilePath(),
+                $fq_class_name_lc
+            );
+        }
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
             $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
@@ -124,12 +132,12 @@ class Properties
         if ($context && $context->calling_function_id) {
             $this->file_reference_provider->addMethodReferenceToMissingClassMember(
                 $context->calling_function_id,
-                strtolower($fq_class_name) . '::$' . $property_name
+                $fq_class_name_lc . '::$' . $property_name
             );
         } elseif ($source) {
             $this->file_reference_provider->addFileReferenceToMissingClassMember(
                 $source->getFilePath(),
-                strtolower($fq_class_name) . '::$' . $property_name
+                $fq_class_name_lc . '::$' . $property_name
             );
         }
 

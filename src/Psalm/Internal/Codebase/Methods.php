@@ -126,6 +126,13 @@ class Methods
             return false;
         }
 
+        if ($source && $fq_class_name !== $source->getFQCLN()) {
+            $this->file_reference_provider->addFileReferenceToClass(
+                $source->getFilePath(),
+                $fq_class_name
+            );
+        }
+
         if (isset($class_storage->declaring_method_ids[$method_name])) {
             $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
 
