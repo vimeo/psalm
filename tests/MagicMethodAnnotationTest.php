@@ -576,6 +576,13 @@ class MagicMethodAnnotationTest extends TestCase
                         return B::make();
                     }'
             ],
+            'validMethodAsAnnotation' => [
+                '<?php
+                    /**
+                     * @method string as(string $value)
+                     */
+                    class Foo {}'
+            ],
         ];
     }
 
