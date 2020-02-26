@@ -573,6 +573,14 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                                     );
                                 }
 
+                                $return_type = ExpressionAnalyzer::fleshOutType(
+                                    $codebase,
+                                    $return_type,
+                                    null,
+                                    null,
+                                    null
+                                );
+
                                 $return_type_location = $function_storage->return_type_location;
 
                                 if ($config->after_function_checks) {
