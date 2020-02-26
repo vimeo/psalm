@@ -497,6 +497,8 @@ class ParseTree
                         break;
                     }
 
+                    // falling through for methods named 'as'
+
                 default:
                     $new_parent = !$current_leaf instanceof ParseTree\Root ? $current_leaf : null;
 
