@@ -54,8 +54,8 @@ use function version_compare;
  */
 class Pool
 {
-    const EXIT_SUCCESS = 1;
-    const EXIT_FAILURE = 0;
+    const EXIT_SUCCESS = 0;
+    const EXIT_FAILURE = 1;
 
     /** @var int[] */
     private $child_pid_list = [];
