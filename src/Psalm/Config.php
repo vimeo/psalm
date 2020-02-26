@@ -936,7 +936,11 @@ class Config
         if (isset($config_xml->stubs) && isset($config_xml->stubs->file)) {
             /** @var \SimpleXMLElement $stub_file */
             foreach ($config_xml->stubs->file as $stub_file) {
-                $file_path = realpath($config->base_dir . DIRECTORY_SEPARATOR . $stub_file['name']);
+                $stub_file_name = (string)$stub_file['name'];
+                if (!Path::isAbsolute($stub_file_name)) {
+                    $stub_file_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_file_name;
+                }
+                $file_path = realpath($stub_file_name);
 
                 if (!$file_path) {
                     throw new Exception\ConfigException(
@@ -1956,6 +1960,14 @@ class Config
     public function addStubFile(string $stub_file)
     {
         $this->stub_files[] = $stub_file;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getStubFiles(): array
+    {
+        return $this->stub_files;
     }
 
     public function getPhpVersion(): ?string
