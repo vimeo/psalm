@@ -125,6 +125,47 @@ class StubTest extends TestCase
     /**
      * @return void
      */
+    public function testLoadStubFileWithRelativePath()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <stubs>
+                        <file name="./tests/../tests/fixtures/stubs/systemclass.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $this->assertStringContainsString('tests/fixtures/stubs/systemclass.php', $this->project_analyzer->getConfig()->getStubFiles()[0]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testLoadStubFileWithAbsolutePath()
+    {
+        $runDir = dirname(__DIR__);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                $runDir,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <stubs>
+                        <file name="' . $runDir . '/tests/fixtures/stubs/systemclass.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $this->assertStringContainsString('tests/fixtures/stubs/systemclass.php', $this->project_analyzer->getConfig()->getStubFiles()[0]);
+    }
+
+    /**
+     * @return void
+     */
     public function testStubFileConstant()
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
