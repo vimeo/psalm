@@ -511,6 +511,19 @@ class MethodCallTest extends TestCase
                     $date = new DateTime(null, new DateTimeZone("Pacific/Nauru"));
                     echo $date->format("Y-m-d H:i:sP") . "\n";'
             ],
+            'noCrashOnGetClassMethodCallWithNull' => [
+                '<?php
+                    class User {
+                        /**
+                         * @psalm-suppress NullArgument
+                         */
+                        public function give(): void{
+                            $model = null;
+                            $class = \get_class($model);
+                            $class::foo();
+                        }
+                    }',
+            ],
         ];
     }
 
