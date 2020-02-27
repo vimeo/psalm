@@ -5,6 +5,9 @@ use function define;
 use function defined;
 use function dirname;
 use function getcwd;
+use function implode;
+use function explode;
+use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -123,6 +126,16 @@ class StubTest extends TestCase
     }
 
     /**
+     * @param string $file
+     *
+     * @return string
+     */
+    private function getOperatingSystemStyledPath(string $file): string
+    {
+        return implode(DIRECTORY_SEPARATOR, explode('/', $file));
+    }
+
+    /**
      * @return void
      */
     public function testLoadStubFileWithRelativePath()
@@ -139,7 +152,8 @@ class StubTest extends TestCase
             )
         );
 
-        $this->assertStringContainsString('tests/fixtures/stubs/systemclass.php', $this->project_analyzer->getConfig()->getStubFiles()[0]);
+        $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.php');
+        $this->assertStringContainsString($path, $this->project_analyzer->getConfig()->getStubFiles()[0]);
     }
 
     /**
@@ -160,7 +174,8 @@ class StubTest extends TestCase
             )
         );
 
-        $this->assertStringContainsString('tests/fixtures/stubs/systemclass.php', $this->project_analyzer->getConfig()->getStubFiles()[0]);
+        $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.php');
+        $this->assertStringContainsString($path, $this->project_analyzer->getConfig()->getStubFiles()[0]);
     }
 
     /**
