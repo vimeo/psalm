@@ -253,6 +253,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
                     }
                 }
+
+                if ($fq_class_name === 'object') {
+                    continue;
+                }
             } elseif ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
                 $fq_class_name = $lhs_type_part->value;
 
