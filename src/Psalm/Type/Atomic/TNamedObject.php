@@ -40,9 +40,9 @@ class TNamedObject extends Atomic
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
-        if ($this->extra_types) {
+        if ($include_extra && $this->extra_types) {
             return $this->value . '&' . implode('&', $this->extra_types);
         }
 

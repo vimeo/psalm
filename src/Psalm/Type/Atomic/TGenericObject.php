@@ -30,16 +30,17 @@ class TGenericObject extends TNamedObject
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         $s = '';
+
         foreach ($this->type_params as $type_param) {
             $s .= $type_param->getKey() . ', ';
         }
 
         $extra_types = '';
 
-        if ($this->extra_types) {
+        if ($include_extra && $this->extra_types) {
             $extra_types = '&' . implode('&', $this->extra_types);
         }
 

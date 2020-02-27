@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\Issue\DeprecatedMethod;
 use Psalm\Issue\ImplementedParamTypeMismatch;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
@@ -731,38 +732,28 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 );
             }
 
-            $guide_trait_name = null;
+            if ($implementer_classlike_storage->is_trait) {
+                $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
+                    $implementer_called_class_name
+                );
 
-            if ($guide_classlike_storage === $implementer_classlike_storage) {
-                $guide_trait_name = $implementer_method_storage->defining_fqcln;
-            }
+                if (isset(
+                    $implementer_called_class_storage->template_type_extends[$implementer_classlike_storage->name]
+                )) {
+                    self::transformTemplates(
+                        $implementer_called_class_storage->template_type_extends,
+                        $implementer_classlike_storage->name,
+                        $implementer_method_storage_return_type,
+                        $codebase
+                    );
 
-            if ($guide_trait_name
-                && isset($implementer_classlike_storage->template_type_extends[$guide_trait_name])
-            ) {
-                $map = $implementer_classlike_storage->template_type_extends[$guide_trait_name];
-
-                $template_types = [];
-
-                foreach ($map as $key => $type) {
-                    if (is_string($key) && $implementer_method_storage->defining_fqcln) {
-                        $template_types[$key][$implementer_method_storage->defining_fqcln] = [
-                            $type,
-                        ];
-                    }
+                    self::transformTemplates(
+                        $implementer_called_class_storage->template_type_extends,
+                        $guide_class_name,
+                        $guide_method_storage_return_type,
+                        $codebase
+                    );
                 }
-
-                $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
-
-                $implementer_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_result->template_types,
-                    $codebase
-                );
-
-                $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    $template_result->template_types,
-                    $codebase
-                );
             }
 
             // treat void as null when comparing against docblock implementer
@@ -1015,6 +1006,30 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         $guide_method_storage_param_type,
                         $codebase
                     );
+                }
+
+                if ($implementer_classlike_storage->is_trait) {
+                    $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
+                        $implementer_called_class_name
+                    );
+
+                    if (isset(
+                        $implementer_called_class_storage->template_type_extends[$implementer_classlike_storage->name]
+                    )) {
+                        self::transformTemplates(
+                            $implementer_called_class_storage->template_type_extends,
+                            $implementer_classlike_storage->name,
+                            $implementer_method_storage_param_type,
+                            $codebase
+                        );
+
+                        self::transformTemplates(
+                            $implementer_called_class_storage->template_type_extends,
+                            $guide_class_name,
+                            $guide_method_storage_param_type,
+                            $codebase
+                        );
+                    }
                 }
 
                 $union_comparison_results = new TypeComparisonResult();

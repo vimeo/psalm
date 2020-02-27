@@ -1460,6 +1460,34 @@ class FunctionTemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'returnIntersectionWhenTemplateIsExpectedForward' => [
+                '<?php
+                    interface Baz {}
+
+                    /**
+                     * @template T as object
+                     * @param T $t
+                     * @return T&Baz
+                     */
+                    function returnsTemplatedIntersection(object $t) {
+                        return $t;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'returnIntersectionWhenTemplateIsExpectedBackward' => [
+                '<?php
+                    interface Baz {}
+
+                    /**
+                     * @template T as object
+                     * @param T $t
+                     * @return Baz&T
+                     */
+                    function returnsTemplatedIntersection(object $t) {
+                        return $t;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

@@ -39,8 +39,12 @@ class TIterable extends Atomic
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
+        if ($include_extra && $this->extra_types) {
+            // do nothing
+        }
+
         return 'iterable';
     }
 

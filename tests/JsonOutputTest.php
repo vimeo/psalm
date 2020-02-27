@@ -209,7 +209,7 @@ echo $a;';
                     function fooFoo(int $a): string {
                         return $a + 1;
                     }',
-                'message' => "The type 'int' does not match the declared return type 'string' for fooFoo",
+                'message' => "The inferred type 'int' does not match the declared return type 'string' for fooFoo",
                 'line' => 3,
                 'error' => '$a + 1',
             ],
@@ -248,7 +248,7 @@ echo $a;';
                     function fooFoo() {
                         return "hello";
                     }',
-                'message' => "The type 'string(hello)' does not match the declared return type 'int' for fooFoo",
+                'message' => "The inferred type 'string(hello)' does not match the declared return type 'int' for fooFoo",
                 'line' => 6,
                 'error' => '"hello"',
             ],

@@ -1569,6 +1569,7 @@ class ClassTemplateTest extends TestCase
                      */
                     function makeConcrete(string $className) : object
                     {
+                        /** @var T&I<T> */
                         return new class() extends C implements I {
                             public function getMe() {
                                 return $this;

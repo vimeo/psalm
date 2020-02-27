@@ -1147,6 +1147,7 @@ class ClassTemplateExtendsTest extends TestCase
                     }
                     /**
                      * @template T
+                     * @implements Functor<T>
                      */
                     class Box implements Functor
                     {

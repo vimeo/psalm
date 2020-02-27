@@ -689,16 +689,23 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             && $new_type_part->as->isSingle()
         ) {
             $new_as_atomic = \array_values($new_type_part->as->getAtomicTypes())[0];
+
             $acceptable_atomic_types = [];
 
             foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
-                if (TypeAnalyzer::isAtomicContainedBy(
-                    $codebase,
-                    $existing_var_type_part,
-                    $new_as_atomic
-                )) {
+                if ($existing_var_type_part instanceof TNamedObject
+                    || $existing_var_type_part instanceof TTemplateParam
+                ) {
+                    $new_type_part->addIntersectionType($existing_var_type_part);
                     $acceptable_atomic_types[] = clone $existing_var_type_part;
-                    continue;
+                } else {
+                    if (TypeAnalyzer::isAtomicContainedBy(
+                        $codebase,
+                        $existing_var_type_part,
+                        $new_as_atomic
+                    )) {
+                        $acceptable_atomic_types[] = clone $existing_var_type_part;
+                    }
                 }
             }
 
