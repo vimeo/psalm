@@ -11,7 +11,7 @@ class TTrue extends TBool
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'true';
     }

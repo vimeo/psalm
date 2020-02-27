@@ -31,7 +31,7 @@ class TTemplateIndexedAccess extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return $this->array_param_name . '[' . $this->offset_param_name . ']';
     }

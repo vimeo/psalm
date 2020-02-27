@@ -27,7 +27,7 @@ class TKeyOfClassConstant extends Scalar
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }

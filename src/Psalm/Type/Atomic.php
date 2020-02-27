@@ -259,7 +259,7 @@ abstract class Atomic
     /**
      * @return string
      */
-    abstract public function getKey();
+    abstract public function getKey(bool $include_extra = true);
 
     /**
      * @return bool

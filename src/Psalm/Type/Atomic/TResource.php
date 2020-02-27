@@ -14,7 +14,7 @@ class TResource extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'resource';
     }

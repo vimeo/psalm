@@ -11,7 +11,7 @@ class TArrayKey extends Scalar
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'array-key';
     }

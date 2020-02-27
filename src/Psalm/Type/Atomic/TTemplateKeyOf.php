@@ -33,7 +33,7 @@ class TTemplateKeyOf extends TArrayKey
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'key-of<' . $this->param_name . '>';
     }

@@ -17,7 +17,7 @@ class TLiteralFloat extends TFloat
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'float(' . $this->value . ')';
     }

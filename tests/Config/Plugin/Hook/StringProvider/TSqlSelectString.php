@@ -6,7 +6,7 @@ class TSqlSelectString extends \Psalm\Type\Atomic\TLiteralString
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'sql-select-string';
     }

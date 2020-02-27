@@ -22,7 +22,7 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'value-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }

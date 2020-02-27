@@ -25,7 +25,7 @@ class TScalarClassConstant extends Scalar
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'scalar-class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
     }

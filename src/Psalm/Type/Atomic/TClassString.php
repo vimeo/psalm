@@ -29,7 +29,7 @@ class TClassString extends TString
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(bool $include_extra = true)
     {
         return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
