@@ -221,6 +221,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     || $lhs_type_part instanceof Type\Atomic\TTemplateParam
                     ? $lhs_type_part
                     : null,
+                false,
                 $lhs_var_id,
                 $return_type,
                 $returns_by_ref,
@@ -445,6 +446,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         Context $context,
         Type\Atomic $lhs_type_part,
         ?Type\Atomic $static_type,
+        bool $is_intersection = false,
         $lhs_var_id,
         &$return_type,
         &$returns_by_ref,
@@ -520,6 +522,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 case Type\Atomic\TNonEmptyMixed::class:
                 case Type\Atomic\TObject::class:
                 case Type\Atomic\TObjectWithProperties::class:
+                    if ($is_intersection) {
+                        return;
+                    }
+
                     if (!$context->collect_initializations
                         && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
@@ -671,6 +677,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $context,
                     $intersection_type,
                     $lhs_type_part,
+                    true,
                     $lhs_var_id,
                     $intersection_return_type,
                     $returns_by_ref,

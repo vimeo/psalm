@@ -91,6 +91,8 @@ trait HasIntersectionTrait
                 foreach ($template_type->getAtomicTypes() as $template_type_part) {
                     if ($template_type_part instanceof TNamedObject) {
                         $new_types[$template_type_part->getKey()] = $template_type_part;
+                    } elseif ($template_type_part instanceof TTemplateParam) {
+                        $new_types[$template_type_part->getKey()] = $template_type_part;
                     }
                 }
             } else {
