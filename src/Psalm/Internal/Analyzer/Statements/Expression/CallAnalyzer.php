@@ -1891,8 +1891,9 @@ class CallAnalyzer
                         [$template_type->param_name]
                         [$template_type->defining_class]
                 )) {
-                    $template_result->generic_params[$template_type->param_name] = [
-                        ($template_type->defining_class) => [clone $template_type->as, 0]
+                    $template_result->generic_params[$template_type->param_name][$template_type->defining_class] = [
+                        clone $template_type->as,
+                        0
                     ];
                 }
             }
