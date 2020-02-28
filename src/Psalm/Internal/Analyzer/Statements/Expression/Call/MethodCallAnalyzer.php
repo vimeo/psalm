@@ -446,7 +446,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         Context $context,
         Type\Atomic $lhs_type_part,
         ?Type\Atomic $static_type,
-        bool $is_intersection = false,
+        bool $is_intersection,
         $lhs_var_id,
         &$return_type,
         &$returns_by_ref,
