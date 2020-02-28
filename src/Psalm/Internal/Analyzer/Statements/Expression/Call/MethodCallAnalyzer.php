@@ -522,10 +522,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 case Type\Atomic\TNonEmptyMixed::class:
                 case Type\Atomic\TObject::class:
                 case Type\Atomic\TObjectWithProperties::class:
-                    if ($is_intersection) {
-                        return;
-                    }
-
                     if (!$context->collect_initializations
                         && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
@@ -543,7 +539,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         && isset($lhs_type_part->methods[$stmt->name->name])
                     ) {
                         $existent_method_ids[] = $lhs_type_part->methods[$stmt->name->name];
-                    } else {
+                    } elseif (!$is_intersection) {
                         if ($stmt->name instanceof PhpParser\Node\Identifier) {
                             $codebase->analyzer->addMixedMemberName(
                                 strtolower($stmt->name->name),
