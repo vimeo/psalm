@@ -1815,6 +1815,12 @@ class CallAnalyzer
             $param_type = clone $function_param->type;
         }
 
+        $bindable_template_params = [];
+
+        if ($template_result) {
+            $bindable_template_params = $param_type->getTemplateTypes();
+        }
+
         if ($class_generic_params) {
             $empty_generic_params = [];
 
@@ -1873,8 +1879,6 @@ class CallAnalyzer
                     $arg_type_param = Type::getMixed();
                 }
             }
-
-            $bindable_template_params = $param_type->getTemplateTypes();
 
             $param_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
                 $param_type,
