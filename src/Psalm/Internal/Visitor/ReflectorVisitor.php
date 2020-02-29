@@ -180,6 +180,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )) {
                         // fall through
                     }
+
+                    $this->file_storage->has_docblock_issues = true;
                 } catch (TypeParseTreeException $e) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
@@ -189,6 +191,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )) {
                         // fall through
                     }
+
+                    $this->file_storage->has_docblock_issues = true;
                 }
             }
         }
@@ -437,6 +441,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         )
                     )) {
                     }
+
+                    $storage->has_docblock_issues = true;
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Include_) {
@@ -1200,6 +1206,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                     )
                                 )) {
                                 }
+
+                                $storage->has_docblock_issues = true;
                             }
                         } else {
                             $storage->template_types[$template_name][$fq_classlike_name] = [Type::getMixed()];
@@ -1289,6 +1297,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             )
                         )) {
                         }
+
+                        $storage->has_docblock_issues = true;
                     } else {
                         $storage->mixin_fqcln = Type::getFQCLNFromString(
                             $docblock_info->mixin,
@@ -1379,6 +1389,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 )
             )) {
             }
+
+            $storage->has_docblock_issues = true;
         }
 
         $extended_union_type->setFromDocblock();
@@ -1392,6 +1404,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )
                 )) {
                 }
+
+                $storage->has_docblock_issues = true;
 
                 return;
             }
@@ -1409,6 +1423,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )
                 )) {
                 }
+
+                $storage->has_docblock_issues = true;
             }
 
             $extended_type_parameters = [];
@@ -1478,6 +1494,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 )
             )) {
             }
+
+            $storage->has_docblock_issues = true;
+
+            return;
         }
 
         $implemented_union_type->setFromDocblock();
@@ -1491,6 +1511,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )
                 )) {
                 }
+
+                $storage->has_docblock_issues = true;
 
                 return;
             }
@@ -1506,6 +1528,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )
                 )) {
                 }
+
+                $storage->has_docblock_issues = true;
+
+                return;
             }
 
             $implemented_type_parameters = [];
@@ -1575,6 +1601,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 )
             )) {
             }
+
+            $storage->has_docblock_issues = true;
+
+            return;
         }
 
         $used_union_type->setFromDocblock();
@@ -1588,6 +1618,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )
                 )) {
                 }
+
+                $storage->has_docblock_issues = true;
 
                 return;
             }
@@ -1603,6 +1635,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     )
                 )) {
                 }
+
+                $storage->has_docblock_issues = true;
+
+                return;
             }
 
             $used_type_parameters = [];
@@ -2232,6 +2268,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             )) {
                             }
 
+                            $storage->has_docblock_issues = true;
+
                             $template_type = Type::getMixed();
                         }
                     } else {
@@ -2242,6 +2280,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             )
                         )) {
                         }
+
+                        $storage->has_docblock_issues = true;
 
                         $template_type = Type::getMixed();
                     }
@@ -2737,6 +2777,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             )) {
                 // do nothing
             }
+
+            $this->file_storage->has_docblock_issues = true;
 
             return null;
         }
