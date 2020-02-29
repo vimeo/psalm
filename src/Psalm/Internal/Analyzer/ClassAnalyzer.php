@@ -795,6 +795,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $template_result,
                     $codebase,
                     null,
+                    null,
                     null
                 );
             }
@@ -1822,6 +1823,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $return_type,
                 $template_result,
                 $codebase,
+                null,
                 null,
                 null
             );

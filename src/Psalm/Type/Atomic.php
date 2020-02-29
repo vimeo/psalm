@@ -12,6 +12,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\InvalidTemplateParam;
@@ -860,6 +861,7 @@ abstract class Atomic
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase = null,
+        ?StatementsAnalyzer $statements_analyer = null,
         Type\Atomic $input_type = null,
         ?string $calling_class = null,
         ?string $calling_function = null,

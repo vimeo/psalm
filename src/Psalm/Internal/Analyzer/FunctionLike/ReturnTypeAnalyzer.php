@@ -774,6 +774,7 @@ class ReturnTypeAnalyzer
                     $template_result,
                     $codebase,
                     null,
+                    null,
                     null
                 );
             }

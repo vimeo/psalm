@@ -11,6 +11,7 @@ use function sort;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
@@ -314,6 +315,7 @@ class ObjectLike extends \Psalm\Type\Atomic
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase = null,
+        StatementsAnalyzer $statements_analyzer = null,
         Atomic $input_type = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
@@ -336,6 +338,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                 $property,
                 $template_result,
                 $codebase,
+                $statements_analyzer,
                 $input_type_param,
                 $calling_class,
                 $calling_function,

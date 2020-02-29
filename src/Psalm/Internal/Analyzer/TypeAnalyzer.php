@@ -1782,11 +1782,15 @@ class TypeAnalyzer
     public static function getCallableFromAtomic(
         Codebase $codebase,
         Type\Atomic $input_type_part,
-        ?TCallable $container_type_part = null
+        ?TCallable $container_type_part = null,
+        ?StatementsAnalyzer $statements_analyzer = null
     ) : ?TCallable {
         if ($input_type_part instanceof TLiteralString) {
             try {
-                $function_storage = $codebase->functions->getStorage(null, $input_type_part->value);
+                $function_storage = $codebase->functions->getStorage(
+                    $statements_analyzer,
+                    $input_type_part->value
+                );
 
                 return new TCallable(
                     'callable',

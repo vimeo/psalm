@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Type\Union;
 use Psalm\Type\Atomic;
@@ -21,6 +22,7 @@ class UnionTemplateHandler
         Union $union_type,
         TemplateResult $template_result,
         ?Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer,
         ?Union $input_type,
         ?string $calling_class = null,
         ?string $calling_function = null,
@@ -42,6 +44,7 @@ class UnionTemplateHandler
                     $key,
                     $template_result,
                     $codebase,
+                    $statements_analyzer,
                     $input_type,
                     $calling_class,
                     $calling_function,
@@ -87,6 +90,7 @@ class UnionTemplateHandler
         string $key,
         TemplateResult $template_result,
         ?Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer,
         ?Union $input_type,
         ?string $calling_class,
         ?string $calling_function,
@@ -239,13 +243,15 @@ class UnionTemplateHandler
                 $input_type,
                 $atomic_type,
                 $key,
-                $codebase
+                $codebase,
+                $statements_analyzer
             );
         }
 
         $atomic_type = $atomic_type->replaceTemplateTypesWithStandins(
             $template_result,
             $codebase,
+            $statements_analyzer,
             $matching_atomic_type,
             $calling_class,
             $calling_function,
@@ -257,11 +263,12 @@ class UnionTemplateHandler
         return [$atomic_type];
     }
 
-    public static function findMatchingAtomicTypeForTemplate(
+    private static function findMatchingAtomicTypeForTemplate(
         Union $input_type,
         Atomic $atomic_type,
         string $key,
-        Codebase $codebase
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer
     ) : ?Atomic {
         foreach ($input_type->getAtomicTypes() as $input_key => $atomic_input_type) {
             if ($bracket_pos = strpos($input_key, '<')) {
@@ -301,7 +308,9 @@ class UnionTemplateHandler
             if ($atomic_type instanceof Atomic\TCallable) {
                 $matching_atomic_type = TypeAnalyzer::getCallableFromAtomic(
                     $codebase,
-                    $atomic_input_type
+                    $atomic_input_type,
+                    null,
+                    $statements_analyzer
                 );
 
                 if ($matching_atomic_type) {

@@ -5,6 +5,7 @@ use function array_map;
 use function implode;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
@@ -164,7 +165,8 @@ trait GenericTrait
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
+        ?StatementsAnalyzer $statements_analyzer = null,
         Atomic $input_type = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
@@ -203,6 +205,7 @@ trait GenericTrait
                 $type_param,
                 $template_result,
                 $codebase,
+                $statements_analyzer,
                 $input_type_param,
                 $calling_class,
                 $calling_function,

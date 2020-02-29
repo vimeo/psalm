@@ -6,6 +6,7 @@ use function count;
 use function implode;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\StatementsSource;
@@ -197,6 +198,7 @@ trait CallableTrait
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase = null,
+        ?StatementsAnalyzer $statements_analyzer = null,
         Atomic $input_type = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
@@ -224,6 +226,7 @@ trait CallableTrait
                     $param->type,
                     $template_result,
                     $codebase,
+                    $statements_analyzer,
                     $input_param_type,
                     $calling_class,
                     $calling_function,
@@ -242,6 +245,7 @@ trait CallableTrait
                 $callable->return_type,
                 $template_result,
                 $codebase,
+                $statements_analyzer,
                 $input_type->return_type,
                 $calling_class,
                 $calling_function,

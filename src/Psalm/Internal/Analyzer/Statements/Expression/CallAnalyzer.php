@@ -503,6 +503,7 @@ class CallAnalyzer
                         $replaced_type,
                         $replace_template_result,
                         $codebase,
+                        $statements_analyzer,
                         null,
                         'fn-' . $context->calling_function_id
                     );
@@ -596,6 +597,7 @@ class CallAnalyzer
                         $generic_param_type,
                         $replace_template_result,
                         $codebase,
+                        $statements_analyzer,
                         $statements_analyzer->node_data->getType($arg->value),
                         'fn-' . $context->calling_function_id
                     );
@@ -1313,6 +1315,7 @@ class CallAnalyzer
                         $function_param->type,
                         $template_result,
                         $codebase,
+                        $statements_analyzer,
                         $arg_value_type,
                         $context->self,
                         $context->calling_function_id,
@@ -1526,6 +1529,7 @@ class CallAnalyzer
                         $param->type,
                         $template_result,
                         $codebase,
+                        $statements_analyzer,
                         clone $param->default_type,
                         $context->self,
                         $context->calling_function_id,
@@ -1723,6 +1727,7 @@ class CallAnalyzer
                         clone $by_ref_type,
                         $template_result,
                         $codebase,
+                        $statements_analyzer,
                         $statements_analyzer->node_data->getType($arg->value),
                         'fn-' . $context->calling_function_id
                     );
@@ -1743,6 +1748,7 @@ class CallAnalyzer
                         clone $by_ref_out_type,
                         $template_result,
                         $codebase,
+                        $statements_analyzer,
                         $statements_analyzer->node_data->getType($arg->value),
                         'fn-' . $context->calling_function_id
                     );
@@ -1832,6 +1838,7 @@ class CallAnalyzer
                 $param_type,
                 $empty_template_result,
                 $codebase,
+                $statements_analyzer,
                 $arg_value_type,
                 $context->self ?: 'fn-' . $context->calling_function_id
             );
@@ -1840,6 +1847,7 @@ class CallAnalyzer
                 $arg_type,
                 $empty_template_result,
                 $codebase,
+                $statements_analyzer,
                 $arg_value_type,
                 $context->self ?: 'fn-' . $context->calling_function_id
             );
@@ -1884,6 +1892,7 @@ class CallAnalyzer
                 $param_type,
                 $template_result,
                 $codebase,
+                $statements_analyzer,
                 $arg_type_param,
                 $context->self,
                 $context->calling_function_id
@@ -2453,6 +2462,7 @@ class CallAnalyzer
                     $closure_param_type,
                     $template_result,
                     $codebase,
+                    $statements_analyzer,
                     $input_type,
                     $context->self,
                     $context->calling_function_id

@@ -280,6 +280,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         $closure_param_type,
                         $template_result,
                         $codebase,
+                        $statements_source,
                         $array_arg_type->value,
                         $context->self,
                         $context->calling_function_id

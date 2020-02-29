@@ -1030,6 +1030,93 @@ class FunctionTemplateTest extends TestCase
                         return new MockObject;
                     }'
             ],
+            'testStringCallableInference' => [
+                '<?php
+                    class A {
+                        public static function dup(string $a): string {
+                            return $a . $a;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param iterable<T> $iter
+                     * @return list<T>
+                     */
+                    function toArray(iterable $iter): array {
+                        $data = [];
+                        foreach ($iter as $key => $val) {
+                            $data[] = $val;
+                        }
+                        return $data;
+                    }
+
+                    /**
+                     * @template T
+                     * @template U
+                     * @param callable(T): U $predicate
+                     * @return callable(iterable<T>): iterable<U>
+                     */
+                    function map(callable $predicate): callable {
+                        return
+                        /** @param iterable<T> $iter */
+                        function(iterable $iter) use ($predicate): iterable {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $predicate($value);
+                            }
+                        };
+                    }
+
+                    /** @param list<string> $strings */
+                    function _test(array $strings): void {}
+                    $a =  map([A::class, "dup"])(["a", "b", "c"]);',
+                [
+                    '$a' => 'iterable<mixed, string>'
+                ]
+            ],
+            'testClosureCallableInference' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param iterable<T> $iter
+                     * @return list<T>
+                     */
+                    function toArray(iterable $iter): array {
+                        $data = [];
+                        foreach ($iter as $key => $val) {
+                            $data[] = $val;
+                        }
+                        return $data;
+                    }
+
+                    /**
+                     * @template T
+                     * @template U
+                     * @param callable(T): U $predicate
+                     * @return callable(iterable<T>): iterable<U>
+                     */
+                    function map(callable $predicate): callable {
+                        return
+                        /** @param iterable<T> $iter */
+                        function(iterable $iter) use ($predicate): iterable {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $predicate($value);
+                            }
+                        };
+                    }
+
+                    /** @param list<string> $strings */
+                    function _test(array $strings): void {}
+
+                    $a = map(
+                        function (string $a) {
+                            return $a . $a;
+                        }
+                    )(["a", "b", "c"]);',
+                [
+                    '$a' => 'iterable<mixed, string>'
+                ]
+            ],
         ];
     }
 
