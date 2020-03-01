@@ -58,27 +58,25 @@ class RangeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
         }
 
         if ($all_ints) {
-            return new Type\Union([new Type\Atomic\TArray([Type::getInt(), Type::getInt()])]);
+            return new Type\Union([new Type\Atomic\TList(new Type\Union([new Type\Atomic\TInt]))]);
         }
 
         if ($all_strings) {
-            return new Type\Union([new Type\Atomic\TArray([Type::getInt(), Type::getString()])]);
+            return new Type\Union([new Type\Atomic\TList(new Type\Union([new Type\Atomic\TString]))]);
         }
 
         if ($all_floats) {
-            return new Type\Union([new Type\Atomic\TArray([Type::getInt(), Type::getFloat()])]);
+            return new Type\Union([new Type\Atomic\TList(new Type\Union([new Type\Atomic\TFloat]))]);
         }
 
         if ($all_numbers) {
-            return new Type\Union([new Type\Atomic\TArray([
-                Type::getInt(),
-                new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat]),
-            ])]);
+            return new Type\Union([new Type\Atomic\TList(
+                new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat])
+            )]);
         }
 
-        return new Type\Union([new Type\Atomic\TArray([
-            Type::getInt(),
-            new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat, new Type\Atomic\TString]),
-        ])]);
+        return new Type\Union([new Type\Atomic\TList(
+            new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat, new Type\Atomic\TString])
+        )]);
     }
 }
