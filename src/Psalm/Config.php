@@ -1661,14 +1661,14 @@ class Config
         $codebase->register_stub_files = true;
 
         // note: don't realpath $generic_stubs_path, or phar version will fail
-        $generic_stubs_path = __DIR__ . '/Internal/Stubs/CoreGenericFunctions.php';
+        $generic_stubs_path = __DIR__ . '/Internal/Stubs/CoreGenericFunctions.phpstub';
 
         if (!file_exists($generic_stubs_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
         // note: don't realpath $generic_classes_path, or phar version will fail
-        $generic_classes_path = __DIR__ . '/Internal/Stubs/CoreGenericClasses.php';
+        $generic_classes_path = __DIR__ . '/Internal/Stubs/CoreGenericClasses.phpstub';
 
         if (!file_exists($generic_classes_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic classes');
