@@ -863,6 +863,7 @@ abstract class Atomic
         Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyer = null,
         Type\Atomic $input_type = null,
+        ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,

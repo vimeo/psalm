@@ -24,6 +24,7 @@ class UnionTemplateHandler
         ?Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
         ?Union $input_type,
+        ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,
@@ -46,6 +47,7 @@ class UnionTemplateHandler
                     $codebase,
                     $statements_analyzer,
                     $input_type,
+                    $input_arg_offset,
                     $calling_class,
                     $calling_function,
                     $replace,
@@ -92,6 +94,7 @@ class UnionTemplateHandler
         ?Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
         ?Union $input_type,
+        ?int $input_arg_offset,
         ?string $calling_class,
         ?string $calling_function,
         bool $replace,
@@ -113,6 +116,7 @@ class UnionTemplateHandler
                 $atomic_type,
                 $key,
                 $input_type,
+                $input_arg_offset,
                 $calling_class,
                 $calling_function,
                 $template_result,
@@ -134,6 +138,7 @@ class UnionTemplateHandler
                 return self::handleTemplateParamClassStandin(
                     $atomic_type,
                     $input_type,
+                    $input_arg_offset,
                     $template_result,
                     $depth,
                     $was_single
@@ -253,6 +258,7 @@ class UnionTemplateHandler
             $codebase,
             $statements_analyzer,
             $matching_atomic_type,
+            $input_arg_offset,
             $calling_class,
             $calling_function,
             $replace,
@@ -379,6 +385,7 @@ class UnionTemplateHandler
         Atomic\TTemplateParam $atomic_type,
         string $key,
         ?Union $input_type,
+        ?int $input_arg_offset,
         ?string $calling_class,
         ?string $calling_function,
         TemplateResult $template_result,
@@ -493,17 +500,18 @@ class UnionTemplateHandler
                 if (isset(
                     $template_result->generic_params[$param_name_key][$atomic_type->defining_class][0]
                 )) {
-                    $existing_depth = $template_result->generic_params
+                    $existing_generic_param = $template_result->generic_params
                         [$param_name_key]
-                        [$atomic_type->defining_class]
-                        [1]
-                        ?? -1;
+                        [$atomic_type->defining_class];
 
-                    if ($existing_depth > $depth) {
+                    $existing_depth = $existing_generic_param[1] ?? -1;
+                    $existing_arg_offset = $existing_generic_param[2] ?? $input_arg_offset;
+
+                    if ($existing_depth > $depth && $input_arg_offset === $existing_arg_offset) {
                         return $atomic_types ?: [$atomic_type];
                     }
 
-                    if ($existing_depth === $depth) {
+                    if ($existing_depth === $depth || $input_arg_offset !== $existing_arg_offset) {
                         $generic_param = \Psalm\Type::combineUnionTypes(
                             $template_result->generic_params
                                 [$param_name_key]
@@ -518,6 +526,7 @@ class UnionTemplateHandler
                 $template_result->generic_params[$param_name_key][$atomic_type->defining_class] = [
                     $generic_param,
                     $depth,
+                    $input_arg_offset
                 ];
             }
 
@@ -546,6 +555,7 @@ class UnionTemplateHandler
     public static function handleTemplateParamClassStandin(
         Atomic\TTemplateParamClass $atomic_type,
         ?Union $input_type,
+        ?int $input_arg_offset,
         TemplateResult $template_result,
         int $depth,
         bool $was_single
@@ -609,6 +619,7 @@ class UnionTemplateHandler
                     $template_result->generic_params[$atomic_type->param_name][$atomic_type->defining_class] = [
                         $generic_param,
                         $depth,
+                        $input_arg_offset
                     ];
                 }
             }

@@ -314,9 +314,10 @@ class ObjectLike extends \Psalm\Type\Atomic
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        Codebase $codebase = null,
-        StatementsAnalyzer $statements_analyzer = null,
+        ?Codebase $codebase = null,
+        ?StatementsAnalyzer $statements_analyzer = null,
         Atomic $input_type = null,
+        ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,
@@ -340,6 +341,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                 $codebase,
                 $statements_analyzer,
                 $input_type_param,
+                $input_arg_offset,
                 $calling_class,
                 $calling_function,
                 $replace,
