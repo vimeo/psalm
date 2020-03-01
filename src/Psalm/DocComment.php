@@ -219,7 +219,7 @@ class DocComment
                 list($data, $data_offset) = $data_info;
 
                 if (strpos($data, '*')) {
-                    $data = rtrim(preg_replace('/^[ \t]*\*\s*$/', '', $data));
+                    $data = rtrim(preg_replace('/^[ \t]*\*\s*$/m', '', $data));
                 }
 
                 $docblock = str_replace($full_match, '', $docblock);
