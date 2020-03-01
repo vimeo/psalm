@@ -15,6 +15,7 @@ use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedMethod;
@@ -103,11 +104,17 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $fq_class_name = $context->self;
                     }
                 } else {
-                    $namespace = $statements_analyzer->getNamespace()
-                        ? $statements_analyzer->getNamespace() . '\\'
-                        : '';
+                    if (IssueBuffer::accepts(
+                        new NonStaticSelfCall(
+                            'Cannot use ' . $stmt->class->parts[0] . ' outside class context',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
 
-                    $fq_class_name = $namespace . $statements_analyzer->getClassName();
+                    return;
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {

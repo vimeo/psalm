@@ -14,6 +14,7 @@ use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\InaccessibleClassConstant;
+use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
@@ -47,10 +48,20 @@ class ClassConstFetchAnalyzer
 
             if ($first_part_lc === 'self' || $first_part_lc === 'static') {
                 if (!$context->self) {
-                    throw new \UnexpectedValueException('$context->self cannot be null');
+                    if (IssueBuffer::accepts(
+                        new NonStaticSelfCall(
+                            'Cannot use ' . $first_part_lc . ' outside class context',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    return;
                 }
 
-                $fq_class_name = (string)$context->self;
+                $fq_class_name = $context->self;
             } elseif ($first_part_lc === 'parent') {
                 $fq_class_name = $statements_analyzer->getParentFQCLN();
 

@@ -287,6 +287,20 @@ class ClassScopeTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleMethod',
             ],
+            'noSelfInFunctionConstant' => [
+                '<?php
+                    function foo() : void {
+                        echo self::SOMETHING;
+                    }',
+                'error_message' => 'NonStaticSelfCall',
+            ],
+            'noSelfInFunctionCall' => [
+                '<?php
+                    function foo() : void {
+                        echo self::bar();
+                    }',
+                'error_message' => 'NonStaticSelfCall',
+            ],
         ];
     }
 }
