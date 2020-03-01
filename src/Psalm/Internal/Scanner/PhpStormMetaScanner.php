@@ -83,7 +83,7 @@ class PhpStormMetaScanner
         ) {
             $meta_fq_classlike_name = implode('\\', $identifier->class->parts);
 
-            $meta_method_name = $identifier->name->name;
+            $meta_method_name = strtolower($identifier->name->name);
 
             if ($map) {
                 $offset = $identifier->args[0]->value->value;
