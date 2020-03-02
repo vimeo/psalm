@@ -612,8 +612,6 @@ class Analyzer
 
         $this->mixed_counts = $file_reference_provider->getTypeCoverage();
 
-        $classlikes = $codebase->classlikes;
-
         foreach ($changed_members as $file_path => $members_by_file) {
             foreach ($members_by_file as $changed_member => $_) {
                 if (!strpos($changed_member, '&')) {
@@ -622,7 +620,7 @@ class Analyzer
 
                 list($base_class, $trait) = explode('&', $changed_member);
 
-                foreach ($all_referencing_methods as $member_id => $referencing_method_ids) {
+                foreach ($all_referencing_methods as $member_id => $_) {
                     if (strpos($member_id, $base_class . '::') !== 0) {
                         continue;
                     }
@@ -633,20 +631,6 @@ class Analyzer
                         $changed_members[$file_path][$member_id] = true;
                     }
                 }
-            }
-        }
-
-        foreach ($all_referencing_methods as $member_id => $referencing_method_ids) {
-            if (!strpos($member_id, '&')) {
-                continue;
-            }
-
-            $member_stub = $member_class_name . '::*';
-
-            if (!isset($all_referencing_methods[$member_stub])) {
-                $all_referencing_methods[$member_stub] = $referencing_method_ids;
-            } else {
-                $all_referencing_methods[$member_stub] += $referencing_method_ids;
             }
         }
 

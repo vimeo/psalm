@@ -289,16 +289,6 @@ class ClassLikes
     }
 
     /**
-     * @param string        $fq_class_name_lc
-     *
-     * @return bool
-     */
-    public function hasFullyQualifiedClassLikeName($fq_class_name_lc)
-    {
-        return isset($this->existing_classlikes_lc[$fq_class_name_lc]);
-    }
-
-    /**
      * @param string $fq_class_name
      *
      * @return bool
