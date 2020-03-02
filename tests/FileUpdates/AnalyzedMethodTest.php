@@ -921,6 +921,82 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     ],
                 ],
             ],
+            'invalidateConstructorWhenDependentMethodInSubclassChanges' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        abstract class A {
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+
+                            abstract protected function setFoo() : void;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                        namespace Foo;
+
+                        class AChild extends A {
+                            /** @var string */
+                            public $foo;
+
+                            protected function setFoo() : void {
+                                $this->reallySetFoo();
+                            }
+
+                            private function reallySetFoo() : void {
+                                $this->foo = "bar";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        abstract class A {
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+
+                            abstract protected function setFoo() : void;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                        namespace Foo;
+
+                        class AChild extends A {
+                            /** @var string */
+                            public $foo;
+
+                            protected function setFoo() : void {
+                                $this->reallySetFoo();
+                            }
+
+                            private function reallySetFoo() : void {
+                                //$this->foo = "bar";
+                            }
+                        }',
+                ],
+                'initial_analyzed_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 1,
+                        'foo\a::setfoo' => 1,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
+                        'foo\achild::setfoo' => 1,
+                        'foo\achild::reallysetfoo' => 1,
+                        'foo\achild::__construct' => 2,
+                    ],
+                ],
+                'unaffected_analyzed_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 1,
+                        'foo\a::setfoo' => 1,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
+                        'foo\achild::setfoo' => 1,
+                    ],
+                ],
+            ],
             'invalidateConstructorWhenDependentTraitMethodChanges' => [
                 'start_files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php

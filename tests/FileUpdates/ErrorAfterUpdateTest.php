@@ -855,6 +855,65 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_message' => 'PossiblyUnusedProperty',
             ],
+            'uninitialisedChildProperty' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            abstract class A {
+                                public function __construct() {
+                                    $this->setFoo();
+                                }
+
+                                abstract protected function setFoo() : void;
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                            namespace Foo;
+
+                            class AChild extends A {
+                                /** @var string */
+                                public $foo;
+
+                                protected function setFoo() : void {
+                                    $this->reallySetFoo();
+                                }
+
+                                private function reallySetFoo() : void {
+                                    $this->foo = "bar";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            abstract class A {
+                                public function __construct() {
+                                    $this->setFoo();
+                                }
+
+                                abstract protected function setFoo() : void;
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                            namespace Foo;
+
+                            class AChild extends A {
+                                /** @var string */
+                                public $foo;
+
+                                protected function setFoo() : void {
+                                    $this->reallySetFoo();
+                                }
+
+                                private function reallySetFoo() : void {
+                                    //$this->foo = "bar";
+                                }
+                            }',
+                    ],
+                ],
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
         ];
     }
 }
