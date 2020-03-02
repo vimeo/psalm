@@ -203,7 +203,7 @@ class ClassStatementsDiffer extends AstDiffer
                     }
                 } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\TraitUse) {
                     foreach ($diff_elem->old->traits as $trait) {
-                        $keep[] = strtolower((string) $trait->getAttribute('resolvedName')) . '::*';
+                        $keep[] = strtolower($name . '&' . $trait->getAttribute('resolvedName'));
                     }
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_KEEP_SIGNATURE) {
@@ -229,7 +229,7 @@ class ClassStatementsDiffer extends AstDiffer
                     }
                 } elseif ($affected_elem instanceof PhpParser\Node\Stmt\TraitUse) {
                     foreach ($affected_elem->traits as $trait) {
-                        $add_or_delete[] = strtolower((string) $trait->getAttribute('resolvedName')) . '::*';
+                        $add_or_delete[] = strtolower($name . '&' . $trait->getAttribute('resolvedName'));
                     }
                 }
             }

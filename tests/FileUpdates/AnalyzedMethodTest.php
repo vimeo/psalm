@@ -507,7 +507,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         class A {
                             use T;
 
-                            public function fooFoo(): void { }
+                            public function fooFoo(?string $foo = null): void { }
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
@@ -535,7 +535,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         namespace Foo;
 
                         class A {
-                            public function fooFoo(?string $foo = null): void { }
+                            public function fooFoo(): void { }
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
@@ -569,9 +569,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar&foo\t::barbar' => 1, // this doesn't exist, so we don't care
-                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ],
             ],

@@ -614,12 +614,30 @@ class Analyzer
 
         $classlikes = $codebase->classlikes;
 
-        foreach ($all_referencing_methods as $member_id => $referencing_method_ids) {
-            $member_class_name = preg_replace('/::.*$/', '', $member_id);
+        foreach ($changed_members as $file_path => $members_by_file) {
+            foreach ($members_by_file as $changed_member => $_) {
+                if (!strpos($changed_member, '&')) {
+                    continue;
+                }
 
-            if ($classlikes->hasFullyQualifiedClassLikeName($member_class_name)
-                && !$classlikes->hasFullyQualifiedTraitName($member_class_name)
-            ) {
+                list($base_class, $trait) = explode('&', $changed_member);
+
+                foreach ($all_referencing_methods as $member_id => $referencing_method_ids) {
+                    if (strpos($member_id, $base_class . '::') !== 0) {
+                        continue;
+                    }
+
+                    $member_bit = substr($member_id, strlen($base_class) + 2);
+
+                    if (isset($all_referencing_methods[$trait . '::' . $member_bit])) {
+                        $changed_members[$file_path][$member_id] = true;
+                    }
+                }
+            }
+        }
+
+        foreach ($all_referencing_methods as $member_id => $referencing_method_ids) {
+            if (!strpos($member_id, '&')) {
                 continue;
             }
 
