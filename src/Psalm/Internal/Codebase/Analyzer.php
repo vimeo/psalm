@@ -625,7 +625,7 @@ class Analyzer
                         continue;
                     }
 
-                    $member_bit = substr($member_id, strlen($base_class) + 2);
+                    $member_bit = substr($member_id, \strlen($base_class) + 2);
 
                     if (isset($all_referencing_methods[$trait . '::' . $member_bit])) {
                         $changed_members[$file_path][$member_id] = true;
