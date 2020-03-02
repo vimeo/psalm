@@ -319,3 +319,11 @@ function preg_grep($pattern, array $input, $flags = 0)
 function fclose(&$handle) : bool
 {
 }
+
+/**
+ * @param string $reference
+ * @param-out null $reference
+ */
+function sodium_memzero(string &$reference): void
+{
+}
