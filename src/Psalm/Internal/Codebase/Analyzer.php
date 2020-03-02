@@ -642,7 +642,22 @@ class Analyzer
                 if (isset($all_referencing_methods[$unchanged_signature_member_id])) {
                     foreach ($all_referencing_methods[$unchanged_signature_member_id] as $referencing_method_id => $_) {
                         if (substr($referencing_method_id, -13) === '::__construct') {
-                            $newly_invalidated_methods[$referencing_method_id] = true;
+                            $referencing_base_classlike = explode('::', $referencing_method_id)[0];
+                            $unchanged_signature_classlike = explode('::', $unchanged_signature_member_id)[0];
+
+                            if ($referencing_base_classlike === $unchanged_signature_classlike) {
+                                $newly_invalidated_methods[$referencing_method_id] = true;
+                            } else {
+                                $referencing_storage = $codebase->classlike_storage_provider->get(
+                                    $referencing_base_classlike
+                                );
+
+                                if (isset($referencing_storage->used_traits[$unchanged_signature_classlike])
+                                    || isset($referencing_storage->parent_classes[$unchanged_signature_classlike])
+                                ) {
+                                    $newly_invalidated_methods[$referencing_method_id] = true;
+                                }
+                            }
                         }
                     }
                 }

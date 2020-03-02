@@ -182,7 +182,7 @@ class ClassLikeStorage
     /**
      * Parent classes
      *
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $parent_classes = [];
 
