@@ -997,6 +997,71 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     ],
                 ],
             ],
+            'invalidateConstructorWhenDependentMethodInSubclassChanges' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public $foo;
+
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+
+                            protected function setFoo() : void {
+                                $this->foo = "bar";
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                        namespace Foo;
+
+                        class AChild extends A {
+                            public function __construct() {
+                                parent::__construct();
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public $foo;
+
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+
+                            protected function setFoo() : void {
+                                $this->foo = "baz";
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                        namespace Foo;
+
+                        class AChild extends A {
+                            public function __construct() {
+                                parent::__construct();
+                            }
+                        }',
+                ],
+                'initial_analyzed_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 2,
+                        'foo\a::setfoo' => 1,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
+                        'foo\achild::__construct' => 2,
+                    ],
+                ],
+                'unaffected_analyzed_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [],
+                ],
+            ],
             'invalidateConstructorWhenDependentTraitMethodChanges' => [
                 'start_files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
