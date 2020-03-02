@@ -1694,6 +1694,15 @@ class FunctionCallTest extends TestCase
                     (print "test") === 2;',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'sodiumMemzeroNullifyString' => [
+                '<?php
+                    function returnsStr(): string {
+                        $str = "x";
+                        sodium_memzero($str);
+                        return $str;
+                    }',
+                'error_message' => 'NullableReturnStatement'
+            ]
         ];
     }
 }
