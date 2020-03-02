@@ -997,7 +997,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     ],
                 ],
             ],
-            'invalidateConstructorWhenDependentMethodInSubclassChanges' => [
+            'invalidateConstructorWhenDependentMethodInSubclassChanges2' => [
                 'start_files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
