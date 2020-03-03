@@ -2262,7 +2262,7 @@ class ClassLikes
             $this->existing_interfaces_lc[$fq_class_name_lc],
             $this->existing_interfaces[$fq_class_name],
             $this->existing_classes[$fq_class_name],
-            $this->trait_nodes[$fq_class_name_lc],
+            $this->trait_nodes[$fq_class_name_lc]
         );
 
         $this->scanner->removeClassLike($fq_class_name_lc);
