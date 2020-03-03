@@ -712,14 +712,21 @@ class ClassLikes
         $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path);
 
         foreach ($file_statements as $file_statement) {
-            if ($file_statement instanceof PhpParser\Node\Stmt\Trait_) {
+            if ($file_statement instanceof PhpParser\Node\Stmt\Trait_
+                && $file_statement->name
+                && strtolower($file_statement->name->name) === $fq_trait_name_lc
+            ) {
                 $this->trait_nodes[$fq_trait_name_lc] = $file_statement;
                 return $file_statement;
             }
 
             if ($file_statement instanceof PhpParser\Node\Stmt\Namespace_) {
+                $namespace_stub = $file_statement->name ? $file_statement->name . '\\' : '';
+
                 foreach ($file_statement->stmts as $namespace_stmt) {
-                    if ($namespace_stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                    if ($namespace_stmt instanceof PhpParser\Node\Stmt\Trait_
+                        && strtolower($namespace_stub . $namespace_stmt->name) === $fq_trait_name_lc
+                    ) {
                         $this->trait_nodes[$fq_trait_name_lc] = $namespace_stmt;
                         return $namespace_stmt;
                     }

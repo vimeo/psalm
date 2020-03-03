@@ -459,13 +459,14 @@ class TraitTest extends TestCase
                     class C
                     {
                         use T2;
+
                         use T1 {
-                            traitFunc as _func;
+                            traitFunc as aliasedTraitFunc;
                         }
 
                         public static function func(): void
                         {
-                            static::_func();
+                            static::aliasedTraitFunc();
                         }
                     }
                     trait T1
