@@ -967,8 +967,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         continue;
                     }
 
+                    $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
                     $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
-                    $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name);
+                    $trait_aliases = $trait_storage->aliases;
+
+                    if ($trait_aliases === null) {
+                        continue;
+                    }
+
                     $trait_analyzer = new TraitAnalyzer(
                         $trait_node,
                         $trait_file_analyzer,
@@ -979,7 +985,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $fq_trait_name_lc = strtolower($fq_trait_name);
 
                     if (isset($storage->template_type_uses_count[$fq_trait_name_lc])) {
-                        $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_lc);
                         $expected_param_count = $storage->template_type_uses_count[$fq_trait_name_lc];
 
                         $this->checkTemplateParams(
@@ -1463,7 +1468,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
                 $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name_resolved);
-                $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name_resolved);
+                $trait_aliases = $trait_storage->aliases;
+                if ($trait_aliases === null) {
+                    continue;
+                }
+
                 $trait_analyzer = new TraitAnalyzer(
                     $trait_node,
                     $trait_file_analyzer,

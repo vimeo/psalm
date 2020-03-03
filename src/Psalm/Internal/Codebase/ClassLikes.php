@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
@@ -93,19 +94,14 @@ class ClassLikes
     private $existing_traits = [];
 
     /**
-     * @var array<string, PhpParser\Node\Stmt\Trait_>
-     */
-    private $trait_nodes = [];
-
-    /**
-     * @var array<string, Aliases>
-     */
-    private $trait_aliases = [];
-
-    /**
      * @var array<string, string>
      */
     private $classlike_aliases = [];
+
+    /**
+     * @var array<string, PhpParser\Node\Stmt\Trait_>
+     */
+    private $trait_nodes = [];
 
     /**
      * @var bool
@@ -116,6 +112,11 @@ class ClassLikes
      * @var bool
      */
     public $collect_locations = false;
+
+    /**
+     * @var StatementsProvider
+     */
+    private $statements_provider;
 
     /**
      * @var Config
@@ -131,11 +132,13 @@ class ClassLikes
         Config $config,
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
+        StatementsProvider $statements_provider,
         Scanner $scanner
     ) {
         $this->config = $config;
         $this->classlike_storage_provider = $storage_provider;
         $this->file_reference_provider = $file_reference_provider;
+        $this->statements_provider = $statements_provider;
         $this->scanner = $scanner;
 
         $this->collectPredefinedClassLikes();
@@ -690,18 +693,6 @@ class ClassLikes
     /**
      * @param  string $fq_trait_name
      *
-     * @return void
-     */
-    public function addTraitNode($fq_trait_name, PhpParser\Node\Stmt\Trait_ $node, Aliases $aliases)
-    {
-        $fq_trait_name_lc = strtolower($fq_trait_name);
-        $this->trait_nodes[$fq_trait_name_lc] = $node;
-        $this->trait_aliases[$fq_trait_name_lc] = $aliases;
-    }
-
-    /**
-     * @param  string $fq_trait_name
-     *
      * @return PhpParser\Node\Stmt\Trait_
      */
     public function getTraitNode($fq_trait_name)
@@ -712,27 +703,31 @@ class ClassLikes
             return $this->trait_nodes[$fq_trait_name_lc];
         }
 
-        throw new \UnexpectedValueException(
-            'Expecting trait statements to exist for ' . $fq_trait_name
-        );
-    }
+        $storage = $this->classlike_storage_provider->get($fq_trait_name);
 
-    /**
-     * @param  string $fq_trait_name
-     *
-     * @return Aliases
-     */
-    public function getTraitAliases($fq_trait_name)
-    {
-        $fq_trait_name_lc = strtolower($fq_trait_name);
-
-        if (isset($this->trait_aliases[$fq_trait_name_lc])) {
-            return $this->trait_aliases[$fq_trait_name_lc];
+        if (!$storage->location) {
+            throw new \UnexpectedValueException('Storage should exist for ' . $fq_trait_name);
         }
 
-        throw new \UnexpectedValueException(
-            'Expecting trait aliases to exist for ' . $fq_trait_name
-        );
+        $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path);
+
+        foreach ($file_statements as $file_statement) {
+            if ($file_statement instanceof PhpParser\Node\Stmt\Trait_) {
+                $this->trait_nodes[$fq_trait_name_lc] = $file_statement;
+                return $file_statement;
+            }
+
+            if ($file_statement instanceof PhpParser\Node\Stmt\Namespace_) {
+                foreach ($file_statement->stmts as $namespace_stmt) {
+                    if ($namespace_stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                        $this->trait_nodes[$fq_trait_name_lc] = $namespace_stmt;
+                        return $namespace_stmt;
+                    }
+                }
+            }
+        }
+
+        throw new \UnexpectedValueException('Could not locate trait statement');
     }
 
     /**
@@ -2268,7 +2263,6 @@ class ClassLikes
             $this->existing_interfaces[$fq_class_name],
             $this->existing_classes[$fq_class_name],
             $this->trait_nodes[$fq_class_name_lc],
-            $this->trait_aliases[$fq_class_name_lc]
         );
 
         $this->scanner->removeClassLike($fq_class_name_lc);
@@ -2283,8 +2277,6 @@ class ClassLikes
      *     4: array<lowercase-string, bool>,
      *     5: array<string, bool>,
      *     6: array<string, bool>,
-     *     7: array<string, \PhpParser\Node\Stmt\Trait_>,
-     *     8: array<string, \Psalm\Aliases>
      * }
      */
     public function getThreadData()
@@ -2297,8 +2289,6 @@ class ClassLikes
             $this->existing_interfaces_lc,
             $this->existing_interfaces,
             $this->existing_classes,
-            $this->trait_nodes,
-            $this->trait_aliases,
         ];
     }
 
@@ -2311,8 +2301,6 @@ class ClassLikes
      *     4: array<lowercase-string, bool>,
      *     5: array<string, bool>,
      *     6: array<string, bool>,
-     *     7: array<string, \PhpParser\Node\Stmt\Trait_>,
-     *     8: array<string, \Psalm\Aliases>
      * } $thread_data
      *
      * @return void
@@ -2326,9 +2314,7 @@ class ClassLikes
             $existing_traits,
             $existing_interfaces_lc,
             $existing_interfaces,
-            $existing_classes,
-            $trait_nodes,
-            $trait_aliases) = $thread_data;
+            $existing_classes) = $thread_data;
 
         $this->existing_classlikes_lc = array_merge($existing_classlikes_lc, $this->existing_classlikes_lc);
         $this->existing_classes_lc = array_merge($existing_classes_lc, $this->existing_classes_lc);
@@ -2337,7 +2323,5 @@ class ClassLikes
         $this->existing_interfaces_lc = array_merge($existing_interfaces_lc, $this->existing_interfaces_lc);
         $this->existing_interfaces = array_merge($existing_interfaces, $this->existing_interfaces);
         $this->existing_classes = array_merge($existing_classes, $this->existing_classes);
-        $this->trait_nodes = array_merge($trait_nodes, $this->trait_nodes);
-        $this->trait_aliases = array_merge($trait_aliases, $this->trait_aliases);
     }
 }

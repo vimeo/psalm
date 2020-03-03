@@ -33,9 +33,7 @@ use function substr;
  *         3:array<string, bool>,
  *         4:array<lowercase-string, bool>,
  *         5:array<string, bool>,
- *         6:array<string, bool>,
- *         7:array<string, \PhpParser\Node\Stmt\Trait_>,
- *         8:array<string, \Psalm\Aliases>
+ *         6:array<string, bool>
  *     },
  *     scanner_data:array{
  *         0:array<string, string>,

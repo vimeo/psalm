@@ -1126,14 +1126,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->is_trait = true;
             $this->file_storage->has_trait = true;
             $this->codebase->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
-
-            // adding this trait information (and scanning the traits in to begin with)
-            // increases the memory usage, but makes Psalm faster.
-            $this->codebase->classlikes->addTraitNode(
-                $fq_classlike_name,
-                $node,
-                $this->aliases
-            );
         }
 
         if ($doc_comment) {

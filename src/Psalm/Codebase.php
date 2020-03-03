@@ -318,6 +318,7 @@ class Codebase
             $this->config,
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
+            $providers->statements_provider,
             $this->scanner
         );
 
