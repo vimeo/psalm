@@ -888,7 +888,7 @@ class NegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasScalar()) {
+                if (!$type->as->hasScalar() || $is_equality) {
                     $non_scalar_types[] = $type;
                 }
 
@@ -953,7 +953,7 @@ class NegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasObject()) {
+                if (!$type->as->hasObject() || $is_equality) {
                     $non_object_types[] = $type;
                 }
 
@@ -1026,7 +1026,7 @@ class NegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasNumeric()) {
+                if (!$type->as->hasNumeric() || $is_equality) {
                     if ($type->as->hasMixed()) {
                         $did_remove_type = true;
                     }
@@ -1096,7 +1096,7 @@ class NegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasInt()) {
+                if (!$type->as->hasInt() || $is_equality) {
                     if ($type->as->hasMixed()) {
                         $did_remove_type = true;
                     }
@@ -1173,7 +1173,7 @@ class NegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasInt()) {
+                if (!$type->as->hasFloat() || $is_equality) {
                     if ($type->as->hasMixed()) {
                         $did_remove_type = true;
                     }
@@ -1245,7 +1245,7 @@ class NegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasString()) {
+                if (!$type->as->hasString() || $is_equality) {
                     if ($type->as->hasMixed()) {
                         $did_remove_type = true;
                     }
@@ -1330,7 +1330,7 @@ class NegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasArray()) {
+                if (!$type->as->hasArray() || $is_equality) {
                     if ($type->as->hasMixed()) {
                         $did_remove_type = true;
                     }
