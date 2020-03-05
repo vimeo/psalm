@@ -47,12 +47,16 @@ class JunitReport extends Report
             $fname = $error->file_name;
 
             if (!isset($ndata[$fname])) {
+                $failure = [];
+                if ($is_error || ($this->show_info && $is_warning)) {
+                    $failure = [
+                        $this->createFailure($error)
+                    ];
+                }
                 $ndata[$fname] = [
                     'errors'   => $is_error ? 1 : 0,
                     'warnings' => $is_warning ? 1 : 0,
-                    'failures' => [
-                        $this->createFailure($error),
-                    ],
+                    'failures' => $failure,
                 ];
             } else {
                 if ($is_error) {
@@ -61,7 +65,9 @@ class JunitReport extends Report
                     $ndata[$fname]['warnings']++;
                 }
 
-                $ndata[$fname]['failures'][] = $this->createFailure($error);
+                if ($is_error || ($this->show_info && $is_warning)) {
+                    $ndata[$fname]['failures'][] = $this->createFailure($error);
+                }
             }
         }
 
