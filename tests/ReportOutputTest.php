@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests;
 
+use DOMDocument;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -499,6 +500,8 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
 
         $checkstyle_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.junit.xml'])[0];
 
+        $xml = IssueBuffer::getOutput($checkstyle_report_options);
+
         $this->assertSame(
             '<?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
@@ -548,8 +551,17 @@ column_to: 8
   </testsuite>
 </testsuites>
 ',
-            IssueBuffer::getOutput($checkstyle_report_options)
+            $xml
         );
+
+        // Validate against junit xsd
+        $dom = new DOMDocument("1.0", "UTF-8");
+        $dom->preserveWhiteSpace = false;
+        $dom->loadXML($xml);
+
+        // Validate against xsd
+        $valid = $dom->schemaValidate(__DIR__ . "/junit.xsd");
+        $this->assertTrue($valid, "Output did not validate against XSD");
 
         // FIXME: The XML parser only return strings, all int value are casted, so the assertSame failed
         //$this->assertSame(
