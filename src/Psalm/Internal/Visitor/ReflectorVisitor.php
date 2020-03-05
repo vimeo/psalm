@@ -1387,6 +1387,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $extended_union_type->setFromDocblock();
 
+        $extended_union_type->queueClassLikesForScanning(
+            $this->codebase,
+            $this->file_storage,
+            $storage->template_types ?: []
+        );
+
         foreach ($extended_union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
                 if (IssueBuffer::accepts(
@@ -1494,6 +1500,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $implemented_union_type->setFromDocblock();
 
+        $implemented_union_type->queueClassLikesForScanning(
+            $this->codebase,
+            $this->file_storage,
+            $storage->template_types ?: []
+        );
+
         foreach ($implemented_union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
                 if (IssueBuffer::accepts(
@@ -1600,6 +1612,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         $used_union_type->setFromDocblock();
+
+        $used_union_type->queueClassLikesForScanning(
+            $this->codebase,
+            $this->file_storage,
+            $storage->template_types ?: []
+        );
 
         foreach ($used_union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
