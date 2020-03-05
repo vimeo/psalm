@@ -859,6 +859,23 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidStringClass',
             ],
+            'dontAssumePossibleByRef' => [
+                '<?php
+                    class C {
+                        function b(string $p): string {
+                            return $p;
+                        }
+                    }
+
+                    /** @return mixed */
+                    function func() {
+                        return new C();
+                    }
+
+                    /** @psalm-suppress MixedMethodCall */
+                    func()->b($param);',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
         ];
     }
 }

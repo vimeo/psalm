@@ -657,37 +657,15 @@ class CallAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context
     ) {
-        // there are a bunch of things we want to evaluate even when we don't
-        // know what function/method is being called
-        if ($arg->value instanceof PhpParser\Node\Expr\Closure
-            || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
-            || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-            || $arg->value instanceof PhpParser\Node\Expr\FuncCall
-            || $arg->value instanceof PhpParser\Node\Expr\MethodCall
-            || $arg->value instanceof PhpParser\Node\Expr\StaticCall
-            || $arg->value instanceof PhpParser\Node\Expr\New_
-            || $arg->value instanceof PhpParser\Node\Expr\Assign
-            || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
-            || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
-            || $arg->value instanceof PhpParser\Node\Expr\Array_
-            || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
-            || $arg->value instanceof PhpParser\Node\Expr\Ternary
-            || $arg->value instanceof PhpParser\Node\Scalar\Encapsed
-            || $arg->value instanceof PhpParser\Node\Expr\PostInc
-            || $arg->value instanceof PhpParser\Node\Expr\PostDec
-            || $arg->value instanceof PhpParser\Node\Expr\PreInc
-            || $arg->value instanceof PhpParser\Node\Expr\PreDec
-        ) {
-            $was_inside_call = $context->inside_call;
-            $context->inside_call = true;
+        $was_inside_call = $context->inside_call;
+        $context->inside_call = true;
 
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
-                return false;
-            }
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+            return false;
+        }
 
-            if (!$was_inside_call) {
-                $context->inside_call = false;
-            }
+        if (!$was_inside_call) {
+            $context->inside_call = false;
         }
 
         if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
@@ -703,27 +681,7 @@ class CallAnalyzer
         }
 
         if ($var_id) {
-            if (!$context->hasVariable($var_id, $statements_analyzer)
-                || $context->vars_in_scope[$var_id]->isNull()
-            ) {
-                // we don't know if it exists, assume it's passed by reference
-                $context->vars_in_scope[$var_id] = Type::getMixed();
-                $context->vars_possibly_in_scope[$var_id] = true;
-
-                if (strpos($var_id, '-') === false
-                    && strpos($var_id, '[') === false
-                    && !$statements_analyzer->hasVariable($var_id)
-                ) {
-                    $location = new CodeLocation($statements_analyzer, $arg->value);
-                    $statements_analyzer->registerVariable(
-                        $var_id,
-                        $location,
-                        null
-                    );
-
-                    $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
-                }
-            } else {
+            if ($context->hasVariable($var_id, $statements_analyzer)) {
                 $context->removeVarFromConflictingClauses(
                     $var_id,
                     $context->vars_in_scope[$var_id],
