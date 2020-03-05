@@ -367,6 +367,9 @@ class Functions
             'mysqli_select_db', 'mysqli_dump_debug_info', 'mysqli_kill', 'mysqli_multi_query',
             'mysqli_next_result', 'mysqli_options', 'mysqli_ping', 'mysqli_query', 'mysqli_report',
             'mysqli_rollback', 'mysqli_savepoint', 'mysqli_set_charset', 'mysqli_ssl_set',
+
+            // ftp
+            'ftp_close',
         ];
 
         if (\in_array(strtolower($function_id), $impure_functions, true)) {
