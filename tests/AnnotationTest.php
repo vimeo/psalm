@@ -990,6 +990,17 @@ class AnnotationTest extends TestCase
             'allowClosingComma' => [
                 '<?php
                     /**
+                     * @psalm-type _Alias=array{
+                     *    foo: string,
+                     *    bar: string,
+                     *    baz: array{
+                     *       a: int,
+                     *    },
+                     * }
+                     */
+                    class Foo { }
+
+                    /**
                      * @param array{
                      *    foo: string,
                      *    bar: string,
