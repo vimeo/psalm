@@ -1416,24 +1416,6 @@ class UnusedVariableTest extends TestCase
                         echo implode(",", $p);
                     }'
             ],
-            'ternaryUse' => [
-                '<?php
-                    class C {
-                      function b(string $p): string {
-                        return $p;
-                      }
-                    }
-
-                    /** @return mixed */
-                    function func() {
-                        return new C();
-                    }
-
-                    function main(): void {
-                        $a = true;
-                        func()->b($a ? "5" : "6");
-                    }'
-            ],
         ];
     }
 
