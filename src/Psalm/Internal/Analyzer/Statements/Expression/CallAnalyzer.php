@@ -430,6 +430,8 @@ class CallAnalyzer
                         || $arg->value instanceof PhpParser\Node\Expr\New_
                         || $arg->value instanceof PhpParser\Node\Expr\Assign
                         || $arg->value instanceof PhpParser\Node\Expr\Array_
+                        || $arg->value instanceof PhpParser\Node\Expr\Ternary
+                        || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
                     )
                 ) {
                     if (self::handleByRefFunctionArg(
@@ -669,6 +671,7 @@ class CallAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+            || $arg->value instanceof PhpParser\Node\Expr\Ternary
             || $arg->value instanceof PhpParser\Node\Scalar\Encapsed
             || $arg->value instanceof PhpParser\Node\Expr\PostInc
             || $arg->value instanceof PhpParser\Node\Expr\PostDec
@@ -1669,6 +1672,8 @@ class CallAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+            || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+            || $arg->value instanceof PhpParser\Node\Expr\Ternary
             || (
                 (
                 $arg->value instanceof PhpParser\Node\Expr\ConstFetch

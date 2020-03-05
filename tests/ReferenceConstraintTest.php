@@ -232,6 +232,20 @@ class ReferenceConstraintTest extends TestCase
                     function foo(array &$ar) : void {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'preventTernaryPassedByReference' => [
+                '<?php
+                    /**
+                     * @param string $p
+                     */
+                    function b(&$p): string {
+                        return $p;
+                    }
+
+                    function main(bool $a, string $b, string $c): void {
+                        b($a ? $b : $c);
+                    }',
+                'error_message' => 'InvalidPassByReference',
+            ],
         ];
     }
 }
