@@ -72,28 +72,22 @@ class JunitReport extends Report
             'junit5/r5.5.1/platform-tests/src/test/resources/jenkins-junit.xsd';
 
         $suites = $dom->createElement('testsuites');
-        $testsuite = $dom->createElement('testsuite');
 
-        if ($testsuite === false) {
-            throw new \UnexpectedValueException('Bad falsy value');
-        }
-
-        $testsuite->setAttribute('failures', (string) $errors);
-        $testsuite->setAttribute('warnings', (string) $warnings);
-        $testsuite->setAttribute('name', 'psalm');
-        $testsuite->setAttribute('tests', (string) $tests);
-        $testsuite->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-        $testsuite->setAttribute('xsi:noNamespaceSchemaLocation', $schema);
-        $suites->appendChild($testsuite);
+        $suites->setAttribute('failures', (string) $errors);
+        $suites->setAttribute('errors', "0");
+        $suites->setAttribute('name', 'psalm');
+        $suites->setAttribute('tests', (string) $tests);
+        $suites->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+        $suites->setAttribute('xsi:noNamespaceSchemaLocation', $schema);
         $dom->appendChild($suites);
 
         if (!count($ndata)) {
             $testcase = $dom->createElement('testcase');
             $testcase->setAttribute('name', 'psalm');
-            $testsuite->appendChild($testcase);
+            $suites->appendChild($testcase);
         } else {
             foreach ($ndata as $file => $report) {
-                $this->createTestSuite($dom, $testsuite, $file, $report);
+                $this->createTestSuite($dom, $suites, $file, $report);
             }
         }
 

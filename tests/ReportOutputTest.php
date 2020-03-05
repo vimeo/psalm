@@ -504,11 +504,10 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
 
         $this->assertSame(
             '<?xml version="1.0" encoding="UTF-8"?>
-<testsuites>
-  <testsuite failures="3" warnings="1" name="psalm" tests="4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/junit-team/junit5/r5.5.1/platform-tests/src/test/resources/jenkins-junit.xsd">
-    <testsuite name="somefile.php" file="somefile.php" assertions="4" failures="3" warnings="1" tests="4">
-      <testcase name="somefile.php:3" file="somefile.php" class="UndefinedVariable" classname="UndefinedVariable" line="3" assertions="1">
-        <failure type="UndefinedVariable">message: Cannot find referenced variable $as_you
+<testsuites failures="3" errors="0" name="psalm" tests="4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/junit-team/junit5/r5.5.1/platform-tests/src/test/resources/jenkins-junit.xsd">
+  <testsuite name="somefile.php" file="somefile.php" assertions="4" failures="3" warnings="1" tests="4">
+    <testcase name="somefile.php:3" file="somefile.php" class="UndefinedVariable" classname="UndefinedVariable" line="3" assertions="1">
+      <failure type="UndefinedVariable">message: Cannot find referenced variable $as_you
 type: UndefinedVariable
 snippet: return $as_you . "type";
 selected_text: $as_you
@@ -516,9 +515,9 @@ line: 3
 column_from: 10
 column_to: 17
 </failure>
-      </testcase>
-      <testcase name="somefile.php:2" file="somefile.php" class="MixedInferredReturnType" classname="MixedInferredReturnType" line="2" assertions="1">
-        <failure type="MixedInferredReturnType">message: Could not verify return type \'null|string\' for psalmCanVerify
+    </testcase>
+    <testcase name="somefile.php:2" file="somefile.php" class="MixedInferredReturnType" classname="MixedInferredReturnType" line="2" assertions="1">
+      <failure type="MixedInferredReturnType">message: Could not verify return type \'null|string\' for psalmCanVerify
 type: MixedInferredReturnType
 snippet: function psalmCanVerify(int $your_code): ?string {
 selected_text: ?string
@@ -526,9 +525,9 @@ line: 2
 column_from: 42
 column_to: 49
 </failure>
-      </testcase>
-      <testcase name="somefile.php:7" file="somefile.php" class="UndefinedConstant" classname="UndefinedConstant" line="7" assertions="1">
-        <failure type="UndefinedConstant">message: Const CHANGE_ME is not defined
+    </testcase>
+    <testcase name="somefile.php:7" file="somefile.php" class="UndefinedConstant" classname="UndefinedConstant" line="7" assertions="1">
+      <failure type="UndefinedConstant">message: Const CHANGE_ME is not defined
 type: UndefinedConstant
 snippet: echo CHANGE_ME;
 selected_text: CHANGE_ME
@@ -536,9 +535,9 @@ line: 7
 column_from: 6
 column_to: 15
 </failure>
-      </testcase>
-      <testcase name="somefile.php:15" file="somefile.php" class="PossiblyUndefinedGlobalVariable" classname="PossiblyUndefinedGlobalVariable" line="15" assertions="1">
-        <failure type="PossiblyUndefinedGlobalVariable">message: Possibly undefined global variable $a, first seen on line 10
+    </testcase>
+    <testcase name="somefile.php:15" file="somefile.php" class="PossiblyUndefinedGlobalVariable" classname="PossiblyUndefinedGlobalVariable" line="15" assertions="1">
+      <failure type="PossiblyUndefinedGlobalVariable">message: Possibly undefined global variable $a, first seen on line 10
 type: PossiblyUndefinedGlobalVariable
 snippet: echo $a
 selected_text: $a
@@ -546,8 +545,7 @@ line: 15
 column_from: 6
 column_to: 8
 </failure>
-      </testcase>
-    </testsuite>
+    </testcase>
   </testsuite>
 </testsuites>
 ',
@@ -555,13 +553,13 @@ column_to: 8
         );
 
         // Validate against junit xsd
-        $dom = new DOMDocument("1.0", "UTF-8");
+        $dom = new DOMDocument('1.0', 'UTF-8');
         $dom->preserveWhiteSpace = false;
         $dom->loadXML($xml);
 
         // Validate against xsd
-        $valid = $dom->schemaValidate(__DIR__ . "/junit.xsd");
-        $this->assertTrue($valid, "Output did not validate against XSD");
+        $valid = $dom->schemaValidate(__DIR__ . '/junit.xsd');
+        $this->assertTrue($valid, 'Output did not validate against XSD');
 
         // FIXME: The XML parser only return strings, all int value are casted, so the assertSame failed
         //$this->assertSame(
