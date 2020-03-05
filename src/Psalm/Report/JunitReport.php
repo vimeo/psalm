@@ -228,6 +228,9 @@ class JunitReport extends Report
         $ret = '';
 
         foreach ($data as $key => $value) {
+            if (!$this->show_snippet && $key === 'snippet') {
+                continue;
+            }
             $value = trim((string) $value);
             $ret .= "{$key}: {$value}\n";
         }
