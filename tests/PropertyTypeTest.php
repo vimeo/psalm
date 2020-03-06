@@ -1866,6 +1866,50 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'someConditionalCallToParentConstructor' => [
+                '<?php
+                    class GrandParentClassDoesNotDefine {
+                        public function __construct() {}
+                    }
+
+                    class ParentClassDefinesVar extends GrandParentClassDoesNotDefine {
+                        protected string $val;
+
+                        public function __construct() {
+                            $this->val = "hello";
+                            if (true) {
+                                parent::__construct();
+                            }
+                        }
+                    }
+
+                    class ChildClass extends ParentClassDefinesVar {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }'
+            ],
+            'noConditionalCallToParentConstructor' => [
+                '<?php
+                    class GrandParentClassDoesNotDefine {
+                        public function __construct() {}
+                    }
+
+                    class ParentClassDefinesVar extends GrandParentClassDoesNotDefine {
+                        protected string $val;
+
+                        public function __construct() {
+                            $this->val = "hello";
+                            parent::__construct();
+                        }
+                    }
+
+                    class ChildClass extends ParentClassDefinesVar {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }'
+            ],
         ];
     }
 
