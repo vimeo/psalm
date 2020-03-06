@@ -161,6 +161,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 try {
                     $type_alias_tokens = CommentAnalyzer::getTypeAliasesFromComment(
                         $comment,
+                        $this->codebase,
                         $this->aliases,
                         $this->type_aliases
                     );

@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Aliases;
+use Psalm\Codebase;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
@@ -11,8 +12,11 @@ use Psalm\FileSource;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\VarDocblockComment;
+use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Type;
+use function array_map;
+use function array_values;
 use function trim;
 use function substr_count;
 use function strlen;
@@ -22,6 +26,7 @@ use function preg_match;
 use function count;
 use function reset;
 use function preg_split;
+use function var_dump;
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
 use function array_shift;
@@ -241,10 +246,20 @@ class CommentAnalyzer
      */
     public static function getTypeAliasesFromComment(
         PhpParser\Comment\Doc $comment,
+        Codebase $codebase,
         Aliases $aliases,
         array $type_aliases = null
     ) {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
+
+        if (isset($parsed_docblock['specials']['psalm-use'])) {
+
+            // @todo Is it possible to get the Aliases form another class using {@see $codebase}?
+            return [
+                // @todo faking the data
+                'TData' => [['array', 4], ['{', 1], ['name', 4], [':', 1], ['string', 5], ['}', 1]]
+            ];
+        }
 
         if (!isset($parsed_docblock['specials']['psalm-type'])) {
             return [];

@@ -267,7 +267,7 @@ class DocComment
                     $special_key,
                     [
                         'return', 'param', 'template', 'var', 'type',
-                        'template-covariant', 'property', 'method',
+                        'template-covariant', 'property', 'method', 'use',
                         'assert', 'assert-if-true', 'assert-if-false', 'suppress',
                         'ignore-nullable-return', 'override-property-visibility',
                         'override-method-visibility', 'seal-properties', 'seal-methods',

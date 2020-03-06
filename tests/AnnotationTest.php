@@ -114,6 +114,54 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
+    public function testReferenceTypeAliasFromAnotherScopeArray()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage(
+            'Argument 1 of Boo\Baz::doIt expects array{name: string}, array{age: int(12)} provided'
+        );
+
+        $this->addFile(
+            'definition.php',
+            '<?php
+                namespace Foo {
+                    /**
+                     * @psalm-type TData = array{name: string}
+                     */
+                    class Bar {}
+                }'
+        );
+
+        $this->addFile(
+            'import.php',
+            '<?php
+                namespace Boo {
+                    class Baz {
+                        /**
+                         * @psalm-use TData from \Foo\Bar
+                         * @psalm-param TData $array
+                         */
+                         public static function doIt(array $array) : void {}
+                    }
+                }'
+        );
+
+        $this->addFile(
+            'client.php',
+            '<?php
+               namespace Bar {
+                    \Boo\Baz::doIt(["age" => 12]);
+               }'
+        );
+
+        $this->analyzeFile('definition.php', new Context());
+        $this->analyzeFile('import.php', new Context());
+        $this->analyzeFile('client.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testPhpStormGenericsWithValidIterableArgument()
     {
         Config::getInstance()->allow_phpstorm_generics = true;
