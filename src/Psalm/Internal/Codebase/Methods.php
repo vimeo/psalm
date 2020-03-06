@@ -127,6 +127,10 @@ class Methods
         }
 
         if ($source && $fq_class_name !== strtolower((string) $source->getFQCLN())) {
+            if ($fq_class_name === 'vimeo\cli\command\consumecommand') {
+                var_dump($source->getFilePath(), $source->getFQCLN());
+            }
+
             $this->file_reference_provider->addFileReferenceToClass(
                 $source->getFilePath(),
                 $fq_class_name

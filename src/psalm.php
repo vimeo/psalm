@@ -327,7 +327,7 @@ if (isset($options['threads'])) {
 } elseif (isset($options['debug']) || $in_ci) {
     $threads = 1;
 } else {
-    $threads = max(1, ProjectAnalyzer::getCpuCount() - 2);
+    $threads = max(1, ProjectAnalyzer::getCpuCount() - 1);
 }
 
 if (!isset($options['threads'])
