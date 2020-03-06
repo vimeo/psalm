@@ -790,15 +790,21 @@ class PropertyFetchAnalyzer
             );
 
             if (!$class_property_type) {
-                if (IssueBuffer::accepts(
-                    new MissingPropertyType(
-                        'Property ' . $fq_class_name . '::$' . $prop_name
-                            . ' does not have a declared type',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($declaring_class_storage->location
+                    && $config->isInProjectDirs(
+                        $declaring_class_storage->location->file_path
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new MissingPropertyType(
+                            'Property ' . $fq_class_name . '::$' . $prop_name
+                                . ' does not have a declared type',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
 
                 $class_property_type = Type::getMixed();
