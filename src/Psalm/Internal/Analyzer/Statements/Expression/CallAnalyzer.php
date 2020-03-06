@@ -707,7 +707,9 @@ class CallAnalyzer
             if (!$context->hasVariable($var_id, $statements_analyzer)
                 || $context->vars_in_scope[$var_id]->isNull()
             ) {
-                if (!isset($context->vars_in_scope[$var_id])) {
+                if (!isset($context->vars_in_scope[$var_id])
+                    && $arg->value instanceof PhpParser\Node\Expr\Variable
+                ) {
                     if (IssueBuffer::accepts(
                         new PossiblyUndefinedVariable(
                             'Variable ' . $var_id
