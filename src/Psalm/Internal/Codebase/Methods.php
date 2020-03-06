@@ -94,7 +94,7 @@ class Methods
         $calling_function_id = null,
         CodeLocation $code_location = null,
         StatementsSource $source = null,
-        string $file_path = null
+        string $source_file_path = null
     ) {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -126,7 +126,7 @@ class Methods
             return false;
         }
 
-        if ($source && $fq_class_name !== $source->getFQCLN()) {
+        if ($source && $fq_class_name !== strtolower($source->getFQCLN())) {
             $this->file_reference_provider->addFileReferenceToClass(
                 $source->getFilePath(),
                 $fq_class_name
@@ -150,9 +150,9 @@ class Methods
                             $calling_function_id,
                             $potential_id
                         );
-                    } elseif ($file_path) {
+                    } elseif ($source_file_path) {
                         $this->file_reference_provider->addFileReferenceToClassMember(
-                            $file_path,
+                            $source_file_path,
                             $potential_id
                         );
                     }
@@ -163,9 +163,9 @@ class Methods
                         $calling_function_id,
                         strtolower((string) $declaring_method_id)
                     );
-                } elseif ($file_path) {
+                } elseif ($source_file_path) {
                     $this->file_reference_provider->addFileReferenceToClassMember(
-                        $file_path,
+                        $source_file_path,
                         strtolower((string) $declaring_method_id)
                     );
                 }
@@ -193,9 +193,9 @@ class Methods
                         $calling_function_id,
                         $interface_method_id_lc
                     );
-                } elseif ($file_path) {
+                } elseif ($source_file_path) {
                     $this->file_reference_provider->addFileReferenceToClassMember(
-                        $file_path,
+                        $source_file_path,
                         $interface_method_id_lc
                     );
                 }
@@ -223,9 +223,9 @@ class Methods
                             $calling_function_id,
                             strtolower((string) $overridden_method_id)
                         );
-                    } elseif ($file_path) {
+                    } elseif ($source_file_path) {
                         $this->file_reference_provider->addFileReferenceToClassMember(
-                            $file_path,
+                            $source_file_path,
                             strtolower((string) $overridden_method_id)
                         );
                     }
@@ -261,9 +261,9 @@ class Methods
                     $calling_function_id,
                     $potential_id
                 );
-            } elseif ($file_path) {
+            } elseif ($source_file_path) {
                 $this->file_reference_provider->addFileReferenceToMissingClassMember(
-                    $file_path,
+                    $source_file_path,
                     $potential_id
                 );
             }
@@ -275,9 +275,9 @@ class Methods
                 $calling_function_id,
                 strtolower((string) $method_id)
             );
-        } elseif ($file_path) {
+        } elseif ($source_file_path) {
             $this->file_reference_provider->addFileReferenceToMissingClassMember(
-                $file_path,
+                $source_file_path,
                 strtolower((string) $method_id)
             );
         }

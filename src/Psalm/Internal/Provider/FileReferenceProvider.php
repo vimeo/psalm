@@ -160,6 +160,7 @@ class FileReferenceProvider
     }
 
     /**
+     * @param lowercase-string $fq_class_name_lc
      * @return void
      */
     public function addFileReferenceToClass(string $source_file, string $fq_class_name_lc)

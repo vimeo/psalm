@@ -395,7 +395,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $method_id,
                     $context->calling_function_id,
                     $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
-                    null,
+                    $statements_analyzer,
                     $statements_analyzer->getFilePath()
                 )) {
                     if ($codebase->store_node_types
