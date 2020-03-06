@@ -645,16 +645,14 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     && ($context->mutation_free
                         || $context->external_mutation_free)
                 ) {
-                    if ($context->mutation_free || $context->external_mutation_free) {
-                        if (IssueBuffer::accepts(
-                            new ImpureFunctionCall(
-                                'Cannot call echo from a mutation-free context',
-                                new CodeLocation($this, $stmt)
-                            ),
-                            $this->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                    if (IssueBuffer::accepts(
+                        new ImpureFunctionCall(
+                            'Cannot call echo from a mutation-free context',
+                            new CodeLocation($this, $stmt)
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
