@@ -126,7 +126,7 @@ class Methods
             return false;
         }
 
-        if ($source && $fq_class_name !== strtolower($source->getFQCLN())) {
+        if ($source && $fq_class_name !== strtolower((string) $source->getFQCLN())) {
             $this->file_reference_provider->addFileReferenceToClass(
                 $source->getFilePath(),
                 $fq_class_name
