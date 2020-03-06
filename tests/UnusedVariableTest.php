@@ -518,6 +518,13 @@ class UnusedVariableTest extends TestCase
 
                     if ($i) {}',
             ],
+            'unknownMethodCallWithVar' => [
+                '<?php
+                    /** @psalm-suppress MixedMethodCall */
+                    function passesByRef(object $a): void {
+                        $a->passedByRef($b);
+                    }',
+            ],
             'usedMethodCallVariable' => [
                 '<?php
                     function reindex(array $arr, string $methodName): array {
