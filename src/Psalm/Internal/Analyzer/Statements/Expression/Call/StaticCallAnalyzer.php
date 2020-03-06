@@ -443,7 +443,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $callstatic_id,
                         $context->calling_function_id,
                         $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
-                        $statements_analyzer,
+                        !$context->collect_initializations
+                            && !$context->collect_mutations
+                            ? $statements_analyzer
+                            : null,
                         $statements_analyzer->getFilePath()
                     )) {
                         if (isset($class_storage->pseudo_static_methods[$method_name_lc])) {

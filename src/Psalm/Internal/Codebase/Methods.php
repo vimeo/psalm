@@ -126,18 +126,20 @@ class Methods
             return false;
         }
 
-        if ($source && $fq_class_name !== strtolower((string) $source->getFQCLN())) {
-            $this->file_reference_provider->addFileReferenceToClass(
-                $source->getFilePath(),
-                $fq_class_name
-            );
-        }
-
         if (isset($class_storage->declaring_method_ids[$method_name])) {
             $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
 
             if ((string) $calling_function_id === strtolower((string) $declaring_method_id)) {
                 return true;
+            }
+
+            $declaring_fq_class_name = strtolower($declaring_method_id->fq_class_name);
+
+            if ($source && $declaring_fq_class_name !== strtolower((string) $source->getFQCLN())) {
+                $this->file_reference_provider->addFileReferenceToClass(
+                    $source->getFilePath(),
+                    $declaring_fq_class_name
+                );
             }
 
             if ((string) $method_id !== (string) $declaring_method_id
@@ -233,6 +235,13 @@ class Methods
             }
 
             return true;
+        }
+
+        if ($source && $fq_class_name !== strtolower((string) $source->getFQCLN())) {
+            $this->file_reference_provider->addFileReferenceToClass(
+                $source->getFilePath(),
+                $fq_class_name
+            );
         }
 
         if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {

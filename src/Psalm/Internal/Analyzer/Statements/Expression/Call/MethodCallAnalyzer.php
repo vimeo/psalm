@@ -730,7 +730,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $method_id,
             $context->calling_function_id,
             $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
-            $statements_analyzer,
+            !$context->collect_initializations
+                && !$context->collect_mutations
+                ? $statements_analyzer
+                : null,
             $statements_analyzer->getFilePath()
         )
             || !MethodAnalyzer::isMethodVisible(
