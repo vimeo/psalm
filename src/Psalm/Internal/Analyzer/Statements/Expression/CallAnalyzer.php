@@ -30,6 +30,7 @@ use Psalm\Issue\NullArgument;
 use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
+use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\ArgumentTypeCoercion;
@@ -706,6 +707,19 @@ class CallAnalyzer
             if (!$context->hasVariable($var_id, $statements_analyzer)
                 || $context->vars_in_scope[$var_id]->isNull()
             ) {
+                if (!isset($context->vars_in_scope[$var_id])) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyUndefinedVariable(
+                            'Variable ' . $var_id
+                                . ' must be defined prior to use within an unknown function or method',
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
                 // we don't know if it exists, assume it's passed by reference
                 $context->vars_in_scope[$var_id] = Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;

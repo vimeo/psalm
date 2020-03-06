@@ -543,14 +543,14 @@ class UnusedCodeTest extends TestCase
                         /**
                          * @psalm-suppress MixedArgument
                          */
-                        public function bar(): void {
+                        public function bar(string $request): void {
                             /** @var mixed $action */
                             $action = "";
                             $this->{"execute" . ucfirst($action)}($request);
                         }
                     }
 
-                    (new Foo)->bar();'
+                    (new Foo)->bar("request");'
             ],
             'usedMethodCallForExternalMutationFreeClass' => [
                 '<?php
