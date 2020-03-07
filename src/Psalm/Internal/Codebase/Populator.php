@@ -324,7 +324,7 @@ class Populator
                     }
 
                     if ((count($overridden_method_ids) === 1
-                        || $candidate_overridden_ids)
+                            || $candidate_overridden_ids)
                         && $method_storage->signature_return_type
                         && !$method_storage->signature_return_type->isVoid()
                         && ($method_storage->return_type === $method_storage->signature_return_type

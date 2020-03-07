@@ -570,9 +570,7 @@ class Analyzer
     public function loadCachedResults(ProjectAnalyzer $project_analyzer)
     {
         $codebase = $project_analyzer->getCodebase();
-        if ($codebase->diff_methods
-            && (!$codebase->collect_references || $codebase->server_mode)
-        ) {
+        if ($codebase->diff_methods) {
             $this->analyzed_methods = $codebase->file_reference_provider->getAnalyzedMethods();
             $this->existing_issues = $codebase->file_reference_provider->getExistingIssues();
             $file_maps = $codebase->file_reference_provider->getFileMaps();

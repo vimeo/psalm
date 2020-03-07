@@ -1733,8 +1733,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         }
 
-        $static_template_types = $static_class_storage->template_types;
-
         foreach ($template_types as $type_name => $type_map) {
             foreach ($type_map as list($type)) {
                 foreach ($candidate_class_storages as $candidate_class_storage) {
@@ -1742,45 +1740,15 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         && isset($e[$candidate_class_storage->name][$type_name])
                         && !isset($class_template_params[$type_name][$candidate_class_storage->name])
                     ) {
-                        $input_type_extends = $e[$candidate_class_storage->name][$type_name];
-
-                        $output_type_extends = null;
-
-                        foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
-                            if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam) {
-                                if ($static_class_storage->name === $type_extends_atomic->defining_class
-                                    && isset($static_template_types[$type_extends_atomic->param_name])
-                                ) {
-                                    if (!$output_type_extends) {
-                                        $output_type_extends = new Type\Union([$type_extends_atomic]);
-                                    } else {
-                                        $output_type_extends = Type::combineUnionTypes(
-                                            new Type\Union([$type_extends_atomic]),
-                                            $output_type_extends
-                                        );
-                                    }
-                                } elseif (!$output_type_extends) {
-                                    $output_type_extends = $type_extends_atomic->as;
-                                } else {
-                                    $output_type_extends = Type::combineUnionTypes(
-                                        $type_extends_atomic->as,
-                                        $output_type_extends
-                                    );
-                                }
-                            } else {
-                                if (!$output_type_extends) {
-                                    $output_type_extends = new Type\Union([$type_extends_atomic]);
-                                } else {
-                                    $output_type_extends = Type::combineUnionTypes(
-                                        new Type\Union([$type_extends_atomic]),
-                                        $output_type_extends
-                                    );
-                                }
-                            }
-                        }
-
                         $class_template_params[$type_name][$candidate_class_storage->name] = [
-                            $output_type_extends
+                            new Type\Union(
+                                self::expandType(
+                                    $e[$candidate_class_storage->name][$type_name],
+                                    $e,
+                                    $static_class_storage->name,
+                                    $static_class_storage->template_types
+                                )
+                            )
                         ];
                     }
                 }
@@ -1794,6 +1762,41 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         return $class_template_params;
+    }
+
+    /**
+     * @param array<string, array<int|string, Type\Union>> $e
+     * @return non-empty-list<Type\Atomic>
+     */
+    private static function expandType(
+        Type\Union $input_type_extends,
+        array $e,
+        string $static_fq_class_name,
+        ?array $static_template_types
+    ) : array {
+        $output_type_extends = [];
+
+        foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
+            if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam
+                && ($static_fq_class_name !== $type_extends_atomic->defining_class
+                    || !isset($static_template_types[$type_extends_atomic->param_name]))
+                && isset($e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name])
+            ) {
+                $output_type_extends = array_merge(
+                    $output_type_extends,
+                    self::expandType(
+                        $e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name],
+                        $e,
+                        $static_fq_class_name,
+                        $static_template_types
+                    )
+                );
+            } else {
+                $output_type_extends[] = $type_extends_atomic;
+            }
+        }
+
+        return $output_type_extends;
     }
 
     /**

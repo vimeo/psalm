@@ -1144,7 +1144,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
      */
-    private static function transformTemplates(
+    public static function transformTemplates(
         array $template_type_extends,
         string $base_class_name,
         Type\Union $templated_type,
