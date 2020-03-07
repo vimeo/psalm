@@ -537,14 +537,14 @@ column_to: 15
 </failure>
     </testcase>
     <testcase name="somefile.php:15" classname="PossiblyUndefinedGlobalVariable" assertions="1">
-      <failure type="PossiblyUndefinedGlobalVariable">message: Possibly undefined global variable $a, first seen on line 10
+      <skipped>message: Possibly undefined global variable $a, first seen on line 10
 type: PossiblyUndefinedGlobalVariable
 snippet: echo $a
 selected_text: $a
 line: 15
 column_from: 6
 column_to: 8
-</failure>
+</skipped>
     </testcase>
   </testsuite>
 </testsuites>
