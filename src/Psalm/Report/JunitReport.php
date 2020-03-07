@@ -1,14 +1,14 @@
 <?php
 namespace Psalm\Report;
 
+use ArrayObject;
 use DOMDocument;
 use DOMElement;
 use Psalm\Config;
 use Psalm\Report;
+use Psalm\Internal\Analyzer\IssueData;
 use function count;
-use function sprintf;
 use function trim;
-use Doctrine\Instantiator\Exception\UnexpectedValueException;
 
 /**
  * based on https://github.com/m50/psalm-json-to-junit
@@ -47,16 +47,10 @@ class JunitReport extends Report
             $fname = $error->file_name;
 
             if (!isset($ndata[$fname])) {
-                $failure = [];
-                if ($is_error || ($this->show_info && $is_warning)) {
-                    $failure = [
-                        $this->createFailure($error)
-                    ];
-                }
                 $ndata[$fname] = [
                     'errors'   => $is_error ? 1 : 0,
                     'warnings' => $is_warning ? 1 : 0,
-                    'failures' => $failure,
+                    'failures' => [],
                 ];
             } else {
                 if ($is_error) {
@@ -64,10 +58,10 @@ class JunitReport extends Report
                 } else {
                     $ndata[$fname]['warnings']++;
                 }
+            }
 
-                if ($is_error || ($this->show_info && $is_warning)) {
-                    $ndata[$fname]['failures'][] = $this->createFailure($error);
-                }
+            if ($is_error || ($this->show_info && $is_warning)) {
+                $ndata[$fname]['failures'][] = $error;
             }
         }
 
@@ -106,17 +100,7 @@ class JunitReport extends Report
      * @param  array{
      *         errors: int,
      *         warnings: int,
-     *         failures: list<array{
-     *             data: array{
-     *                 column_from: int,
-     *                 column_to: int,
-     *                 line: int,
-     *                 message: string,
-     *                 selected_text: string,
-     *                 snippet: string,
-     *                 type: string},
-     *                 type: string
-     *             }>
+     *         failures: list<IssueData>
      *         } $report
      */
     private function createTestSuite(DOMDocument $dom, DOMElement $parent, string $file, array $report): void
@@ -128,18 +112,16 @@ class JunitReport extends Report
 
         $testsuite = $dom->createElement('testsuite');
         $testsuite->setAttribute('name', $file);
-        // $testsuite->setAttribute('tests', (string) $totalTests);
+        $testsuite->setAttribute('tests', (string) $totalTests);
         $testsuite->setAttribute('failures', (string) $report['errors']);
         $testsuite->setAttribute('errors', '0');
 
         $failuresByType = $this->groupByType($report['failures']);
-        $testsuite->setAttribute('tests', (string) count($failuresByType));
 
-        $iterator = 0;
         foreach ($failuresByType as $type => $data) {
             foreach ($data as $d) {
                 $testcase = $dom->createElement('testcase');
-                $testcase->setAttribute('name', "{$file}:{$d['line']}");
+                $testcase->setAttribute('name', "{$file}:{$d->line_from}");
                 $testcase->setAttribute('classname', $type);
                 $testcase->setAttribute('assertions', (string) count($data));
 
@@ -150,90 +132,43 @@ class JunitReport extends Report
                 $testcase->appendChild($failure);
                 $testsuite->appendChild($testcase);
             }
-            $iterator++;
         }
         $parent->appendChild($testsuite);
     }
 
     /**
-     * @return array{
-     *     data: array{
-     *         column_from: int,
-     *         column_to: int,
-     *         line: int,
-     *         message: string,
-     *         selected_text: string,
-     *         snippet: string,
-     *         type: string
-     *     },
-     *     type: string
-     * }
-     */
-    private function createFailure(\Psalm\Internal\Analyzer\IssueData $issue_data) : array
-    {
-        return [
-            'type' => $issue_data->type,
-            'data' => [
-                'message'       => $issue_data->message,
-                'type'          => $issue_data->type,
-                'snippet'       => $issue_data->snippet,
-                'selected_text' => $issue_data->selected_text,
-                'line'          => $issue_data->line_from,
-                'column_from'   => $issue_data->column_from,
-                'column_to'     => $issue_data->column_to,
-            ],
-        ];
-    }
-
-    /**
-     * @param  array<array{
-     *     data: array{
-     *         column_from: int,
-     *         column_to: int,
-     *         line: int,
-     *         message: string,
-     *         selected_text: string,
-     *         snippet: string,
-     *         type: string
-     *     },
-     *     type: string
-     * }>  $failures
+     * @param  list<IssueData> $failures
      *
-     * @return array<string, non-empty-list<array{
-     *         column_from: int,
-     *         column_to: int,
-     *         line: int,
-     *         message: string,
-     *         selected_text: string,
-     *         snippet: string,
-     *         type: string
-     *  }>>
+     * @return array<string, list<IssueData>>
      */
     private function groupByType(array $failures)
     {
         $nfailures = [];
 
         foreach ($failures as $failure) {
-            $nfailures[$failure['type']][] = $failure['data'];
+            $nfailures[$failure->type][] = $failure;
         }
 
         return $nfailures;
     }
 
     /**
-     * @param  array<string, int|string>  $data
+     * @param  IssueData  $data
      */
-    private function dataToOutput(array $data): string
+    private function dataToOutput(IssueData $data): string
     {
         $ret = '';
-
-        foreach ($data as $key => $value) {
-            if (!$this->show_snippet && $key === 'snippet') {
-                continue;
-            }
-            $value = trim((string) $value);
-            $ret .= "{$key}: {$value}\n";
+        if ($this->show_snippet) {
+            $ret = "snippet: {$data->snippet}\n";
         }
+        $ret .= <<<SNIPPET
+message : {$data->message}
+type : {$data->type}
+selected_text : {$data->selected_text}
+line : {$data->line_from}
+column_from : {$data->column_from}
+column_to : {$data->column_to}
+SNIPPET;
 
         return $ret;
     }
