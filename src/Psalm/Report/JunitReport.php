@@ -163,9 +163,9 @@ class JunitReport extends Report
             $ret .= 'snippet: ' . trim($data->snippet) . "\n";
         }
         $ret .= 'selected_text: ' . trim($data->selected_text) . "\n";
-        $ret .= 'line: ' . trim($data->line_from) . "\n";
-        $ret .= 'column_from: ' . trim($data->column_from) . "\n";
-        $ret .= 'column_to: ' . trim($data->column_to) . "\n";
+        $ret .= 'line: ' . $data->line_from . "\n";
+        $ret .= 'column_from: ' . $data->column_from . "\n";
+        $ret .= 'column_to: ' . $data->column_to . "\n";
 
         return $ret;
     }
