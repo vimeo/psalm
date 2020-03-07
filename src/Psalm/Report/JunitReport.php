@@ -112,9 +112,9 @@ class JunitReport extends Report
 
         $testsuite = $dom->createElement('testsuite');
         $testsuite->setAttribute('name', $file);
-        $testsuite->setAttribute('tests', (string) $totalTests);
         $testsuite->setAttribute('failures', (string) $report['errors']);
         $testsuite->setAttribute('errors', '0');
+        $testsuite->setAttribute('tests', (string) $totalTests);
 
         $failuresByType = $this->groupByType($report['failures']);
 
@@ -157,18 +157,15 @@ class JunitReport extends Report
      */
     private function dataToOutput(IssueData $data): string
     {
-        $ret = '';
+        $ret = 'message: ' . trim($data->message) . "\n";
+        $ret .= 'type: ' . trim($data->type) . "\n";
         if ($this->show_snippet) {
-            $ret = "snippet: {$data->snippet}\n";
+            $ret .= 'snippet: ' . trim($data->snippet) . "\n";
         }
-        $ret .= <<<SNIPPET
-message : {$data->message}
-type : {$data->type}
-selected_text : {$data->selected_text}
-line : {$data->line_from}
-column_from : {$data->column_from}
-column_to : {$data->column_to}
-SNIPPET;
+        $ret .= 'selected_text: ' . trim($data->selected_text) . "\n";
+        $ret .= 'line: ' . trim($data->line_from) . "\n";
+        $ret .= 'column_from: ' . trim($data->column_from) . "\n";
+        $ret .= 'column_to: ' . trim($data->column_to) . "\n";
 
         return $ret;
     }
