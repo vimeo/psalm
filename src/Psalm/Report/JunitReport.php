@@ -7,7 +7,10 @@ use DOMElement;
 use Psalm\Config;
 use Psalm\Report;
 use Psalm\Internal\Analyzer\IssueData;
+use const ENT_XML1;
+use const ENT_QUOTES;
 use function count;
+use function htmlspecialchars;
 use function trim;
 
 /**
@@ -60,9 +63,7 @@ class JunitReport extends Report
                 }
             }
 
-            if ($is_error || ($this->show_info && $is_warning)) {
-                $ndata[$fname]['failures'][] = $error;
-            }
+            $ndata[$fname]['failures'][] = $error;
         }
 
         $dom = new DOMDocument('1.0', 'UTF-8');
@@ -82,9 +83,19 @@ class JunitReport extends Report
         $dom->appendChild($suites);
 
         if (!count($ndata)) {
+            $suites->setAttribute('tests', '1');
+
+            $testsuite = $dom->createElement('testsuite');
+            $testsuite->setAttribute('name', 'psalm');
+            $testsuite->setAttribute('failures', '0');
+            $testsuite->setAttribute('errors', '0');
+            $testsuite->setAttribute('tests', '1');
+
             $testcase = $dom->createElement('testcase');
             $testcase->setAttribute('name', 'psalm');
-            $suites->appendChild($testcase);
+            $testsuite->appendChild($testcase);
+
+            $suites->appendChild($testsuite);
         } else {
             foreach ($ndata as $file => $report) {
                 $this->createTestSuite($dom, $suites, $file, $report);
@@ -125,11 +136,15 @@ class JunitReport extends Report
                 $testcase->setAttribute('classname', $type);
                 $testcase->setAttribute('assertions', (string) count($data));
 
-                $failure = $dom->createElement('failure');
-                $failure->setAttribute('type', $type);
-                $failure->nodeValue = $this->dataToOutput($d);
+                if ($d->severity === Config::REPORT_ERROR) {
+                    $issue = $dom->createElement('failure');
+                    $issue->setAttribute('type', $type);
+                } else {
+                    $issue = $dom->createElement('skipped');
+                }
+                $issue->nodeValue = $this->dataToOutput($d);
 
-                $testcase->appendChild($failure);
+                $testcase->appendChild($issue);
                 $testsuite->appendChild($testcase);
             }
         }
@@ -157,10 +172,10 @@ class JunitReport extends Report
      */
     private function dataToOutput(IssueData $data): string
     {
-        $ret = 'message: ' . trim($data->message) . "\n";
+        $ret = 'message: ' . htmlspecialchars(trim($data->message), ENT_XML1 | ENT_QUOTES) . "\n";
         $ret .= 'type: ' . trim($data->type) . "\n";
         if ($this->show_snippet) {
-            $ret .= 'snippet: ' . trim($data->snippet) . "\n";
+            $ret .= 'snippet: ' . htmlspecialchars(trim($data->snippet), ENT_XML1 | ENT_QUOTES) . "\n";
         }
         $ret .= 'selected_text: ' . trim($data->selected_text) . "\n";
         $ret .= 'line: ' . $data->line_from . "\n";
