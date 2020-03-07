@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Report;
 
-use ArrayObject;
 use DOMDocument;
 use DOMElement;
 use Psalm\Config;
