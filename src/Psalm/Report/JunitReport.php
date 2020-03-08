@@ -173,9 +173,7 @@ class JunitReport extends Report
     {
         $ret = 'message: ' . htmlspecialchars(trim($data->message), ENT_XML1 | ENT_QUOTES) . "\n";
         $ret .= 'type: ' . trim($data->type) . "\n";
-        if ($this->show_snippet) {
-            $ret .= 'snippet: ' . htmlspecialchars(trim($data->snippet), ENT_XML1 | ENT_QUOTES) . "\n";
-        }
+        $ret .= 'snippet: ' . htmlspecialchars(trim($data->snippet), ENT_XML1 | ENT_QUOTES) . "\n";
         $ret .= 'selected_text: ' . trim($data->selected_text) . "\n";
         $ret .= 'line: ' . $data->line_from . "\n";
         $ret .= 'column_from: ' . $data->column_from . "\n";
