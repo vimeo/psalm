@@ -120,6 +120,7 @@ class TryAnalyzer
             }
 
             $try_context->vars_possibly_in_scope = $context->vars_possibly_in_scope;
+            $try_context->possibly_thrown_exceptions = $context->possibly_thrown_exceptions;
 
             $context->referenced_var_ids = array_intersect_key(
                 $try_context->referenced_var_ids,
@@ -258,40 +259,26 @@ class TryAnalyzer
                 foreach ($fq_catch_classes as $fq_catch_class) {
                     $fq_catch_class_lower = strtolower($fq_catch_class);
 
-                    foreach ($context->possibly_thrown_exceptions as $exception_fqcln => $_) {
+                    foreach ($catch_context->possibly_thrown_exceptions as $exception_fqcln => $_) {
                         $exception_fqcln_lower = strtolower($exception_fqcln);
 
-                        if ($exception_fqcln_lower === $fq_catch_class_lower) {
-                            unset($context->possibly_thrown_exceptions[$exception_fqcln]);
-                            unset($catch_context->possibly_thrown_exceptions[$exception_fqcln]);
-                            continue;
-                        }
-
-                        if ($codebase->classExists($exception_fqcln)
-                            && $codebase->classExtendsOrImplements(
-                                $exception_fqcln,
-                                $fq_catch_class
-                            )
+                        if ($exception_fqcln_lower === $fq_catch_class_lower
+                            || ($codebase->classExists($exception_fqcln)
+                                && $codebase->classExtendsOrImplements($exception_fqcln, $fq_catch_class))
+                            || ($codebase->interfaceExists($exception_fqcln)
+                                && $codebase->interfaceExtends($exception_fqcln, $fq_catch_class))
                         ) {
+                            unset($original_context->possibly_thrown_exceptions[$exception_fqcln]);
                             unset($context->possibly_thrown_exceptions[$exception_fqcln]);
                             unset($catch_context->possibly_thrown_exceptions[$exception_fqcln]);
-                            continue;
-                        }
-
-                        if ($codebase->interfaceExists($exception_fqcln)
-                            && $codebase->interfaceExtends(
-                                $exception_fqcln,
-                                $fq_catch_class
-                            )
-                        ) {
-                            unset($context->possibly_thrown_exceptions[$exception_fqcln]);
-                            unset($catch_context->possibly_thrown_exceptions[$exception_fqcln]);
-                            continue;
                         }
                     }
                 }
 
-                $context->mergeExceptions($catch_context);
+                /**
+                 * @var array<string, array<array-key, CodeLocation>>
+                 */
+                $catch_context->possibly_thrown_exceptions = [];
             }
 
             $catch_var_id = '$' . $catch_var_name;

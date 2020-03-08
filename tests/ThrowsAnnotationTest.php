@@ -656,4 +656,31 @@ class ThrowsAnnotationTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
     }
+
+    public function testNextCatchShouldIgnoreExceptionsCaughtByPreviousCatch(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @throws \RuntimeException
+                 */
+                function method(): void
+                {
+                    try {
+                        throw new \LogicException();
+                    } catch (\LogicException $e) {
+                        throw new \RuntimeException();
+                    } catch (\Exception $e) {
+                        throw new \RuntimeException();
+                    }
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
 }
