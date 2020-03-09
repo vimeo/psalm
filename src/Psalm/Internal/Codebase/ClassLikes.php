@@ -711,27 +711,19 @@ class ClassLikes
 
         $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path);
 
-        foreach ($file_statements as $file_statement) {
-            if ($file_statement instanceof PhpParser\Node\Stmt\Trait_
-                && $file_statement->name
-                && strtolower($file_statement->name->name) === $fq_trait_name_lc
-            ) {
-                $this->trait_nodes[$fq_trait_name_lc] = $file_statement;
-                return $file_statement;
-            }
+        $trait_finder = new \Psalm\Internal\Visitor\TraitFinder($fq_trait_name);
 
-            if ($file_statement instanceof PhpParser\Node\Stmt\Namespace_) {
-                $namespace_stub = $file_statement->name ? $file_statement->name . '\\' : '';
+        $traverser = new \PhpParser\NodeTraverser();
+        $traverser->addVisitor(
+            $trait_finder
+        );
 
-                foreach ($file_statement->stmts as $namespace_stmt) {
-                    if ($namespace_stmt instanceof PhpParser\Node\Stmt\Trait_
-                        && strtolower($namespace_stub . $namespace_stmt->name) === $fq_trait_name_lc
-                    ) {
-                        $this->trait_nodes[$fq_trait_name_lc] = $namespace_stmt;
-                        return $namespace_stmt;
-                    }
-                }
-            }
+        $traverser->traverse($file_statements);
+
+        $trait_node = $trait_finder->getNode();
+
+        if ($trait_node) {
+            return $trait_node;
         }
 
         throw new \UnexpectedValueException('Could not locate trait statement');

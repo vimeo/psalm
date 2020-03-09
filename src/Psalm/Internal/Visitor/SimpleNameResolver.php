@@ -116,6 +116,8 @@ class SimpleNameResolver extends NodeVisitorAbstract
             }
         } elseif ($node instanceof Expr\ConstFetch) {
             $node->name = $this->resolveName($node->name, Stmt\Use_::TYPE_CONSTANT);
+        } elseif ($node instanceof Stmt\Trait_) {
+            $this->resolveTrait($node);
         } elseif ($node instanceof Stmt\TraitUse) {
             foreach ($node->traits as &$trait) {
                 $trait = $this->resolveClassName($trait);
@@ -217,5 +219,17 @@ class SimpleNameResolver extends NodeVisitorAbstract
     protected function resolveClassName(Name $name)
     {
         return $this->resolveName($name, Stmt\Use_::TYPE_NORMAL);
+    }
+
+    /**
+     * @return void
+     */
+    protected function resolveTrait(Stmt\Trait_ $node)
+    {
+        $resolvedName = Name::concat($this->nameContext->getNamespace(), (string) $node->name);
+
+        if (null !== $resolvedName) {
+            $node->setAttribute('resolvedName', $resolvedName->toString());
+        }
     }
 }
