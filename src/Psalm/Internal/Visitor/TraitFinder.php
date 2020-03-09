@@ -28,10 +28,23 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract implements PhpParser\Nod
      */
     public function enterNode(PhpParser\Node $node, &$traverseChildren = true)
     {
-        if ($node instanceof PhpParser\Node\Stmt\Trait_
-            && $node->getAttribute('resolvedName') === $this->fq_trait_name
-        ) {
-            $this->matching_trait_nodes[] = $node;
+        if ($node instanceof PhpParser\Node\Stmt\Trait_) {
+            /** @var ?string */
+            $resolved_name = $node->getAttribute('resolvedName');
+
+            if ($resolved_name === null) {
+                // compare ends of names, a temporary hack because PHPParser caches
+                // may not have that attribute
+
+                $fq_trait_name_parts = \explode('\\', $this->fq_trait_name);
+
+                /** @psalm-suppress PossiblyNullPropertyFetch */
+                if ($node->name->name === \end($fq_trait_name_parts)) {
+                    $this->matching_trait_nodes[] = $node;
+                }
+            } elseif ($resolved_name === $this->fq_trait_name) {
+                $this->matching_trait_nodes[] = $node;
+            }
         }
 
         if ($node instanceof PhpParser\Node\Stmt\ClassLike
