@@ -1001,6 +1001,14 @@ class Union
     /**
      * @return bool
      */
+    public function isTrue()
+    {
+        return count($this->types) === 1 && isset($this->types['true']);
+    }
+
+    /**
+     * @return bool
+     */
     public function isVoid()
     {
         return isset($this->types['void']);

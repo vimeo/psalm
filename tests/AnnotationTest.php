@@ -1108,6 +1108,20 @@ class AnnotationTest extends TestCase
                         return ["a" => 1, "b" => "two"];
                     }'
             ],
+            'falsableFunctionAllowedWhenBooleanExpected' => [
+                '<?php
+
+                    /** @psalm-return bool */
+                    function alwaysFalse1()
+                    {
+                        return false;
+                    }
+
+                    function alwaysFalse2(): bool
+                    {
+                        return false;
+                    }'
+            ],
         ];
     }
 
@@ -1604,6 +1618,26 @@ class AnnotationTest extends TestCase
                      */
                     function f($reference) {}',
                 'error_message' => 'MissingDocblockType',
+            ],
+            'canNeverReturnDeclaredType' => [
+                '<?php
+
+                    /** @psalm-return false */
+                    function alwaysFalse() : bool
+                    {
+                        return true;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32',
+            ],
+            'falsableWithExpectedTypeTrue' => [
+                '<?php
+
+                    /** @psalm-return true */
+                    function alwaysFalse()
+                    {
+                        return false;
+                    }',
+                'error_message' => 'FalsableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32',
             ],
         ];
     }
