@@ -1278,162 +1278,166 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $returns_by_ref
                             || $codebase->methods->getMethodReturnsByRef($method_id);
                 }
+            }
+        }
 
-                $method_storage = $codebase->methods->getUserMethodStorage($method_id);
+        try {
+            $method_storage = $codebase->methods->getStorage($declaring_method_id ?: $method_id);
+        } catch (\UnexpectedValueException $e) {
+            $method_storage = null;
+        }
 
-                if ($method_storage) {
-                    if (!$context->collect_mutations && !$context->collect_initializations) {
-                        $method_pure_compatible = $method_storage->external_mutation_free
-                            && $statements_analyzer->node_data->isPureCompatible($stmt->var);
+        if ($method_storage) {
+            if (!$context->collect_mutations && !$context->collect_initializations) {
+                $method_pure_compatible = $method_storage->external_mutation_free
+                    && $statements_analyzer->node_data->isPureCompatible($stmt->var);
 
-                        if ($context->pure
-                            && !$method_storage->mutation_free
-                            && !$method_pure_compatible
-                        ) {
-                            if (IssueBuffer::accepts(
-                                new ImpureMethodCall(
-                                    'Cannot call an mutation-free method '
-                                        . $cased_method_id . ' from a pure context',
-                                    new CodeLocation($source, $stmt->name)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        } elseif ($context->mutation_free
-                            && !$method_storage->mutation_free
-                            && !$method_pure_compatible
-                        ) {
-                            if (IssueBuffer::accepts(
-                                new ImpureMethodCall(
-                                    'Cannot call an possibly-mutating method '
-                                        . $cased_method_id . ' from a mutation-free context',
-                                    new CodeLocation($source, $stmt->name)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        } elseif ($context->external_mutation_free
-                            && !$method_storage->mutation_free
-                            && $fq_class_name !== $context->self
-                            && !$method_pure_compatible
-                        ) {
-                            if (IssueBuffer::accepts(
-                                new ImpureMethodCall(
-                                    'Cannot call an possibly-mutating method '
-                                        . $cased_method_id . ' from a mutation-free context',
-                                    new CodeLocation($source, $stmt->name)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        } elseif (($method_storage->mutation_free
-                                || ($method_storage->external_mutation_free
-                                    && (isset($stmt->var->external_mutation_free) || isset($stmt->var->pure))))
-                            && !$context->inside_unset
-                        ) {
-                            if ($method_storage->mutation_free && !$method_storage->mutation_free_inferred) {
-                                if ($context->inside_conditional) {
-                                    /** @psalm-suppress UndefinedPropertyAssignment */
-                                    $stmt->pure = true;
-                                }
-
-                                $can_memoize = true;
-                            }
-
-                            if ($codebase->find_unused_variables && !$context->inside_conditional) {
-                                if (!$context->inside_assignment && !$context->inside_call) {
-                                    if (IssueBuffer::accepts(
-                                        new \Psalm\Issue\UnusedMethodCall(
-                                            'The call to ' . $cased_method_id . ' is not used',
-                                            new CodeLocation($statements_analyzer, $stmt->name),
-                                            (string) $method_id
-                                        ),
-                                        $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        // fall through
-                                    }
-                                } elseif (!$method_storage->mutation_free_inferred) {
-                                    /** @psalm-suppress UndefinedPropertyAssignment */
-                                    $stmt->pure = true;
-                                }
-                            }
+                if ($context->pure
+                    && !$method_storage->mutation_free
+                    && !$method_pure_compatible
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ImpureMethodCall(
+                            'Cannot call an mutation-free method '
+                                . $cased_method_id . ' from a pure context',
+                            new CodeLocation($source, $stmt->name)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif ($context->mutation_free
+                    && !$method_storage->mutation_free
+                    && !$method_pure_compatible
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ImpureMethodCall(
+                            'Cannot call an possibly-mutating method '
+                                . $cased_method_id . ' from a mutation-free context',
+                            new CodeLocation($source, $stmt->name)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif ($context->external_mutation_free
+                    && !$method_storage->mutation_free
+                    && $fq_class_name !== $context->self
+                    && !$method_pure_compatible
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ImpureMethodCall(
+                            'Cannot call an possibly-mutating method '
+                                . $cased_method_id . ' from a mutation-free context',
+                            new CodeLocation($source, $stmt->name)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif (($method_storage->mutation_free
+                        || ($method_storage->external_mutation_free
+                            && (isset($stmt->var->external_mutation_free) || isset($stmt->var->pure))))
+                    && !$context->inside_unset
+                ) {
+                    if ($method_storage->mutation_free && !$method_storage->mutation_free_inferred) {
+                        if ($context->inside_conditional) {
+                            /** @psalm-suppress UndefinedPropertyAssignment */
+                            $stmt->pure = true;
                         }
 
-                        if (!$config->remember_property_assignments_after_call
-                            && !$method_storage->mutation_free
-                            && !$method_pure_compatible
-                        ) {
-                            $context->removeAllObjectVars();
-                        } elseif ($method_storage->this_property_mutations) {
-                            foreach ($method_storage->this_property_mutations as $name => $_) {
-                                $mutation_var_id = $lhs_var_id . '->' . $name;
+                        $can_memoize = true;
+                    }
 
-                                $this_property_didnt_exist = $lhs_var_id === '$this'
-                                    && isset($context->vars_in_scope[$mutation_var_id])
-                                    && !isset($class_storage->declaring_property_ids[$name]);
-
-                                $context->remove($mutation_var_id);
-
-                                if ($this_property_didnt_exist) {
-                                    $context->vars_in_scope[$mutation_var_id] = Type::getMixed();
-                                }
+                    if ($codebase->find_unused_variables && !$context->inside_conditional) {
+                        if (!$context->inside_assignment && !$context->inside_call) {
+                            if (IssueBuffer::accepts(
+                                new \Psalm\Issue\UnusedMethodCall(
+                                    'The call to ' . $cased_method_id . ' is not used',
+                                    new CodeLocation($statements_analyzer, $stmt->name),
+                                    (string) $method_id
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
                             }
+                        } elseif (!$method_storage->mutation_free_inferred) {
+                            /** @psalm-suppress UndefinedPropertyAssignment */
+                            $stmt->pure = true;
                         }
-                    }
-
-                    $class_template_params = $template_result->generic_params;
-
-                    if ($method_storage->assertions) {
-                        self::applyAssertionsToContext(
-                            $stmt->name,
-                            ExpressionAnalyzer::getArrayVarId($stmt->var, null, $statements_analyzer),
-                            $method_storage->assertions,
-                            $args,
-                            $class_template_params,
-                            $context,
-                            $statements_analyzer
-                        );
-                    }
-
-                    if ($method_storage->if_true_assertions) {
-                        $statements_analyzer->node_data->setIfTrueAssertions(
-                            $stmt,
-                            array_map(
-                                function (Assertion $assertion) use (
-                                    $class_template_params,
-                                    $lhs_var_id
-                                ) : Assertion {
-                                    return $assertion->getUntemplatedCopy(
-                                        $class_template_params ?: [],
-                                        $lhs_var_id
-                                    );
-                                },
-                                $method_storage->if_true_assertions
-                            )
-                        );
-                    }
-
-                    if ($method_storage->if_false_assertions) {
-                        $statements_analyzer->node_data->setIfFalseAssertions(
-                            $stmt,
-                            array_map(
-                                function (Assertion $assertion) use (
-                                    $class_template_params,
-                                    $lhs_var_id
-                                ) : Assertion {
-                                    return $assertion->getUntemplatedCopy(
-                                        $class_template_params ?: [],
-                                        $lhs_var_id
-                                    );
-                                },
-                                $method_storage->if_false_assertions
-                            )
-                        );
                     }
                 }
+
+                if (!$config->remember_property_assignments_after_call
+                    && !$method_storage->mutation_free
+                    && !$method_pure_compatible
+                ) {
+                    $context->removeAllObjectVars();
+                } elseif ($method_storage->this_property_mutations) {
+                    foreach ($method_storage->this_property_mutations as $name => $_) {
+                        $mutation_var_id = $lhs_var_id . '->' . $name;
+
+                        $this_property_didnt_exist = $lhs_var_id === '$this'
+                            && isset($context->vars_in_scope[$mutation_var_id])
+                            && !isset($class_storage->declaring_property_ids[$name]);
+
+                        $context->remove($mutation_var_id);
+
+                        if ($this_property_didnt_exist) {
+                            $context->vars_in_scope[$mutation_var_id] = Type::getMixed();
+                        }
+                    }
+                }
+            }
+
+            $class_template_params = $template_result->generic_params;
+
+            if ($method_storage->assertions) {
+                self::applyAssertionsToContext(
+                    $stmt->name,
+                    ExpressionAnalyzer::getArrayVarId($stmt->var, null, $statements_analyzer),
+                    $method_storage->assertions,
+                    $args,
+                    $class_template_params,
+                    $context,
+                    $statements_analyzer
+                );
+            }
+
+            if ($method_storage->if_true_assertions) {
+                $statements_analyzer->node_data->setIfTrueAssertions(
+                    $stmt,
+                    array_map(
+                        function (Assertion $assertion) use (
+                            $class_template_params,
+                            $lhs_var_id
+                        ) : Assertion {
+                            return $assertion->getUntemplatedCopy(
+                                $class_template_params ?: [],
+                                $lhs_var_id
+                            );
+                        },
+                        $method_storage->if_true_assertions
+                    )
+                );
+            }
+
+            if ($method_storage->if_false_assertions) {
+                $statements_analyzer->node_data->setIfFalseAssertions(
+                    $stmt,
+                    array_map(
+                        function (Assertion $assertion) use (
+                            $class_template_params,
+                            $lhs_var_id
+                        ) : Assertion {
+                            return $assertion->getUntemplatedCopy(
+                                $class_template_params ?: [],
+                                $lhs_var_id
+                            );
+                        },
+                        $method_storage->if_false_assertions
+                    )
+                );
             }
         }
 

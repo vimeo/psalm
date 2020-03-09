@@ -948,7 +948,7 @@ class UnusedCodeTest extends TestCase
                     $a->getShort();',
                 'error_message' => 'UnusedMethodCall',
             ],
-            'SKIPPED-dateTimeImmutable' => [
+            'dateTimeImmutable' => [
                 '<?php
                     function foo(DateTimeImmutable $dt) : void {
                         $dt->modify("+1 day");
