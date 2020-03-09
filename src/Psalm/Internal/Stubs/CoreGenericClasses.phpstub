@@ -1490,7 +1490,7 @@ final class WeakReference
 /**
  * @psalm-immutable
  */
-class DateTimeImmutable
+class DateTimeImmutable implements DateTimeInterface
 {
     public function __construct(string $time = "now", DateTimeZone $tz = null) {}
 }
