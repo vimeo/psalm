@@ -2,7 +2,9 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -12,6 +14,7 @@ use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Internal\Analyzer\TypeComparisonResult;
 use Psalm\Internal\Taint\Sink;
 use Psalm\Internal\Taint\Source;
 use Psalm\Issue\FalsableReturnStatement;
@@ -23,6 +26,8 @@ use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
+use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use function explode;
 use function strtolower;
@@ -122,6 +127,7 @@ class ReturnAnalyzer
 
         if ($stmt->expr) {
             $context->inside_call = true;
+            self::potentiallyInferTypesOnClosureFromParentReturnType($statements_analyzer, $stmt, $context);
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -539,5 +545,99 @@ class ReturnAnalyzer
                     . $stmt->getLine()
             );
         }
+    }
+
+    /**
+     * If a function returns a closure, we try to infer the param/return types of
+     * the inner closure.
+     * @see \Psalm\Tests\ReturnTypeTest:756
+     */
+    private static function potentiallyInferTypesOnClosureFromParentReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Return_ $stmt,
+        Context $context
+    ): void {
+        // if not returning from inside of a function, return
+        if (!$context->calling_function_id) {
+            return;
+        }
+        // only handle if we returning a closure specifically
+        if (!$stmt->expr instanceof PhpParser\Node\Expr\Closure) {
+            return;
+        }
+
+        $closure_id = (new ClosureAnalyzer($stmt->expr, $statements_analyzer))->getId();
+        $closure_storage = $statements_analyzer
+            ->getCodebase()
+            ->getFunctionLikeStorage($statements_analyzer, $closure_id);
+
+        $parent_fn_storage = $statements_analyzer
+            ->getCodebase()
+            ->getFunctionLikeStorage($statements_analyzer, $context->calling_function_id);
+
+        // if no return type on parent, infer from return
+        if ($parent_fn_storage->return_type === null) {
+            $parent_fn_storage->return_type = self::functionLikeStorageToUnionType($closure_storage);
+            return;
+        }
+        // can't infer returned closure if the parent doesn't have a callable return type
+        if (!$parent_fn_storage->return_type->hasCallableType()) {
+            return;
+        }
+        // cannot infer if we have union/intersection types
+        if (\count($parent_fn_storage->return_type->getAtomicTypes()) !== 1) {
+            return;
+        }
+
+        /** @var Type\Atomic\TFn|Type\Atomic\TCallable $parent_callable_return_type */
+        $parent_callable_return_type = \current($parent_fn_storage->return_type->getAtomicTypes());
+        // if no params or return type was designed for parent callable return, then allow inferring of parent
+        // return type from child closure definition
+        if ($parent_callable_return_type->params === null && $parent_callable_return_type->return_type === null) {
+            $parent_fn_storage->return_type = self::functionLikeStorageToUnionType($closure_storage);
+            return;
+        }
+
+        foreach ($closure_storage->params as $key => $param) {
+            $parent_param = $parent_callable_return_type->params[$key] ?? null;
+            $param->type = self::inferInnerClosureTypeFromParent(
+                $statements_analyzer->getCodebase(),
+                $param->type,
+                $parent_param ? $parent_param->type : null
+            );
+        }
+        $closure_storage->return_type = self::inferInnerClosureTypeFromParent(
+            $statements_analyzer->getCodebase(),
+            $closure_storage->return_type,
+            $parent_callable_return_type->return_type
+        );
+    }
+
+    private static function functionLikeStorageToUnionType(
+        FunctionLikeStorage $closure
+    ): Type\Union {
+        return new Type\Union([
+            new Type\Atomic\TCallable('callable', $closure->params, $closure->return_type, $closure->pure)
+        ]);
+    }
+
+    /**
+     * - If non parent type, do nothing
+     * - If no return type, infer from parent
+     * - If parent return type is more specific, infer from parent
+     * - else, do nothing
+     */
+    private static function inferInnerClosureTypeFromParent(
+        Codebase $codebase,
+        ?Type\Union $return_type,
+        ?Type\Union $parent_return_type
+    ): ?Type\Union {
+        if (!$parent_return_type) {
+            return $return_type;
+        }
+        if (!$return_type || TypeAnalyzer::isContainedBy($codebase, $parent_return_type, $return_type)) {
+            return $parent_return_type;
+        }
+        return $return_type;
     }
 }
