@@ -683,4 +683,50 @@ class ThrowsAnnotationTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
     }
+
+    public function testInferRethrownExceptionType(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @throws \DomainException
+                 */
+                function method(): void
+                {
+                    try {
+                        throw new \DomainException();
+                    } catch (\Throwable $e) {
+                        throw $e;
+                    }
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    public function testIgnoreImpossibleRethrownException(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function method(): void
+                {
+                    try {
+                    } catch (\Throwable $e) {
+                        throw $e;
+                    }
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
 }

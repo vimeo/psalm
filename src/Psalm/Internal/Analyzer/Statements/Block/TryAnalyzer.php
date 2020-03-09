@@ -255,6 +255,8 @@ class TryAnalyzer
                 $fq_catch_classes[] = $fq_catch_class;
             }
 
+            $possibly_catch_var_classes = [];
+
             if ($catch_context->collect_exceptions) {
                 foreach ($fq_catch_classes as $fq_catch_class) {
                     $fq_catch_class_lower = strtolower($fq_catch_class);
@@ -268,6 +270,8 @@ class TryAnalyzer
                             || ($codebase->interfaceExists($exception_fqcln)
                                 && $codebase->interfaceExtends($exception_fqcln, $fq_catch_class))
                         ) {
+                            $possibly_catch_var_classes[] = $exception_fqcln;
+
                             unset($original_context->possibly_thrown_exceptions[$exception_fqcln]);
                             unset($context->possibly_thrown_exceptions[$exception_fqcln]);
                             unset($catch_context->possibly_thrown_exceptions[$exception_fqcln]);
@@ -279,6 +283,8 @@ class TryAnalyzer
                  * @var array<string, array<array-key, CodeLocation>>
                  */
                 $catch_context->possibly_thrown_exceptions = [];
+            } else {
+                $possibly_catch_var_classes = $fq_catch_classes;
             }
 
             $catch_var_id = '$' . $catch_var_name;
@@ -302,7 +308,7 @@ class TryAnalyzer
 
                         return $catch_class_type;
                     },
-                    $fq_catch_classes
+                    $possibly_catch_var_classes
                 )
             );
 
