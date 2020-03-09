@@ -3514,6 +3514,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
                 return new UnresolvedConstant\UnresolvedConcatOp($left, $right);
             }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
+                return new UnresolvedConstant\UnresolvedBitwiseOr($left, $right);
+            }
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Ternary) {

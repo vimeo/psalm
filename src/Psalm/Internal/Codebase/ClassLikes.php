@@ -1595,7 +1595,7 @@ class ClassLikes
                 || $c instanceof UnresolvedConstant\UnresolvedSubtractionOp
                 || $c instanceof UnresolvedConstant\UnresolvedDivisionOp
                 || $c instanceof UnresolvedConstant\UnresolvedMultiplicationOp
-                || $c instanceof UnresolvedConstant\UnresolvedBinaryOr
+                || $c instanceof UnresolvedConstant\UnresolvedBitwiseOr
             ) {
                 if (($left instanceof Type\Atomic\TLiteralFloat || $left instanceof Type\Atomic\TLiteralInt)
                     && ($right instanceof Type\Atomic\TLiteralFloat || $right instanceof Type\Atomic\TLiteralInt)
@@ -1612,7 +1612,7 @@ class ClassLikes
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedBinaryOr) {
+                    if ($c instanceof UnresolvedConstant\UnresolvedBitwiseOr) {
                         return self::getLiteralTypeFromScalarValue($left->value | $right->value);
                     }
 
