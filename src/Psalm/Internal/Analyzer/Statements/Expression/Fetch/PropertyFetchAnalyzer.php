@@ -827,32 +827,21 @@ class PropertyFetchAnalyzer
 
                         foreach ($reversed_class_template_types as $i => $type_name) {
                             if (isset($lhs_type_part->type_params[$provided_type_param_count - 1 - $i])) {
-                                $class_template_params[$type_name] =
-                                    (string)$lhs_type_part->type_params[$provided_type_param_count - 1 - $i];
+                                $class_template_params[$type_name][$declaring_class_storage->name] = [
+                                    $lhs_type_part->type_params[$provided_type_param_count - 1 - $i],
+                                    0
+                                ];
                             } else {
-                                $class_template_params[$type_name] = 'mixed';
+                                $class_template_params[$type_name][$declaring_class_storage->name] = [
+                                    Type::getMixed(),
+                                    0
+                                ];
                             }
                         }
 
-                        $type_tokens = Type::tokenize((string)$class_property_type);
-
-                        $new_type_tokens = [];
-
-                        foreach ($type_tokens as $type_token_map) {
-                            if (isset($class_template_params[$type_token_map[0]])) {
-                                $tokened = Type::tokenize($class_template_params[$type_token_map[0]]);
-                                foreach ($tokened as $new_t) {
-                                    $new_type_tokens[] = [$new_t[0], $type_token_map[1]];
-                                }
-                            } else {
-                                $new_type_tokens[] = $type_token_map;
-                            }
-                        }
-
-                        $class_property_type = Type::parseTokens(
-                            $new_type_tokens,
-                            null,
-                            $statements_analyzer->getTemplateTypeMap() ?: []
+                        $class_property_type->replaceTemplateTypesWithArgTypes(
+                            $class_template_params,
+                            $codebase
                         );
                     }
                 }

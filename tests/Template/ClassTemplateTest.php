@@ -2471,7 +2471,7 @@ class ClassTemplateTest extends TestCase
                     '$packages' => 'Collection<A>'
                 ]
             ],
-            'assertOnTemplatedProperty' => [
+            'assertSameOnTemplatedProperty' => [
                 '<?php
                     /** @template E as object */
                     final class Box
@@ -2495,6 +2495,23 @@ class ClassTemplateTest extends TestCase
                             return true;
                         }
                     }'
+            ],
+            'assertNotNullOnTemplatedProperty' => [
+                '<?php
+                    /**
+                     * @template T of object
+                     */
+                    final class A {
+                        /**
+                         * @psalm-var ?callable(T): bool
+                         */
+                        public $filter;
+                    }
+
+                    /** @psalm-var A<A> */
+                    $a = new A();
+
+                    if (null !== $a->filter) {}'
             ],
         ];
     }
