@@ -1091,7 +1091,22 @@ class CallAnalyzer
             $array_type = $array_arg_type->getAtomicTypes()['array'];
 
             if ($array_type instanceof ObjectLike) {
-                $array_type = $array_type->getGenericArrayType();
+                if ($array_type->is_list) {
+                    $array_type = new TNonEmptyList($array_type->getGenericValueType());
+                } else {
+                    $array_type = $array_type->getGenericArrayType();
+                }
+            }
+
+            if ($array_type instanceof TArray
+                && $array_type->type_params[0]->hasInt()
+                && !$array_type->type_params[0]->hasString()
+            ) {
+                if ($array_type instanceof TNonEmptyArray) {
+                    $array_type = new TNonEmptyList($array_type->type_params[1]);
+                } else {
+                    $array_type = new TList($array_type->type_params[1]);
+                }
             }
 
             /**
@@ -1099,10 +1114,6 @@ class CallAnalyzer
              * @var TArray|ObjectLike|TList
              */
             $replacement_array_type = $replacement_arg_type->getAtomicTypes()['array'];
-
-            if ($replacement_array_type instanceof ObjectLike) {
-                $replacement_array_type = $replacement_array_type->getGenericArrayType();
-            }
 
             $by_ref_type = TypeCombination::combineTypes([$array_type, $replacement_array_type]);
 
