@@ -1778,7 +1778,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($array_types) {
-            return new Type\Union($array_types);
+            return \Psalm\Internal\Type\TypeCombination::combineTypes($array_types);
         }
 
         $failed_reconciliation = 2;
@@ -1866,7 +1866,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($array_types) {
-            return new Type\Union($array_types);
+            return \Psalm\Internal\Type\TypeCombination::combineTypes($array_types);
         }
 
         $failed_reconciliation = 2;
@@ -1987,7 +1987,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($array_types) {
-            return new Type\Union($array_types);
+            return \Psalm\Internal\Type\TypeCombination::combineTypes($array_types);
         }
 
         $failed_reconciliation = 2;
@@ -2078,7 +2078,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($callable_types) {
-            return new Type\Union($callable_types);
+            return \Psalm\Internal\Type\TypeCombination::combineTypes($callable_types);
         }
 
         $failed_reconciliation = 2;

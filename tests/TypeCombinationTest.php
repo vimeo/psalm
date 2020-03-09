@@ -522,6 +522,13 @@ class TypeCombinationTest extends TestCase
                     'callable'
                 ],
             ],
+            'combineCallableArrayAndArray' => [
+                'array<array-key, mixed>',
+                [
+                    'callable-array{class-string, string}',
+                    'array',
+                ],
+            ],
         ];
     }
 

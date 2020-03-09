@@ -566,7 +566,7 @@ abstract class Type
                 $properties[$property_key] = $property_type;
             }
 
-            if ($type !== 'array' && $type !== 'object') {
+            if ($type !== 'array' && $type !== 'object' && $type !== 'callable-array') {
                 throw new TypeParseTreeException('Unexpected brace character');
             }
 
@@ -576,6 +576,10 @@ abstract class Type
 
             if ($type === 'object') {
                 return new TObjectWithProperties($properties);
+            }
+
+            if ($type === 'callable-array') {
+                return new Atomic\TCallableObjectLikeArray($properties);
             }
 
             return new ObjectLike($properties);

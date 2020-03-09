@@ -1702,7 +1702,14 @@ class FunctionCallTest extends TestCase
                         return $str;
                     }',
                 'error_message' => 'NullableReturnStatement'
-            ]
+            ],
+            'noCrashWithPattern' => [
+                '<?php
+                    echo !\is_callable($loop_callback)
+                        || (\is_array($loop_callback)
+                            && !\method_exists(...$loop_callback));',
+                'error_message' => 'UndefinedGlobalVariable'
+            ],
         ];
     }
 }
