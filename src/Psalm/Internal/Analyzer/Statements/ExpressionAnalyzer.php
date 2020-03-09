@@ -1305,7 +1305,7 @@ class ExpressionAnalyzer
         if ($return_type instanceof Type\Atomic\TClassString
             && $return_type->as_type
         ) {
-            $new_as_type = $return_type->as_type;
+            $new_as_type = clone $return_type->as_type;
 
             self::fleshOutAtomicType(
                 $codebase,

@@ -695,6 +695,39 @@ class ClassStringTest extends TestCase
                         }
                     }'
             ],
+            'traitClassStringClone' => [
+                '<?php
+                    trait Factory
+                    {
+                        /** @return class-string<static> */
+                        public static function getFactoryClass()
+                        {
+                            return static::class;
+                        }
+                    }
+
+                    class A
+                    {
+                        use Factory;
+
+                        public static function factory(): self
+                        {
+                            $class = static::getFactoryClass();
+                            return new $class;
+                        }
+                    }
+
+                    class B
+                    {
+                        use Factory;
+
+                        public static function factory(): self
+                        {
+                            $class = static::getFactoryClass();
+                            return new $class;
+                        }
+                    }'
+            ],
         ];
     }
 
