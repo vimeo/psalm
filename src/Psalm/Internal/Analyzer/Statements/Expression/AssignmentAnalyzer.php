@@ -860,6 +860,45 @@ class AssignmentAnalyzer
         PhpParser\Node\Expr\AssignOp $stmt,
         Context $context
     ) {
+        $array_var_id = ExpressionAnalyzer::getArrayVarId(
+            $stmt->var,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
+        );
+
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+            $old_data_provider = $statements_analyzer->node_data;
+
+            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+            $fake_coalesce_expr = new PhpParser\Node\Expr\BinaryOp\Coalesce(
+                $stmt->var,
+                $stmt->expr,
+                $stmt->getAttributes()
+            );
+
+            $fake_coalesce_type = AssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->var,
+                $fake_coalesce_expr,
+                null,
+                $context,
+                $stmt->getDocComment()
+            );
+
+            $statements_analyzer->node_data = $old_data_provider;
+
+            if ($fake_coalesce_type) {
+                if ($array_var_id) {
+                    $context->vars_in_scope[$array_var_id] = $fake_coalesce_type;
+                }
+
+                $statements_analyzer->node_data->setType($stmt, $fake_coalesce_type);
+            }
+
+            return;
+        }
+
         $was_in_assignment = $context->inside_assignment;
 
         $context->inside_assignment = true;
@@ -871,12 +910,6 @@ class AssignmentAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
-
-        $array_var_id = ExpressionAnalyzer::getArrayVarId(
-            $stmt->var,
-            $statements_analyzer->getFQCLN(),
-            $statements_analyzer
-        );
 
         if ($array_var_id
             && $context->mutation_free
@@ -1028,38 +1061,6 @@ class AssignmentAnalyzer
                 null,
                 $result_type ?: Type::getEmpty()
             );
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
-            $old_data_provider = $statements_analyzer->node_data;
-
-            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-            $fake_coalesce_expr = new PhpParser\Node\Expr\BinaryOp\Coalesce(
-                $stmt->var,
-                $stmt->expr,
-                $stmt->getAttributes()
-            );
-
-            if (BinaryOpAnalyzer::analyze(
-                $statements_analyzer,
-                $fake_coalesce_expr,
-                $context
-            ) === false) {
-                return false;
-            }
-
-            $fake_coalesce_type = $statements_analyzer->node_data->getType($fake_coalesce_expr);
-
-            $statements_analyzer->node_data = $old_data_provider;
-
-            if ($fake_coalesce_type) {
-                if ($array_var_id) {
-                    $context->vars_in_scope[$array_var_id] = $fake_coalesce_type;
-                }
-
-                $statements_analyzer->node_data->setType($stmt, $fake_coalesce_type);
-            }
         }
 
         if (!$was_in_assignment) {
