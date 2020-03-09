@@ -1305,16 +1305,21 @@ class ExpressionAnalyzer
         if ($return_type instanceof Type\Atomic\TClassString
             && $return_type->as_type
         ) {
+            $new_as_type = $return_type->as_type;
+
             self::fleshOutAtomicType(
                 $codebase,
-                $return_type->as_type,
+                $new_as_type,
                 $self_class,
                 $static_class_type,
                 $parent_class,
                 $evaluate
             );
 
-            $return_type->as = $return_type->as_type->value;
+            if ($new_as_type instanceof TNamedObject) {
+                $return_type->as_type = $new_as_type;
+                $return_type->as = $return_type->as_type->value;
+            }
         }
 
         if ($return_type instanceof Type\Atomic\TScalarClassConstant) {
