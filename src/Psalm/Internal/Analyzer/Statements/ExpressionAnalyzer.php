@@ -1302,6 +1302,21 @@ class ExpressionAnalyzer
             }
         }
 
+        if ($return_type instanceof Type\Atomic\TClassString
+            && $return_type->as_type
+        ) {
+            self::fleshOutAtomicType(
+                $codebase,
+                $return_type->as_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate
+            );
+
+            $return_type->as = $return_type->as_type->value;
+        }
+
         if ($return_type instanceof Type\Atomic\TScalarClassConstant) {
             if ($return_type->fq_classlike_name === 'self' && $self_class) {
                 $return_type->fq_classlike_name = $self_class;
