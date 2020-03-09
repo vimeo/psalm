@@ -371,6 +371,10 @@ class ImmutableAnnotationTest extends TestCase
                      */
                     final class ImmutableClass extends ImmutableParent {}',
             ],
+            'passDateTimeZone' => [
+                '<?php
+                    echo (new DateTimeImmutable("now", new DateTimeZone("UTC")))->format("Y-m-d");'
+            ],
         ];
     }
 

@@ -1164,27 +1164,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $static_type,
                     $class_storage->parent_class
                 );
-
-                if ($fq_class_name === 'DateTimeImmutable'
-                    && !$context->inside_conditional
-                    && !$context->inside_unset
-                ) {
-                    if (!$context->inside_assignment && !$context->inside_call) {
-                        if (IssueBuffer::accepts(
-                            new \Psalm\Issue\UnusedMethodCall(
-                                'The call to ' . $cased_method_id . ' is not used',
-                                new CodeLocation($statements_analyzer, $stmt->name),
-                                (string) $method_id
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } else {
-                        /** @psalm-suppress UndefinedPropertyAssignment */
-                        $stmt->pure = true;
-                    }
-                }
             } else {
                 $name_code_location = new CodeLocation($source, $stmt->name);
 
