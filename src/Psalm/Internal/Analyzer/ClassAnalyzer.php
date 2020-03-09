@@ -1541,9 +1541,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
 
             if (!$declaring_property_class) {
-                throw new \UnexpectedValueException(
-                    'Cannot get declaring class for ' . $property_id
-                );
+                return;
             }
 
             $fq_class_name = $declaring_property_class;

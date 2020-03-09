@@ -525,6 +525,14 @@ class ClassTest extends TestCase
                         echo A::SOME_CONST;
                     }'
             ],
+            'noCrashOnClassExists' => [
+                '<?php
+                    if (!class_exists(ReflectionGenerator::class)) {
+                        class ReflectionGenerator {
+                            private $prop;
+                        }
+                    }',
+            ]
         ];
     }
 
