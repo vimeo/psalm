@@ -62,6 +62,10 @@ trait ValidCodeAnalysisTestTrait
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
 
+        if (\strtoupper(substr(\PHP_OS, 0, 3)) === 'WIN') {
+            $code = \str_replace("\n", "\r\r", $code);
+        }
+
         $context = new Context();
 
         $this->project_analyzer->setPhpVersion($php_version);

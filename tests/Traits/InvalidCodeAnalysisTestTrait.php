@@ -46,6 +46,10 @@ trait InvalidCodeAnalysisTestTrait
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
+        if (\strtoupper(\substr(\PHP_OS, 0, 3)) === 'WIN') {
+            $code = \str_replace("\n", "\r\r", $code);
+        }
+
         if ($strict_mode) {
             Config::getInstance()->strict_binary_operands = true;
         }
