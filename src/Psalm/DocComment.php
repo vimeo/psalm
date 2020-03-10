@@ -195,9 +195,10 @@ class DocComment
 
         $last = false;
         foreach ($lines as $k => $line) {
+
             if (preg_match('/^[ \t]*\*?\s?@\w/i', $line)) {
                 $last = $k;
-            } elseif (preg_match('/^\s*$/', $line)) {
+            } elseif (preg_match('/^\s*\r?$/', $line)) {
                 $last = false;
             } elseif ($last !== false) {
                 $old_last_line = $lines[$last];
@@ -210,6 +211,10 @@ class DocComment
         $line_offset = 0;
 
         foreach ($lines as $line) {
+            $original_line_length = strlen($line);
+
+            $line = str_replace("\r", '', $line);
+
             if (preg_match('/^[ \t]*\*?\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
                 /** @var array<int, array{string, int}> $matches */
                 list($full_match_info, $type_info, $data_info) = $matches;
@@ -233,7 +238,7 @@ class DocComment
                 $special[$type][$data_offset + 3] = $data;
             }
 
-            $line_offset += strlen($line) + 1;
+            $line_offset += $original_line_length + 1;
         }
 
         $docblock = str_replace("\t", '  ', $docblock);
