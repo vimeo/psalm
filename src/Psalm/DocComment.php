@@ -195,7 +195,6 @@ class DocComment
 
         $last = false;
         foreach ($lines as $k => $line) {
-
             if (preg_match('/^[ \t]*\*?\s?@\w/i', $line)) {
                 $last = $k;
             } elseif (preg_match('/^\s*\r?$/', $line)) {
