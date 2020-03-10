@@ -47,7 +47,7 @@ trait InvalidCodeAnalysisTestTrait
         }
 
         if (\strtoupper(\substr(\PHP_OS, 0, 3)) === 'WIN') {
-            $code = \str_replace("\n", "\r\r", $code);
+            $code = \str_replace("\n", "\r\n", $code);
         }
 
         if ($strict_mode) {
