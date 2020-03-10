@@ -5,7 +5,7 @@ use Psalm\DocComment;
 
 class LinebreakTest extends \Psalm\Tests\TestCase
 {
-    public function testCarriageReturnIsIgnoredInParameters()
+    public function testCarriageReturnIsIgnoredInParameters(): void
     {
         $comment = <<<COMMENT
 /**
