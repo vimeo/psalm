@@ -2,6 +2,8 @@
 namespace Psalm\Tests\Config;
 
 use Psalm\DocComment;
+use function str_replace;
+use function current;
 
 class LinebreakTest extends \Psalm\Tests\TestCase
 {
