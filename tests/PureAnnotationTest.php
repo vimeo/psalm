@@ -199,6 +199,17 @@ class PureAnnotationTest extends TestCase
                         return $s;
                     }',
             ],
+            'exceptionGetMessage' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function getMessage(Throwable $e): string {
+                        return $e->getMessage();
+                    }
+
+                    echo getMessage(new Exception("test"));'
+            ],
         ];
     }
 

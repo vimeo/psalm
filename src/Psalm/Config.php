@@ -1674,7 +1674,14 @@ class Config
             throw new \UnexpectedValueException('Cannot locate core generic classes');
         }
 
-        $core_generic_files = [$generic_stubs_path, $generic_classes_path];
+        // note: don't realpath $generic_classes_path, or phar version will fail
+        $immutable_classes_path = __DIR__ . '/Internal/Stubs/CoreImmutableClasses.phpstub';
+
+        if (!file_exists($immutable_classes_path)) {
+            throw new \UnexpectedValueException('Cannot locate core immutable classes');
+        }
+
+        $core_generic_files = [$generic_stubs_path, $generic_classes_path, $immutable_classes_path];
 
         if (\extension_loaded('ds')) {
             $ext_ds_path = __DIR__ . '/Internal/Stubs/ext-ds.php';
