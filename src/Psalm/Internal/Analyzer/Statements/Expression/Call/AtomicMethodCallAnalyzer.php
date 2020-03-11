@@ -430,7 +430,10 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                         if (!$result->return_type) {
                             $result->return_type = $return_type_candidate;
                         } else {
-                            $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
+                            $result->return_type = Type::combineUnionTypes(
+                                $return_type_candidate,
+                                $result->return_type
+                            );
                         }
 
                         return;
