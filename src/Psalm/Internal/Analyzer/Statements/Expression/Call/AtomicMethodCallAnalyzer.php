@@ -750,12 +750,16 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                 $statements_analyzer->getSuppressedIssues()
             );
 
-            self::checkMagicGetterOrSetterProperty(
+            $getter_return_type = self::getMagicGetterOrSetterProperty(
                 $statements_analyzer,
                 $stmt,
                 $context,
                 $fq_class_name
             );
+
+            if ($getter_return_type) {
+                $return_type_candidate = $getter_return_type;
+            }
         }
 
         try {
@@ -1147,10 +1151,6 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                     $args
                 );
 
-                if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
-                    $return_type_candidate = $stmt_type;
-                }
-
                 if ($return_type_candidate) {
                     $return_type_candidate = clone $return_type_candidate;
 
@@ -1236,26 +1236,26 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
      * @param PhpParser\Node\Expr\MethodCall $stmt
      * @param string $fq_class_name
      */
-    private static function checkMagicGetterOrSetterProperty(
+    private static function getMagicGetterOrSetterProperty(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
         $fq_class_name
-    ) : void {
+    ) : ?Type\Union {
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-            return;
+            return null;
         }
 
         $method_name = strtolower($stmt->name->name);
         if (!in_array($method_name, ['__get', '__set'], true)) {
-            return;
+            return null;
         }
 
         $codebase = $statements_analyzer->getCodebase();
 
         $first_arg_value = $stmt->args[0]->value;
         if (!$first_arg_value instanceof PhpParser\Node\Scalar\String_) {
-            return;
+            return null;
         }
 
         $prop_name = $first_arg_value->value;
@@ -1395,15 +1395,12 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                 }
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
-                    $statements_analyzer->node_data->setType(
-                        $stmt,
-                        clone $class_storage->pseudo_property_get_types['$' . $prop_name]
-                    );
+                    return clone $class_storage->pseudo_property_get_types['$' . $prop_name];
                 }
 
                 break;
         }
 
-        return;
+        return null;
     }
 }
