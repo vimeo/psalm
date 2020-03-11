@@ -521,7 +521,7 @@ class FunctionTemplateTest extends TestCase
                     function call(callable $gen) : array {
                         $return = $gen();
                         if ($return instanceof Generator) {
-                            return [$gen->getReturn()];
+                            return [$return->getReturn()];
                         }
                         /** @var array<int, TReturn> */
                         $wrapped_gen = [$gen];
