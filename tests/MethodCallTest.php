@@ -871,6 +871,19 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidStringClass',
             ],
+            'preventAbstractMethodCall' => [
+                '<?php
+                    abstract class Base {
+                        public static function callAbstract() : void {
+                            static::bar();
+                        }
+
+                        abstract static function bar() : void;
+                    }
+
+                    Base::bar();',
+                'error_message' => 'AbstractMethodCall',
+            ],
         ];
     }
 }

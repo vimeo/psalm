@@ -9,6 +9,18 @@ abstract class A {}
 new A();
 ```
 
+### AbstractMethodCall
+
+Emitted when an attempt is made to call an abstract method
+
+```php
+abstract class Base {
+    abstract static function bar() : void;
+}
+
+Base::bar();
+```
+
 ### ArgumentTypeCoercion
 
 Emitted when calling a function with an argument which has a less specific type than the function expects

@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidStringClass;
@@ -952,6 +953,20 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
                 if ($method_storage) {
+                    if ($method_storage->abstract) {
+                        if (IssueBuffer::accepts(
+                            new AbstractMethodCall(
+                                'Cannot call an abstract method ' . $method_id,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+
+                        return;
+                    }
+
                     if ($context->pure && !$method_storage->pure) {
                         if (IssueBuffer::accepts(
                             new ImpureMethodCall(
