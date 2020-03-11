@@ -11,7 +11,7 @@ new A();
 
 ### AbstractMethodCall
 
-Emitted when an attempt is made to call an abstract method
+Emitted when an attempt is made to call an abstract static method directly
 
 ```php
 abstract class Base {

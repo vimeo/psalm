@@ -953,10 +953,22 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
                 if ($method_storage) {
-                    if ($method_storage->abstract) {
+                    if ($method_storage->abstract
+                        && (!$context->self
+                            || !\Psalm\Internal\Analyzer\TypeAnalyzer::isContainedBy(
+                                $codebase,
+                                $context->vars_in_scope['$this']
+                                    ?? new Type\Union([
+                                        new Type\Atomic\TNamedObject($context->self)
+                                    ]),
+                                new Type\Union([
+                                    new Type\Atomic\TNamedObject($method_id->fq_class_name)
+                                ])
+                            ))
+                    ) {
                         if (IssueBuffer::accepts(
                             new AbstractMethodCall(
-                                'Cannot call an abstract method ' . $method_id,
+                                'Cannot call an abstract static method ' . $method_id . ' directly',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()
