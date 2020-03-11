@@ -173,7 +173,6 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
         }
 
         if (!$does_class_exist) {
-            $result->non_existent_class_method_ids[] = $fq_class_name . '::*';
             return;
         }
 
@@ -821,17 +820,15 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
 
             $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
-            if (self::checkFunctionArguments(
+            self::checkFunctionArguments(
                 $statements_analyzer,
                 $stmt->args,
                 $pseudo_method_storage->params,
                 (string) $method_id,
                 $context
-            ) === false) {
-                return null;
-            }
+            );
 
-            if (self::checkFunctionLikeArgumentsMatch(
+            self::checkFunctionLikeArgumentsMatch(
                 $statements_analyzer,
                 $stmt->args,
                 null,
@@ -841,9 +838,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                 null,
                 new CodeLocation($statements_analyzer, $stmt),
                 $context
-            ) === false) {
-                return null;
-            }
+            );
 
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = clone $pseudo_method_storage->return_type;
@@ -879,20 +874,23 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                 );
             }
         } else {
-            if (self::checkFunctionArguments(
+            self::checkFunctionArguments(
                 $statements_analyzer,
                 $stmt->args,
                 null,
                 null,
                 $context
-            ) === false) {
-                return null;
-            }
+            );
 
             if ($class_storage->sealed_methods) {
                 $result->non_existent_magic_method_ids[] = $method_id;
-                return null;
             }
+
+            return new AtomicCallContext(
+                $method_id,
+                $stmt->args,
+                $statements_analyzer->node_data
+            );
         }
 
         $result->has_valid_method_call_type = true;
