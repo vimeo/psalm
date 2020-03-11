@@ -1094,9 +1094,9 @@ class PropertyAssignmentAnalyzer
         Type\Union $assignment_value_type,
         Context $context
     ) {
-        $var_id = ExpressionAnalyzer::getVarId(
+        $var_id = ExpressionAnalyzer::getArrayVarId(
             $stmt,
-            $statements_analyzer->getFQCLN(),
+            $context->self,
             $statements_analyzer
         );
 
