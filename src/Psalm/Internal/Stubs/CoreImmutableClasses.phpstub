@@ -29,22 +29,22 @@ class Exception implements Throwable
     /**
      * @var string
      */
-    protected $message;
+    protected $message = '';
 
     /**
      * @var int
      */
-    protected $code;
+    protected $code = 0;
 
     /**
      * @var string
      */
-    protected $file;
+    protected $file = '';
 
     /**
      * @var int
      */
-    protected $line;
+    protected $line = 0;
 
     /**
      * @psalm-external-mutation-free
@@ -52,7 +52,7 @@ class Exception implements Throwable
      * @param int $code
      * @param Throwable $previous
      */
-    public function __construct($message = "", $code = 0, Throwable $previous = null) { }
+    public function __construct($message = "", $code = 0, Throwable $previous = null) {}
 
     /**
      * @psalm-mutation-free

@@ -532,6 +532,13 @@ class ClassTest extends TestCase
                             private $prop;
                         }
                     }',
+            ],
+            'extendException' => [
+                '<?php
+                    class ME extends Exception {
+                        /** @var string */
+                        protected $message = "hello";
+                    }',
             ]
         ];
     }

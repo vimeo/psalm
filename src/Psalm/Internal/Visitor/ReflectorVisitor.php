@@ -628,7 +628,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $fq_classlike_name = array_pop($this->fq_classlike_names);
 
             if (PropertyMap::inPropertyMap($fq_classlike_name)) {
-                $public_mapped_properties = PropertyMap::getPropertyMap()[strtolower($fq_classlike_name)];
+                $mapped_properties = PropertyMap::getPropertyMap()[strtolower($fq_classlike_name)];
 
                 if (!$this->classlike_storages) {
                     throw new \UnexpectedValueException('$this->classlike_storages cannot be empty');
@@ -636,7 +636,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage = $this->classlike_storages[count($this->classlike_storages) - 1];
 
-                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
+                foreach ($mapped_properties as $property_name => $public_mapped_property) {
                     $property_type = Type::parseString($public_mapped_property);
 
                     $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
@@ -646,7 +646,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
 
                     $storage->properties[$property_name]->type = $property_type;
-                    $storage->properties[$property_name]->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
 
                     $property_id = $fq_classlike_name . '::$' . $property_name;
 

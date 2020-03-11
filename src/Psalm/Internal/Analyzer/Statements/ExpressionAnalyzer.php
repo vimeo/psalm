@@ -763,9 +763,12 @@ class ExpressionAnalyzer
                 // continue
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Print_) {
+            $was_inside_call = $context->inside_call;
+            $context->inside_call = true;
             if (self::analyzePrint($statements_analyzer, $stmt, $context) === false) {
                 return false;
             }
+            $context->inside_call = $was_inside_call;
         } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_) {
             self::analyzeYield($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
