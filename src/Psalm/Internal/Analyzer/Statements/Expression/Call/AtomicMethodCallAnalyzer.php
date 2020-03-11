@@ -12,6 +12,8 @@ use Psalm\Internal\Codebase\CallMap;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidMethodCall;
@@ -328,7 +330,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
 
         $method_name_lc = strtolower($stmt->name->name);
 
-        $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, $method_name_lc);
+        $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
         $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
         $intersection_method_id = $intersection_types
@@ -364,7 +366,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                     if (isset($interface_storage->methods[$method_name_lc])) {
                         $interface_has_method = true;
                         $fq_class_name = $interface_storage->name;
-                        $method_id = new \Psalm\Internal\MethodIdentifier(
+                        $method_id = new MethodIdentifier(
                             $fq_class_name,
                             $method_name_lc
                         );
@@ -375,7 +377,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
 
             if (!$interface_has_method
                 && $codebase->methods->methodExists(
-                    new \Psalm\Internal\MethodIdentifier($fq_class_name, '__call'),
+                    new MethodIdentifier($fq_class_name, '__call'),
                     $context->calling_function_id
                 )
             ) {
@@ -476,7 +478,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                     new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
                 ];
 
-                $method_id = new \Psalm\Internal\MethodIdentifier(
+                $method_id = new MethodIdentifier(
                     $fq_class_name,
                     '__call'
                 );
@@ -496,10 +498,10 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
             && $classlike_source_fqcln
             && $fq_class_name !== $context->self
             && $codebase->methods->methodExists(
-                new \Psalm\Internal\MethodIdentifier($context->self, $method_name_lc)
+                new MethodIdentifier($context->self, $method_name_lc)
             )
         ) {
-            $method_id = new \Psalm\Internal\MethodIdentifier($context->self, $method_name_lc);
+            $method_id = new MethodIdentifier($context->self, $method_name_lc);
             $cased_method_id = $context->self . '::' . $stmt->name->name;
             $fq_class_name = $context->self;
         }
@@ -667,7 +669,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                 $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_lc);
 
                 if (isset($trait_storage->methods[$method_name_lc])) {
-                    $trait_method_id = new \Psalm\Internal\MethodIdentifier($trait_storage->name, $method_name_lc);
+                    $trait_method_id = new MethodIdentifier($trait_storage->name, $method_name_lc);
 
                     $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
                         $codebase,
@@ -708,194 +710,52 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
 
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-        $call_map_id = $declaring_method_id ?: $method_id;
-
         $can_memoize = false;
 
-        $return_type_candidate = null;
+        $return_type_candidate = self::getAtomicReturnType(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $context,
+            $method_id,
+            $declaring_method_id,
+            $cased_method_id,
+            $lhs_type_part,
+            $static_type,
+            $args,
+            $result,
+            $template_result
+        );
 
-        if ($codebase->methods->return_type_provider->has($fq_class_name)) {
-            $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
-                $statements_analyzer,
-                $fq_class_name,
-                $stmt->name->name,
-                $stmt->args,
-                $context,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null
-            );
-        }
+        if (!CallMap::inCallMap((string) ($declaring_method_id ?: $method_id))) {
+            $name_code_location = new CodeLocation($statements_analyzer, $stmt->name);
 
-        if (!$return_type_candidate && $declaring_method_id && $declaring_method_id !== $method_id) {
-            $declaring_fq_class_name = $declaring_method_id->fq_class_name;
-            $declaring_method_name = $declaring_method_id->method_name;
-
-            if ($codebase->methods->return_type_provider->has($declaring_fq_class_name)) {
-                $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
-                    $statements_analyzer,
-                    $declaring_fq_class_name,
-                    $declaring_method_name,
-                    $stmt->args,
-                    $context,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                    $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
-                    $fq_class_name,
-                    $stmt->name->name
-                );
-            }
-        }
-
-        $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
-
-        if (!$return_type_candidate) {
-            if (CallMap::inCallMap((string) $call_map_id)) {
-                if (($template_result->generic_params || $class_storage->stubbed)
-                    && isset($class_storage->methods[$method_name_lc])
-                    && ($method_storage = $class_storage->methods[$method_name_lc])
-                    && $method_storage->return_type
-                ) {
-                    $return_type_candidate = clone $method_storage->return_type;
-
-                    if ($template_result->generic_params) {
-                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                            $template_result->generic_params,
-                            $codebase
-                        );
-                    }
-                } else {
-                    $callmap_callables = CallMap::getCallablesFromCallMap((string) $call_map_id);
-
-                    if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
-                        throw new \UnexpectedValueException('Shouldn’t get here');
-                    }
-
-                    $return_type_candidate = $callmap_callables[0]->return_type;
-                }
-
-                if ($return_type_candidate->isFalsable()) {
-                    $return_type_candidate->ignore_falsable_issues = true;
-                }
-
-                $return_type_candidate = ExpressionAnalyzer::fleshOutType(
-                    $codebase,
-                    $return_type_candidate,
-                    $fq_class_name,
-                    $static_type,
-                    $class_storage->parent_class
-                );
-            } else {
-                $name_code_location = new CodeLocation($source, $stmt->name);
-
-                if ($result->check_visibility) {
-                    if (MethodAnalyzer::checkMethodVisibility(
-                        $method_id,
-                        $context,
-                        $statements_analyzer->getSource(),
-                        $name_code_location,
-                        $statements_analyzer->getSuppressedIssues()
-                    ) === false) {
-                        return;
-                    }
-                }
-
-                if (MethodAnalyzer::checkMethodNotDeprecatedOrInternal(
-                    $codebase,
-                    $context,
+            if ($result->check_visibility) {
+                if (MethodAnalyzer::checkMethodVisibility(
                     $method_id,
+                    $context,
+                    $statements_analyzer->getSource(),
                     $name_code_location,
                     $statements_analyzer->getSuppressedIssues()
                 ) === false) {
                     return;
                 }
-
-                self::checkMagicGetterOrSetterProperty(
-                    $statements_analyzer,
-                    $stmt,
-                    $context,
-                    $fq_class_name
-                );
-
-                $self_fq_class_name = $fq_class_name;
-
-                $return_type_candidate = $codebase->methods->getMethodReturnType(
-                    $method_id,
-                    $self_fq_class_name,
-                    $statements_analyzer,
-                    $args
-                );
-
-                if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
-                    $return_type_candidate = $stmt_type;
-                }
-
-                if ($return_type_candidate) {
-                    $return_type_candidate = clone $return_type_candidate;
-
-                    if ($template_result->template_types) {
-                        $bindable_template_types = $return_type_candidate->getTemplateTypes();
-
-                        foreach ($bindable_template_types as $template_type) {
-                            if ($template_type->defining_class !== $fq_class_name
-                                && !isset(
-                                    $template_result->generic_params
-                                        [$template_type->param_name]
-                                        [$template_type->defining_class]
-                                )
-                            ) {
-                                $template_result->generic_params[$template_type->param_name] = [
-                                    ($template_type->defining_class) => [Type::getEmpty(), 0]
-                                ];
-                            }
-                        }
-                    }
-
-                    if ($template_result->generic_params) {
-                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                            $template_result->generic_params,
-                            $codebase
-                        );
-                    }
-
-                    $return_type_candidate = ExpressionAnalyzer::fleshOutType(
-                        $codebase,
-                        $return_type_candidate,
-                        $self_fq_class_name,
-                        $static_type,
-                        $class_storage->parent_class
-                    );
-
-                    $return_type_candidate->sources = [
-                        new Source(
-                            strtolower((string) $method_id),
-                            $cased_method_id,
-                            new CodeLocation($source, $stmt->name)
-                        )
-                    ];
-
-                    $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
-                        $method_id,
-                        $secondary_return_type_location
-                    );
-
-                    if ($secondary_return_type_location) {
-                        $return_type_location = $secondary_return_type_location;
-                    }
-
-                    // only check the type locally if it's defined externally
-                    if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                        $return_type_candidate->check(
-                            $statements_analyzer,
-                            new CodeLocation($source, $stmt),
-                            $statements_analyzer->getSuppressedIssues(),
-                            $context->phantom_classes
-                        );
-                    }
-                } else {
-                    $result->returns_by_ref =
-                        $result->returns_by_ref
-                            || $codebase->methods->getMethodReturnsByRef($method_id);
-                }
             }
+
+            MethodAnalyzer::checkMethodNotDeprecatedOrInternal(
+                $codebase,
+                $context,
+                $method_id,
+                $name_code_location,
+                $statements_analyzer->getSuppressedIssues()
+            );
+
+            self::checkMagicGetterOrSetterProperty(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                $fq_class_name
+            );
         }
 
         try {
@@ -906,105 +766,18 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
 
         if ($method_storage) {
             if (!$context->collect_mutations && !$context->collect_initializations) {
-                $method_pure_compatible = $method_storage->external_mutation_free
-                    && $statements_analyzer->node_data->isPureCompatible($stmt->var);
-
-                if ($context->pure
-                    && !$method_storage->mutation_free
-                    && !$method_pure_compatible
-                ) {
-                    if (IssueBuffer::accepts(
-                        new ImpureMethodCall(
-                            'Cannot call an mutation-free method '
-                                . $cased_method_id . ' from a pure context',
-                            new CodeLocation($source, $stmt->name)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } elseif ($context->mutation_free
-                    && !$method_storage->mutation_free
-                    && !$method_pure_compatible
-                ) {
-                    if (IssueBuffer::accepts(
-                        new ImpureMethodCall(
-                            'Cannot call an possibly-mutating method '
-                                . $cased_method_id . ' from a mutation-free context',
-                            new CodeLocation($source, $stmt->name)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } elseif ($context->external_mutation_free
-                    && !$method_storage->mutation_free
-                    && $fq_class_name !== $context->self
-                    && !$method_pure_compatible
-                ) {
-                    if (IssueBuffer::accepts(
-                        new ImpureMethodCall(
-                            'Cannot call an possibly-mutating method '
-                                . $cased_method_id . ' from a mutation-free context',
-                            new CodeLocation($source, $stmt->name)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } elseif (($method_storage->mutation_free
-                        || ($method_storage->external_mutation_free
-                            && (isset($stmt->var->external_mutation_free) || isset($stmt->var->pure))))
-                    && !$context->inside_unset
-                ) {
-                    if ($method_storage->mutation_free && !$method_storage->mutation_free_inferred) {
-                        if ($context->inside_conditional) {
-                            /** @psalm-suppress UndefinedPropertyAssignment */
-                            $stmt->pure = true;
-                        }
-
-                        $can_memoize = true;
-                    }
-
-                    if ($codebase->find_unused_variables && !$context->inside_conditional) {
-                        if (!$context->inside_assignment && !$context->inside_call) {
-                            if (IssueBuffer::accepts(
-                                new \Psalm\Issue\UnusedMethodCall(
-                                    'The call to ' . $cased_method_id . ' is not used',
-                                    new CodeLocation($statements_analyzer, $stmt->name),
-                                    (string) $method_id
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        } elseif (!$method_storage->mutation_free_inferred) {
-                            /** @psalm-suppress UndefinedPropertyAssignment */
-                            $stmt->pure = true;
-                        }
-                    }
-                }
-
-                if (!$config->remember_property_assignments_after_call
-                    && !$method_storage->mutation_free
-                    && !$method_pure_compatible
-                ) {
-                    $context->removeAllObjectVars();
-                } elseif ($method_storage->this_property_mutations) {
-                    foreach ($method_storage->this_property_mutations as $name => $_) {
-                        $mutation_var_id = $lhs_var_id . '->' . $name;
-
-                        $this_property_didnt_exist = $lhs_var_id === '$this'
-                            && isset($context->vars_in_scope[$mutation_var_id])
-                            && !isset($class_storage->declaring_property_ids[$name]);
-
-                        $context->remove($mutation_var_id);
-
-                        if ($this_property_didnt_exist) {
-                            $context->vars_in_scope[$mutation_var_id] = Type::getMixed();
-                        }
-                    }
-                }
+                $can_memoize = self::checkCallPurity(
+                    $statements_analyzer,
+                    $codebase,
+                    $stmt,
+                    $lhs_var_id,
+                    $cased_method_id,
+                    $method_id,
+                    $method_storage,
+                    $class_storage,
+                    $context,
+                    $config
+                );
             }
 
             $class_template_params = $template_result->generic_params;
@@ -1151,6 +924,306 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
         } else {
             $result->return_type = Type::getMixed();
         }
+    }
+
+    private static function checkCallPurity(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        ?string $lhs_var_id,
+        ?string $cased_method_id,
+        MethodIdentifier $method_id,
+        \Psalm\Storage\MethodStorage $method_storage,
+        \Psalm\Storage\ClassLikeStorage $class_storage,
+        Context $context,
+        \Psalm\Config $config
+    ) : bool {
+        $can_memoize = false;
+
+        $method_pure_compatible = $method_storage->external_mutation_free
+            && $statements_analyzer->node_data->isPureCompatible($stmt->var);
+
+        if ($context->pure
+            && !$method_storage->mutation_free
+            && !$method_pure_compatible
+        ) {
+            if (IssueBuffer::accepts(
+                new ImpureMethodCall(
+                    'Cannot call an mutation-free method '
+                        . $cased_method_id . ' from a pure context',
+                    new CodeLocation($statements_analyzer, $stmt->name)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        } elseif ($context->mutation_free
+            && !$method_storage->mutation_free
+            && !$method_pure_compatible
+        ) {
+            if (IssueBuffer::accepts(
+                new ImpureMethodCall(
+                    'Cannot call an possibly-mutating method '
+                        . $cased_method_id . ' from a mutation-free context',
+                    new CodeLocation($statements_analyzer, $stmt->name)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        } elseif ($context->external_mutation_free
+            && !$method_storage->mutation_free
+            && $method_id->fq_class_name !== $context->self
+            && !$method_pure_compatible
+        ) {
+            if (IssueBuffer::accepts(
+                new ImpureMethodCall(
+                    'Cannot call an possibly-mutating method '
+                        . $cased_method_id . ' from a mutation-free context',
+                    new CodeLocation($statements_analyzer, $stmt->name)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        } elseif (($method_storage->mutation_free
+                || ($method_storage->external_mutation_free
+                    && (isset($stmt->var->external_mutation_free) || isset($stmt->var->pure))))
+            && !$context->inside_unset
+        ) {
+            if ($method_storage->mutation_free && !$method_storage->mutation_free_inferred) {
+                if ($context->inside_conditional) {
+                    /** @psalm-suppress UndefinedPropertyAssignment */
+                    $stmt->pure = true;
+                }
+
+                $can_memoize = true;
+            }
+
+            if ($codebase->find_unused_variables && !$context->inside_conditional) {
+                if (!$context->inside_assignment && !$context->inside_call) {
+                    if (IssueBuffer::accepts(
+                        new \Psalm\Issue\UnusedMethodCall(
+                            'The call to ' . $cased_method_id . ' is not used',
+                            new CodeLocation($statements_analyzer, $stmt->name),
+                            (string) $method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif (!$method_storage->mutation_free_inferred) {
+                    /** @psalm-suppress UndefinedPropertyAssignment */
+                    $stmt->pure = true;
+                }
+            }
+        }
+
+        if (!$config->remember_property_assignments_after_call
+            && !$method_storage->mutation_free
+            && !$method_pure_compatible
+        ) {
+            $context->removeAllObjectVars();
+        } elseif ($method_storage->this_property_mutations) {
+            foreach ($method_storage->this_property_mutations as $name => $_) {
+                $mutation_var_id = $lhs_var_id . '->' . $name;
+
+                $this_property_didnt_exist = $lhs_var_id === '$this'
+                    && isset($context->vars_in_scope[$mutation_var_id])
+                    && !isset($class_storage->declaring_property_ids[$name]);
+
+                $context->remove($mutation_var_id);
+
+                if ($this_property_didnt_exist) {
+                    $context->vars_in_scope[$mutation_var_id] = Type::getMixed();
+                }
+            }
+        }
+
+        return $can_memoize;
+    }
+
+    /**
+     * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
+     * @param array<int, PhpParser\Node\Arg> $args
+     */
+    private static function getAtomicReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Context $context,
+        MethodIdentifier $method_id,
+        ?MethodIdentifier $declaring_method_id,
+        string $cased_method_id,
+        Type\Atomic $lhs_type_part,
+        ?Type\Atomic $static_type,
+        array $args,
+        AtomicMethodCallAnalysisResult $result,
+        TemplateResult $template_result
+    ) : ?Type\Union {
+        $call_map_id = $declaring_method_id ?: $method_id;
+
+        $fq_class_name = $method_id->fq_class_name;
+        $method_name = $method_id->method_name;
+
+        $return_type_candidate = null;
+
+        if ($codebase->methods->return_type_provider->has($fq_class_name)) {
+            $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
+                $statements_analyzer,
+                $fq_class_name,
+                $method_name,
+                $args,
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null
+            );
+        }
+
+        if (!$return_type_candidate && $declaring_method_id && $declaring_method_id !== $method_id) {
+            $declaring_fq_class_name = $declaring_method_id->fq_class_name;
+            $declaring_method_name = $declaring_method_id->method_name;
+
+            if ($codebase->methods->return_type_provider->has($declaring_fq_class_name)) {
+                $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
+                    $statements_analyzer,
+                    $declaring_fq_class_name,
+                    $declaring_method_name,
+                    $args,
+                    $context,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                    $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
+                    $fq_class_name,
+                    $method_name
+                );
+            }
+        }
+
+        $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
+
+        if (!$return_type_candidate) {
+            if (CallMap::inCallMap((string) $call_map_id)) {
+                if (($template_result->generic_params || $class_storage->stubbed)
+                    && isset($class_storage->methods[$method_id->method_name])
+                    && ($method_storage = $class_storage->methods[$method_id->method_name])
+                    && $method_storage->return_type
+                ) {
+                    $return_type_candidate = clone $method_storage->return_type;
+
+                    if ($template_result->generic_params) {
+                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
+                            $template_result->generic_params,
+                            $codebase
+                        );
+                    }
+                } else {
+                    $callmap_callables = CallMap::getCallablesFromCallMap((string) $call_map_id);
+
+                    if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
+                        throw new \UnexpectedValueException('Shouldn’t get here');
+                    }
+
+                    $return_type_candidate = $callmap_callables[0]->return_type;
+                }
+
+                if ($return_type_candidate->isFalsable()) {
+                    $return_type_candidate->ignore_falsable_issues = true;
+                }
+
+                $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $return_type_candidate,
+                    $fq_class_name,
+                    $static_type,
+                    $class_storage->parent_class
+                );
+            } else {
+                $self_fq_class_name = $fq_class_name;
+
+                $return_type_candidate = $codebase->methods->getMethodReturnType(
+                    $method_id,
+                    $self_fq_class_name,
+                    $statements_analyzer,
+                    $args
+                );
+
+                if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
+                    $return_type_candidate = $stmt_type;
+                }
+
+                if ($return_type_candidate) {
+                    $return_type_candidate = clone $return_type_candidate;
+
+                    if ($template_result->template_types) {
+                        $bindable_template_types = $return_type_candidate->getTemplateTypes();
+
+                        foreach ($bindable_template_types as $template_type) {
+                            if ($template_type->defining_class !== $fq_class_name
+                                && !isset(
+                                    $template_result->generic_params
+                                        [$template_type->param_name]
+                                        [$template_type->defining_class]
+                                )
+                            ) {
+                                $template_result->generic_params[$template_type->param_name] = [
+                                    ($template_type->defining_class) => [Type::getEmpty(), 0]
+                                ];
+                            }
+                        }
+                    }
+
+                    if ($template_result->generic_params) {
+                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
+                            $template_result->generic_params,
+                            $codebase
+                        );
+                    }
+
+                    $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                        $codebase,
+                        $return_type_candidate,
+                        $self_fq_class_name,
+                        $static_type,
+                        $class_storage->parent_class
+                    );
+
+                    $return_type_candidate->sources = [
+                        new Source(
+                            strtolower((string) $method_id),
+                            $cased_method_id,
+                            new CodeLocation($statements_analyzer, $stmt->name)
+                        )
+                    ];
+
+                    $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+                        $method_id,
+                        $secondary_return_type_location
+                    );
+
+                    if ($secondary_return_type_location) {
+                        $return_type_location = $secondary_return_type_location;
+                    }
+
+                    $config = \Psalm\Config::getInstance();
+
+                    // only check the type locally if it's defined externally
+                    if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
+                        $return_type_candidate->check(
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer, $stmt),
+                            $statements_analyzer->getSuppressedIssues(),
+                            $context->phantom_classes
+                        );
+                    }
+                } else {
+                    $result->returns_by_ref =
+                        $result->returns_by_ref
+                            || $codebase->methods->getMethodReturnsByRef($method_id);
+                }
+            }
+        }
+
+        return $return_type_candidate;
     }
 
     /**
