@@ -109,11 +109,16 @@ class MethodCallTest extends TestCase
             'magicCall' => [
                 '<?php
                     class A {
-                        public function __call(string $method_name, array $args) {}
+                        public function __call(string $method_name, array $args) : string {
+                            return "hello";
+                        }
                     }
 
                     $a = new A;
-                    $a->bar();',
+                    $s = $a->bar();',
+                [
+                    '$s' => 'string',
+                ]
             ],
             'canBeCalledOnMagic' => [
                 '<?php

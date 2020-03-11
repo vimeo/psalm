@@ -313,6 +313,8 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                     $method_id = $new_call_context->method_id;
                     $args = $new_call_context->args;
                     $old_node_data = $statements_analyzer->node_data;
+                } else {
+                    return;
                 }
             }
         }
@@ -867,11 +869,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                     );
                 }
 
-                return new AtomicCallContext(
-                    $method_id,
-                    $stmt->args,
-                    $statements_analyzer->node_data
-                );
+                return null;
             }
         } else {
             self::checkFunctionArguments(
@@ -884,13 +882,9 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
 
             if ($class_storage->sealed_methods) {
                 $result->non_existent_magic_method_ids[] = $method_id;
-            }
 
-            return new AtomicCallContext(
-                $method_id,
-                $stmt->args,
-                $statements_analyzer->node_data
-            );
+                return null;
+            }
         }
 
         $result->has_valid_method_call_type = true;
