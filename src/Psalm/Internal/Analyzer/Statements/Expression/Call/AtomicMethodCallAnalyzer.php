@@ -104,102 +104,16 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
         $source = $statements_analyzer->getSource();
 
         if (!$lhs_type_part instanceof TNamedObject) {
-            switch (get_class($lhs_type_part)) {
-                case Type\Atomic\TNull::class:
-                case Type\Atomic\TFalse::class:
-                    // handled above
-                    return;
-
-                case Type\Atomic\TInt::class:
-                case Type\Atomic\TLiteralInt::class:
-                case Type\Atomic\TFloat::class:
-                case Type\Atomic\TLiteralFloat::class:
-                case Type\Atomic\TBool::class:
-                case Type\Atomic\TTrue::class:
-                case Type\Atomic\TArray::class:
-                case Type\Atomic\TNonEmptyArray::class:
-                case Type\Atomic\ObjectLike::class:
-                case Type\Atomic\TString::class:
-                case Type\Atomic\TSingleLetter::class:
-                case Type\Atomic\TLiteralString::class:
-                case Type\Atomic\TLiteralClassString::class:
-                case Type\Atomic\TTemplateParamClass::class:
-                case Type\Atomic\TNumericString::class:
-                case Type\Atomic\THtmlEscapedString::class:
-                case Type\Atomic\TClassString::class:
-                case Type\Atomic\TIterable::class:
-                    $result->invalid_method_call_types[] = (string)$lhs_type_part;
-                    return;
-
-                case Type\Atomic\TTemplateParam::class:
-                case Type\Atomic\TEmptyMixed::class:
-                case Type\Atomic\TEmpty::class:
-                case Type\Atomic\TMixed::class:
-                case Type\Atomic\TNonEmptyMixed::class:
-                case Type\Atomic\TObject::class:
-                case Type\Atomic\TObjectWithProperties::class:
-                    if (!$context->collect_initializations
-                        && !$context->collect_mutations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                        && (!(($parent_source = $statements_analyzer->getSource())
-                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                            || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
-                    ) {
-                        $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                    }
-
-                    $result->has_mixed_method_call = true;
-
-                    if ($lhs_type_part instanceof Type\Atomic\TObjectWithProperties
-                        && $stmt->name instanceof PhpParser\Node\Identifier
-                        && isset($lhs_type_part->methods[$stmt->name->name])
-                    ) {
-                        $result->existent_method_ids[] = $lhs_type_part->methods[$stmt->name->name];
-                    } elseif (!$is_intersection) {
-                        if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                            $codebase->analyzer->addMixedMemberName(
-                                strtolower($stmt->name->name),
-                                $context->calling_function_id ?: $statements_analyzer->getFileName()
-                            );
-                        }
-
-                        if ($context->check_methods) {
-                            $message = 'Cannot determine the type of the object'
-                                . ' on the left hand side of this expression';
-
-                            if ($lhs_var_id) {
-                                $message = 'Cannot determine the type of ' . $lhs_var_id;
-
-                                if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                                    $message .= ' when calling method ' . $stmt->name->name;
-                                }
-                            }
-
-                            if (IssueBuffer::accepts(
-                                new MixedMethodCall(
-                                    $message,
-                                    new CodeLocation($source, $stmt->name)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        }
-                    }
-
-                    if (self::checkFunctionArguments(
-                        $statements_analyzer,
-                        $stmt->args,
-                        null,
-                        null,
-                        $context
-                    ) === false) {
-                        return;
-                    }
-
-                    $result->return_type = Type::getMixed();
-                    return;
-            }
+            self::handleInvalidClass(
+                $statements_analyzer,
+                $codebase,
+                $stmt,
+                $lhs_type_part,
+                $lhs_var_id,
+                $context,
+                $is_intersection,
+                $result
+            );
 
             return;
         }
@@ -381,107 +295,26 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                     $context->calling_function_id
                 )
             ) {
-                if (isset($class_storage->pseudo_methods[$method_name_lc])) {
-                    $result->has_valid_method_call_type = true;
-                    $result->existent_method_ids[] = $method_id;
+                $new_call_context = self::handleMagicMethod(
+                    $statements_analyzer,
+                    $codebase,
+                    $stmt,
+                    $method_id,
+                    $class_storage,
+                    $context,
+                    $all_intersection_return_type,
+                    $result
+                );
 
-                    $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
-
-                    if (self::checkFunctionArguments(
-                        $statements_analyzer,
-                        $args,
-                        $pseudo_method_storage->params,
-                        (string) $method_id,
-                        $context
-                    ) === false) {
+                if ($new_call_context) {
+                    if ($method_id === $new_call_context->method_id) {
                         return;
                     }
 
-                    if (self::checkFunctionLikeArgumentsMatch(
-                        $statements_analyzer,
-                        $args,
-                        null,
-                        $pseudo_method_storage->params,
-                        $pseudo_method_storage,
-                        null,
-                        null,
-                        new CodeLocation($source, $stmt),
-                        $context
-                    ) === false) {
-                        return;
-                    }
-
-                    if ($pseudo_method_storage->return_type) {
-                        $return_type_candidate = clone $pseudo_method_storage->return_type;
-
-                        $return_type_candidate = ExpressionAnalyzer::fleshOutType(
-                            $codebase,
-                            $return_type_candidate,
-                            $fq_class_name,
-                            $fq_class_name,
-                            $class_storage->parent_class
-                        );
-
-                        if ($all_intersection_return_type) {
-                            $return_type_candidate = Type::intersectUnionTypes(
-                                $all_intersection_return_type,
-                                $return_type_candidate
-                            ) ?: Type::getMixed();
-                        }
-
-                        if (!$result->return_type) {
-                            $result->return_type = $return_type_candidate;
-                        } else {
-                            $result->return_type = Type::combineUnionTypes(
-                                $return_type_candidate,
-                                $result->return_type
-                            );
-                        }
-
-                        return;
-                    }
-                } else {
-                    if (self::checkFunctionArguments(
-                        $statements_analyzer,
-                        $args,
-                        null,
-                        null,
-                        $context
-                    ) === false) {
-                        return;
-                    }
-
-                    if ($class_storage->sealed_methods) {
-                        $result->non_existent_magic_method_ids[] = $method_id;
-                        return;
-                    }
+                    $method_id = $new_call_context->method_id;
+                    $args = $new_call_context->args;
+                    $old_node_data = $statements_analyzer->node_data;
                 }
-
-                $result->has_valid_method_call_type = true;
-                $result->existent_method_ids[] = $method_id;
-
-                $array_values = array_map(
-                    /**
-                     * @return PhpParser\Node\Expr\ArrayItem
-                     */
-                    function (PhpParser\Node\Arg $arg) {
-                        return new PhpParser\Node\Expr\ArrayItem($arg->value);
-                    },
-                    $args
-                );
-
-                $old_node_data = $statements_analyzer->node_data;
-                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-                $args = [
-                    new PhpParser\Node\Arg(new PhpParser\Node\Scalar\String_($method_name_lc)),
-                    new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
-                ];
-
-                $method_id = new MethodIdentifier(
-                    $fq_class_name,
-                    '__call'
-                );
             }
         }
 
@@ -524,73 +357,17 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
             || ($config->use_phpdoc_method_without_magic_or_parent
                 && isset($class_storage->pseudo_methods[$method_name_lc]))
         ) {
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-            if (($is_interface || $config->use_phpdoc_method_without_magic_or_parent)
-                && isset($class_storage->pseudo_methods[$method_name_lc])
-            ) {
-                $result->has_valid_method_call_type = true;
-                $result->existent_method_ids[] = $method_id;
-
-                $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
-
-                if (self::checkFunctionArguments(
-                    $statements_analyzer,
-                    $args,
-                    $pseudo_method_storage->params,
-                    (string) $method_id,
-                    $context
-                ) === false) {
-                    return;
-                }
-
-                if (self::checkFunctionLikeArgumentsMatch(
-                    $statements_analyzer,
-                    $args,
-                    null,
-                    $pseudo_method_storage->params,
-                    $pseudo_method_storage,
-                    null,
-                    null,
-                    new CodeLocation($source, $stmt->name),
-                    $context
-                ) === false) {
-                    return;
-                }
-
-                if ($pseudo_method_storage->return_type) {
-                    $return_type_candidate = clone $pseudo_method_storage->return_type;
-
-                    if ($all_intersection_return_type) {
-                        $return_type_candidate = Type::intersectUnionTypes(
-                            $all_intersection_return_type,
-                            $return_type_candidate
-                        ) ?: Type::getMixed();
-                    }
-
-                    if (!$result->return_type) {
-                        $result->return_type = $return_type_candidate;
-                    } else {
-                        $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
-                    }
-
-                    return;
-                }
-
-                $result->return_type = Type::getMixed();
-
-                return;
-            }
-
-            if (self::checkFunctionArguments(
+            self::handleMissingOrMagicMethod(
                 $statements_analyzer,
-                $args,
-                null,
-                null,
-                $context
-            ) === false) {
-                return;
-            }
+                $codebase,
+                $stmt,
+                $method_id,
+                $is_interface,
+                $context,
+                $config,
+                $all_intersection_return_type,
+                $result
+            );
 
             if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
                 $result->existent_method_ids = array_merge(
@@ -607,10 +384,14 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                 return;
             }
 
-            if ($is_interface) {
-                $result->non_existent_interface_method_ids[] = $intersection_method_id ?: $method_id;
-            } else {
-                $result->non_existent_class_method_ids[] = $intersection_method_id ?: $method_id;
+            if ((!$is_interface && !$config->use_phpdoc_method_without_magic_or_parent)
+                || !isset($class_storage->pseudo_methods[$method_name_lc])
+            ) {
+                if ($is_interface) {
+                    $result->non_existent_interface_method_ids[] = $intersection_method_id ?: $method_id;
+                } else {
+                    $result->non_existent_class_method_ids[] = $intersection_method_id ?: $method_id;
+                }
             }
 
             return;
@@ -930,6 +711,302 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
         }
     }
 
+    private static function handleInvalidClass(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Type\Atomic $lhs_type_part,
+        ?string $lhs_var_id,
+        Context $context,
+        bool $is_intersection,
+        AtomicMethodCallAnalysisResult $result
+    ) : void {
+        switch (get_class($lhs_type_part)) {
+            case Type\Atomic\TNull::class:
+            case Type\Atomic\TFalse::class:
+                // handled above
+                return;
+
+            case Type\Atomic\TTemplateParam::class:
+            case Type\Atomic\TEmptyMixed::class:
+            case Type\Atomic\TEmpty::class:
+            case Type\Atomic\TMixed::class:
+            case Type\Atomic\TNonEmptyMixed::class:
+            case Type\Atomic\TObject::class:
+            case Type\Atomic\TObjectWithProperties::class:
+                if (!$context->collect_initializations
+                    && !$context->collect_mutations
+                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                    && (!(($parent_source = $statements_analyzer->getSource())
+                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                ) {
+                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                }
+
+                $result->has_mixed_method_call = true;
+
+                if ($lhs_type_part instanceof Type\Atomic\TObjectWithProperties
+                    && $stmt->name instanceof PhpParser\Node\Identifier
+                    && isset($lhs_type_part->methods[$stmt->name->name])
+                ) {
+                    $result->existent_method_ids[] = $lhs_type_part->methods[$stmt->name->name];
+                } elseif (!$is_intersection) {
+                    if ($stmt->name instanceof PhpParser\Node\Identifier) {
+                        $codebase->analyzer->addMixedMemberName(
+                            strtolower($stmt->name->name),
+                            $context->calling_function_id ?: $statements_analyzer->getFileName()
+                        );
+                    }
+
+                    if ($context->check_methods) {
+                        $message = 'Cannot determine the type of the object'
+                            . ' on the left hand side of this expression';
+
+                        if ($lhs_var_id) {
+                            $message = 'Cannot determine the type of ' . $lhs_var_id;
+
+                            if ($stmt->name instanceof PhpParser\Node\Identifier) {
+                                $message .= ' when calling method ' . $stmt->name->name;
+                            }
+                        }
+
+                        if (IssueBuffer::accepts(
+                            new MixedMethodCall(
+                                $message,
+                                new CodeLocation($statements_analyzer, $stmt->name)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+
+                if (self::checkFunctionArguments(
+                    $statements_analyzer,
+                    $stmt->args,
+                    null,
+                    null,
+                    $context
+                ) === false) {
+                    return;
+                }
+
+                $result->return_type = Type::getMixed();
+                return;
+
+            default:
+                $result->invalid_method_call_types[] = (string)$lhs_type_part;
+                return;
+        }
+    }
+
+    private static function handleMagicMethod(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        MethodIdentifier $method_id,
+        \Psalm\Storage\ClassLikeStorage $class_storage,
+        Context $context,
+        ?Type\Union $all_intersection_return_type,
+        AtomicMethodCallAnalysisResult $result
+    ) : ?AtomicCallContext {
+        $fq_class_name = $method_id->fq_class_name;
+        $method_name_lc = $method_id->method_name;
+
+        if (isset($class_storage->pseudo_methods[$method_name_lc])) {
+            $result->has_valid_method_call_type = true;
+            $result->existent_method_ids[] = $method_id;
+
+            $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+
+            if (self::checkFunctionArguments(
+                $statements_analyzer,
+                $stmt->args,
+                $pseudo_method_storage->params,
+                (string) $method_id,
+                $context
+            ) === false) {
+                return null;
+            }
+
+            if (self::checkFunctionLikeArgumentsMatch(
+                $statements_analyzer,
+                $stmt->args,
+                null,
+                $pseudo_method_storage->params,
+                $pseudo_method_storage,
+                null,
+                null,
+                new CodeLocation($statements_analyzer, $stmt),
+                $context
+            ) === false) {
+                return null;
+            }
+
+            if ($pseudo_method_storage->return_type) {
+                $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+                $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $return_type_candidate,
+                    $fq_class_name,
+                    $fq_class_name,
+                    $class_storage->parent_class
+                );
+
+                if ($all_intersection_return_type) {
+                    $return_type_candidate = Type::intersectUnionTypes(
+                        $all_intersection_return_type,
+                        $return_type_candidate
+                    ) ?: Type::getMixed();
+                }
+
+                if (!$result->return_type) {
+                    $result->return_type = $return_type_candidate;
+                } else {
+                    $result->return_type = Type::combineUnionTypes(
+                        $return_type_candidate,
+                        $result->return_type
+                    );
+                }
+
+                return new AtomicCallContext(
+                    $method_id,
+                    $stmt->args,
+                    $statements_analyzer->node_data
+                );
+            }
+        } else {
+            if (self::checkFunctionArguments(
+                $statements_analyzer,
+                $stmt->args,
+                null,
+                null,
+                $context
+            ) === false) {
+                return null;
+            }
+
+            if ($class_storage->sealed_methods) {
+                $result->non_existent_magic_method_ids[] = $method_id;
+                return null;
+            }
+        }
+
+        $result->has_valid_method_call_type = true;
+        $result->existent_method_ids[] = $method_id;
+
+        $array_values = array_map(
+            /**
+             * @return PhpParser\Node\Expr\ArrayItem
+             */
+            function (PhpParser\Node\Arg $arg) {
+                return new PhpParser\Node\Expr\ArrayItem($arg->value);
+            },
+            $stmt->args
+        );
+
+        $old_node_data = $statements_analyzer->node_data;
+        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+        return new AtomicCallContext(
+            new MethodIdentifier(
+                $fq_class_name,
+                '__call'
+            ),
+            [
+                new PhpParser\Node\Arg(new PhpParser\Node\Scalar\String_($method_name_lc)),
+                new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
+            ],
+            $old_node_data
+        );
+    }
+
+    private static function handleMissingOrMagicMethod(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        MethodIdentifier $method_id,
+        bool $is_interface,
+        Context $context,
+        \Psalm\Config $config,
+        ?Type\Union $all_intersection_return_type,
+        AtomicMethodCallAnalysisResult $result
+    ) : void {
+        $fq_class_name = $method_id->fq_class_name;
+        $method_name_lc = $method_id->method_name;
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        if (($is_interface || $config->use_phpdoc_method_without_magic_or_parent)
+            && isset($class_storage->pseudo_methods[$method_name_lc])
+        ) {
+            $result->has_valid_method_call_type = true;
+            $result->existent_method_ids[] = $method_id;
+
+            $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+
+            if (self::checkFunctionArguments(
+                $statements_analyzer,
+                $stmt->args,
+                $pseudo_method_storage->params,
+                (string) $method_id,
+                $context
+            ) === false) {
+                return;
+            }
+
+            if (self::checkFunctionLikeArgumentsMatch(
+                $statements_analyzer,
+                $stmt->args,
+                null,
+                $pseudo_method_storage->params,
+                $pseudo_method_storage,
+                null,
+                null,
+                new CodeLocation($statements_analyzer, $stmt->name),
+                $context
+            ) === false) {
+                return;
+            }
+
+            if ($pseudo_method_storage->return_type) {
+                $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+                if ($all_intersection_return_type) {
+                    $return_type_candidate = Type::intersectUnionTypes(
+                        $all_intersection_return_type,
+                        $return_type_candidate
+                    ) ?: Type::getMixed();
+                }
+
+                if (!$result->return_type) {
+                    $result->return_type = $return_type_candidate;
+                } else {
+                    $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
+                }
+
+                return;
+            }
+
+            $result->return_type = Type::getMixed();
+
+            return;
+        }
+
+        if (self::checkFunctionArguments(
+            $statements_analyzer,
+            $stmt->args,
+            null,
+            null,
+            $context
+        ) === false) {
+            return;
+        }
+    }
+
     private static function checkCallPurity(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1077,7 +1154,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                 $statements_analyzer,
                 $fq_class_name,
                 $method_name,
-                $args,
+                $stmt->args,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                 $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null
@@ -1093,7 +1170,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                     $statements_analyzer,
                     $declaring_fq_class_name,
                     $declaring_method_name,
-                    $args,
+                    $stmt->args,
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                     $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
