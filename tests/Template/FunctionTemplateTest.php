@@ -529,9 +529,6 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     $arr = call(
-                        /**
-                         * @return Generator<mixed, mixed, mixed, string>
-                         */
                         function() {
                             yield 1;
                             return "hello";
