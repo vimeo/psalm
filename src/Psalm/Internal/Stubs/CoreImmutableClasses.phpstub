@@ -27,6 +27,26 @@ interface Throwable
 class Exception implements Throwable
 {
     /**
+     * @var string
+     */
+    protected $message;
+
+    /**
+     * @var int
+     */
+    protected $code;
+
+    /**
+     * @var string
+     */
+    protected $file;
+
+    /**
+     * @var int
+     */
+    protected $line;
+
+    /**
      * @psalm-external-mutation-free
      * @param string $message
      * @param int $code
