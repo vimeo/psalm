@@ -586,6 +586,22 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
+        if ($guide_method_storage->final
+            && $prevent_method_signature_mismatch
+            && $prevent_abstract_override
+        ) {
+            if (IssueBuffer::accepts(
+                new MethodSignatureMismatch(
+                    'Method ' . $cased_guide_method_id . ' is declared final and cannot be overridden',
+                    $code_location
+                )
+            )) {
+                // fall through
+            }
+
+            return null;
+        }
+
         if ($prevent_abstract_override
             && !$guide_method_storage->abstract
             && $implementer_method_storage->abstract
