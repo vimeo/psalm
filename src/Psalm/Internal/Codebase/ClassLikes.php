@@ -723,6 +723,8 @@ class ClassLikes
         $trait_node = $trait_finder->getNode();
 
         if ($trait_node) {
+            $this->trait_nodes[$fq_trait_name_lc] = $trait_node;
+
             return $trait_node;
         }
 
