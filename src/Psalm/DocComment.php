@@ -22,6 +22,9 @@ use function trim;
 
 class DocComment
 {
+    /**
+     * @var bool
+     */
     private static $shouldAddNewLineBeforeReturn = true;
 
     /**

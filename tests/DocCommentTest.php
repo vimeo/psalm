@@ -6,7 +6,7 @@ use Psalm\DocComment;
 
 class DocCommentTest extends BaseTestCase
 {
-    public function testNewLineIsAddedInDocBlockBeforeReturnByDefault()
+    public function testNewLineIsAddedInDocBlockBeforeReturnByDefault(): void
     {
         $docComment = [
             'description' => 'some desc',
@@ -23,7 +23,7 @@ class DocCommentTest extends BaseTestCase
                 ],
         ];
 
-    $expectedDoc = '/**
+        $expectedDoc = '/**
  * some desc
  *
  * @param int $bla
@@ -35,7 +35,7 @@ class DocCommentTest extends BaseTestCase
         $this->assertSame($expectedDoc, DocComment::render($docComment, ''));
     }
 
-    public function testNewLineIsNotAddedInDocBlockBeforeReturnIfDisabled()
+    public function testNewLineIsNotAddedInDocBlockBeforeReturnIfDisabled(): void
     {
         DocComment::addNewLineBeforeReturn(false);
 
@@ -65,7 +65,7 @@ class DocCommentTest extends BaseTestCase
         $this->assertSame($expectedDoc, DocComment::render($docComment, ''));
     }
 
-    public function testNewLineIsAddedInDocBlockBeforeReturnIfEnabled()
+    public function testNewLineIsAddedInDocBlockBeforeReturnIfEnabled(): void
     {
         DocComment::addNewLineBeforeReturn(true);
 
