@@ -1,6 +1,7 @@
 <?php
 require_once('command_functions.php');
 
+use Psalm\DocComment;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
 use Psalm\IssueBuffer;
@@ -31,6 +32,7 @@ $valid_long_options = [
     'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
     'find-unused-code', 'threads:', 'codeowner:',
     'allow-backwards-incompatible-changes:',
+    'doc-block-add-new-line-before-return:',
 ];
 
 // get options from command line
@@ -145,6 +147,9 @@ Options:
 
     --allow-backwards-incompatible-changes=BOOL
         Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
+
+    --doc-block-add-new-line-before-return=BOOL
+        Whether to add or not add a new line before the @return annotation in doc blocks. Defaults to true.
 
 HELP;
 
@@ -352,6 +357,20 @@ if (isset($options['allow-backwards-incompatible-changes'])) {
     }
 
     $project_analyzer->getCodebase()->allow_backwards_incompatible_changes = $allow_backwards_incompatible_changes;
+}
+
+if (isset($options['doc-block-add-new-line-before-return'])) {
+    $doc_block_add_new_line_before_return = filter_var(
+        $options['doc-block-add-new-line-before-return'],
+        FILTER_VALIDATE_BOOLEAN,
+        ['flags' => FILTER_NULL_ON_FAILURE]
+    );
+
+    if ($doc_block_add_new_line_before_return === null) {
+        die('--doc-block-add-new-line-before-return expectes a boolean value [true|false|1|0]' . PHP_EOL);
+    }
+
+    DocComment::addNewLineBeforeReturn($doc_block_add_new_line_before_return);
 }
 
 $plugins = [];
