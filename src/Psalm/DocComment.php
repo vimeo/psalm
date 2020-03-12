@@ -22,6 +22,8 @@ use function trim;
 
 class DocComment
 {
+    private static $shouldAddNewLineBeforeReturn = true;
+
     /**
      * Parse a docblock comment into its parts.
      *
@@ -347,6 +349,16 @@ class DocComment
 
     private static function shouldAddNewLineBeforeReturn(): bool
     {
-        return true;
+        return static::$shouldAddNewLineBeforeReturn;
+    }
+
+    /**
+     * Sets whether a new line should be added before the return or not.
+     *
+     * @param bool $should
+     */
+    public static function addNewLineBeforeReturn(bool $should = true): void
+    {
+        static::$shouldAddNewLineBeforeReturn = $should;
     }
 }
