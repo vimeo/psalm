@@ -59,7 +59,6 @@ use function array_keys;
 use function array_reduce;
 use function end;
 use function array_unique;
-use Exception;
 
 /**
  * @internal

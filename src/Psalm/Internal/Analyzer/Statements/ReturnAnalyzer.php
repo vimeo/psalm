@@ -22,12 +22,10 @@ use Psalm\Issue\MixedReturnStatement;
 use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullableReturnStatement;
-use Psalm\Issue\TaintedInput;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use function explode;
 use function strtolower;
-use UnexpectedValueException;
 
 /**
  * @internal

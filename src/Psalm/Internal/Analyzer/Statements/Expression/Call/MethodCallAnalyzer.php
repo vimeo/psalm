@@ -2,56 +2,30 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
-use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
-use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidMethodCall;
-use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\InvalidScope;
-use Psalm\Issue\MixedMethodCall;
-use Psalm\Issue\MixedPropertyTypeCoercion;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyFalseReference;
 use Psalm\Issue\PossiblyInvalidMethodCall;
-use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\PossiblyUndefinedMethod;
-use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedInterfaceMethod;
 use Psalm\Issue\UndefinedMagicMethod;
 use Psalm\Issue\UndefinedMethod;
-use Psalm\Issue\UndefinedThisPropertyAssignment;
-use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use function is_string;
-use function array_values;
-use function array_shift;
-use function array_unshift;
-use function get_class;
-use function strtolower;
-use function array_map;
 use function array_merge;
-use function explode;
-use function implode;
 use function array_search;
 use function array_keys;
-use function in_array;
-use Psalm\Internal\Taint\Source;
-use Doctrine\Instantiator\Exception\UnexpectedValueException;
 
 /**
  * @internal

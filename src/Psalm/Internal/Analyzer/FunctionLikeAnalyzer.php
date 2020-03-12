@@ -31,18 +31,15 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use function md5;
-use function explode;
 use function strtolower;
 use function array_merge;
 use function array_filter;
-use function is_string;
 use function array_key_exists;
 use function substr;
 use function strpos;
 use function array_search;
 use function array_keys;
 use function end;
-use function array_diff;
 use Psalm\Internal\Taint\Source;
 
 /**

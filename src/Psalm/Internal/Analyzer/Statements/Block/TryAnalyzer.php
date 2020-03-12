@@ -14,7 +14,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use function in_array;
 use function array_merge;
-use function array_diff;
 use function array_intersect_key;
 use function array_diff_key;
 use function is_string;

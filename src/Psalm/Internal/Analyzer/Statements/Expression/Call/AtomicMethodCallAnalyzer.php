@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
@@ -13,49 +14,29 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ImpureMethodCall;
-use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
-use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\MixedPropertyTypeCoercion;
-use Psalm\Issue\NullReference;
-use Psalm\Issue\PossiblyFalseReference;
-use Psalm\Issue\PossiblyInvalidMethodCall;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
-use Psalm\Issue\PossiblyNullReference;
-use Psalm\Issue\PossiblyUndefinedMethod;
 use Psalm\Issue\PropertyTypeCoercion;
-use Psalm\Issue\UndefinedInterfaceMethod;
-use Psalm\Issue\UndefinedMagicMethod;
-use Psalm\Issue\UndefinedMethod;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
-use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
-use function is_string;
 use function array_values;
 use function array_shift;
-use function array_unshift;
 use function get_class;
 use function strtolower;
 use function array_map;
 use function array_merge;
 use function explode;
-use function implode;
-use function array_search;
-use function array_keys;
 use function in_array;
-use Psalm\Internal\Taint\Source;
-use Doctrine\Instantiator\Exception\UnexpectedValueException;
 
-class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
+class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  StatementsAnalyzer             $statements_analyzer
@@ -294,7 +275,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
                     $context->calling_function_id
                 )
             ) {
-                $new_call_context = self::handleMagicMethod(
+                $new_call_context = MissingMethodCallHandler::handleMagicMethod(
                     $statements_analyzer,
                     $codebase,
                     $stmt,
@@ -358,7 +339,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
             || ($config->use_phpdoc_method_without_magic_or_parent
                 && isset($class_storage->pseudo_methods[$method_name_lc]))
         ) {
-            self::handleMissingOrMagicMethod(
+            MissingMethodCallHandler::handleMissingOrMagicMethod(
                 $statements_analyzer,
                 $codebase,
                 $stmt,
@@ -494,7 +475,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
 
         $can_memoize = false;
 
-        $return_type_candidate = self::getAtomicReturnType(
+        $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
             $statements_analyzer,
             $codebase,
             $stmt,
@@ -803,201 +784,6 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
         }
     }
 
-    private static function handleMagicMethod(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        PhpParser\Node\Expr\MethodCall $stmt,
-        MethodIdentifier $method_id,
-        \Psalm\Storage\ClassLikeStorage $class_storage,
-        Context $context,
-        ?Type\Union $all_intersection_return_type,
-        AtomicMethodCallAnalysisResult $result
-    ) : ?AtomicCallContext {
-        $fq_class_name = $method_id->fq_class_name;
-        $method_name_lc = $method_id->method_name;
-
-        if (isset($class_storage->pseudo_methods[$method_name_lc])) {
-            $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id;
-
-            $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
-
-            self::checkFunctionArguments(
-                $statements_analyzer,
-                $stmt->args,
-                $pseudo_method_storage->params,
-                (string) $method_id,
-                $context
-            );
-
-            self::checkFunctionLikeArgumentsMatch(
-                $statements_analyzer,
-                $stmt->args,
-                null,
-                $pseudo_method_storage->params,
-                $pseudo_method_storage,
-                null,
-                null,
-                new CodeLocation($statements_analyzer, $stmt),
-                $context
-            );
-
-            if ($pseudo_method_storage->return_type) {
-                $return_type_candidate = clone $pseudo_method_storage->return_type;
-
-                $return_type_candidate = ExpressionAnalyzer::fleshOutType(
-                    $codebase,
-                    $return_type_candidate,
-                    $fq_class_name,
-                    $fq_class_name,
-                    $class_storage->parent_class
-                );
-
-                if ($all_intersection_return_type) {
-                    $return_type_candidate = Type::intersectUnionTypes(
-                        $all_intersection_return_type,
-                        $return_type_candidate
-                    ) ?: Type::getMixed();
-                }
-
-                if (!$result->return_type) {
-                    $result->return_type = $return_type_candidate;
-                } else {
-                    $result->return_type = Type::combineUnionTypes(
-                        $return_type_candidate,
-                        $result->return_type
-                    );
-                }
-
-                return null;
-            }
-        } else {
-            self::checkFunctionArguments(
-                $statements_analyzer,
-                $stmt->args,
-                null,
-                null,
-                $context
-            );
-
-            if ($class_storage->sealed_methods) {
-                $result->non_existent_magic_method_ids[] = $method_id;
-
-                return null;
-            }
-        }
-
-        $result->has_valid_method_call_type = true;
-        $result->existent_method_ids[] = $method_id;
-
-        $array_values = array_map(
-            /**
-             * @return PhpParser\Node\Expr\ArrayItem
-             */
-            function (PhpParser\Node\Arg $arg) {
-                return new PhpParser\Node\Expr\ArrayItem($arg->value);
-            },
-            $stmt->args
-        );
-
-        $old_node_data = $statements_analyzer->node_data;
-        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-        return new AtomicCallContext(
-            new MethodIdentifier(
-                $fq_class_name,
-                '__call'
-            ),
-            [
-                new PhpParser\Node\Arg(new PhpParser\Node\Scalar\String_($method_name_lc)),
-                new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
-            ],
-            $old_node_data
-        );
-    }
-
-    private static function handleMissingOrMagicMethod(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        PhpParser\Node\Expr\MethodCall $stmt,
-        MethodIdentifier $method_id,
-        bool $is_interface,
-        Context $context,
-        \Psalm\Config $config,
-        ?Type\Union $all_intersection_return_type,
-        AtomicMethodCallAnalysisResult $result
-    ) : void {
-        $fq_class_name = $method_id->fq_class_name;
-        $method_name_lc = $method_id->method_name;
-
-        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-        if (($is_interface || $config->use_phpdoc_method_without_magic_or_parent)
-            && isset($class_storage->pseudo_methods[$method_name_lc])
-        ) {
-            $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id;
-
-            $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
-
-            if (self::checkFunctionArguments(
-                $statements_analyzer,
-                $stmt->args,
-                $pseudo_method_storage->params,
-                (string) $method_id,
-                $context
-            ) === false) {
-                return;
-            }
-
-            if (self::checkFunctionLikeArgumentsMatch(
-                $statements_analyzer,
-                $stmt->args,
-                null,
-                $pseudo_method_storage->params,
-                $pseudo_method_storage,
-                null,
-                null,
-                new CodeLocation($statements_analyzer, $stmt->name),
-                $context
-            ) === false) {
-                return;
-            }
-
-            if ($pseudo_method_storage->return_type) {
-                $return_type_candidate = clone $pseudo_method_storage->return_type;
-
-                if ($all_intersection_return_type) {
-                    $return_type_candidate = Type::intersectUnionTypes(
-                        $all_intersection_return_type,
-                        $return_type_candidate
-                    ) ?: Type::getMixed();
-                }
-
-                if (!$result->return_type) {
-                    $result->return_type = $return_type_candidate;
-                } else {
-                    $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
-                }
-
-                return;
-            }
-
-            $result->return_type = Type::getMixed();
-
-            return;
-        }
-
-        if (self::checkFunctionArguments(
-            $statements_analyzer,
-            $stmt->args,
-            null,
-            null,
-            $context
-        ) === false) {
-            return;
-        }
-    }
 
     private static function checkCallPurity(
         StatementsAnalyzer $statements_analyzer,
@@ -1116,184 +902,7 @@ class AtomicMethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expre
         return $can_memoize;
     }
 
-    /**
-     * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
-     * @param array<int, PhpParser\Node\Arg> $args
-     */
-    private static function getAtomicReturnType(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        PhpParser\Node\Expr\MethodCall $stmt,
-        Context $context,
-        MethodIdentifier $method_id,
-        ?MethodIdentifier $declaring_method_id,
-        string $cased_method_id,
-        Type\Atomic $lhs_type_part,
-        ?Type\Atomic $static_type,
-        array $args,
-        AtomicMethodCallAnalysisResult $result,
-        TemplateResult $template_result
-    ) : ?Type\Union {
-        $call_map_id = $declaring_method_id ?: $method_id;
 
-        $fq_class_name = $method_id->fq_class_name;
-        $method_name = $method_id->method_name;
-
-        $return_type_candidate = null;
-
-        if ($codebase->methods->return_type_provider->has($fq_class_name)) {
-            $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
-                $statements_analyzer,
-                $fq_class_name,
-                $method_name,
-                $stmt->args,
-                $context,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null
-            );
-        }
-
-        if (!$return_type_candidate && $declaring_method_id && $declaring_method_id !== $method_id) {
-            $declaring_fq_class_name = $declaring_method_id->fq_class_name;
-            $declaring_method_name = $declaring_method_id->method_name;
-
-            if ($codebase->methods->return_type_provider->has($declaring_fq_class_name)) {
-                $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
-                    $statements_analyzer,
-                    $declaring_fq_class_name,
-                    $declaring_method_name,
-                    $stmt->args,
-                    $context,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                    $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
-                    $fq_class_name,
-                    $method_name
-                );
-            }
-        }
-
-        $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
-
-        if (!$return_type_candidate) {
-            if (CallMap::inCallMap((string) $call_map_id)) {
-                if (($template_result->generic_params || $class_storage->stubbed)
-                    && isset($class_storage->methods[$method_id->method_name])
-                    && ($method_storage = $class_storage->methods[$method_id->method_name])
-                    && $method_storage->return_type
-                ) {
-                    $return_type_candidate = clone $method_storage->return_type;
-
-                    if ($template_result->generic_params) {
-                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                            $template_result->generic_params,
-                            $codebase
-                        );
-                    }
-                } else {
-                    $callmap_callables = CallMap::getCallablesFromCallMap((string) $call_map_id);
-
-                    if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
-                        throw new \UnexpectedValueException('Shouldn’t get here');
-                    }
-
-                    $return_type_candidate = $callmap_callables[0]->return_type;
-                }
-
-                if ($return_type_candidate->isFalsable()) {
-                    $return_type_candidate->ignore_falsable_issues = true;
-                }
-
-                $return_type_candidate = ExpressionAnalyzer::fleshOutType(
-                    $codebase,
-                    $return_type_candidate,
-                    $fq_class_name,
-                    $static_type,
-                    $class_storage->parent_class
-                );
-            } else {
-                $self_fq_class_name = $fq_class_name;
-
-                $return_type_candidate = $codebase->methods->getMethodReturnType(
-                    $method_id,
-                    $self_fq_class_name,
-                    $statements_analyzer,
-                    $args
-                );
-
-                if ($return_type_candidate) {
-                    $return_type_candidate = clone $return_type_candidate;
-
-                    if ($template_result->template_types) {
-                        $bindable_template_types = $return_type_candidate->getTemplateTypes();
-
-                        foreach ($bindable_template_types as $template_type) {
-                            if ($template_type->defining_class !== $fq_class_name
-                                && !isset(
-                                    $template_result->generic_params
-                                        [$template_type->param_name]
-                                        [$template_type->defining_class]
-                                )
-                            ) {
-                                $template_result->generic_params[$template_type->param_name] = [
-                                    ($template_type->defining_class) => [Type::getEmpty(), 0]
-                                ];
-                            }
-                        }
-                    }
-
-                    if ($template_result->generic_params) {
-                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                            $template_result->generic_params,
-                            $codebase
-                        );
-                    }
-
-                    $return_type_candidate = ExpressionAnalyzer::fleshOutType(
-                        $codebase,
-                        $return_type_candidate,
-                        $self_fq_class_name,
-                        $static_type,
-                        $class_storage->parent_class
-                    );
-
-                    $return_type_candidate->sources = [
-                        new Source(
-                            strtolower((string) $method_id),
-                            $cased_method_id,
-                            new CodeLocation($statements_analyzer, $stmt->name)
-                        )
-                    ];
-
-                    $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
-                        $method_id,
-                        $secondary_return_type_location
-                    );
-
-                    if ($secondary_return_type_location) {
-                        $return_type_location = $secondary_return_type_location;
-                    }
-
-                    $config = \Psalm\Config::getInstance();
-
-                    // only check the type locally if it's defined externally
-                    if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                        $return_type_candidate->check(
-                            $statements_analyzer,
-                            new CodeLocation($statements_analyzer, $stmt),
-                            $statements_analyzer->getSuppressedIssues(),
-                            $context->phantom_classes
-                        );
-                    }
-                } else {
-                    $result->returns_by_ref =
-                        $result->returns_by_ref
-                            || $codebase->methods->getMethodReturnsByRef($method_id);
-                }
-            }
-        }
-
-        return $return_type_candidate;
-    }
 
     /**
      * Check properties accessed with magic getters and setters.

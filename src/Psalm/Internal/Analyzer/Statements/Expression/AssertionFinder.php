@@ -16,7 +16,6 @@ use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use function substr;
 use function count;

@@ -3,24 +3,16 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Issue\DeprecatedClass;
-use Psalm\Issue\DeprecatedConstant;
-use Psalm\Issue\InaccessibleClassConstant;
-use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use function array_key_exists;
 use function implode;
 use function strtolower;
-use function explode;
 
 /**
  * @internal

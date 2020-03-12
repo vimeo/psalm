@@ -67,8 +67,6 @@ use function is_int;
 use function substr;
 use function array_merge;
 use Psalm\Issue\TaintedInput;
-use Doctrine\Instantiator\Exception\UnexpectedValueException;
-use Exception;
 
 /**
  * @internal
@@ -362,7 +360,7 @@ class CallAnalyzer
      *
      * @return  false|null
      */
-    protected static function checkFunctionArguments(
+    public static function checkFunctionArguments(
         StatementsAnalyzer $statements_analyzer,
         array $args,
         ?array $function_params,
@@ -1224,7 +1222,7 @@ class CallAnalyzer
      *
      * @return  false|null
      */
-    protected static function checkFunctionLikeArgumentsMatch(
+    public static function checkFunctionLikeArgumentsMatch(
         StatementsAnalyzer $statements_analyzer,
         array $args,
         $method_id,

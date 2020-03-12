@@ -7,7 +7,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use function array_merge;
 use function array_values;
-use function count;
 
 /**
  * A class for analysing a given method call's effects in relation to $this/self and also looking at return types

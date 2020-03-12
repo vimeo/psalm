@@ -35,7 +35,6 @@ use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use Psalm\Type;
 use Psalm\Issue\CodeIssue;
-use function in_array;
 use function substr;
 use function strlen;
 use function cli_set_process_title;

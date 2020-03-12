@@ -3,10 +3,8 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Aliases;
-use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -41,7 +39,6 @@ use function preg_replace;
 use function preg_match;
 use function explode;
 use function array_pop;
-use function array_merge;
 use function strtolower;
 use function implode;
 use function substr;

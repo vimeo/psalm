@@ -41,7 +41,6 @@ use Psalm\Internal\Type\TypeCombination;
 use function array_merge;
 use function array_diff_key;
 use function array_filter;
-use const ARRAY_FILTER_USE_KEY;
 use function array_intersect_key;
 use function array_values;
 use function array_map;
