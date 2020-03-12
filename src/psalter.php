@@ -6,7 +6,6 @@ use Psalm\Config;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
-use function getMemoryLimitInBytes;
 
 // show all errors
 error_reporting(-1);
