@@ -150,6 +150,20 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             }
                         }
 
+                        if ($lhs_type_part->as_type) {
+                            $codebase->methods->methodExists(
+                                new \Psalm\Internal\MethodIdentifier(
+                                    $lhs_type_part->as_type->value,
+                                    '__construct'
+                                ),
+                                $context->calling_function_id,
+                                $context->collect_references
+                                    ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+                                $statements_analyzer,
+                                $statements_analyzer->getFilePath()
+                            );
+                        }
+
                         continue;
                     }
 

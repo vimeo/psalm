@@ -683,6 +683,29 @@ class UnusedCodeTest extends TestCase
                     /** @psalm-suppress MixedAssignment */
                     foreach ($items as $_item) {}'
             ],
+            'usedThroughNewClassStringOfBase' => [
+                '<?php
+                    abstract class FooBase {
+                        public final function __construct() {}
+
+                        public function baz() : void {
+                            echo "hello";
+                        }
+                    }
+
+                    /**
+                     * @psalm-template T as FooBase
+                     * @psalm-param class-string<T> $type
+                     * @psalm-return T
+                     */
+                    function createFoo($type): FooBase {
+                        return new $type();
+                    }
+
+                    class Foo extends FooBase {}
+
+                    createFoo(Foo::class)->baz();'
+            ],
         ];
     }
 
