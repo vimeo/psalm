@@ -4,7 +4,7 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -772,7 +772,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 )
                 : $property_type;
 
-            $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
+            $class_template_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $property_class_storage,
                 $fq_class_name,
@@ -1810,7 +1810,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $this_object_type = new Type\Atomic\TNamedObject($original_fq_classlike_name);
             }
 
-            $class_template_params = Statements\Expression\Call\MethodCallAnalyzer::getClassTemplateParams(
+            $class_template_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $class_storage,
                 $original_fq_classlike_name,

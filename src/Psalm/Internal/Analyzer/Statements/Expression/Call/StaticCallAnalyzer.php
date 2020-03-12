@@ -772,7 +772,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     // fall through
                 }
 
-                $found_generic_params = MethodCallAnalyzer::getClassTemplateParams(
+                $found_generic_params = ClassTemplateParamCollector::collect(
                     $codebase,
                     $class_storage,
                     $fq_class_name,

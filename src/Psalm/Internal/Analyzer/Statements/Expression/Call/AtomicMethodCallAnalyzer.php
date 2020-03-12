@@ -411,7 +411,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $parent_source = $statements_analyzer->getSource();
 
-        $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
+        $class_template_params = ClassTemplateParamCollector::collect(
             $codebase,
             $codebase->methods->getClassLikeStorageForMethod($method_id),
             $fq_class_name,
@@ -433,7 +433,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 if (isset($trait_storage->methods[$method_name_lc])) {
                     $trait_method_id = new MethodIdentifier($trait_storage->name, $method_name_lc);
 
-                    $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
+                    $class_template_params = ClassTemplateParamCollector::collect(
                         $codebase,
                         $codebase->methods->getClassLikeStorageForMethod($trait_method_id),
                         $fq_class_name,

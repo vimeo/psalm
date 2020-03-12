@@ -13,7 +13,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\CodeLocation;
@@ -752,7 +752,7 @@ class ReturnTypeAnalyzer
         }
 
         if ($classlike_storage && $context->self) {
-            $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
+            $class_template_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $classlike_storage,
                 $context->self,
