@@ -694,7 +694,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
-                if (MethodAnalyzer::checkMethodVisibility(
+                if (MethodVisibilityAnalyzer::analyze(
                     $method_id,
                     $context,
                     $statements_analyzer->getSource(),
@@ -762,7 +762,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
-                if (MethodAnalyzer::checkMethodNotDeprecatedOrInternal(
+                if (MethodCallProhibitionAnalyzer::analyze(
                     $codebase,
                     $context,
                     $method_id,

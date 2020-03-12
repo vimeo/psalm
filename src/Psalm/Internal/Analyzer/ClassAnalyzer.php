@@ -641,7 +641,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         continue;
                     }
 
-                    MethodAnalyzer::compareMethods(
+                    MethodComparator::compare(
                         $codebase,
                         $implementer_classlike_storage ?: $storage,
                         $interface_storage,
@@ -1028,7 +1028,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
 
-                    MethodAnalyzer::compareMethods(
+                    MethodComparator::compare(
                         $codebase,
                         $storage,
                         $parent_storage,
@@ -1641,7 +1641,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $actual_method_id->fq_class_name
                     );
 
-                    MethodAnalyzer::compareMethods(
+                    MethodComparator::compare(
                         $codebase,
                         $class_storage,
                         $declaring_storage,

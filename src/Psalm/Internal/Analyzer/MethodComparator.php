@@ -1,0 +1,716 @@
+<?php
+namespace Psalm\Internal\Analyzer;
+
+use Psalm\Codebase;
+use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Issue\ImplementedParamTypeMismatch;
+use Psalm\Issue\ImplementedReturnTypeMismatch;
+use Psalm\Issue\MethodSignatureMismatch;
+use Psalm\Issue\MoreSpecificImplementedParamType;
+use Psalm\Issue\LessSpecificImplementedReturnType;
+use Psalm\Issue\OverriddenMethodAccess;
+use Psalm\Issue\TraitMethodSignatureMismatch;
+use Psalm\IssueBuffer;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
+use Psalm\Type;
+use function strtolower;
+use function is_string;
+use function in_array;
+use Psalm\Issue\MissingImmutableAnnotation;
+
+class MethodComparator
+{
+    /**
+     * @param  ClassLikeStorage $implementer_classlike_storage
+     * @param  ClassLikeStorage $guide_classlike_storage
+     * @param  MethodStorage    $implementer_method_storage
+     * @param  MethodStorage    $guide_method_storage
+     * @param  CodeLocation     $code_location
+     * @param  string[]         $suppressed_issues
+     * @param  bool             $prevent_abstract_override
+     * @param  bool             $prevent_method_signature_mismatch
+     *
+     * @return false|null
+     */
+    public static function compare(
+        Codebase $codebase,
+        ClassLikeStorage $implementer_classlike_storage,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $implementer_method_storage,
+        MethodStorage $guide_method_storage,
+        string $implementer_called_class_name,
+        int $implementer_visibility,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        $prevent_abstract_override = true,
+        $prevent_method_signature_mismatch = true
+    ) {
+        $config = $codebase->config;
+
+        $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
+            new \Psalm\Internal\MethodIdentifier(
+                $implementer_classlike_storage->name,
+                strtolower($guide_method_storage->cased_name ?: '')
+            )
+        );
+
+        $cased_implementer_method_id = $implementer_classlike_storage->name . '::'
+            . $implementer_method_storage->cased_name;
+
+        $cased_guide_method_id = $guide_classlike_storage->name . '::' . $guide_method_storage->cased_name;
+
+        if ($implementer_visibility > $guide_method_storage->visibility) {
+            if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+                || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
+                || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
+                || (!$implementer_method_storage->abstract
+                    && !$guide_method_storage->abstract)
+            ) {
+                if (IssueBuffer::accepts(
+                    new OverriddenMethodAccess(
+                        'Method ' . $cased_implementer_method_id . ' has different access level than '
+                            . $cased_guide_method_id,
+                        $code_location
+                    )
+                )) {
+                    // fall through
+                }
+
+                return null;
+            }
+
+            if (IssueBuffer::accepts(
+                new TraitMethodSignatureMismatch(
+                    'Method ' . $cased_implementer_method_id . ' has different access level than '
+                        . $cased_guide_method_id,
+                    $code_location
+                )
+            )) {
+                // fall through
+            }
+        }
+
+        if ($guide_method_storage->final
+            && $prevent_method_signature_mismatch
+            && $prevent_abstract_override
+        ) {
+            if (IssueBuffer::accepts(
+                new MethodSignatureMismatch(
+                    'Method ' . $cased_guide_method_id . ' is declared final and cannot be overridden',
+                    $code_location
+                )
+            )) {
+                // fall through
+            }
+
+            return null;
+        }
+
+        if ($prevent_abstract_override
+            && !$guide_method_storage->abstract
+            && $implementer_method_storage->abstract
+            && !$guide_classlike_storage->abstract
+            && !$guide_classlike_storage->is_interface
+        ) {
+            if (IssueBuffer::accepts(
+                new MethodSignatureMismatch(
+                    'Method ' . $cased_implementer_method_id . ' cannot be abstract when inherited method '
+                        . $cased_guide_method_id . ' is non-abstract',
+                    $code_location
+                )
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+
+        if ($guide_method_storage->signature_return_type && $prevent_method_signature_mismatch) {
+            $guide_signature_return_type = ExpressionAnalyzer::fleshOutType(
+                $codebase,
+                $guide_method_storage->signature_return_type,
+                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                    ? $implementer_classlike_storage->name
+                    : $guide_classlike_storage->name,
+                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                    ? $implementer_classlike_storage->name
+                    : $guide_classlike_storage->name,
+                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                    ? $implementer_classlike_storage->parent_class
+                    : $guide_classlike_storage->parent_class
+            );
+
+            $implementer_signature_return_type = $implementer_method_storage->signature_return_type
+                ? ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $implementer_method_storage->signature_return_type,
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->parent_class
+                ) : null;
+
+            $is_contained_by = $codebase->php_major_version >= 7
+                && $codebase->php_minor_version >= 4
+                && $implementer_signature_return_type
+                ? TypeAnalyzer::isContainedBy(
+                    $codebase,
+                    $implementer_signature_return_type,
+                    $guide_signature_return_type
+                )
+                : TypeAnalyzer::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
+
+            if (!$is_contained_by) {
+                if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+                    || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
+                    || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
+                    || (!$implementer_method_storage->abstract
+                        && !$guide_method_storage->abstract)
+                ) {
+                    if (IssueBuffer::accepts(
+                        new MethodSignatureMismatch(
+                            'Method ' . $cased_implementer_method_id . ' with return type \''
+                                . $implementer_signature_return_type . '\' is different to return type \''
+                                . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new TraitMethodSignatureMismatch(
+                            'Method ' . $cased_implementer_method_id . ' with return type \''
+                                . $implementer_signature_return_type . '\' is different to return type \''
+                                . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        if ($guide_method_storage->external_mutation_free
+            && !$implementer_method_storage->external_mutation_free
+            && !$guide_method_storage->mutation_free_inferred
+            && $prevent_method_signature_mismatch
+        ) {
+            if (IssueBuffer::accepts(
+                new MissingImmutableAnnotation(
+                    $cased_guide_method_id . ' is marked immutable, but '
+                        . $implementer_classlike_storage->name . '::'
+                        . ($guide_method_storage->cased_name ?: '')
+                        . ' is not marked immutable',
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                // fall through
+            }
+        }
+
+        if ($guide_method_storage->return_type
+            && $implementer_method_storage->return_type
+            && !$implementer_method_storage->inherited_return_type
+            && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
+                || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
+            && $implementer_classlike_storage->user_defined
+            && (!$guide_classlike_storage->stubbed || $guide_classlike_storage->template_types)
+        ) {
+            $implementer_method_storage_return_type = ExpressionAnalyzer::fleshOutType(
+                $codebase,
+                $implementer_method_storage->return_type,
+                $implementer_classlike_storage->name,
+                $implementer_called_class_name,
+                $implementer_classlike_storage->parent_class
+            );
+
+            $guide_method_storage_return_type = ExpressionAnalyzer::fleshOutType(
+                $codebase,
+                $guide_method_storage->return_type,
+                $guide_classlike_storage->is_trait
+                    ? $implementer_classlike_storage->name
+                    : $guide_classlike_storage->name,
+                $guide_classlike_storage->is_trait
+                    ? $implementer_called_class_name
+                    : $guide_classlike_storage->name,
+                $guide_classlike_storage->parent_class
+            );
+
+            $guide_class_name = $guide_classlike_storage->name;
+
+            if ($implementer_classlike_storage->template_type_extends) {
+                self::transformTemplates(
+                    $implementer_classlike_storage->template_type_extends,
+                    $guide_class_name,
+                    $guide_method_storage_return_type,
+                    $codebase
+                );
+            }
+
+            if ($implementer_classlike_storage->is_trait) {
+                $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
+                    $implementer_called_class_name
+                );
+
+                if (isset(
+                    $implementer_called_class_storage->template_type_extends[$implementer_classlike_storage->name]
+                )) {
+                    self::transformTemplates(
+                        $implementer_called_class_storage->template_type_extends,
+                        $implementer_classlike_storage->name,
+                        $implementer_method_storage_return_type,
+                        $codebase
+                    );
+
+                    self::transformTemplates(
+                        $implementer_called_class_storage->template_type_extends,
+                        $guide_class_name,
+                        $guide_method_storage_return_type,
+                        $codebase
+                    );
+                }
+            }
+
+            // treat void as null when comparing against docblock implementer
+            if ($implementer_method_storage_return_type->isVoid()) {
+                $implementer_method_storage_return_type = Type::getNull();
+            }
+
+            if ($guide_method_storage_return_type->isVoid()) {
+                $guide_method_storage_return_type = Type::getNull();
+            }
+
+            $union_comparison_results = new TypeComparisonResult();
+
+            if (!TypeAnalyzer::isContainedBy(
+                $codebase,
+                $implementer_method_storage_return_type,
+                $guide_method_storage_return_type,
+                false,
+                false,
+                $union_comparison_results
+            )) {
+                // is the declared return type more specific than the inferred one?
+                if ($union_comparison_results->type_coerced) {
+                    if (IssueBuffer::accepts(
+                        new LessSpecificImplementedReturnType(
+                            'The inherited return type \'' . $guide_method_storage_return_type->getId()
+                                . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
+                                . 'return type for ' . $implementer_declaring_method_id . ' \''
+                                . $implementer_method_storage_return_type->getId() . '\'',
+                            $implementer_method_storage->return_type_location
+                                ?: $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new ImplementedReturnTypeMismatch(
+                            'The inherited return type \'' . $guide_method_storage_return_type->getId()
+                                . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
+                                . 'return type for ' . $implementer_declaring_method_id . ' \''
+                                . $implementer_method_storage_return_type->getId() . '\'',
+                            $implementer_method_storage->return_type_location
+                                ?: $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        foreach ($guide_method_storage->params as $i => $guide_param) {
+            if (!isset($implementer_method_storage->params[$i])) {
+                if (!$prevent_abstract_override && $i >= $guide_method_storage->required_param_count) {
+                    continue;
+                }
+
+                if (IssueBuffer::accepts(
+                    new MethodSignatureMismatch(
+                        'Method ' . $cased_implementer_method_id . ' has fewer parameters than parent method ' .
+                            $cased_guide_method_id,
+                        $code_location
+                    )
+                )) {
+                    return false;
+                }
+
+                return null;
+            }
+
+            $implementer_param = $implementer_method_storage->params[$i];
+
+            if ($prevent_method_signature_mismatch
+                && !$guide_classlike_storage->user_defined
+                && $guide_param->type
+            ) {
+                $implementer_param_type = $implementer_method_storage->params[$i]->signature_type;
+
+                $guide_param_signature_type = $guide_param->type;
+
+                $or_null_guide_param_signature_type = $guide_param->signature_type
+                    ? clone $guide_param->signature_type
+                    : null;
+
+                if ($or_null_guide_param_signature_type) {
+                    $or_null_guide_param_signature_type->addType(new Type\Atomic\TNull);
+                }
+
+                if ($cased_guide_method_id === 'Serializable::unserialize') {
+                    $guide_param_signature_type = null;
+                    $or_null_guide_param_signature_type = null;
+                }
+
+                if (!$guide_param->type->hasMixed()
+                    && !$guide_param->type->from_docblock
+                    && ($implementer_param_type || $guide_param_signature_type)
+                ) {
+                    if ($implementer_param_type
+                        && (!$guide_param_signature_type
+                            || strtolower($implementer_param_type->getId())
+                                !== strtolower($guide_param_signature_type->getId()))
+                        && (!$or_null_guide_param_signature_type
+                            || strtolower($implementer_param_type->getId())
+                                !== strtolower($or_null_guide_param_signature_type->getId()))
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new MethodSignatureMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                    $implementer_param_type . '\', expecting \'' .
+                                    $guide_param_signature_type . '\' as defined by ' .
+                                    $cased_guide_method_id,
+                                $implementer_method_storage->params[$i]->location
+                                    && $config->isInProjectDirs(
+                                        $implementer_method_storage->params[$i]->location->file_path
+                                    )
+                                    ? $implementer_method_storage->params[$i]->location
+                                    : $code_location
+                            )
+                        )) {
+                            return false;
+                        }
+
+                        return null;
+                    }
+                }
+            }
+
+            if ($prevent_method_signature_mismatch
+                && $guide_classlike_storage->user_defined
+                && $implementer_param->signature_type
+            ) {
+                $guide_param_signature_type = $guide_param->signature_type
+                    ? ExpressionAnalyzer::fleshOutType(
+                        $codebase,
+                        $guide_param->signature_type,
+                        $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                            ? $implementer_classlike_storage->name
+                            : $guide_classlike_storage->name,
+                        $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                            ? $implementer_classlike_storage->name
+                            : $guide_classlike_storage->name,
+                        $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                            ? $implementer_classlike_storage->parent_class
+                            : $guide_classlike_storage->parent_class
+                    )
+                    : null;
+
+                $implementer_param_signature_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $implementer_param->signature_type,
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->parent_class
+                );
+
+                $is_contained_by = $codebase->php_major_version >= 7
+                    && $codebase->php_minor_version >= 4
+                    && $guide_param_signature_type
+                    ? TypeAnalyzer::isContainedBy(
+                        $codebase,
+                        $guide_param_signature_type,
+                        $implementer_param_signature_type
+                    )
+                    : TypeAnalyzer::isContainedByInPhp(
+                        $guide_param_signature_type,
+                        $implementer_param_signature_type
+                    );
+                if (!$is_contained_by) {
+                    if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+                        || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
+                        || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
+                        || (!$implementer_method_storage->abstract
+                            && !$guide_method_storage->abstract)
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new MethodSignatureMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                    $implementer_param_signature_type . '\', expecting \'' .
+                                    $guide_param_signature_type . '\' as defined by ' .
+                                    $cased_guide_method_id,
+                                $implementer_method_storage->params[$i]->location
+                                    && $config->isInProjectDirs(
+                                        $implementer_method_storage->params[$i]->location->file_path
+                                    )
+                                    ? $implementer_method_storage->params[$i]->location
+                                    : $code_location
+                            )
+                        )) {
+                            return false;
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new TraitMethodSignatureMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                    $implementer_param_signature_type . '\', expecting \'' .
+                                    $guide_param_signature_type . '\' as defined by ' .
+                                    $cased_guide_method_id,
+                                $implementer_method_storage->params[$i]->location
+                                    && $config->isInProjectDirs(
+                                        $implementer_method_storage->params[$i]->location->file_path
+                                    )
+                                    ? $implementer_method_storage->params[$i]->location
+                                    : $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            return false;
+                        }
+                    }
+
+                    return null;
+                }
+            }
+
+            if ($implementer_param->type
+                && $guide_param->type
+                && $implementer_param->type->getId() !== $guide_param->type->getId()
+            ) {
+                $implementer_method_storage_param_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $implementer_param->type,
+                    $implementer_classlike_storage->name,
+                    $implementer_called_class_name,
+                    $implementer_classlike_storage->parent_class
+                );
+
+                $guide_method_storage_param_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $guide_param->type,
+                    $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                        ? $implementer_classlike_storage->name
+                        : $guide_classlike_storage->name,
+                    $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                        ? $implementer_classlike_storage->name
+                        : $guide_classlike_storage->name,
+                    $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                        ? $implementer_classlike_storage->parent_class
+                        : $guide_classlike_storage->parent_class
+                );
+
+                $guide_class_name = $guide_classlike_storage->name;
+
+                if ($implementer_classlike_storage->template_type_extends) {
+                    self::transformTemplates(
+                        $implementer_classlike_storage->template_type_extends,
+                        $guide_class_name,
+                        $guide_method_storage_param_type,
+                        $codebase
+                    );
+                }
+
+                if ($implementer_classlike_storage->is_trait) {
+                    $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
+                        $implementer_called_class_name
+                    );
+
+                    if (isset(
+                        $implementer_called_class_storage->template_type_extends[$implementer_classlike_storage->name]
+                    )) {
+                        self::transformTemplates(
+                            $implementer_called_class_storage->template_type_extends,
+                            $implementer_classlike_storage->name,
+                            $implementer_method_storage_param_type,
+                            $codebase
+                        );
+
+                        self::transformTemplates(
+                            $implementer_called_class_storage->template_type_extends,
+                            $guide_class_name,
+                            $guide_method_storage_param_type,
+                            $codebase
+                        );
+                    }
+                }
+
+                $union_comparison_results = new TypeComparisonResult();
+
+                if (!TypeAnalyzer::isContainedBy(
+                    $codebase,
+                    $guide_method_storage_param_type,
+                    $implementer_method_storage_param_type,
+                    !$guide_classlike_storage->user_defined,
+                    !$guide_classlike_storage->user_defined,
+                    $union_comparison_results
+                )) {
+                    // is the declared return type more specific than the inferred one?
+                    if ($union_comparison_results->type_coerced) {
+                        if ($guide_classlike_storage->user_defined) {
+                            if (IssueBuffer::accepts(
+                                new MoreSpecificImplementedParamType(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                                        . ' has the more specific type \'' .
+                                        $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                        $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                        $cased_guide_method_id,
+                                    $implementer_method_storage->params[$i]->location
+                                        ?: $code_location
+                                ),
+                                $suppressed_issues
+                            )) {
+                                return false;
+                            }
+                        }
+                    } else {
+                        if (TypeAnalyzer::isContainedBy(
+                            $codebase,
+                            $implementer_method_storage_param_type,
+                            $guide_method_storage_param_type,
+                            !$guide_classlike_storage->user_defined,
+                            !$guide_classlike_storage->user_defined
+                        )) {
+                            if (IssueBuffer::accepts(
+                                new MoreSpecificImplementedParamType(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                                        . ' has the more specific type \'' .
+                                        $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                        $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                        $cased_guide_method_id,
+                                    $implementer_method_storage->params[$i]->location
+                                        ?: $code_location
+                                ),
+                                $suppressed_issues
+                            )) {
+                                return false;
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new ImplementedParamTypeMismatch(
+                                    'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                                        . ' has wrong type \'' .
+                                        $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                        $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                                        $cased_guide_method_id,
+                                    $implementer_method_storage->params[$i]->location
+                                        ?: $code_location
+                                ),
+                                $suppressed_issues
+                            )) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if ($guide_classlike_storage->user_defined && $implementer_param->by_ref !== $guide_param->by_ref) {
+                if (IssueBuffer::accepts(
+                    new MethodSignatureMismatch(
+                        'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' is' .
+                            ($implementer_param->by_ref ? '' : ' not') . ' passed by reference, but argument ' .
+                            ($i + 1) . ' of ' . $cased_guide_method_id . ' is' . ($guide_param->by_ref ? '' : ' not'),
+                        $implementer_method_storage->params[$i]->location
+                            && $config->isInProjectDirs(
+                                $implementer_method_storage->params[$i]->location->file_path
+                            )
+                            ? $implementer_method_storage->params[$i]->location
+                            : $code_location
+                    )
+                )) {
+                    return false;
+                }
+
+                return null;
+            }
+        }
+
+        if ($guide_classlike_storage->user_defined
+            && ($guide_classlike_storage->is_interface || $implementer_method_storage->cased_name !== '__construct')
+            && $implementer_method_storage->required_param_count > $guide_method_storage->required_param_count
+        ) {
+            if (IssueBuffer::accepts(
+                new MethodSignatureMismatch(
+                    'Method ' . $cased_implementer_method_id . ' has more required parameters than parent method ' .
+                        $cased_guide_method_id,
+                    $code_location
+                )
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
+     */
+    private static function transformTemplates(
+        array $template_type_extends,
+        string $base_class_name,
+        Type\Union $templated_type,
+        Codebase $codebase
+    ) : void {
+        if (isset($template_type_extends[$base_class_name])) {
+            $map = $template_type_extends[$base_class_name];
+
+            $template_types = [];
+
+            foreach ($map as $key => $mapped_type) {
+                if (is_string($key)) {
+                    $new_bases = [];
+
+                    foreach ($mapped_type->getAtomicTypes() as $mapped_atomic_type) {
+                        if ($mapped_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                            $new_bases[] = $mapped_atomic_type->defining_class;
+                        }
+                    }
+
+                    if ($new_bases) {
+                        $mapped_type = clone $mapped_type;
+
+                        foreach ($new_bases as $new_base_class_name) {
+                            self::transformTemplates(
+                                $template_type_extends,
+                                $new_base_class_name,
+                                $mapped_type,
+                                $codebase
+                            );
+                        }
+                    }
+
+                    $template_types[$key][$base_class_name] = [$mapped_type];
+                }
+            }
+
+            $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+
+            $templated_type->replaceTemplateTypesWithArgTypes(
+                $template_result->template_types,
+                $codebase
+            );
+        }
+    }
+}

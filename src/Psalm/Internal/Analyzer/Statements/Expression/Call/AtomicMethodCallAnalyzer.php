@@ -493,7 +493,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $name_code_location = new CodeLocation($statements_analyzer, $stmt->name);
 
             if ($result->check_visibility) {
-                if (MethodAnalyzer::checkMethodVisibility(
+                if (MethodVisibilityAnalyzer::analyze(
                     $method_id,
                     $context,
                     $statements_analyzer->getSource(),
@@ -504,7 +504,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            MethodAnalyzer::checkMethodNotDeprecatedOrInternal(
+            MethodCallProhibitionAnalyzer::analyze(
                 $codebase,
                 $context,
                 $method_id,
