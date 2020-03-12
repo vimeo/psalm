@@ -324,7 +324,10 @@ class DocComment
             $last_type = null;
 
             foreach ($parsed_doc_comment['specials'] as $type => $lines) {
-                if ($last_type !== null && $last_type !== 'psalm-return') {
+                if ($last_type !== null
+                    && $last_type !== 'psalm-return'
+                    && ($type !== 'return' || static::shouldAddNewLineBeforeReturn())
+                ) {
                     $doc_comment_text .= $left_padding . ' *' . "\n";
                 }
 
@@ -340,5 +343,10 @@ class DocComment
         $doc_comment_text .= $left_padding . ' */' . "\n" . $left_padding;
 
         return $doc_comment_text;
+    }
+
+    private static function shouldAddNewLineBeforeReturn(): bool
+    {
+        return true;
     }
 }
