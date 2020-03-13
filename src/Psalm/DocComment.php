@@ -25,7 +25,7 @@ class DocComment
     /**
      * @var bool
      */
-    private static $shouldAddNewLineBeforeReturn = true;
+    private static $shouldAddNewLineBetweenAnnotations = true;
 
     /**
      * Parse a docblock comment into its parts.
@@ -331,7 +331,7 @@ class DocComment
             foreach ($parsed_doc_comment['specials'] as $type => $lines) {
                 if ($last_type !== null
                     && $last_type !== 'psalm-return'
-                    && ($type !== 'return' || static::shouldAddNewLineBeforeReturn())
+                    && static::shouldAddNewLineBetweenAnnotations()
                 ) {
                     $doc_comment_text .= $left_padding . ' *' . "\n";
                 }
@@ -350,18 +350,18 @@ class DocComment
         return $doc_comment_text;
     }
 
-    private static function shouldAddNewLineBeforeReturn(): bool
+    private static function shouldAddNewLineBetweenAnnotations(): bool
     {
-        return static::$shouldAddNewLineBeforeReturn;
+        return static::$shouldAddNewLineBetweenAnnotations;
     }
 
     /**
-     * Sets whether a new line should be added before the return or not.
+     * Sets whether a new line should be added between the annotations or not.
      *
      * @param bool $should
      */
-    public static function addNewLineBeforeReturn(bool $should = true): void
+    public static function addNewLineBetweenAnnotations(bool $should = true): void
     {
-        static::$shouldAddNewLineBeforeReturn = $should;
+        static::$shouldAddNewLineBetweenAnnotations = $should;
     }
 }

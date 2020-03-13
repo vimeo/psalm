@@ -37,7 +37,7 @@ class DocCommentTest extends BaseTestCase
 
     public function testNewLineIsNotAddedInDocBlockBeforeReturnIfDisabled(): void
     {
-        DocComment::addNewLineBeforeReturn(false);
+        DocComment::addNewLineBetweenAnnotations(false);
 
         $docComment = [
             'description' => 'some desc',
@@ -67,7 +67,7 @@ class DocCommentTest extends BaseTestCase
 
     public function testNewLineIsAddedInDocBlockBeforeReturnIfEnabled(): void
     {
-        DocComment::addNewLineBeforeReturn(true);
+        DocComment::addNewLineBetweenAnnotations(true);
 
         $docComment = [
             'description' => 'some desc',
