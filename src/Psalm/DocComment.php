@@ -23,6 +23,11 @@ use function trim;
 class DocComment
 {
     /**
+     * @var bool
+     */
+    private static $shouldAddNewLineBetweenAnnotations = true;
+
+    /**
      * Parse a docblock comment into its parts.
      *
      * Taken from advanced api docmaker, which was taken from
@@ -324,7 +329,10 @@ class DocComment
             $last_type = null;
 
             foreach ($parsed_doc_comment['specials'] as $type => $lines) {
-                if ($last_type !== null && $last_type !== 'psalm-return') {
+                if ($last_type !== null
+                    && $last_type !== 'psalm-return'
+                    && static::shouldAddNewLineBetweenAnnotations()
+                ) {
                     $doc_comment_text .= $left_padding . ' *' . "\n";
                 }
 
@@ -340,5 +348,20 @@ class DocComment
         $doc_comment_text .= $left_padding . ' */' . "\n" . $left_padding;
 
         return $doc_comment_text;
+    }
+
+    private static function shouldAddNewLineBetweenAnnotations(): bool
+    {
+        return static::$shouldAddNewLineBetweenAnnotations;
+    }
+
+    /**
+     * Sets whether a new line should be added between the annotations or not.
+     *
+     * @param bool $should
+     */
+    public static function addNewLineBetweenAnnotations(bool $should = true): void
+    {
+        static::$shouldAddNewLineBetweenAnnotations = $should;
     }
 }
