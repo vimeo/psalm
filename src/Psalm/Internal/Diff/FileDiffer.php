@@ -234,7 +234,7 @@ class FileDiffer
                     $changes[$i - 1] = $last_change;
                 } else {
                     $last_change[1] += $old_text_length;
-                    $last_change[3] += $old_text_length;
+                    $last_change[3] += $new_text_length;
                     $last_change[5] .= $new_diff_text;
                     $changes[$i - 1] = $last_change;
                 }

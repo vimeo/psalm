@@ -1417,6 +1417,27 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[], [381], []],
             ],
+            'reformat' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public function b(): void {
+
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public function b(): void
+                                {
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], []],
+            ],
         ];
     }
 }
