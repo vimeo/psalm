@@ -6,7 +6,7 @@ use Psalm\DocComment;
 
 class DocCommentTest extends BaseTestCase
 {
-    public function testNewLineIsAddedInDocBlockBeforeReturnByDefault(): void
+    public function testNewLineIsAddedBetweenAnnotationsByDefault(): void
     {
         $docComment = [
             'description' => 'some desc',
@@ -14,7 +14,12 @@ class DocCommentTest extends BaseTestCase
                 [
                     'param' =>
                         [
+                            2 => 'string $bli',
                             3 => 'int $bla',
+                        ],
+                    'throws' =>
+                        [
+                            0 => '\Exception',
                         ],
                     'return' =>
                         [
@@ -26,7 +31,10 @@ class DocCommentTest extends BaseTestCase
         $expectedDoc = '/**
  * some desc
  *
+ * @param string $bli
  * @param int $bla
+ *
+ * @throws \Exception
  *
  * @return bool
  */
@@ -35,7 +43,7 @@ class DocCommentTest extends BaseTestCase
         $this->assertSame($expectedDoc, DocComment::render($docComment, ''));
     }
 
-    public function testNewLineIsNotAddedInDocBlockBeforeReturnIfDisabled(): void
+    public function testNewLineIsNotAddedBetweenAnnotationsIfDisabled(): void
     {
         DocComment::addNewLineBetweenAnnotations(false);
 
@@ -45,7 +53,12 @@ class DocCommentTest extends BaseTestCase
                 [
                     'param' =>
                         [
+                            2 => 'string $bli',
                             3 => 'int $bla',
+                        ],
+                    'throws' =>
+                        [
+                            0 => '\Exception',
                         ],
                     'return' =>
                         [
@@ -57,7 +70,9 @@ class DocCommentTest extends BaseTestCase
         $expectedDoc = '/**
  * some desc
  *
+ * @param string $bli
  * @param int $bla
+ * @throws \Exception
  * @return bool
  */
 ';
@@ -65,7 +80,7 @@ class DocCommentTest extends BaseTestCase
         $this->assertSame($expectedDoc, DocComment::render($docComment, ''));
     }
 
-    public function testNewLineIsAddedInDocBlockBeforeReturnIfEnabled(): void
+    public function testNewLineIsAddedBetweenAnnotationsIfEnabled(): void
     {
         DocComment::addNewLineBetweenAnnotations(true);
 
@@ -75,7 +90,12 @@ class DocCommentTest extends BaseTestCase
                 [
                     'param' =>
                         [
+                            2 => 'string $bli',
                             3 => 'int $bla',
+                        ],
+                    'throws' =>
+                        [
+                            0 => '\Exception',
                         ],
                     'return' =>
                         [
@@ -87,7 +107,10 @@ class DocCommentTest extends BaseTestCase
         $expectedDoc = '/**
  * some desc
  *
+ * @param string $bli
  * @param int $bla
+ *
+ * @throws \Exception
  *
  * @return bool
  */
