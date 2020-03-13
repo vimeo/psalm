@@ -228,7 +228,7 @@ class DoAnalyzer
         );
 
         if ($context->collect_references) {
-            $context->unreferenced_vars = $inner_loop_context->unreferenced_vars;
+            $context->unreferenced_vars = $loop_scope->loop_context->unreferenced_vars;
         }
 
         if ($context->collect_exceptions) {
