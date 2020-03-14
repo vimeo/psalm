@@ -699,6 +699,146 @@ class ReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'infersClosureReturnTypes' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param callable(T): U $predicate
+                     * @return Closure(iterable<T>): iterable<U>
+                     */
+                    function map(callable $predicate): callable {
+                        return function($iter) use ($predicate) {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $predicate($value);
+                            }
+                        };
+                    }
+
+                    $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'assertions' => [
+                    '$res' => 'iterable<mixed, string>',
+                ],
+            ],
+            'infersClosureReturnTypesWithPartialTypehinting' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param callable(T): U $predicate
+                     * @return Closure(iterable<T>): iterable<U>
+                     */
+                    function map(callable $predicate): callable {
+                        return function(iterable $iter) use ($predicate): iterable {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $predicate($value);
+                            }
+                        };
+                    }
+
+                    $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'assertions' => [
+                    '$res' => 'iterable<mixed, string>',
+                ],
+            ],
+            'infersCallableReturnTypes' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param callable(T): U $predicate
+                     * @return callable(iterable<T>): iterable<U>
+                     */
+                    function map(callable $predicate): callable {
+                        return function($iter) use ($predicate) {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $predicate($value);
+                            }
+                        };
+                    }
+
+                    $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'assertions' => [
+                    '$res' => 'iterable<mixed, string>',
+                ],
+            ],
+            'infersCallableReturnTypesWithPartialTypehinting' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param callable(T): U $predicate
+                     * @return callable(iterable<T>): iterable<U>
+                     */
+                    function map(callable $predicate): callable {
+                        return function(iterable $iter) use ($predicate): iterable {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $predicate($value);
+                            }
+                        };
+                    }
+
+                    $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'assertions' => [
+                    '$res' => 'iterable<mixed, string>',
+                ],
+            ],
+            'infersReturnTypeFromReturnedCallable' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param callable(T): U $predicate
+                     */
+                    function map(callable $predicate) {
+                        return
+                        /**
+                         * @param iterable<T> $iter
+                         * @return iterable<U>
+                         */
+                        function($iter) use ($predicate): iterable {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $predicate($value);
+                            }
+                        };
+                    }
+
+                    $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'assertions' => [
+                    '$res' => 'iterable<mixed, string>',
+                ],
+            ],
+            'infersReturnTypeFromReturnedCallableWithPartialReturnStatement' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param callable(T): U $predicate
+                     */
+                    function map(callable $predicate): callable {
+                        return
+                        /**
+                         * @param iterable<T> $iter
+                         * @return iterable<U>
+                         */
+                        function($iter) use ($predicate): iterable {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $predicate($value);
+                            }
+                        };
+                    }
+
+                    $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'assertions' => [
+                    '$res' => 'iterable<mixed, string>',
+                ],
+            ],
         ];
     }
 
@@ -1021,6 +1161,82 @@ class ReturnTypeTest extends TestCase
                         int $a
                     ): string {}',
                 'error_message' => 'InvalidReturnType - src/somefile.php:4:24',
+            ],
+            'cannotInferReturnClosureWithoutReturn' => [
+                '<?php
+                /**
+                 * @template T
+                 * @template U
+                 * @param callable(T): U $predicate
+                 * @return callable(iterable<T>): iterable<U>
+                 */
+                function map(callable $predicate): callable {
+                    $a = function($iter) use ($predicate) {
+                        foreach ($iter as $key => $value) {
+                            yield $key => $predicate($value);
+                        }
+                    };
+                    return $a;
+                }
+
+                $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'error_message' => 'MixedAssignment - src/somefile.php:10:51 - Cannot assign $value to a mixed type',
+            ],
+            'cannotInferReturnClosureWithMoreSpecificTypes' => [
+                '<?php
+                /**
+                 * @template T
+                 * @template U
+                 * @param callable(T): U $predicate
+                 * @return callable(iterable<T>): iterable<U>
+                 */
+                function map(callable $predicate): callable {
+                    return
+                    /** @param iterable<int> $iter */
+                    function($iter) use ($predicate) {
+                        foreach ($iter as $key => $value) {
+                            yield $key => $predicate($value);
+                        }
+                    };
+                }
+
+                $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'error_message' => 'InvalidArgument - src/somefile.php:13:54 - Argument 1 expects T:fn-map as mixed, int provided',
+            ],
+            'cannotInferReturnClosureWithDifferentReturnTypes' => [
+                '<?php
+                /**
+                 * @template T
+                 * @template U
+                 * @param callable(T): U $predicate
+                 * @return callable(iterable<T>): iterable<U>
+                 */
+                function map(callable $predicate): callable {
+                    return function($iter) use ($predicate): int {
+                        return 1;
+                    };
+                }
+
+                $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'error_message' => 'InvalidReturnStatement - src/somefile.php:9:28 - The inferred type \'Closure(iterable<mixed, T:fn-map as mixed>):int(1)\' does not match the declared return type \'callable(iterable<mixed, T:fn-map as mixed>):iterable<mixed, U:fn-map as mixed>\' for map',
+            ],
+            'cannotInferReturnClosureWithDifferentTypes' => [
+                '<?php
+                class A {}
+                class B {}
+                /**
+                 * @return callable(A): void
+                 */
+                function map(): callable {
+                    return function(B $v): void {};
+                }
+
+                $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
+                ',
+                'error_message' => 'InvalidReturnStatement - src/somefile.php:8:28 - The inferred type \'Closure(B):void\' does not match the declared return type \'callable(A):void\' for map',
             ],
         ];
     }

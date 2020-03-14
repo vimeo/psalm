@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use function array_combine;
 use function array_merge;
 use function count;
@@ -822,6 +823,24 @@ class Codebase
     }
 
     /**
+     * Given a function id, return the function like storage for
+     * a method, closure, or function.
+     */
+    public function getFunctionLikeStorage(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id
+    ): FunctionLikeStorage {
+        $doesMethodExist =
+            \Psalm\Internal\MethodIdentifier::isValidMethodIdReference($function_id)
+            && $this->methodExists($function_id);
+        if ($doesMethodExist) {
+            return $this->methods->getStorage(\Psalm\Internal\MethodIdentifier::wrap($function_id));
+        }
+
+        return $this->functions->getStorage($statements_analyzer, $function_id);
+    }
+
+    /**
      * Whether or not a given method exists
      *
      * @param  string|\Psalm\Internal\MethodIdentifier       $method_id
@@ -836,15 +855,8 @@ class Codebase
         $calling_function_id = null,
         string $file_path = null
     ) {
-        if (is_string($method_id)) {
-            // remove trailing backslash if it exists
-            $method_id = preg_replace('/^\\\\/', '', $method_id);
-            $method_id_parts = explode('::', $method_id);
-            $method_id = new \Psalm\Internal\MethodIdentifier($method_id_parts[0], strtolower($method_id_parts[1]));
-        }
-
         return $this->methods->methodExists(
-            $method_id,
+            \Psalm\Internal\MethodIdentifier::wrap($method_id),
             $calling_function_id,
             $code_location,
             null,
