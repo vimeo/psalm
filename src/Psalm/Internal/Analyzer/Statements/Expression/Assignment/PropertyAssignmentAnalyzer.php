@@ -695,7 +695,8 @@ class PropertyAssignmentAnalyzer
                                         if (!$object_storage->mutation_free) {
                                             if (IssueBuffer::accepts(
                                                 new ImpurePropertyAssignment(
-                                                    'Cannot store mutable reference inside an immutable object',
+                                                    'Cannot store a reference to an externally-mutable object'
+                                                        . ' inside an immutable object – consider using __clone',
                                                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                                                 ),
                                                 $statements_analyzer->getSuppressedIssues()
