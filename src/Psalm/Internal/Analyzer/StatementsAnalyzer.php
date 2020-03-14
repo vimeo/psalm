@@ -2240,7 +2240,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     public function getUnusedVarLocations()
     {
-        return array_diff_key($this->unused_var_locations, $this->used_var_locations);
+        return \array_diff_key($this->unused_var_locations, $this->used_var_locations);
     }
 
     /**
