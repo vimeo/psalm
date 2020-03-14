@@ -375,6 +375,39 @@ class ImmutableAnnotationTest extends TestCase
                 '<?php
                     echo (new DateTimeImmutable("now", new DateTimeZone("UTC")))->format("Y-m-d");'
             ],
+            'allowPassingCloneOfMutableIntoImmutable' => [
+                '<?php
+                    class Item {
+                        private int $i = 0;
+
+                        public function mutate(): void {
+                            $this->i++;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function get(): int {
+                            return $this->i;
+                        }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Immutable {
+                        private Item $item;
+
+                        public function __construct(Item $item) {
+                            $this->item = clone $item;
+                        }
+
+                        public function get(): int {
+                            return $this->item->get();
+                        }
+                    }
+
+                    $item = new Item();
+                    new Immutable($item);',
+            ],
         ];
     }
 
@@ -482,31 +515,6 @@ class ImmutableAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
-            'cloneMutatingClass' => [
-                '<?php
-                    /**
-                     * @psalm-immutable
-                     */
-                    class Foo {
-                        protected string $bar;
-
-                        public function __construct(string $bar) {
-                            $this->bar = $bar;
-                        }
-
-                        public function withBar(Bar $b): Bar {
-                            $new = clone $b;
-                            $b->a = $this->bar;
-
-                            return $new;
-                        }
-                    }
-
-                    class Bar {
-                        public string $a = "hello";
-                    }',
-                'error_message' => 'ImpurePropertyAssignment',
-            ],
             'mustBeImmutableLikeInterfaces' => [
                 '<?php
                     /** @psalm-immutable */
@@ -539,19 +547,6 @@ class ImmutableAnnotationTest extends TestCase
             ],
             'preventPassingMutableIntoImmutable' => [
                 '<?php
-                    class Item {
-                        private int $i = 0;
-
-                        public function mutate(): void {
-                            $this->i++;
-                        }
-
-                        /** @psalm-mutation-free */
-                        public function get(): int {
-                            return $this->i;
-                        }
-                    }
-
                     /**
                      * @psalm-immutable
                      */
@@ -567,9 +562,19 @@ class ImmutableAnnotationTest extends TestCase
                         }
                     }
 
-                    $item = new Item();
-                    new Immutable($item);',
-                'error_message' => 'ImpureArgument',
+                    class Item {
+                        private int $i = 0;
+
+                        public function mutate(): void {
+                            $this->i++;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function get(): int {
+                            return $this->i;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
             ],
             'preventNonImmutableTraitInImmutableClass' => [
                 '<?php

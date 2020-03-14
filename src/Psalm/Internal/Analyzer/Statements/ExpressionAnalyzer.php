@@ -2174,16 +2174,8 @@ class ExpressionAnalyzer
                     return;
                 }
 
-                $codebase = $statements_analyzer->getCodebase();
-
-                if ($clone_type_part instanceof TNamedObject
-                    && $codebase->classExists($clone_type_part->value)
-                ) {
-                    $class_storage = $codebase->classlike_storage_provider->get($clone_type_part->value);
-
-                    if ($class_storage->mutation_free) {
-                        $immutable_cloned = true;
-                    }
+                if ($clone_type_part instanceof TNamedObject) {
+                    $immutable_cloned = true;
                 }
             }
 
@@ -2192,8 +2184,8 @@ class ExpressionAnalyzer
             if ($immutable_cloned) {
                 $stmt_expr_type = clone $stmt_expr_type;
                 $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
-                $stmt_expr_type->external_mutation_free = true;
-                $stmt_expr_type->mutation_free = false;
+                $stmt_expr_type->reference_free = true;
+                $stmt_expr_type->allow_mutations = true;
             }
         }
     }

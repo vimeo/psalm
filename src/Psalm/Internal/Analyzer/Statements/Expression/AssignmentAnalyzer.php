@@ -754,10 +754,11 @@ class AssignmentAnalyzer
                 $context->vars_possibly_in_scope[$var_id] = true;
             }
 
-            $method_pure_compatible = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
+            $property_var_pure_compatible = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
 
+            // prevents writing to any properties in a mutation-free context
             if (($context->mutation_free || $context->external_mutation_free)
-                && !$method_pure_compatible
+                && !$property_var_pure_compatible
                 && !$context->collect_mutations
                 && !$context->collect_initializations
             ) {
@@ -915,8 +916,7 @@ class AssignmentAnalyzer
             && $context->mutation_free
             && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
             && ($stmt_var_var_type = $statements_analyzer->node_data->getType($stmt->var->var))
-            && (!$stmt_var_var_type->external_mutation_free
-                || $stmt_var_var_type->mutation_free)
+            && !$stmt_var_var_type->reference_free
         ) {
             if (IssueBuffer::accepts(
                 new ImpurePropertyAssignment(

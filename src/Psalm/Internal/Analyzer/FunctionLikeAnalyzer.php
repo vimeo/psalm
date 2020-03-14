@@ -210,10 +210,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($storage->external_mutation_free
                     && !$storage->mutation_free_inferred
                 ) {
-                    $context->vars_in_scope['$this']->external_mutation_free = true;
+                    $context->vars_in_scope['$this']->reference_free = true;
 
-                    if ($storage->mutation_free) {
-                        $context->vars_in_scope['$this']->mutation_free = true;
+                    if ($this->function->name->name !== '__construct') {
+                        $context->vars_in_scope['$this']->allow_mutations = false;
                     }
                 }
 

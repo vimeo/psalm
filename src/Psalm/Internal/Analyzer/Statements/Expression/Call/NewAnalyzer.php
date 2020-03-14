@@ -525,7 +525,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
                     if ($stmt_type) {
-                        $stmt_type->external_mutation_free = true;
+                        $stmt_type->reference_free = true;
                     }
                 }
             }

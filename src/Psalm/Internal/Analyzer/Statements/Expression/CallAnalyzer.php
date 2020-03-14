@@ -19,7 +19,6 @@ use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ImplicitToStringCast;
-use Psalm\Issue\ImpureArgument;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidPassByReference;
 use Psalm\Issue\InvalidScalarArgument;
@@ -1430,32 +1429,6 @@ class CallAnalyzer
                 $in_call_map
             ) === false) {
                 return false;
-            }
-
-            if ($class_storage
-                && $class_storage->mutation_free
-                && $function_storage
-                && $function_storage->cased_name === '__construct'
-                && ($node_type = $statements_analyzer->node_data->getType($arg->value))
-                && !$context->inside_throw
-            ) {
-                foreach ($node_type->getAtomicTypes() as $atomic_arg_type) {
-                    if ($atomic_arg_type instanceof Type\Atomic\TNamedObject) {
-                        $class_storage = $codebase->classlike_storage_provider->get($atomic_arg_type->value);
-
-                        if (!$class_storage->mutation_free) {
-                            if (IssueBuffer::accepts(
-                                new ImpureArgument(
-                                    'Cannot pass mutable value to ' . $cased_method_id,
-                                    new CodeLocation($statements_analyzer->getSource(), $arg->value)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        }
-                    }
-                }
             }
         }
 

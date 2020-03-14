@@ -168,12 +168,12 @@ class Union
     /**
      * @var bool
      */
-    public $external_mutation_free = false;
+    public $reference_free = false;
 
     /**
      * @var bool
      */
-    public $mutation_free = false;
+    public $allow_mutations = true;
 
     /** @var null|string */
     private $id;

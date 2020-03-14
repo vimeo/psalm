@@ -344,43 +344,6 @@ function takesString(string $s) : void {}
 takesString(new A);
 ```
 
-### ImpureArgument
-
-Emitted when passing a mutable value into a function or method marked as mutation-free.
-
-```php
-class Item {
-    private int $i = 0;
-
-    public function mutate(): void {
-        $this->i++;
-    }
-
-    /** @psalm-mutation-free */
-    public function get(): int {
-        return $this->i;
-    }
-}
-
-/**
- * @psalm-immutable
- */
-class Immutable {
-    private Item $item;
-
-    public function __construct(Item $item) {
-        $this->item = $item;
-    }
-
-    public function get(): int {
-        return $this->item->get();
-    }
-}
-
-$item = new Item();
-new Immutable($item);
-```
-
 ### ImpureByReferenceAssignment
 
 Emitted when assigning a passed-by-reference variable inside a function or method marked as mutation-free.

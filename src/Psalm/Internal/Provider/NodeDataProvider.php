@@ -120,7 +120,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     {
         $node_type = self::getType($node);
 
-        return ($node_type && $node_type->external_mutation_free) || isset($node->pure);
+        return ($node_type && $node_type->reference_free) || isset($node->pure);
     }
 
     /**

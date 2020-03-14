@@ -1630,8 +1630,8 @@ abstract class Type
                 $combined_type->had_template = true;
             }
 
-            if ($type_1->external_mutation_free && $type_2->external_mutation_free) {
-                $combined_type->external_mutation_free = true;
+            if ($type_1->reference_free && $type_2->reference_free) {
+                $combined_type->reference_free = true;
             }
 
             if ($both_failed_reconciliation) {

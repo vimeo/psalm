@@ -14,6 +14,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
@@ -649,6 +650,7 @@ class PropertyAssignmentAnalyzer
                         }
                     }
 
+                    // prevents writing to readonly properties
                     if ($property_storage->readonly) {
                         $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
                             $property_id,
@@ -657,29 +659,52 @@ class PropertyAssignmentAnalyzer
 
                         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
 
-                        $property_pure_compatible = $stmt_var_type
-                            && $stmt_var_type->external_mutation_free
-                            && !$stmt_var_type->mutation_free;
+                        $property_var_pure_compatible = $stmt_var_type
+                            && $stmt_var_type->reference_free
+                            && $stmt_var_type->allow_mutations;
 
-                        if ($appearing_property_class
-                            && !($context->self
+                        if ($appearing_property_class) {
+                            $can_set_property = $context->self
+                                && $context->calling_function_id
                                 && ($appearing_property_class === $context->self
                                     || $codebase->classExtends($context->self, $appearing_property_class))
-                                && (!$context->calling_function_id
-                                    || \strpos($context->calling_function_id, '::__construct')
+                                && (\strpos($context->calling_function_id, '::__construct')
                                     || \strpos($context->calling_function_id, '::unserialize')
                                     || $property_storage->allow_private_mutation
-                                    || $property_pure_compatible)
-                            )
-                        ) {
-                            if (IssueBuffer::accepts(
-                                new InaccessibleProperty(
-                                    $property_id . ' is marked readonly',
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
+                                    || $property_var_pure_compatible);
+
+                            if (!$can_set_property) {
+                                if (IssueBuffer::accepts(
+                                    new InaccessibleProperty(
+                                        $property_id . ' is marked readonly',
+                                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } elseif ($class_storage->mutation_free
+                                && !$assignment_value_type->reference_free
+                            ) {
+                                foreach ($assignment_value_type->getAtomicTypes() as $atomic_arg_type) {
+                                    if ($atomic_arg_type instanceof Type\Atomic\TNamedObject) {
+                                        $object_storage = $codebase->classlike_storage_provider->get(
+                                            $atomic_arg_type->value
+                                        );
+
+                                        if (!$object_storage->mutation_free) {
+                                            if (IssueBuffer::accepts(
+                                                new ImpurePropertyAssignment(
+                                                    'Cannot store mutable reference inside an immutable object',
+                                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                                ),
+                                                $statements_analyzer->getSuppressedIssues()
+                                            )) {
+                                                // fall through
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
