@@ -1439,6 +1439,31 @@ class UnusedVariableTest extends TestCase
                         if ($f) {}
                     }'
             ],
+            'usedParamInWhileDirectly' => [
+                '<?php
+                    function foo(int $index): void {
+                        while (100 >= $index = nextNumber($index)) {
+                            // ...
+                        }
+                    }
+
+                    function nextNumber(int $eee): int {
+                        return $eee + 1;
+                    }'
+            ],
+            'usedParamInWhileIndirectly' => [
+                '<?php
+                    function foo(int $i): void {
+                        $index = $i;
+                        while (100 >= $index = nextNumber($index)) {
+                            // ...
+                        }
+                    }
+
+                    function nextNumber(int $i): int {
+                        return $i + 1;
+                    }'
+            ],
         ];
     }
 
