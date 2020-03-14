@@ -32,6 +32,13 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             $this->file_analyzer,
             new \Psalm\Internal\Provider\NodeDataProvider()
         );
+
+        $this->addFile('newfile.php', '
+            <?php
+            class A {}
+            class B extends A {}
+        ');
+        $this->project_analyzer->getCodebase()->scanFiles();
     }
 
     /**
@@ -147,7 +154,11 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
         return [
             'arrayContainsWithArrayOfStrings' => ['array<string>', 'array'],
             'arrayContainsWithArrayOfExceptions' => ['array<Exception>', 'array'],
-
+            'arrayOfIterable' => ['array', 'iterable'],
+            'arrayOfIterableWithType' => ['array<A>', 'iterable<A>'],
+            'arrayOfIterableWithSubclass' => ['array<B>', 'iterable<A>'],
+            'arrayOfSubclassOfParent' => ['array<B>', 'array<A>'],
+            'subclassOfParent' => ['B', 'A'],
             'unionContainsWithstring' => ['string', 'string|false'],
             'unionContainsWithFalse' => ['false', 'string|false'],
             'objectLikeTypeWithPossiblyUndefinedToGeneric' => [
