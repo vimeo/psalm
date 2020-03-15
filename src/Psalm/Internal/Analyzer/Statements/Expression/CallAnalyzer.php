@@ -2085,6 +2085,8 @@ class CallAnalyzer
                                 ) {
                                     $output_type_candidate = $calling_class_storage
                                         ->template_type_extends[$atomic_type->defining_class][$atomic_type->param_name];
+                                } elseif ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+                                    $output_type_candidate = $atomic_type->as;
                                 } else {
                                     $output_type_candidate = new Type\Union([$atomic_type]);
                                 }
