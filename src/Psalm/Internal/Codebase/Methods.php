@@ -558,9 +558,9 @@ class Methods
                             $extends
                         )
                     );
-                } else {
-                    $extra_added_types[] = $extended_atomic_type;
                 }
+
+                $extra_added_types[] = $extended_atomic_type;
             }
         }
 
