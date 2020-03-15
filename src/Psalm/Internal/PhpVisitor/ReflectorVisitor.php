@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Internal\Visitor;
+namespace Psalm\Internal\PhpVisitor;
 
 use function array_filter;
 use function array_key_exists;

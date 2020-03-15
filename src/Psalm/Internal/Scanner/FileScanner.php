@@ -8,7 +8,7 @@ use Psalm\FileSource;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\FileStorage;
-use Psalm\Internal\Visitor\ReflectorVisitor;
+use Psalm\Internal\PhpVisitor\ReflectorVisitor;
 
 /**
  * @internal

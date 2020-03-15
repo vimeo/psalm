@@ -21,7 +21,7 @@
         <directory name="examples"/>
         <ignoreFiles>
             <file name="src/Psalm/Internal/CallMap.php"/>
-            <file name="src/Psalm/Internal/Traverser/CustomTraverser.php"/>
+            <file name="src/Psalm/Internal/PhpTraverser/CustomTraverser.php"/>
             <file name="tests/ErrorBaselineTest.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
             <file name="src/spl_object_id.php"/>

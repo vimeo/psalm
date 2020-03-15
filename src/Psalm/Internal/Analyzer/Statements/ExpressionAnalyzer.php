@@ -529,7 +529,7 @@ class ExpressionAnalyzer
             } else {
                 $traverser = new PhpParser\NodeTraverser;
 
-                $short_closure_visitor = new \Psalm\Internal\Visitor\ShortClosureVisitor();
+                $short_closure_visitor = new \Psalm\Internal\PhpVisitor\ShortClosureVisitor();
 
                 $traverser->addVisitor($short_closure_visitor);
                 $traverser->traverse($stmt->getStmts());

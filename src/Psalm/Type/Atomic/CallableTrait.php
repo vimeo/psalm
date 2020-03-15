@@ -283,93 +283,24 @@ trait CallableTrait
     }
 
     /**
-     * @return list<Type\Atomic\TTemplateParam>
+     * @return array<\Psalm\Type\TypeNode>
      */
-    public function getTemplateTypes() : array
+    public function getChildNodes() : array
     {
-        $template_types = [];
+        $child_nodes = [];
 
         if ($this->params) {
             foreach ($this->params as $param) {
                 if ($param->type) {
-                    $template_types = \array_merge($template_types, $param->type->getTemplateTypes());
+                    $child_nodes[] = $param->type;
                 }
             }
         }
 
         if ($this->return_type) {
-            $template_types = \array_merge($template_types, $this->return_type->getTemplateTypes());
+            $child_nodes[] = $this->return_type;
         }
 
-        return $template_types;
-    }
-
-    /**
-     * @return void
-     */
-    public function setFromDocblock()
-    {
-        $this->from_docblock = true;
-
-        if ($this->params) {
-            foreach ($this->params as $param) {
-                if (!$param->type) {
-                    continue;
-                }
-
-                $param->type->setFromDocblock();
-            }
-        }
-
-        if ($this->return_type) {
-            $this->return_type->setFromDocblock();
-        }
-    }
-
-    /**
-     * @param  StatementsSource $source
-     * @param  CodeLocation     $code_location
-     * @param  array<string>    $suppressed_issues
-     * @param  array<string, bool> $phantom_classes
-     * @param  bool             $inferred
-     *
-     * @return false|null
-     */
-    public function check(
-        StatementsSource $source,
-        CodeLocation $code_location,
-        array $suppressed_issues,
-        array $phantom_classes = [],
-        bool $inferred = true,
-        bool $inherited = false,
-        bool $prevent_template_covariance = false
-    ) {
-        if ($this->params) {
-            foreach ($this->params as $param) {
-                if ($param->type) {
-                    $param->type->check(
-                        $source,
-                        $code_location,
-                        $suppressed_issues,
-                        $phantom_classes,
-                        $inferred,
-                        $inherited,
-                        $prevent_template_covariance
-                    );
-                }
-            }
-        }
-
-        if ($this->return_type) {
-            $this->return_type->check(
-                $source,
-                $code_location,
-                $suppressed_issues,
-                $phantom_classes,
-                $inferred,
-                $inherited,
-                $prevent_template_covariance
-            );
-        }
+        return $child_nodes;
     }
 }

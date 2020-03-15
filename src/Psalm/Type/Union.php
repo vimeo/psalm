@@ -33,7 +33,7 @@ use function strval;
 use function substr;
 use Doctrine\Instantiator\Exception\UnexpectedValueException;
 
-class Union
+class Union implements TypeNode
 {
     const TAINTED_INPUT_SQL = 1;
     const TAINTED_INPUT_HTML = 2;
@@ -89,7 +89,7 @@ class Union
      *
      * @var bool
      */
-    protected $checked = false;
+    public $checked = false;
 
     /**
      * @var bool
@@ -541,18 +541,6 @@ class Union
     }
 
     /**
-     * @return void
-     */
-    public function setFromDocblock()
-    {
-        $this->from_docblock = true;
-
-        foreach ($this->types as $type) {
-            $type->setFromDocblock();
-        }
-    }
-
-    /**
      * @param  string $type_string
      *
      * @return bool
@@ -916,24 +904,6 @@ class Union
                 return $type instanceof Type\Atomic\TTemplateParam;
             }
         );
-    }
-
-    /**
-     * @return list<Type\Atomic\TTemplateParam>
-     */
-    public function getTemplateTypes() : array
-    {
-        $template_types = [];
-
-        foreach ($this->types as $type) {
-            if ($type instanceof Type\Atomic\TTemplateParam) {
-                $template_types[] = $type;
-            }
-
-            $template_types = array_merge($template_types, $type->getTemplateTypes());
-        }
-
-        return $template_types;
     }
 
     /**
@@ -1519,7 +1489,7 @@ class Union
      * @param  array<string, bool> $phantom_classes
      * @param  bool             $inferred
      *
-     * @return null|false
+     * @return bool
      */
     public function check(
         StatementsSource $source,
@@ -1529,31 +1499,26 @@ class Union
         bool $inferred = true,
         bool $inherited = false,
         bool $prevent_template_covariance = false
-    ) {
+    ) : bool {
         if ($this->checked) {
-            return;
+            return true;
         }
 
-        $all_good = true;
+        $checker = new \Psalm\Internal\TypeVisitor\TypeChecker(
+            $source,
+            $code_location,
+            $suppressed_issues,
+            $phantom_classes,
+            $inferred,
+            $inherited,
+            $prevent_template_covariance
+        );
 
-        foreach ($this->types as $atomic_type) {
-            if ($atomic_type->check(
-                $source,
-                $code_location,
-                $suppressed_issues,
-                $phantom_classes,
-                $inferred,
-                $inherited,
-                $prevent_template_covariance
-            ) === false) {
-                $all_good = false;
-            }
-        }
+        $checker->traverseArray($this->types);
 
-        if (!$all_good) {
-            return false;
-        }
         $this->checked = true;
+
+        return !$checker->hasErrors();
     }
 
     /**
@@ -1566,24 +1531,47 @@ class Union
         FileStorage $file_storage = null,
         array $phantom_classes = []
     ) {
-        foreach ($this->types as $atomic_type) {
-            $atomic_type->queueClassLikesForScanning(
-                $codebase,
-                $file_storage,
-                $phantom_classes
-            );
-        }
+        $scanner_visitor = new \Psalm\Internal\TypeVisitor\TypeScanner(
+            $codebase->scanner,
+            $file_storage,
+            $phantom_classes
+        );
+
+        $scanner_visitor->traverseArray($this->types);
     }
 
+    /**
+     * @param  lowercase-string $fq_class_like_name
+     */
     public function containsClassLike(string $fq_class_like_name) : bool
     {
-        foreach ($this->types as $atomic_type) {
-            if ($atomic_type->containsClassLike($fq_class_like_name)) {
-                return true;
-            }
-        }
+        $classlike_visitor = new \Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor($fq_class_like_name);
 
-        return false;
+        $classlike_visitor->traverseArray($this->types);
+
+        return $classlike_visitor->matches();
+    }
+
+    /**
+     * @return list<TTemplateParam>
+     */
+    public function getTemplateTypes()
+    {
+        $template_type_collector = new \Psalm\Internal\TypeVisitor\TemplateTypeCollector();
+
+        $template_type_collector->traverseArray($this->types);
+
+        return $template_type_collector->getTemplateTypes();
+    }
+
+    /**
+     * @return void
+     */
+    public function setFromDocblock()
+    {
+        $this->from_docblock = true;
+
+        (new \Psalm\Internal\TypeVisitor\FromDocblockSetter())->traverseArray($this->types);
     }
 
     public function replaceClassLike(string $old, string $new) : void
@@ -1678,5 +1666,10 @@ class Union
     public function getLiteralFloats()
     {
         return $this->literal_float_types;
+    }
+
+    public function getChildNodes() : array
+    {
+        return $this->types;
     }
 }

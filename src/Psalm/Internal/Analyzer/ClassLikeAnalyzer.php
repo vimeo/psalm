@@ -614,7 +614,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                         ),
                         $suppressed_issues
                     )) {
-                        return false;
+                        // fall through
                     }
 
                     return null;
@@ -635,7 +635,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                         ),
                         $suppressed_issues
                     )) {
-                        return false;
+                        // fall through
                     }
 
                     return null;
@@ -653,7 +653,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                         ),
                         $suppressed_issues
                     )) {
-                        return false;
+                        // fall through
                     }
 
                     return null;

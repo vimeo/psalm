@@ -5,6 +5,7 @@ use function count;
 use function implode;
 use Psalm\Type\Atomic;
 use function substr;
+use function array_merge;
 
 class TGenericObject extends TNamedObject
 {
@@ -102,5 +103,10 @@ class TGenericObject extends TNamedObject
     public function getAssertionString()
     {
         return $this->value;
+    }
+
+    public function getChildNodes() : array
+    {
+        return array_merge($this->type_params, $this->extra_types !== null ? $this->extra_types : []);
     }
 }

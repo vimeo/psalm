@@ -303,15 +303,6 @@ class ObjectLike extends \Psalm\Type\Atomic
         return static::KEY;
     }
 
-    public function setFromDocblock()
-    {
-        $this->from_docblock = true;
-
-        foreach ($this->properties as $property_type) {
-            $property_type->setFromDocblock();
-        }
-    }
-
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         ?Codebase $codebase = null,
@@ -368,18 +359,9 @@ class ObjectLike extends \Psalm\Type\Atomic
         }
     }
 
-    /**
-     * @return list<Type\Atomic\TTemplateParam>
-     */
-    public function getTemplateTypes() : array
+    public function getChildNodes() : array
     {
-        $template_types = [];
-
-        foreach ($this->properties as $property) {
-            $template_types = \array_merge($template_types, $property->getTemplateTypes());
-        }
-
-        return $template_types;
+        return $this->properties;
     }
 
     /**
@@ -418,43 +400,6 @@ class ObjectLike extends \Psalm\Type\Atomic
     public function getAssertionString()
     {
         return $this->getKey();
-    }
-
-    /**
-     * @param  StatementsSource $source
-     * @param  CodeLocation     $code_location
-     * @param  array<string>    $suppressed_issues
-     * @param  array<string, bool> $phantom_classes
-     * @param  bool             $inferred
-     *
-     * @return void
-     */
-    public function check(
-        StatementsSource $source,
-        CodeLocation $code_location,
-        array $suppressed_issues,
-        array $phantom_classes = [],
-        bool $inferred = true,
-        bool $inherited = false,
-        bool $prevent_template_covariance = false
-    ) {
-        if ($this->checked) {
-            return;
-        }
-
-        foreach ($this->properties as $property_type) {
-            $property_type->check(
-                $source,
-                $code_location,
-                $suppressed_issues,
-                $phantom_classes,
-                $inferred,
-                $inherited,
-                $prevent_template_covariance
-            );
-        }
-
-        $this->checked = true;
     }
 
     public function getList() : TList

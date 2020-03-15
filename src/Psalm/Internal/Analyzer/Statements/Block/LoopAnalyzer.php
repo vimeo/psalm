@@ -48,7 +48,7 @@ class LoopAnalyzer
     ) {
         $traverser = new PhpParser\NodeTraverser;
 
-        $assignment_mapper = new \Psalm\Internal\Visitor\AssignmentMapVisitor($loop_scope->loop_context->self);
+        $assignment_mapper = new \Psalm\Internal\PhpVisitor\AssignmentMapVisitor($loop_scope->loop_context->self);
         $traverser->addVisitor($assignment_mapper);
 
         $traverser->traverse(array_merge($stmts, $post_expressions));
@@ -345,7 +345,7 @@ class LoopAnalyzer
                 $traverser = new PhpParser\NodeTraverser;
 
                 $traverser->addVisitor(
-                    new \Psalm\Internal\Visitor\NodeCleanerVisitor(
+                    new \Psalm\Internal\PhpVisitor\NodeCleanerVisitor(
                         $statements_analyzer->node_data
                     )
                 );

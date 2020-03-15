@@ -107,4 +107,9 @@ class TTemplateParamClass extends TClassString
     ) {
         return $this->param_name . '::class';
     }
+
+    public function getChildNodes() : array
+    {
+        return $this->as_type ? [$this->as_type] : [];
+    }
 }

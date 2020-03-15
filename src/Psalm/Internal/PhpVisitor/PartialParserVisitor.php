@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Internal\Visitor;
+namespace Psalm\Internal\PhpVisitor;
 
 use function count;
 use PhpParser;
@@ -205,7 +205,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                         $replacement_stmts = $replacement_stmts[0]->stmts;
 
                         $renumbering_traverser = new PhpParser\NodeTraverser;
-                        $position_shifter = new \Psalm\Internal\Visitor\OffsetShifterVisitor(
+                        $position_shifter = new \Psalm\Internal\PhpVisitor\OffsetShifterVisitor(
                             $stmt_start_pos - 15,
                             $current_line
                         );

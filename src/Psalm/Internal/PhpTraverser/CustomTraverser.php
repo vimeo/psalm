@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace Psalm\Internal\Traverser;
+namespace Psalm\Internal\PhpTraverser;
 
 use function array_pop;
 use function array_splice;

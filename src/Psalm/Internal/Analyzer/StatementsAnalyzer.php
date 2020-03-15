@@ -17,7 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
-use Psalm\Internal\Visitor\CheckTrivialExprVisitor;
+use Psalm\Internal\PhpVisitor\CheckTrivialExprVisitor;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;

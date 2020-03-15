@@ -287,7 +287,7 @@ class SwitchAnalyzer
 
             $traverser = new PhpParser\NodeTraverser;
             $traverser->addVisitor(
-                new \Psalm\Internal\Visitor\ConditionCloningVisitor(
+                new \Psalm\Internal\PhpVisitor\ConditionCloningVisitor(
                     $statements_analyzer->node_data
                 )
             );
@@ -541,7 +541,7 @@ class SwitchAnalyzer
 
         $traverser = new PhpParser\NodeTraverser;
         $traverser->addVisitor(
-            new \Psalm\Internal\Visitor\TypeMappingVisitor(
+            new \Psalm\Internal\PhpVisitor\TypeMappingVisitor(
                 $statements_analyzer->node_data,
                 $old_node_data
             )

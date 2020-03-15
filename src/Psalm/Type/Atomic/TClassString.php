@@ -111,57 +111,8 @@ class TClassString extends TString
         return false;
     }
 
-    /**
-     * @param  StatementsSource $source
-     * @param  CodeLocation     $code_location
-     * @param  array<string>    $suppressed_issues
-     * @param  array<string, bool> $phantom_classes
-     * @param  bool             $inferred
-     *
-     * @return false|null
-     */
-    public function check(
-        StatementsSource $source,
-        CodeLocation $code_location,
-        array $suppressed_issues,
-        array $phantom_classes = [],
-        bool $inferred = true,
-        bool $inherited = false,
-        bool $prevent_template_covariance = false
-    ) {
-        if ($this->checked) {
-            return;
-        }
-
-        if ($this->as !== 'object' && $this->as !== 'mixed') {
-            if ($this->as_type) {
-                if ($this->as_type->check(
-                    $source,
-                    $code_location,
-                    $suppressed_issues,
-                    $phantom_classes,
-                    $inferred
-                ) === false) {
-                    return false;
-                }
-            } else {
-                if (\Psalm\Internal\Analyzer\ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                    $source,
-                    $this->as,
-                    $code_location,
-                    null,
-                    $suppressed_issues,
-                    $inferred,
-                    false,
-                    true,
-                    $this->from_docblock
-                ) === false
-                ) {
-                    return false;
-                }
-            }
-        }
-
-        $this->checked = true;
+    public function getChildNodes() : array
+    {
+        return $this->as_type ? [$this->as_type] : [];
     }
 }

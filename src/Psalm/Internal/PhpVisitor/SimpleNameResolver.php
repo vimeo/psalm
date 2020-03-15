@@ -1,7 +1,7 @@
 <?php
 
 // based on PhpParser's builtin one
-namespace Psalm\Internal\Visitor;
+namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
 use PhpParser\ErrorHandler;

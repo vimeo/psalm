@@ -139,12 +139,6 @@ class TClassStringMap extends \Psalm\Type\Atomic
         return 'array';
     }
 
-    public function setFromDocblock()
-    {
-        $this->from_docblock = true;
-        $this->value_param->from_docblock = true;
-    }
-
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         ?Codebase $codebase = null,
@@ -215,12 +209,9 @@ class TClassStringMap extends \Psalm\Type\Atomic
         $this->value_param->replaceTemplateTypesWithArgTypes($template_types);
     }
 
-    /**
-     * @return list<Type\Atomic\TTemplateParam>
-     */
-    public function getTemplateTypes() : array
+    public function getChildNodes() : array
     {
-        return $this->value_param->getTemplateTypes();
+        return [$this->value_param];
     }
 
     /**
@@ -245,41 +236,6 @@ class TClassStringMap extends \Psalm\Type\Atomic
     public function getAssertionString()
     {
         return $this->getKey();
-    }
-
-    /**
-     * @param  StatementsSource $source
-     * @param  CodeLocation     $code_location
-     * @param  array<string>    $suppressed_issues
-     * @param  array<string, bool> $phantom_classes
-     * @param  bool             $inferred
-     *
-     * @return void
-     */
-    public function check(
-        StatementsSource $source,
-        CodeLocation $code_location,
-        array $suppressed_issues,
-        array $phantom_classes = [],
-        bool $inferred = true,
-        bool $inherited = false,
-        bool $prevent_template_covariance = false
-    ) {
-        if ($this->checked) {
-            return;
-        }
-
-        $this->value_param->check(
-            $source,
-            $code_location,
-            $suppressed_issues,
-            $phantom_classes,
-            $inferred,
-            $inherited,
-            $prevent_template_covariance
-        );
-
-        $this->checked = true;
     }
 
     public function getStandinKeyParam() : Type\Union

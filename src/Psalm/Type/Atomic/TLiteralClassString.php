@@ -114,44 +114,4 @@ class TLiteralClassString extends TLiteralString
 
         return '\\' . $this->value . '::class';
     }
-
-    /**
-     * @param  StatementsSource $source
-     * @param  CodeLocation     $code_location
-     * @param  array<string>    $suppressed_issues
-     * @param  array<string, bool> $phantom_classes
-     * @param  bool             $inferred
-     *
-     * @return false|null
-     */
-    public function check(
-        StatementsSource $source,
-        CodeLocation $code_location,
-        array $suppressed_issues,
-        array $phantom_classes = [],
-        bool $inferred = true,
-        bool $inherited = false,
-        bool $prevent_template_covariance = false
-    ) {
-        if ($this->checked) {
-            return;
-        }
-
-        if (\Psalm\Internal\Analyzer\ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-            $source,
-            $this->value,
-            $code_location,
-            null,
-            $suppressed_issues,
-            $inferred,
-            false,
-            true,
-            $this->from_docblock
-        ) === false
-        ) {
-            return false;
-        }
-
-        $this->checked = true;
-    }
 }

@@ -251,7 +251,7 @@ class Codebase
     public $class_constant_transforms = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $class_transforms = [];
 

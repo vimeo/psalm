@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Internal\Visitor;
+namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;

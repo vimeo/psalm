@@ -23,7 +23,7 @@ $line_diff_time = $dlt - $time;
 echo 'Partial parsing: diffing lines: ' . number_format($line_diff_time, 4) . "\n";
 
 $traverser = new PhpParser\NodeTraverser;
-$traverser->addVisitor(new Psalm\Internal\Visitor\CloningVisitor);
+$traverser->addVisitor(new Psalm\Internal\PhpVisitor\CloningVisitor);
 // performs a deep clone
 /** @var array<int, PhpParser\Node\Stmt> */
 $a_stmts_copy = $traverser->traverse($a_stmts);

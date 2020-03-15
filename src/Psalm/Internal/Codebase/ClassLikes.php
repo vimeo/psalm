@@ -711,7 +711,7 @@ class ClassLikes
 
         $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path);
 
-        $trait_finder = new \Psalm\Internal\Visitor\TraitFinder($fq_trait_name);
+        $trait_finder = new \Psalm\Internal\PhpVisitor\TraitFinder($fq_trait_name);
 
         $traverser = new \PhpParser\NodeTraverser();
         $traverser->addVisitor(
