@@ -850,7 +850,9 @@ class UnusedVariableTest extends TestCase
                 '<?php
                     interface Foo { }
 
-                    function returnFoo(): Foo { return new class implements Foo { }; }
+                    function returnFoo(): Foo {
+                        return new class implements Foo { };
+                    }
 
                     $interface = Foo::class;
 

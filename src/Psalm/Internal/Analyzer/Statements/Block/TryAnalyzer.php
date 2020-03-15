@@ -446,6 +446,8 @@ class TryAnalyzer
                     }
                 }
 
+                $catch_context->has_returned = false;
+
                 $statements_analyzer->analyze($stmt->finally->stmts, $catch_context);
 
                 foreach ($issues_to_suppress as $issue_to_suppress) {

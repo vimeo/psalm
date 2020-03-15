@@ -381,11 +381,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
                 $this->analyzeUnset($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                $context->has_returned = true;
                 ReturnAnalyzer::analyze($this, $stmt, $context);
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $context->has_returned = true;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 ThrowAnalyzer::analyze($this, $stmt, $context);
+                $context->has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 SwitchAnalyzer::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
