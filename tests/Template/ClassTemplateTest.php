@@ -2387,26 +2387,7 @@ class ClassTemplateTest extends TestCase
                      * @psalm-template TKey of array-key
                      * @psalm-template T
                      */
-                    interface Collection
-                    {
-                        /**
-                         * @param Closure $p
-                         *
-                         * @return Collection A
-                         *
-                         * @psalm-param Closure(T=):bool $p
-                         * @psalm-return Collection<TKey, T>
-                         */
-                        public function filter(Closure $p);
-                    }
-
-
-                    /**
-                     * @psalm-template TKey of array-key
-                     * @psalm-template T
-                     * @template-implements Collection<TKey,T>
-                     */
-                    class ArrayCollection implements Collection
+                    class ArrayCollection
                     {
                         /**
                          * @psalm-var array<TKey,T>
@@ -2425,9 +2406,8 @@ class ClassTemplateTest extends TestCase
                         }
 
                         /**
-                         * {@inheritDoc}
-                         *
-                         * @return static
+                         * @psalm-param Closure(T=):bool $p
+                         * @psalm-return self<TKey, T>
                          */
                         public function filter(Closure $p)
                         {

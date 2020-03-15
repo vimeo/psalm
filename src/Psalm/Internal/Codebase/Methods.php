@@ -461,7 +461,9 @@ class Methods
         $type = clone $type;
 
         foreach ($type->getAtomicTypes() as $key => $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam
+                && $atomic_type->defining_class === $base_fq_class_name
+            ) {
                 $types_to_add = self::getExtendedTemplatedTypes(
                     $atomic_type,
                     $extends
@@ -558,10 +560,12 @@ class Methods
                             $extends
                         )
                     );
+                } else {
+                    $extra_added_types[] = $extended_atomic_type;
                 }
-
-                $extra_added_types[] = $extended_atomic_type;
             }
+        } else {
+            $extra_added_types[] = $atomic_type;
         }
 
         return $extra_added_types;
