@@ -13,6 +13,8 @@ use Psalm\Issue\PossiblyFalseReference;
 use Psalm\Issue\PossiblyInvalidMethodCall;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\PossiblyUndefinedMethod;
+use Psalm\Issue\TooFewArguments;
+use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedInterfaceMethod;
 use Psalm\Issue\UndefinedMagicMethod;
 use Psalm\Issue\UndefinedMethod;
@@ -20,6 +22,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use function is_string;
+use function count;
 
 /**
  * @internal
@@ -279,6 +282,36 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
 
             return null;
+        }
+
+        if ($result->too_many_arguments && $result->too_many_arguments_method_ids) {
+            $error_method_id = $result->too_many_arguments_method_ids[0];
+
+            if (IssueBuffer::accepts(
+                new TooManyArguments(
+                    'Too many arguments for method ' . $error_method_id . ' - saw ' . count($stmt->args),
+                    new CodeLocation($source, $stmt->name),
+                    (string) $error_method_id
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
+        if ($result->too_few_arguments && $result->too_few_arguments_method_ids) {
+            $error_method_id = $result->too_few_arguments_method_ids[0];
+
+            if (IssueBuffer::accepts(
+                new TooFewArguments(
+                    'Too few arguments for method ' . $error_method_id . ' saw ' . count($stmt->args),
+                    new CodeLocation($source, $stmt->name),
+                    (string) $error_method_id
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
         }
 
         $stmt_type = $result->return_type;

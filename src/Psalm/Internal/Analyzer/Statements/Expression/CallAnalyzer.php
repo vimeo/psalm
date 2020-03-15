@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Taint\Sink;
 use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Type\TypeCombination;
@@ -1212,7 +1213,7 @@ class CallAnalyzer
     /**
      * @param   StatementsAnalyzer                       $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
-     * @param   string|\Psalm\Internal\MethodIdentifier|null  $method_id
+     * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @param   FunctionLikeStorage|null                $function_storage
      * @param   ClassLikeStorage|null                   $class_storage
@@ -1474,10 +1475,15 @@ class CallAnalyzer
         if (!$is_variadic
             && count($args) > count($function_params)
             && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')
+            && ($in_call_map
+                || !$function_storage instanceof \Psalm\Storage\MethodStorage
+                || $function_storage->is_static
+                || ($method_id instanceof MethodIdentifier
+                    && $method_id->method_name === '__construct'))
         ) {
             if (IssueBuffer::accepts(
                 new TooManyArguments(
-                    'Too many arguments for method ' . ($cased_method_id ?: $method_id)
+                    'Too many arguments for ' . ($cased_method_id ?: $method_id)
                         . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
                     $code_location,
                     (string) $method_id
@@ -1508,10 +1514,17 @@ class CallAnalyzer
             for ($i = count($args), $j = count($function_params); $i < $j; ++$i) {
                 $param = $function_params[$i];
 
-                if (!$param->is_optional && !$param->is_variadic) {
+                if (!$param->is_optional
+                    && !$param->is_variadic
+                    && ($in_call_map
+                        || !$function_storage instanceof \Psalm\Storage\MethodStorage
+                        || $function_storage->is_static
+                        || ($method_id instanceof MethodIdentifier
+                            && $method_id->method_name === '__construct'))
+                ) {
                     if (IssueBuffer::accepts(
                         new TooFewArguments(
-                            'Too few arguments for method ' . $cased_method_id
+                            'Too few arguments for ' . $cased_method_id
                                 . ' - expecting ' . $expected_param_count . ' but saw ' . count($args),
                             $code_location,
                             (string) $method_id

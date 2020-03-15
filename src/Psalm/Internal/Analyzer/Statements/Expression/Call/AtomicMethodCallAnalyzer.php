@@ -34,6 +34,7 @@ use function array_map;
 use function array_merge;
 use function explode;
 use function in_array;
+use function count;
 
 class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
@@ -489,7 +490,9 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result
         );
 
-        if (!CallMap::inCallMap((string) ($declaring_method_id ?: $method_id))) {
+        $in_call_map = CallMap::inCallMap((string) ($declaring_method_id ?: $method_id));
+
+        if (!$in_call_map) {
             $name_code_location = new CodeLocation($statements_analyzer, $stmt->name);
 
             if ($result->check_visibility) {
@@ -531,6 +534,37 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($method_storage) {
+            $has_packed_arg = false;
+            foreach ($args as $arg) {
+                $has_packed_arg = $has_packed_arg || $arg->unpack;
+            }
+
+            if (!$has_packed_arg) {
+                $has_variadic_param = false;
+
+                foreach ($method_storage->params as $param) {
+                    $has_variadic_param = $has_variadic_param || $param->is_variadic;
+                }
+
+                for ($i = count($args), $j = count($method_storage->params); $i < $j; ++$i) {
+                    $param = $method_storage->params[$i];
+
+                    if (!$param->is_optional
+                        && !$param->is_variadic
+                        && !$in_call_map
+                    ) {
+                        $result->too_few_arguments = true;
+                        $result->too_few_arguments_method_ids[] = $declaring_method_id ?: $method_id;
+                    }
+                }
+
+                if ($has_variadic_param || count($method_storage->params) >= count($args) || $in_call_map) {
+                    $result->too_many_arguments = false;
+                } else {
+                    $result->too_many_arguments_method_ids[] = $declaring_method_id ?: $method_id;
+                }
+            }
+
             if (!$context->collect_mutations && !$context->collect_initializations) {
                 $can_memoize = MethodCallPurityAnalyzer::analyze(
                     $statements_analyzer,

@@ -1320,7 +1320,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     function fooFoo(int $a): void {}
                     fooFoo(5, "dfd");',
-                'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Too many arguments for method fooFoo '
+                'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Too many arguments for fooFoo '
                     . '- expecting 1 but saw 2',
             ],
             'tooManyArgumentsForConstructor' => [
@@ -1642,7 +1642,7 @@ class FunctionCallTest extends TestCase
             'tooFewArgsAccurateCount' => [
                 '<?php
                     preg_match(\'/adsf/\');',
-                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for method preg_match - expecting 2 but saw 1',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting 2 but saw 1',
             ],
             'compactUndefinedVariable' => [
                 '<?php

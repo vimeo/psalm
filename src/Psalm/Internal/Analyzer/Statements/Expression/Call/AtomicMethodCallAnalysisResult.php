@@ -59,4 +59,24 @@ class AtomicMethodCallAnalysisResult
      * @var bool
      */
     public $check_visibility = true;
+
+    /**
+     * @var bool
+     */
+    public $too_many_arguments = true;
+
+    /**
+     * @var list<\Psalm\Internal\MethodIdentifier>
+     */
+    public $too_many_arguments_method_ids = [];
+
+    /**
+     * @var bool
+     */
+    public $too_few_arguments = false;
+
+    /**
+     * @var list<\Psalm\Internal\MethodIdentifier>
+     */
+    public $too_few_arguments_method_ids = [];
 }

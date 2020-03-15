@@ -541,6 +541,18 @@ class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'maybeNotTooManyArgumentsToInstance' => [
+                '<?php
+                    class A {
+                        public function fooFoo(int $a): void {}
+                    }
+
+                    class B {
+                        public function fooFoo(int $a, string $s): void {}
+                    }
+
+                    (rand(0, 1) ? new A : new B)->fooFoo(5, "dfd");',
+            ],
         ];
     }
 
@@ -888,6 +900,42 @@ class MethodCallTest extends TestCase
 
                     Base::bar();',
                 'error_message' => 'AbstractMethodCall',
+            ],
+            'tooManyArgumentsToStatic' => [
+                '<?php
+                    class A {
+                        public static function fooFoo(int $a): void {}
+                    }
+
+                    A::fooFoo(5, "dfd");',
+                'error_message' => 'TooManyArguments',
+            ],
+            'tooFewArgumentsToStatic' => [
+                '<?php
+                    class A {
+                        public static function fooFoo(int $a): void {}
+                    }
+
+                    A::fooFoo();',
+                'error_message' => 'TooFewArguments',
+            ],
+            'tooManyArgumentsToInstance' => [
+                '<?php
+                    class A {
+                        public function fooFoo(int $a): void {}
+                    }
+
+                    (new A)->fooFoo(5, "dfd");',
+                'error_message' => 'TooManyArguments',
+            ],
+            'tooFewArgumentsToInstance' => [
+                '<?php
+                    class A {
+                        public function fooFoo(int $a): void {}
+                    }
+
+                    (new A)->fooFoo();',
+                'error_message' => 'TooFewArguments',
             ],
         ];
     }
