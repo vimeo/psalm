@@ -376,7 +376,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 if ($codebase->config->ignore_internal_nullable_issues) {
                     $call_map_return_type->ignore_nullable_issues = true;
                 }
-            break;
+                break;
         }
 
         return $call_map_return_type;
