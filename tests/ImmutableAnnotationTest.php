@@ -610,6 +610,29 @@ class ImmutableAnnotationTest extends TestCase
                     final class NotReallyImmutableClass extends MutableParent {}',
                 'error_message' => 'MutableDependency'
             ],
+            'preventAssigningArrayToImmutableProperty' => [
+                '<?php
+                    class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Immutable {
+                        /**
+                         * @var Item[]
+                         */
+                        private $items;
+
+                        /**
+                         * @param Item[] $items
+                         */
+                        public function __construct(array $items)
+                        {
+                            $this->items = $items;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
         ];
     }
 }

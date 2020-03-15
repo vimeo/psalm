@@ -683,29 +683,13 @@ class PropertyAssignmentAnalyzer
                                 )) {
                                     // fall through
                                 }
-                            } elseif ($class_storage->mutation_free
-                                && !$assignment_value_type->reference_free
-                            ) {
-                                foreach ($assignment_value_type->getAtomicTypes() as $atomic_arg_type) {
-                                    if ($atomic_arg_type instanceof Type\Atomic\TNamedObject) {
-                                        $object_storage = $codebase->classlike_storage_provider->get(
-                                            $atomic_arg_type->value
-                                        );
+                            } elseif ($class_storage->mutation_free) {
+                                $visitor = new \Psalm\Internal\TypeVisitor\ImmutablePropertyAssignmentVisitor(
+                                    $statements_analyzer,
+                                    $stmt
+                                );
 
-                                        if (!$object_storage->mutation_free) {
-                                            if (IssueBuffer::accepts(
-                                                new ImpurePropertyAssignment(
-                                                    'Cannot store a reference to an externally-mutable object'
-                                                        . ' inside an immutable object – consider using __clone',
-                                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                                ),
-                                                $statements_analyzer->getSuppressedIssues()
-                                            )) {
-                                                // fall through
-                                            }
-                                        }
-                                    }
-                                }
+                                $visitor->traverse($assignment_value_type);
                             }
                         }
                     }
