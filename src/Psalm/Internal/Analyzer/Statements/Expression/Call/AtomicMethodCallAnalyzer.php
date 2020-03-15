@@ -191,6 +191,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $result->has_mixed_method_call = $intersection_result->has_mixed_method_call;
                 $result->invalid_method_call_types = $intersection_result->invalid_method_call_types;
                 $result->check_visibility = $intersection_result->check_visibility;
+                $result->too_many_arguments = $intersection_result->too_many_arguments;
 
                 $all_intersection_existent_method_ids = array_merge(
                     $all_intersection_existent_method_ids,
