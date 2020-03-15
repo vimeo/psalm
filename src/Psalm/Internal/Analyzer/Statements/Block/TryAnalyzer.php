@@ -85,6 +85,8 @@ class TryAnalyzer
             return false;
         }
 
+        $context->has_returned = false;
+
         $stmt_control_actions = ScopeAnalyzer::getFinalControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
@@ -168,6 +170,7 @@ class TryAnalyzer
         /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
+            $catch_context->has_returned = false;
 
             foreach ($catch_context->vars_in_scope as $var_id => $type) {
                 if (!isset($old_context->vars_in_scope[$var_id])) {

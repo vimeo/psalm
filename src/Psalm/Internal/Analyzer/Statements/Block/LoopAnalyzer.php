@@ -277,6 +277,8 @@ class LoopAnalyzer
                     }
                 }
 
+                $inner_context->has_returned = false;
+
                 if ($inner_context->collect_references) {
                     foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
                         if (!isset($pre_outer_context->vars_in_scope[$var_id])) {

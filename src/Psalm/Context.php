@@ -353,6 +353,11 @@ class Context
     public $error_suppressing = false;
 
     /**
+     * @var bool
+     */
+    public $has_returned = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

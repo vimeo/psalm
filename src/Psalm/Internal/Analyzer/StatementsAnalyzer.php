@@ -169,8 +169,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         Context $global_context = null,
         $root_scope = false
     ) {
-        $has_returned = false;
-
         // hoist functions to the top
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
@@ -239,8 +237,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             $ignore_variable_property = false;
             $ignore_variable_method = false;
 
-            if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
-                !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
+            if ($context->has_returned
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+                && !($stmt instanceof PhpParser\Node\Stmt\Nop)
+                && !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
             ) {
                 if ($context->collect_references) {
                     if (IssueBuffer::accepts(
@@ -380,10 +381,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
                 $this->analyzeUnset($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                $has_returned = true;
+                $context->has_returned = true;
                 ReturnAnalyzer::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
-                $has_returned = true;
+                $context->has_returned = true;
                 ThrowAnalyzer::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 SwitchAnalyzer::analyze($this, $stmt, $context);
@@ -483,7 +484,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
                 }
 
-                $has_returned = true;
+                $context->has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 $loop_scope = $context->loop_scope;
 
@@ -575,7 +576,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
                 }
 
-                $has_returned = true;
+                $context->has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
                 $this->analyzeStatic($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
@@ -865,7 +866,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
-                $has_returned = true;
+                $context->has_returned = true;
             } else {
                 if (IssueBuffer::accepts(
                     new UnrecognizedStatement(
@@ -882,7 +883,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 && $context->loop_scope->final_actions
                 && !in_array(ScopeAnalyzer::ACTION_NONE, $context->loop_scope->final_actions, true)
             ) {
-                //$has_returned = true;
+                //$context->has_returned = true;
             }
 
             if ($plugin_classes) {

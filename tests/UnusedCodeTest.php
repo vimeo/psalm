@@ -990,6 +990,36 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedClass',
             ],
+            'returnInBothIfConditions' => [
+                '<?php
+
+                    function doAThing(): bool {
+                        if (rand(0, 1)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                        return false;
+                    }',
+                'error_message' => 'UnevaluatedCode',
+            ],
+            'unevaluatedCodeAfterReturnInFinally' => [
+                '<?php
+                    function noOp(): void {
+                        return;
+                    }
+
+                    function doAThing(): bool {
+                        try {
+                            noOp();
+                        } finally {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'UnevaluatedCode',
+            ],
         ];
     }
 }
