@@ -462,16 +462,16 @@ class Methods
 
         foreach ($type->getAtomicTypes() as $key => $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
-                if ($atomic_type->defining_class === $base_fq_class_name) {
-                    if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
-                        $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];
+                $types_to_add = self::getExtendedTemplatedTypes(
+                    $atomic_type,
+                    $extends
+                );
 
-                        $type->removeType($key);
-                        $type = Type::combineUnionTypes(
-                            $type,
-                            $extended_param,
-                            $codebase
-                        );
+                if ($types_to_add) {
+                    $type->removeType($key);
+
+                    foreach ($types_to_add as $extra_added_type) {
+                        $type->addType($extra_added_type);
                     }
                 }
             }
@@ -534,6 +534,37 @@ class Methods
         }
 
         return $type;
+    }
+
+    /**
+     * @param array<string, array<int|string, Type\Union>> $extends
+     * @return list<Type\Atomic>
+     */
+    private static function getExtendedTemplatedTypes(
+        Type\Atomic\TTemplateParam $atomic_type,
+        array $extends
+    ) : array {
+        $extra_added_types = [];
+
+        if (isset($extends[$atomic_type->defining_class][$atomic_type->param_name])) {
+            $extended_param = clone $extends[$atomic_type->defining_class][$atomic_type->param_name];
+
+            foreach ($extended_param->getAtomicTypes() as $extended_atomic_type) {
+                if ($extended_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                    $extra_added_types = \array_merge(
+                        $extra_added_types,
+                        self::getExtendedTemplatedTypes(
+                            $extended_atomic_type,
+                            $extends
+                        )
+                    );
+                } else {
+                    $extra_added_types[] = $extended_atomic_type;
+                }
+            }
+        }
+
+        return $extra_added_types;
     }
 
     /**
