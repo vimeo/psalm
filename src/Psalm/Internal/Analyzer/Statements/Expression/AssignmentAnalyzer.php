@@ -343,14 +343,6 @@ class AssignmentAnalyzer
                 && !strpos($root_var_id ?? '', '->')
                 && !$comment_type
             ) {
-                $assign_value_id = $assign_value
-                    ? ExpressionAnalyzer::getArrayVarId(
-                        $assign_value,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer
-                    )
-                    : null;
-
                 if (IssueBuffer::accepts(
                     new MixedAssignment(
                         $var_id
