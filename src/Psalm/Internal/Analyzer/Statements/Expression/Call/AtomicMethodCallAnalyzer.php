@@ -541,7 +541,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             if (!$has_packed_arg) {
-                $has_variadic_param = false;
+                $has_variadic_param = $method_storage->variadic;
 
                 foreach ($method_storage->params as $param) {
                     $has_variadic_param = $has_variadic_param || $param->is_variadic;
