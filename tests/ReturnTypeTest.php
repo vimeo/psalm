@@ -1181,7 +1181,7 @@ class ReturnTypeTest extends TestCase
 
                 $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
-                'error_message' => 'MixedAssignment - src/somefile.php:10:51 - Cannot assign $value to a mixed type',
+                'error_message' => 'MixedAssignment - src/somefile.php:10:51 - Unable to determine the type that $value is being assigned to',
             ],
             'cannotInferReturnClosureWithMoreSpecificTypes' => [
                 '<?php

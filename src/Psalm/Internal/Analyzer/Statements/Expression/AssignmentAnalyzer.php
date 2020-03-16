@@ -343,10 +343,20 @@ class AssignmentAnalyzer
                 && !strpos($root_var_id ?? '', '->')
                 && !$comment_type
             ) {
+                $assign_value_id = $assign_value
+                    ? ExpressionAnalyzer::getArrayVarId(
+                        $assign_value,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer
+                    )
+                    : null;
+
                 if (IssueBuffer::accepts(
                     new MixedAssignment(
-                        'Cannot assign' . ($var_id ? ' ' . $var_id . ' ' : ' ') . 'to a mixed type',
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                        $var_id
+                            ? 'Unable to determine the type that ' . $var_id . ' is being assigned to'
+                            : 'Unable to determine the type of this assignment',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_value ?: $assign_var)
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
