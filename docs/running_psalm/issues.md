@@ -1311,7 +1311,7 @@ or by adding a docblock
 
 ```php
 /** @var string */
-$a = (string) $_GET['foo'];
+$a = $_GET['foo'];
 ```
 
 ### MixedFunctionCall
