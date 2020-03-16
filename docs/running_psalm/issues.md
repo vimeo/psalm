@@ -35,6 +35,26 @@ function takesA(A $a) : void {
 function takesB(B $b) : void {}
 ```
 
+#### How to fix
+
+You could add a typecheck before the call to `takesB`:
+
+```php
+function takesA(A $a) : void {
+    if ($a instanceof B) {
+        takesB($a);
+    }
+}
+```
+
+Or, if you have control over the function signature of `takesA` you can change it to expect `B`:
+
+```php
+function takesA(B $a) : void {
+    takesB($a);
+}
+```
+
 ### AssignmentToVoid
 
 Emitted when assigning from a function that returns `void`:
@@ -42,6 +62,15 @@ Emitted when assigning from a function that returns `void`:
 ```php
 function foo() : void {}
 $a = foo();
+```
+
+### How to fix
+
+You should just be able to remove the assignment:
+
+```php
+function foo() : void {}
+foo();
 ```
 
 ### CircularReference
