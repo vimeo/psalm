@@ -1263,6 +1263,28 @@ cannot infer a type more specific than `mixed`.
 $a = $_GET['foo'];
 ```
 
+#### How to fix
+
+The above example can be fixed in a few ways – by adding an `assert` call:
+
+```php
+$a = $_GET['foo'];
+assert(is_string($a));
+```
+
+or by adding an explicit cast:
+
+```php
+$a = (string) $_GET['foo'];
+```
+
+or by adding a docblock
+
+```php
+/** @var string */
+$a = (string) $_GET['foo'];
+```
+
 ### MixedFunctionCall
 
 Emitted when calling a function on a value whose type Psalm cannot infer.
