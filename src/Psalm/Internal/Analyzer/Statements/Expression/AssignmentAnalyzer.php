@@ -348,7 +348,7 @@ class AssignmentAnalyzer
                         $var_id
                             ? 'Unable to determine the type that ' . $var_id . ' is being assigned to'
                             : 'Unable to determine the type of this assignment',
-                        new CodeLocation($statements_analyzer->getSource(), $assign_value ?: $assign_var)
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
