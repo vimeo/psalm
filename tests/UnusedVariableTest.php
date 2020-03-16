@@ -1033,7 +1033,7 @@ class UnusedVariableTest extends TestCase
                         public function foo() : void {
                             $var = "something";
 
-                            if (true) {
+                            if (rand(0, 1)) {
                                 static::${$var} = true;
                             }
                         }

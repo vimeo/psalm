@@ -200,6 +200,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             /** @return \Generator<int, true, mixed, InitializeResult> */
             function () use ($capabilities, $rootPath, $processId) {
                 // Eventually, this might block on something. Leave it as a generator.
+                /** @psalm-suppress TypeDoesNotContainType */
                 if (false) {
                     yield true;
                 }

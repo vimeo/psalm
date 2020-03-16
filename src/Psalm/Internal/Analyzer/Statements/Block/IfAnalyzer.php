@@ -12,6 +12,10 @@ use Psalm\Internal\Clause;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ConflictingReferenceConstraint;
+use Psalm\Issue\DocblockTypeContradiction;
+use Psalm\Issue\RedundantConditionGivenDocblockType;
+use Psalm\Issue\TypeDoesNotContainType;
+use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Type;
@@ -693,6 +697,56 @@ class IfAnalyzer
                 $cond_assigned_var_ids
             )
         );
+
+        $cond_type = $statements_analyzer->node_data->getType($cond);
+
+        if ($cond_type !== null) {
+            if ($cond_type->isFalse()) {
+                if ($cond_type->from_docblock) {
+                    if (IssueBuffer::accepts(
+                        new DocblockTypeContradiction(
+                            'if (false) is can never happen',
+                            new CodeLocation($statements_analyzer, $cond)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new TypeDoesNotContainType(
+                            'if (false) is can never happen',
+                            new CodeLocation($statements_analyzer, $cond)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            } elseif ($cond_type->isTrue()) {
+                if ($cond_type->from_docblock) {
+                    if (IssueBuffer::accepts(
+                        new RedundantConditionGivenDocblockType(
+                            'if (true) is redundant',
+                            new CodeLocation($statements_analyzer, $cond)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new RedundantCondition(
+                            'if (true) is redundant',
+                            new CodeLocation($statements_analyzer, $cond)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+        }
 
         // get all the var ids that were referened in the conditional, but not assigned in it
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);

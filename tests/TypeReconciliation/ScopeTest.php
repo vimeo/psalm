@@ -131,7 +131,7 @@ class ScopeTest extends \Psalm\Tests\TestCase
 
                     $a = rand(0, 10) === 5 ? new A(): null;
 
-                    if (false) {
+                    if (rand(0, 1)) {
 
                     } elseif ($a && $a->foo) {
                         echo $a;

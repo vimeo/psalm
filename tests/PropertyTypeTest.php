@@ -1877,7 +1877,7 @@ class PropertyTypeTest extends TestCase
 
                         public function __construct() {
                             $this->val = "hello";
-                            if (true) {
+                            if (rand(0, 1)) {
                                 parent::__construct();
                             }
                         }
