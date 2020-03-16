@@ -127,7 +127,14 @@ class ReturnAnalyzer
 
         if ($stmt->expr) {
             $context->inside_call = true;
-            self::potentiallyInferTypesOnClosureFromParentReturnType($statements_analyzer, $stmt, $context);
+
+            if ($stmt->expr instanceof PhpParser\Node\Expr\Closure) {
+                self::potentiallyInferTypesOnClosureFromParentReturnType(
+                    $statements_analyzer,
+                    $stmt->expr,
+                    $context
+                );
+            }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -554,19 +561,15 @@ class ReturnAnalyzer
      */
     private static function potentiallyInferTypesOnClosureFromParentReturnType(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Stmt\Return_ $stmt,
+        PhpParser\Node\Expr\Closure $expr,
         Context $context
     ): void {
         // if not returning from inside of a function, return
         if (!$context->calling_function_id) {
             return;
         }
-        // only handle if we returning a closure specifically
-        if (!$stmt->expr instanceof PhpParser\Node\Expr\Closure) {
-            return;
-        }
 
-        $closure_id = (new ClosureAnalyzer($stmt->expr, $statements_analyzer))->getId();
+        $closure_id = (new ClosureAnalyzer($expr, $statements_analyzer))->getId();
         $closure_storage = $statements_analyzer
             ->getCodebase()
             ->getFunctionLikeStorage($statements_analyzer, $closure_id);
@@ -575,26 +578,24 @@ class ReturnAnalyzer
             ->getCodebase()
             ->getFunctionLikeStorage($statements_analyzer, $context->calling_function_id);
 
-        // if no return type on parent, infer from return
         if ($parent_fn_storage->return_type === null) {
-            $parent_fn_storage->return_type = self::functionLikeStorageToUnionType($closure_storage);
             return;
         }
+
         // can't infer returned closure if the parent doesn't have a callable return type
         if (!$parent_fn_storage->return_type->hasCallableType()) {
             return;
         }
+
         // cannot infer if we have union/intersection types
-        if (\count($parent_fn_storage->return_type->getAtomicTypes()) !== 1) {
+        if (!$parent_fn_storage->return_type->isSingle()) {
             return;
         }
 
         /** @var Type\Atomic\TFn|Type\Atomic\TCallable $parent_callable_return_type */
         $parent_callable_return_type = \current($parent_fn_storage->return_type->getAtomicTypes());
-        // if no params or return type was designed for parent callable return, then allow inferring of parent
-        // return type from child closure definition
+
         if ($parent_callable_return_type->params === null && $parent_callable_return_type->return_type === null) {
-            $parent_fn_storage->return_type = self::functionLikeStorageToUnionType($closure_storage);
             return;
         }
 
@@ -606,19 +607,12 @@ class ReturnAnalyzer
                 $parent_param ? $parent_param->type : null
             );
         }
+
         $closure_storage->return_type = self::inferInnerClosureTypeFromParent(
             $statements_analyzer->getCodebase(),
             $closure_storage->return_type,
             $parent_callable_return_type->return_type
         );
-    }
-
-    private static function functionLikeStorageToUnionType(
-        FunctionLikeStorage $closure
-    ): Type\Union {
-        return new Type\Union([
-            new Type\Atomic\TCallable('callable', $closure->params, $closure->return_type, $closure->pure)
-        ]);
     }
 
     /**

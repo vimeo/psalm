@@ -833,8 +833,17 @@ class Codebase
         $doesMethodExist =
             \Psalm\Internal\MethodIdentifier::isValidMethodIdReference($function_id)
             && $this->methodExists($function_id);
+
         if ($doesMethodExist) {
-            return $this->methods->getStorage(\Psalm\Internal\MethodIdentifier::wrap($function_id));
+            $method_id = \Psalm\Internal\MethodIdentifier::wrap($function_id);
+
+            $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
+
+            if (!$declaring_method_id) {
+                throw new \UnexpectedValueException('Declaring method for ' . $method_id . ' cannot be found');
+            }
+
+            return $this->methods->getStorage($declaring_method_id);
         }
 
         return $this->functions->getStorage($statements_analyzer, $function_id);

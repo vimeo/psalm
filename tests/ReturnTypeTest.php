@@ -787,58 +787,6 @@ class ReturnTypeTest extends TestCase
                     '$res' => 'iterable<mixed, string>',
                 ],
             ],
-            'infersReturnTypeFromReturnedCallable' => [
-                '<?php
-                    /**
-                     * @template T
-                     * @template U
-                     * @param callable(T): U $predicate
-                     */
-                    function map(callable $predicate) {
-                        return
-                        /**
-                         * @param iterable<T> $iter
-                         * @return iterable<U>
-                         */
-                        function($iter) use ($predicate): iterable {
-                            foreach ($iter as $key => $value) {
-                                yield $key => $predicate($value);
-                            }
-                        };
-                    }
-
-                    $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
-                ',
-                'assertions' => [
-                    '$res' => 'iterable<mixed, string>',
-                ],
-            ],
-            'infersReturnTypeFromReturnedCallableWithPartialReturnStatement' => [
-                '<?php
-                    /**
-                     * @template T
-                     * @template U
-                     * @param callable(T): U $predicate
-                     */
-                    function map(callable $predicate): callable {
-                        return
-                        /**
-                         * @param iterable<T> $iter
-                         * @return iterable<U>
-                         */
-                        function($iter) use ($predicate): iterable {
-                            foreach ($iter as $key => $value) {
-                                yield $key => $predicate($value);
-                            }
-                        };
-                    }
-
-                    $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
-                ',
-                'assertions' => [
-                    '$res' => 'iterable<mixed, string>',
-                ],
-            ],
         ];
     }
 
