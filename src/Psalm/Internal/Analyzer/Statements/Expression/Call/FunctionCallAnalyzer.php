@@ -1152,7 +1152,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         } elseif ($function_name->parts === ['class_exists']) {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    if (!$codebase->classlikes->classExists($first_arg->value->value)) {
+                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
                     && $first_arg->value->name instanceof PhpParser\Node\Identifier
