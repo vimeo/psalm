@@ -107,18 +107,8 @@ class ArgTest extends TestCase
                     $a = [3, 5, 7];
                     takeVariadicInts(...$a);',
                 [
-                    '$a' => 'array{0: int, 1: int, 2: int}'
+                    '$a' => 'non-empty-list<int>'
                 ]
-            ],
-            'argumentUnpackingWithoutChangingRef' => [
-                '<?php
-                    function foo(int ...$is) : void {}
-
-                    $arr = [1, 2, 3, 4];
-                    foo(...$arr);',
-                'assertions' => [
-                    '$arr' => 'array{0: int, 1: int, 2: int, 3: int}',
-                ],
             ],
             'iterableSplat' => [
                 '<?php

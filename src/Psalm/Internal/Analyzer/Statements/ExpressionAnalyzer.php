@@ -1638,6 +1638,7 @@ class ExpressionAnalyzer
                 $context,
                 new FunctionLikeParameter('var', false),
                 false,
+                null,
                 false,
                 true,
                 new CodeLocation($statements_analyzer->getSource(), $stmt)

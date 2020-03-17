@@ -607,6 +607,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $context,
                             $echo_param,
                             false,
+                            null,
                             false,
                             true,
                             new CodeLocation($this->source, $stmt)

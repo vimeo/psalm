@@ -1975,6 +1975,8 @@ class CallAnalyzer
             )
             : null;
 
+        $unpacked_atomic_array = null;
+
         if ($arg->unpack) {
             if ($arg_type->hasMixed()) {
                 if (!$context->collect_initializations
@@ -2007,18 +2009,18 @@ class CallAnalyzer
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
                  */
-                $array_atomic_type = $arg_type->getAtomicTypes()['array'];
+                $unpacked_atomic_array = $arg_type->getAtomicTypes()['array'];
 
-                if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                    if ($array_atomic_type->is_list && isset($array_atomic_type->properties[$argument_offset])) {
-                        $arg_type = clone $array_atomic_type->properties[$argument_offset];
+                if ($unpacked_atomic_array instanceof Type\Atomic\ObjectLike) {
+                    if ($unpacked_atomic_array->is_list && isset($unpacked_atomic_array->properties[$argument_offset])) {
+                        $arg_type = clone $unpacked_atomic_array->properties[$argument_offset];
                     } else {
-                        $arg_type = $array_atomic_type->getGenericValueType();
+                        $arg_type = $unpacked_atomic_array->getGenericValueType();
                     }
-                } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
-                    $arg_type = $array_atomic_type->type_param;
+                } elseif ($unpacked_atomic_array instanceof Type\Atomic\TList) {
+                    $arg_type = $unpacked_atomic_array->type_param;
                 } else {
-                    $arg_type = $array_atomic_type->type_params[1];
+                    $arg_type = $unpacked_atomic_array->type_params[1];
                 }
             } else {
                 foreach ($arg_type->getAtomicTypes() as $atomic_type) {
@@ -2055,6 +2057,7 @@ class CallAnalyzer
             $context,
             $function_param,
             $arg->unpack,
+            $unpacked_atomic_array,
             $function_is_pure,
             $in_call_map,
             $function_location
@@ -2589,6 +2592,7 @@ class CallAnalyzer
     }
 
     /**
+     * @param Type\Atomic\ObjectLike|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
      * @return  null|false
      */
     public static function checkFunctionArgumentType(
@@ -2603,6 +2607,7 @@ class CallAnalyzer
         Context $context,
         FunctionLikeParameter $function_param,
         bool $unpack,
+        ?Type\Atomic $unpacked_atomic_array,
         bool $function_is_pure,
         bool $in_call_map,
         CodeLocation $function_location
@@ -2695,7 +2700,8 @@ class CallAnalyzer
                         $param_type,
                         $signature_param_type,
                         $context,
-                        $unpack
+                        $unpack,
+                        $unpacked_atomic_array
                     );
                 }
             }
@@ -3119,7 +3125,6 @@ class CallAnalyzer
             && !($function_param->is_variadic xor $unpack)
             && $cased_method_id !== 'echo'
             && $cased_method_id !== 'print'
-            && ($input_type->from_docblock || !$unpack)
             && (!$in_call_map || $context->strict_types)
         ) {
             self::coerceValueAfterGatekeeperArgument(
@@ -3130,7 +3135,8 @@ class CallAnalyzer
                 $param_type,
                 $signature_param_type,
                 $context,
-                $unpack
+                $unpack,
+                $unpacked_atomic_array
             );
         }
 
@@ -3315,6 +3321,9 @@ class CallAnalyzer
         }
     }
 
+    /**
+     * @param Type\Atomic\ObjectLike|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
+     */
     private static function coerceValueAfterGatekeeperArgument(
         StatementsAnalyzer $statements_analyzer,
         Type\Union $input_type,
@@ -3323,7 +3332,8 @@ class CallAnalyzer
         Type\Union $param_type,
         ?Type\Union $signature_param_type,
         Context $context,
-        bool $unpack
+        bool $unpack,
+        ?Type\Atomic $unpacked_atomic_array
     ) : void {
         if ($param_type->hasMixed()) {
             return;
@@ -3400,15 +3410,35 @@ class CallAnalyzer
             }
 
             if ($unpack) {
-                $input_type = new Type\Union([
-                    new TArray([
-                        Type::getInt(),
-                        $input_type
-                    ]),
-                ]);
-            }
+                if ($unpacked_atomic_array instanceof Type\Atomic\TList) {
+                    $unpacked_atomic_array = clone $unpacked_atomic_array;
+                    $unpacked_atomic_array->type_param = $input_type;
 
-            $context->vars_in_scope[$var_id] = $input_type;
+                    $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);
+                } elseif ($unpacked_atomic_array instanceof Type\Atomic\TArray) {
+                    $unpacked_atomic_array = clone $unpacked_atomic_array;
+                    /** @psalm-suppress PropertyTypeCoercion */
+                    $unpacked_atomic_array->type_params[1] = $input_type;
+
+                    $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);
+                } elseif ($unpacked_atomic_array instanceof Type\Atomic\ObjectLike
+                    && $unpacked_atomic_array->is_list
+                ) {
+                    $unpacked_atomic_array = $unpacked_atomic_array->getList();
+                    $unpacked_atomic_array->type_param = $input_type;
+
+                    $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);
+                } else {
+                    $context->vars_in_scope[$var_id] = new Type\Union([
+                        new TArray([
+                            Type::getInt(),
+                            $input_type
+                        ]),
+                    ]);
+                }
+            } else {
+                $context->vars_in_scope[$var_id] = $input_type;
+            }
         }
     }
 
