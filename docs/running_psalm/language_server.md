@@ -94,7 +94,7 @@ Add settings to `coc-settings.json`:
     "psalmls": {
       "command": "vendor/bin/psalm-language-server",
       "filetypes": ["php"],
-      "rootPatterns": ["psalm.xml"],
+      "rootPatterns": ["psalm.xml", "psalm.xml.dist"],
       "requireRootPattern": true
     }
   }
