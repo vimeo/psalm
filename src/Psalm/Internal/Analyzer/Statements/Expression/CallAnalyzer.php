@@ -2012,7 +2012,9 @@ class CallAnalyzer
                 $unpacked_atomic_array = $arg_type->getAtomicTypes()['array'];
 
                 if ($unpacked_atomic_array instanceof Type\Atomic\ObjectLike) {
-                    if ($unpacked_atomic_array->is_list && isset($unpacked_atomic_array->properties[$argument_offset])) {
+                    if ($unpacked_atomic_array->is_list
+                        && isset($unpacked_atomic_array->properties[$argument_offset])
+                    ) {
                         $arg_type = clone $unpacked_atomic_array->properties[$argument_offset];
                     } else {
                         $arg_type = $unpacked_atomic_array->getGenericValueType();
