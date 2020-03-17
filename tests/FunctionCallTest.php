@@ -544,33 +544,10 @@ class FunctionCallTest extends TestCase
                         return parse_url($s)["host"] ?? "";
                     }
 
-                    function bar(string $s) : string {
-                        $parsed = parse_url($s);
-
-                        return $parsed["host"];
-                    }
-
-                    function baz(string $s) : string {
-                        $parsed = parse_url($s);
-
-                        return $parsed["host"];
-                    }
-
-                    function bag(string $s) : string {
-                        $parsed = parse_url($s);
-
-                        if (is_string($parsed["host"] ?? false)) {
-                            return $parsed["host"];
-                        }
-
-                        return "";
-                    }
-
-
                     function hereisanotherone(string $s) : string {
                         $parsed = parse_url($s);
 
-                        if (isset($parsed["host"]) && is_string($parsed["host"])) {
+                        if (isset($parsed["host"])) {
                             return $parsed["host"];
                         }
 
@@ -580,7 +557,7 @@ class FunctionCallTest extends TestCase
                     function hereisthelastone(string $s) : string {
                         $parsed = parse_url($s);
 
-                        if (isset($parsed["host"]) && is_string($parsed["host"])) {
+                        if (isset($parsed["host"])) {
                             return $parsed["host"];
                         }
 
@@ -630,6 +607,30 @@ class FunctionCallTest extends TestCase
 
                         return "";
                     }',
+            ],
+            'parseUrlTypes' => [
+                '<?php
+                    $url = "foo";
+                    $components = parse_url($url);
+                    $scheme = parse_url($url, PHP_URL_SCHEME);
+                    $host = parse_url($url, PHP_URL_HOST);
+                    $port = parse_url($url, PHP_URL_PORT);
+                    $user = parse_url($url, PHP_URL_USER);
+                    $pass = parse_url($url, PHP_URL_PASS);
+                    $path = parse_url($url, PHP_URL_PATH);
+                    $query = parse_url($url, PHP_URL_QUERY);
+                    $fragment = parse_url($url, PHP_URL_FRAGMENT);',
+                'assertions' => [
+                    '$components' => 'array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
+                    '$scheme' => 'null|string',
+                    '$host' => 'null|string',
+                    '$port' => 'int|null',
+                    '$user' => 'null|string',
+                    '$pass' => 'null|string',
+                    '$path' => 'null|string',
+                    '$query' => 'null|string',
+                    '$fragment' => 'null|string',
+                ],
             ],
             'triggerUserError' => [
                 '<?php
@@ -1709,6 +1710,28 @@ class FunctionCallTest extends TestCase
                         || (\is_array($loop_callback)
                             && !\method_exists(...$loop_callback));',
                 'error_message' => 'UndefinedGlobalVariable'
+            ],
+            'parseUrlPossiblyUndefined' => [
+                '<?php
+                    function bar(string $s) : string {
+                        $parsed = parse_url($s);
+
+                        return $parsed["host"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'parseUrlPossiblyUndefined2' => [
+                '<?php
+                    function bag(string $s) : string {
+                        $parsed = parse_url($s);
+
+                        if (is_string($parsed["host"] ?? false)) {
+                            return $parsed["host"];
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
         ];
     }
