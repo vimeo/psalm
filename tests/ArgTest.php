@@ -100,6 +100,16 @@ class ArgTest extends TestCase
                     function f(DateTime $d, int $a): void {}
                     f(...$a);',
             ],
+            'unpackWithoutAlteringArray' => [
+                '<?php
+                    function takeVariadicInts(int ...$inputs): void {}
+
+                    $a = [3, 5, 7];
+                    takeVariadicInts(...$a);',
+                [
+                    '$a' => 'array{0: int, 1: int, 2: int}'
+                ]
+            ],
         ];
     }
 

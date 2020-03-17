@@ -3119,6 +3119,7 @@ class CallAnalyzer
             && !($function_param->is_variadic xor $unpack)
             && $cased_method_id !== 'echo'
             && $cased_method_id !== 'print'
+            && $input_type->from_docblock
             && (!$in_call_map || $context->strict_types)
         ) {
             self::coerceValueAfterGatekeeperArgument(
