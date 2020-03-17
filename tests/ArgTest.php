@@ -110,6 +110,26 @@ class ArgTest extends TestCase
                     '$a' => 'array{0: int, 1: int, 2: int}'
                 ]
             ],
+            'argumentUnpackingWithoutChangingRef' => [
+                '<?php
+                    function foo(int ...$is) : void {}
+
+                    $arr = [1, 2, 3, 4];
+                    foo(...$arr);',
+                'assertions' => [
+                    '$arr' => 'array{0: int, 1: int, 2: int, 3: int}',
+                ],
+            ],
+            'iterableSplat' => [
+                '<?php
+                    function foo(iterable $args): int {
+                        return intval(...$args);
+                    }
+
+                    function bar(ArrayIterator $args): int {
+                        return intval(...$args);
+                    }',
+            ],
         ];
     }
 

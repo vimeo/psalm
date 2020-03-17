@@ -240,26 +240,6 @@ class Php56Test extends TestCase
                         }
                     }',
             ],
-            'argumentUnpackingWithoutChangingRef' => [
-                '<?php
-                    function foo(int ...$is) : void {}
-
-                    $arr = [1, 2, 3, 4];
-                    foo(...$arr);',
-                'assertions' => [
-                    '$arr' => 'array<int, int>',
-                ],
-            ],
-            'iterableSplat' => [
-                '<?php
-                    function foo(iterable $args): int {
-                        return intval(...$args);
-                    }
-
-                    function bar(ArrayIterator $args): int {
-                        return intval(...$args);
-                    }',
-            ],
             'yieldReturn' => [
                 '<?php
                     function foo() : Traversable {
