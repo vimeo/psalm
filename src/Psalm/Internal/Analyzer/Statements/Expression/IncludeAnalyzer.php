@@ -167,6 +167,8 @@ class IncludeAnalyzer
                     }
                 }
 
+                $context->has_returned = false;
+
                 foreach ($include_file_analyzer->getRequiredFilePaths() as $required_file_path) {
                     $current_file_analyzer->addRequiredFilePath($required_file_path);
                 }

@@ -8,4 +8,5 @@ namespace Psalm\Issue;
 class PossiblyNullPropertyFetch extends CodeIssue
 {
     const ERROR_LEVEL = 3;
+    const SHORTCODE = 82;
 }
