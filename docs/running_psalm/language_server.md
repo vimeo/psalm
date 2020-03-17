@@ -65,7 +65,7 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
 
 [ALE](https://github.com/w0rp/ale) has support for Psalm (since v2.3.0).
 
-```
+```vim
 let g:ale_linters = { 'php': ['php', 'psalm'] }
 ```
 
@@ -75,12 +75,29 @@ I also got it working with [vim-lsp](https://github.com/prabirshrestha/vim-lsp)
 
 This is the config I used (for Vim):
 
-```
+```vim
 au User lsp_setup call lsp#register_server({
      \ 'name': 'psalm-language-server',
      \ 'cmd': {server_info->[expand('vendor/bin/psalm-language-server')]},
      \ 'whitelist': ['php'],
      \ })
+```
+
+**coc.nvim**
+
+It also works with [coc.nvim](https://github.com/neoclide/coc.nvim).
+
+Add settings to `coc-settings.json`:
+
+```jsonc
+  "languageserver": {
+    "psalmls": {
+      "command": "vendor/bin/psalm-language-server",
+      "filetypes": ["php"],
+      "rootPatterns": ["psalm.xml", "psalm.xml.dist"],
+      "requireRootPattern": true
+    }
+  }
 ```
 
 ## VS Code
