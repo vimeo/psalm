@@ -508,6 +508,15 @@ class Methods
                 }
             }
 
+            if ($atomic_type instanceof Type\Atomic\TList) {
+                $atomic_type->type_param = self::localizeType(
+                    $codebase,
+                    $atomic_type->type_param,
+                    $appearing_fq_class_name,
+                    $base_fq_class_name
+                );
+            }
+
             if ($atomic_type instanceof Type\Atomic\TCallable
                 || $atomic_type instanceof Type\Atomic\TFn
             ) {
