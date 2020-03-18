@@ -112,28 +112,30 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             return $nullable_string_or_int;
         }
 
-        $component_key_type = new Type\Union([
-            new Type\Atomic\TLiteralString('scheme'),
-            new Type\Atomic\TLiteralString('user'),
-            new Type\Atomic\TLiteralString('pass'),
-            new Type\Atomic\TLiteralString('host'),
-            new Type\Atomic\TLiteralString('port'),
-            new Type\Atomic\TLiteralString('path'),
-            new Type\Atomic\TLiteralString('query'),
-            new Type\Atomic\TLiteralString('fragment'),
-        ]);
+        $component_types = [
+            'scheme' => Type::getString(),
+            'user' => Type::getString(),
+            'pass' => Type::getString(),
+            'host' => Type::getString(),
+            'port' => Type::getInt(),
+            'path' => Type::getString(),
+            'query' => Type::getString(),
+            'fragment' => Type::getString(),
+        ];
 
-        $nullable_string_or_int = new Type\Union([
-            new Type\Atomic\TArray([$component_key_type, Type::getMixed()]),
-            new Type\Atomic\TFalse,
-        ]);
-
-        $codebase = $statements_source->getCodebase();
-
-        if ($codebase->config->ignore_internal_falsable_issues) {
-            $nullable_string_or_int->ignore_falsable_issues = true;
+        foreach ($component_types as $component_type) {
+            $component_type->possibly_undefined = true;
         }
 
-        return $nullable_string_or_int;
+        $return_type = new Type\Union([
+            new Type\Atomic\ObjectLike($component_types),
+            new Type\Atomic\TFalse(),
+        ]);
+
+        if ($statements_source->getCodebase()->config->ignore_internal_falsable_issues) {
+            $return_type->ignore_falsable_issues = true;
+        }
+
+        return $return_type;
     }
 }
