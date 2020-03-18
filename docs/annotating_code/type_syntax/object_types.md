@@ -15,6 +15,7 @@ Generator types support up to four parameters, e.g. `Generator<int, string, mixe
 3. `TSend`, the type of the `send()` method's parameter - default: `mixed`
 4. `TReturn`, the return type of the `getReturn()` method - default: `void`
 
+</>
 
 - `Generator<int>` is a shorthand for `Generator<mixed, int, mixed, void>`
 - `Generator<int, string>` is a shorthand for `Generator<int, string, mixed, void>`
