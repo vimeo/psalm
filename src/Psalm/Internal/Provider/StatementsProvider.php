@@ -99,7 +99,9 @@ class StatementsProvider
         $file_contents = $this->file_provider->getContents($file_path);
         $modified_time = $this->file_provider->getModifiedTime($file_path);
 
-        if (!$this->parser_cache_provider) {
+        $config = \Psalm\Config::getInstance();
+
+        if (!$this->parser_cache_provider || !$config->isInProjectDirs($file_path)) {
             $progress->debug('Parsing ' . $file_path . "\n");
 
             $stmts = self::parseStatements($file_contents, $file_path);
