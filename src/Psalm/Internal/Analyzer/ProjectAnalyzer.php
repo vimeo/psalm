@@ -972,12 +972,16 @@ class ProjectAnalyzer
 
         $diff_files = [];
 
+        $last_good_run = $this->parser_cache_provider->getLastGoodRun();
+
         $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
 
         foreach ($file_paths as $file_path) {
             if ($config->isInProjectDirs($file_path)) {
-                if ($this->parser_cache_provider->loadExistingFileContentsFromCache($file_path)
-                    !== $this->file_provider->getContents($file_path)) {
+                if ($this->file_provider->getModifiedTime($file_path) > $last_good_run
+                    && $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path)
+                        !== $this->file_provider->getContents($file_path)
+                ) {
                     $diff_files[] = $file_path;
                 }
             }
