@@ -20,6 +20,7 @@ Atomic types are the basic building block of all type information used in Psalm.
 
 - [object](object_types.md)
 - [Exception, Foo\MyClass and Foo\MyClass<Bar>](object_types.md)
+- [Generator](object_types.md)
 
 ## [Array types](array_types.md)
 
@@ -55,4 +56,4 @@ Atomic types are the basic building block of all type information used in Psalm.
 - `mixed` represents a lack of type information. Psalm warns about mixed when the `totallyTyped` flag is turned on.
 - `resource` represents a [PHP resource](https://www.php.net/manual/en/language.types.resource.php).
 - `no-return` is the 'return type' for a function that can never actually return, such as `die()`, `exit()`, or a function that
-always throws an exception. It may also be written as `never-return` or `never-returns`, and  is also known as the *bottom type*.
+  always throws an exception. It may also be written as `never-return` or `never-returns`, and is also known as the _bottom type_.
