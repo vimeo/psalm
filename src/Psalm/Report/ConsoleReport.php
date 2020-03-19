@@ -32,8 +32,11 @@ class ConsoleReport extends Report
             $issue_string .= 'INFO';
         }
 
-        $issue_string .= ': ' . $issue_data->type . ' - ' . $issue_data->file_name . ':' .
-            $issue_data->line_from . ':' . $issue_data->column_from . ' - ' . $issue_data->message . "\n";
+        $issue_reference = ' (see ' . $issue_data->getLink() . ')';
+
+        $issue_string .= ': ' . $issue_data->type
+            . ' - ' . $issue_data->file_name . ':' . $issue_data->line_from . ':' . $issue_data->column_from
+            . ' - ' . $issue_data->message . $issue_reference . "\n";
 
         if ($this->show_snippet) {
             $snippet = $issue_data->snippet;

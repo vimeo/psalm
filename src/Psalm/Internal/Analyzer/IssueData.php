@@ -151,4 +151,11 @@ class IssueData
         $this->column_to = $column_to;
         $this->error_level = $error_level;
     }
+
+    public function getLink() : string
+    {
+        $class = 'Psalm\\Issue\\' . $this->type;
+
+        return 'https://psalm.dev/' . str_pad((string) $class::SHORTCODE, 3, "0", STR_PAD_LEFT);
+    }
 }
