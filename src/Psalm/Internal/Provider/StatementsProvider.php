@@ -102,7 +102,7 @@ class StatementsProvider
         $config = \Psalm\Config::getInstance();
 
         if (!$this->parser_cache_provider
-            || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
+            || (!$config->isInProjectDirs($file_path) && \strpos($file_path, 'vendor'))
         ) {
             $progress->debug('Parsing ' . $file_path . "\n");
 
