@@ -115,6 +115,7 @@ echo $a;';
                     'column_from' => 10,
                     'column_to' => 17,
                     'error_level' => -1,
+                    'link' => 'https://psalm.dev/024'
                 ],
                 [
                     'severity' => 'error',
@@ -133,6 +134,7 @@ echo $a;';
                     'column_from' => 29,
                     'column_to' => 39,
                     'error_level' => -2,
+                    'link' => 'https://psalm.dev/135'
                 ],
                 [
                     'severity' => 'error',
@@ -151,6 +153,7 @@ echo $a;';
                     'column_from' => 42,
                     'column_to' => 49,
                     'error_level' => 1,
+                    'link' => 'https://psalm.dev/047'
                 ],
                 [
                     'severity' => 'error',
@@ -169,6 +172,7 @@ echo $a;';
                     'column_from' => 6,
                     'column_to' => 15,
                     'error_level' => -1,
+                    'link' => 'https://psalm.dev/020'
                 ],
                 [
                     'severity' => 'error',
@@ -187,6 +191,7 @@ echo $a;';
                     'column_from' => 6,
                     'column_to' => 8,
                     'error_level' => 3,
+                    'link' => 'https://psalm.dev/126'
                 ],
             ],
             \array_map(

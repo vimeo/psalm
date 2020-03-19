@@ -125,6 +125,7 @@ echo $a;';
                 'column_from' => 10,
                 'column_to' => 17,
                 'error_level' => -1,
+                'link' => 'https://psalm.dev/024'
             ],
             [
                 'severity' => 'error',
@@ -143,6 +144,7 @@ echo $a;';
                 'column_from' => 42,
                 'column_to' => 49,
                 'error_level' => 1,
+                'link' => 'https://psalm.dev/047'
             ],
             [
                 'severity' => 'error',
@@ -161,6 +163,7 @@ echo $a;';
                 'column_from' => 6,
                 'column_to' => 15,
                 'error_level' => -1,
+                'link' => 'https://psalm.dev/020'
             ],
             [
                 'severity' => 'info',
@@ -179,6 +182,7 @@ echo $a;';
                 'column_from' => 6,
                 'column_to' => 8,
                 'error_level' => 3,
+                'link' => 'https://psalm.dev/126'
             ],
         ];
 
@@ -357,16 +361,16 @@ somefile.php:15: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined glo
         $console_report_options->use_color = false;
 
         $this->assertSame(
-            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
+            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you (see https://psalm.dev/024)
   return $as_you . "type";
 
-ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify
+ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify (see https://psalm.dev/047)
 function psalmCanVerify(int $your_code): ?string {
 
-ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined
+ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
 echo CHANGE_ME;
 
-INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined global variable $a, first seen on line 10
+INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined global variable $a, first seen on line 10 (see https://psalm.dev/126)
 echo $a
 
 ',
@@ -386,13 +390,13 @@ echo $a
         $console_report_options->show_info = false;
 
         $this->assertSame(
-            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
+            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you (see https://psalm.dev/024)
   return $as_you . "type";
 
-ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify
+ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify (see https://psalm.dev/047)
 function psalmCanVerify(int $your_code): ?string {
 
-ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined
+ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
 echo CHANGE_ME;
 
 ',
@@ -412,16 +416,16 @@ echo CHANGE_ME;
         $console_report_options->use_color = false;
 
         $this->assertSame(
-            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
+            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you (see https://psalm.dev/024)
 
 
-ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify
+ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify (see https://psalm.dev/047)
 
 
-ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined
+ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
 
 
-INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined global variable $a, first seen on line 10
+INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined global variable $a, first seen on line 10 (see https://psalm.dev/126)
 
 
 ',

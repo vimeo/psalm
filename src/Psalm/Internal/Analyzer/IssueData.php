@@ -99,6 +99,12 @@ class IssueData
     public $error_level;
 
     /**
+     * @var string
+     * @readonly
+     */
+    public $link;
+
+    /**
      * @param string $severity
      * @param int $line_from
      * @param int $line_to
@@ -150,9 +156,10 @@ class IssueData
         $this->column_from = $column_from;
         $this->column_to = $column_to;
         $this->error_level = $error_level;
+        $this->link = $this->getLink();
     }
 
-    public function getLink() : string
+    private function getLink() : string
     {
         $class = 'Psalm\\Issue\\' . $this->type;
 
