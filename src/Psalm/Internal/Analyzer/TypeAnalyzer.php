@@ -2142,6 +2142,13 @@ class TypeAnalyzer
                     $param_comparison_result,
                     $allow_interface_equality
                 )) {
+                    if ($input_type_part->value === 'Generator'
+                        && $i === 2
+                        && $param_comparison_result->type_coerced_from_mixed
+                    ) {
+                        continue;
+                    }
+
                     $atomic_comparison_result->type_coerced
                         = $param_comparison_result->type_coerced === true
                             && $atomic_comparison_result->type_coerced !== false;

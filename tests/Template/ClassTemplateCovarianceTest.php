@@ -643,8 +643,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }
 
                     /**
-                     * @return Generator<int,Bar,Bar,mixed>
-                     * @psalm-suppress MixedReturnTypeCoercion
+                     * @return Generator<int, Bar, Bar, mixed>
                      */
                     function gen() : Generator {
                       $bar = yield new Bar();
