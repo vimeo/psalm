@@ -1,0 +1,12 @@
+# MixedReturnTypeCoercion
+
+Emitted when Psalm cannot be sure that part of an array/iterabble return type's constraints can be fulfilled
+
+```php
+/**
+ * @return string[]
+ */
+function foo(array $a) : array {
+    return $a;
+}
+```

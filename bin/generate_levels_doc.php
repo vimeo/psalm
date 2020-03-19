@@ -24,7 +24,7 @@ foreach ($issue_types as $issue_type) {
 
 <?php
 foreach ($grouped_issues[-1] as $issue_type) {
-    echo ' - [' . $issue_type . '](issues.md#' . strtolower($issue_type) . ')' . "\n";
+    echo ' - [' . $issue_type . '](issues/' . $issue_type . ')' . "\n";
 }
 ?>
 
@@ -32,7 +32,7 @@ foreach ($grouped_issues[-1] as $issue_type) {
 
 <?php
 foreach ($grouped_issues[1] as $issue_type) {
-    echo ' - [' . $issue_type . '](issues.md#' . strtolower($issue_type) . ')' . "\n";
+    echo ' - [' . $issue_type . '](issues/' . $issue_type . ')' . "\n";
 }
 ?>
 
@@ -43,7 +43,7 @@ foreach ([2, 3, 4, 5, 6, 7] as $level) {
     echo 'These issues are treated as errors at level ' . $level . ' and below.' . "\n\n";
 
     foreach ($grouped_issues[$level] as $issue_type) {
-        echo ' - [' . $issue_type . '](issues.md#' . strtolower($issue_type) . ')' . "\n";
+        echo ' - [' . $issue_type . '](issues/' . $issue_type . ')' . "\n";
     }
 
     echo "\n";
@@ -54,6 +54,6 @@ foreach ([2, 3, 4, 5, 6, 7] as $level) {
 
 <?php
 foreach ($grouped_issues[-2] as $issue_type) {
-    echo ' - [' . $issue_type . '](issues.md#' . strtolower($issue_type) . ')' . "\n";
+    echo ' - [' . $issue_type . '](issues/' . $issue_type . ')' . "\n";
 }
 ?>
