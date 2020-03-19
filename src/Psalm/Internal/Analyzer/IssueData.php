@@ -163,6 +163,6 @@ class IssueData
     {
         $class = 'Psalm\\Issue\\' . $this->type;
 
-        return 'https://psalm.dev/' . str_pad((string) $class::SHORTCODE, 3, "0", STR_PAD_LEFT);
+        return 'https://psalm.dev/' . \str_pad((string) $class::SHORTCODE, 3, "0", \STR_PAD_LEFT);
     }
 }
