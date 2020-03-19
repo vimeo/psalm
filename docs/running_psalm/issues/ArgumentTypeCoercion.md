@@ -12,7 +12,7 @@ function takesA(A $a) : void {
 function takesB(B $b) : void {}
 ```
 
-#### How to fix
+## How to fix
 
 You could add a typecheck before the call to `takesB`:
 

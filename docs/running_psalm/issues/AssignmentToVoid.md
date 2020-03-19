@@ -7,7 +7,7 @@ function foo() : void {}
 $a = foo();
 ```
 
-#### How to fix
+## How to fix
 
 You should just be able to remove the assignment:
 

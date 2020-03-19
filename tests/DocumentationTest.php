@@ -18,6 +18,9 @@ use function sort;
 use function strpos;
 use function substr;
 use function trim;
+use function glob;
+use function str_replace;
+use function array_shift;
 
 class DocumentationTest extends TestCase
 {

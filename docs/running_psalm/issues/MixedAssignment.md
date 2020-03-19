@@ -7,7 +7,7 @@ cannot infer a type more specific than `mixed`.
 $a = $_GET['foo'];
 ```
 
-#### How to fix
+## How to fix
 
 The above example can be fixed in a few ways – by adding an `assert` call:
 
