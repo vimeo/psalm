@@ -179,10 +179,6 @@ class Populator
 
         $this->populateDataFromTraits($storage, $storage_provider, $dependent_classlikes);
 
-        if ($storage->mixin_fqcln) {
-            $this->populateDataFromMixin($storage, $storage_provider, $dependent_classlikes, $storage->mixin_fqcln);
-        }
-
         if ($storage->parent_classes) {
             $this->populateDataFromParentClass($storage, $storage_provider, $dependent_classlikes);
         }
@@ -200,6 +196,10 @@ class Populator
         $this->populateInterfaceDataFromParentInterfaces($storage, $storage_provider, $dependent_classlikes);
 
         $this->populateDataFromImplementedInterfaces($storage, $storage_provider, $dependent_classlikes);
+
+        if ($storage->mixin_fqcln) {
+            $this->populateDataFromMixin($storage, $storage_provider, $dependent_classlikes, $storage->mixin_fqcln);
+        }
 
         if ($storage->location) {
             $file_path = $storage->location->file_path;
