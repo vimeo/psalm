@@ -104,6 +104,7 @@ abstract class CodeIssue
         $fqcn_parts = explode('\\', get_called_class());
         $issue_type = array_pop($fqcn_parts);
 
+        /** @psalm-suppress UndefinedConstant */
         return new \Psalm\Internal\Analyzer\IssueData(
             $severity,
             $location->getLineNumber(),
@@ -120,6 +121,7 @@ abstract class CodeIssue
             $snippet_bounds[1],
             $location->getColumn(),
             $location->getEndColumn(),
+            (int) static::SHORTCODE,
             (int) static::ERROR_LEVEL
         );
     }
