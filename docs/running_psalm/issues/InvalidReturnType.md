@@ -1,6 +1,6 @@
 # InvalidReturnType
 
-    Emitted when a function’s signature return type is incorrect (often emitted with `InvalidReturnStatement`)
+Emitted when a function’s signature return type is incorrect (often emitted with `InvalidReturnStatement`)
 
 ```php
 function foo() : int {
