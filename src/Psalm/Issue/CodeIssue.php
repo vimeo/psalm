@@ -10,6 +10,7 @@ use function array_pop;
 abstract class CodeIssue
 {
     const ERROR_LEVEL = -1;
+    const SHORTCODE = 0;
 
     /**
      * @var CodeLocation
@@ -104,7 +105,6 @@ abstract class CodeIssue
         $fqcn_parts = explode('\\', get_called_class());
         $issue_type = array_pop($fqcn_parts);
 
-        /** @psalm-suppress UndefinedConstant */
         return new \Psalm\Internal\Analyzer\IssueData(
             $severity,
             $location->getLineNumber(),
