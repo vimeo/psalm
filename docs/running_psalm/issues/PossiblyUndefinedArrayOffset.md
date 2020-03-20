@@ -18,13 +18,17 @@ echo $arr["b"];
 
 You can use the null coalesce operator to provide a default value in the event the array offset doesn’t exist:
 
-```
+```php
+<?php
+
 echo $arr["b"] ?? 0;
 ```
 
 Alternatively, you can ensure that the array offset always exists:
 
 ```php
+<?php
+
 if (rand(0, 1)) {
     $arr = ["a" => 1, "b" => 2];
 } else {
