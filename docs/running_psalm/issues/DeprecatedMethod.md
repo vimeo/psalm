@@ -9,3 +9,7 @@ class A {
 }
 (new A())->foo();
 ```
+
+## How to fix
+
+Don’t use the deprecated method.

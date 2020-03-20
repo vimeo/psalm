@@ -9,3 +9,7 @@ class A {
     use T;
 }
 ```
+
+## How to fix
+
+Don’t use the deprecated trait.

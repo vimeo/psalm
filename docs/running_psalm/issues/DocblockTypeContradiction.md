@@ -9,6 +9,24 @@ Emitted when conditional doesn't make sense given the docblock types supplied.
  * @return void
  */
 function foo($s) {
-    if ($s === 5) { }
+    if ($s === null) {
+        throw new \Exception('Bad input');
+    }
+
+    echo $s;
 }
 ```
+
+## How to fix
+
+A lot of old PHP code is set up to prevent unexpected errors with checks like the one above.
+
+As you migrate your code to newer versions of PHP you can also use stricter type-hints:
+
+```php
+function foo(string $s) : void {
+    echo $s;
+}
+```
+
+Since it's impossible for `$s` to be anything but a `string` inside the function, the null check can be removed.

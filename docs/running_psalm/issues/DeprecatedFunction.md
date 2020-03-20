@@ -7,3 +7,7 @@ Emitted when calling a deprecated function:
 function foo() : void {}
 foo();
 ```
+
+## How to fix
+
+Don’t use the deprecated function.

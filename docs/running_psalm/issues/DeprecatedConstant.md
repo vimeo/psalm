@@ -10,3 +10,7 @@ class A {
 
 echo A::FOO;
 ```
+
+## How to fix
+
+Don’t use the deprecated constant.
