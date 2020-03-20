@@ -227,7 +227,7 @@ class DocumentationTest extends TestCase
             }
 
             $invalid_code_data[$issue_name] = [
-                '<?php' . "\n" . $blocks[0],
+                $blocks[0],
                 $issue_name,
                 $ignored_issues,
                 strpos($issue_name, 'Unused') !== false
