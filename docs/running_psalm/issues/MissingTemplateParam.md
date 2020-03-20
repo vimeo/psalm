@@ -4,6 +4,8 @@ Emitted when using the `@extends`/`@implements` annotation to extend a class wit
 extending all its template params.
 
 ```php
+<?php
+
 /**
  * @template-implements ArrayAccess<int>
  */

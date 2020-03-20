@@ -3,6 +3,8 @@
 Emitted when calling a magic method that doesn’t exist
 
 ```php
+<?php
+
 /**
  * @method bar():string
  */

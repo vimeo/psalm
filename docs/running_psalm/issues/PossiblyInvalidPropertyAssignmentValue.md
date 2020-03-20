@@ -3,6 +3,8 @@
 Emitted when trying to assign a possibly invalid value to a typed property.
 
 ```php
+<?php
+
 class A {
     /** @var int[] */
     public $bb = [];

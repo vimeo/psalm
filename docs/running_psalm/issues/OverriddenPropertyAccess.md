@@ -3,6 +3,8 @@
 Emitted when a property is less accessible than the same-named property in its parent class
 
 ```php
+<?php
+
 class A {
     /** @var string|null */
     public $foo;

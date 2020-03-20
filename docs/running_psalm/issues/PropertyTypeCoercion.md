@@ -3,6 +3,8 @@
 Emitted when setting a property with an value which has a less specific type than the property expects
 
 ```php
+<?php
+
 class A {}
 class B extends A {}
 

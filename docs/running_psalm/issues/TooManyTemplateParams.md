@@ -4,6 +4,8 @@ Emitted when using the `@extends`/`@implements` annotation to extend a class and
 many types.
 
 ```php
+<?php
+
 /**
  * @template-implements IteratorAggregate<int, string, int>
  */

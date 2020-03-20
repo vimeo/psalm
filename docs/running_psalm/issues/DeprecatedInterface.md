@@ -3,6 +3,8 @@
 Emitted when referring to a deprecated interface
 
 ```php
+<?php
+
 /** @deprecated */
 interface I {}
 

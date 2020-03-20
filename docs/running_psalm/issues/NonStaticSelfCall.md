@@ -3,6 +3,8 @@
 Emitted when calling a non-static function statically
 
 ```php
+<?php
+
 class A {
     public function foo(): void {}
 

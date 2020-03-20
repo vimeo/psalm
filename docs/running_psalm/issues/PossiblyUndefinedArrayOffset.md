@@ -3,6 +3,8 @@
 Emitted when trying to access a possibly undefined array offset
 
 ```php
+<?php
+
 if (rand(0, 1)) {
     $arr = ["a" => 1, "b" => 2];
 } else {

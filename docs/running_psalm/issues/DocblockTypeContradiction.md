@@ -3,6 +3,8 @@
 Emitted when conditional doesn't make sense given the docblock types supplied.
 
 ```php
+<?php
+
 /**
  * @param string $s
  *
@@ -24,6 +26,8 @@ A lot of old PHP code is set up to prevent unexpected errors with checks like th
 As you migrate your code to newer versions of PHP you can also use stricter type-hints:
 
 ```php
+<?php
+
 function foo(string $s) : void {
     echo $s;
 }

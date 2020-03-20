@@ -3,6 +3,8 @@
 Emitted when a by-ref variable is set in two different branches of an if to different types.
 
 ```php
+<?php
+
  class A {
     /** @var int */
     private $foo;

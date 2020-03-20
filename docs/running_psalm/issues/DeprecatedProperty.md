@@ -3,6 +3,8 @@
 Emitted when getting/setting a deprecated property of a given class
 
 ```php
+<?php
+
 class A {
     /**
      * @deprecated

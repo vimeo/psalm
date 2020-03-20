@@ -3,6 +3,8 @@
 Emitted if a return statement contains a false value, but the function return type does not allow false
 
 ```php
+<?php
+
 function getCommaPosition(string $a) : int {
     return strpos($a, ',');
 }
@@ -13,6 +15,8 @@ function getCommaPosition(string $a) : int {
 You can add a specific check for false:
 
 ```php
+<?php
+
 function getCommaPosition(string $a) : int {
     $pos = return strpos($a, ',');
 
@@ -27,6 +31,8 @@ function getCommaPosition(string $a) : int {
 Alternatively you may chose to throw an exception:
 
 ```php
+<?php
+
 function getCommaPosition(string $a) : int {
     $pos = return strpos($a, ',');
 

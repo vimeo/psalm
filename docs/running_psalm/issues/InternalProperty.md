@@ -4,6 +4,8 @@ Emitted when attempting to access a property marked as internal from an unrelate
 to access a property marked as psalm-internal to a different namespace.
 
 ```php
+<?php
+
 namespace A {
     class Foo {
         /**

@@ -3,6 +3,8 @@
 Emitted when calling an impure function from a function or method marked as pure.
 
 ```php
+<?php
+
 function impure(array $a) : array {
     /** @var int */
     static $i = 0;

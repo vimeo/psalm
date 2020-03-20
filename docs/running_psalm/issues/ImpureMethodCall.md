@@ -3,6 +3,8 @@
 Emitted when calling an impure method from a function or method marked as pure.
 
 ```php
+<?php
+
 class A {
     public int $a = 5;
 

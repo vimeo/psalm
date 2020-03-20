@@ -4,6 +4,8 @@ Emitted when attempting to access a method marked as internal an unrelated names
 to access a method marked as psalm-internal to a different namespace.
 
 ```php
+<?php
+
 namespace A {
     class Foo {
         /**

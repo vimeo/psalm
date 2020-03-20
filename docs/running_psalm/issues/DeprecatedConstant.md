@@ -3,6 +3,8 @@
 Emitted when referring to a deprecated constant:
 
 ```php
+<?php
+
 class A {
     /** @deprecated */
     const FOO = 'foo';

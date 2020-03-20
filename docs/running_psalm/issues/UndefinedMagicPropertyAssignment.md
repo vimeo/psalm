@@ -3,6 +3,8 @@
 Emitted when assigning a property on an object that doesn’t have that magic property defined
 
 ```php
+<?php
+
 /**
  * @property string $bar
  */

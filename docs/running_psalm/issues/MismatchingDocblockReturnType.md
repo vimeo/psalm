@@ -3,6 +3,8 @@
 Emitted when an `@return` entry in a function’s docblock doesn’t match the function return typehint
 
 ```php
+<?php
+
 class A {}
 class B {}
 /**
@@ -16,6 +18,8 @@ function foo() : A {
 This, however, is fine:
 
 ```php
+<?php
+
 class A {}
 class B extends A {}
 /**

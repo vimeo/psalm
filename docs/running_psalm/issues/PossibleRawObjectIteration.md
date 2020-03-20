@@ -3,6 +3,8 @@
 Emitted when possibly iterating over an object’s properties, the comparison to [RawObjectIteration](#rawobjectiteration).
 
 ```php
+<?php
+
 class A {
     /** @var string|null */
     public $foo;

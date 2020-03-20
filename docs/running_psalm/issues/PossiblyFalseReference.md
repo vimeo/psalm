@@ -3,6 +3,8 @@
 Emitted when making a method call on a value than might be `false`
 
 ```php
+<?php
+
 class A {
     public function bar() : void {}
 }

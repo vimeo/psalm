@@ -3,6 +3,8 @@
 Emitted when a property is used in a constructor before it is initialized
 
 ```php
+<?php
+
 class A {
     /** @var string */
     public $foo;

@@ -3,6 +3,8 @@
 Emitted when trying to fetch a property on a value that may not be an object or may be an object that doesn’t have the desired property.
 
 ```php
+<?php
+
 class A {
     /** @var ?string */
     public $bar;

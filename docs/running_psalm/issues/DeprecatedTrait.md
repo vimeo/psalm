@@ -3,6 +3,8 @@
 Emitted when referring to a deprecated trait:
 
 ```php
+<?php
+
 /** @deprecated */
 trait T {}
 class A {

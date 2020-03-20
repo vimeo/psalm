@@ -3,6 +3,8 @@
 Emitted when a possible exception isn't caught in global scope
 
 ```php
+<?php
+
 /**
  * @throws \Exception
  */

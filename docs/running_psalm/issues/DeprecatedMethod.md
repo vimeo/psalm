@@ -3,6 +3,8 @@
 Emitted when calling a deprecated method on a given class:
 
 ```php
+<?php
+
 class A {
     /** @deprecated */
     public function foo() : void {}

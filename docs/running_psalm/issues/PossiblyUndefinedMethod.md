@@ -3,6 +3,8 @@
 Emitted when trying to access a method that may not be defined on the object
 
 ```php
+<?php
+
 class A {
     public function bar() : void {}
 }

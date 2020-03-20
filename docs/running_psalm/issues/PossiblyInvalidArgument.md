@@ -3,6 +3,8 @@
 Emitted when
 
 ```php
+<?php
+
 /** @return int|stdClass */
 function foo() {
     return rand(0, 1) ? 5 : new stdClass;
