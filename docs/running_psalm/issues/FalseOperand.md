@@ -5,35 +5,9 @@ Emitted when using `false` as part of an operation (e.g. `+`, `.`, `^` etc.)
 ```php
 <?php
 
-function echoCommaPosition(string $str) : void {
-    echo 'The comma is located at ' . strpos($str, ','); 
-}
+echo 5 . false; 
 ```
 
-## How to fix
+## Why this is bad
 
-You can detect the `false` value with some extra logic:
-
-```php
-<?php
-
-function echoCommaPosition(string $str) : void {
-    $pos = strpos($str, ',');
-
-    if ($pos === false) {
-        echo 'There is no comma in the string';
-    }
-
-    echo 'The comma is located at ' . $pos; 
-}
-```
-
-Alternatively you can just use a ternary to suppress this issue:
-
-```php
-<?php
-
-function echoCommaPosition(string $str) : void {
-    echo 'The comma is located at ' . (strpos($str, ',') ?: ''); 
-}
-```
+`false` doesn’t make sense in these operations
