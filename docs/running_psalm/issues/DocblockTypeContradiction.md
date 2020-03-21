@@ -19,6 +19,10 @@ function foo($s) {
 }
 ```
 
+## Why this is bad
+
+This can sometimes point to a flaw in either your docblock types, or some unnecessary runtime checks in an environment where all types can be checked by Psalm, without the need for additional runtime checks.
+
 ## How to fix
 
 A lot of old PHP code is set up to prevent unexpected errors with checks like the one above.

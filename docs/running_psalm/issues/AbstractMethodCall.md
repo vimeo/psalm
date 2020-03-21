@@ -11,3 +11,7 @@ abstract class Base {
 
 Base::bar();
 ```
+
+## Why this is bad
+
+It's not allowed by PHP.

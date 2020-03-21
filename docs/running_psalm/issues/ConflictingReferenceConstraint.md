@@ -33,3 +33,7 @@ if (rand(0, 1)) {
 
 $v = 8;
 ```
+
+## Why this is bad
+
+Psalm doesn't understand what the type of `$c` should be

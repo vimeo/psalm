@@ -6,7 +6,7 @@ Emitted when using a possibly `false` value as part of an operation (e.g. `+`, `
 <?php
 
 function echoCommaPosition(string $str) : void {
-    echo 'The comma is located at ' . false; 
+    echo 'The comma is located at ' . strpos($str, ','); 
 }
 ```
 
