@@ -788,6 +788,9 @@ class CallAnalyzer
                     true
                 ))
         ) {
+            $was_inside_assignment = $context->inside_assignment;
+            $context->inside_assignment = true;
+
             // if the variable is in scope, get or we're in a special array function,
             // figure out its type before proceeding
             if (ExpressionAnalyzer::analyze(
@@ -797,6 +800,8 @@ class CallAnalyzer
             ) === false) {
                 return false;
             }
+
+            $context->inside_assignment = $was_inside_assignment;
         }
 
         // special handling for array sort

@@ -148,7 +148,12 @@ class PropertyFetchAnalyzer
                     && $source->getMethodName() === '__construct'
                     && !$context->inside_unset
                 ) {
-                    if ($context->inside_isset) {
+                    if ($context->inside_isset
+                        || ($context->inside_assignment
+                            && isset($context->vars_in_scope[$var_id])
+                            && $context->vars_in_scope[$var_id]->isNullable()
+                        )
+                    ) {
                         $stmt_type->initialized = true;
                     } else {
                         if (IssueBuffer::accepts(
