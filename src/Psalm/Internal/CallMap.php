@@ -12221,7 +12221,7 @@ return [
 'Sodium\randombytes_uniform' => ['int', 'upperBoundNonInclusive'=>'int'],
 'Sodium\version_string' => ['string'],
 'sodium_add' => ['string', 'string_1'=>'string', 'string_2'=>'string'],
-'sodium_base642bin' => ['string', 'base64'=>'string', 'variant'=>'int', 'ignore'=>'string'],
+'sodium_base642bin' => ['string', 'base64'=>'string', 'variant'=>'int', 'ignore='=>'string'],
 'sodium_bin2base64' => ['string', 'binary'=>'string', 'variant'=>'int'],
 'sodium_bin2hex' => ['string', 'binary'=>'string'],
 'sodium_compare' => ['int', 'string_1'=>'string', 'string_2'=>'string'],
