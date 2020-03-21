@@ -45,6 +45,7 @@ To fix all of these at once, run `vendor/bin/psalter --issues=all`
 Running `vendor/bin/psalter --issues=MissingReturnType --php-version=7.0` on
 
 ```php
+<?php
 function foo() {
   return "hello";
 }
@@ -53,6 +54,7 @@ function foo() {
 gives
 
 ```php
+<?php
 function foo() : string {
   return "hello";
 }
@@ -61,6 +63,7 @@ function foo() : string {
 and running `vendor/bin/psalter --issues=MissingReturnType --php-version=5.6` on
 
 ```php
+<?php
 function foo() {
   return "hello";
 }
@@ -69,6 +72,7 @@ function foo() {
 gives
 
 ```php
+<?php
 /**
  * @return string
  */
@@ -86,6 +90,7 @@ As above, except for closures
 Running `vendor/bin/psalter --issues=InvalidReturnType` on
 
 ```php
+<?php
 /**
  * @return int
  */
@@ -97,6 +102,7 @@ function foo() {
 gives
 
 ```php
+<?php
 /**
  * @return string
  */
@@ -108,6 +114,7 @@ function foo() {
 There's also support for return typehints, so running `vendor/bin/psalter --issues=InvalidReturnType` on
 
 ```php
+<?php
 function foo() : int {
   return "hello";
 }
@@ -116,6 +123,7 @@ function foo() : int {
 gives
 
 ```php
+<?php
 function foo() : string {
   return "hello";
 }
@@ -126,6 +134,7 @@ function foo() : string {
 Running `vendor/bin/psalter --issues=InvalidNullableReturnType  --php-version=7.1` on
 
 ```php
+<?php
 function foo() : string {
   return rand(0, 1) ? "hello" : null;
 }
@@ -134,6 +143,7 @@ function foo() : string {
 gives
 
 ```php
+<?php
 function foo() : ?string {
   return rand(0, 1) ? "hello" : null;
 }
@@ -142,6 +152,7 @@ function foo() : ?string {
 and running `vendor/bin/psalter --issues=InvalidNullableReturnType  --php-version=7.0` on
 
 ```php
+<?php
 function foo() : string {
   return rand(0, 1) ? "hello" : null;
 }
@@ -150,6 +161,7 @@ function foo() : string {
 gives
 
 ```php
+<?php
 /**
  * @return string|null
  */
@@ -163,6 +175,7 @@ function foo() {
 Running `vendor/bin/psalter --issues=InvalidFalsableReturnType` on
 
 ```php
+<?php
 function foo() : string {
   return rand(0, 1) ? "hello" : false;
 }
@@ -171,6 +184,7 @@ function foo() : string {
 gives
 
 ```php
+<?php
 /**
  * @return string|false
  */
@@ -184,6 +198,7 @@ function foo() {
 Running `vendor/bin/psalter --issues=MissingParamType` on
 
 ```php
+<?php
 class C {
   public static function foo($s) : void {
     echo $s;
@@ -195,6 +210,7 @@ C::foo("hello");
 gives
 
 ```php
+<?php
 class C {
   /**
    * @param string $s
@@ -211,6 +227,7 @@ C::foo("hello");
 Given
 
 ```php
+<?php
 class A {}
 class B extends A {}
 class C extends A {}
@@ -219,6 +236,7 @@ class D {}
 
 running `vendor/bin/psalter --issues=MismatchingDocblockParamType` on
 ```php
+<?php
 /**
  * @param B|C $first
  * @param D $second
@@ -229,6 +247,7 @@ function foo(A $first, A $second) : void {}
 gives
 
 ```php
+<?php
 /**
  * @param B|C $first
  * @param A $second
@@ -240,6 +259,7 @@ function foo(A $first, A $second) : void {}
 
 Running `vendor/bin/psalter --issues=MismatchingDocblockReturnType` on
 ```php
+<?php
 /**
  * @return int
  */
@@ -251,6 +271,7 @@ function foo() : string {
 gives
 
 ```php
+<?php
 /**
  * @return string
  */
@@ -264,6 +285,7 @@ function foo() : string {
 Running `vendor/bin/psalter --issues=LessSpecificReturnType` on
 
 ```php
+<?php
 function foo() : ?string {
   return "hello";
 }
@@ -272,6 +294,7 @@ function foo() : ?string {
 gives
 
 ```php
+<?php
 function foo() : string {
   return "hello";
 }
@@ -282,6 +305,7 @@ function foo() : string {
 Running `vendor/bin/psalter --issues=PossiblyUndefinedVariable` on
 
 ```php
+<?php
 function foo()
 {
     if (rand(0, 1)) {
@@ -294,6 +318,7 @@ function foo()
 gives
 
 ```php
+<?php
 function foo()
 {
     $a = null;
@@ -310,6 +335,7 @@ function foo()
 Running `vendor/bin/psalter --issues=PossiblyUndefinedGlobalVariable` on
 
 ```php
+<?php
 if (rand(0, 1)) {
   $a = 5;
 }
@@ -319,6 +345,7 @@ echo $a;
 gives
 
 ```php
+<?php
 $a = null;
 if (rand(0, 1)) {
   $a = 5;
@@ -333,6 +360,7 @@ This removes private unused methods.
 Running `vendor/bin/psalter --issues=UnusedMethod` on
 
 ```php
+<?php
 class A {
     private function foo() : void {}
 }
@@ -343,6 +371,7 @@ new A();
 gives
 
 ```php
+<?php
 class A {
 
 }
@@ -357,6 +386,7 @@ This removes protected/public unused methods.
 Running `vendor/bin/psalter --issues=PossiblyUnusedMethod` on
 
 ```php
+<?php
 class A {
     protected function foo() : void {}
     public function bar() : void {}
@@ -368,6 +398,7 @@ new A();
 gives
 
 ```php
+<?php
 class A {
 
 }
@@ -382,6 +413,7 @@ This removes private unused properties.
 Running `vendor/bin/psalter --issues=UnusedProperty` on
 
 ```php
+<?php
 class A {
     /** @var string */
     private $foo;
@@ -393,6 +425,7 @@ new A();
 gives
 
 ```php
+<?php
 class A {
 
 }
@@ -407,6 +440,7 @@ This removes protected/public unused properties.
 Running `vendor/bin/psalter --issues=PossiblyUnusedProperty` on
 
 ```php
+<?php
 class A {
     /** @var string */
     public $foo;
@@ -421,6 +455,7 @@ new A();
 gives
 
 ```php
+<?php
 class A {
 
 }
@@ -435,6 +470,7 @@ This removes unused variables.
 Running `vendor/bin/psalter --issues=UnusedVariable` on
 
 ```php
+<?php
 function foo() : void {
     $a = 5;
     $b = 6;
@@ -446,6 +482,7 @@ function foo() : void {
 gives
 
 ```php
+<?php
 function foo() : void {
     $a = 5;
     $b = 6;
@@ -460,6 +497,7 @@ This removes unused `@var` annotations
 Running `vendor/bin/psalter --issues=UnnecessaryVarAnnotation` on
 
 ```php
+<?php
 function foo() : string {
     return "hello";
 }
@@ -471,6 +509,7 @@ $a = foo();
 gives
 
 ```php
+<?php
 function foo() : string {
     return "hello";
 }

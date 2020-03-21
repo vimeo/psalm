@@ -20,6 +20,7 @@ So, when analysing the `src` directory, Psalm will deep scan the following file:
 
 src/A.php
 ```php
+<?php
 use Vendor\VendorClass;
 use Vendor\OtherVendorClass;
 

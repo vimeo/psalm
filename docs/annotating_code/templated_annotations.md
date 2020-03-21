@@ -7,6 +7,7 @@ Templated types allow you to tell Psalm even more information about how your cod
 Let's look at a simple class `MyContainer`:
 
 ```php
+<?php
 class MyContainer {
   private $value;
   
@@ -25,6 +26,7 @@ When Psalm handles the return type of `$my_container->getValue()` it doesn't kno
 Templated annotations provide us with a workaround - we can define a generic/templated param `T` that is a placeholder for the value inside `MyContainer`:
 
 ```php
+<?php
 /**
  * @template T
  */
@@ -47,6 +49,7 @@ class MyContainer {
 Now we can substitute values for that templated param when we reference `MyContainer` in docblocks e.g. `@return MyContainer<int>`. This tells Psalm to substitute `T` for `int` when evaluating that return type, effectively treating it as a class that looks like
 
 ```php
+<?php
 class One_off_instance_of_MyContainer {
   /** @var int */
   private $value;
@@ -72,6 +75,7 @@ The `@template` tag allows classes and functions to declare a generic type param
 As a very simple example, this function returns whatever is passed in:
 
 ```php
+<?php
 /**
  * @template T
  * @psalm-param T $t
@@ -91,6 +95,7 @@ $d = mirror($c); // Psalm knows the result is string
 Psalm also uses `@template` annotations in its stubbed versions of PHP array functions e.g.
 
 ```php
+<?php
 /**
  * Takes one array with keys and another with values and combines them
  *
@@ -113,6 +118,7 @@ function array_combine(array $arr, array $arr2) {}
 Psalm also allows you to parameterise class types
 
 ```php
+<?php
 /**
  * @template T
  * @psalm-param class-string<T> $class
@@ -132,6 +138,7 @@ $a = instantiator(Foo::class); // Psalm knows the result is an object of type Fo
 Psalm allows you to extend templated classes with `@extends`/`@template-extends`:
 
 ```php
+<?php
 /**
  * @template T
  */
@@ -146,6 +153,7 @@ class ChildClass extends ParentClass {}
 similarly you can implement interfaces with `@implements`/`@template-implements`
 
 ```php
+<?php
 /**
  * @template T
  */
@@ -160,6 +168,7 @@ class Foo implements IFoo {}
 and import traits with `@use`/`@template-use`
 
 ```php
+<?php
 /**
  * @template T
  */
@@ -176,6 +185,7 @@ class Foo {
 You can also extend one templated class with another, e.g.
 
 ```php
+<?php
 /**
  * @template T1
  */
@@ -193,6 +203,7 @@ class ChildClass extends ParentClass {}
 You can use `@template of <type>` to restrict input. For example, to restrict to a given class you can use
 
 ```php
+<?php
 class Foo {}
 class FooChild extends Foo {}
 
@@ -211,6 +222,7 @@ $c = makeArray(new stdClass()); // type error
 
 Templated types aren't limited to key-value pairs, and you can re-use templates across multiple arguments of a template-supporting type:
 ```php
+<?php
 /**
  * @template T0 as array-key
  *
@@ -274,6 +286,7 @@ class Baz extends Foo {
 Imagine you have code like this:
 
 ```php
+<?php
 class Animal {}
 class Dog extends Animal {}
 class Cat extends Animal {}
@@ -324,6 +337,7 @@ To prevent this, Psalm emits an error when calling `addAnimal($dog_collection)` 
 But there are also times where it's perfectly safe to pass template param subtypes:
 
 ```php
+<?php
 abstract class Animal {
     abstract public function getNoise() : string;
 }
@@ -364,6 +378,7 @@ Here we're not doing anything bad – we're just iterating over an array of obje
 We can tell Psalm that it's safe to pass subtypes for the templated param `T` by using the annotation `@template-covariant T`:
 
 ```php
+<?php
 /**
  * @template-covariant T
  */
@@ -384,6 +399,7 @@ Psalm has [comprehensive support for declaring functional immutability](https://
 If we make sure that the class is immutable, we can declare a class with an `add` method that still takes a covariant param as input, but which does not modify the collection at all, instead returning a new one:
 
 ```php
+<?php
 /**
  * @template-covariant T
  * @psalm-immutable

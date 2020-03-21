@@ -11,6 +11,7 @@ Adding `=` after the type implies it is optional, and suffixing with `...` impli
 Using this annotation you can specify that a given function return a `Closure` e.g.
 
 ```php
+<?php
 /**
  * @return Closure(bool):int
  */

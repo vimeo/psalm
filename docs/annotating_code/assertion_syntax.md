@@ -31,6 +31,7 @@ Most `is_xxx` PHP functions have companion assertions e.g. `int` for `is_int`. H
 So a custom version `is_int` could be annotated in Psalm as
 
 ```php
+<?php
 /** @psalm-assert-if-true int $x */
 function custom_is_int($x) {
   return is_int($x);
@@ -56,11 +57,13 @@ Any assertion above can be negated:
 This asserts that `$foo` is not an `int`:
 
 ```php
+<?php
 /** @psalm-assert !int $foo */
 ```
 
 This asserts that `$bar` is not an object of type `SomeObjectType`:
 ```php
+<?php
 /** @psalm-assert !SomeObjectType $bar  */
 ```
 
@@ -68,11 +71,13 @@ This asserts that `$bar` is not an object of type `SomeObjectType`:
 
 This asserts that `$bar` is `true`:
 ```php
+<?php
 /** @psalm-assert true $bar  */
 ```
 
 This asserts that `$bar` is not `false`:
 ```php
+<?php
 /** @psalm-assert !false $bar  */
 ```
 
@@ -80,18 +85,21 @@ This asserts that `$bar` is not `false`:
 
 Psalm also supports the equivalent of `assert($some_int === $other_int)` in the form
 ```php
+<?php
 /** @psalm-assert =int $some_int */
 ```
 
 There are two differences between the above assertion and 
 
 ```php
+<?php
 /** @psalm-assert int $some_int */
 ```
 
 Firstly, the negation of `=int` has no meaning:
 
 ```php
+<?php
 /** @psalm-assert-if-true =int $x */
 function equalsFive($x) {
   return is_int($x) && $x === 5;

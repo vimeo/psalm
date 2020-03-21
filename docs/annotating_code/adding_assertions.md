@@ -12,6 +12,7 @@ A list of acceptable assertions [can be found here](assertion_syntax.md).
 If you have a class that verified its input is an array of strings, you can make that clear to Psalm:
 
 ```php
+<?php
 /** @psalm-assert string[] $arr */
 function validateStringArray(array $arr) : void {
     foreach ($arr as $s) {
@@ -25,6 +26,7 @@ function validateStringArray(array $arr) : void {
 This enables you to call the `validateStringArray` function on some data and have Psalm understand that the given data *must* be an array of strings:
 
 ```php
+<?php
 function takesString(string $s) : void {}
 function takesInt(int $s) : void {}
 
@@ -44,6 +46,7 @@ function takesArray(array $arr) : void {
 Similarly, `@psalm-assert-if-true` and `@psalm-assert-if-false` will filter input if the function/method returns `true` and `false` respectively:
 
 ```php
+<?php
 class A {
     public function isValid() : bool {
         return (bool) rand(0, 1);
@@ -85,6 +88,7 @@ function takesA(A $a) : void {
 As well as getting Psalm to understand that the given data must be a certain type, you can also show that a variable must be not null:
 
 ```php
+<?php
 /**
  * @psalm-assert !null $value
  */
@@ -96,6 +100,7 @@ function assertNotNull($value): void {
 And you can check on null values:
 
 ```php
+<?php
 /**
  * @psalm-assert-if-true null $value
  */

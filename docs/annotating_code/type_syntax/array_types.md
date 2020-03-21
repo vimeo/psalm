@@ -4,17 +4,20 @@ In PHP, the `array` type is commonly used to represent three different data stru
 
 [List](https://en.wikipedia.org/wiki/List_(abstract_data_type)):
 ```php
+<?php
 $a = [1, 2, 3, 4, 5];
 ```
 
 [Associative array](https://en.wikipedia.org/wiki/Associative_array):  
 ```php
+<?php
 $a = [0 => 'hello', 5 => 'goodbye'];
 $b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
 ```
 
 Makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language)):
 ```php
+<?php
 $a = ['name' => 'Psalm', 'type' => 'tool'];
 ```
 
@@ -58,6 +61,7 @@ A `list` type is of the form `list<SomeType>`,  where `SomeType` is any permitte
 List types show their value in a few ways:
 
 ```php
+<?php
 /**
  * @param array<int, string> $arr
  */
@@ -93,6 +97,7 @@ Psalm supports a special format for arrays where the key offsets are known: obje
 Given an array
 
 ```php
+<?php
 ["hello", "world", "foo" => new stdClass, 28 => false];
 ```
 

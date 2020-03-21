@@ -23,16 +23,17 @@ Psalm also has a few features to make it perform as well as possible on large co
 
 ## Example output
 
+Given a file `implode_strings.php`:
+
 ```php
-// somefile.php
 <?php
 $a = ['foo', 'bar'];
 echo implode($a, ' ');
 ```
 
 ```bash
-> ./vendor/bin/psalm somefile.php
-ERROR: InvalidArgument - somefile.php:3:14 - Argument 1 of implode expects `string`, `array` provided
+> ./vendor/bin/psalm implode_strings.php
+ERROR: InvalidArgument - somefile.php:3:14 - Argument 1 of implode expects `string`, `array` provided (see https://psalm.dev/004)
 ```
 
 ## Inspirations

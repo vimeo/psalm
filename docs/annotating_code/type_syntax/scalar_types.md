@@ -21,6 +21,7 @@ Psalm supports a special meta-type for `MyClass::class` constants, `class-string
 For example, given a function with a `string` parameter `$class_name`, you can use the annotation `@param class-string $class_name` to tell Psalm make sure that the function is always called with a `::class` constant in that position:
 
 ```php
+<?php
 class A {}
 
 /**

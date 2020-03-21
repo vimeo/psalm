@@ -7,6 +7,7 @@ An annotation of the form `Type1|Type2|Type3` is a _Union Type_. `Type1`, `Type2
 Union types can be generated in a number of different ways, for example in ternary expressions:
 
 ```php
+<?php
 $rabbit = rand(0, 10) === 4 ? 'rabbit' : ['rabbit'];
 ```
 

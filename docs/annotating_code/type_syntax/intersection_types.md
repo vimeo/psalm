@@ -4,6 +4,7 @@ An annotation of the form `Type1&Type2&Type3` is an _Intersection Type_. Any val
 
 For example, after this statement in a PHPUnit test:
 ```php
+<?php
 
 $hare = $this->createMock(Hare::class);
 ```

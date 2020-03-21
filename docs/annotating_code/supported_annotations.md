@@ -32,6 +32,7 @@ If `VariableReference` is provided, it should be of the form `$variable` or `$va
 If no `VariableReference` is given, the annotation tells Psalm that the right hand side of the expression, whether an assignment or a return, is of type `Type`.
 
 ```php
+<?php
 /** @var string */
 $a = $_GET['foo'];
 
@@ -53,6 +54,7 @@ There are a number of custom tags that determine how Psalm treats your code.
 This is used to specify that a by-ref type is different from the one that entered. In the function below the first param can be null, but once the function has executed the by-ref value is not null.
 
 ```php
+<?php
 /**
  * @param-out string $s
  */
@@ -75,6 +77,7 @@ This annotation is used to suppress issues. It can be used in function docblocks
 Function docblock example:
 
 ```php
+<?php
 /**
  * @psalm-suppress PossiblyNullOperand
  */
@@ -86,6 +89,7 @@ function addString(?string $s) {
 Inline example:
 
 ```php
+<?php
 function addString(?string $s) {
     /** @psalm-suppress PossiblyNullOperand */
     echo "hello " . $s;
@@ -103,6 +107,7 @@ See [Adding assertions](adding_assertions.md).
 This can be used to tell Psalm not to worry if a function/method returns null. It’s a bit of a hack, but occasionally useful for scenarios where you either have a very high confidence of a non-null value, or some other function guarantees a non-null value for that particular code path.
 
 ```php
+<?php
 class Foo {}
 function takesFoo(Foo $f): void {}
 
@@ -123,6 +128,7 @@ This provides the same, but for `false`. Psalm uses this internally for function
 If you have a magic property getter/setter, you can use `@psalm-seal-properties` to instruct Psalm to disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations.
 
 ```php
+<?php
 /**
  * @property string $foo
  * @psalm-seal-properties
@@ -153,6 +159,7 @@ is not within the given namespace.
 As other tools do not support `@psalm-internal`, it may only be used in conjunction with `@internal`.
 
 ```php
+<?php
 namespace A\B {
     /**
     * @internal
@@ -203,6 +210,7 @@ $b->s = "boo"; // disallowed
 Used to annotate a class method that does not mutate state, either internally or externally of the class's scope.
 
 ```php
+<?php
 class D {
   private string $s;
 
@@ -232,6 +240,7 @@ class D {
 Used to annotate a class method that does not mutate state externally of the class's scope.
 
 ```php
+<?php
 class E {
   private string $s;
 
@@ -261,6 +270,7 @@ class E {
 Used to annotate a class where every property is treated by consumers as `@psalm-readonly` and every instance method is treated as `@psalm-mutation-free`.
 
 ```php
+<?php
 /**
  * @psalm-immutable
  */
@@ -303,6 +313,7 @@ $anonymous = new /** @psalm-immutable */ class extends Foo
 Used to annotate a [pure function](https://en.wikipedia.org/wiki/Pure_function) - one whose output is just a function of its input.
 
 ```php
+<?php
 class Arithmetic {
   /** @psalm-pure */
   public static function add(int $left, int $right) : int {
@@ -330,6 +341,7 @@ echo Arithmetic::addCumulative(3); // outputs 6
 Used to annotate readonly properties that can be mutated in a private context. With this, public properties can be read from another class but only be mutated within a method of its own class.
 
 ```php
+<?php
 class Counter {
   /**
    * @readonly
@@ -354,6 +366,7 @@ $counter->count = 5; // This will fail, as it's mutating a property directly
 This is a shorthand for the property annotations `@readonly` and `@psalm-allow-private-mutation`.
 
 ```php
+<?php
 class Counter {
   /**
    * @psalm-readonly-allow-private-mutation

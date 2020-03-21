@@ -21,6 +21,8 @@ You can use the null coalesce operator to provide a default value in the event t
 ```php
 <?php
 
+...
+
 echo $arr["b"] ?? 0;
 ```
 
