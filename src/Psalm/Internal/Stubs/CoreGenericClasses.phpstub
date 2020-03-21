@@ -232,6 +232,9 @@ class Generator implements Traversable {
      */
     public function send($value) {}
 
+    /**
+     * @return TValue Can return any type.
+     */
     public function throw(Throwable $exception) {}
 }
 
