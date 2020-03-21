@@ -13,3 +13,18 @@ function foo(string &$a): string {
     return $a;
 }
 ```
+
+## How to fix
+
+Just remove the mutating assignment:
+
+```php
+<?php
+
+/**
+ * @psalm-pure
+ */
+function foo(string &$a): string {
+    return $a;
+}
+```
