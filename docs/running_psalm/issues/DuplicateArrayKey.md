@@ -6,10 +6,10 @@ Emitted when an array has a key more than once
 <?php
 
 $arr = [
-    'a' => 1,
-    'b' => 2,
-    'c' => 3,
-    'c' => 4,
+    'a' => 'one',
+    'b' => 'two',
+    'c' => 'this text will be overwritten by the next line',
+    'c' => 'three',
 ];
 ```
 
@@ -21,9 +21,9 @@ Remove the offending duplicates:
 <?php
 
 $arr = [
-    'a' => 1,
-    'b' => 2,
-    'c' => 4,
+    'a' => 'one',
+    'b' => 'two',
+    'c' => 'three',
 ];
 ```
 
