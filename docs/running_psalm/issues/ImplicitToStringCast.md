@@ -16,7 +16,7 @@ function takesString(string $s) : void {}
 takesString(new A);
 ```
 
-## How to  fix
+## How to fix
 
 You can add an explicit string cast:
 
