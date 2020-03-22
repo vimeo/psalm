@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
@@ -491,6 +492,18 @@ class ExpressionAnalyzer
                 if (strpos($var, '$this->') === 0) {
                     $use_context->vars_in_scope[$var] = clone $type;
                 }
+            }
+
+            if ($context->self) {
+                $self_class_storage = $codebase->classlike_storage_provider->get($context->self);
+
+                ClassAnalyzer::addContextProperties(
+                    $statements_analyzer,
+                    $self_class_storage,
+                    $use_context,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer->getParentFQCLN()
+                );
             }
 
             foreach ($context->vars_possibly_in_scope as $var => $_) {

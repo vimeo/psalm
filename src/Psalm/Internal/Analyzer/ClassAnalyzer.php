@@ -704,131 +704,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-            $property_class_name = $codebase->properties->getDeclaringClassForProperty(
-                $appearing_property_id,
-                true
-            );
-
-            if ($property_class_name === null) {
-                continue;
-            }
-
-            $property_class_storage = $classlike_storage_provider->get($property_class_name);
-
-            $property_storage = $property_class_storage->properties[$property_name];
-
-            if (isset($storage->overridden_property_ids[$property_name])) {
-                foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
-                    list($guide_class_name) = explode('::$', $overridden_property_id);
-                    $guide_class_storage = $classlike_storage_provider->get($guide_class_name);
-                    $guide_property_storage = $guide_class_storage->properties[$property_name];
-
-                    if ($property_storage->visibility > $guide_property_storage->visibility
-                        && $property_storage->location
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new OverriddenPropertyAccess(
-                                'Property ' . $guide_class_storage->name . '::$' . $property_name
-                                    . ' has different access level than '
-                                    . $storage->name . '::$' . $property_name,
-                                $property_storage->location
-                            )
-                        )) {
-                            return false;
-                        }
-
-                        return null;
-                    }
-                }
-            }
-
-            if ($property_storage->type) {
-                $property_type = clone $property_storage->type;
-
-                if (!$property_type->isMixed()
-                    && !$property_storage->has_default
-                    && !($property_type->isNullable() && $property_type->from_docblock)
-                ) {
-                    $property_type->initialized = false;
-                }
-            } else {
-                $property_type = Type::getMixed();
-
-                if (!$property_storage->has_default) {
-                    $property_type->initialized = false;
-                }
-            }
-
-            $property_type_location = $property_storage->type_location;
-
-            $fleshed_out_type = !$property_type->isMixed()
-                ? ExpressionAnalyzer::fleshOutType(
-                    $codebase,
-                    $property_type,
-                    $this->fq_class_name,
-                    $this->fq_class_name,
-                    $this->parent_fq_class_name
-                )
-                : $property_type;
-
-            $class_template_params = ClassTemplateParamCollector::collect(
-                $codebase,
-                $property_class_storage,
-                $fq_class_name,
-                null,
-                new Type\Atomic\TNamedObject($fq_class_name),
-                '$this'
-            );
-
-            $template_result = new \Psalm\Internal\Type\TemplateResult(
-                $class_template_params ?: [],
-                []
-            );
-
-            if ($class_template_params) {
-                $fleshed_out_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
-                    $fleshed_out_type,
-                    $template_result,
-                    $codebase,
-                    null,
-                    null,
-                    null
-                );
-            }
-
-            if ($property_type_location && !$fleshed_out_type->isMixed()) {
-                $fleshed_out_type->check(
-                    $this,
-                    $property_type_location,
-                    $storage->suppressed_issues + $this->getSuppressedIssues(),
-                    [],
-                    false
-                );
-            }
-
-            if ($property_storage->is_static) {
-                $property_id = $this->fq_class_name . '::$' . $property_name;
-
-                $class_context->vars_in_scope[$property_id] = $fleshed_out_type;
-            } else {
-                $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
-            }
-        }
-
-        foreach ($storage->pseudo_property_get_types as $property_name => $property_type) {
-            $fleshed_out_type = !$property_type->isMixed()
-                ? ExpressionAnalyzer::fleshOutType(
-                    $codebase,
-                    $property_type,
-                    $this->fq_class_name,
-                    $this->fq_class_name,
-                    $this->parent_fq_class_name
-                )
-                : $property_type;
-
-            $class_context->vars_in_scope['$this->' . substr($property_name, 1)] = $fleshed_out_type;
-        }
+        self::addContextProperties(
+            $this,
+            $storage,
+            $class_context,
+            $this->fq_class_name,
+            $this->parent_fq_class_name
+        );
 
         $constructor_analyzer = null;
         $member_stmts = [];
@@ -1068,6 +950,142 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $file_manipulations
                 );
             }
+        }
+    }
+
+    public static function addContextProperties(
+        StatementsSource $statements_source,
+        ClassLikeStorage $storage,
+        Context $class_context,
+        string $fq_class_name,
+        ?string $parent_fq_class_name
+    ) : void {
+        $codebase = $statements_source->getCodebase();
+
+        foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
+            $property_class_name = $codebase->properties->getDeclaringClassForProperty(
+                $appearing_property_id,
+                true
+            );
+
+            if ($property_class_name === null) {
+                continue;
+            }
+
+            $property_class_storage = $codebase->classlike_storage_provider->get($property_class_name);
+
+            $property_storage = $property_class_storage->properties[$property_name];
+
+            if (isset($storage->overridden_property_ids[$property_name])) {
+                foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
+                    list($guide_class_name) = explode('::$', $overridden_property_id);
+                    $guide_class_storage = $classlike_storage_provider->get($guide_class_name);
+                    $guide_property_storage = $guide_class_storage->properties[$property_name];
+
+                    if ($property_storage->visibility > $guide_property_storage->visibility
+                        && $property_storage->location
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new OverriddenPropertyAccess(
+                                'Property ' . $guide_class_storage->name . '::$' . $property_name
+                                    . ' has different access level than '
+                                    . $storage->name . '::$' . $property_name,
+                                $property_storage->location
+                            )
+                        )) {
+                            // fall through
+                        }
+
+                        continue;
+                    }
+                }
+            }
+
+            if ($property_storage->type) {
+                $property_type = clone $property_storage->type;
+
+                if (!$property_type->isMixed()
+                    && !$property_storage->has_default
+                    && !($property_type->isNullable() && $property_type->from_docblock)
+                ) {
+                    $property_type->initialized = false;
+                }
+            } else {
+                $property_type = Type::getMixed();
+
+                if (!$property_storage->has_default) {
+                    $property_type->initialized = false;
+                }
+            }
+
+            $property_type_location = $property_storage->type_location;
+
+            $fleshed_out_type = !$property_type->isMixed()
+                ? ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $property_type,
+                    $fq_class_name,
+                    $fq_class_name,
+                    $parent_fq_class_name
+                )
+                : $property_type;
+
+            $class_template_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $property_class_storage,
+                $fq_class_name,
+                null,
+                new Type\Atomic\TNamedObject($fq_class_name),
+                '$this'
+            );
+
+            $template_result = new \Psalm\Internal\Type\TemplateResult(
+                $class_template_params ?: [],
+                []
+            );
+
+            if ($class_template_params) {
+                $fleshed_out_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                    $fleshed_out_type,
+                    $template_result,
+                    $codebase,
+                    null,
+                    null,
+                    null
+                );
+            }
+
+            if ($property_type_location && !$fleshed_out_type->isMixed()) {
+                $fleshed_out_type->check(
+                    $statements_source,
+                    $property_type_location,
+                    $storage->suppressed_issues + $statements_source->getSuppressedIssues(),
+                    [],
+                    false
+                );
+            }
+
+            if ($property_storage->is_static) {
+                $property_id = $fq_class_name . '::$' . $property_name;
+
+                $class_context->vars_in_scope[$property_id] = $fleshed_out_type;
+            } else {
+                $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
+            }
+        }
+
+        foreach ($storage->pseudo_property_get_types as $property_name => $property_type) {
+            $fleshed_out_type = !$property_type->isMixed()
+                ? ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $property_type,
+                    $fq_class_name,
+                    $fq_class_name,
+                    $parent_fq_class_name
+                )
+                : $property_type;
+
+            $class_context->vars_in_scope['$this->' . substr($property_name, 1)] = $fleshed_out_type;
         }
     }
 
