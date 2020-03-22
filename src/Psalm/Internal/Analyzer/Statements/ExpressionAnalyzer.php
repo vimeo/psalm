@@ -501,7 +501,7 @@ class ExpressionAnalyzer
                     $statements_analyzer,
                     $self_class_storage,
                     $use_context,
-                    $statements_analyzer->getFQCLN(),
+                    $context->self,
                     $statements_analyzer->getParentFQCLN()
                 );
             }

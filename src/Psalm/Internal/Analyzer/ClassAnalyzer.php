@@ -979,7 +979,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if (isset($storage->overridden_property_ids[$property_name])) {
                 foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
                     list($guide_class_name) = explode('::$', $overridden_property_id);
-                    $guide_class_storage = $classlike_storage_provider->get($guide_class_name);
+                    $guide_class_storage = $codebase->classlike_storage_provider->get($guide_class_name);
                     $guide_property_storage = $guide_class_storage->properties[$property_name];
 
                     if ($property_storage->visibility > $guide_property_storage->visibility
