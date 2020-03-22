@@ -554,6 +554,47 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testConditionalTypeWithSpaces()
+    {
+        $this->assertSame(
+            '(T is string ? string : int)',
+            (string) Type::parseString('(T is string ? string : int)', null, ['T' => ['' => [Type::getArray()]]])
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testConditionalTypeWithUnion()
+    {
+        $this->assertSame(
+            '(T is string|true ? int|string : int)',
+            (string) Type::parseString('(T is "hello"|true ? string|int : int)', null, ['T' => ['' => [Type::getArray()]]])
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testConditionalTypeWithoutSpaces()
+    {
+        $this->assertSame(
+            '(T is string ? string : int)',
+            (string) Type::parseString('(T is string?string:int)', null, ['T' => ['' => [Type::getArray()]]])
+        );
+    }
+
+    public function testConditionalTypeWithGenerics() : void
+    {
+        $this->assertSame(
+            '(T is string ? string : array<string, string>)',
+            (string) Type::parseString('(T is string ? string : array<string, string>)', null, ['T' => ['' => [Type::getArray()]]])
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testCallableWithTrailingColon()
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);

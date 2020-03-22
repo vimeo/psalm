@@ -24,6 +24,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\GetClassT;
 use Psalm\Type\Atomic\GetTypeT;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
@@ -907,6 +908,28 @@ class TypeAnalyzer
                     ) {
                         return true;
                     }
+                }
+            }
+
+            return false;
+        }
+
+        if ($container_type_part instanceof TConditional) {
+            $atomic_types = array_merge(
+                array_values($container_type_part->if_type->getAtomicTypes()),
+                array_values($container_type_part->else_type->getAtomicTypes())
+            );
+
+            foreach ($atomic_types as $container_as_type_part) {
+                if (self::isAtomicContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    $container_as_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $atomic_comparison_result
+                )) {
+                    return true;
                 }
             }
 

@@ -735,6 +735,53 @@ abstract class Type
             );
         }
 
+        if ($parse_tree instanceof ParseTree\ConditionalTree) {
+            $template_param_name = $parse_tree->condition->param_name;
+
+            if (isset($template_type_map[$template_param_name])) {
+                $first_class = array_keys($template_type_map[$template_param_name])[0];
+
+                $conditional_type = self::getTypeFromTree(
+                    $parse_tree->condition->children[0],
+                    null,
+                    $template_type_map
+                );
+
+                $if_type = self::getTypeFromTree(
+                    $parse_tree->children[0],
+                    null,
+                    $template_type_map
+                );
+
+                $else_type = self::getTypeFromTree(
+                    $parse_tree->children[1],
+                    null,
+                    $template_type_map
+                );
+
+                if ($conditional_type instanceof Type\Atomic) {
+                    $conditional_type = new Type\Union([$conditional_type]);
+                }
+
+                if ($if_type instanceof Type\Atomic) {
+                    $if_type = new Type\Union([$if_type]);
+                }
+
+                if ($else_type instanceof Type\Atomic) {
+                    $else_type = new Type\Union([$else_type]);
+                }
+
+                return new Atomic\TConditional(
+                    $template_param_name,
+                    $first_class,
+                    $template_type_map[$template_param_name][$first_class][0],
+                    $conditional_type,
+                    $if_type,
+                    $else_type
+                );
+            }
+        }
+
         if (!$parse_tree instanceof ParseTree\Value) {
             throw new \InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
         }
@@ -905,11 +952,11 @@ abstract class Type
                 $type_tokens[++$rtc] = [' ', $i - 1];
                 $type_tokens[++$rtc] = ['', $i];
             } elseif ($was_space
-                && $char === 'a'
+                && ($char === 'a' || $char === 'i')
                 && ($chars[$i + 1] ?? null) === 's'
                 && ($chars[$i + 2] ?? null) === ' '
             ) {
-                $type_tokens[++$rtc] = ['as', $i - 1];
+                $type_tokens[++$rtc] = [$char . 's', $i - 1];
                 $type_tokens[++$rtc] = ['', ++$i];
                 continue;
             } elseif ($was_char) {
@@ -1079,7 +1126,7 @@ abstract class Type
             if (in_array(
                 $string_type_token[0],
                 [
-                    '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as',
+                    '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
                 ],
                 true
             )) {

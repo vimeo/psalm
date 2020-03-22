@@ -1267,6 +1267,50 @@ class Union implements TypeNode
                 } else {
                     $new_types[$key] = new Type\Atomic\TMixed();
                 }
+            } elseif ($atomic_type instanceof Type\Atomic\TConditional
+                && $codebase
+            ) {
+                $template_type = isset($template_types[$atomic_type->param_name][$atomic_type->defining_class])
+                    ? clone $template_types[$atomic_type->param_name][$atomic_type->defining_class][0]
+                    : null;
+
+                $class_template_type = null;
+
+                if ($template_type) {
+                    if (TypeAnalyzer::isContainedBy(
+                        $codebase,
+                        $template_type,
+                        $atomic_type->conditional_type
+                    )) {
+                        $class_template_type = clone $atomic_type->if_type;
+                    } elseif (TypeAnalyzer::isContainedBy(
+                        $codebase,
+                        $template_type,
+                        $atomic_type->as_type
+                    )
+                        && !TypeAnalyzer::isContainedBy(
+                            $codebase,
+                            $atomic_type->as_type,
+                            $template_type
+                        )
+                    ) {
+                        $class_template_type = clone $atomic_type->else_type;
+                    }
+                }
+
+                if (!$class_template_type) {
+                    $class_template_type = Type::combineUnionTypes(
+                        $atomic_type->if_type,
+                        $atomic_type->else_type,
+                        $codebase
+                    );
+                }
+
+                $keys_to_unset[] = $key;
+
+                foreach ($class_template_type->getAtomicTypes() as $class_template_atomic_type) {
+                    $new_types[$class_template_atomic_type->getKey()] = $class_template_atomic_type;
+                }
             }
         }
 
