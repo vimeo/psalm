@@ -24,7 +24,7 @@ Add `--shepherd` to send information about your build to https://shepherd.dev.
 
 Currently, Shepherd tracks type coverage (the percentage of types Psalm can infer) on `master` branches.
 
-### Running Psalm faster
+## Running Psalm faster
 
 Psalm has a couple of command-line options that will result in faster builds:
 
