@@ -954,6 +954,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if ($method_storage) {
                     if ($method_storage->abstract
+                        && $stmt->class instanceof PhpParser\Node\Name
                         && (!$context->self
                             || !\Psalm\Internal\Analyzer\TypeAnalyzer::isContainedBy(
                                 $codebase,
