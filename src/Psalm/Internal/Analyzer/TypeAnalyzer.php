@@ -422,7 +422,9 @@ class TypeAnalyzer
                     $atomic_comparison_result
                 );
 
-                if ($is_atomic_contained_by && !$atomic_comparison_result->to_string_cast) {
+                if (($is_atomic_contained_by && !$atomic_comparison_result->to_string_cast)
+                    || $atomic_comparison_result->type_coerced_from_mixed
+                ) {
                     return true;
                 }
             }

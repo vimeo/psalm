@@ -158,6 +158,21 @@ class ArgTest extends TestCase
                     bar($foo);',
                 'error_message' => 'PossiblyInvalidArgument',
             ],
+            'possiblyInvalidArgumentWithMixed' => [
+                '<?php declare(strict_types=1);
+                    /**
+                     * @psalm-suppress MissingParamType
+                     * @psalm-suppress MixedArgument
+                     */
+                    function foo($a) : void {
+                        if (rand(0, 1)) {
+                            $a = 0;
+                        }
+
+                        echo strlen($a);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
         ];
     }
 }
