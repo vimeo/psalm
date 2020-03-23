@@ -1696,6 +1696,7 @@ class ClassLikes
             $objectlike = new Type\Atomic\ObjectLike($properties);
 
             $objectlike->is_list = $is_list;
+            $objectlike->sealed = true;
 
             return $objectlike;
         }
