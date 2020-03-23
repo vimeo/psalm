@@ -79,8 +79,6 @@ class MethodCallReturnTypeFetcher
             }
         }
 
-        $return_type_candidate = null;
-
         $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
 
         if (CallMap::inCallMap((string) $call_map_id)) {

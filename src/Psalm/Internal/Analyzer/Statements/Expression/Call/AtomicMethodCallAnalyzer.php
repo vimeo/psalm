@@ -504,7 +504,12 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $name_code_location,
                     $statements_analyzer->getSuppressedIssues()
                 ) === false) {
-                    self::updateResultReturnType($result, $return_type_candidate, $all_intersection_return_type);
+                    self::updateResultReturnType(
+                        $result,
+                        $return_type_candidate,
+                        $all_intersection_return_type,
+                        $method_name_lc
+                    );
 
                     return;
                 }
@@ -703,14 +708,20 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        self::updateResultReturnType($result, $return_type_candidate, $all_intersection_return_type);
+        self::updateResultReturnType(
+            $result,
+            $return_type_candidate,
+            $all_intersection_return_type,
+            $method_name_lc
+        );
     }
 
     private static function updateResultReturnType(
         AtomicMethodCallAnalysisResult $result,
         ?Type\Union $return_type_candidate,
-        ?Type\Union $all_intersection_return_type
-    ) {
+        ?Type\Union $all_intersection_return_type,
+        string $method_name
+    ) : void {
         if ($return_type_candidate) {
             if ($all_intersection_return_type) {
                 $return_type_candidate = Type::intersectUnionTypes(
@@ -730,7 +741,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             } else {
                 $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
             }
-        } elseif (strtolower($stmt->name->name) === '__tostring') {
+        } elseif ($method_name === '__tostring') {
             $result->return_type = Type::getString();
         } else {
             $result->return_type = Type::getMixed();
