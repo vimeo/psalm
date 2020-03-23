@@ -34,7 +34,7 @@ class FooMethodProvider implements
         StatementsSource $source = null,
         CodeLocation $code_location = null
     ) {
-        return $method_name_lc === 'magicmethod';
+        return $method_name_lc === 'magicmethod' || $method_name_lc === 'magicmethod2';
     }
 
     /**
@@ -82,6 +82,10 @@ class FooMethodProvider implements
         string $called_fq_classlike_name = null,
         string $called_method_name = null
     ) {
-        return Type::getString();
+        if ($method_name == 'magicmethod') {
+            return Type::getString();
+        } else {
+            return new \Psalm\Type\Union([new \Psalm\Type\Atomic\TNamedObject('NS\\Foo2')]);
+        }
     }
 }

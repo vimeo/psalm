@@ -504,6 +504,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $name_code_location,
                     $statements_analyzer->getSuppressedIssues()
                 ) === false) {
+                    self::updateResultReturnType($result, $return_type_candidate, $all_intersection_return_type);
+
                     return;
                 }
             }
@@ -701,6 +703,14 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        self::updateResultReturnType($result, $return_type_candidate, $all_intersection_return_type);
+    }
+
+    private static function updateResultReturnType(
+        AtomicMethodCallAnalysisResult $result,
+        ?Type\Union $return_type_candidate,
+        ?Type\Union $all_intersection_return_type
+    ) {
         if ($return_type_candidate) {
             if ($all_intersection_return_type) {
                 $return_type_candidate = Type::intersectUnionTypes(

@@ -83,7 +83,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -118,7 +120,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -157,7 +161,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -194,7 +200,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -228,7 +236,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -267,7 +277,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -303,7 +315,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -355,7 +369,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -389,7 +405,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -428,7 +446,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -463,7 +483,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -488,7 +510,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -524,7 +548,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -554,7 +580,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     }
 
     /** @return void */
-    public function testMethodProviderHooks()
+    public function testMethodProviderHooksValidArg()
     {
         require_once __DIR__ . '/Plugin/MethodPlugin.php';
 
@@ -562,7 +588,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -582,11 +610,23 @@ class PluginTest extends \Psalm\Tests\TestCase
             '<?php
                 namespace Ns;
 
+                interface I {}
+                class Foo2 implements I {
+                    public function id(): int { return 1; }
+                }
                 class Foo {}
 
+                function i(I $i): void {}
+
                 $foo = new Foo();
+
                 echo $foo->magicMethod("hello");
-                echo $foo::magicMethod("hello");'
+                echo $foo::magicMethod("hello");
+
+                $foo2 = $foo->magicMethod2("test");
+                $foo2->id();
+                i($foo2);
+                echo $foo2->id();'
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -601,7 +641,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -634,7 +676,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -678,7 +722,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -720,7 +766,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -762,7 +810,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -797,7 +847,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm>
+                <psalm
+                    errorLevel="1"
+                >
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
@@ -828,7 +880,9 @@ class PluginTest extends \Psalm\Tests\TestCase
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 sprintf(
                     '<?xml version="1.0"?>
-                    <psalm>
+                    <psalm
+                    errorLevel="1"
+                >
                         <projectFiles>
                             <directory name="src" />
                         </projectFiles>
@@ -854,7 +908,9 @@ class PluginTest extends \Psalm\Tests\TestCase
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 sprintf(
                     '<?xml version="1.0"?>
-                    <psalm>
+                    <psalm
+                    errorLevel="1"
+                >
                         <projectFiles>
                             <directory name="src" />
                         </projectFiles>
@@ -876,7 +932,9 @@ class PluginTest extends \Psalm\Tests\TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
-                <psalm></psalm>'
+                <psalm
+                    errorLevel="1"
+                ></psalm>'
             )
         );
 
