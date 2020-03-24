@@ -728,6 +728,16 @@ class ClassStringTest extends TestCase
                         }
                     }'
             ],
+            'staticClassReturn' => [
+                '<?php
+                    class A {
+                        /** @return static */
+                        public static function getInstance() {
+                            $class = static::class;
+                            return new $class();
+                        }
+                    }'
+            ],
         ];
     }
 

@@ -137,10 +137,13 @@ class ClassConstFetchAnalyzer
                 }
 
                 if ($first_part_lc === 'static') {
+                    $static_named_object = new Type\Atomic\TNamedObject($fq_class_name);
+                    $static_named_object->was_static = true;
+
                     $statements_analyzer->node_data->setType(
                         $stmt,
                         new Type\Union([
-                            new Type\Atomic\TClassString($fq_class_name, new Type\Atomic\TNamedObject($fq_class_name))
+                            new Type\Atomic\TClassString($fq_class_name, $static_named_object)
                         ])
                     );
                 } else {

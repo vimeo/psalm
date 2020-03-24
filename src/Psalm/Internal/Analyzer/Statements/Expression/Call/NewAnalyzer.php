@@ -176,28 +176,34 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     ) {
                         if (!$statements_analyzer->node_data->getType($stmt)) {
                             if ($lhs_type_part instanceof Type\Atomic\TClassString) {
-                                $class_name = $lhs_type_part->as;
+                                $generated_type = $lhs_type_part->as_type
+                                    ? clone $lhs_type_part->as_type
+                                    : new Type\Atomic\TObject();
                             } elseif ($lhs_type_part instanceof Type\Atomic\GetClassT) {
-                                $class_name = 'object';
+                                $generated_type = new Type\Atomic\TObject();
 
                                 if ($lhs_type_part->as_type->hasObjectType()
                                     && $lhs_type_part->as_type->isSingle()
                                 ) {
                                     foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
                                         if ($typeof_type_atomic instanceof Type\Atomic\TNamedObject) {
-                                            $class_name = $typeof_type_atomic->value;
+                                            $generated_type = new Type\Atomic\TNamedObject(
+                                                $typeof_type_atomic->value
+                                            );
                                         }
                                     }
                                 }
                             } else {
-                                $class_name = $lhs_type_part->value;
+                                $generated_type =  new Type\Atomic\TNamedObject(
+                                    $lhs_type_part->value
+                                );
                             }
 
                             if ($lhs_type_part instanceof Type\Atomic\TClassString) {
                                 $can_extend = true;
                             }
 
-                            if ($class_name === 'object') {
+                            if ($generated_type instanceof Type\Atomic\TObject) {
                                 if (IssueBuffer::accepts(
                                     new MixedMethodCall(
                                         'Cannot call constructor on an unknown class',
@@ -212,10 +218,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             if ($new_type) {
                                 $new_type = Type::combineUnionTypes(
                                     $new_type,
-                                    Type::parseString($class_name)
+                                    new Type\Union([$generated_type])
                                 );
                             } else {
-                                $new_type = Type::parseString($class_name);
+                                $new_type = new Type\Union([$generated_type]);
                             }
                         }
 
