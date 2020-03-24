@@ -1708,7 +1708,11 @@ class AssertionFinder
                     ) {
                         $class_node = $second_arg->class;
 
-                        if ($class_node->parts === ['static'] || $class_node->parts === ['self']) {
+                        if ($class_node->parts === ['static']) {
+                            if ($this_class_name) {
+                                $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $this_class_name . '&static']];
+                            }
+                        } elseif ($class_node->parts === ['self']) {
                             if ($this_class_name) {
                                 $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $this_class_name]];
                             }
@@ -2233,7 +2237,7 @@ class AssertionFinder
                 && (in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true))
             ) {
                 if ($stmt->class->parts[0] === 'static') {
-                    return ['=' . $this_class_name];
+                    return ['=' . $this_class_name . '&static'];
                 }
 
                 return [$this_class_name];

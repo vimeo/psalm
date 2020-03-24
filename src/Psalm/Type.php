@@ -530,7 +530,14 @@ abstract class Type
 
             $first_type = array_shift($keyed_intersection_types);
 
-            $first_type->extra_types = $keyed_intersection_types;
+            if (count($keyed_intersection_types) === 1
+                && isset($keyed_intersection_types['static'])
+                && $first_type instanceof TNamedObject
+            ) {
+                $first_type->was_static = true;
+            } else {
+                $first_type->extra_types = $keyed_intersection_types;
+            }
 
             return $first_type;
         }

@@ -422,31 +422,31 @@ class MethodSignatureTest extends TestCase
             'selfReturnShouldBeParent' => [
                 '<?php
                     class A {
-                      /** @return self */
-                      public function foo() {
-                        return new A();
-                      }
+                        /** @return self */
+                        public function foo() {
+                            return new A();
+                        }
                     }
 
                     class B extends A {
-                      public function foo() {
-                        return new A();
-                      }
+                        public function foo() {
+                            return new A();
+                        }
                     }',
             ],
             'staticReturnShouldBeStatic' => [
                 '<?php
                     class A {
-                      /** @return static */
-                      public static function foo() {
-                        return new A();
-                      }
+                        /** @return static */
+                        public static function foo() {
+                            return new static();
+                        }
                     }
 
                     class B extends A {
-                      public static function foo() {
-                        return new B();
-                      }
+                        public static function foo() {
+                            return new static();
+                        }
                     }
 
                     $b = B::foo();',
