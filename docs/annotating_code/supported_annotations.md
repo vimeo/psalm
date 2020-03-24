@@ -66,7 +66,7 @@ function addFoo(?string &$s) : void {
 }
 ```
 
-### `@psalm-var`, `@psalm-param` and `@psalm-return`
+### `@psalm-var`, `@psalm-param`, `@psalm-return`, `@psalm-property`, `@psalm-property-read`, `@psalm-property-write`
 
 When specifying types in a format not supported by phpDocumentor ([but supported by Psalm](#type-syntax)) you may wish to prepend `@psalm-` to the PHPDoc tag, so as to avoid confusing your IDE. If a `@psalm`-prefixed tag is given, Psalm will use it in place of its non-prefixed counterpart.
 
