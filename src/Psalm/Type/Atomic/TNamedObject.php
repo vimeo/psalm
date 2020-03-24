@@ -21,6 +21,11 @@ class TNamedObject extends Atomic
     public $value;
 
     /**
+     * @var bool
+     */
+    public $was_static = false;
+
+    /**
      * @param string $value the name of the object
      */
     public function __construct($value)

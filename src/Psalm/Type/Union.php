@@ -756,6 +756,22 @@ class Union implements TypeNode
     /**
      * @return bool
      */
+    public function fromStatic()
+    {
+        foreach ($this->types as $type) {
+            if ($type instanceof TNamedObject
+                && $type->was_static
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
     public function isNullable()
     {
         return isset($this->types['null']);

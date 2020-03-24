@@ -1295,6 +1295,10 @@ class ExpressionAnalyzer
                             $return_type = clone $static_class_type;
                         }
                     }
+
+                    if ($return_type instanceof TNamedObject) {
+                        $return_type->was_static = true;
+                    }
                 } elseif ($return_type_lc === 'self') {
                     if (!$self_class) {
                         throw new \UnexpectedValueException(

@@ -51,6 +51,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
         $can_extend = false;
 
+        $from_static = false;
+
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
                 $aliases = $statements_analyzer->getAliases();
@@ -86,6 +88,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $class_storage = $codebase->classlike_storage_provider->get($context->self);
                         $fq_class_name = $class_storage->name;
                         $can_extend = true;
+                        $from_static = true;
                         break;
                 }
             }
@@ -330,13 +333,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 }
             }
 
+            if ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
+                $result_atomic_type = new Type\Atomic\TAnonymousClassInstance($fq_class_name);
+            } else {
+                $result_atomic_type = new TNamedObject($fq_class_name);
+                $result_atomic_type->was_static = $from_static;
+            }
+
             $statements_analyzer->node_data->setType(
                 $stmt,
-                new Type\Union([
-                    $stmt->class instanceof PhpParser\Node\Stmt\Class_
-                        ? new Type\Atomic\TAnonymousClassInstance($fq_class_name)
-                        : new TNamedObject($fq_class_name)
-                ])
+                new Type\Union([$result_atomic_type])
             );
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
@@ -496,14 +502,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
 
                     if ($generic_param_types) {
+                        $result_atomic_type = new Type\Atomic\TGenericObject(
+                            $fq_class_name,
+                            $generic_param_types
+                        );
+
+                        $result_atomic_type->was_static = $from_static;
+
                         $statements_analyzer->node_data->setType(
                             $stmt,
-                            new Type\Union([
-                                new Type\Atomic\TGenericObject(
-                                    $fq_class_name,
-                                    $generic_param_types
-                                ),
-                            ])
+                            new Type\Union([$result_atomic_type])
                         );
                     }
                 } elseif ($stmt->args) {

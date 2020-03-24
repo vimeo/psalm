@@ -539,7 +539,7 @@ class ClassTest extends TestCase
                         /** @var string */
                         protected $message = "hello";
                     }',
-            ]
+            ],
         ];
     }
 
@@ -778,6 +778,28 @@ class ClassTest extends TestCase
                         public function f() : void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'preventFinalOverriding' => [
+                '<?php
+                    class A {
+                        /** @return static */
+                        public static function getInstance() {
+                            return new static();
+                        }
+                    }
+
+                    class AChild extends A {
+                        public static function getInstance() {
+                            return new AChild();
+                        }
+                    }
+
+                    class AGrandChild extends AChild {
+                        public function foo() : void {}
+                    }
+
+                    AGrandChild::getInstance()->foo();',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

@@ -201,8 +201,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $context->self,
                         $template_params
                     );
+                    $this_object_type->was_static = true;
                 } else {
                     $this_object_type = new TNamedObject($context->self);
+                    $this_object_type->was_static = true;
                 }
 
                 $context->vars_in_scope['$this'] = new Type\Union([$this_object_type]);
