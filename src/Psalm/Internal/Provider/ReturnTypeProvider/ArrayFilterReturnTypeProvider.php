@@ -203,7 +203,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                                 $changed_var_ids,
                                 ['$inner_type' => true],
                                 $statements_source,
-                                [],
+                                $statements_source->getTemplateTypeMap(),
                                 false,
                                 new CodeLocation($statements_source, $stmt)
                             );
