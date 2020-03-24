@@ -614,7 +614,7 @@ class CommentAnalyzer
             foreach ($parsed_docblock['specials']['template-typeof'] as $template_typeof) {
                 $typeof_parts = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_typeof));
 
-                if (count($typeof_parts) < 2 || $typeof_parts[1][0] !== '$') {
+                if ($typeof_parts === false || count($typeof_parts) < 2 || $typeof_parts[1][0] !== '$') {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
