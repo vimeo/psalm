@@ -540,6 +540,21 @@ class ClassTest extends TestCase
                         protected $message = "hello";
                     }',
             ],
+            'allowFinalReturnerForStatic' => [
+                '<?php
+                    class A {
+                        /** @return static */
+                        public static function getInstance() {
+                            return new static();
+                        }
+                    }
+
+                    final class AChild extends A {
+                        public static function getInstance() {
+                            return new AChild();
+                        }
+                    }',
+            ],
         ];
     }
 

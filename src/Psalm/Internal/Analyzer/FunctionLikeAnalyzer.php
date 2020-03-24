@@ -1703,7 +1703,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * @return Type\Union
      */
-    public function getLocalReturnType(Type\Union $storage_return_type)
+    public function getLocalReturnType(Type\Union $storage_return_type, bool $final = false)
     {
         if ($this->local_return_type) {
             return $this->local_return_type;
@@ -1714,7 +1714,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $storage_return_type,
             $this->getFQCLN(),
             $this->getFQCLN(),
-            $this->getParentFQCLN()
+            $this->getParentFQCLN(),
+            true,
+            $final
         );
 
         return $this->local_return_type;

@@ -1191,7 +1191,8 @@ class ExpressionAnalyzer
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
-        bool $evaluate = true
+        bool $evaluate = true,
+        bool $final = false
     ) {
         $return_type = clone $return_type;
 
@@ -1204,7 +1205,8 @@ class ExpressionAnalyzer
                 $self_class,
                 $static_class_type,
                 $parent_class,
-                $evaluate
+                $evaluate,
+                $final
             );
 
             if (is_array($parts)) {
@@ -1242,7 +1244,8 @@ class ExpressionAnalyzer
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
-        bool $evaluate = true
+        bool $evaluate = true,
+        bool $final = false
     ) {
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
@@ -1296,7 +1299,7 @@ class ExpressionAnalyzer
                         }
                     }
 
-                    if ($return_type instanceof TNamedObject) {
+                    if (!$final && $return_type instanceof TNamedObject) {
                         $return_type->was_static = true;
                     }
                 } elseif ($return_type_lc === 'self') {
@@ -1332,7 +1335,8 @@ class ExpressionAnalyzer
                 $self_class,
                 $static_class_type,
                 $parent_class,
-                $evaluate
+                $evaluate,
+                $final
             );
 
             if ($new_as_type instanceof TNamedObject) {
@@ -1454,7 +1458,9 @@ class ExpressionAnalyzer
                     $type_param,
                     $self_class,
                     $static_class_type,
-                    $parent_class
+                    $parent_class,
+                    $evaluate,
+                    $final
                 );
             }
         } elseif ($return_type instanceof Type\Atomic\ObjectLike) {
@@ -1464,7 +1470,9 @@ class ExpressionAnalyzer
                     $property_type,
                     $self_class,
                     $static_class_type,
-                    $parent_class
+                    $parent_class,
+                    $evaluate,
+                    $final
                 );
             }
         } elseif ($return_type instanceof Type\Atomic\TList) {
@@ -1473,7 +1481,9 @@ class ExpressionAnalyzer
                 $return_type->type_param,
                 $self_class,
                 $static_class_type,
-                $parent_class
+                $parent_class,
+                $evaluate,
+                $final
             );
         }
 
@@ -1486,7 +1496,9 @@ class ExpressionAnalyzer
                             $param->type,
                             $self_class,
                             $static_class_type,
-                            $parent_class
+                            $parent_class,
+                            $evaluate,
+                            $final
                         );
                     }
                 }
@@ -1497,7 +1509,9 @@ class ExpressionAnalyzer
                     $return_type->return_type,
                     $self_class,
                     $static_class_type,
-                    $parent_class
+                    $parent_class,
+                    $evaluate,
+                    $final
                 );
             }
         }
