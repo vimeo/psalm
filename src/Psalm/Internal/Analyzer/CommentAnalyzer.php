@@ -1078,7 +1078,9 @@ class CommentAnalyzer
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'property');
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'psalm-property');
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'property-read');
+        self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'psalm-property-read');
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'property-write');
+        self::addMagicPropertyToInfo($comment, $info, $parsed_docblock['specials'], 'psalm-property-write');
 
         return $info;
     }
@@ -1086,7 +1088,8 @@ class CommentAnalyzer
     /**
      * @param ClassLikeDocblockComment $info
      * @param array<string, array<int, string>> $specials
-     * @param 'property'|'psalm-property'|'property-read'|'property-write' $property_tag
+     * @param 'property'|'psalm-property'|'property-read'|
+     *     'psalm-property-read'|'property-write'|'psalm-property-write' $property_tag
      *
      * @throws DocblockParseException
      *

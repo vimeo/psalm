@@ -1239,11 +1239,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 $storage->template_types ?: []
                             );
 
-                            if ($property['tag'] !== 'property-read') {
+                            if ($property['tag'] !== 'property-read' && $property['tag'] !== 'psalm-property-read') {
                                 $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
                             }
 
-                            if ($property['tag'] !== 'property-write') {
+                            if ($property['tag'] !== 'property-write' && $property['tag'] !== 'psalm-property-write') {
                                 $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
                             }
                         } catch (TypeParseTreeException $e) {
