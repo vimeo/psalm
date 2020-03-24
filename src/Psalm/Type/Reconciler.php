@@ -514,7 +514,9 @@ class Reconciler
 
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
-                        } elseif ($existing_key_type_part instanceof Type\Atomic\TNull) {
+                        } elseif ($existing_key_type_part instanceof Type\Atomic\TNull
+                            || $existing_key_type_part instanceof Type\Atomic\TFalse
+                        ) {
                             $new_base_type_candidate = Type::getNull();
                         } elseif ($existing_key_type_part instanceof Type\Atomic\TClassStringMap) {
                             return Type::getMixed();
@@ -552,9 +554,9 @@ class Reconciler
                                 $codebase
                             );
                         }
-
-                        $existing_keys[$new_base_key] = $new_base_type;
                     }
+
+                    $existing_keys[$new_base_key] = $new_base_type;
                 }
 
                 $base_key = $new_base_key;
