@@ -768,7 +768,7 @@ class ArrayAssignmentTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment', 'MixedReturnStatement'],
             ],
             'assignToNullDontDie' => [
                 '<?php

@@ -202,8 +202,21 @@ class ReturnAnalyzer
                     $storage
                 );
 
-                if ($storage->return_type && !$storage->return_type->hasMixed()) {
-                    $local_return_type = $source->getLocalReturnType($storage->return_type);
+                if ($storage instanceof \Psalm\Storage\MethodStorage && $context->self) {
+                    $self_class = $context->self;
+
+                    $declared_return_type = $codebase->methods->getMethodReturnType(
+                        \Psalm\Internal\MethodIdentifier::wrap($cased_method_id),
+                        $self_class,
+                        $statements_analyzer,
+                        null
+                    );
+                } else {
+                    $declared_return_type = $storage->return_type;
+                }
+
+                if ($declared_return_type && !$declared_return_type->hasMixed()) {
+                    $local_return_type = $source->getLocalReturnType($declared_return_type);
 
                     if ($storage instanceof \Psalm\Storage\MethodStorage) {
                         list($fq_class_name, $method_name) = explode('::', $cased_method_id);
@@ -384,6 +397,18 @@ class ReturnAnalyzer
                             )) {
                                 return false;
                             }
+                        }
+                    } elseif ($local_return_type->fromStatic() && !$inferred_type->fromStatic()) {
+                        if (IssueBuffer::accepts(
+                            new LessSpecificReturnStatement(
+                                'The type \'' . $stmt_type->getId() . '\' is more general than the'
+                                    . ' declared return type \'' . $declared_return_type->getId() . '\''
+                                    . ' for ' . $cased_method_id,
+                                new CodeLocation($source, $stmt->expr)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            return false;
                         }
                     }
 

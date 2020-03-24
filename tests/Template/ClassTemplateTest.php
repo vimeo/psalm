@@ -2138,7 +2138,7 @@ class ClassTemplateTest extends TestCase
                     class Base {
                         /** @return static */
                         public static function factory(): self {
-                            return new self();
+                            return new static();
                         }
                     }
 

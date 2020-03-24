@@ -120,7 +120,7 @@ class Config
     ];
 
     /**
-     * @var self|null
+     * @var static|null
      */
     private static $instance;
 

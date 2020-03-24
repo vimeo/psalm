@@ -1696,6 +1696,9 @@ class ClassTemplateExtendsTest extends TestCase
 
                         public function getIterator()
                         {
+                            /**
+                             * @psalm-suppress InvalidReturnStatement
+                             */
                             return new ArrayIterator($this->elements);
                         }
 
@@ -4020,7 +4023,7 @@ class ClassTemplateExtendsTest extends TestCase
                             return ["foo"];
                         }
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'implementsAndExtendsWithTemplateReturningInvalid' => [
                 '<?php
@@ -4050,7 +4053,7 @@ class ClassTemplateExtendsTest extends TestCase
                             return ["foo"];
                         }
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'implementsChildClassWithNonExtendedTemplate' => [
                 '<?php
@@ -4374,7 +4377,7 @@ class ClassTemplateExtendsTest extends TestCase
                             return new OtherConcreteView;
                         }
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnStatement'
             ],
             'preventExplicitMethodClassTemplateReturn' => [
                 '<?php
