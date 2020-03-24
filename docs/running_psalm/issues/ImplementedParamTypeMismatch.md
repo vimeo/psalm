@@ -1,6 +1,6 @@
 # ImplementedParamTypeMismatch
 
-Emitted when a class that inherits another, or implements an interface, has docblock param type that's entirely different to the parent. Subclasses of the parent return type are permitted, in docblocks.
+Emitted when a class that inherits another, or implements an interface, has a docblock param type that's entirely different to the parent.
 
 ```php
 <?php
