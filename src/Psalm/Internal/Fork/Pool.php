@@ -9,6 +9,7 @@ use function base64_decode;
 use function base64_encode;
 use function count;
 use function error_log;
+use function error_get_last;
 use function explode;
 use function extension_loaded;
 use function fclose;
@@ -38,6 +39,7 @@ use const STREAM_SOCK_STREAM;
 use function stream_socket_pair;
 use function strlen;
 use function strpos;
+use function stripos;
 use function substr;
 use function unserialize;
 use function usleep;
@@ -309,10 +311,17 @@ class Pool
             $needs_except = null;
 
             // Wait for data on at least one stream.
-            $num = stream_select($needs_read, $needs_write, $needs_except, null /* no timeout */);
+            $num = @stream_select($needs_read, $needs_write, $needs_except, null /* no timeout */);
             if ($num === false) {
-                error_log('unable to select on read stream');
-                exit(self::EXIT_FAILURE);
+                $err = error_get_last();
+
+                // stream_select returns false when the `select` system call is interrupted by an incoming signal
+                if (isset($err['message']) && stripos($err['message'], 'interrupted system call') === false) {
+                    error_log('unable to select on read stream');
+                    exit(self::EXIT_FAILURE);
+                }
+
+                continue;
             }
 
             // For each stream that was ready, read the content.
