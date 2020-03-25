@@ -1967,7 +1967,9 @@ class CallAnalyzer
             $param_type,
             $classlike_storage ? $classlike_storage->name : null,
             $static_classlike_storage ? $static_classlike_storage->name : null,
-            $parent_class
+            $parent_class,
+            true,
+            $static_classlike_storage ? $static_classlike_storage->final : false
         );
 
         $fleshed_out_signature_type = $function_param->signature_type

@@ -516,7 +516,7 @@ class CallableTest extends TestCase
                         }
                     }',
             ],
-            'callableSelfReturn' => [
+            'callableStaticReturn' => [
                 '<?php
                     class A {}
 
@@ -525,27 +525,48 @@ class CallableTest extends TestCase
                          * @param callable():static $f
                          */
                         function func1(callable $f): void {}
+                    }
 
+                    final class C extends B {}
+
+                    $b = new B();
+                    $c = new C();
+
+                    $c->func1(function(): C { return new C(); });',
+            ],
+            'callableSelfReturn' => [
+                '<?php
+                    class A {}
+
+                    class B extends A {
                         /**
                          * @param callable():self $f
                          */
                         function func2(callable $f): void {}
+                    }
 
+                    final class C extends B {}
+
+                    $b = new B();
+                    $c = new C();
+
+                    $b->func2(function() { return new B(); });
+                    $c->func2(function() { return new C(); });',
+            ],
+            'callableParentReturn' => [
+                '<?php
+                    class A {}
+
+                    class B extends A {
                         /**
                          * @param callable():parent $f
                          */
                         function func3(callable $f): void {}
                     }
 
-                    class C extends B {}
-
                     $b = new B();
-                    $c = new C();
 
-                    $b->func1(function(): B { return new B(); });
-                    $c->func1(function(): C { return new C(); });
-                    $b->func2(function(): B { return new B(); });
-                    $c->func2(function(): B { return new B(); });',
+                    $b->func3(function() { return new A(); });',
             ],
             'selfArrayMapCallableWrongClass' => [
                 '<?php

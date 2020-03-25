@@ -363,7 +363,9 @@ class ReturnTypeAnalyzer
             $return_type,
             $self_fq_class_name,
             $self_fq_class_name,
-            $parent_class
+            $parent_class,
+            true,
+            $function_like_storage instanceof MethodStorage && $function_like_storage->final
         );
 
         if (!$inferred_return_type_parts && !$inferred_yield_types) {

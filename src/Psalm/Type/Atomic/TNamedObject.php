@@ -68,7 +68,7 @@ class TNamedObject extends Atomic
             );
         }
 
-        return $this->value;
+        return $this->was_static ? $this->value . '&static' : $this->value;
     }
 
     /**

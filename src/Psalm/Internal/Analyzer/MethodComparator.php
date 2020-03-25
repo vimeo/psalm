@@ -668,12 +668,15 @@ class MethodComparator
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
-            $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+            ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
+                || $guide_classlike_storage->final
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
                 ? $implementer_classlike_storage->parent_class
-                : $guide_classlike_storage->parent_class
+                : $guide_classlike_storage->parent_class,
+            true,
+            $implementer_method_storage->final
         );
 
         $implementer_signature_return_type = $implementer_method_storage->signature_return_type
@@ -760,9 +763,12 @@ class MethodComparator
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->is_trait
+                || $implementer_method_storage->final
                 ? $implementer_called_class_name
                 : $guide_classlike_storage->name,
-            $guide_classlike_storage->parent_class
+            $guide_classlike_storage->parent_class,
+            true,
+            $implementer_method_storage->final
         );
 
         $guide_class_name = $guide_classlike_storage->name;

@@ -401,21 +401,6 @@ class ReturnAnalyzer
                                 return false;
                             }
                         }
-                    } elseif ($local_return_type->fromStatic()
-                        && !$inferred_type->fromStatic()
-                        && $inferred_type->hasNamedObjectType()
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new LessSpecificReturnStatement(
-                                'The type \'' . $stmt_type->getId() . '\' is more general than the'
-                                    . ' declared return type \'' . $declared_return_type->getId() . '\''
-                                    . ' for ' . $cased_method_id,
-                                new CodeLocation($source, $stmt->expr)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
                     }
 
                     if (!$stmt_type->ignore_nullable_issues

@@ -2428,6 +2428,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                 $atomic_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
+                if ($existing_type_part instanceof TNamedObject) {
+                    $existing_type_part->was_static = false;
+                }
+
                 $atomic_contained_by = TypeAnalyzer::isAtomicContainedBy(
                     $codebase,
                     $new_type_part,

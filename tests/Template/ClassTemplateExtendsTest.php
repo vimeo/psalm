@@ -1149,7 +1149,7 @@ class ClassTemplateExtendsTest extends TestCase
                      * @template T
                      * @implements Functor<T>
                      */
-                    class Box implements Functor
+                    final class Box implements Functor
                     {
                         /**
                          * @var T
@@ -3379,6 +3379,107 @@ class ClassTemplateExtendsTest extends TestCase
                         $result->execute($query);
                     }'
             ],
+            'respectExtendsAnnotationWhenVerifyingFinalChildReturnType' => [
+                '<?php
+                    /**
+                     * @template T of Enum
+                     */
+                    class EnumSet
+                    {
+                        /**
+                         * @var class-string<T>
+                         */
+                        private $type;
+
+                        /**
+                         * @param class-string<T> $type
+                         */
+                        public function __construct(string $type)
+                        {
+                            $this->type = $type;
+                        }
+                    }
+
+                    abstract class Enum {
+                        /**
+                         * @return EnumSet<static>
+                         */
+                        public static function all()
+                        {
+                            return new EnumSet(static::class);
+                        }
+                    }
+
+                    /**
+                     * @extends EnumSet<CustomEnum>
+                     */
+                    final class CustomEnumSet extends EnumSet {
+                        public function __construct()
+                        {
+                            parent::__construct(CustomEnum::class);
+                        }
+                    }
+
+                    final class CustomEnum extends Enum
+                    {
+                        /**
+                         * @return CustomEnumSet
+                         */
+                        public static function all()
+                        {
+                            return new CustomEnumSet();
+                        }
+                    }'
+            ],
+            'allowValidChildReturnType' => [
+                '<?php
+                    /**
+                     * @template T of Enum
+                     */
+                    class EnumSet
+                    {
+                        /**
+                         * @var class-string<T>
+                         */
+                        private $type;
+
+                        /**
+                         * @param class-string<T> $type
+                         */
+                        public function __construct(string $type)
+                        {
+                            $this->type = $type;
+                        }
+                    }
+
+                    abstract class Enum {
+                        /**
+                         * @return EnumSet<static>
+                         */
+                        public static function all()
+                        {
+                            return new EnumSet(static::class);
+                        }
+                    }
+
+                    /**
+                     * @extends EnumSet<CustomEnum>
+                     */
+                    final class CustomEnumSet extends EnumSet {
+                        public function __construct()
+                        {
+                            parent::__construct(CustomEnum::class);
+                        }
+                    }
+
+                    class CustomEnum extends Enum
+                    {
+                        public static function all()
+                        {
+                            return new EnumSet(static::class);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -4494,6 +4595,112 @@ class ClassTemplateExtendsTest extends TestCase
 
                         public function m(): string {
                             return static::class;
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement'
+            ],
+            'preventBadOverrideWhenVerifyingNonFinalChildReturnType' => [
+                '<?php
+                    /**
+                     * @template T of Enum
+                     */
+                    class EnumSet
+                    {
+                        /**
+                         * @var class-string<T>
+                         */
+                        private $type;
+
+                        /**
+                         * @param class-string<T> $type
+                         */
+                        public function __construct(string $type)
+                        {
+                            $this->type = $type;
+                        }
+                    }
+
+                    abstract class Enum {
+                        /**
+                         * @return EnumSet<static>
+                         */
+                        public static function all()
+                        {
+                            return new EnumSet(static::class);
+                        }
+                    }
+
+                    /**
+                     * @extends EnumSet<CustomEnum>
+                     */
+                    final class CustomEnumSet extends EnumSet {
+                        public function __construct()
+                        {
+                            parent::__construct(CustomEnum::class);
+                        }
+                    }
+
+                    class CustomEnum extends Enum
+                    {
+                        /**
+                         * @return CustomEnumSet
+                         */
+                        public static function all()
+                        {
+                            return new CustomEnumSet();
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType'
+            ],
+            'preventBadLocallyDefinedDocblockWhenVerifyingChildReturnType' => [
+                '<?php
+                    /**
+                     * @template T of Enum
+                     */
+                    class EnumSet
+                    {
+                        /**
+                         * @var class-string<T>
+                         */
+                        private $type;
+
+                        /**
+                         * @param class-string<T> $type
+                         */
+                        public function __construct(string $type)
+                        {
+                            $this->type = $type;
+                        }
+                    }
+
+                    abstract class Enum {
+                        /**
+                         * @return EnumSet<static>
+                         */
+                        public static function all()
+                        {
+                            return new EnumSet(static::class);
+                        }
+                    }
+
+                    /**
+                     * @extends EnumSet<CustomEnum>
+                     */
+                    final class CustomEnumSet extends EnumSet {
+                        public function __construct()
+                        {
+                            parent::__construct(CustomEnum::class);
+                        }
+                    }
+
+                    class CustomEnum extends Enum
+                    {
+                        /**
+                         * @return EnumSet<static>
+                         */
+                        public static function all()
+                        {
+                            return new CustomEnumSet();
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement'

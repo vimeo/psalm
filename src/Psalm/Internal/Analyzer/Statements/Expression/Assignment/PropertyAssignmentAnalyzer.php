@@ -1273,8 +1273,8 @@ class PropertyAssignmentAnalyzer
             if ($union_comparison_results->type_coerced_from_mixed) {
                 if (IssueBuffer::accepts(
                     new MixedPropertyTypeCoercion(
-                        $var_id . ' expects \'' . $class_property_type . '\', '
-                            . ' parent type `' . $assignment_value_type . '` provided',
+                        $var_id . ' expects \'' . $class_property_type->getId() . '\', '
+                            . ' parent type `' . $assignment_value_type->getId() . '` provided',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt,
@@ -1289,8 +1289,8 @@ class PropertyAssignmentAnalyzer
             } else {
                 if (IssueBuffer::accepts(
                     new PropertyTypeCoercion(
-                        $var_id . ' expects \'' . $class_property_type . '\', '
-                            . ' parent type \'' . $assignment_value_type . '\' provided',
+                        $var_id . ' expects \'' . $class_property_type->getId() . '\', '
+                            . ' parent type \'' . $assignment_value_type->getId() . '\' provided',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt,

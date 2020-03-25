@@ -1312,7 +1312,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context = clone $class_context;
             $method_context->collect_initializations = true;
             $method_context->self = $fq_class_name;
-            $method_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
+
+            $this_atomic_object_type = new Type\Atomic\TNamedObject($fq_class_name);
+            $this_atomic_object_type->was_static = true;
+
+            $method_context->vars_in_scope['$this'] = new Type\Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
             $method_context->calling_function_id = strtolower($fq_class_name) . '::__construct';
 

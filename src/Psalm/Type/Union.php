@@ -756,7 +756,23 @@ class Union implements TypeNode
     /**
      * @return bool
      */
-    public function fromStatic()
+    public function isFormerStaticObject()
+    {
+        foreach ($this->types as $type) {
+            if (!$type instanceof TNamedObject
+                || !$type->was_static
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasFormerStaticObject()
     {
         foreach ($this->types as $type) {
             if ($type instanceof TNamedObject

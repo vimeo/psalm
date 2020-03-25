@@ -1393,7 +1393,9 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     class A {
-                        /** @return A */
+                        /**
+                         * @return self
+                         */
                         public function getMe() {
                             return $this;
                         }

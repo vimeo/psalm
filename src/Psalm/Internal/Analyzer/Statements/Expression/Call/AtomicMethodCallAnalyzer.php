@@ -930,7 +930,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         if ($union_comparison_results->type_coerced_from_mixed) {
                             if (IssueBuffer::accepts(
                                 new MixedPropertyTypeCoercion(
-                                    $prop_name . ' expects \'' . $pseudo_set_type . '\', '
+                                    $prop_name . ' expects \'' . $pseudo_set_type->getId() . '\', '
                                         . ' parent type `' . $second_arg_type . '` provided',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id
@@ -942,7 +942,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         } else {
                             if (IssueBuffer::accepts(
                                 new PropertyTypeCoercion(
-                                    $prop_name . ' expects \'' . $pseudo_set_type . '\', '
+                                    $prop_name . ' expects \'' . $pseudo_set_type->getId() . '\', '
                                         . ' parent type `' . $second_arg_type . '` provided',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id

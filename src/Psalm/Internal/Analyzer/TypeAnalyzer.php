@@ -499,7 +499,8 @@ class TypeAnalyzer
         Codebase $codebase,
         $input_type_part,
         $container_type_part,
-        $allow_interface_equality
+        $allow_interface_equality,
+        ?TypeComparisonResult $atomic_comparison_result
     ) {
         $intersection_input_types = $input_type_part->extra_types ?: [];
         $intersection_input_types[$input_type_part->getKey(false)] = $input_type_part;
@@ -530,6 +531,8 @@ class TypeAnalyzer
         }
 
         foreach ($intersection_container_types as $container_type_key => $intersection_container_type) {
+            $container_was_static = false;
+
             if ($intersection_container_type instanceof TIterable) {
                 $intersection_container_type_lower = 'iterable';
             } elseif ($intersection_container_type instanceof TObjectWithProperties) {
@@ -581,6 +584,8 @@ class TypeAnalyzer
                     return false;
                 }
             } else {
+                $container_was_static = $intersection_container_type->was_static;
+
                 $intersection_container_type_lower = strtolower(
                     $codebase->classlikes->getUnAliasedName(
                         $intersection_container_type->value
@@ -589,6 +594,8 @@ class TypeAnalyzer
             }
 
             foreach ($intersection_input_types as $intersection_input_type) {
+                $input_was_static = false;
+
                 if ($intersection_input_type instanceof TIterable) {
                     $intersection_input_type_lower = 'iterable';
                 } elseif ($intersection_input_type instanceof TObjectWithProperties) {
@@ -616,6 +623,8 @@ class TypeAnalyzer
                         return false;
                     }
                 } else {
+                    $input_was_static = $intersection_input_type->was_static;
+
                     $intersection_input_type_lower = strtolower(
                         $codebase->classlikes->getUnAliasedName(
                             $intersection_input_type->value
@@ -653,6 +662,14 @@ class TypeAnalyzer
                     || $intersection_input_type instanceof TTemplateParam
                 ) {
                     if ($intersection_container_type_lower === $intersection_input_type_lower) {
+                        if ($container_was_static && !$input_was_static) {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = true;
+                            }
+
+                            continue;
+                        }
+
                         continue 2;
                     }
 
@@ -682,6 +699,14 @@ class TypeAnalyzer
                             $intersection_container_type_lower
                         )
                     ) {
+                        if ($container_was_static && !$input_was_static) {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = true;
+                            }
+
+                            continue;
+                        }
+
                         continue 2;
                     }
 
@@ -728,7 +753,8 @@ class TypeAnalyzer
                 $codebase,
                 $input_type_part,
                 $container_type_part,
-                $allow_interface_equality
+                $allow_interface_equality,
+                $atomic_comparison_result
             );
         }
 
@@ -868,7 +894,8 @@ class TypeAnalyzer
                     $codebase,
                     $input_type_part,
                     $container_type_part,
-                    $allow_interface_equality
+                    $allow_interface_equality,
+                    $atomic_comparison_result
                 )
             )
         ) {
@@ -1774,26 +1801,32 @@ class TypeAnalyzer
                 $atomic_comparison_result->type_coerced = true;
             } elseif ($container_type_part instanceof TNamedObject
                 && $input_type_part instanceof TNamedObject
-                && $codebase->classOrInterfaceExists($input_type_part->value)
-                && (
-                    (
-                        $codebase->classExists($container_type_part->value)
-                        && $codebase->classExtendsOrImplements(
-                            $container_type_part->value,
-                            $input_type_part->value
-                        )
-                    )
-                    ||
-                    (
-                        $codebase->interfaceExists($container_type_part->value)
-                        && $codebase->interfaceExtends(
-                            $container_type_part->value,
-                            $input_type_part->value
-                        )
-                    )
-                )
             ) {
-                $atomic_comparison_result->type_coerced = true;
+                if ($container_type_part->was_static
+                    && !$input_type_part->was_static
+                ) {
+                    $atomic_comparison_result->type_coerced = true;
+                } elseif ($codebase->classOrInterfaceExists($input_type_part->value)
+                    && (
+                        (
+                            $codebase->classExists($container_type_part->value)
+                            && $codebase->classExtendsOrImplements(
+                                $container_type_part->value,
+                                $input_type_part->value
+                            )
+                        )
+                        ||
+                        (
+                            $codebase->interfaceExists($container_type_part->value)
+                            && $codebase->interfaceExtends(
+                                $container_type_part->value,
+                                $input_type_part->value
+                            )
+                        )
+                    )
+                ) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
             }
         }
 
@@ -2231,13 +2264,28 @@ class TypeAnalyzer
                                 $allow_interface_equality
                             ) || $param_comparison_result->type_coerced
                             ) {
-                                if ($container_param->hasMixed() || $container_param->isArrayKey()) {
-                                    $atomic_comparison_result->type_coerced_from_mixed = true;
+                                if ($container_param->hasFormerStaticObject()
+                                    && $input_param->isFormerStaticObject()
+                                    && self::isContainedBy(
+                                        $codebase,
+                                        $input_param,
+                                        $container_param,
+                                        $container_param->ignore_nullable_issues,
+                                        $container_param->ignore_falsable_issues,
+                                        $param_comparison_result,
+                                        $allow_interface_equality
+                                    )
+                                ) {
+                                    // do nothing
                                 } else {
-                                    $all_types_contain = false;
-                                }
+                                    if ($container_param->hasMixed() || $container_param->isArrayKey()) {
+                                        $atomic_comparison_result->type_coerced_from_mixed = true;
+                                    } else {
+                                        $all_types_contain = false;
+                                    }
 
-                                $atomic_comparison_result->type_coerced = false;
+                                    $atomic_comparison_result->type_coerced = false;
+                                }
                             }
                         }
                     }
@@ -2457,6 +2505,15 @@ class TypeAnalyzer
                     }
                 }
             }
+        }
+
+        if ($container_type_part instanceof TNamedObject
+            && $input_type_part instanceof TNamedObject
+            && $container_type_part->was_static
+            && !$input_type_part->was_static
+        ) {
+            $all_types_contain = false;
+            $atomic_comparison_result->type_coerced = true;
         }
 
         if ($container_type_part instanceof Type\Atomic\TNonEmptyArray
