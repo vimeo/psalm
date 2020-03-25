@@ -2129,8 +2129,10 @@ class CallAnalyzer
                     }
                 }
             } elseif ($class_storage->template_types) {
-                foreach ($class_storage->template_types as $template_name => $type) {
-                    $template_types[$template_name] = $type;
+                foreach ($class_storage->template_types as $template_name => $type_map) {
+                    foreach ($type_map as $key => list($type)) {
+                        $template_types[$template_name][$key] = [$type];
+                    }
                 }
             }
         }
