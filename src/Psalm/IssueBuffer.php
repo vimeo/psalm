@@ -604,16 +604,16 @@ class IssueBuffer
             }
         }
 
-        if ($error_count) {
-            exit(1);
-        }
-
         if ($is_full && $start_time) {
             $codebase->file_reference_provider->removeDeletedFilesFromReferences();
 
             if ($codebase->statements_provider->parser_cache_provider) {
                 $codebase->statements_provider->parser_cache_provider->processSuccessfulRun($start_time);
             }
+        }
+
+        if ($error_count) {
+            exit(1);
         }
     }
 

@@ -39,7 +39,7 @@ class ParserCacheProvider
     /**
      * @var int|null
      */
-    private $last_good_run = null;
+    private $last_run = null;
 
     /**
      * A map of filename hashes to contents hashes
@@ -366,19 +366,19 @@ class ParserCacheProvider
     /**
      * @return int
      */
-    public function getLastGoodRun()
+    public function getLastRun()
     {
-        if ($this->last_good_run === null) {
+        if ($this->last_run === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();
 
             if (file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME)) {
-                $this->last_good_run = filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
+                $this->last_run = filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
             } else {
-                $this->last_good_run = 0;
+                $this->last_run = 0;
             }
         }
 
-        return $this->last_good_run;
+        return $this->last_run;
     }
 
     /**
