@@ -629,7 +629,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
                             $var_type_part,
                             $codebase,
-                            $context->calling_function_id,
+                            $context->calling_method_id,
                             $statements_analyzer->getFilePath()
                         );
 
@@ -651,7 +651,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     if ($potential_method_id) {
                         $codebase->methods->methodExists(
                             $potential_method_id,
-                            $context->calling_function_id,
+                            $context->calling_method_id,
                             null,
                             $statements_analyzer,
                             $statements_analyzer->getFilePath()

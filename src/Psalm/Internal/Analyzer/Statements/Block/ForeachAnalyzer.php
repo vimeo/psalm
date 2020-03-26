@@ -141,7 +141,7 @@ class ForeachAnalyzer
                         $statements_analyzer,
                         $comment_type,
                         $type_location,
-                        $context->calling_function_id
+                        $context->calling_method_id
                     );
                 }
             }
@@ -558,6 +558,7 @@ class ForeachAnalyzer
                         $iterator_atomic_type->value,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                         $context->self,
+                        $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues()
                     ) === false) {
                         return false;

@@ -1949,7 +1949,7 @@ class TypeAnalyzer
     public static function getCallableMethodIdFromObjectLike(
         ObjectLike $input_type_part,
         Codebase $codebase = null,
-        string $calling_function_id = null,
+        string $calling_method_id = null,
         string $file_name = null
     ) {
         if (!isset($input_type_part->properties[0])
@@ -1968,12 +1968,12 @@ class TypeAnalyzer
                 return 'not-callable';
             }
 
-            if ($codebase && ($calling_function_id || $file_name)) {
+            if ($codebase && ($calling_method_id || $file_name)) {
                 foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                     if ($lhs_atomic_type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($lhs_atomic_type->value) . '::',
-                            $calling_function_id ?: $file_name
+                            $calling_method_id ?: $file_name
                         );
                     }
                 }
@@ -2007,10 +2007,10 @@ class TypeAnalyzer
         }
 
         if (!$class_name) {
-            if ($codebase && ($calling_function_id || $file_name)) {
+            if ($codebase && ($calling_method_id || $file_name)) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($method_name),
-                    $calling_function_id ?: $file_name
+                    $calling_method_id ?: $file_name
                 );
             }
 

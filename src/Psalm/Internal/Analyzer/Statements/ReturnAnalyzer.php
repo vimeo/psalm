@@ -112,7 +112,7 @@ class ReturnAnalyzer
                         $statements_analyzer,
                         $comment_type,
                         $type_location,
-                        $context->calling_function_id
+                        $context->calling_method_id
                     );
                 }
 
@@ -358,6 +358,7 @@ class ReturnAnalyzer
                                         $stmt->expr->value,
                                         new CodeLocation($source, $stmt->expr),
                                         $context->self,
+                                        $context->calling_method_id,
                                         $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
@@ -377,6 +378,7 @@ class ReturnAnalyzer
                                                         $item->value->value,
                                                         new CodeLocation($source, $item->value),
                                                         $context->self,
+                                                        $context->calling_method_id,
                                                         $statements_analyzer->getSuppressedIssues()
                                                     ) === false
                                                     ) {
@@ -581,7 +583,7 @@ class ReturnAnalyzer
         Context $context
     ): void {
         // if not returning from inside of a function, return
-        if (!$context->calling_function_id) {
+        if (!$context->calling_method_id) {
             return;
         }
 
@@ -592,7 +594,7 @@ class ReturnAnalyzer
 
         $parent_fn_storage = $statements_analyzer
             ->getCodebase()
-            ->getFunctionLikeStorage($statements_analyzer, $context->calling_function_id);
+            ->getFunctionLikeStorage($statements_analyzer, $context->calling_method_id);
 
         if ($parent_fn_storage->return_type === null) {
             return;

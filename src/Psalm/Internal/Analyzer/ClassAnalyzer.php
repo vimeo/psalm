@@ -224,6 +224,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $parent_fq_class_name,
                 $parent_reference_location,
                 null,
+                null,
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
                 false
             ) === false) {
@@ -392,6 +393,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $this,
                 $fq_interface_name,
                 $interface_location,
+                null,
                 null,
                 $this->getSuppressedIssues(),
                 false
@@ -1318,7 +1320,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $method_context->vars_in_scope['$this'] = new Type\Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
-            $method_context->calling_function_id = strtolower($fq_class_name) . '::__construct';
+            $method_context->calling_method_id = strtolower($fq_class_name) . '::__construct';
 
             $constructor_analyzer->analyze(
                 $method_context,

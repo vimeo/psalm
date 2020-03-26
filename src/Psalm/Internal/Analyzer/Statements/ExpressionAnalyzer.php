@@ -168,7 +168,7 @@ class ExpressionAnalyzer
                             $statements_analyzer,
                             $stmt,
                             $context->self,
-                            $context->calling_function_id
+                            $context->calling_method_id
                         );
                     }
 
@@ -557,7 +557,7 @@ class ExpressionAnalyzer
                 }
             }
 
-            $use_context->calling_function_id = $context->calling_function_id;
+            $use_context->calling_method_id = $context->calling_method_id;
 
             $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false, $byref_uses);
 
@@ -712,6 +712,7 @@ class ExpressionAnalyzer
                         $fq_class_name,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                         $context->self,
+                        $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues(),
                         false
                     ) === false) {
@@ -724,7 +725,7 @@ class ExpressionAnalyzer
                             $statements_analyzer,
                             $stmt->class,
                             $fq_class_name,
-                            $context->calling_function_id
+                            $context->calling_method_id
                         );
                     }
                 }

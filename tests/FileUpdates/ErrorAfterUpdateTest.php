@@ -262,12 +262,12 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             namespace Foo;
 
                             class C {
-                                public function bar() : string {
+                                public function existingMethod() : string {
                                     return (new A)->getB()->getString();
                                 }
                             }
 
-                            (new C)->bar();',
+                            (new C)->existingMethod();',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -290,15 +290,16 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             namespace Foo;
 
                             class C {
-                                public function bar() : string {
+                                public function existingMethod() : string {
                                     return (new A)->getB()->getString();
                                 }
 
-                                public function bat() : void {}
+                                public function newMethod() : void {}
                             }
 
-                            (new C)->bar();
-                            (new C)->bat();',
+                            (new C)->existingMethod();
+                            // newly-added call, removed in the next code block
+                            (new C)->newMethod();',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -321,12 +322,12 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             namespace Foo;
 
                             class C {
-                                public function bar() : string {
+                                public function existingMethod() : string {
                                     return (new A)->getB()->getString();
                                 }
                             }
 
-                            (new C)->bar();',
+                            (new C)->existingMethod();',
                     ],
                 ],
                 'error_message' => 'NullableReturnStatement',

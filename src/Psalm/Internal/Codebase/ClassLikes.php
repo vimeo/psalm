@@ -299,7 +299,8 @@ class ClassLikes
     public function hasFullyQualifiedClassName(
         $fq_class_name,
         CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null
+        ?string $calling_fq_class_name = null,
+        ?string $calling_method_id = null
     ) {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -330,21 +331,28 @@ class ClassLikes
         }
 
         if ($this->collect_references && $code_location) {
-            $this->file_reference_provider->addFileReferenceToClass(
-                $code_location->file_path,
-                $fq_class_name_lc
-            );
+            if ($calling_method_id) {
+                $this->file_reference_provider->addMethodReferenceToClass(
+                    $calling_method_id,
+                    $fq_class_name_lc
+                );
+            } else {
+                $this->file_reference_provider->addFileReferenceToClass(
+                    $code_location->file_path,
+                    $fq_class_name_lc
+                );
 
-            if ($calling_fq_class_name) {
-                $class_storage = $this->classlike_storage_provider->get($calling_fq_class_name);
+                if ($calling_fq_class_name) {
+                    $class_storage = $this->classlike_storage_provider->get($calling_fq_class_name);
 
-                if ($class_storage->location
-                    && $class_storage->location->file_path !== $code_location->file_path
-                ) {
-                    $this->file_reference_provider->addFileReferenceToClass(
-                        $class_storage->location->file_path,
-                        $fq_class_name_lc
-                    );
+                    if ($class_storage->location
+                        && $class_storage->location->file_path !== $code_location->file_path
+                    ) {
+                        $this->file_reference_provider->addFileReferenceToClass(
+                            $class_storage->location->file_path,
+                            $fq_class_name_lc
+                        );
+                    }
                 }
             }
         }
@@ -367,7 +375,8 @@ class ClassLikes
     public function hasFullyQualifiedInterfaceName(
         $fq_class_name,
         CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null
+        ?string $calling_fq_class_name = null,
+        ?string $calling_method_id = null
     ) {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -398,21 +407,28 @@ class ClassLikes
         }
 
         if ($this->collect_references && $code_location) {
-            $this->file_reference_provider->addFileReferenceToClass(
-                $code_location->file_path,
-                $fq_class_name_lc
-            );
+            if ($calling_method_id) {
+                $this->file_reference_provider->addMethodReferenceToClass(
+                    $calling_method_id,
+                    $fq_class_name_lc
+                );
+            } else {
+                $this->file_reference_provider->addFileReferenceToClass(
+                    $code_location->file_path,
+                    $fq_class_name_lc
+                );
 
-            if ($calling_fq_class_name) {
-                $class_storage = $this->classlike_storage_provider->get($calling_fq_class_name);
+                if ($calling_fq_class_name) {
+                    $class_storage = $this->classlike_storage_provider->get($calling_fq_class_name);
 
-                if ($class_storage->location
-                    && $class_storage->location->file_path !== $code_location->file_path
-                ) {
-                    $this->file_reference_provider->addFileReferenceToClass(
-                        $class_storage->location->file_path,
-                        $fq_class_name_lc
-                    );
+                    if ($class_storage->location
+                        && $class_storage->location->file_path !== $code_location->file_path
+                    ) {
+                        $this->file_reference_provider->addFileReferenceToClass(
+                            $class_storage->location->file_path,
+                            $fq_class_name_lc
+                        );
+                    }
                 }
             }
         }
@@ -467,10 +483,11 @@ class ClassLikes
     public function classOrInterfaceExists(
         $fq_class_name,
         CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null
+        ?string $calling_fq_class_name = null,
+        ?string $calling_method_id = null
     ) {
-        if (!$this->classExists($fq_class_name, $code_location, $calling_fq_class_name)
-            && !$this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name)
+        if (!$this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
+            && !$this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
         ) {
             return false;
         }
@@ -488,7 +505,8 @@ class ClassLikes
     public function classExists(
         $fq_class_name,
         CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null
+        ?string $calling_fq_class_name = null,
+        ?string $calling_method_id = null
     ) {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
             return false;
@@ -498,7 +516,12 @@ class ClassLikes
             return true;
         }
 
-        return $this->hasFullyQualifiedClassName($fq_class_name, $code_location, $calling_fq_class_name);
+        return $this->hasFullyQualifiedClassName(
+            $fq_class_name,
+            $code_location,
+            $calling_fq_class_name,
+            $calling_method_id
+        );
     }
 
     /**
@@ -580,7 +603,8 @@ class ClassLikes
     public function interfaceExists(
         $fq_interface_name,
         CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null
+        ?string $calling_fq_class_name = null,
+        ?string $calling_method_id = null
     ) {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
@@ -589,7 +613,8 @@ class ClassLikes
         return $this->hasFullyQualifiedInterfaceName(
             $fq_interface_name,
             $code_location,
-            $calling_fq_class_name
+            $calling_fq_class_name,
+            $calling_method_id
         );
     }
 
@@ -1056,12 +1081,15 @@ class ClassLikes
         FileManipulationBuffer::addCodeMigrations($code_migrations);
     }
 
+    /**
+     * @param lowercase-string|null $calling_method_id
+     */
     public function handleClassLikeReferenceInMigration(
         \Psalm\Codebase $codebase,
         \Psalm\StatementsSource $source,
         PhpParser\Node $class_name_node,
         string $fq_class_name,
-        ?string $calling_function_id,
+        ?string $calling_method_id,
         bool $force_change = false,
         bool $was_self = false
     ) : bool {
@@ -1070,10 +1098,10 @@ class ClassLikes
         // if we're inside a moved class static method
         if ($codebase->methods_to_move
             && $calling_fq_class_name
-            && $calling_function_id
-            && isset($codebase->methods_to_move[strtolower($calling_function_id)])
+            && $calling_method_id
+            && isset($codebase->methods_to_move[$calling_method_id])
         ) {
-            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_function_id)])[0];
+            $destination_class = explode('::', $codebase->methods_to_move[$calling_method_id])[0];
 
             $intended_fq_class_name = strtolower($calling_fq_class_name) === strtolower($fq_class_name)
                 && isset($codebase->classes_to_move[strtolower($calling_fq_class_name)])
@@ -1236,12 +1264,15 @@ class ClassLikes
         return false;
     }
 
+    /**
+     * @param lowercase-string|null $calling_method_id
+     */
     public function handleDocblockTypeInMigration(
         \Psalm\Codebase $codebase,
         \Psalm\StatementsSource $source,
         Type\Union $type,
         CodeLocation $type_location,
-        ?string $calling_function_id
+        ?string $calling_method_id
     ) : void {
         $calling_fq_class_name = $source->getFQCLN();
 
@@ -1250,12 +1281,12 @@ class ClassLikes
         // if we're inside a moved class static method
         if ($codebase->methods_to_move
             && $calling_fq_class_name
-            && $calling_function_id
-            && isset($codebase->methods_to_move[strtolower($calling_function_id)])
+            && $calling_method_id
+            && isset($codebase->methods_to_move[$calling_method_id])
         ) {
             $bounds = $type_location->getSelectionBounds();
 
-            $destination_class = explode('::', $codebase->methods_to_move[strtolower($calling_function_id)])[0];
+            $destination_class = explode('::', $codebase->methods_to_move[$calling_method_id])[0];
 
             $this->airliftClassDefinedDocblockType(
                 $type,

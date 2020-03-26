@@ -90,6 +90,7 @@ class ClassConstFetchAnalyzer
                             $fq_class_name,
                             new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                             $context->self,
+                            $context->calling_method_id,
                             $statements_analyzer->getSuppressedIssues(),
                             false,
                             true
@@ -110,7 +111,7 @@ class ClassConstFetchAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_function_id,
+                    $context->calling_method_id,
                     false,
                     $stmt->class->parts[0] === 'self'
                 );
@@ -272,9 +273,9 @@ class ClassConstFetchAnalyzer
                 return;
             }
 
-            if ($context->calling_function_id) {
+            if ($context->calling_method_id) {
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                    $context->calling_function_id,
+                    $context->calling_method_id,
                     strtolower($fq_class_name) . '::' . $stmt->name->name
                 );
             }

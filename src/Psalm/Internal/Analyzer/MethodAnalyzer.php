@@ -141,7 +141,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * @param  CodeLocation $code_location
      * @param  string[]     $suppressed_issues
-     * @param  string|null  $calling_function_id
+     * @param  lowercase-string|null  $calling_method_id
      *
      * @return bool|null
      */
@@ -150,13 +150,13 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         \Psalm\Internal\MethodIdentifier $method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $calling_function_id = null
+        ?string $calling_method_id = null
     ) {
         if ($codebase->methods->methodExists(
             $method_id,
-            $calling_function_id,
-            !$calling_function_id
-                || strtolower($calling_function_id) !== strtolower((string) $method_id)
+            $calling_method_id,
+            !$calling_method_id
+                || $calling_method_id !== strtolower((string) $method_id)
                 ? $code_location
                 : null,
             null,

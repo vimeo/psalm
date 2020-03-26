@@ -57,11 +57,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
                 $aliases = $statements_analyzer->getAliases();
 
-                if ($context->calling_function_id
+                if ($context->calling_method_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                        $context->calling_function_id,
+                        $context->calling_method_id,
                         'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
                     );
                 }
@@ -159,7 +159,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                     $lhs_type_part->as_type->value,
                                     '__construct'
                                 ),
-                                $context->calling_function_id,
+                                $context->calling_method_id,
                                 $context->collect_references
                                     ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
                                 $statements_analyzer,
@@ -305,7 +305,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_function_id
+                    $context->calling_method_id
                 );
             }
 
@@ -319,6 +319,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $fq_class_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context->self,
+                    $context->calling_method_id,
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 ) === false) {
@@ -417,7 +418,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                 if ($codebase->methods->methodExists(
                     $method_id,
-                    $context->calling_function_id,
+                    $context->calling_method_id,
                     $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
                     $statements_analyzer,
                     $statements_analyzer->getFilePath()

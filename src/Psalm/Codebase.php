@@ -699,9 +699,12 @@ class Codebase
      *
      * @return bool
      */
-    public function classOrInterfaceExists($fq_class_name, CodeLocation $code_location = null)
-    {
-        return $this->classlikes->classOrInterfaceExists($fq_class_name, $code_location);
+    public function classOrInterfaceExists(
+        $fq_class_name,
+        CodeLocation $code_location = null,
+        ?string $calling_method_id = null
+    ) {
+        return $this->classlikes->classOrInterfaceExists($fq_class_name, $code_location, $calling_method_id);
     }
 
     /**
@@ -762,9 +765,11 @@ class Codebase
      *
      * @return bool
      */
-    public function interfaceExists($fq_interface_name)
-    {
-        return $this->classlikes->interfaceExists($fq_interface_name);
+    public function interfaceExists(
+        $fq_interface_name,
+        ?string $calling_method_id = null
+    ) {
+        return $this->classlikes->interfaceExists($fq_interface_name, null, null, $calling_method_id);
     }
 
     /**
@@ -853,20 +858,19 @@ class Codebase
      * Whether or not a given method exists
      *
      * @param  string|\Psalm\Internal\MethodIdentifier       $method_id
-     * @param  CodeLocation|null $code_location
-     * @param  string       $calling_function_id
+     * @param  string|\Psalm\Internal\MethodIdentifier|null $calling_method_id
      *
-     * @return bool
+     @return bool
      */
     public function methodExists(
         $method_id,
-        CodeLocation $code_location = null,
-        $calling_function_id = null,
-        string $file_path = null
+        ?CodeLocation $code_location = null,
+        $calling_method_id = null,
+        ?string $file_path = null
     ) {
         return $this->methods->methodExists(
             Internal\MethodIdentifier::wrap($method_id),
-            $calling_function_id,
+            is_string($calling_method_id) ? strtolower($calling_method_id) : strtolower((string) $calling_method_id),
             $code_location,
             null,
             $file_path

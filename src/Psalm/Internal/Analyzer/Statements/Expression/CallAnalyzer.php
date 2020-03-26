@@ -220,7 +220,7 @@ class CallAnalyzer
                     }
                 }
 
-                $old_calling_function_id = $context->calling_function_id;
+                $old_calling_method_id = $context->calling_method_id;
 
                 if ($fq_class_name === $source->getFQCLN()) {
                     $class_analyzer->getMethodMutations(strtolower($method_name), $context);
@@ -238,7 +238,7 @@ class CallAnalyzer
                     $context->self = $old_self;
                 }
 
-                $context->calling_function_id = $old_calling_function_id;
+                $context->calling_method_id = $old_calling_method_id;
 
                 foreach ($local_vars_in_scope as $var => $type) {
                     $context->vars_in_scope[$var] = $type;
@@ -508,7 +508,7 @@ class CallAnalyzer
                         null,
                         null,
                         null,
-                        'fn-' . $context->calling_function_id
+                        'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
                     );
 
                     $replaced_type->replaceTemplateTypesWithArgTypes(
@@ -603,7 +603,7 @@ class CallAnalyzer
                         $statements_analyzer,
                         $statements_analyzer->node_data->getType($arg->value),
                         $argument_offset,
-                        'fn-' . $context->calling_function_id
+                        'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
                     );
 
                     if ($replace_template_result->generic_params) {
@@ -1355,7 +1355,7 @@ class CallAnalyzer
                         $arg_value_type,
                         $argument_offset,
                         $context->self,
-                        $context->calling_function_id,
+                        $context->calling_method_id ?: $context->calling_function_id,
                         false
                     );
 
@@ -1556,7 +1556,7 @@ class CallAnalyzer
                         clone $param->default_type,
                         $i,
                         $context->self,
-                        $context->calling_function_id,
+                        $context->calling_method_id ?: $context->calling_function_id,
                         true
                     );
                 }
@@ -1756,7 +1756,7 @@ class CallAnalyzer
                         $statements_analyzer,
                         $statements_analyzer->node_data->getType($arg->value),
                         $argument_offset,
-                        'fn-' . $context->calling_function_id
+                        'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
                     );
 
                     if ($template_result->generic_params) {
@@ -1778,7 +1778,7 @@ class CallAnalyzer
                         $statements_analyzer,
                         $statements_analyzer->node_data->getType($arg->value),
                         $argument_offset,
-                        'fn-' . $context->calling_function_id
+                        'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
                     );
 
                     if ($template_result->generic_params) {
@@ -1926,7 +1926,7 @@ class CallAnalyzer
                 $arg_type_param,
                 $argument_offset,
                 $context->self,
-                $context->calling_function_id
+                $context->calling_method_id ?: $context->calling_function_id
             );
 
             foreach ($bindable_template_params as $template_type) {
@@ -2508,7 +2508,7 @@ class CallAnalyzer
                     $input_type,
                     $i,
                     $context->self,
-                    $context->calling_function_id
+                    $context->calling_method_id ?: $context->calling_function_id
                 );
 
                 $closure_type->return_type->replaceTemplateTypesWithArgTypes(
@@ -2811,7 +2811,7 @@ class CallAnalyzer
                     $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
                         $input_type_part,
                         $codebase,
-                        $context->calling_function_id,
+                        $context->calling_method_id,
                         $statements_analyzer->getFilePath()
                     );
 
@@ -2832,7 +2832,7 @@ class CallAnalyzer
             foreach ($potential_method_ids as $potential_method_id) {
                 $codebase->methods->methodExists(
                     $potential_method_id,
-                    $context->calling_function_id,
+                    $context->calling_method_id,
                     null,
                     $statements_analyzer,
                     $statements_analyzer->getFilePath()
@@ -2961,6 +2961,7 @@ class CallAnalyzer
                         $input_expr->value,
                         $code_location,
                         $context->self,
+                        $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues()
                     ) === false
                     ) {
@@ -2978,6 +2979,7 @@ class CallAnalyzer
                                         $item->value->value,
                                         $code_location,
                                         $context->self,
+                                        $context->calling_method_id,
                                         $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
@@ -3025,6 +3027,7 @@ class CallAnalyzer
                                     $callable_fq_class_name,
                                     $code_location,
                                     $context->self,
+                                    $context->calling_method_id,
                                     $statements_analyzer->getSuppressedIssues()
                                 ) === false
                                 ) {

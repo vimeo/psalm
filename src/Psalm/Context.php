@@ -11,6 +11,7 @@ use function preg_quote;
 use function preg_replace;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Type\Union;
@@ -316,6 +317,11 @@ class Context
      * @var string|null
      */
     public $calling_function_id;
+
+    /**
+     * @var lowercase-string|null
+     */
+    public $calling_method_id;
 
     /**
      * @var bool

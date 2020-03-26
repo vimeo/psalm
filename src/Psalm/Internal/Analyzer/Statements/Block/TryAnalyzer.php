@@ -217,7 +217,7 @@ class TryAnalyzer
                         $statements_analyzer,
                         $catch_type,
                         $fq_catch_class,
-                        $context->calling_function_id
+                        $context->calling_method_id
                     );
                 }
 
@@ -227,6 +227,7 @@ class TryAnalyzer
                         $fq_catch_class,
                         new CodeLocation($statements_analyzer->getSource(), $catch_type, $context->include_location),
                         $context->self,
+                        $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues(),
                         false
                     ) === false) {

@@ -83,6 +83,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             $method_id->fq_class_name,
             new CodeLocation($this, $stmt),
             null,
+            null,
             [],
             true
         ) === false

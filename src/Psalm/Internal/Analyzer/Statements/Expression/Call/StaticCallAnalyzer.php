@@ -124,11 +124,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             } elseif ($context->check_classes) {
                 $aliases = $statements_analyzer->getAliases();
 
-                if ($context->calling_function_id
+                if ($context->calling_method_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                        $context->calling_function_id,
+                        $context->calling_method_id,
                         'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
                     );
                 }
@@ -161,6 +161,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $fq_class_name,
                         new CodeLocation($source, $stmt->class),
                         $context->self,
+                        $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues(),
                         false,
                         false,
@@ -221,6 +222,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $fq_class_name,
                     new CodeLocation($source, $stmt->class),
                     $context->self,
+                    $context->calling_method_id,
                     $statements_analyzer->getSuppressedIssues(),
                     $stmt->class instanceof PhpParser\Node\Name
                         && count($stmt->class->parts) === 1
@@ -240,6 +242,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $fq_class_name,
                     new CodeLocation($source, $stmt->class),
                     $context->self,
+                    $context->calling_method_id,
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 )) {
@@ -273,6 +276,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $fq_class_name,
                     new CodeLocation($source, $stmt->class),
                     $context->self,
+                    $context->calling_method_id,
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 )) {
@@ -315,7 +319,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($stmt->name->name),
-                            $context->calling_function_id ?: $statements_analyzer->getFileName()
+                            $context->calling_method_id ?: $statements_analyzer->getFileName()
                         );
                     }
 
@@ -423,7 +427,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if (!$codebase->methods->methodExists(
                     $method_id,
-                    $context->calling_function_id,
+                    $context->calling_method_id,
                     $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
                     $statements_analyzer,
                     $statements_analyzer->getFilePath()
@@ -442,7 +446,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     );
                     if ($codebase->methods->methodExists(
                         $callstatic_id,
-                        $context->calling_function_id,
+                        $context->calling_method_id,
                         $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
                         !$context->collect_initializations
                             && !$context->collect_mutations
@@ -545,7 +549,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $method_id,
                     new CodeLocation($source, $stmt),
                     $statements_analyzer->getSuppressedIssues(),
-                    $context->calling_function_id
+                    $context->calling_method_id
                 );
 
                 if (!$does_method_exist) {
@@ -565,7 +569,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $statements_analyzer,
                             $stmt->class,
                             $fq_class_name,
-                            $context->calling_function_id
+                            $context->calling_method_id
                         );
                     }
 
@@ -1058,7 +1062,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     $statements_analyzer,
                                     $stmt->class,
                                     $new_fq_class_name,
-                                    $context->calling_function_id,
+                                    $context->calling_method_id,
                                     strtolower($old_declaring_fq_class_name) !== strtolower($new_fq_class_name),
                                     $stmt->class->parts[0] === 'self'
                                 )) {
@@ -1150,7 +1154,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 if (!$context->ignore_variable_method) {
                     $codebase->analyzer->addMixedMemberName(
                         strtolower($fq_class_name) . '::',
-                        $context->calling_function_id ?: $statements_analyzer->getFileName()
+                        $context->calling_method_id ?: $statements_analyzer->getFileName()
                     );
                 }
 
@@ -1176,7 +1180,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_function_id,
+                    $context->calling_method_id,
                     false,
                     $stmt->class->parts[0] === 'self'
                 );

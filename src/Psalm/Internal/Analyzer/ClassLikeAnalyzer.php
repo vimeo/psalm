@@ -217,6 +217,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         string $fq_class_name,
         CodeLocation $code_location,
         ?string $calling_fq_class_name,
+        ?string $calling_method_id,
         array $suppressed_issues,
         bool $inferred = true,
         bool $allow_trait = false,
@@ -270,12 +271,14 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         $class_exists = $codebase->classlikes->classExists(
             $fq_class_name,
             !$inferred ? $code_location : null,
-            $calling_fq_class_name
+            $calling_fq_class_name,
+            $calling_method_id
         );
         $interface_exists = $codebase->classlikes->interfaceExists(
             $fq_class_name,
             !$inferred ? $code_location : null,
-            $calling_fq_class_name
+            $calling_fq_class_name,
+            $calling_method_id
         );
 
         if (!$class_exists && !$interface_exists) {

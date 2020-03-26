@@ -145,6 +145,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $fq_class_name,
                 new CodeLocation($source, $stmt->var),
                 $context->self,
+                $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
                 true,
                 false,
@@ -215,7 +216,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($fq_class_name) . '::',
-                    $context->calling_function_id ?: $statements_analyzer->getFileName()
+                    $context->calling_method_id ?: $statements_analyzer->getFileName()
                 );
             }
 
@@ -238,7 +239,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         if (!$codebase->methods->methodExists(
             $method_id,
-            $context->calling_function_id,
+            $context->calling_method_id,
             $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
             !$context->collect_initializations
                 && !$context->collect_mutations
@@ -273,7 +274,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             if (!$interface_has_method
                 && $codebase->methods->methodExists(
                     new MethodIdentifier($fq_class_name, '__call'),
-                    $context->calling_function_id
+                    $context->calling_method_id
                 )
             ) {
                 $new_call_context = MissingMethodCallHandler::handleMagicMethod(
@@ -334,7 +335,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         if (!$codebase->methods->methodExists(
             $method_id,
-            $context->calling_function_id,
+            $context->calling_method_id,
             $method_id !== $source_method_id ? new CodeLocation($source, $stmt->name) : null
         )
             || ($config->use_phpdoc_method_without_magic_or_parent
@@ -391,8 +392,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($context->collect_initializations && $context->calling_function_id) {
-            list($calling_method_class) = explode('::', $context->calling_function_id);
+        if ($context->collect_initializations && $context->calling_method_id) {
+            list($calling_method_class) = explode('::', $context->calling_method_id);
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $calling_method_class . '::__construct',
                 strtolower((string) $method_id)
@@ -792,7 +793,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($stmt->name->name),
-                            $context->calling_function_id ?: $statements_analyzer->getFileName()
+                            $context->calling_method_id ?: $statements_analyzer->getFileName()
                         );
                     }
 
