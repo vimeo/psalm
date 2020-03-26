@@ -465,7 +465,7 @@ class Codebase
     public function addFilesToAnalyze(array $files_to_analyze)
     {
         $this->scanner->addFilesToDeepScan($files_to_analyze);
-        $this->analyzer->addFiles($files_to_analyze);
+        $this->analyzer->addFilesToAnalyze($files_to_analyze);
     }
 
     /**

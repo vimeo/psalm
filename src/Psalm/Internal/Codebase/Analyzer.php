@@ -114,6 +114,14 @@ class Analyzer
     private $files_to_analyze = [];
 
     /**
+     * We can show analysis results on more files than we analyze
+     * because the results can be cached
+     *
+     * @var array<string, string>
+     */
+    private $files_with_analysis_results = [];
+
+    /**
      * We may update fewer files than we analyse (i.e. for dead code detection)
      *
      * @var array<string>|null
@@ -167,9 +175,20 @@ class Analyzer
      *
      * @return void
      */
-    public function addFiles(array $files_to_analyze)
+    public function addFilesToAnalyze(array $files_to_analyze)
     {
         $this->files_to_analyze += $files_to_analyze;
+        $this->files_with_analysis_results += $files_to_analyze;
+    }
+
+    /**
+     * @param array<string, string> $files_to_analyze
+     *
+     * @return void
+     */
+    public function addFilesToShowResults(array $files_to_analyze)
+    {
+        $this->files_with_analysis_results += $files_to_analyze;
     }
 
     /**
@@ -189,7 +208,7 @@ class Analyzer
      */
     public function canReportIssues($file_path)
     {
-        return isset($this->files_to_analyze[$file_path]);
+        return isset($this->files_with_analysis_results[$file_path]);
     }
 
     /**
@@ -576,9 +595,7 @@ class Analyzer
     {
         $codebase = $project_analyzer->getCodebase();
 
-        if ($codebase->diff_methods
-            && (!$codebase->collect_references || $codebase->server_mode)
-        ) {
+        if ($codebase->diff_methods) {
             $this->analyzed_methods = $codebase->file_reference_provider->getAnalyzedMethods();
             $this->existing_issues = $codebase->file_reference_provider->getExistingIssues();
             $file_maps = $codebase->file_reference_provider->getFileMaps();
@@ -768,6 +785,12 @@ class Analyzer
 
             foreach ($file_references_to_missing_class_members as &$referencing_file_paths) {
                 unset($referencing_file_paths[$file_path]);
+            }
+        }
+
+        foreach (array_diff_key($this->files_with_analysis_results, $this->files_to_analyze) as $file_path) {
+            if (isset($this->existing_issues[$file_path])) {
+                IssueBuffer::addIssues([$file_path => $this->existing_issues[$file_path]]);
             }
         }
 

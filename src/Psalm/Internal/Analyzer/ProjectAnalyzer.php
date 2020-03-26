@@ -487,7 +487,7 @@ class ProjectAnalyzer
             || $deleted_files === null
             || count($diff_files) > 200
         ) {
-            $this->codebase->analyzer->addFiles($this->project_files);
+            $this->codebase->analyzer->addFilesToAnalyze($this->project_files);
 
             $this->config->initializePlugins($this);
 
@@ -497,6 +497,8 @@ class ProjectAnalyzer
         } else {
             $this->progress->debug(count($diff_files) . ' changed files: ' . "\n");
             $this->progress->debug('    ' . implode("\n    ", $diff_files) . "\n");
+
+            $this->codebase->analyzer->addFilesToShowResults($this->project_files);
 
             if ($diff_files || $this->codebase->find_unused_code) {
                 $file_list = $this->getReferencedFilesFromDiff($diff_files);
