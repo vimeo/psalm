@@ -790,7 +790,7 @@ class Analyzer
 
         foreach (array_diff_key($this->files_with_analysis_results, $this->files_to_analyze) as $file_path) {
             if (isset($this->existing_issues[$file_path])) {
-                IssueBuffer::addIssues([$file_path => $this->existing_issues[$file_path]]);
+                IssueBuffer::addIssues([$file_path => array_values($this->existing_issues[$file_path])]);
             }
         }
 
