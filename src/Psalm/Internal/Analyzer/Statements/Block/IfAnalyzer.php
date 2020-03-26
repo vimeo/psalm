@@ -705,7 +705,7 @@ class IfAnalyzer
                 if ($cond_type->from_docblock) {
                     if (IssueBuffer::accepts(
                         new DocblockTypeContradiction(
-                            'if (false) is can never happen',
+                            'if (false) is impossible',
                             new CodeLocation($statements_analyzer, $cond)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -715,7 +715,7 @@ class IfAnalyzer
                 } else {
                     if (IssueBuffer::accepts(
                         new TypeDoesNotContainType(
-                            'if (false) is can never happen',
+                            'if (false) is impossible',
                             new CodeLocation($statements_analyzer, $cond)
                         ),
                         $statements_analyzer->getSuppressedIssues()
