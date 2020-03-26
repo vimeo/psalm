@@ -461,6 +461,8 @@ class ProjectAnalyzer
 
         $reference_cache = $this->file_reference_provider->loadReferenceCache(true);
 
+        $this->codebase->diff_methods = $is_diff;
+
         if ($is_diff
             && $reference_cache
             && $this->parser_cache_provider

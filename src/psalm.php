@@ -542,8 +542,6 @@ if (isset($options['php-version'])) {
     $project_analyzer->setPhpVersion($options['php-version']);
 }
 
-$project_analyzer->getCodebase()->diff_methods = isset($options['diff-methods']);
-
 if ($type_map_location) {
     $project_analyzer->getCodebase()->store_node_types = true;
 }
