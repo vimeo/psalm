@@ -583,7 +583,7 @@ class ReturnAnalyzer
         Context $context
     ): void {
         // if not returning from inside of a function, return
-        if (!$context->calling_method_id) {
+        if (!$context->calling_method_id && !$context->calling_function_id) {
             return;
         }
 
@@ -594,7 +594,10 @@ class ReturnAnalyzer
 
         $parent_fn_storage = $statements_analyzer
             ->getCodebase()
-            ->getFunctionLikeStorage($statements_analyzer, $context->calling_method_id);
+            ->getFunctionLikeStorage(
+                $statements_analyzer,
+                $context->calling_function_id ?: $context->calling_method_id
+            );
 
         if ($parent_fn_storage->return_type === null) {
             return;
