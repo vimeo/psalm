@@ -481,7 +481,7 @@ class ProjectAnalyzer
         if ($diff_files === null
             || $deleted_files === null
             || count($diff_files) > 200
-            || $this->codebase->find_unused_code) {
+        ) {
             $this->codebase->scanner->addFilesToDeepScan($this->project_files);
         }
 
