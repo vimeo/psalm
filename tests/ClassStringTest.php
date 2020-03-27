@@ -738,6 +738,16 @@ class ClassStringTest extends TestCase
                         }
                     }'
             ],
+            'getCalledClassIsStaticClass' => [
+                '<?php
+                    class A {
+                        /** @return static */
+                        public function getStatic() {
+                            $c = get_called_class();
+                            return new $c();
+                        }
+                    }'
+            ],
         ];
     }
 

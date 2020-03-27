@@ -89,7 +89,12 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     ]);
 
                 case 'get_called_class':
-                    return new Type\Union([new Type\Atomic\TClassString($context->self ?: 'object')]);
+                    return new Type\Union([
+                        new Type\Atomic\TClassString(
+                            $context->self ?: 'object',
+                            $context->self ? new Type\Atomic\TNamedObject($context->self, true) : null
+                        )
+                    ]);
 
                 case 'get_parent_class':
                     if ($context->self && $codebase->classExists($context->self)) {

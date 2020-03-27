@@ -28,13 +28,14 @@ class TNamedObject extends Atomic
     /**
      * @param string $value the name of the object
      */
-    public function __construct($value)
+    public function __construct($value, bool $was_static = false)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
         }
 
         $this->value = $value;
+        $this->was_static = $was_static;
     }
 
     public function __toString()
