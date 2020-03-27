@@ -1303,6 +1303,11 @@ class ExpressionAnalyzer
                     if (!$final && $return_type instanceof TNamedObject) {
                         $return_type->was_static = true;
                     }
+                } elseif ($return_type->was_static
+                    && ($static_class_type instanceof Type\Atomic\TNamedObject
+                        || $static_class_type instanceof Type\Atomic\TTemplateParam)
+                ) {
+                    $return_type->extra_types[$static_class_type->getKey()] = $static_class_type;
                 } elseif ($return_type_lc === 'self') {
                     if (!$self_class) {
                         throw new \UnexpectedValueException(

@@ -528,14 +528,22 @@ abstract class Type
                     ] = $intersection_type;
             }
 
+            $intersect_static = false;
+
+            if (isset($keyed_intersection_types['static'])) {
+                unset($keyed_intersection_types['static']);
+                $intersect_static = true;
+            }
+
             $first_type = array_shift($keyed_intersection_types);
 
-            if (count($keyed_intersection_types) === 1
-                && isset($keyed_intersection_types['static'])
+            if ($intersect_static
                 && $first_type instanceof TNamedObject
             ) {
                 $first_type->was_static = true;
-            } else {
+            }
+
+            if ($keyed_intersection_types) {
                 $first_type->extra_types = $keyed_intersection_types;
             }
 
