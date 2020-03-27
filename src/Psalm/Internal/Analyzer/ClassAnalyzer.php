@@ -1053,7 +1053,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $codebase,
                     null,
                     null,
-                    null
+                    null,
+                    $class_context->self
                 );
             }
 
