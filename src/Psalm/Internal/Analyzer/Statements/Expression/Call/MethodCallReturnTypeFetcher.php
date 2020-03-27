@@ -162,13 +162,15 @@ class MethodCallReturnTypeFetcher
                     $class_storage->parent_class
                 );
 
-                $return_type_candidate->sources = [
-                    new Source(
-                        strtolower((string) $method_id),
-                        $cased_method_id,
-                        new CodeLocation($statements_analyzer, $stmt->name)
-                    )
-                ];
+                if ($codebase->taint) {
+                    $return_type_candidate->sources = [
+                        new Source(
+                            strtolower((string) $method_id),
+                            $cased_method_id,
+                            new CodeLocation($statements_analyzer, $stmt->name)
+                        )
+                    ];
+                }
 
                 $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
                     $method_id,
