@@ -1117,10 +1117,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $included_file_path = $this->getFilePath();
 
-        if ($class_context->include_location) {
-            $included_file_path = $class_context->include_location->file_path;
-        }
-
         $method_already_analyzed = $codebase->analyzer->isMethodAlreadyAnalyzed(
             $included_file_path,
             $fq_class_name_lc . '::__construct',
@@ -1640,10 +1636,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $analyzed_method_id = $actual_method_id;
 
         $included_file_path = $source->getFilePath();
-
-        if ($class_context->include_location) {
-            $included_file_path = $class_context->include_location->file_path;
-        }
 
         if ($class_context->self && strtolower($class_context->self) !== strtolower((string) $source->getFQCLN())) {
             $analyzed_method_id = $method_analyzer->getMethodId($class_context->self);

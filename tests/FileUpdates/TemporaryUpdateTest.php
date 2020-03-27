@@ -1438,6 +1438,47 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[], []],
             ],
+            'dontForgetErrorInTraitMethod' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                            }
+
+                            (new A)->foo();',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                public function foo() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                            }
+
+                            (new A)->foo();',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                public function foo() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[192, 192], [192, 192]],
+            ],
         ];
     }
 }
