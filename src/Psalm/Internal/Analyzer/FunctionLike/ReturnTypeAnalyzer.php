@@ -496,8 +496,11 @@ class ReturnTypeAnalyzer
 
                     if (IssueBuffer::accepts(
                         new InvalidReturnType(
-                            'The declared return type \'' . $declared_return_type->getId() . '\' for ' . $cased_method_id .
-                                ' is incorrect, got \'' . $inferred_return_type->getId() . '\'',
+                            'The declared return type \''
+                                . $declared_return_type->getId()
+                                . '\' for ' . $cased_method_id
+                                . ' is incorrect, got \''
+                                . $inferred_return_type->getId() . '\'',
                             $return_type_location
                         ),
                         $suppressed_issues,
