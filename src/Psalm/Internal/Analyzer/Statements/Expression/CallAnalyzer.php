@@ -2079,7 +2079,7 @@ class CallAnalyzer
      * @return array<string, array<string, array{Type\Union}>>
      * @param array<string, non-empty-array<string, array{Type\Union}>> $existing_template_types
      */
-    private static function getTemplateTypesForCall(
+    public static function getTemplateTypesForCall(
         ClassLikeStorage $declaring_class_storage = null,
         ClassLikeStorage $calling_class_storage = null,
         array $existing_template_types = []

@@ -1201,6 +1201,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 $storage->has_docblock_issues = true;
                             }
                         } else {
+                            /** @psalm-suppress PropertyTypeCoercion due to a Psalm bug */
                             $storage->template_types[$template_name][$fq_classlike_name] = [Type::getMixed()];
                         }
 

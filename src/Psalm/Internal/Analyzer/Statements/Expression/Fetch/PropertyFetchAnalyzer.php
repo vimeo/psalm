@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\CodeLocation;
@@ -28,6 +29,7 @@ use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -825,32 +827,13 @@ class PropertyFetchAnalyzer
                 );
 
                 if ($lhs_type_part instanceof TGenericObject) {
-                    if ($class_storage->template_types) {
-                        $class_template_params = [];
-
-                        $reversed_class_template_types = array_reverse(array_keys($class_storage->template_types));
-
-                        $provided_type_param_count = count($lhs_type_part->type_params);
-
-                        foreach ($reversed_class_template_types as $i => $type_name) {
-                            if (isset($lhs_type_part->type_params[$provided_type_param_count - 1 - $i])) {
-                                $class_template_params[$type_name][$declaring_class_storage->name] = [
-                                    $lhs_type_part->type_params[$provided_type_param_count - 1 - $i],
-                                    0
-                                ];
-                            } else {
-                                $class_template_params[$type_name][$declaring_class_storage->name] = [
-                                    Type::getMixed(),
-                                    0
-                                ];
-                            }
-                        }
-
-                        $class_property_type->replaceTemplateTypesWithArgTypes(
-                            $class_template_params,
-                            $codebase
-                        );
-                    }
+                    $class_property_type = self::localizePropertyType(
+                        $codebase,
+                        $class_property_type,
+                        $lhs_type_part,
+                        $class_storage,
+                        $declaring_class_storage
+                    );
                 }
             }
 
@@ -917,6 +900,47 @@ class PropertyFetchAnalyzer
         if ($var_id) {
             $context->vars_in_scope[$var_id] = $statements_analyzer->node_data->getType($stmt) ?: Type::getMixed();
         }
+    }
+
+    public static function localizePropertyType(
+        \Psalm\Codebase $codebase,
+        Type\Union $class_property_type,
+        TGenericObject $lhs_type_part,
+        ClassLikeStorage $calling_class_storage,
+        ClassLikeStorage $declaring_class_storage
+    ) : Type\Union {
+        $template_types = CallAnalyzer::getTemplateTypesForCall(
+            $declaring_class_storage,
+            $calling_class_storage,
+            $calling_class_storage->template_types ?: []
+        );
+
+        if ($template_types) {
+            $reversed_class_template_types = array_reverse(array_keys($template_types));
+
+            $provided_type_param_count = count($lhs_type_part->type_params);
+
+            foreach ($reversed_class_template_types as $i => $type_name) {
+                if (isset($lhs_type_part->type_params[$provided_type_param_count - 1 - $i])) {
+                    $template_types[$type_name][$declaring_class_storage->name] = [
+                        $lhs_type_part->type_params[$provided_type_param_count - 1 - $i],
+                        0
+                    ];
+                } else {
+                    $template_types[$type_name][$declaring_class_storage->name] = [
+                        Type::getMixed(),
+                        0
+                    ];
+                }
+            }
+
+            $class_property_type->replaceTemplateTypesWithArgTypes(
+                $template_types,
+                $codebase
+            );
+        }
+
+        return $class_property_type;
     }
 
     private static function processTaints(

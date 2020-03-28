@@ -7,6 +7,7 @@ use PhpParser\Node\Stmt\PropertyProperty;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\PropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -600,12 +601,12 @@ class PropertyAssignmentAnalyzer
                     }
                 }
 
-                $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
+                $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
                 $property_storage = null;
 
-                if (isset($class_storage->properties[$prop_name])) {
-                    $property_storage = $class_storage->properties[$prop_name];
+                if (isset($declaring_class_storage->properties[$prop_name])) {
+                    $property_storage = $declaring_class_storage->properties[$prop_name];
 
                     if ($property_storage->deprecated) {
                         if (IssueBuffer::accepts(
@@ -683,7 +684,7 @@ class PropertyAssignmentAnalyzer
                                 )) {
                                     // fall through
                                 }
-                            } elseif ($class_storage->mutation_free) {
+                            } elseif ($declaring_class_storage->mutation_free) {
                                 $visitor = new \Psalm\Internal\TypeVisitor\ImmutablePropertyAssignmentVisitor(
                                     $statements_analyzer,
                                     $stmt
@@ -725,7 +726,7 @@ class PropertyAssignmentAnalyzer
                         $class_property_type,
                         $fq_class_name,
                         $lhs_type_part,
-                        $class_storage->parent_class
+                        $declaring_class_storage->parent_class
                     );
 
                     $class_property_type = \Psalm\Internal\Codebase\Methods::localizeType(
@@ -734,6 +735,18 @@ class PropertyAssignmentAnalyzer
                         $fq_class_name,
                         $declaring_property_class
                     );
+
+                    if ($lhs_type_part instanceof Type\Atomic\TGenericObject) {
+                        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                        $class_property_type = PropertyFetchAnalyzer::localizePropertyType(
+                            $codebase,
+                            $class_property_type,
+                            $lhs_type_part,
+                            $class_storage,
+                            $declaring_class_storage
+                        );
+                    }
 
                     $assignment_value_type = \Psalm\Internal\Codebase\Methods::localizeType(
                         $codebase,
