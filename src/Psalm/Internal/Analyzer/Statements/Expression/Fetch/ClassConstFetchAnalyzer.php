@@ -118,7 +118,7 @@ class ClassConstFetchAnalyzer
             }
 
             if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
-                if ($codebase->classExists($fq_class_name)) {
+                if ($codebase->classlikes->classExists($fq_class_name)) {
                     $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
                     $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
                     $fq_class_name = $class_const_storage->name;
@@ -166,7 +166,7 @@ class ClassConstFetchAnalyzer
             }
 
             // if we're ignoring that the class doesn't exist, exit anyway
-            if (!$codebase->classOrInterfaceExists($fq_class_name)) {
+            if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
                 return null;
@@ -208,7 +208,7 @@ class ClassConstFetchAnalyzer
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
             } elseif ($context->self &&
-                $codebase->classExtends($context->self, $fq_class_name)
+                $codebase->classlikes->classExtends($context->self, $fq_class_name)
             ) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             } else {

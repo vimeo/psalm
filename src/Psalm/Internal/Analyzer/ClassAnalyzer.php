@@ -1294,6 +1294,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $codebase->analyzer->disableMixedCounts();
 
+                $was_collecting_initializations = $class_context->collect_initializations;
+
+                $class_context->collect_initializations = true;
+
                 $constructor_analyzer = $this->analyzeClassMethod(
                     $fake_stmt,
                     $storage,
@@ -1302,6 +1306,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $global_context,
                     true
                 );
+
+                $class_context->collect_initializations = $was_collecting_initializations;
 
                 $codebase->analyzer->enableMixedCounts();
             }

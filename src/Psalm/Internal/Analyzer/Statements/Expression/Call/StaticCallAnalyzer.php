@@ -160,8 +160,15 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $statements_analyzer,
                         $fq_class_name,
                         new CodeLocation($source, $stmt->class),
-                        $context->self,
-                        $context->calling_method_id,
+                        !$context->collect_initializations
+                            && !$context->collect_mutations
+                            ? $context->self
+                            : null,
+                        !$context->collect_initializations
+                            && !$context->collect_mutations
+                            && $codebase->collect_references
+                            ? $context->calling_method_id
+                            : null,
                         $statements_analyzer->getSuppressedIssues(),
                         false,
                         false,
@@ -221,8 +228,15 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $statements_analyzer,
                     $fq_class_name,
                     new CodeLocation($source, $stmt->class),
-                    $context->self,
-                    $context->calling_method_id,
+                    !$context->collect_initializations
+                        && !$context->collect_mutations
+                        ? $context->self
+                        : null,
+                    !$context->collect_initializations
+                        && !$context->collect_mutations
+                        && $codebase->collect_references
+                        ? $context->calling_method_id
+                        : null,
                     $statements_analyzer->getSuppressedIssues(),
                     $stmt->class instanceof PhpParser\Node\Name
                         && count($stmt->class->parts) === 1
@@ -427,8 +441,16 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if (!$codebase->methods->methodExists(
                     $method_id,
-                    $context->calling_method_id,
-                    $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
+                    !$context->collect_initializations
+                        && !$context->collect_mutations
+                        && $codebase->collect_references
+                        ? $context->calling_method_id
+                        : null,
+                    !$context->collect_initializations
+                        && !$context->collect_mutations
+                        && $codebase->collect_references
+                        ? new CodeLocation($source, $stmt->name)
+                        : null,
                     $statements_analyzer,
                     $statements_analyzer->getFilePath()
                 )

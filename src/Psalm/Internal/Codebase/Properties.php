@@ -97,7 +97,12 @@ class Properties
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
-        if ($source && $context && $context->self !== $fq_class_name) {
+        if ($source
+            && $context
+            && $context->self !== $fq_class_name
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
             if ($context->calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClass(
                     $context->calling_method_id,
