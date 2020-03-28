@@ -424,7 +424,7 @@ class AssignmentAnalyzer
 
                     $location = new CodeLocation($statements_analyzer, $assign_var);
 
-                    if ($context->collect_references) {
+                    if ($codebase->find_unused_variables) {
                         $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
                     }
 
@@ -571,7 +571,7 @@ class AssignmentAnalyzer
                         if (strpos($list_var_id, '-') === false && strpos($list_var_id, '[') === false) {
                             $location = new CodeLocation($statements_analyzer, $var);
 
-                            if ($context->collect_references) {
+                            if ($codebase->find_unused_variables) {
                                 $context->unreferenced_vars[$list_var_id] = [$location->getHash() => $location];
                             }
 
@@ -931,11 +931,13 @@ class AssignmentAnalyzer
             }
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($array_var_id) {
             $context->assigned_var_ids[$array_var_id] = true;
             $context->possibly_assigned_var_ids[$array_var_id] = true;
 
-            if ($context->collect_references && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
+            if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
                 $location = new CodeLocation($statements_analyzer, $stmt->var);
                 $statements_analyzer->registerVariableAssignment(
                     $array_var_id,

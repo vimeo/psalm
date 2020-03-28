@@ -181,7 +181,7 @@ class ForAnalyzer
             $context->referenced_var_ids
         );
 
-        if ($context->collect_references) {
+        if ($codebase->find_unused_variables) {
             foreach ($for_context->unreferenced_vars as $var_id => $locations) {
                 if (isset($loop_scope->referenced_var_ids[$var_id])) {
                     $statements_analyzer->registerVariableUses($locations);

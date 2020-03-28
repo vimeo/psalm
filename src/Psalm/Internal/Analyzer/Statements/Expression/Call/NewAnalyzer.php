@@ -160,7 +160,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                     '__construct'
                                 ),
                                 $context->calling_method_id,
-                                $context->collect_references
+                                $codebase->collect_locations
                                     ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
                                 $statements_analyzer,
                                 $statements_analyzer->getFilePath()
@@ -419,7 +419,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($codebase->methods->methodExists(
                     $method_id,
                     $context->calling_method_id,
-                    $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+                    $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
                     $statements_analyzer,
                     $statements_analyzer->getFilePath()
                 )) {

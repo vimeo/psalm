@@ -227,7 +227,7 @@ class DoAnalyzer
             $do_context->referenced_var_ids
         );
 
-        if ($context->collect_references) {
+        if ($codebase->find_unused_variables) {
             $context->unreferenced_vars = $loop_scope->loop_context->unreferenced_vars;
         }
 

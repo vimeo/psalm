@@ -128,7 +128,7 @@ class TryAnalyzer
                 $context->referenced_var_ids
             );
 
-            if ($context->collect_references) {
+            if ($codebase->find_unused_variables) {
                 $newly_unreferenced_vars = array_merge(
                     $newly_unreferenced_vars,
                     array_diff_key(
@@ -374,7 +374,7 @@ class TryAnalyzer
                 $possibly_referenced_var_ids
             );
 
-            if ($context->collect_references && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {
+            if ($codebase->find_unused_variables && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {
                 $newly_unreferenced_vars = array_merge(
                     $newly_unreferenced_vars,
                     array_diff_key(
@@ -479,7 +479,7 @@ class TryAnalyzer
             $old_referenced_var_ids
         );
 
-        if ($context->collect_references) {
+        if ($codebase->find_unused_variables) {
             foreach ($old_unreferenced_vars as $var_id => $locations) {
                 if ((isset($context->unreferenced_vars[$var_id]) && $context->unreferenced_vars[$var_id] !== $locations)
                     || (!isset($newly_referenced_var_ids[$var_id]) && isset($possibly_referenced_var_ids[$var_id]))

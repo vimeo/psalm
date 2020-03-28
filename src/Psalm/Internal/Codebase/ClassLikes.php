@@ -330,7 +330,7 @@ class ClassLikes
             return false;
         }
 
-        if ($this->collect_references && $code_location) {
+        if ($code_location) {
             if ($calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClass(
                     $calling_method_id,

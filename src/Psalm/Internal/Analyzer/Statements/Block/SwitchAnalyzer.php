@@ -205,7 +205,7 @@ class SwitchAnalyzer
             $context->assigned_var_ids += $switch_scope->new_assigned_var_ids;
         }
 
-        if ($context->collect_references) {
+        if ($codebase->find_unused_variables) {
             foreach ($switch_scope->new_unreferenced_vars as $var_id => $locations) {
                 if (($all_options_matched && isset($switch_scope->new_assigned_var_ids[$var_id]))
                     || !isset($context->vars_in_scope[$var_id])
@@ -768,7 +768,9 @@ class SwitchAnalyzer
             $context->mergeExceptions($case_context);
         }
 
-        if ($context->collect_references) {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($codebase->find_unused_variables) {
             $switch_scope->new_possibly_assigned_var_ids =
                 $switch_scope->new_possibly_assigned_var_ids + $new_case_possibly_assigned_var_ids;
 

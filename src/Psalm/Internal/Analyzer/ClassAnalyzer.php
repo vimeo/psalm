@@ -661,7 +661,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         if (!$class_context) {
             $class_context = new Context($this->fq_class_name);
-            $class_context->collect_references = $codebase->collect_references;
             $class_context->parent = $parent_fq_class_name;
         }
 

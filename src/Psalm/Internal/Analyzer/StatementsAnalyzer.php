@@ -243,7 +243,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 && !($stmt instanceof PhpParser\Node\Stmt\Nop)
                 && !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
             ) {
-                if ($context->collect_references) {
+                if ($codebase->find_unused_variables) {
                     if (IssueBuffer::accepts(
                         new UnevaluatedCode(
                             'Expressions after return/throw/continue',
@@ -442,7 +442,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         }
                     }
 
-                    if ($context->collect_references && !$leaving_switch) {
+                    if ($codebase->find_unused_variables && !$leaving_switch) {
                         foreach ($context->unreferenced_vars as $var_id => $locations) {
                             if (isset($loop_scope->unreferenced_vars[$var_id])) {
                                 $loop_scope->unreferenced_vars[$var_id] += $locations;
@@ -473,7 +473,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             }
                         }
                     }
-                    if ($context->collect_references) {
+                    if ($codebase->find_unused_variables) {
                         foreach ($context->unreferenced_vars as $var_id => $locations) {
                             if (isset($case_scope->unreferenced_vars[$var_id])) {
                                 $case_scope->unreferenced_vars[$var_id] += $locations;
@@ -546,7 +546,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         }
                     }
 
-                    if ($context->collect_references && (!$context->case_scope || $stmt->num)) {
+                    if ($codebase->find_unused_variables && (!$context->case_scope || $stmt->num)) {
                         foreach ($context->unreferenced_vars as $var_id => $locations) {
                             if (isset($loop_scope->unreferenced_vars[$var_id])) {
                                 $loop_scope->unreferenced_vars[$var_id] += $locations;
@@ -566,7 +566,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
 
                 $case_scope = $context->case_scope;
-                if ($case_scope && $context->collect_references && $leaving_switch) {
+                if ($case_scope && $codebase->find_unused_variables && $leaving_switch) {
                     foreach ($context->unreferenced_vars as $var_id => $locations) {
                         if (isset($case_scope->unreferenced_vars[$var_id])) {
                             $case_scope->unreferenced_vars[$var_id] += $locations;
@@ -679,7 +679,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $function_context = new Context($context->self);
                     $function_context->strict_types = $context->strict_types;
                     $config = Config::getInstance();
-                    $function_context->collect_references = $codebase->collect_references;
                     $function_context->collect_exceptions = $config->check_for_throws_docblock;
 
                     if (isset($this->function_analyzers[$function_id])) {
@@ -921,7 +920,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($root_scope
-            && $context->collect_references
             && !$context->collect_initializations
             && $codebase->find_unused_variables
             && $context->check_variables
@@ -1587,7 +1585,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                 $location = new CodeLocation($this, $var);
 
-                if ($context->collect_references) {
+                if ($codebase->find_unused_variables) {
                     $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
                 }
 

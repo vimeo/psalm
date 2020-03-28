@@ -192,7 +192,7 @@ class PropertyFetchAnalyzer
                             true,
                             $statements_analyzer,
                             $context,
-                            $context->collect_references
+                            $codebase->collect_locations
                                 ? new CodeLocation($statements_analyzer->getSource(), $stmt)
                                 : null
                         );
@@ -614,7 +614,7 @@ class PropertyFetchAnalyzer
                 true,
                 $statements_analyzer,
                 $context,
-                $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
+                $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
             )
             ) {
                 if ($config->use_phpdoc_property_without_magic_or_parent
@@ -635,7 +635,9 @@ class PropertyFetchAnalyzer
                         true,
                         $statements_analyzer,
                         $context,
-                        $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
+                        $codebase->collect_locations
+                            ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            : null
                     )
                 ) {
                     $property_id = $context->self . '::$' . $prop_name;
@@ -1117,14 +1119,16 @@ class PropertyFetchAnalyzer
             // we don't need to check anything
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-            if ($context->collect_references) {
+            if ($codebase->collect_references) {
                 // log the appearance
                 $codebase->properties->propertyExists(
                     $property_id,
                     true,
                     $statements_analyzer,
                     $context,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    $codebase->collect_locations
+                        ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        : null
                 );
             }
 
@@ -1148,7 +1152,9 @@ class PropertyFetchAnalyzer
             true,
             $statements_analyzer,
             $context,
-            $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
+            $codebase->collect_locations
+                ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                : null
         )
         ) {
             if (IssueBuffer::accepts(

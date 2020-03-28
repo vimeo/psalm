@@ -207,7 +207,7 @@ class BinaryOpAnalyzer
                 $left_context->referenced_var_ids
             );
 
-            if ($context->collect_references) {
+            if ($codebase->find_unused_variables) {
                 $context->unreferenced_vars = $right_context->unreferenced_vars;
             }
 
@@ -247,7 +247,7 @@ class BinaryOpAnalyzer
                     $if_context->assigned_var_ids
                 );
 
-                if ($context->collect_references) {
+                if ($codebase->find_unused_variables) {
                     $if_context->unreferenced_vars = $context->unreferenced_vars;
                 }
 
@@ -345,7 +345,7 @@ class BinaryOpAnalyzer
                     }
                 }
 
-                if ($context->collect_references) {
+                if ($codebase->find_unused_variables) {
                     $context->unreferenced_vars = $left_context->unreferenced_vars;
                 }
 
@@ -505,7 +505,7 @@ class BinaryOpAnalyzer
                 $right_context->assigned_var_ids
             );
 
-            if ($context->collect_references) {
+            if ($codebase->find_unused_variables) {
                 foreach ($right_context->unreferenced_vars as $var_id => $locations) {
                     if (!isset($context->unreferenced_vars[$var_id])) {
                         $context->unreferenced_vars[$var_id] = $locations;
@@ -547,7 +547,7 @@ class BinaryOpAnalyzer
                     $if_context->assigned_var_ids
                 );
 
-                if ($context->collect_references) {
+                if ($codebase->find_unused_variables) {
                     $if_context->unreferenced_vars = $context->unreferenced_vars;
                 }
 
@@ -733,7 +733,7 @@ class BinaryOpAnalyzer
                 $t_if_context->referenced_var_ids
             );
 
-            if ($context->collect_references) {
+            if ($codebase->find_unused_variables) {
                 $context->unreferenced_vars = array_intersect_key(
                     $t_if_context->unreferenced_vars,
                     $context->unreferenced_vars
@@ -767,7 +767,7 @@ class BinaryOpAnalyzer
                 $t_else_context->referenced_var_ids
             );
 
-            if ($context->collect_references) {
+            if ($codebase->find_unused_variables) {
                 $context->unreferenced_vars = array_intersect_key(
                     $t_else_context->unreferenced_vars,
                     $context->unreferenced_vars

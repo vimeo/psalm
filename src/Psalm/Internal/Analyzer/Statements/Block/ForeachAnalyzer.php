@@ -240,7 +240,7 @@ class ForeachAnalyzer
 
             $location = new CodeLocation($statements_analyzer, $stmt->keyVar);
 
-            if ($context->collect_references && !isset($foreach_context->byref_constraints[$key_var_id])) {
+            if ($codebase->find_unused_variables && !isset($foreach_context->byref_constraints[$key_var_id])) {
                 $foreach_context->unreferenced_vars[$key_var_id] = [$location->getHash() => $location];
                 unset($foreach_context->referenced_var_ids[$key_var_id]);
             }
@@ -258,12 +258,12 @@ class ForeachAnalyzer
                 );
             }
 
-            if ($stmt->byRef && $context->collect_references) {
+            if ($stmt->byRef && $codebase->find_unused_variables) {
                 $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
             }
         }
 
-        if ($context->collect_references
+        if ($codebase->find_unused_variables
             && $stmt->byRef
             && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
             && is_string($stmt->valueVar->name)
@@ -322,7 +322,7 @@ class ForeachAnalyzer
                         );
                     }
                 } else {
-                    if ($context->collect_references
+                    if ($codebase->find_unused_variables
                         && !isset($context->vars_in_scope[$var_id])
                         && isset($inner_loop_context->unreferenced_vars[$var_id])
                     ) {
@@ -350,7 +350,7 @@ class ForeachAnalyzer
             $context->mergeExceptions($foreach_context);
         }
 
-        if ($context->collect_references) {
+        if ($codebase->find_unused_variables) {
             foreach ($foreach_context->unreferenced_vars as $var_id => $locations) {
                 if (isset($context->unreferenced_vars[$var_id])) {
                     $context->unreferenced_vars[$var_id] += $locations;

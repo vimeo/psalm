@@ -58,10 +58,7 @@ class UnusedCodeTest extends TestCase
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
-        $context = new Context();
-        $context->collect_references = true;
-
-        $this->analyzeFile($file_path, $context, false);
+        $this->analyzeFile($file_path, new Context(), false);
 
         $this->project_analyzer->consolidateAnalyzedData();
 
@@ -97,10 +94,7 @@ class UnusedCodeTest extends TestCase
             $code
         );
 
-        $context = new Context();
-        $context->collect_references = true;
-
-        $this->analyzeFile($file_path, $context, false);
+        $this->analyzeFile($file_path, new Context(), false);
 
         $this->project_analyzer->consolidateAnalyzedData();
 

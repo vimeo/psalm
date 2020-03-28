@@ -146,7 +146,7 @@ class WhileAnalyzer
             $while_context->referenced_var_ids
         );
 
-        if ($context->collect_references) {
+        if ($codebase->find_unused_variables) {
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
             if (!in_array('RedundantCondition', $suppressed_issues, true)) {

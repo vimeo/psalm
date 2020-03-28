@@ -318,7 +318,7 @@ class IfAnalyzer
         );
 
         // this captures statements in the if conditional
-        if ($context->collect_references) {
+        if ($codebase->find_unused_variables) {
             foreach ($if_context->unreferenced_vars as $var_id => $locations) {
                 if (!isset($context->unreferenced_vars[$var_id])) {
                     if (isset($if_scope->new_unreferenced_vars[$var_id])) {
@@ -477,7 +477,7 @@ class IfAnalyzer
             }
         }
 
-        if ($context->collect_references) {
+        if ($codebase->find_unused_variables) {
             foreach ($if_scope->new_unreferenced_vars as $var_id => $locations) {
                 if (($stmt->else
                         && (isset($if_scope->assigned_var_ids[$var_id]) || isset($if_scope->new_vars[$var_id])))
@@ -855,7 +855,7 @@ class IfAnalyzer
             }
         }
 
-        if ($outer_context->collect_references) {
+        if ($codebase->find_unused_variables) {
             $outer_context->referenced_var_ids = array_merge(
                 $outer_context->referenced_var_ids,
                 $if_context->referenced_var_ids
@@ -1009,7 +1009,7 @@ class IfAnalyzer
                 $if_scope->new_vars_possibly_in_scope = $vars_possibly_in_scope;
             }
 
-            if ($if_context->collect_references && (!$has_leaving_statements || $has_leave_switch_statement)) {
+            if ($codebase->find_unused_variables && (!$has_leaving_statements || $has_leave_switch_statement)) {
                 foreach ($if_context->unreferenced_vars as $var_id => $locations) {
                     if (!isset($outer_context->unreferenced_vars[$var_id])) {
                         if (isset($if_scope->new_unreferenced_vars[$var_id])) {
@@ -1479,7 +1479,7 @@ class IfAnalyzer
                 );
             }
 
-            if ($outer_context->collect_references &&  (!$has_leaving_statements || $has_leave_switch_statement)) {
+            if ($codebase->find_unused_variables &&  (!$has_leaving_statements || $has_leave_switch_statement)) {
                 foreach ($elseif_context->unreferenced_vars as $var_id => $locations) {
                     if (!isset($outer_context->unreferenced_vars[$var_id])) {
                         if (isset($if_scope->new_unreferenced_vars[$var_id])) {
@@ -1505,7 +1505,7 @@ class IfAnalyzer
             }
         }
 
-        if ($outer_context->collect_references) {
+        if ($codebase->find_unused_variables) {
             $outer_context->referenced_var_ids = array_merge(
                 $outer_context->referenced_var_ids,
                 $elseif_context->referenced_var_ids
@@ -1650,7 +1650,7 @@ class IfAnalyzer
             }
         }
 
-        if ($else && $outer_context->collect_references) {
+        if ($else && $codebase->find_unused_variables) {
             $outer_context->referenced_var_ids = array_merge(
                 $outer_context->referenced_var_ids,
                 $else_context->referenced_var_ids
@@ -1784,7 +1784,7 @@ class IfAnalyzer
                 );
             }
 
-            if ($outer_context->collect_references && (!$has_leaving_statements || $has_leave_switch_statement)) {
+            if ($codebase->find_unused_variables && (!$has_leaving_statements || $has_leave_switch_statement)) {
                 foreach ($else_context->unreferenced_vars as $var_id => $locations) {
                     if (!isset($outer_context->unreferenced_vars[$var_id])) {
                         if (isset($if_scope->new_unreferenced_vars[$var_id])) {

@@ -279,7 +279,7 @@ class LoopAnalyzer
 
                 $inner_context->has_returned = false;
 
-                if ($inner_context->collect_references) {
+                if ($codebase->find_unused_variables) {
                     foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
                         if (!isset($pre_outer_context->vars_in_scope[$var_id])) {
                             $loop_scope->unreferenced_vars[$var_id] = $locations;
@@ -298,7 +298,7 @@ class LoopAnalyzer
                     break;
                 }
 
-                if ($inner_context->collect_references) {
+                if ($codebase->find_unused_variables) {
                     foreach ($loop_scope->possibly_unreferenced_vars as $var_id => $locations) {
                         if (isset($inner_context->unreferenced_vars[$var_id])) {
                             $inner_context->unreferenced_vars[$var_id] += $locations;
@@ -474,7 +474,7 @@ class LoopAnalyzer
             $loop_scope->loop_context->referenced_var_ids
         );
 
-        if ($inner_context->collect_references) {
+        if ($codebase->find_unused_variables) {
             foreach ($loop_scope->possibly_unreferenced_vars as $var_id => $locations) {
                 if (isset($inner_context->unreferenced_vars[$var_id])) {
                     $inner_context->unreferenced_vars[$var_id] += $locations;

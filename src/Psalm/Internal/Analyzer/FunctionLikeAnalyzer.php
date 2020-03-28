@@ -628,7 +628,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($context->collect_references
+        if ($codebase->collect_references
             && !$context->collect_initializations
             && $codebase->find_unused_variables
             && $context->check_variables
@@ -1000,7 +1000,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context->vars_in_scope['$' . $function_param->name] = $var_type;
             $context->vars_possibly_in_scope['$' . $function_param->name] = true;
 
-            if ($context->collect_references && $function_param->location) {
+            if ($codebase->find_unused_variables && $function_param->location) {
                 $context->unreferenced_vars['$' . $function_param->name] = [
                     $function_param->location->getHash() => $function_param->location
                 ];
@@ -1132,7 +1132,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             }
 
-            if ($codebase->collect_references) {
+            if ($codebase->collect_locations) {
                 if ($function_param->type_location !== $function_param->signature_type_location &&
                     $function_param->signature_type_location &&
                     $function_param->signature_type

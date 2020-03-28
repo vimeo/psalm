@@ -237,16 +237,22 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $old_node_data = null;
 
-        if (!$codebase->methods->methodExists(
+        $naive_method_id = $method_id;
+
+        $naive_method_exists = $codebase->methods->methodExists(
             $method_id,
             $context->calling_method_id,
-            $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
+            $codebase->collect_locations
+                ? new CodeLocation($source, $stmt->name)
+                : null,
             !$context->collect_initializations
                 && !$context->collect_mutations
                 ? $statements_analyzer
                 : null,
             $statements_analyzer->getFilePath()
-        )
+        );
+
+        if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
                 $context,
@@ -333,11 +339,17 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             ? $source->getId()
             : null;
 
-        if (!$codebase->methods->methodExists(
-            $method_id,
-            $context->calling_method_id,
-            $method_id !== $source_method_id ? new CodeLocation($source, $stmt->name) : null
-        )
+        $corrected_method_exists = ($naive_method_exists && $method_id === $naive_method_id)
+            || ($method_id !== $naive_method_id
+                && $codebase->methods->methodExists(
+                    $method_id,
+                    $context->calling_method_id,
+                    $codebase->collect_locations && $method_id !== $source_method_id
+                        ? new CodeLocation($source, $stmt->name)
+                        : null
+                ));
+
+        if (!$corrected_method_exists
             || ($config->use_phpdoc_method_without_magic_or_parent
                 && isset($class_storage->pseudo_methods[$method_name_lc]))
         ) {

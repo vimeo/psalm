@@ -615,7 +615,7 @@ class CallAnalyzer
                     }
                 }
 
-                if ($context->collect_references
+                if ($codebase->find_unused_variables
                     && ($arg->value instanceof PhpParser\Node\Expr\AssignOp
                         || $arg->value instanceof PhpParser\Node\Expr\PreInc
                         || $arg->value instanceof PhpParser\Node\Expr\PreDec)

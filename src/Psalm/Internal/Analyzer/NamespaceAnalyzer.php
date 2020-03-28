@@ -65,9 +65,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
 
         $codebase = $this->getCodebase();
 
-        $namespace_context = new Context();
-        $namespace_context->collect_references = $codebase->collect_references;
-
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
                 $this->collectAnalyzableClassLike($stmt);
@@ -89,7 +86,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         if ($leftover_stmts) {
             $statements_analyzer = new StatementsAnalyzer($this, new \Psalm\Internal\Provider\NodeDataProvider());
             $context = new Context();
-            $context->collect_references = $codebase->collect_references;
             $context->is_global = true;
             $context->defineGlobals();
             $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;

@@ -147,7 +147,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 
         if (!$this->context) {
             $this->context = new Context();
-            $this->context->collect_references = $codebase->collect_references;
         }
 
         if ($codebase->config->useStrictTypesForFile($this->file_path)) {

@@ -1121,10 +1121,7 @@ class StubTest extends TestCase
                 \SomeVendor\VendorClass::vendorFunction(new MyClass);'
         );
 
-        $context = new Context();
-        $context->collect_references = true;
-
-        $this->analyzeFile($file_path, $context, false);
+        $this->analyzeFile($file_path, new Context(), false);
 
         $this->project_analyzer->consolidateAnalyzedData();
     }

@@ -403,7 +403,7 @@ class ExpressionAnalyzer
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = $stmt_type;
 
-                    if ($context->collect_references && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
+                    if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
                         $location = new CodeLocation($statements_analyzer, $stmt->var);
                         $context->assigned_var_ids[$var_id] = true;
                         $context->possibly_assigned_var_ids[$var_id] = true;
@@ -468,7 +468,6 @@ class ExpressionAnalyzer
             }
 
             $use_context = new Context($context->self);
-            $use_context->collect_references = $codebase->collect_references;
             $use_context->mutation_free = $context->mutation_free;
             $use_context->external_mutation_free = $context->external_mutation_free;
             $use_context->pure = $context->pure;
@@ -915,7 +914,9 @@ class ExpressionAnalyzer
                         }
                     }
 
-                    if ($context->collect_references) {
+                    $codebase = $statements_analyzer->getCodebase();
+
+                    if ($codebase->find_unused_variables) {
                         $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
                     }
 

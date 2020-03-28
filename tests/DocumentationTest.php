@@ -159,10 +159,7 @@ class DocumentationTest extends TestCase
 
         $this->addFile($file_path, $code);
 
-        $context = new Context();
-        $context->collect_references = $check_references;
-
-        $this->analyzeFile($file_path, $context);
+        $this->analyzeFile($file_path, new Context());
 
         if ($check_references) {
             $this->project_analyzer->consolidateAnalyzedData();

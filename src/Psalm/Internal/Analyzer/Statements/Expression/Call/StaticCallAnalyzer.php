@@ -166,7 +166,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             : null,
                         !$context->collect_initializations
                             && !$context->collect_mutations
-                            && $codebase->collect_references
                             ? $context->calling_method_id
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
@@ -234,7 +233,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         : null,
                     !$context->collect_initializations
                         && !$context->collect_mutations
-                        && $codebase->collect_references
                         ? $context->calling_method_id
                         : null,
                     $statements_analyzer->getSuppressedIssues(),
@@ -443,12 +441,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $method_id,
                     !$context->collect_initializations
                         && !$context->collect_mutations
-                        && $codebase->collect_references
                         ? $context->calling_method_id
                         : null,
-                    !$context->collect_initializations
-                        && !$context->collect_mutations
-                        && $codebase->collect_references
+                    $codebase->collect_locations
                         ? new CodeLocation($source, $stmt->name)
                         : null,
                     $statements_analyzer,
@@ -469,7 +464,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($codebase->methods->methodExists(
                         $callstatic_id,
                         $context->calling_method_id,
-                        $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
+                        $codebase->collect_locations
+                            ? new CodeLocation($source, $stmt->name)
+                            : null,
                         !$context->collect_initializations
                             && !$context->collect_mutations
                             ? $statements_analyzer

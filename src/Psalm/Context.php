@@ -189,13 +189,6 @@ class Context
     public $constants = [];
 
     /**
-     * Whether or not to track how many times a variable is used
-     *
-     * @var bool
-     */
-    public $collect_references = false;
-
-    /**
      * Whether or not to track exceptions
      *
      * @var bool
@@ -787,7 +780,7 @@ class Context
                 return false;
             }
 
-            if ($this->collect_references && $statements_analyzer) {
+            if ($statements_analyzer && $statements_analyzer->getCodebase()->find_unused_variables) {
                 if (isset($this->unreferenced_vars[$var_name])) {
                     $statements_analyzer->registerVariableUses($this->unreferenced_vars[$var_name]);
                 }
