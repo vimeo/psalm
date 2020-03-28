@@ -341,6 +341,16 @@ class WhileTest extends \Psalm\Tests\TestCase
                         $position++;
                     }'
             ],
+            'variableDefinedInWhileConditional' => [
+                '<?php
+                    function foo() : void {
+                        $pointers = ["hi"];
+
+                        while (rand(0, 1) && 0 < ($parent = 0)) {
+                            print $pointers[$parent];
+                        }
+                    }'
+            ],
         ];
     }
 
