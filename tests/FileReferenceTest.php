@@ -231,6 +231,9 @@ class FileReferenceTest extends TestCase
                     'foo\d::$foo' => [
                         '/var/www/somefile.php' => true,
                     ],
+                    'foo\a::bat' => [
+                        '/var/www/somefile.php' => true,
+                    ]
                 ],
                 [
                     'foo\a::__construct' => [
