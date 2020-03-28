@@ -1306,8 +1306,17 @@ class ExpressionAnalyzer
                 } elseif ($return_type->was_static
                     && ($static_class_type instanceof Type\Atomic\TNamedObject
                         || $static_class_type instanceof Type\Atomic\TTemplateParam)
+                    && $static_class_type->getKey(false) !== $return_type->getKey(false)
                 ) {
-                    $return_type->extra_types[$static_class_type->getKey()] = $static_class_type;
+                    $return_type = clone $return_type;
+                    $cloned_static = clone $static_class_type;
+                    $extra_static = $cloned_static->extra_types ?: [];
+                    $cloned_static->extra_types = null;
+                    $return_type->extra_types[$static_class_type->getKey()] = clone $cloned_static;
+
+                    foreach ($extra_static as $extra_static_type) {
+                        $return_type->extra_types[$extra_static_type->getKey()] = clone $extra_static_type;
+                    }
                 } elseif ($return_type_lc === 'self') {
                     if (!$self_class) {
                         throw new \UnexpectedValueException(
