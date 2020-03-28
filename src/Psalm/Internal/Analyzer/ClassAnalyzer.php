@@ -208,6 +208,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
         }
 
+        foreach ($storage->docblock_issues as $docblock_issue) {
+            IssueBuffer::add($docblock_issue);
+        }
+
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         $parent_fq_class_name = $this->parent_fq_class_name;

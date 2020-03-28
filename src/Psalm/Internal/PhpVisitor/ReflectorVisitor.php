@@ -172,27 +172,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     $this->type_aliases += $type_alias_tokens;
                 } catch (DocblockParseException $e) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            (string)$e->getMessage(),
-                            new CodeLocation($this->file_scanner, $node, null, true)
-                        )
-                    )) {
-                        // fall through
-                    }
-
-                    $this->file_storage->has_docblock_issues = true;
+                    $this->file_storage->docblock_issues[] = new InvalidDocblock(
+                        (string)$e->getMessage(),
+                        new CodeLocation($this->file_scanner, $node, null, true)
+                    );
                 } catch (TypeParseTreeException $e) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            (string)$e->getMessage(),
-                            new CodeLocation($this->file_scanner, $node, null, true)
-                        )
-                    )) {
-                        // fall through
-                    }
-
-                    $this->file_storage->has_docblock_issues = true;
+                    $this->file_storage->docblock_issues[] = new InvalidDocblock(
+                        (string)$e->getMessage(),
+                        new CodeLocation($this->file_scanner, $node, null, true)
+                    );
                 }
             }
         }
@@ -434,15 +422,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     || isset($comments['specials']['template-implements'])
                     || isset($comments['specials']['implements'])
                 ) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            'You must use @use or @template-use to parameterize traits',
-                            new CodeLocation($this->file_scanner, $node, null, true)
-                        )
-                    )) {
-                    }
-
-                    $storage->has_docblock_issues = true;
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        'You must use @use or @template-use to parameterize traits',
+                        new CodeLocation($this->file_scanner, $node, null, true)
+                    );
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Include_) {
@@ -664,10 +647,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->file_storage->has_visitor_issues = true;
             }
 
-            if ($classlike_storage->has_docblock_issues) {
-                $this->file_storage->has_docblock_issues = true;
-            }
-
             if ($node->name) {
                 $this->class_template_types = [];
             }
@@ -714,10 +693,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             if ($functionlike_storage->has_visitor_issues) {
                 $this->file_storage->has_visitor_issues = true;
-            }
-
-            if ($functionlike_storage->has_docblock_issues) {
-                $this->file_storage->has_docblock_issues = true;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\If_ && $node->getLine() === $this->skip_if_descendants) {
             $this->exists_cond_expr = null;
@@ -1136,15 +1111,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->aliases
                 );
             } catch (DocblockParseException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
-                        $name_location ?: $class_location
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
+                    $name_location ?: $class_location
+                );
             }
 
             if ($docblock_info) {
@@ -1173,16 +1143,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                         )
                                     );
                                 } catch (TypeParseTreeException $e) {
-                                    if (IssueBuffer::accepts(
-                                        new InvalidDocblock(
-                                            $e->getMessage() . ' in docblock for '
-                                                . implode('.', $this->fq_classlike_names),
-                                            $name_location ?: $class_location
-                                        )
-                                    )) {
-                                    }
+                                    $storage->docblock_issues[] = new InvalidDocblock(
+                                        $e->getMessage() . ' in docblock for '
+                                            . implode('.', $this->fq_classlike_names),
+                                        $name_location ?: $class_location
+                                    );
 
-                                    $storage->has_docblock_issues = true;
                                     continue;
                                 }
 
@@ -1190,15 +1156,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                     $fq_classlike_name => [$template_type],
                                 ];
                             } else {
-                                if (IssueBuffer::accepts(
-                                    new InvalidDocblock(
-                                        'Template missing as type',
-                                        $name_location ?: $class_location
-                                    )
-                                )) {
-                                }
-
-                                $storage->has_docblock_issues = true;
+                                $storage->docblock_issues[] = new InvalidDocblock(
+                                    'Template missing as type',
+                                    $name_location ?: $class_location
+                                );
                             }
                         } else {
                             /** @psalm-suppress PropertyTypeCoercion due to a Psalm bug */
@@ -1248,15 +1209,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
                             }
                         } catch (TypeParseTreeException $e) {
-                            if (IssueBuffer::accepts(
-                                new InvalidDocblock(
-                                    $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
-                                    $name_location ?: $class_location
-                                )
-                            )) {
-                            }
-
-                            $storage->has_docblock_issues = true;
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
+                                $name_location ?: $class_location
+                            );
                         }
                     }
 
@@ -1282,15 +1238,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 if ($docblock_info->mixin) {
                     if (isset($this->class_template_types[$docblock_info->mixin])) {
-                        if (IssueBuffer::accepts(
-                            new InvalidDocblock(
-                                'Templates are not currently supported for @mixin',
-                                $name_location ?: $class_location
-                            )
-                        )) {
-                        }
-
-                        $storage->has_docblock_issues = true;
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'Templates are not currently supported for @mixin',
+                            $name_location ?: $class_location
+                        );
                     } else {
                         $storage->mixin_fqcln = Type::getFQCLNFromString(
                             $docblock_info->mixin,
@@ -1335,15 +1286,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         string $extended_class_name
     ) {
         if (trim($extended_class_name) === '') {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
+                new CodeLocation($this->file_scanner, $node, null, true)
+            );
 
             return;
         }
@@ -1360,29 +1306,19 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->class_template_types
             );
         } catch (TypeParseTreeException $e) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
+                new CodeLocation($this->file_scanner, $node, null, true)
+            );
 
             return;
         }
 
         if (!$extended_union_type->isSingle()) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    '@template-extends cannot be a union type',
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                '@template-extends cannot be a union type',
+                new CodeLocation($this->file_scanner, $node, null, true)
+            );
         }
 
         $extended_union_type->setFromDocblock();
@@ -1395,15 +1331,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         foreach ($extended_union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        '@template-extends has invalid class ' . $atomic_type->getId(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@template-extends has invalid class ' . $atomic_type->getId(),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                );
 
                 return;
             }
@@ -1413,16 +1344,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if (!isset($storage->parent_classes[$generic_class_lc])
                 && !isset($storage->parent_interfaces[$generic_class_lc])
             ) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        '@template-extends must include the name of an extended class,'
-                            . ' got ' . $atomic_type->getId(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@template-extends must include the name of an extended class,'
+                        . ' got ' . $atomic_type->getId(),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                );
             }
 
             $extended_type_parameters = [];
@@ -1446,15 +1372,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         string $implemented_class_name
     ) {
         if (trim($implemented_class_name) === '') {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
+                new CodeLocation($this->file_scanner, $node, null, true)
+            );
 
             return;
         }
@@ -1471,29 +1392,19 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->class_template_types
             );
         } catch (TypeParseTreeException $e) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
+                new CodeLocation($this->file_scanner, $node, null, true)
+            );
 
             return;
         }
 
         if (!$implemented_union_type->isSingle()) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    '@template-implements cannot be a union type',
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                '@template-implements cannot be a union type',
+                new CodeLocation($this->file_scanner, $node, null, true)
+            );
 
             return;
         }
@@ -1508,15 +1419,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         foreach ($implemented_union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        '@template-implements has invalid class ' . $atomic_type->getId(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@template-implements has invalid class ' . $atomic_type->getId(),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                );
 
                 return;
             }
@@ -1524,16 +1430,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $generic_class_lc = strtolower($atomic_type->value);
 
             if (!isset($storage->class_implements[$generic_class_lc])) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        '@template-implements must include the name of an implemented class,'
-                            . ' got ' . $atomic_type->getId(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@template-implements must include the name of an implemented class,'
+                        . ' got ' . $atomic_type->getId(),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                );
 
                 return;
             }
@@ -1559,15 +1460,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         string $used_class_name
     ) {
         if (trim($used_class_name) === '') {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
+                new CodeLocation($this->file_scanner, $node, null, true)
+            );
 
             return;
         }
@@ -1584,29 +1480,19 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->class_template_types
             );
         } catch (TypeParseTreeException $e) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
+                new CodeLocation($this->file_scanner, $node, null, true)
+            );
 
             return;
         }
 
         if (!$used_union_type->isSingle()) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    '@template-use cannot be a union type',
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                '@template-use cannot be a union type',
+                new CodeLocation($this->file_scanner, $node, null, true)
+            );
 
             return;
         }
@@ -1621,15 +1507,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         foreach ($used_union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        '@template-use has invalid class ' . $atomic_type->getId(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@template-use has invalid class ' . $atomic_type->getId(),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                );
 
                 return;
             }
@@ -1637,16 +1518,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $generic_class_lc = strtolower($atomic_type->value);
 
             if (!isset($storage->used_traits[$generic_class_lc])) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        '@template-use must include the name of an used class,'
-                            . ' got ' . $atomic_type->getId(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@template-use must include the name of an used class,'
+                        . ' got ' . $atomic_type->getId(),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                );
 
                 return;
             }
@@ -1901,15 +1777,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         foreach ($stmt->getParams() as $param) {
             if ($param->var instanceof PhpParser\Node\Expr\Error) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        'Param' . ($i + 1) . ' of ' . $cased_function_id . ' has invalid syntax',
-                        new CodeLocation($this->file_scanner, $param, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    'Param' . ($i + 1) . ' of ' . $cased_function_id . ' has invalid syntax',
+                    new CodeLocation($this->file_scanner, $param, null, true)
+                );
 
                 ++$i;
 
@@ -1919,15 +1790,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $param_array = $this->getTranslatedFunctionParam($param, $stmt, $fake_method, $fq_classlike_name);
 
             if (isset($existing_params['$' . $param_array->name])) {
-                if (IssueBuffer::accepts(
-                    new DuplicateParam(
-                        'Duplicate param $' . $param_array->name . ' in docblock for ' . $cased_function_id,
-                        new CodeLocation($this->file_scanner, $param, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new DuplicateParam(
+                    'Duplicate param $' . $param_array->name . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_scanner, $param, null, true)
+                );
 
                 ++$i;
 
@@ -2136,26 +2002,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         try {
             $docblock_info = CommentAnalyzer::extractFunctionDocblockInfo($doc_comment);
         } catch (IncorrectDocblockException $e) {
-            if (IssueBuffer::accepts(
-                new MissingDocblockType(
-                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                )
-            )) {
-            }
+            $storage->docblock_issues[] = new MissingDocblockType(
+                $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                new CodeLocation($this->file_scanner, $stmt, null, true)
+            );
 
-            $storage->has_docblock_issues = true;
             $docblock_info = null;
         } catch (DocblockParseException $e) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                )
-            )) {
-            }
-
-            $storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                new CodeLocation($this->file_scanner, $stmt, null, true)
+            );
 
             $docblock_info = null;
         }
@@ -2270,28 +2127,18 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 $storage->template_types + ($template_types ?: [])
                             );
                         } catch (TypeParseTreeException $e) {
-                            if (IssueBuffer::accepts(
-                                new InvalidDocblock(
-                                    'Template ' . $template_name . ' has invalid as type - ' . $e->getMessage(),
-                                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                                )
-                            )) {
-                            }
-
-                            $storage->has_docblock_issues = true;
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                'Template ' . $template_name . ' has invalid as type - ' . $e->getMessage(),
+                                new CodeLocation($this->file_scanner, $stmt, null, true)
+                            );
 
                             $template_type = Type::getMixed();
                         }
                     } else {
-                        if (IssueBuffer::accepts(
-                            new InvalidDocblock(
-                                'Template ' . $template_name . ' missing as type',
-                                new CodeLocation($this->file_scanner, $stmt, null, true)
-                            )
-                        )) {
-                        }
-
-                        $storage->has_docblock_issues = true;
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'Template ' . $template_name . ' missing as type',
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        );
 
                         $template_type = Type::getMixed();
                     }
@@ -2300,16 +2147,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 if (isset($template_types[$template_name])) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            'Duplicate template param ' . $template_name . ' in docblock for '
-                                . $cased_function_id,
-                            new CodeLocation($this->file_scanner, $stmt, null, true)
-                        )
-                    )) {
-                    }
-
-                    $storage->has_docblock_issues = true;
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        'Duplicate template param ' . $template_name . ' in docblock for '
+                            . $cased_function_id,
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    );
                 } else {
                     $storage->template_types[$template_name] = [
                         'fn-' . strtolower($cased_function_id) => [$template_type],
@@ -2328,7 +2170,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->assertions = [];
 
             foreach ($docblock_info->assertions as $assertion) {
-                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt);
+                $assertion_type_parts = $this->getAssertionParts(
+                    $storage,
+                    $assertion['type'],
+                    $stmt
+                );
 
                 if (!$assertion_type_parts) {
                     continue;
@@ -2355,7 +2201,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->if_true_assertions = [];
 
             foreach ($docblock_info->if_true_assertions as $assertion) {
-                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt);
+                $assertion_type_parts = $this->getAssertionParts(
+                    $storage,
+                    $assertion['type'],
+                    $stmt
+                );
 
                 if (!$assertion_type_parts) {
                     continue;
@@ -2382,7 +2232,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->if_false_assertions = [];
 
             foreach ($docblock_info->if_false_assertions as $assertion) {
-                $assertion_type_parts = $this->getAssertionParts($assertion['type'], $stmt);
+                $assertion_type_parts = $this->getAssertionParts(
+                    $storage,
+                    $assertion['type'],
+                    $stmt
+                );
 
                 if (!$assertion_type_parts) {
                     continue;
@@ -2417,15 +2271,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     null
                 );
             } catch (TypeParseTreeException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                        new CodeLocation($this->file_scanner, $stmt, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                );
 
                 continue;
             }
@@ -2468,15 +2317,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->function_template_types + $class_template_types
                 );
             } catch (TypeParseTreeException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                        new CodeLocation($this->file_scanner, $stmt, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                );
 
                 continue;
             }
@@ -2630,15 +2474,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             } catch (TypeParseTreeException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                        new CodeLocation($this->file_scanner, $stmt, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                );
             }
 
             if ($storage->return_type && $docblock_info->ignore_nullable_return) {
@@ -2742,6 +2581,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      * @return ?list<string>
      */
     private function getAssertionParts(
+        FunctionLikeStorage $storage,
         string $assertion_type,
         PhpParser\Node\FunctionLike $stmt
     ) : ?array {
@@ -2779,16 +2619,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         );
 
         if ($prefix && count($namespaced_type->getAtomicTypes()) > 1) {
-            if (IssueBuffer::accepts(
-                new InvalidDocblock(
-                    'Docblock assertions cannot contain | characters together with ' . $prefix,
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                )
-            )) {
-                // do nothing
-            }
-
-            $this->file_storage->has_docblock_issues = true;
+            $storage->docblock_issues[] = new InvalidDocblock(
+                'Docblock assertions cannot contain | characters together with ' . $prefix,
+                new CodeLocation($this->file_scanner, $stmt, null, true)
+            );
 
             return null;
         }
@@ -3039,15 +2873,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->function_template_types + $class_template_types
                 );
             } catch (TypeParseTreeException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        $e->getMessage() . ' in docblock for ' . $cased_method_id,
-                        $docblock_type_location
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_method_id,
+                    $docblock_type_location
+                );
 
                 continue;
             }
@@ -3199,25 +3028,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $var_comment = array_pop($var_comments);
             } catch (IncorrectDocblockException $e) {
-                if (IssueBuffer::accepts(
-                    new MissingDocblockType(
-                        $e->getMessage(),
-                        new CodeLocation($this->file_scanner, $stmt, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new MissingDocblockType(
+                    $e->getMessage(),
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                );
             } catch (DocblockParseException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        $e->getMessage(),
-                        new CodeLocation($this->file_scanner, $stmt, null, true)
-                    )
-                )) {
-                }
-
-                $storage->has_docblock_issues = true;
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage(),
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                );
             }
         }
 

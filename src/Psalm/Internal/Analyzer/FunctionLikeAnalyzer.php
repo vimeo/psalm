@@ -158,6 +158,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        foreach ($storage->docblock_issues as $docblock_issue) {
+            IssueBuffer::add($docblock_issue);
+        }
+
         $overridden_method_ids = [];
 
         if ($this->function instanceof ClassMethod) {

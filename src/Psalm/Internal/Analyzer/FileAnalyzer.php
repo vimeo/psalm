@@ -180,6 +180,10 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->node_data = new \Psalm\Internal\Provider\NodeDataProvider();
         $statements_analyzer = new StatementsAnalyzer($this, $this->node_data);
 
+        foreach ($file_storage->docblock_issues as $docblock_issue) {
+            IssueBuffer::add($docblock_issue);
+        }
+
         // if there are any leftover statements, evaluate them,
         // in turn causing the classes/interfaces be evaluated
         if ($leftover_stmts) {

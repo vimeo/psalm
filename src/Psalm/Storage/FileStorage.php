@@ -77,9 +77,9 @@ class FileStorage
     public $has_visitor_issues = false;
 
     /**
-     * @var bool
+     * @var list<\Psalm\Issue\CodeIssue>
      */
-    public $has_docblock_issues = false;
+    public $docblock_issues = [];
 
     /**
      * @var array<string, array<int, array{0: string, 1: int}>>
