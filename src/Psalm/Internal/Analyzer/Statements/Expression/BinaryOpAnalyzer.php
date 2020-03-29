@@ -1291,7 +1291,7 @@ class BinaryOpAnalyzer
 
             $combined_atomic_types = array_values($combined_type->getAtomicTypes());
 
-            if (count($combined_atomic_types) <= 2) {
+            if (\count($combined_atomic_types) <= 2) {
                 $left_type_part = $combined_atomic_types[0];
                 $right_type_part = $combined_atomic_types[1] ?? $combined_atomic_types[0];
             }
