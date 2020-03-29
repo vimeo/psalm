@@ -149,4 +149,39 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$a' => ['!falsy']], $simplified_formula[0]->possibilities);
         $this->assertSame(['$b' => ['falsy']], $simplified_formula[1]->possibilities);
     }
+
+    public function testGroupImpossibilities() : void
+    {
+       $clause1 = new \Psalm\Internal\Clause(
+            [
+                '$a' => ['=array']
+            ],
+            false,
+            true,
+            true,
+            [],
+            5377
+        );
+
+        $clause1->impossibilities = [];
+
+        $clause2 = new \Psalm\Internal\Clause(
+            [
+                '$b' => ['isset']
+            ],
+            false,
+            true,
+            true,
+            [],
+            5377
+        );
+
+        $clause2->impossibilities = [
+            '$b' => ['!isset']
+        ];
+
+        $result_clauses = Algebra::groupImpossibilities([$clause1, $clause2]);
+
+        $this->assertCount(0, $result_clauses);
+    }
 }

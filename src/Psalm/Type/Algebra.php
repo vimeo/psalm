@@ -550,29 +550,47 @@ class Algebra
      *
      * @return array<int, Clause>
      */
-    private static function groupImpossibilities(array $clauses, int &$complexity = 1)
+    public static function groupImpossibilities(array $clauses)
     {
-        if ($complexity > 50000) {
-            throw new ComplicatedExpressionException();
-        }
+        $complexity = 1;
 
-        // this stops us getting into pathological cases
-        if (count($clauses) > 20) {
-            throw new ComplicatedExpressionException();
-        }
+        $seed_clauses = [];
 
         $clause = array_shift($clauses);
 
-        $new_clauses = [];
-
-        if ($clauses) {
-            $grouped_clauses = self::groupImpossibilities($clauses, $complexity);
-
-            if ($complexity > 50000) {
-                throw new ComplicatedExpressionException();
+        if (!$clause->wedge) {
+            if ($clause->impossibilities === null) {
+                throw new \UnexpectedValueException('$clause->impossibilities should not be null');
             }
 
-            foreach ($grouped_clauses as $grouped_clause) {
+            foreach ($clause->impossibilities as $var => $impossible_types) {
+                foreach ($impossible_types as $impossible_type) {
+                    $seed_clause = new Clause(
+                        [$var => [$impossible_type]],
+                        false,
+                        true,
+                        false,
+                        [],
+                        $clause->creating_object_id
+                    );
+
+                    $seed_clauses[] = $seed_clause;
+
+                    ++$complexity;
+                }
+            }
+        }
+
+        if (!$clauses || !$seed_clauses) {
+            return $seed_clauses;
+        }
+
+        while ($clauses) {
+            $clause = array_shift($clauses);
+
+            $new_clauses = [];
+
+            foreach ($seed_clauses as $grouped_clause) {
                 if ($clause->impossibilities === null) {
                     throw new \UnexpectedValueException('$clause->impossibilities should not be null');
                 }
@@ -600,34 +618,19 @@ class Algebra
 
                         $new_clauses[] = $new_clause;
 
-                        $complexity += count($new_clause_possibilities);
+                        ++$complexity;
+
+                        if ($complexity > 20000) {
+                            throw new ComplicatedExpressionException();
+                        }
                     }
                 }
             }
-        } elseif ($clause && !$clause->wedge) {
-            if ($clause->impossibilities === null) {
-                throw new \UnexpectedValueException('$clause->impossibilities should not be null');
-            }
 
-            foreach ($clause->impossibilities as $var => $impossible_types) {
-                foreach ($impossible_types as $impossible_type) {
-                    $new_clause = new Clause(
-                        [$var => [$impossible_type]],
-                        false,
-                        true,
-                        false,
-                        [],
-                        $clause->creating_object_id
-                    );
-
-                    $new_clauses[] = $new_clause;
-
-                    ++$complexity;
-                }
-            }
+            $seed_clauses = $new_clauses;
         }
 
-        return $new_clauses;
+        return $seed_clauses;
     }
 
     /**
@@ -754,17 +757,13 @@ class Algebra
      *
      * @return list<Clause>
      */
-    public static function negateFormula(array $clauses, int $complexity = null)
+    public static function negateFormula(array $clauses)
     {
         foreach ($clauses as $clause) {
             self::calculateNegation($clause);
         }
 
-        if ($complexity === null) {
-            $complexity = count($clauses);
-        }
-
-        $negated = self::simplifyCNF(self::groupImpossibilities($clauses, $complexity));
+        $negated = self::simplifyCNF(self::groupImpossibilities($clauses));
 
         return $negated;
     }
