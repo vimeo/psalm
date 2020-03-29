@@ -1227,6 +1227,19 @@ class AnnotationTest extends TestCase
                         var_export($expression);
                     }'
             ],
+            'userlandAddition' => [
+                '<?php
+                    /**
+                     * @template T as int|float
+                     * @param T $a
+                     * @param T $b
+                     * @return int|float
+                     * @psalm-return (T is int ? int : float)
+                     */
+                    function add($a, $b) {
+                        return $a + $b;
+                    }'
+            ],
         ];
     }
 
