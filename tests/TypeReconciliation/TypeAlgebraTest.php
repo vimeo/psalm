@@ -801,11 +801,15 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                     class Bar extends Foo {}
                     class Bat extends Foo {}',
             ],
-            'explicitValuesInOr' => [
+            'explicitValuesInOrIf' => [
                 '<?php
                     $s = rand(0, 1) ? "a" : "b";
 
-                    if (($s === "a" && rand(0, 1)) || ($s === "b" && rand(0, 1))) {}
+                    if (($s === "a" && rand(0, 1)) || ($s === "b" && rand(0, 1))) {}',
+            ],
+            'explicitValuesInOrTernary' => [
+                '<?php
+                    $s = rand(0, 1) ? "a" : "b";
 
                     $a = (($s === "a" && rand(0, 1)) || ($s === "b" && rand(0, 1))) ? 1 : 0;',
             ],
