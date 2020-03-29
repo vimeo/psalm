@@ -556,6 +556,11 @@ class Algebra
             throw new ComplicatedExpressionException();
         }
 
+        // this stops us getting into pathological cases
+        if (count($clauses) > 20) {
+            throw new ComplicatedExpressionException();
+        }
+
         $clause = array_shift($clauses);
 
         $new_clauses = [];
