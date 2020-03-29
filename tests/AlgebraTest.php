@@ -152,7 +152,7 @@ class AlgebraTest extends TestCase
 
     public function testGroupImpossibilities() : void
     {
-       $clause1 = new \Psalm\Internal\Clause(
+        $clause1 = new \Psalm\Internal\Clause(
             [
                 '$a' => ['=array']
             ],
