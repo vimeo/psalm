@@ -556,7 +556,7 @@ class Algebra
 
         $seed_clauses = [];
 
-        $clause = array_shift($clauses);
+        $clause = array_pop($clauses);
 
         if (!$clause->wedge) {
             if ($clause->impossibilities === null) {
@@ -586,7 +586,7 @@ class Algebra
         }
 
         while ($clauses) {
-            $clause = array_shift($clauses);
+            $clause = array_pop($clauses);
 
             $new_clauses = [];
 
