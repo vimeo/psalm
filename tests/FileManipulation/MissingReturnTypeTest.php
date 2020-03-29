@@ -846,6 +846,50 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 false,
             ],
+            'noReturnNullButReturnTrue' => [
+                '<?php
+                    function a() {
+                        if (rand(0,1)){
+                            return true;
+                        }
+                    }',
+                '<?php
+                    /**
+                     * @return null|true
+                     */
+                    function a() {
+                        if (rand(0,1)){
+                            return true;
+                        }
+                    }',
+                '7.3',
+                ['MissingReturnType'],
+                false,
+            ],
+            'returnNullAndReturnTrue' => [
+                '<?php
+                    function a() {
+                        if (rand(0,1)){
+                            return true;
+                        }
+
+                        return null;
+                    }',
+                '<?php
+                    /**
+                     * @return null|true
+                     */
+                    function a(): ?bool {
+                        if (rand(0,1)){
+                            return true;
+                        }
+
+                        return null;
+                    }',
+                '7.3',
+                ['MissingReturnType'],
+                false,
+            ],
         ];
     }
 }

@@ -35,8 +35,12 @@ class ReturnTypeCollector
     ) {
         $return_types = [];
 
+        $had_explicit_return = [];
+
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
+                $had_explicit_return = true;
+
                 if ($stmt->expr instanceof PhpParser\Node\Expr\Yield_ ||
                     $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom) {
                     $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
@@ -300,6 +304,10 @@ class ReturnTypeCollector
                         ]
                     ),
                 ];
+            }
+
+            if (!$had_explicit_return) {
+                $return_types[] = new Atomic\TVoid();
             }
         }
 

@@ -405,7 +405,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                         /**
                          * @return void
                          */
-                        protected function foo() {}
+                        protected function foo(): void {}
                     }',
                 '7.3',
                 ['InvalidReturnType'],
