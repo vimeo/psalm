@@ -1151,6 +1151,66 @@ class AnnotationTest extends TestCase
                     '$c' => 'array<string, string>|string'
                 ]
             ],
+            'nestedConditionalOnIntReturnType' => [
+                '<?php
+                    /**
+                     * @template T as int
+                     * @param T $i
+                     * @psalm-return (T is 0 ? string : (T is 1 ? int : bool))
+                     */
+                    function getDifferentType(int $i) {
+                        if ($i === 0) {
+                            return "hello";
+                        }
+
+                        if ($i === 1) {
+                            return 5;
+                        }
+
+                        return true;
+                    }'
+            ],
+            'nestedConditionalOnStringsReturnType' => [
+                '<?php
+                    /**
+                     * @template T as string
+                     * @param T $i
+                     * @psalm-return (T is "0" ? string : (T is "1" ? int : bool))
+                     */
+                    function getDifferentType(string $i) {
+                        if ($i === "0") {
+                            return "hello";
+                        }
+
+                        if ($i === "1") {
+                            return 5;
+                        }
+
+                        return true;
+                    }'
+            ],
+            'nestedConditionalOnClassStringsReturnType' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @template T as string
+                     * @param T $i
+                     * @psalm-return (T is A::class ? string : (T is B::class ? int : bool))
+                     */
+                    function getDifferentType(string $i) {
+                        if ($i === A::class) {
+                            return "hello";
+                        }
+
+                        if ($i === B::class) {
+                            return 5;
+                        }
+
+                        return true;
+                    }'
+            ],
         ];
     }
 

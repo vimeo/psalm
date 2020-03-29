@@ -2641,7 +2641,30 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 return new Type\Union([new Type\Atomic\TLiteralInt($value)]);
             }
 
-            if ($existing_var_type->hasInt()) {
+            $has_int = false;
+
+            foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+                if ($existing_var_atomic_type instanceof TInt) {
+                    $has_int = true;
+                } elseif ($existing_var_atomic_type instanceof TTemplateParam) {
+                    if ($existing_var_atomic_type->as->hasMixed()
+                        || $existing_var_atomic_type->as->hasScalar()
+                        || $existing_var_atomic_type->as->hasNumeric()
+                    ) {
+                        if ($is_loose_equality) {
+                            return $existing_var_type;
+                        }
+
+                        return new Type\Union([new Type\Atomic\TLiteralInt($value)]);
+                    }
+
+                    if ($existing_var_atomic_type->as->hasInt()) {
+                        $has_int = true;
+                    }
+                }
+            }
+
+            if ($has_int) {
                 $existing_int_types = $existing_var_type->getLiteralInts();
 
                 if ($existing_int_types) {
@@ -2744,7 +2767,30 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 return new Type\Union([new Type\Atomic\TLiteralString($value)]);
             }
 
-            if ($existing_var_type->hasString()) {
+            $has_string = false;
+
+            foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+                if ($existing_var_atomic_type instanceof TString) {
+                    $has_string = true;
+                } elseif ($existing_var_atomic_type instanceof TTemplateParam) {
+                    if ($existing_var_atomic_type->as->hasMixed()
+                        || $existing_var_atomic_type->as->hasScalar()
+                        || $existing_var_atomic_type->as->hasArrayKey()
+                    ) {
+                        if ($is_loose_equality) {
+                            return $existing_var_type;
+                        }
+
+                        return new Type\Union([new Type\Atomic\TLiteralString($value)]);
+                    }
+
+                    if ($existing_var_atomic_type->as->hasString()) {
+                        $has_string = true;
+                    }
+                }
+            }
+
+            if ($has_string) {
                 $existing_string_types = $existing_var_type->getLiteralStrings();
 
                 if ($existing_string_types) {
