@@ -1969,6 +1969,7 @@ class CallAnalyzer
             $static_classlike_storage ? $static_classlike_storage->name : null,
             $parent_class,
             true,
+            false,
             $static_classlike_storage ? $static_classlike_storage->final : false
         );
 

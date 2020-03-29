@@ -1724,6 +1724,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $this->getFQCLN(),
             $this->getParentFQCLN(),
             true,
+            true,
             $final
         );
 

@@ -676,6 +676,7 @@ class MethodComparator
                 ? $implementer_classlike_storage->parent_class
                 : $guide_classlike_storage->parent_class,
             true,
+            true,
             $implementer_method_storage->final
         );
 
@@ -767,6 +768,7 @@ class MethodComparator
                 ? $implementer_called_class_name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->parent_class,
+            true,
             true,
             $implementer_method_storage->final
         );

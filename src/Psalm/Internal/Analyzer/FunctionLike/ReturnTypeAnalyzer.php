@@ -372,6 +372,7 @@ class ReturnTypeAnalyzer
             $self_fq_class_name,
             $parent_class,
             true,
+            true,
             $function_like_storage instanceof MethodStorage && $function_like_storage->final
         );
 

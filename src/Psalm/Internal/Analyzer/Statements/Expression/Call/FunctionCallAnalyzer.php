@@ -907,6 +907,14 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $return_type = clone $function_storage->return_type;
 
                         if ($template_result->generic_params && $function_storage->template_types) {
+                            $return_type = ExpressionAnalyzer::fleshOutType(
+                                $codebase,
+                                $return_type,
+                                null,
+                                null,
+                                null
+                            );
+
                             $return_type->replaceTemplateTypesWithArgTypes(
                                 $template_result->generic_params,
                                 $codebase

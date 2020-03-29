@@ -923,13 +923,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             }
                         }
 
-                        if ($template_result->generic_params) {
-                            $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                                $template_result->generic_params,
-                                $codebase
-                            );
-                        }
-
                         if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
                             $static_type = $lhs_type_part;
                         } elseif ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
@@ -942,6 +935,21 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         } else {
                             $static_type = $fq_class_name;
+                        }
+
+                        if ($template_result->generic_params) {
+                            $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                                $codebase,
+                                $return_type_candidate,
+                                null,
+                                null,
+                                null
+                            );
+
+                            $return_type_candidate->replaceTemplateTypesWithArgTypes(
+                                $template_result->generic_params,
+                                $codebase
+                            );
                         }
 
                         $return_type_candidate = ExpressionAnalyzer::fleshOutType(

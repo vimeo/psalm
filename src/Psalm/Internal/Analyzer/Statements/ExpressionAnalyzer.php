@@ -1193,7 +1193,8 @@ class ExpressionAnalyzer
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
-        bool $evaluate = true,
+        bool $evaluate_class_constants = true,
+        bool $evaluate_conditional_types = false,
         bool $final = false
     ) {
         $return_type = clone $return_type;
@@ -1207,7 +1208,8 @@ class ExpressionAnalyzer
                 $self_class,
                 $static_class_type,
                 $parent_class,
-                $evaluate,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
                 $final
             );
 
@@ -1246,7 +1248,8 @@ class ExpressionAnalyzer
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
-        bool $evaluate = true,
+        bool $evaluate_class_constants = true,
+        bool $evaluate_conditional_types = false,
         bool $final = false
     ) {
         if ($return_type instanceof TNamedObject
@@ -1262,7 +1265,8 @@ class ExpressionAnalyzer
                         $self_class,
                         $static_class_type,
                         $parent_class,
-                        $evaluate
+                        $evaluate_class_constants,
+                        $evaluate_conditional_types
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
@@ -1282,13 +1286,7 @@ class ExpressionAnalyzer
             if ($return_type instanceof TNamedObject) {
                 $return_type_lc = strtolower($return_type->value);
 
-                if ($return_type_lc === 'static' || $return_type_lc === '$this') {
-                    if (!$static_class_type) {
-                        throw new \UnexpectedValueException(
-                            'Cannot handle ' . $return_type->value . ' when $static_class is empty'
-                        );
-                    }
-
+                if ($static_class_type && ($return_type_lc === 'static' || $return_type_lc === '$this')) {
                     if (is_string($static_class_type)) {
                         $return_type->value = $static_class_type;
                     } else {
@@ -1322,21 +1320,9 @@ class ExpressionAnalyzer
                             $return_type->extra_types[$extra_static_type->getKey()] = clone $extra_static_type;
                         }
                     }
-                } elseif ($return_type_lc === 'self') {
-                    if (!$self_class) {
-                        throw new \UnexpectedValueException(
-                            'Cannot handle ' . $return_type->value . ' when $self_class is empty'
-                        );
-                    }
-
+                } elseif ($self_class && $return_type_lc === 'self') {
                     $return_type->value = $self_class;
-                } elseif ($return_type_lc === 'parent') {
-                    if (!$parent_class) {
-                        throw new \UnexpectedValueException(
-                            'Cannot handle ' . $return_type->value . ' when $parent_class is empty'
-                        );
-                    }
-
+                } elseif ($parent_class && $return_type_lc === 'parent') {
                     $return_type->value = $parent_class;
                 } else {
                     $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
@@ -1355,7 +1341,8 @@ class ExpressionAnalyzer
                 $self_class,
                 $static_class_type,
                 $parent_class,
-                $evaluate,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
                 $final
             );
 
@@ -1370,7 +1357,7 @@ class ExpressionAnalyzer
                 $return_type->fq_classlike_name = $self_class;
             }
 
-            if ($evaluate && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+            if ($evaluate_class_constants && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
                 if (strtolower($return_type->const_name) === 'class') {
                     return new Type\Atomic\TLiteralClassString($return_type->fq_classlike_name);
                 }
@@ -1435,7 +1422,7 @@ class ExpressionAnalyzer
                 $return_type->fq_classlike_name = $self_class;
             }
 
-            if ($evaluate && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+            if ($evaluate_class_constants && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
                 try {
                     $class_constant_type = $codebase->classlikes->getConstantForClass(
                         $return_type->fq_classlike_name,
@@ -1479,7 +1466,8 @@ class ExpressionAnalyzer
                     $self_class,
                     $static_class_type,
                     $parent_class,
-                    $evaluate,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
                     $final
                 );
             }
@@ -1491,7 +1479,8 @@ class ExpressionAnalyzer
                     $self_class,
                     $static_class_type,
                     $parent_class,
-                    $evaluate,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
                     $final
                 );
             }
@@ -1502,7 +1491,8 @@ class ExpressionAnalyzer
                 $self_class,
                 $static_class_type,
                 $parent_class,
-                $evaluate,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
                 $final
             );
         }
@@ -1517,7 +1507,8 @@ class ExpressionAnalyzer
                             $self_class,
                             $static_class_type,
                             $parent_class,
-                            $evaluate,
+                            $evaluate_class_constants,
+                            $evaluate_conditional_types,
                             $final
                         );
                     }
@@ -1530,67 +1521,105 @@ class ExpressionAnalyzer
                     $self_class,
                     $static_class_type,
                     $parent_class,
-                    $evaluate,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
                     $final
                 );
             }
         }
 
-        if ($return_type instanceof Type\Atomic\TConditional && $evaluate) {
-            $all_conditional_return_types = [];
+        if ($return_type instanceof Type\Atomic\TConditional) {
+            if ($evaluate_conditional_types) {
+                $all_conditional_return_types = [];
 
-            foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
-                $candidate = self::fleshOutAtomicType(
-                    $codebase,
-                    $if_atomic_type,
-                    $self_class,
-                    $static_class_type,
-                    $parent_class,
-                    $evaluate,
-                    $final
-                );
-
-                if (is_array($candidate)) {
-                    $all_conditional_return_types = array_merge(
-                        $all_conditional_return_types,
-                        $candidate
+                foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
+                    $candidate = self::fleshOutAtomicType(
+                        $codebase,
+                        $if_atomic_type,
+                        $self_class,
+                        $static_class_type,
+                        $parent_class,
+                        $evaluate_class_constants,
+                        $evaluate_conditional_types,
+                        $final
                     );
-                } else {
-                    $all_conditional_return_types[] = $candidate;
+
+                    if (is_array($candidate)) {
+                        $all_conditional_return_types = array_merge(
+                            $all_conditional_return_types,
+                            $candidate
+                        );
+                    } else {
+                        $all_conditional_return_types[] = $candidate;
+                    }
                 }
-            }
 
-            foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
-                $candidate = self::fleshOutAtomicType(
-                    $codebase,
-                    $else_atomic_type,
-                    $self_class,
-                    $static_class_type,
-                    $parent_class,
-                    $evaluate,
-                    $final
-                );
-
-                if (is_array($candidate)) {
-                    $all_conditional_return_types = array_merge(
-                        $all_conditional_return_types,
-                        $candidate
+                foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
+                    $candidate = self::fleshOutAtomicType(
+                        $codebase,
+                        $else_atomic_type,
+                        $self_class,
+                        $static_class_type,
+                        $parent_class,
+                        $evaluate_class_constants,
+                        $evaluate_conditional_types,
+                        $final
                     );
-                } else {
-                    $all_conditional_return_types[] = $candidate;
+
+                    if (is_array($candidate)) {
+                        $all_conditional_return_types = array_merge(
+                            $all_conditional_return_types,
+                            $candidate
+                        );
+                    } else {
+                        $all_conditional_return_types[] = $candidate;
+                    }
                 }
+
+                foreach ($all_conditional_return_types as $i => $conditional_return_type) {
+                    if ($conditional_return_type instanceof Type\Atomic\TVoid
+                        && count($all_conditional_return_types) > 1
+                    ) {
+                        $all_conditional_return_types[$i] = new Type\Atomic\TNull();
+                        $all_conditional_return_types[$i]->from_docblock = true;
+                    }
+                }
+
+                return $all_conditional_return_types;
             }
 
-            foreach ($all_conditional_return_types as $i => $conditional_return_type) {
-                if ($conditional_return_type instanceof Type\Atomic\TVoid
-                    && count($all_conditional_return_types) > 1
-                ) {
-                    $all_conditional_return_types[$i] = new Type\Atomic\TNull();
-                    $all_conditional_return_types[$i]->from_docblock = true;
-                }
-            }
+            $return_type->conditional_type = self::fleshOutType(
+                $codebase,
+                $return_type->conditional_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final
+            );
 
-            return $all_conditional_return_types;
+            $return_type->if_type = self::fleshOutType(
+                $codebase,
+                $return_type->if_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final
+            );
+
+            $return_type->else_type = self::fleshOutType(
+                $codebase,
+                $return_type->else_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final
+            );
         }
 
         return $return_type;

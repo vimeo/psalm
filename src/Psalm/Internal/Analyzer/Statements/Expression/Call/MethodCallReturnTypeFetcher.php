@@ -148,6 +148,14 @@ class MethodCallReturnTypeFetcher
                 }
 
                 if ($template_result->generic_params) {
+                    $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                        $codebase,
+                        $return_type_candidate,
+                        null,
+                        null,
+                        null
+                    );
+
                     $return_type_candidate->replaceTemplateTypesWithArgTypes(
                         $template_result->generic_params,
                         $codebase
