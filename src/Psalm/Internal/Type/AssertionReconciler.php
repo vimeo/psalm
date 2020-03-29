@@ -2633,7 +2633,11 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         if ($scalar_type === 'int') {
             $value = (int) $value;
 
-            if ($existing_var_type->hasMixed() || $existing_var_type->hasScalar() || $existing_var_type->hasNumeric()) {
+            if ($existing_var_type->hasMixed()
+                || $existing_var_type->hasScalar()
+                || $existing_var_type->hasNumeric()
+                || $existing_var_type->hasArrayKey()
+            ) {
                 if ($is_loose_equality) {
                     return $existing_var_type;
                 }
@@ -2650,6 +2654,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     if ($existing_var_atomic_type->as->hasMixed()
                         || $existing_var_atomic_type->as->hasScalar()
                         || $existing_var_atomic_type->as->hasNumeric()
+                        || $existing_var_atomic_type->as->hasArrayKey()
                     ) {
                         if ($is_loose_equality) {
                             return $existing_var_type;
