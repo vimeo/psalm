@@ -746,6 +746,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             $statements_analyzer->addSuppressedIssues(['InternalMethod']);
         }
 
+        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
+        }
+
         \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call,
@@ -759,6 +763,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
         if (!in_array('InternalMethod', $suppressed_issues, true)) {
             $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
+        }
+
+        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
 
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call);

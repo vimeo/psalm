@@ -529,7 +529,6 @@ class CallableTest extends TestCase
 
                     final class C extends B {}
 
-                    $b = new B();
                     $c = new C();
 
                     $c->func1(function(): C { return new C(); });',
@@ -774,6 +773,17 @@ class CallableTest extends TestCase
                     function f($_fields): void {}
 
                     f(["instance_date" => "ASC", "start_time" => "ASC"]);'
+            ],
+            'callOnInvokableOrCallable' => [
+                '<?php
+                    interface Callback {
+                        public function __invoke(): void;
+                    }
+
+                    /** @var Callback|callable */
+                    $test = function (): void {};
+
+                    $test();'
             ],
         ];
     }
