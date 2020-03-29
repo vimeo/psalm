@@ -704,7 +704,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 $this,
                                 $return_type,
                                 $this->getFQCLN(),
-                                $return_type_location
+                                $return_type_location,
+                                $function_context->has_returned
                             );
                         }
                     }

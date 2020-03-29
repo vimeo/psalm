@@ -1761,7 +1761,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_storage,
                 $class_context->self,
                 $analyzed_method_id,
-                $actual_method_id
+                $actual_method_id,
+                $method_context->has_returned
             );
         }
 
@@ -1785,7 +1786,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $class_storage,
         string $fq_classlike_name,
         \Psalm\Internal\MethodIdentifier $analyzed_method_id,
-        \Psalm\Internal\MethodIdentifier $actual_method_id
+        \Psalm\Internal\MethodIdentifier $actual_method_id,
+        bool $did_explicitly_return
     ) : void {
         $secondary_return_type_location = null;
 
@@ -1892,7 +1894,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $interface_return_type,
                     $interface_class,
                     $interface_return_type_location,
-                    [$analyzed_method_id]
+                    [$analyzed_method_id],
+                    $did_explicitly_return
                 );
             }
         }
@@ -1910,7 +1913,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $return_type,
             $fq_classlike_name,
             $return_type_location,
-            $overridden_method_ids
+            $overridden_method_ids,
+            $did_explicitly_return
         );
     }
 

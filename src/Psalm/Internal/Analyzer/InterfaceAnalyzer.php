@@ -116,7 +116,8 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $class_storage,
                         $fq_interface_name,
                         $actual_method_id,
-                        $actual_method_id
+                        $actual_method_id,
+                        false
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {

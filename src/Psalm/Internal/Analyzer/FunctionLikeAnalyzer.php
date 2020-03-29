@@ -588,6 +588,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $storage->return_type,
                 $this->source->getFQCLN(),
                 $storage->return_type_location,
+                $context->has_returned,
                 $global_context && $global_context->inside_call
             );
 
@@ -1309,6 +1310,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         Type\Union $return_type = null,
         $fq_class_name = null,
         CodeLocation $return_type_location = null,
+        bool $did_explicitly_return = false,
         bool $closure_inside_call = false
     ) {
         ReturnTypeAnalyzer::verifyReturnType(
@@ -1321,6 +1323,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $fq_class_name,
             $return_type_location,
             [],
+            $did_explicitly_return,
             $closure_inside_call
         );
     }
