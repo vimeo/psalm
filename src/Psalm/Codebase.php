@@ -702,9 +702,15 @@ class Codebase
     public function classOrInterfaceExists(
         $fq_class_name,
         CodeLocation $code_location = null,
+        ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ) {
-        return $this->classlikes->classOrInterfaceExists($fq_class_name, $code_location, $calling_method_id);
+        return $this->classlikes->classOrInterfaceExists(
+            $fq_class_name,
+            $code_location,
+            $calling_fq_class_name,
+            $calling_method_id
+        );
     }
 
     /**
@@ -726,9 +732,18 @@ class Codebase
      *
      * @return bool
      */
-    public function classExists($fq_class_name)
-    {
-        return $this->classlikes->classExists($fq_class_name);
+    public function classExists(
+        $fq_class_name,
+        CodeLocation $code_location = null,
+        ?string $calling_fq_class_name = null,
+        ?string $calling_method_id = null
+    ) {
+        return $this->classlikes->classExists(
+            $fq_class_name,
+            $code_location,
+            $calling_fq_class_name,
+            $calling_method_id
+        );
     }
 
     /**
@@ -767,9 +782,16 @@ class Codebase
      */
     public function interfaceExists(
         $fq_interface_name,
+        CodeLocation $code_location = null,
+        ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ) {
-        return $this->classlikes->interfaceExists($fq_interface_name, null, null, $calling_method_id);
+        return $this->classlikes->interfaceExists(
+            $fq_interface_name,
+            $code_location,
+            $calling_fq_class_name,
+            $calling_method_id
+        );
     }
 
     /**
