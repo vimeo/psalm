@@ -40,6 +40,11 @@ class Populator
     private $file_storage_provider;
 
     /**
+     * @var array<lowercase-string, list<ClassLikeStorage>>
+     */
+    private $invalid_class_storages = [];
+
+    /**
      * @var Progress
      */
     private $progress;
@@ -259,6 +264,15 @@ class Populator
         $this->progress->debug('Have populated ' . $storage->name . "\n");
 
         $storage->populated = true;
+
+        if (isset($this->invalid_class_storages[$fq_classlike_name_lc])) {
+            foreach ($this->invalid_class_storages[$fq_classlike_name_lc] as $dependency) {
+                $dependency->populated = false;
+                $this->populateClassLikeStorage($dependency, $dependent_classlikes);
+            }
+
+            unset($this->invalid_class_storages[$fq_classlike_name_lc]);
+        }
     }
 
     /** @return void */
@@ -494,114 +508,116 @@ class Populator
     ) {
         $parent_storage_class = reset($storage->parent_classes);
 
+        $parent_storage_class = strtolower(
+            $this->classlikes->getUnAliasedName(
+                $parent_storage_class
+            )
+        );
+
         try {
-            $parent_storage_class = strtolower(
-                $this->classlikes->getUnAliasedName(
-                    $parent_storage_class
-                )
-            );
             $parent_storage = $storage_provider->get($parent_storage_class);
         } catch (\InvalidArgumentException $e) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[] = $parent_storage_class;
-            $parent_storage = null;
+
+            $this->invalid_class_storages[strtolower($parent_storage_class)][] = $storage;
+
+            return;
         }
 
-        if ($parent_storage && $parent_storage_class) {
-            $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
+        $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
 
-            $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
+        $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
-            if ($parent_storage->template_types) {
-                if (isset($storage->template_type_extends[$parent_storage->name])) {
-                    foreach ($storage->template_type_extends[$parent_storage->name] as $i => $type) {
-                        $parent_template_type_names = array_keys($parent_storage->template_types);
+        if ($parent_storage->template_types) {
+            if (isset($storage->template_type_extends[$parent_storage->name])) {
+                foreach ($storage->template_type_extends[$parent_storage->name] as $i => $type) {
+                    $parent_template_type_names = array_keys($parent_storage->template_types);
 
-                        $mapped_name = $parent_template_type_names[$i] ?? null;
+                    $mapped_name = $parent_template_type_names[$i] ?? null;
 
-                        if ($mapped_name) {
-                            $storage->template_type_extends[$parent_storage->name][$mapped_name] = $type;
-                        }
-                    }
-
-                    if ($parent_storage->template_type_extends) {
-                        foreach ($parent_storage->template_type_extends as $t_storage_class => $type_map) {
-                            foreach ($type_map as $i => $type) {
-                                if (is_int($i)) {
-                                    continue;
-                                }
-
-                                $storage->template_type_extends[$t_storage_class][$i] = self::extendType(
-                                    $type,
-                                    $storage
-                                );
-                            }
-                        }
-                    }
-                } else {
-                    $storage->template_type_extends[$parent_storage->name] = [];
-
-                    foreach ($parent_storage->template_types as $template_name => $template_type_map) {
-                        foreach ($template_type_map as $template_type) {
-                            $default_param = clone $template_type[0];
-                            $default_param->from_docblock = false;
-                            $storage->template_type_extends[$parent_storage->name][$template_name]
-                                = $default_param;
-                        }
-                    }
-
-                    if ($parent_storage->template_type_extends) {
-                        $storage->template_type_extends = array_merge(
-                            $storage->template_type_extends,
-                            $parent_storage->template_type_extends
-                        );
+                    if ($mapped_name) {
+                        $storage->template_type_extends[$parent_storage->name][$mapped_name] = $type;
                     }
                 }
-            } elseif ($parent_storage->template_type_extends) {
-                $storage->template_type_extends = array_merge(
-                    $storage->template_type_extends ?: [],
-                    $parent_storage->template_type_extends
-                );
+
+                if ($parent_storage->template_type_extends) {
+                    foreach ($parent_storage->template_type_extends as $t_storage_class => $type_map) {
+                        foreach ($type_map as $i => $type) {
+                            if (is_int($i)) {
+                                continue;
+                            }
+
+                            $storage->template_type_extends[$t_storage_class][$i] = self::extendType(
+                                $type,
+                                $storage
+                            );
+                        }
+                    }
+                }
+            } else {
+                $storage->template_type_extends[$parent_storage->name] = [];
+
+                foreach ($parent_storage->template_types as $template_name => $template_type_map) {
+                    foreach ($template_type_map as $template_type) {
+                        $default_param = clone $template_type[0];
+                        $default_param->from_docblock = false;
+                        $storage->template_type_extends[$parent_storage->name][$template_name]
+                            = $default_param;
+                    }
+                }
+
+                if ($parent_storage->template_type_extends) {
+                    $storage->template_type_extends = array_merge(
+                        $storage->template_type_extends,
+                        $parent_storage->template_type_extends
+                    );
+                }
             }
-
-            $this->inheritMethodsFromParent($storage, $parent_storage);
-            $this->inheritPropertiesFromParent($storage, $parent_storage);
-
-            $storage->class_implements = array_merge($storage->class_implements, $parent_storage->class_implements);
-            $storage->invalid_dependencies = array_merge(
-                $storage->invalid_dependencies,
-                $parent_storage->invalid_dependencies
+        } elseif ($parent_storage->template_type_extends) {
+            $storage->template_type_extends = array_merge(
+                $storage->template_type_extends ?: [],
+                $parent_storage->template_type_extends
             );
-
-            if ($parent_storage->has_visitor_issues) {
-                $storage->has_visitor_issues = true;
-            }
-
-            $storage->public_class_constants = array_merge(
-                $parent_storage->public_class_constants,
-                $storage->public_class_constants
-            );
-            $storage->protected_class_constants = array_merge(
-                $parent_storage->protected_class_constants,
-                $storage->protected_class_constants
-            );
-
-            foreach ($parent_storage->public_class_constant_nodes as $name => $_) {
-                $storage->public_class_constants[$name] = Type::getMixed();
-            }
-
-            foreach ($parent_storage->protected_class_constant_nodes as $name => $_) {
-                $storage->protected_class_constants[$name] = Type::getMixed();
-            }
-
-            $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
-            $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
-
-            $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
-
-            $storage->pseudo_methods += $parent_storage->pseudo_methods;
         }
+
+        $this->inheritMethodsFromParent($storage, $parent_storage);
+        $this->inheritPropertiesFromParent($storage, $parent_storage);
+
+        $storage->class_implements = array_merge($storage->class_implements, $parent_storage->class_implements);
+        $storage->invalid_dependencies = array_merge(
+            $storage->invalid_dependencies,
+            $parent_storage->invalid_dependencies
+        );
+
+        if ($parent_storage->has_visitor_issues) {
+            $storage->has_visitor_issues = true;
+        }
+
+        $storage->public_class_constants = array_merge(
+            $parent_storage->public_class_constants,
+            $storage->public_class_constants
+        );
+        $storage->protected_class_constants = array_merge(
+            $parent_storage->protected_class_constants,
+            $storage->protected_class_constants
+        );
+
+        foreach ($parent_storage->public_class_constant_nodes as $name => $_) {
+            $storage->public_class_constants[$name] = Type::getMixed();
+        }
+
+        foreach ($parent_storage->protected_class_constant_nodes as $name => $_) {
+            $storage->protected_class_constants[$name] = Type::getMixed();
+        }
+
+        $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
+        $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
+
+        $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
+
+        $storage->pseudo_methods += $parent_storage->pseudo_methods;
     }
 
     /**
