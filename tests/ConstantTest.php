@@ -766,6 +766,22 @@ class ConstantTest extends TestCase
                     '$c' => 'int',
                 ]
             ],
+            'protectedClassConstantAccessibilitySameNameInChild' => [
+                '<?php
+                    class A {
+                        protected const A = 1;
+
+                        public static function test(): void {
+                            echo B::A;
+                        }
+                    }
+
+                    class B extends A {
+                        protected const A = 2;
+                    }
+
+                    A::test();'
+            ],
         ];
     }
 

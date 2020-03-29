@@ -208,7 +208,8 @@ class ClassConstFetchAnalyzer
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
             } elseif ($context->self &&
-                $codebase->classlikes->classExtends($context->self, $fq_class_name)
+                ($codebase->classlikes->classExtends($context->self, $fq_class_name)
+                    || $codebase->classlikes->classExtends($fq_class_name, $context->self))
             ) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             } else {
