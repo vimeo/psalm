@@ -1536,6 +1536,63 @@ class ExpressionAnalyzer
             }
         }
 
+        if ($return_type instanceof Type\Atomic\TConditional && $evaluate) {
+            $all_conditional_return_types = [];
+
+            foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
+                $candidate = self::fleshOutAtomicType(
+                    $codebase,
+                    $if_atomic_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate,
+                    $final
+                );
+
+                if (is_array($candidate)) {
+                    $all_conditional_return_types = array_merge(
+                        $all_conditional_return_types,
+                        $candidate
+                    );
+                } else {
+                    $all_conditional_return_types[] = $candidate;
+                }
+            }
+
+            foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
+                $candidate = self::fleshOutAtomicType(
+                    $codebase,
+                    $else_atomic_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate,
+                    $final
+                );
+
+                if (is_array($candidate)) {
+                    $all_conditional_return_types = array_merge(
+                        $all_conditional_return_types,
+                        $candidate
+                    );
+                } else {
+                    $all_conditional_return_types[] = $candidate;
+                }
+            }
+
+            foreach ($all_conditional_return_types as $i => $conditional_return_type) {
+                if ($conditional_return_type instanceof Type\Atomic\TVoid
+                    && count($all_conditional_return_types) > 1
+                ) {
+                    $all_conditional_return_types[$i] = new Type\Atomic\TNull();
+                    $all_conditional_return_types[$i]->from_docblock = true;
+                }
+            }
+
+            return $all_conditional_return_types;
+        }
+
         return $return_type;
     }
 
