@@ -908,7 +908,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                         if ($template_result->generic_params && $function_storage->template_types) {
                             $return_type->replaceTemplateTypesWithArgTypes(
-                                $template_result->generic_params
+                                $template_result->generic_params,
+                                $codebase
                             );
                         }
 

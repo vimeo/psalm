@@ -1238,7 +1238,18 @@ class AnnotationTest extends TestCase
                      */
                     function add($a, $b) {
                         return $a + $b;
-                    }'
+                    }
+
+                    $int = add(3, 5);
+                    $float1 = add(2.5, 3);
+                    $float2 = add(2.7, 3.1);
+                    $float3 = add(3, 3.5);',
+                [
+                    '$int' => 'int',
+                    '$float1' => 'float',
+                    '$float2' => 'float',
+                    '$float3' => 'float',
+                ]
             ],
         ];
     }
