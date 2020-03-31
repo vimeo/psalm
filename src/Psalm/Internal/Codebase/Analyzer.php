@@ -792,7 +792,7 @@ class Analyzer
                 unset($this->existing_issues[$file_path]);
 
                 if ($this->file_provider->fileExists($file_path)) {
-                    IssueBuffer::addIssues([$file_path => $issues]);
+                    IssueBuffer::addIssues([$file_path => array_values($issues)]);
                 }
             }
         }
