@@ -263,7 +263,6 @@ class Analyzer
         $this->doAnalysis($project_analyzer, $pool_size);
 
         $scanned_files = $codebase->scanner->getScannedFiles();
-        $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
         if ($codebase->taint) {
             $i = 0;
@@ -281,12 +280,22 @@ class Analyzer
 
                 $this->doAnalysis($project_analyzer, $pool_size, true);
             }
-        }
 
-        $this->progress->finish();
+            $this->progress->finish();
+        } else {
+            $this->progress->finish();
 
-        if ($project_analyzer->full_run || $codebase->find_unused_code === 'always') {
-            $project_analyzer->consolidateAnalyzedData();
+            if ($project_analyzer->full_run || $codebase->find_unused_code === 'always') {
+                $project_analyzer->consolidateAnalyzedData();
+            }
+
+            foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
+                foreach ($file_issues as $issue_data) {
+                    $codebase->file_reference_provider->addIssue($file_path, $issue_data);
+                }
+            }
+
+            $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
         }
 
         if ($codebase->track_unused_suppressions) {
@@ -485,12 +494,6 @@ class Analyzer
                     continue;
                 }
 
-                foreach ($pool_data['issues'] as $file_path => $file_issues) {
-                    foreach ($file_issues as $issue_data) {
-                        $codebase->file_reference_provider->addIssue($file_path, $issue_data);
-                    }
-                }
-
                 $codebase->file_reference_provider->addFileReferencesToClasses(
                     $pool_data['file_references_to_classes']
                 );
@@ -580,12 +583,6 @@ class Analyzer
 
                 $issues = IssueBuffer::getIssuesDataForFile($file_path);
                 $task_done_closure($issues);
-            }
-
-            foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
-                foreach ($file_issues as $issue_data) {
-                    $codebase->file_reference_provider->addIssue($file_path, $issue_data);
-                }
             }
         }
     }
@@ -792,7 +789,9 @@ class Analyzer
 
         foreach (array_diff_key($this->files_with_analysis_results, $this->files_to_analyze) as $file_path) {
             if (isset($this->existing_issues[$file_path])) {
-                IssueBuffer::addIssues([$file_path => array_values($this->existing_issues[$file_path])]);
+                $file_issues = $this->existing_issues[$file_path];
+                unset($this->existing_issues[$file_path]);
+                IssueBuffer::addIssues([$file_path => array_values($file_issues)]);
             }
         }
 
