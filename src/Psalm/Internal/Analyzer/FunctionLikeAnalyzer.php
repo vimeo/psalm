@@ -635,6 +635,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($codebase->collect_references
             && !$context->collect_initializations
+            && !$context->collect_mutations
             && $codebase->find_unused_variables
             && $context->check_variables
         ) {
@@ -829,20 +830,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 $method_name_lc = strtolower($storage->cased_name);
 
-                if ($storage->abstract || !isset($class_storage->overridden_method_ids[$method_name_lc])) {
+                if ($storage->abstract) {
                     continue;
                 }
 
-                $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
+                if (isset($class_storage->overridden_method_ids[$method_name_lc])) {
+                    $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
 
-                if ($parent_method_id) {
-                    $parent_method_storage = $codebase->methods->getStorage($parent_method_id);
+                    if ($parent_method_id) {
+                        $parent_method_storage = $codebase->methods->getStorage($parent_method_id);
 
-                    // if the parent method has a param at that position and isn't abstract
-                    if (!$parent_method_storage->abstract
-                        && isset($parent_method_storage->params[$position])
-                    ) {
-                        continue;
+                        // if the parent method has a param at that position and isn't abstract
+                        if (!$parent_method_storage->abstract
+                            && isset($parent_method_storage->params[$position])
+                        ) {
+                            continue;
+                        }
                     }
                 }
 

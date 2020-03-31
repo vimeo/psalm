@@ -1994,14 +1994,26 @@ class ClassLikes
                         )
                             && $param_storage->location
                         ) {
-                            if (IssueBuffer::accepts(
-                                new PossiblyUnusedParam(
-                                    'Param #' . ($offset + 1) . ' is never referenced in this method',
-                                    $param_storage->location
-                                ),
-                                $method_storage->suppressed_issues
-                            )) {
-                                // fall through
+                            if ($method_storage->final) {
+                                if (IssueBuffer::accepts(
+                                    new \Psalm\Issue\UnusedParam(
+                                        'Param #' . ($offset + 1) . ' is never referenced in this method',
+                                        $param_storage->location
+                                    ),
+                                    $method_storage->suppressed_issues
+                                )) {
+                                    // fall through
+                                }
+                            } else {
+                                if (IssueBuffer::accepts(
+                                    new PossiblyUnusedParam(
+                                        'Param #' . ($offset + 1) . ' is never referenced in this method',
+                                        $param_storage->location
+                                    ),
+                                    $method_storage->suppressed_issues
+                                )) {
+                                    // fall through
+                                }
                             }
                         }
                     }
