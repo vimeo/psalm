@@ -1307,6 +1307,39 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                     if (!is_int(returnsInt())) {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'classAlwaysParent' => [
+                '<?php
+                    class AParent {}
+
+                    class A extends AParent {
+                        public static function load() : A {
+                            return new A();
+                        }
+                    }
+
+                    $a = A::load();
+
+                    if ($a instanceof AParent) {}',
+                'error_message' => 'RedundantCondition',
+            ],
+            'staticClassIsAlwaysNull' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return ?static
+                         */
+                        public static function load() {
+                            return rand(0, 1)
+                                ? null
+                                : new static();
+                        }
+                    }
+
+                    $a = A::load();
+
+                    if ($a && $a instanceof A) {}',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
         ];
     }
 }

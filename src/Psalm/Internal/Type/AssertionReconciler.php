@@ -783,6 +783,31 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
             $any_scalar_type_match_found = false;
 
+            if ($code_location
+                && $key
+                && !$is_equality
+                && $new_type_part instanceof TNamedObject
+                && !$new_type_has_interface
+                && (!($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
+                    || ($key !== '$this'
+                        && !($existing_var_type->hasLiteralClassString() && $new_type->hasLiteralClassString())))
+                && TypeAnalyzer::isContainedBy(
+                    $codebase,
+                    $existing_var_type,
+                    $new_type
+                )
+            ) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    true,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+
             $new_type = self::filterTypeWithAnother(
                 $codebase,
                 $existing_var_type,
