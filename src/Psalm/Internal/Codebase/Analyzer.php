@@ -787,11 +787,13 @@ class Analyzer
             }
         }
 
-        foreach (array_diff_key($this->files_with_analysis_results, $this->files_to_analyze) as $file_path) {
-            if (isset($this->existing_issues[$file_path])) {
-                $file_issues = $this->existing_issues[$file_path];
+        foreach ($this->existing_issues as $file_path => $issues) {
+            if (!isset($this->files_to_analyze[$file_path])) {
                 unset($this->existing_issues[$file_path]);
-                IssueBuffer::addIssues([$file_path => array_values($file_issues)]);
+
+                if ($this->file_provider->fileExists($file_path)) {
+                    IssueBuffer::addIssues([$file_path => $issues]);
+                }
             }
         }
 
