@@ -869,7 +869,6 @@ class Analyzer
     {
         foreach ($this->existing_issues as $file_path => &$file_issues) {
             if (!isset($this->analyzed_methods[$file_path])) {
-                unset($this->existing_issues[$file_path]);
                 continue;
             }
 
