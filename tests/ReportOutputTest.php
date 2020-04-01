@@ -190,7 +190,7 @@ echo $a;';
 
         $this->assertSame(
             array_values($issue_data),
-            json_decode(IssueBuffer::getOutput($json_report_options), true)
+            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $json_report_options), true)
         );
     }
 
@@ -308,7 +308,7 @@ echo $a;';
 
         $this->assertSame(
             $issue_data,
-            json_decode(IssueBuffer::getOutput($sonarqube_report_options), true)
+            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $sonarqube_report_options), true)
         );
     }
 
@@ -327,7 +327,7 @@ somefile.php:2:42:error - Could not verify return type \'null|string\' for psalm
 somefile.php:7:6:error - Const CHANGE_ME is not defined
 somefile.php:15:6:warning - Possibly undefined global variable $a, first seen on line 10
 ',
-            IssueBuffer::getOutput($emacs_report_options)
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $emacs_report_options)
         );
     }
 
@@ -346,7 +346,7 @@ somefile.php:2: [E0001] MixedInferredReturnType: Could not verify return type \'
 somefile.php:7: [E0001] UndefinedConstant: Const CHANGE_ME is not defined (column 6)
 somefile.php:15: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10 (column 6)
 ',
-            IssueBuffer::getOutput($pylint_report_options)
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $pylint_report_options)
         );
     }
 
@@ -374,7 +374,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
 echo $a
 
 ',
-            IssueBuffer::getOutput($console_report_options)
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options)
         );
     }
 
@@ -400,7 +400,7 @@ ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined (se
 echo CHANGE_ME;
 
 ',
-            IssueBuffer::getOutput($console_report_options)
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options)
         );
     }
 
@@ -429,7 +429,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
 
 
 ',
-            IssueBuffer::getOutput($console_report_options)
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options)
         );
     }
 
@@ -455,7 +455,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
             '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . "\n" .
             '| INFO     | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . "\n" .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n",
-            $this->toUnixLineEndings(IssueBuffer::getOutput($compact_report_options))
+            $this->toUnixLineEndings(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $compact_report_options))
         );
     }
 
@@ -485,7 +485,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
 </file>
 </checkstyle>
 ',
-            IssueBuffer::getOutput($checkstyle_report_options)
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $checkstyle_report_options)
         );
 
         // FIXME: The XML parser only return strings, all int value are casted, so the assertSame failed
@@ -504,7 +504,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
 
         $checkstyle_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.junit.xml'])[0];
 
-        $xml = IssueBuffer::getOutput($checkstyle_report_options);
+        $xml = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $checkstyle_report_options);
 
         $this->assertSame(
             '<?xml version="1.0" encoding="UTF-8"?>
@@ -586,11 +586,11 @@ column_to: 8
         $this->assertSame(
             '[]
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json'])[0])
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json'])[0])
         );
         $this->assertSame(
             '',
-            IssueBuffer::getOutput(ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.emacs'])[0])
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.emacs'])[0])
         );
         $this->assertSame(
             '<?xml version="1.0" encoding="UTF-8"?>
@@ -598,7 +598,7 @@ column_to: 8
   <item/>
 </report>
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.xml'])[0])
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.xml'])[0])
         );
 
         $this->assertSame(
@@ -606,7 +606,7 @@ column_to: 8
 <checkstyle>
 </checkstyle>
 ',
-            IssueBuffer::getOutput(ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.checkstyle.xml'])[0])
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.checkstyle.xml'])[0])
         );
 
         ob_start();

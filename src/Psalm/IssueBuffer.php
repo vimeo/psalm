@@ -431,6 +431,8 @@ class IssueBuffer
         $error_count = 0;
         $info_count = 0;
 
+        $issues_data = [];
+
         if (self::$issues_data) {
             \ksort(self::$issues_data);
 
@@ -456,9 +458,12 @@ class IssueBuffer
                 self::$issues_data[$file_path] = $file_issues;
             }
 
+            // make a copy so what gets saved in cache is unaffected by baseline
+            $issues_data = self::$issues_data;
+
             if (!empty($issue_baseline)) {
                 // Set severity for issues in baseline to INFO
-                foreach (self::$issues_data as $file_path => $file_issues) {
+                foreach ($issues_data as $file_path => $file_issues) {
                     foreach ($file_issues as $key => $issue_data) {
                         $file = $issue_data->file_name;
                         $file = str_replace('\\', '/', $file);
@@ -485,18 +490,19 @@ class IssueBuffer
                         }
 
                         /** @psalm-suppress PropertyTypeCoercion due to Psalm bug */
-                        self::$issues_data[$file_path][$key] = $issue_data;
+                        $issues_data[$file_path][$key] = $issue_data;
                     }
                 }
             }
 
             echo self::getOutput(
+                $issues_data,
                 $project_analyzer->stdout_report_options,
                 $codebase->analyzer->getTotalTypeCoverage($codebase)
             );
         }
 
-        foreach (self::$issues_data as $file_issues) {
+        foreach ($issues_data as $file_issues) {
             foreach ($file_issues as $issue_data) {
                 if ($issue_data->severity === Config::REPORT_ERROR) {
                     ++$error_count;
@@ -522,7 +528,7 @@ class IssueBuffer
                 /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
                 $after_analysis_hook::afterAnalysis(
                     $codebase,
-                    self::$issues_data,
+                    $issues_data,
                     $build_info,
                     $source_control_info
                 );
@@ -537,6 +543,7 @@ class IssueBuffer
             file_put_contents(
                 $report_options->output_path,
                 self::getOutput(
+                    $issues_data,
                     $report_options,
                     $codebase->analyzer->getTotalTypeCoverage($codebase)
                 )
@@ -618,18 +625,20 @@ class IssueBuffer
     }
 
     /**
+     * @param array<string, array<int, IssueData>> $issues_data
      * @param array{int, int} $mixed_counts
      *
      * @return string
      */
     public static function getOutput(
+        array $issues_data,
         \Psalm\Report\ReportOptions $report_options,
         array $mixed_counts = [0, 0]
     ) {
         $total_expression_count = $mixed_counts[0] + $mixed_counts[1];
         $mixed_expression_count = $mixed_counts[0];
 
-        $normalized_data = self::$issues_data === [] ? [] : array_merge(...array_values(self::$issues_data));
+        $normalized_data = $issues_data === [] ? [] : array_merge(...array_values($issues_data));
 
         switch ($report_options->format) {
             case Report::TYPE_COMPACT:
