@@ -516,10 +516,10 @@ class ProjectAnalyzer
                 // strip out deleted files
                 $file_list = array_diff($file_list, $deleted_files);
 
-                $this->checkDiffFilesWithConfig($this->config, $file_list);
-
                 if ($file_list) {
                     $this->visitAutoloadFiles();
+
+                    $this->checkDiffFilesWithConfig($this->config, $file_list);
 
                     $this->config->initializePlugins($this);
 
