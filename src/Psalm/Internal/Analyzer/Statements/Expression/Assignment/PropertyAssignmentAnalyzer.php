@@ -103,7 +103,7 @@ class PropertyAssignmentAnalyzer
 
                 $class_property_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
-                    $class_property_type,
+                    clone $class_property_type,
                     $class_storage->name,
                     $class_storage->name,
                     $class_storage->parent_class
@@ -723,7 +723,7 @@ class PropertyAssignmentAnalyzer
                 } else {
                     $class_property_type = ExpressionAnalyzer::fleshOutType(
                         $codebase,
-                        $class_property_type,
+                        clone $class_property_type,
                         $fq_class_name,
                         $lhs_type_part,
                         $declaring_class_storage->parent_class
