@@ -309,7 +309,7 @@ class ProjectAnalyzer
         return $report_options;
     }
 
-    private function visitAutoloadFiles()
+    private function visitAutoloadFiles() : void
     {
         $start_time = microtime(true);
 
