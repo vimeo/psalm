@@ -294,6 +294,8 @@ class Analyzer
             }
 
             foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
+                $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
+
                 foreach ($file_issues as $issue_data) {
                     $codebase->file_reference_provider->addIssue($file_path, $issue_data);
                 }
