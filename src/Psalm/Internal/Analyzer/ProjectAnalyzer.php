@@ -507,6 +507,8 @@ class ProjectAnalyzer
         ) {
             $this->codebase->analyzer->addFilesToAnalyze($this->project_files);
 
+            $this->visitAutoloadFiles();
+
             $this->config->initializePlugins($this);
 
             $this->codebase->scanFiles($this->threads);

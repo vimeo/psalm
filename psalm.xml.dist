@@ -26,6 +26,7 @@
             <file name="vendor/symfony/console/Command/Command.php"/>
             <file name="src/spl_object_id.php"/>
             <file name="src/Psalm/Internal/Stubs/*.php"/>
+            <file name="src/Psalm/Internal/Stubs/*.phpstub"/>
             <directory name="tests/fixtures"/>
             <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
             <directory name="vendor/netresearch/jsonmapper" />
@@ -102,6 +103,12 @@
                 <file name="src/Psalm/Storage/PropertyStorage.php"/>
             </errorLevel>
         </PossiblyUnusedProperty>
+
+        <MissingConstructor>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+            </errorLevel>
+        </MissingConstructor>
 
         <MissingThrowsDocblock errorLevel="info"/>
 
