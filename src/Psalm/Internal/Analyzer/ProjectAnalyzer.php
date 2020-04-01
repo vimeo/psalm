@@ -510,7 +510,7 @@ class ProjectAnalyzer
 
             $this->codebase->analyzer->addFilesToShowResults($this->project_files);
 
-            if ($diff_files || $this->codebase->find_unused_code) {
+            if ($diff_files) {
                 $file_list = $this->getReferencedFilesFromDiff($diff_files);
 
                 // strip out deleted files
@@ -527,6 +527,8 @@ class ProjectAnalyzer
                 } else {
                     $diff_no_files = true;
                 }
+            } else {
+                $diff_no_files = true;
             }
         }
 
