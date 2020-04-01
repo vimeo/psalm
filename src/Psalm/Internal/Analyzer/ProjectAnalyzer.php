@@ -171,7 +171,7 @@ class ProjectAnalyzer
     /**
      * @var array<string,string>
      */
-    private $project_files;
+    private $project_files = [];
 
     /**
      * @var array<string, string>
@@ -246,8 +246,6 @@ class ProjectAnalyzer
         $this->stdout_report_options = $stdout_report_options;
         $this->generated_report_options = $generated_report_options;
 
-        $project_files = [];
-
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $file_extensions = $this->config->getFileExtensions();
 
@@ -255,16 +253,14 @@ class ProjectAnalyzer
 
             foreach ($file_paths as $file_path) {
                 if ($this->config->isInProjectDirs($file_path)) {
-                    $project_files[$file_path] = $file_path;
+                    $this->addProjectFile($file_path);
                 }
             }
         }
 
         foreach ($this->config->getProjectFiles() as $file_path) {
-            $project_files[$file_path] = $file_path;
+            $this->addProjectFile($file_path);
         }
-
-        $this->project_files = $project_files;
 
         self::$instance = $this;
     }
@@ -548,7 +544,12 @@ class ProjectAnalyzer
 
         $this->progress->startAnalyzingFiles();
 
-        $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
+        $this->codebase->analyzer->analyzeFiles(
+            $this,
+            $this->threads,
+            $this->codebase->alter_code,
+            true
+        );
 
         if ($this->parser_cache_provider) {
             $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches(
@@ -933,7 +934,12 @@ class ProjectAnalyzer
 
         $this->progress->startAnalyzingFiles();
 
-        $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
+        $this->codebase->analyzer->analyzeFiles(
+            $this,
+            $this->threads,
+            $this->codebase->alter_code,
+            $this->codebase->find_unused_code === 'always'
+        );
     }
 
     /**
@@ -979,6 +985,17 @@ class ProjectAnalyzer
 
         return $file_paths;
     }
+
+    /**
+     * @param  string  $dir_name
+     *
+     * @return void
+     */
+    public function addProjectFile(string $file_path)
+    {
+        $this->project_files[$file_path] = $file_path;
+    }
+
 
     /**
      * @param  string $dir_name
@@ -1066,7 +1083,12 @@ class ProjectAnalyzer
 
         $this->progress->startAnalyzingFiles();
 
-        $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
+        $this->codebase->analyzer->analyzeFiles(
+            $this,
+            $this->threads,
+            $this->codebase->alter_code,
+            $this->codebase->find_unused_code === 'always'
+        );
     }
 
     /**
@@ -1100,7 +1122,12 @@ class ProjectAnalyzer
 
         $this->progress->startAnalyzingFiles();
 
-        $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
+        $this->codebase->analyzer->analyzeFiles(
+            $this,
+            $this->threads,
+            $this->codebase->alter_code,
+            $this->codebase->find_unused_code === 'always'
+        );
 
         if ($this->stdout_report_options
             && $this->stdout_report_options->format === Report::TYPE_CONSOLE

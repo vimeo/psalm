@@ -79,9 +79,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
             $codebase->reloadFiles($this->project_analyzer, array_keys($files));
 
-            $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-            $this->project_analyzer->consolidateAnalyzedData();
+            $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false, true);
         }
 
         foreach ($end_files as $file_path => $contents) {
@@ -97,9 +95,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
-        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-        $this->project_analyzer->consolidateAnalyzedData();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false, true);
     }
 
     /**

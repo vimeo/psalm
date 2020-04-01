@@ -243,8 +243,12 @@ class Analyzer
      *
      * @return void
      */
-    public function analyzeFiles(ProjectAnalyzer $project_analyzer, $pool_size, $alter_code)
-    {
+    public function analyzeFiles(
+        ProjectAnalyzer $project_analyzer,
+        int $pool_size,
+        bool $alter_code,
+        bool $consolidate_analyzed_data = false
+    ) {
         $this->loadCachedResults($project_analyzer);
 
         $codebase = $project_analyzer->getCodebase();
@@ -285,7 +289,7 @@ class Analyzer
         } else {
             $this->progress->finish();
 
-            if ($project_analyzer->full_run || $codebase->find_unused_code === 'always') {
+            if ($consolidate_analyzed_data) {
                 $project_analyzer->consolidateAnalyzedData();
             }
 
