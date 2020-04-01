@@ -2252,7 +2252,9 @@ class TypeAnalyzer
                                 = clone $container_param;
                         }
                     } else {
-                        if (!($container_type_params_covariant[$i] ?? false)) {
+                        if (!($container_type_params_covariant[$i] ?? false)
+                            && !$container_param->had_template
+                        ) {
                             // Make sure types are basically the same
                             if (!self::isContainedBy(
                                 $codebase,
