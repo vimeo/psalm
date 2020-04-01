@@ -209,6 +209,7 @@ $vendor_dir = getVendorDir($current_dir);
 
 $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
 
+
 if (array_key_exists('v', $options)) {
     echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
     exit;
@@ -433,8 +434,6 @@ $find_references_to = isset($options['find-references-to']) && is_string($option
     ? $options['find-references-to']
     : null;
 
-
-
 if (isset($options['shepherd'])) {
     if (is_string($options['shepherd'])) {
         $config->shepherd_host = $options['shepherd'];
@@ -547,12 +546,6 @@ if ($type_map_location) {
 }
 
 $start_time = microtime(true);
-
-$config->visitComposerAutoloadFiles($project_analyzer, $progress);
-
-$now_time = microtime(true);
-
-$progress->debug('Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n");
 
 if (array_key_exists('debug-by-line', $options)) {
     $project_analyzer->debug_lines = true;

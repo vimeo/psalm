@@ -309,12 +309,26 @@ class ProjectAnalyzer
         return $report_options;
     }
 
+    private function visitAutoloadFiles()
+    {
+        $start_time = microtime(true);
+
+        $this->config->visitComposerAutoloadFiles($this, $this->progress);
+
+        $now_time = microtime(true);
+
+        $this->progress->debug(
+            'Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n"
+        );
+    }
+
     /**
      * @param  string|null $address
      * @return void
      */
     public function server($address = '127.0.0.1:12345', bool $socket_server_mode = false)
     {
+        $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
@@ -485,6 +499,8 @@ class ProjectAnalyzer
             $this->codebase->scanner->addFilesToDeepScan($this->project_files);
         }
 
+        $diff_no_files = false;
+
         if ($diff_files === null
             || $deleted_files === null
             || count($diff_files) > 200
@@ -510,19 +526,27 @@ class ProjectAnalyzer
 
                 $this->checkDiffFilesWithConfig($this->config, $file_list);
 
-                $this->config->initializePlugins($this);
+                if ($file_list) {
+                    $this->visitAutoloadFiles();
 
-                $this->codebase->scanFiles($this->threads);
+                    $this->config->initializePlugins($this);
+
+                    $this->codebase->scanFiles($this->threads);
+                } else {
+                    $diff_no_files = true;
+                }
             }
         }
 
-        $this->config->visitStubFiles($this->codebase, $this->progress);
+        if (!$diff_no_files) {
+            $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        $plugin_classes = $this->config->after_codebase_populated;
+            $plugin_classes = $this->config->after_codebase_populated;
 
-        if ($plugin_classes) {
-            foreach ($plugin_classes as $plugin_fq_class_name) {
-                $plugin_fq_class_name::afterCodebasePopulated($this->codebase);
+            if ($plugin_classes) {
+                foreach ($plugin_classes as $plugin_fq_class_name) {
+                    $plugin_fq_class_name::afterCodebasePopulated($this->codebase);
+                }
             }
         }
 
@@ -1055,6 +1079,8 @@ class ProjectAnalyzer
      */
     public function checkPaths(array $paths_to_check)
     {
+        $this->visitAutoloadFiles();
+
         foreach ($paths_to_check as $path) {
             $this->progress->debug('Checking ' . $path . "\n");
 
