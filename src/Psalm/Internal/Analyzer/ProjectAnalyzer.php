@@ -318,7 +318,7 @@ class ProjectAnalyzer
         $now_time = microtime(true);
 
         $this->progress->debug(
-            'Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n"
+            'Visiting autoload files took ' . \number_format($now_time - $start_time, 3) . 's' . "\n"
         );
     }
 
