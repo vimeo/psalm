@@ -492,22 +492,16 @@ class ProjectAnalyzer
 
         $this->progress->startScanningFiles();
 
-        if ($diff_files === null
-            || $deleted_files === null
-            || count($diff_files) > 200
-        ) {
-            $this->codebase->scanner->addFilesToDeepScan($this->project_files);
-        }
-
         $diff_no_files = false;
 
         if ($diff_files === null
             || $deleted_files === null
             || count($diff_files) > 200
         ) {
-            $this->codebase->analyzer->addFilesToAnalyze($this->project_files);
-
             $this->visitAutoloadFiles();
+
+            $this->codebase->scanner->addFilesToDeepScan($this->project_files);
+            $this->codebase->analyzer->addFilesToAnalyze($this->project_files);
 
             $this->config->initializePlugins($this);
 
