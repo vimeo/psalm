@@ -33,7 +33,7 @@ use function array_values;
  * @psalm-type  WorkerData = array{
  *      issues: array<string, list<IssueData>>,
  *      fixable_issue_counts: array<string, int>,
- *      file_references_to_classes: array<string, array<string,bool>>,
+ *      nonmethod_references_to_classes: array<string, array<string,bool>>,
  *      method_references_to_classes: array<string, array<string,bool>>,
  *      file_references_to_class_members: array<string, array<string,bool>>,
  *      file_references_to_missing_class_members: array<string, array<string,bool>>,
@@ -426,7 +426,7 @@ class Analyzer
 
                     $file_reference_provider = $codebase->file_reference_provider;
 
-                    $file_reference_provider->setFileReferencesToClasses([]);
+                    $file_reference_provider->setNonMethodReferencesToClasses([]);
                     $file_reference_provider->setCallingMethodReferencesToClassMembers([]);
                     $file_reference_provider->setFileReferencesToClassMembers([]);
                     $file_reference_provider->setCallingMethodReferencesToMissingClassMembers([]);
@@ -448,7 +448,7 @@ class Analyzer
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
                         'fixable_issue_counts' => IssueBuffer::getFixableIssues(),
-                        'file_references_to_classes' => $rerun ? [] : $file_reference_provider->getAllFileReferencesToClasses(),
+                        'nonmethod_references_to_classes' => $rerun ? [] : $file_reference_provider->getAllNonMethodReferencesToClasses(),
                         'method_references_to_classes' => $rerun ? [] : $file_reference_provider->getAllMethodReferencesToClasses(),
                         'file_references_to_class_members' => $rerun ? [] : $file_reference_provider->getAllFileReferencesToClassMembers(),
                         'method_references_to_class_members' => $rerun ? [] : $file_reference_provider->getAllMethodReferencesToClassMembers(),
@@ -500,8 +500,8 @@ class Analyzer
                     continue;
                 }
 
-                $codebase->file_reference_provider->addFileReferencesToClasses(
-                    $pool_data['file_references_to_classes']
+                $codebase->file_reference_provider->addNonMethodReferencesToClasses(
+                    $pool_data['nonmethod_references_to_classes']
                 );
                 $codebase->file_reference_provider->addMethodReferencesToClasses(
                     $pool_data['method_references_to_classes']
@@ -627,7 +627,7 @@ class Analyzer
 
         $all_referencing_methods = $method_references_to_class_members + $method_references_to_missing_class_members;
 
-        $file_references_to_classes = $file_reference_provider->getAllFileReferencesToClasses();
+        $nonmethod_references_to_classes = $file_reference_provider->getAllNonMethodReferencesToClasses();
 
         $method_references_to_classes = $file_reference_provider->getAllMethodReferencesToClasses();
 
@@ -780,7 +780,7 @@ class Analyzer
                 unset($referencing_file_paths[$file_path]);
             }
 
-            foreach ($file_references_to_classes as &$referencing_file_paths) {
+            foreach ($nonmethod_references_to_classes as &$referencing_file_paths) {
                 unset($referencing_file_paths[$file_path]);
             }
 
@@ -823,8 +823,8 @@ class Analyzer
             $references_to_mixed_member_names
         );
 
-        $file_references_to_classes = array_filter(
-            $file_references_to_classes
+        $nonmethod_references_to_classes = array_filter(
+            $nonmethod_references_to_classes
         );
 
         $method_references_to_classes = array_filter(
@@ -859,8 +859,8 @@ class Analyzer
             $method_references_to_classes
         );
 
-        $file_reference_provider->setFileReferencesToClasses(
-            $file_references_to_classes
+        $file_reference_provider->setNonMethodReferencesToClasses(
+            $nonmethod_references_to_classes
         );
 
         $file_reference_provider->setMethodParamUses(

@@ -267,7 +267,6 @@ class Scanner
      */
     public function queueClassLikeForScanning(
         $fq_classlike_name,
-        $referencing_file_path = null,
         $analyze_too = false,
         $store_failure = true,
         array $phantom_classes = []
@@ -312,10 +311,6 @@ class Scanner
                     );
                 }
             }
-        }
-
-        if ($referencing_file_path) {
-            $this->file_reference_provider->addFileReferenceToClass($referencing_file_path, $fq_classlike_name_lc);
         }
     }
 
@@ -486,6 +481,8 @@ class Scanner
             $this->codebase->statements_provider->parser_cache_provider->saveFileContentHashes();
         }
 
+        $this->file_reference_provider->addClassLikeFiles($this->classlike_files);
+
         return true;
     }
 
@@ -609,15 +606,15 @@ class Scanner
             }
 
             foreach ($file_storage->required_classes as $fq_classlike_name) {
-                $this->queueClassLikeForScanning($fq_classlike_name, $file_path, $will_analyze, false);
+                $this->queueClassLikeForScanning($fq_classlike_name, $will_analyze, false);
             }
 
             foreach ($file_storage->required_interfaces as $fq_classlike_name) {
-                $this->queueClassLikeForScanning($fq_classlike_name, $file_path, false, false);
+                $this->queueClassLikeForScanning($fq_classlike_name, false, false);
             }
 
             foreach ($file_storage->referenced_classlikes as $fq_classlike_name) {
-                $this->queueClassLikeForScanning($fq_classlike_name, $file_path, false, false);
+                $this->queueClassLikeForScanning($fq_classlike_name, false, false);
             }
 
             if ($this->codebase->register_autoload_files) {

@@ -337,7 +337,7 @@ class ClassLikes
                     $fq_class_name_lc
                 );
             } else {
-                $this->file_reference_provider->addFileReferenceToClass(
+                $this->file_reference_provider->addNonMethodReferenceToClass(
                     $code_location->file_path,
                     $fq_class_name_lc
                 );
@@ -348,7 +348,7 @@ class ClassLikes
                     if ($class_storage->location
                         && $class_storage->location->file_path !== $code_location->file_path
                     ) {
-                        $this->file_reference_provider->addFileReferenceToClass(
+                        $this->file_reference_provider->addNonMethodReferenceToClass(
                             $class_storage->location->file_path,
                             $fq_class_name_lc
                         );
@@ -413,7 +413,7 @@ class ClassLikes
                     $fq_class_name_lc
                 );
             } else {
-                $this->file_reference_provider->addFileReferenceToClass(
+                $this->file_reference_provider->addNonMethodReferenceToClass(
                     $code_location->file_path,
                     $fq_class_name_lc
                 );
@@ -424,7 +424,7 @@ class ClassLikes
                     if ($class_storage->location
                         && $class_storage->location->file_path !== $code_location->file_path
                     ) {
-                        $this->file_reference_provider->addFileReferenceToClass(
+                        $this->file_reference_provider->addNonMethodReferenceToClass(
                             $class_storage->location->file_path,
                             $fq_class_name_lc
                         );
@@ -463,7 +463,7 @@ class ClassLikes
         }
 
         if ($this->collect_references && $code_location) {
-            $this->file_reference_provider->addFileReferenceToClass(
+            $this->file_reference_provider->addNonMethodReferenceToClass(
                 $code_location->file_path,
                 $fq_class_name_lc
             );

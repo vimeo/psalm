@@ -11,10 +11,13 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     private $cached_file_references;
 
     /** @var ?array */
-    private $cached_file_class_references;
+    private $cached_classlike_files;
 
     /** @var ?array */
     private $cached_method_class_references;
+
+    /** @var ?array */
+    private $cached_nonmethod_class_references;
 
     /** @var ?array */
     private $cached_method_member_references;
@@ -68,15 +71,23 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedFileClassReferences()
+    public function getCachedClassLikeFiles()
     {
-        return $this->cached_file_class_references;
+        return $this->cached_classlike_files;
     }
 
     /**
      * @return ?array
      */
     public function getCachedMethodClassReferences()
+    {
+        return $this->cached_method_class_references;
+    }
+
+    /**
+     * @return ?array
+     */
+    public function getCachedNonMethodClassReferences()
     {
         return $this->cached_method_class_references;
     }
@@ -148,9 +159,9 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return void
      */
-    public function setCachedFileClassReferences(array $file_references)
+    public function setCachedClassLikeFiles(array $file_references)
     {
-        $this->cached_file_class_references = $file_references;
+        $this->cached_classlike_files = $file_references;
     }
 
     /**
@@ -159,6 +170,14 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     public function setCachedMethodClassReferences(array $method_references)
     {
         $this->cached_method_class_references = $method_references;
+    }
+
+    /**
+     * @return void
+     */
+    public function setCachedNonMethodClassReferences(array $method_references)
+    {
+        $this->cached_nonmethod_class_references = $method_references;
     }
 
     /**

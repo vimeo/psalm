@@ -53,13 +53,12 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 
                 $codebase->scanner->queueClassLikeForScanning(
                     $fq_class_name,
-                    $this->file_path,
                     true
                 );
             }
         }
 
-        $codebase->scanner->queueClassLikeForScanning(self::VIEW_CLASS, $this->file_path);
+        $codebase->scanner->queueClassLikeForScanning(self::VIEW_CLASS);
 
         parent::scan($codebase, $file_storage, $storage_from_cache, $progress);
     }

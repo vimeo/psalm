@@ -109,7 +109,7 @@ class Properties
                     $fq_class_name_lc
                 );
             } else {
-                $this->file_reference_provider->addFileReferenceToClass(
+                $this->file_reference_provider->addNonMethodReferenceToClass(
                     $source->getFilePath(),
                     $fq_class_name_lc
                 );

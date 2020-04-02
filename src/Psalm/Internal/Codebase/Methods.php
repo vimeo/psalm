@@ -134,7 +134,7 @@ class Methods
                         $declaring_fq_class_name
                     );
                 } else {
-                    $this->file_reference_provider->addFileReferenceToClass(
+                    $this->file_reference_provider->addNonMethodReferenceToClass(
                         $source->getFilePath(),
                         $declaring_fq_class_name
                     );
@@ -243,7 +243,7 @@ class Methods
                     $fq_class_name
                 );
             } else {
-                $this->file_reference_provider->addFileReferenceToClass(
+                $this->file_reference_provider->addNonMethodReferenceToClass(
                     $source->getFilePath(),
                     $fq_class_name
                 );

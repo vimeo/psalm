@@ -43,7 +43,6 @@ class TypeScanner extends NodeVisitor
             ) {
                 $this->scanner->queueClassLikeForScanning(
                     $type->value,
-                    $this->file_storage ? $this->file_storage->file_path : null,
                     false,
                     !$type->from_docblock,
                     $this->phantom_classes
@@ -58,7 +57,6 @@ class TypeScanner extends NodeVisitor
         if ($type instanceof TScalarClassConstant) {
             $this->scanner->queueClassLikeForScanning(
                 $type->fq_classlike_name,
-                $this->file_storage ? $this->file_storage->file_path : null,
                 false,
                 !$type->from_docblock,
                 $this->phantom_classes
@@ -74,7 +72,6 @@ class TypeScanner extends NodeVisitor
         if ($type instanceof TLiteralClassString) {
             $this->scanner->queueClassLikeForScanning(
                 $type->value,
-                $this->file_storage ? $this->file_storage->file_path : null,
                 false,
                 !$type->from_docblock,
                 $this->phantom_classes
