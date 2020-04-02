@@ -327,3 +327,7 @@ function fclose(&$handle) : bool
 function sodium_memzero(string &$reference): void
 {
 }
+
+function json_decode(string $json, bool $assoc = false, int $depth = 512, int $options = 0): null|scalar|array|stdClass
+{
+}
