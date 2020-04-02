@@ -185,6 +185,33 @@ class Php70Test extends TestCase
                         }
                     }',
             ],
+            'generatorPromise' => [
+                '<?php
+                    namespace Amp {
+                        /**
+                         * @template-covariant T
+                         */
+                        class Promise {
+                            /**
+                             * @param T $value
+                             */
+                            public function __construct($value) {
+                                // ...
+                            }
+                        }
+
+                        /**
+                         * @return \Generator<mixed, Promise, mixed, int>
+                         */
+                        function fooFoo(): \Generator {
+                            $promise = new Promise(1);
+
+                            $result = yield $promise;
+
+                            return $result;
+                        }
+                    }',
+            ],
             'generatorWithReturn' => [
                 '<?php
                     /**

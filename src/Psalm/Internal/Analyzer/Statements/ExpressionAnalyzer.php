@@ -1916,6 +1916,14 @@ class ExpressionAnalyzer
                 $statements_analyzer->node_data->setType($stmt, $var_comment_type);
             } elseif ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->value)) {
                 $statements_analyzer->node_data->setType($stmt, $stmt_var_type);
+
+                foreach ($stmt_var_type->getAtomicTypes() as $atomic_stmt_type) {
+                    if ($atomic_stmt_type instanceof Type\Atomic\TGenericObject
+                        && $atomic_stmt_type->value === 'Amp\Promise'
+                    ) {
+                        $statements_analyzer->node_data->setType($stmt, $atomic_stmt_type->type_params[0]);
+                    }
+                }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
