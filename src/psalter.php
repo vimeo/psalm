@@ -32,6 +32,7 @@ $valid_long_options = [
     'find-unused-code', 'threads:', 'codeowner:',
     'allow-backwards-incompatible-changes:',
     'add-newline-between-docblock-annotations:',
+    'no-cache'
 ];
 
 // get options from command line
@@ -150,6 +151,8 @@ Options:
     --add-newline-between-docblock-annotations=BOOL
         Whether to add or not add a new line between docblock annotations. Defaults to true.
 
+    --no-cache
+        Runs Psalm without using cache
 HELP;
 
     exit;
@@ -200,12 +203,18 @@ if ($config->resolve_from_config_file) {
 
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
-$providers = new Psalm\Internal\Provider\Providers(
-    new Psalm\Internal\Provider\FileProvider(),
-    new Psalm\Internal\Provider\ParserCacheProvider($config),
-    new Psalm\Internal\Provider\FileStorageCacheProvider($config),
-    new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config)
-);
+if (isset($options['no-cache'])) {
+    $providers = new Psalm\Internal\Provider\Providers(
+        new Psalm\Internal\Provider\FileProvider()
+    );
+} else {
+    $providers = new Psalm\Internal\Provider\Providers(
+        new Psalm\Internal\Provider\FileProvider(),
+        new Psalm\Internal\Provider\ParserCacheProvider($config),
+        new Psalm\Internal\Provider\FileStorageCacheProvider($config),
+        new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config)
+    );
+}
 
 if (array_key_exists('list-supported-issues', $options)) {
     echo implode(',', ProjectAnalyzer::getSupportedIssuesToFix()) . PHP_EOL;
