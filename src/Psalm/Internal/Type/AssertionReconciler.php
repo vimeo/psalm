@@ -1658,7 +1658,13 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $const_type_atomic = $const_type_atomic->getGenericArrayType();
                         }
 
-                        return clone $const_type_atomic->type_params[0];
+                        if (TypeAnalyzer::isContainedBy(
+                            $codebase,
+                            $const_type_atomic->type_params[0],
+                            $existing_var_type
+                        )) {
+                            return clone $const_type_atomic->type_params[0];
+                        }
                     }
                 }
             }
