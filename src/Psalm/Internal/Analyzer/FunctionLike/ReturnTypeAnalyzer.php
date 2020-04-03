@@ -167,6 +167,7 @@ class ReturnTypeAnalyzer
             && !$return_type->from_docblock
             && !$return_type->isVoid()
             && !$inferred_yield_types
+            && (!$function_like_storage || !$function_like_storage->has_yield)
             && ScopeAnalyzer::getFinalControlActions(
                 $function_stmts,
                 $type_provider,
@@ -376,7 +377,10 @@ class ReturnTypeAnalyzer
             $function_like_storage instanceof MethodStorage && $function_like_storage->final
         );
 
-        if (!$inferred_return_type_parts && !$inferred_yield_types) {
+        if (!$inferred_return_type_parts
+            && !$inferred_yield_types
+            && (!$function_like_storage || !$function_like_storage->has_yield)
+        ) {
             if ($declared_return_type->isVoid() || $declared_return_type->isNever()) {
                 return null;
             }
@@ -424,7 +428,9 @@ class ReturnTypeAnalyzer
         }
 
         if (!$declared_return_type->hasMixed()) {
-            if ($inferred_return_type->isVoid() && $declared_return_type->isVoid()) {
+            if ($inferred_return_type->isVoid()
+                && ($declared_return_type->isVoid() || ($function_like_storage && $function_like_storage->has_yield))
+            ) {
                 return null;
             }
 

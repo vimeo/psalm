@@ -352,6 +352,11 @@ class ClassLikeStorage
     public $template_type_implements_count;
 
     /**
+     * @var ?Type\Union
+     */
+    public $yield;
+
+    /**
      * @var array<string, int>|null
      */
     public $template_type_uses_count;

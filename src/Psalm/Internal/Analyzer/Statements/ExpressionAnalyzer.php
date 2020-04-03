@@ -1913,15 +1913,39 @@ class ExpressionAnalyzer
             $context->inside_call = false;
 
             if ($var_comment_type) {
-                $statements_analyzer->node_data->setType($stmt, $var_comment_type);
+                $expression_type = $var_comment_type;
             } elseif ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->value)) {
-                $statements_analyzer->node_data->setType($stmt, $stmt_var_type);
+                $expression_type = clone $stmt_var_type;
             } else {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+                $expression_type = Type::getMixed();
             }
         } else {
-            $statements_analyzer->node_data->setType($stmt, Type::getNull());
+            $expression_type = Type::getEmpty();
         }
+
+        foreach ($expression_type->getAtomicTypes() as $expression_atomic_type) {
+            if ($expression_atomic_type instanceof Type\Atomic\TNamedObject) {
+                $classlike_storage = $codebase->classlike_storage_provider->get($expression_atomic_type->value);
+
+                if ($classlike_storage->yield) {
+                    $yield_type = $classlike_storage->yield;
+
+                    if ($expression_atomic_type instanceof Type\Atomic\TGenericObject) {
+                        $yield_type = PropertyFetchAnalyzer::localizePropertyType(
+                            $codebase,
+                            $yield_type,
+                            $expression_atomic_type,
+                            $classlike_storage,
+                            $classlike_storage
+                        );
+                    }
+
+                    $expression_type->substitute($expression_type, $yield_type);
+                }
+            }
+        }
+
+        $statements_analyzer->node_data->setType($stmt, $expression_type);
 
         $source = $statements_analyzer->getSource();
 
@@ -1934,13 +1958,28 @@ class ExpressionAnalyzer
 
             if ($storage->return_type) {
                 foreach ($storage->return_type->getAtomicTypes() as $atomic_return_type) {
-                    if ($atomic_return_type instanceof Type\Atomic\TGenericObject
+                    if ($atomic_return_type instanceof Type\Atomic\TNamedObject
                         && $atomic_return_type->value === 'Generator'
                     ) {
-                        if (!$atomic_return_type->type_params[2]->isMixed()
-                            && !$atomic_return_type->type_params[2]->isVoid()
-                        ) {
-                            $statements_analyzer->node_data->setType($stmt, clone $atomic_return_type->type_params[2]);
+                        if ($atomic_return_type instanceof Type\Atomic\TGenericObject) {
+                            if (!$atomic_return_type->type_params[2]->isVoid()) {
+                                $statements_analyzer->node_data->setType(
+                                    $stmt,
+                                    Type::combineUnionTypes(
+                                        $atomic_return_type->type_params[2],
+                                        $expression_type,
+                                        $codebase
+                                    )
+                                );
+                            }
+                        } else {
+                            $statements_analyzer->node_data->setType(
+                                $stmt,
+                                Type::combineUnionTypes(
+                                    Type::getMixed(),
+                                    $expression_type
+                                )
+                            );
                         }
                     }
                 }

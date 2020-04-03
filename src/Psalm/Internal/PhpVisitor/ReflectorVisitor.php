@@ -1174,6 +1174,33 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->implementTemplatedType($storage, $node, $implemented_class_name);
                 }
 
+                if ($docblock_info->yield) {
+                    $yield_type_tokens = Type::fixUpLocalType(
+                        $docblock_info->yield,
+                        $this->aliases,
+                        $storage->template_types,
+                        $this->type_aliases
+                    );
+
+                    try {
+                        $yield_type = Type::parseTokens(
+                            $yield_type_tokens,
+                            null,
+                            $storage->template_types ?: []
+                        );
+                        $yield_type->setFromDocblock();
+                        $yield_type->queueClassLikesForScanning(
+                            $this->codebase,
+                            $this->file_storage,
+                            $storage->template_types ?: []
+                        );
+
+                        $storage->yield = $yield_type;
+                    } catch (TypeParseTreeException $e) {
+                        // do nothing
+                    }
+                }
+
                 $storage->sealed_properties = $docblock_info->sealed_properties;
                 $storage->sealed_methods = $docblock_info->sealed_methods;
 

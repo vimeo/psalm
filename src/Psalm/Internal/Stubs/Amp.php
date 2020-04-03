@@ -25,6 +25,7 @@ function call(callable $gen) : Promise
 
 /**
  * @template TReturn
+ * @psalm-yield TReturn
  */
 interface Promise
 {

@@ -37,7 +37,7 @@ class TextDocument
      * @param string $uri
      * @param Diagnostic[] $diagnostics
      *
-     * @return Promise <void>
+     * @return Promise<void>
      */
     public function publishDiagnostics(string $uri, array $diagnostics): Promise
     {
@@ -59,13 +59,16 @@ class TextDocument
     {
         return call(
             /**
-             * @return \Generator<int, mixed, mixed, TextDocumentItem>
+             * @return \Generator<int, Promise<object>, object, TextDocumentItem>
              */
             function () use ($textDocument) {
-                $result = yield $this->handler->request(
+                /** @var Promise<object> */
+                $promise = $this->handler->request(
                     'textDocument/xcontent',
                     ['textDocument' => $textDocument]
                 );
+
+                $result = yield $promise;
 
                 /** @var TextDocumentItem */
                 return $this->mapper->map($result, new TextDocumentItem);

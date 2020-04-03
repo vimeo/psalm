@@ -868,6 +868,13 @@ class CommentAnalyzer
             }
         }
 
+        if (isset($parsed_docblock['specials']['psalm-yield'])
+        ) {
+            $yield = reset($parsed_docblock['specials']['psalm-yield']);
+
+            $info->yield = trim(preg_replace('@^[ \t]*\*@m', '', $yield));
+        }
+
         if (isset($parsed_docblock['specials']['deprecated'])) {
             $info->deprecated = true;
         }

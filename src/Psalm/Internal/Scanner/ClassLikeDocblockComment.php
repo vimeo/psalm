@@ -48,6 +48,11 @@ class ClassLikeDocblockComment
     public $template_implements = [];
 
     /**
+     * @var ?string
+     */
+    public $yield = null;
+
+    /**
      * @var array<int, array{name:string, type:string, tag:string, line_number:int}>
      */
     public $properties = [];

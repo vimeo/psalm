@@ -4,6 +4,7 @@ namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
 use function Amp\asyncCall;
+use Amp\Promise;
 use Amp\ByteStream\ResourceInputStream;
 use Exception;
 use function explode;
@@ -47,13 +48,15 @@ class ProtocolStreamReader implements ProtocolReader
         $input = new ResourceInputStream($input);
         asyncCall(
             /**
-             * @return \Generator<int, string, string, void>
+             * @return \Generator<int, Promise<?string>, ?string, void>
              * @psalm-suppress MixedReturnTypeCoercion
              */
             function () use ($input) : \Generator {
                 while ($this->is_accepting_new_requests) {
-                    /** @var ?string $chunk */
-                    $chunk = yield $input->read();
+                    /** @var Promise<?string> */
+                    $read_promise = $input->read();
+
+                    $chunk = yield $read_promise;
 
                     if ($chunk === null) {
                         break;

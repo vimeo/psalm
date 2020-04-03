@@ -22,6 +22,20 @@ use function trim;
 
 class DocComment
 {
+    private const PSALM_ANNOTATIONS = [
+        'return', 'param', 'template', 'var', 'type',
+        'template-covariant', 'property', 'property-read', 'property-write', 'method',
+        'assert', 'assert-if-true', 'assert-if-false', 'suppress',
+        'ignore-nullable-return', 'override-property-visibility',
+        'override-method-visibility', 'seal-properties', 'seal-methods',
+        'generator-return', 'ignore-falsable-return', 'variadic', 'pure',
+        'ignore-variable-method', 'ignore-variable-property', 'internal',
+        'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
+        'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
+        'remove-taint', 'allow-private-mutation', 'readonly-allow-private-mutation',
+        'yield'
+    ];
+
     /**
      * @var bool
      */
@@ -146,18 +160,7 @@ class DocComment
 
                 if (!in_array(
                     $special_key,
-                    [
-                        'return', 'param', 'template', 'var', 'type',
-                        'template-covariant', 'property', 'property-read', 'property-write', 'method',
-                        'assert', 'assert-if-true', 'assert-if-false', 'suppress',
-                        'ignore-nullable-return', 'override-property-visibility',
-                        'override-method-visibility', 'seal-properties', 'seal-methods',
-                        'generator-return', 'ignore-falsable-return', 'variadic', 'pure',
-                        'ignore-variable-method', 'ignore-variable-property', 'internal',
-                        'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
-                        'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
-                        'remove-taint', 'allow-private-mutation', 'readonly-allow-private-mutation',
-                    ],
+                    self::PSALM_ANNOTATIONS,
                     true
                 )) {
                     throw new DocblockParseException('Unrecognised annotation @psalm-' . $special_key);
@@ -274,18 +277,7 @@ class DocComment
 
                 if (!in_array(
                     $special_key,
-                    [
-                        'return', 'param', 'template', 'var', 'type',
-                        'template-covariant', 'property', 'property-read', 'property-write', 'method',
-                        'assert', 'assert-if-true', 'assert-if-false', 'suppress',
-                        'ignore-nullable-return', 'override-property-visibility',
-                        'override-method-visibility', 'seal-properties', 'seal-methods',
-                        'generator-return', 'ignore-falsable-return', 'variadic', 'pure',
-                        'ignore-variable-method', 'ignore-variable-property', 'internal',
-                        'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
-                        'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
-                        'remove-taint', 'allow-private-mutation', 'readonly-allow-private-mutation',
-                    ],
+                    self::PSALM_ANNOTATIONS,
                     true
                 )) {
                     throw new DocblockParseException('Unrecognised annotation @psalm-' . $special_key);
