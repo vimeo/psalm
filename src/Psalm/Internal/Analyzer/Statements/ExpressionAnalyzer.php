@@ -1933,7 +1933,7 @@ class ExpressionAnalyzer
                     if ($expression_atomic_type instanceof Type\Atomic\TGenericObject) {
                         $yield_type = PropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
-                            $yield_type,
+                            clone $yield_type,
                             $expression_atomic_type,
                             $classlike_storage,
                             $classlike_storage

@@ -328,7 +328,7 @@ class ReturnTypeCollector
                 $generator_type = new Atomic\TGenericObject(
                     'Generator',
                     [
-                        $key_type ?: Type::getInt(),
+                        $key_type ? clone $key_type : Type::getInt(),
                         clone $value_type,
                         Type::getMixed(),
                         Type::getMixed()
