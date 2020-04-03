@@ -85,6 +85,7 @@ class MethodComparator
                 $implementer_method_storage,
                 $guide_method_storage->signature_return_type,
                 $cased_guide_method_id,
+                $implementer_called_class_name,
                 $cased_implementer_method_id,
                 $code_location,
                 $suppressed_issues
@@ -658,6 +659,7 @@ class MethodComparator
         MethodStorage $implementer_method_storage,
         Type\Union $guide_signature_return_type,
         string $cased_guide_method_id,
+        string $implementer_called_class_name,
         string $cased_implementer_method_id,
         CodeLocation $code_location,
         array $suppressed_issues
@@ -684,8 +686,12 @@ class MethodComparator
             ? ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $implementer_method_storage->signature_return_type,
-                $implementer_classlike_storage->name,
-                $implementer_classlike_storage->name,
+                $implementer_classlike_storage->is_trait
+                    ? $implementer_called_class_name
+                    : $implementer_classlike_storage->name,
+                $implementer_classlike_storage->is_trait
+                    ? $implementer_called_class_name
+                    : $implementer_classlike_storage->name,
                 $implementer_classlike_storage->parent_class
             ) : null;
 

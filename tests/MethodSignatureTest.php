@@ -748,6 +748,31 @@ class MethodSignatureTest extends TestCase
                         }
                     }'
             ],
+            'allowMatchIn74' => [
+                '<?php
+                    trait FooTrait {
+                        /**
+                         * @return static
+                         */
+                        public function bar(): self  {
+                            return $this;
+                        }
+                    }
+
+                    interface FooInterface {
+                        /**
+                         * @return static
+                         */
+                        public function bar(): self;
+                    }
+
+                    class FooClass implements FooInterface {
+                        use FooTrait;
+                    }',
+                [],
+                [],
+                '7.4'
+            ],
         ];
     }
 
@@ -1249,6 +1274,32 @@ class MethodSignatureTest extends TestCase
                         public function foo(string $s): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'preventTraitMatchIn73' => [
+                '<?php
+                    trait FooTrait {
+                        /**
+                         * @return static
+                         */
+                        public function bar(): self  {
+                            return $this;
+                        }
+                    }
+
+                    interface FooInterface {
+                        /**
+                         * @return static
+                         */
+                        public function bar(): self;
+                    }
+
+                    class FooClass implements FooInterface {
+                        use FooTrait;
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                [],
+                false,
+                '7.3'
             ],
         ];
     }
