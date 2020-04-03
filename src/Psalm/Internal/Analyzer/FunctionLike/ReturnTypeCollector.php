@@ -322,12 +322,16 @@ class ReturnTypeCollector
                 $key_type = $stmt_key_type;
             }
 
-            if ($stmt_type = $nodes->getType($stmt)) {
+            if ($stmt->value
+                && $value_type = $nodes->getType($stmt->value)
+            ) {
                 $generator_type = new Atomic\TGenericObject(
                     'Generator',
                     [
                         $key_type ?: Type::getInt(),
-                        $stmt_type,
+                        clone $value_type,
+                        Type::getMixed(),
+                        Type::getMixed()
                     ]
                 );
 
