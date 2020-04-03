@@ -3534,7 +3534,6 @@ class CallAnalyzer
 
         if (!$file_source instanceof StatementsAnalyzer
             || !($class_arg_type = $file_source->node_data->getType($class_arg))
-            || !$class_arg_type->hasObjectType()
         ) {
             return [];
         }

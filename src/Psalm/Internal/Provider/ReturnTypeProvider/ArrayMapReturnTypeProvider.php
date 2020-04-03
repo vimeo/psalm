@@ -111,188 +111,55 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     $function_call_arg->value
                 );
 
-                $call_map = CallMap::getCallMap();
+                if ($mapping_function_ids) {
+                    $mapping_return_type = self::getReturnTypeFromMappingIds(
+                        $statements_source,
+                        $mapping_function_ids,
+                        $context,
+                        $function_call_arg,
+                        $array_arg_type
+                    );
+                }
 
-                $mapping_return_type = null;
-                $closure_param_type = null;
+                if ($function_call_arg->value instanceof PhpParser\Node\Expr\Array_
+                    && isset($function_call_arg->value->items[0])
+                    && isset($function_call_arg->value->items[1])
+                    && $function_call_arg->value->items[1]->value instanceof PhpParser\Node\Scalar\String_
+                    && $function_call_arg->value->items[0]->value instanceof PhpParser\Node\Expr\Variable
+                    && ($variable_type
+                        = $statements_source->node_data->getType($function_call_arg->value->items[0]->value))
+                ) {
+                    $fake_method_call = null;
 
-                $codebase = $statements_source->getCodebase();
-
-                foreach ($mapping_function_ids as $mapping_function_id) {
-                    $mapping_function_id = strtolower($mapping_function_id);
-
-                    $mapping_function_id_parts = explode('&', $mapping_function_id);
-
-                    $part_match_found = false;
-
-                    foreach ($mapping_function_id_parts as $mapping_function_id_part) {
-                        if (isset($call_map[$mapping_function_id_part][0])) {
-                            if ($call_map[$mapping_function_id_part][0]) {
-                                $mapped_function_return =
-                                    Type::parseString($call_map[$mapping_function_id_part][0]);
-
-                                if ($mapping_return_type) {
-                                    $mapping_return_type = Type::combineUnionTypes(
-                                        $mapping_return_type,
-                                        $mapped_function_return
-                                    );
-                                } else {
-                                    $mapping_return_type = $mapped_function_return;
-                                }
-
-                                $part_match_found = true;
-                            }
-                        } else {
-                            if (strpos($mapping_function_id_part, '::') !== false) {
-                                $method_id_parts = explode('::', $mapping_function_id_part);
-                                $callable_fq_class_name = $method_id_parts[0];
-
-                                if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
-                                    continue;
-                                }
-
-                                if (!$codebase->classlikes->classExists($callable_fq_class_name)) {
-                                    continue;
-                                }
-
-                                $class_storage = $codebase->classlike_storage_provider->get($callable_fq_class_name);
-
-                                $method_id = new \Psalm\Internal\MethodIdentifier(
-                                    $callable_fq_class_name,
-                                    $method_id_parts[1]
-                                );
-
-                                if (!$codebase->methods->methodExists(
-                                    $method_id,
-                                    !$context->collect_initializations
-                                        && !$context->collect_mutations
-                                        ? $context->calling_method_id
-                                        : null,
-                                    $codebase->collect_locations
-                                        ? new CodeLocation(
-                                            $statements_source,
-                                            $function_call_arg->value
-                                        ) : null,
-                                    null,
-                                    $statements_source->getFilePath()
-                                )) {
-                                    continue;
-                                }
-
-                                $part_match_found = true;
-
-                                $params = $codebase->methods->getMethodParams(
-                                    $method_id,
-                                    $statements_source
-                                );
-
-                                if (isset($params[0]->type)) {
-                                    $closure_param_type = $params[0]->type;
-                                }
-
-                                $self_class = 'self';
-
-                                $return_type = $codebase->methods->getMethodReturnType(
-                                    new \Psalm\Internal\MethodIdentifier(...$method_id_parts),
-                                    $self_class
-                                ) ?: Type::getMixed();
-
-                                $static_class = $self_class;
-
-                                if ($self_class !== 'self') {
-                                    $static_class = $class_storage->name;
-                                }
-
-                                $return_type = ExpressionAnalyzer::fleshOutType(
-                                    $codebase,
-                                    $return_type,
-                                    $self_class,
-                                    $static_class,
-                                    $class_storage->parent_class
-                                );
-
-                                if ($mapping_return_type) {
-                                    $mapping_return_type = Type::combineUnionTypes(
-                                        $mapping_return_type,
-                                        $return_type
-                                    );
-                                } else {
-                                    $mapping_return_type = $return_type;
-                                }
-                            } else {
-                                if (!$codebase->functions->functionExists(
-                                    $statements_source,
-                                    $mapping_function_id_part
-                                )
-                                ) {
-                                    $mapping_return_type = Type::getMixed();
-                                    continue;
-                                }
-
-                                $part_match_found = true;
-
-                                $function_storage = $codebase->functions->getStorage(
-                                    $statements_source,
-                                    $mapping_function_id_part
-                                );
-
-                                if (isset($function_storage->params[0]->type)) {
-                                    $closure_param_type = $function_storage->params[0]->type;
-                                }
-
-                                $return_type = $function_storage->return_type ?: Type::getMixed();
-
-                                if ($mapping_return_type) {
-                                    $mapping_return_type = Type::combineUnionTypes(
-                                        $mapping_return_type,
-                                        $return_type
-                                    );
-                                } else {
-                                    $mapping_return_type = $return_type;
-                                }
-                            }
+                    foreach ($variable_type->getAtomicTypes() as $variable_atomic_type) {
+                        if ($variable_atomic_type instanceof Type\Atomic\TTemplateParam
+                            || $variable_atomic_type instanceof Type\Atomic\TTemplateParamClass
+                        ) {
+                            $fake_method_call = new PhpParser\Node\Expr\StaticCall(
+                                $function_call_arg->value->items[0]->value,
+                                $function_call_arg->value->items[1]->value->value,
+                                []
+                            );
+                        } elseif ($variable_atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                            $fake_method_call = new PhpParser\Node\Expr\StaticCall(
+                                $function_call_arg->value->items[0]->value,
+                                $function_call_arg->value->items[1]->value->value,
+                                []
+                            );
                         }
                     }
 
-                    if ($part_match_found === false) {
-                        $mapping_return_type = Type::getMixed();
+                    if ($fake_method_call) {
+                        $fake_method_return_type = self::executeFakeCall(
+                            $statements_source,
+                            $fake_method_call,
+                            $context
+                        );
+
+                        if ($fake_method_return_type) {
+                            $mapping_return_type = $fake_method_return_type;
+                        }
                     }
-                }
-
-                if ($mapping_return_type
-                    && $closure_param_type
-                    && $mapping_return_type->hasTemplate()
-                    && $array_arg_type
-                ) {
-                    $mapping_return_type = clone $mapping_return_type;
-
-                    $template_types = [];
-
-                    foreach ($closure_param_type->getTemplateTypes() as $template_type) {
-                        $template_types[$template_type->param_name] = [
-                            ($template_type->defining_class) => [$template_type->as]
-                        ];
-                    }
-
-                    $template_result = new \Psalm\Internal\Type\TemplateResult(
-                        $template_types,
-                        []
-                    );
-
-                    \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
-                        $closure_param_type,
-                        $template_result,
-                        $codebase,
-                        $statements_source,
-                        $array_arg_type->value,
-                        0,
-                        $context->self,
-                        $context->calling_method_id ?: $context->calling_function_id
-                    );
-
-                    $mapping_return_type->replaceTemplateTypesWithArgTypes(
-                        $template_result->generic_params
-                    );
                 }
             }
         }
@@ -358,5 +225,241 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 ])
             ])
             : Type::getList();
+    }
+
+    private static function executeFakeCall(
+        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $fake_method_call,
+        Context $context
+    ) : ?Type\Union {
+        $old_data_provider = $statements_analyzer->node_data;
+
+        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
+        }
+
+        $was_inside_call = $context->inside_call;
+
+        $context->inside_call = true;
+
+        \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer::analyze(
+            $statements_analyzer,
+            $fake_method_call,
+            $context
+        );
+
+        $context->inside_call = $was_inside_call;
+
+        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
+        }
+
+        $return_type = $statements_analyzer->node_data->getType($fake_method_call) ?: null;
+
+        $statements_analyzer->node_data = $old_data_provider;
+
+        return $return_type;
+    }
+
+    /**
+     * @param non-empty-array<string> $mapping_function_ids
+     */
+    private static function getReturnTypeFromMappingIds(
+        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_source,
+        array $mapping_function_ids,
+        Context $context,
+        PhpParser\Node\Arg $function_call_arg,
+        ?\Psalm\Internal\Type\ArrayType $array_arg_type
+    ) : Type\Union {
+        $call_map = CallMap::getCallMap();
+
+        $mapping_return_type = null;
+        $closure_param_type = null;
+
+        $codebase = $statements_source->getCodebase();
+
+        foreach ($mapping_function_ids as $mapping_function_id) {
+            $mapping_function_id = strtolower($mapping_function_id);
+
+            $mapping_function_id_parts = explode('&', $mapping_function_id);
+
+            $function_id_return_type = null;
+
+            foreach ($mapping_function_id_parts as $mapping_function_id_part) {
+                if (isset($call_map[$mapping_function_id_part][0])) {
+                    if ($call_map[$mapping_function_id_part][0]) {
+                        $mapped_function_return =
+                            Type::parseString($call_map[$mapping_function_id_part][0]);
+
+                        if ($function_id_return_type) {
+                            $function_id_return_type = Type::combineUnionTypes(
+                                $function_id_return_type,
+                                $mapped_function_return
+                            );
+                        } else {
+                            $function_id_return_type = $mapped_function_return;
+                        }
+                    }
+                } else {
+                    if (strpos($mapping_function_id_part, '::') !== false) {
+                        $method_id_parts = explode('::', $mapping_function_id_part);
+                        $callable_fq_class_name = $method_id_parts[0];
+
+                        if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
+                            continue;
+                        }
+
+                        if (!$codebase->classlikes->classExists($callable_fq_class_name)) {
+                            continue;
+                        }
+
+                        $class_storage = $codebase->classlike_storage_provider->get($callable_fq_class_name);
+
+                        $method_id = new \Psalm\Internal\MethodIdentifier(
+                            $callable_fq_class_name,
+                            $method_id_parts[1]
+                        );
+
+                        if (!$codebase->methods->methodExists(
+                            $method_id,
+                            !$context->collect_initializations
+                                && !$context->collect_mutations
+                                ? $context->calling_method_id
+                                : null,
+                            $codebase->collect_locations
+                                ? new CodeLocation(
+                                    $statements_source,
+                                    $function_call_arg->value
+                                ) : null,
+                            null,
+                            $statements_source->getFilePath()
+                        )) {
+                            continue;
+                        }
+
+                        $params = $codebase->methods->getMethodParams(
+                            $method_id,
+                            $statements_source
+                        );
+
+                        if (isset($params[0]->type)) {
+                            $closure_param_type = $params[0]->type;
+                        }
+
+                        $self_class = 'self';
+
+                        $return_type = $codebase->methods->getMethodReturnType(
+                            new \Psalm\Internal\MethodIdentifier(...$method_id_parts),
+                            $self_class
+                        ) ?: Type::getMixed();
+
+                        $static_class = $self_class;
+
+                        if ($self_class !== 'self') {
+                            $static_class = $class_storage->name;
+                        }
+
+                        $return_type = ExpressionAnalyzer::fleshOutType(
+                            $codebase,
+                            $return_type,
+                            $self_class,
+                            $static_class,
+                            $class_storage->parent_class
+                        );
+
+                        if ($function_id_return_type) {
+                            $function_id_return_type = Type::combineUnionTypes(
+                                $function_id_return_type,
+                                $return_type
+                            );
+                        } else {
+                            $function_id_return_type = $return_type;
+                        }
+                    } else {
+                        if (!$codebase->functions->functionExists(
+                            $statements_source,
+                            $mapping_function_id_part
+                        )
+                        ) {
+                            $function_id_return_type = Type::getMixed();
+                            continue;
+                        }
+
+                        $function_storage = $codebase->functions->getStorage(
+                            $statements_source,
+                            $mapping_function_id_part
+                        );
+
+                        if (isset($function_storage->params[0]->type)) {
+                            $closure_param_type = $function_storage->params[0]->type;
+                        }
+
+                        $return_type = $function_storage->return_type ?: Type::getMixed();
+
+                        if ($function_id_return_type) {
+                            $function_id_return_type = Type::combineUnionTypes(
+                                $function_id_return_type,
+                                $return_type
+                            );
+                        } else {
+                            $function_id_return_type = $return_type;
+                        }
+                    }
+                }
+            }
+
+            if ($function_id_return_type === null) {
+                $mapping_return_type = Type::getMixed();
+            } elseif (!$mapping_return_type) {
+                $mapping_return_type = $function_id_return_type;
+            } else {
+                $mapping_return_type = Type::combineUnionTypes(
+                    $function_id_return_type,
+                    $mapping_return_type,
+                    $codebase
+                );
+            }
+        }
+
+        if ($closure_param_type
+            && $mapping_return_type->hasTemplate()
+            && $array_arg_type
+        ) {
+            $mapping_return_type = clone $mapping_return_type;
+
+            $template_types = [];
+
+            foreach ($closure_param_type->getTemplateTypes() as $template_type) {
+                $template_types[$template_type->param_name] = [
+                    ($template_type->defining_class) => [$template_type->as]
+                ];
+            }
+
+            $template_result = new \Psalm\Internal\Type\TemplateResult(
+                $template_types,
+                []
+            );
+
+            \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $closure_param_type,
+                $template_result,
+                $codebase,
+                $statements_source,
+                $array_arg_type->value,
+                0,
+                $context->self,
+                $context->calling_method_id ?: $context->calling_function_id
+            );
+
+            $mapping_return_type->replaceTemplateTypesWithArgTypes(
+                $template_result->generic_params
+            );
+        }
+
+        return $mapping_return_type;
     }
 }
