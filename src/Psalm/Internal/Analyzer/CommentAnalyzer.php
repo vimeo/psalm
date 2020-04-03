@@ -120,9 +120,7 @@ class CommentAnalyzer
                     $type_start = $offset + $comment->getFilePos();
                     $type_end = $type_start + strlen($line_parts[0]);
 
-                    $line_parts[0] = preg_replace('@^[ \t]*\*@m', '', $line_parts[0]);
-                    $line_parts[0] = preg_replace('/,\n\s+\}/', '}', $line_parts[0]);
-                    $line_parts[0] = str_replace("\n", '', $line_parts[0]);
+                    $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
@@ -229,6 +227,13 @@ class CommentAnalyzer
         }
 
         return $var_comments;
+    }
+
+    private static function sanitizeDocblockType(string $docblock_type) : string
+    {
+        $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
+        $docblock_type = preg_replace('/,\n\s+\}/', '}', $docblock_type);
+        return str_replace("\n", '', $docblock_type);
     }
 
     /**
@@ -401,9 +406,7 @@ class CommentAnalyzer
                         $start = $offset + $comment->getFilePos();
                         $end = $start + strlen($line_parts[0]);
 
-                        $line_parts[0] = preg_replace('@^[ \t]*\*@m', '', $line_parts[0]);
-                        $line_parts[0] = preg_replace('/,\n\s+\}/', '}', $line_parts[0]);
-                        $line_parts[0] = str_replace("\n", '', $line_parts[0]);
+                        $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);
 
                         if ($line_parts[0] === ''
                             || ($line_parts[0][0] === '$'
@@ -633,6 +636,8 @@ class CommentAnalyzer
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
+                $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);
+
                 $info->assertions[] = [
                     'type' => $line_parts[0],
                     'param_name' => substr($line_parts[1], 1),
@@ -720,9 +725,7 @@ class CommentAnalyzer
                 $start = $offset + $comment->getFilePos();
                 $end = $start + strlen($line_parts[0]);
 
-                $line_parts[0] = preg_replace('@^[ \t]*\*@m', '', $line_parts[0]);
-                $line_parts[0] = preg_replace('/,\n\s+\}/', '}', $line_parts[0]);
-                $line_parts[0] = str_replace("\n", '', $line_parts[0]);
+                $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);
 
                 $info->return_type = array_shift($line_parts);
                 $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;

@@ -70,7 +70,12 @@ trait InvalidCodeAnalysisTestTrait
         $error_message = preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
 
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
+
+        if (\method_exists($this, 'expectExceptionMessageMatches')) {
+            $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
+        } else {
+            $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
+        }
 
         $file_path = 'src/somefile.php';
 
