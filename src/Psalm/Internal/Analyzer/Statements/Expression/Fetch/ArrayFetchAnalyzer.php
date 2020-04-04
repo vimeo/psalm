@@ -1245,7 +1245,7 @@ class ArrayFetchAnalyzer
                     ) {
                         // do nothing
                     }
-                } else {
+                } elseif (!$context->inside_isset) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
