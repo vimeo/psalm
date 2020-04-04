@@ -2493,6 +2493,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
                 }
 
+                /**
+                 * @psalm-suppress ArgumentTypeCoercion due to theoretical list -> array coercion
+                 */
                 $storage->return_type = Type::parseTokens(
                     $fixed_type_tokens,
                     null,
