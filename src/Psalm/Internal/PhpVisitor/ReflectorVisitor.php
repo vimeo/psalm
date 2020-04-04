@@ -2487,17 +2487,22 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                     $param_type_mapping[$token_body] = $template_name;
                                 }
 
+                                // spaces are allowed before $foo in get(string $foo) magic method
+                                // definitions, but we want to remove them in this instance
+                                if (isset($fixed_type_tokens[$i - 1])
+                                    && $fixed_type_tokens[$i - 1][0][0] === ' '
+                                ) {
+                                    unset($fixed_type_tokens[$i - 1]);
+                                }
+
                                 $fixed_type_tokens[$i][0] = $param_type_mapping[$token_body];
                             }
                         }
                     }
                 }
 
-                /**
-                 * @psalm-suppress ArgumentTypeCoercion due to theoretical list -> array coercion
-                 */
                 $storage->return_type = Type::parseTokens(
-                    $fixed_type_tokens,
+                    array_values($fixed_type_tokens),
                     null,
                     $this->function_template_types + $class_template_types
                 );
