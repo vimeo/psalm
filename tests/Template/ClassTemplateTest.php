@@ -1877,7 +1877,7 @@ class ClassTemplateTest extends TestCase
             ],
             'coerceEmptyArrayToGeneral' => [
                 '<?php
-                    /** @template T */
+                    /** @template-covariant T */
                     class Foo
                     {
                         /** @param \Closure(string):T $closure */
@@ -1897,7 +1897,6 @@ class ClassTemplateTest extends TestCase
                                     return [];
                                 }
 
-                                /** @var array */
                                 return $json;
                             });
 
