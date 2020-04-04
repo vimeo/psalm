@@ -329,20 +329,6 @@ function sodium_memzero(string &$reference): void
 }
 
 /**
- * @psalm-return (
- *     $associative is true
- *     ? null|scalar|array<null|scalar|array<null|scalar|array>>
- *     : null|scalar|array<int, null|scalar|array<int, null|scalar|array|stdClass>|stdClass>|stdClass
- * )
- */
-function json_decode(
-    string $json,
-    bool $associative = false,
-    int $depth = 512,
-    int $options = 0
-) {}
-
-/**
  * @param string|string[] $search
  * @param string|string[] $replace
  * @param string|string[] $subject
