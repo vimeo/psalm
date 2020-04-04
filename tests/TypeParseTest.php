@@ -216,6 +216,66 @@ class TypeParseTest extends TestCase
         $this->assertSame('iterable<mixed, A>&iterable<mixed, B>', (string) Type::parseString('iterable<A>&iterable<B>'));
     }
 
+    /**
+     * @return void
+     */
+    public function testIntersectionOfObjectLike()
+    {
+        $this->assertSame('array{a: int, b: int}', (string) Type::parseString('array{a: int}&array{b: int}'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testIntersectionOfObjectLikeWithMergedProperties()
+    {
+        $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a: mixed}'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testIntersectionOfObjectLikeWithPossiblyUndefinedMergedProperties()
+    {
+        $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a?: int}'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testIntersectionOfObjectLikeWithConflictingProperties()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('array{a: string}&array{a: int}');
+    }
+
+    /**
+     * @return void
+     */
+    public function testUnionOfIntersectionOfObjectLike()
+    {
+        $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{a: int}|array{a: string}&array{b: int}'));
+        $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{b: int}&array{a: string}|array{a: int}'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testIntersectionOfUnionOfObjectLike()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('array{a: int}&array{a: string}|array{b: int}');
+    }
+
+    /**
+     * @return void
+     */
+    public function testIntersectionOfObjectLikeAndObject()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('array{a: int}&T1');
+    }
+
     public function testIterableContainingObjectLike() : void
     {
         $this->assertSame('iterable<string, array{0: int}>', Type::parseString('iterable<string, array{int}>')->getId());

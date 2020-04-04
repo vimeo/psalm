@@ -20,6 +20,7 @@ use function preg_match;
 use function preg_quote;
 use function preg_replace;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\TypeCombination;
@@ -58,6 +59,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
+use function array_key_exists;
 use function str_split;
 use function stripos;
 use function strlen;
@@ -177,7 +179,13 @@ abstract class Type
         }
 
         $parse_tree = ParseTree::createFromTokens($type_tokens);
-        $parsed_type = self::getTypeFromTree($parse_tree, $php_version, $template_type_map);
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+        $parsed_type = self::getTypeFromTree(
+            $parse_tree,
+            $codebase,
+            $php_version,
+            $template_type_map
+        );
 
         if (!($parsed_type instanceof Union)) {
             $parsed_type = new Union([$parsed_type]);
@@ -239,6 +247,7 @@ abstract class Type
      */
     public static function getTypeFromTree(
         ParseTree $parse_tree,
+        Codebase $codebase,
         array $php_version = null,
         array $template_type_map = []
     ) {
@@ -248,7 +257,12 @@ abstract class Type
             $generic_params = [];
 
             foreach ($parse_tree->children as $i => $child_tree) {
-                $tree_type = self::getTypeFromTree($child_tree, null, $template_type_map);
+                $tree_type = self::getTypeFromTree(
+                    $child_tree,
+                    $codebase,
+                    null,
+                    $template_type_map
+                );
 
                 if ($generic_type === 'class-string-map'
                     && $i === 0
@@ -460,10 +474,20 @@ abstract class Type
 
             foreach ($parse_tree->children as $child_tree) {
                 if ($child_tree instanceof ParseTree\NullableTree) {
-                    $atomic_type = self::getTypeFromTree($child_tree->children[0], null, $template_type_map);
+                    $atomic_type = self::getTypeFromTree(
+                        $child_tree->children[0],
+                        $codebase,
+                        null,
+                        $template_type_map
+                    );
                     $has_null = true;
                 } else {
-                    $atomic_type = self::getTypeFromTree($child_tree, null, $template_type_map);
+                    $atomic_type = self::getTypeFromTree(
+                        $child_tree,
+                        $codebase,
+                        null,
+                        $template_type_map
+                    );
                 }
 
                 if ($atomic_type instanceof Union) {
@@ -495,8 +519,13 @@ abstract class Type
                 /**
                  * @return Atomic
                  */
-                function (ParseTree $child_tree) use ($template_type_map) {
-                    $atomic_type = self::getTypeFromTree($child_tree, null, $template_type_map);
+                function (ParseTree $child_tree) use ($codebase, $template_type_map) {
+                    $atomic_type = self::getTypeFromTree(
+                        $child_tree,
+                        $codebase,
+                        null,
+                        $template_type_map
+                    );
 
                     if (!$atomic_type instanceof Atomic) {
                         throw new TypeParseTreeException(
@@ -509,6 +538,43 @@ abstract class Type
                 $parse_tree->children
             );
 
+            $onlyObjectLike = true;
+            foreach ($intersection_types as $intersection_type) {
+                if (!$intersection_type instanceof ObjectLike) {
+                    $onlyObjectLike = false;
+                    break;
+                }
+            }
+
+            if ($onlyObjectLike) {
+                /** @var non-empty-array<string|int, Union> */
+                $properties = [];
+                /** @var ObjectLike $intersection_type */
+                foreach ($intersection_types as $intersection_type) {
+                    foreach ($intersection_type->properties as $property => $property_type) {
+                        if (!array_key_exists($property, $properties)) {
+                            $properties[$property] = clone $property_type;
+                            continue;
+                        }
+
+                        $intersection_type = Type::intersectUnionTypes(
+                            $properties[$property],
+                            $property_type,
+                            $codebase
+                        );
+                        if ($intersection_type === null) {
+                            throw new TypeParseTreeException(
+                                'Incompatible intersection types for "' . $property . '", '
+                                    . $properties[$property] . ' and ' . $property_type
+                                    . ' provided'
+                            );
+                        }
+                        $properties[$property] = $intersection_type;
+                    }
+                }
+                return new ObjectLike($properties);
+            }
+
             $keyed_intersection_types = [];
 
             foreach ($intersection_types as $intersection_type) {
@@ -518,7 +584,8 @@ abstract class Type
                     && !$intersection_type instanceof TObjectWithProperties
                 ) {
                     throw new TypeParseTreeException(
-                        'Intersection types must all be objects, ' . get_class($intersection_type) . ' provided'
+                        'Intersection types must be all objects or all object-like arrays, '
+                            . get_class($intersection_type) . ' provided'
                     );
                 }
 
@@ -558,11 +625,21 @@ abstract class Type
 
             foreach ($parse_tree->children as $i => $property_branch) {
                 if (!$property_branch instanceof ParseTree\ObjectLikePropertyTree) {
-                    $property_type = self::getTypeFromTree($property_branch, null, $template_type_map);
+                    $property_type = self::getTypeFromTree(
+                        $property_branch,
+                        $codebase,
+                        null,
+                        $template_type_map
+                    );
                     $property_maybe_undefined = false;
                     $property_key = (string)$i;
                 } elseif (count($property_branch->children) === 1) {
-                    $property_type = self::getTypeFromTree($property_branch->children[0], null, $template_type_map);
+                    $property_type = self::getTypeFromTree(
+                        $property_branch->children[0],
+                        $codebase,
+                        null,
+                        $template_type_map
+                    );
                     $property_maybe_undefined = $property_branch->possibly_undefined;
                     $property_key = $property_branch->value;
                 } else {
@@ -602,7 +679,12 @@ abstract class Type
         }
 
         if ($parse_tree instanceof ParseTree\CallableWithReturnTypeTree) {
-            $callable_type = self::getTypeFromTree($parse_tree->children[0], null, $template_type_map);
+            $callable_type = self::getTypeFromTree(
+                $parse_tree->children[0],
+                $codebase,
+                null,
+                $template_type_map
+            );
 
             if (!$callable_type instanceof TCallable && !$callable_type instanceof Type\Atomic\TFn) {
                 throw new \InvalidArgumentException('Parsing callable tree node should return TCallable');
@@ -612,7 +694,12 @@ abstract class Type
                 throw new TypeParseTreeException('Invalid return type');
             }
 
-            $return_type = self::getTypeFromTree($parse_tree->children[1], null, $template_type_map);
+            $return_type = self::getTypeFromTree(
+                $parse_tree->children[1],
+                $codebase,
+                null,
+                $template_type_map
+            );
 
             $callable_type->return_type = $return_type instanceof Union ? $return_type : new Union([$return_type]);
 
@@ -624,12 +711,17 @@ abstract class Type
                 /**
                  * @return FunctionLikeParameter
                  */
-                function (ParseTree $child_tree) use ($template_type_map) {
+                function (ParseTree $child_tree) use ($codebase, $template_type_map) {
                     $is_variadic = false;
                     $is_optional = false;
 
                     if ($child_tree instanceof ParseTree\CallableParamTree) {
-                        $tree_type = self::getTypeFromTree($child_tree->children[0], null, $template_type_map);
+                        $tree_type = self::getTypeFromTree(
+                            $child_tree->children[0],
+                            $codebase,
+                            null,
+                            $template_type_map
+                        );
                         $is_variadic = $child_tree->variadic;
                         $is_optional = $child_tree->has_default;
                     } else {
@@ -637,7 +729,7 @@ abstract class Type
                             $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
                         }
 
-                        $tree_type = self::getTypeFromTree($child_tree, null, $template_type_map);
+                        $tree_type = self::getTypeFromTree($child_tree, $codebase, null, $template_type_map);
                     }
 
                     $tree_type = $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
@@ -669,7 +761,7 @@ abstract class Type
         }
 
         if ($parse_tree instanceof ParseTree\EncapsulationTree) {
-            return self::getTypeFromTree($parse_tree->children[0], null, $template_type_map);
+            return self::getTypeFromTree($parse_tree->children[0], $codebase, null, $template_type_map);
         }
 
         if ($parse_tree instanceof ParseTree\NullableTree) {
@@ -677,7 +769,12 @@ abstract class Type
                 throw new TypeParseTreeException('Misplaced question mark');
             }
 
-            $non_nullable_type = self::getTypeFromTree($parse_tree->children[0], null, $template_type_map);
+            $non_nullable_type = self::getTypeFromTree(
+                $parse_tree->children[0],
+                $codebase,
+                null,
+                $template_type_map
+            );
 
             if ($non_nullable_type instanceof Union) {
                 $non_nullable_type->addType(new TNull);
@@ -762,18 +859,21 @@ abstract class Type
 
             $conditional_type = self::getTypeFromTree(
                 $parse_tree->condition->children[0],
+                $codebase,
                 null,
                 $template_type_map
             );
 
             $if_type = self::getTypeFromTree(
                 $parse_tree->children[0],
+                $codebase,
                 null,
                 $template_type_map
             );
 
             $else_type = self::getTypeFromTree(
                 $parse_tree->children[1],
+                $codebase,
                 null,
                 $template_type_map
             );
