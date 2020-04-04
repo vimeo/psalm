@@ -2462,6 +2462,37 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $class_storage && !$class_storage->is_trait ? $class_storage->name : null
                 );
 
+                $param_type_mapping = [];
+
+                // This checks for param references in the return type tokens
+                // If found, the param is replaced with a generated template param
+                foreach ($fixed_type_tokens as $i => $type_token) {
+                    if ($type_token[0][0] === '$') {
+                        $token_body = $type_token[0];
+
+                        foreach ($storage->params as $j => $param_storage) {
+                            if ('$' . $param_storage->name === $token_body) {
+                                if (!isset($param_type_mapping[$token_body])) {
+                                    $template_name = 'TGeneratedFromParam' . $j;
+
+                                    $storage->template_types[$template_name] = [
+                                        'fn-' . strtolower($cased_function_id) => [
+                                            $param_storage->type ? clone $param_storage->type : Type::getMixed()
+                                        ],
+                                    ];
+
+                                    $this->function_template_types[$template_name]
+                                        = $storage->template_types[$template_name];
+
+                                    $param_type_mapping[$token_body] = $template_name;
+                                }
+
+                                $fixed_type_tokens[$i][0] = $param_type_mapping[$token_body];
+                            }
+                        }
+                    }
+                }
+
                 $storage->return_type = Type::parseTokens(
                     $fixed_type_tokens,
                     null,
