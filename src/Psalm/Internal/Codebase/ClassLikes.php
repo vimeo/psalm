@@ -336,7 +336,7 @@ class ClassLikes
                     $calling_method_id,
                     $fq_class_name_lc
                 );
-            } elseif (strtolower($calling_fq_class_name) !== $fq_class_name_lc) {
+            } elseif (!$calling_fq_class_name || strtolower($calling_fq_class_name) !== $fq_class_name_lc) {
                 $this->file_reference_provider->addNonMethodReferenceToClass(
                     $code_location->file_path,
                     $fq_class_name_lc
