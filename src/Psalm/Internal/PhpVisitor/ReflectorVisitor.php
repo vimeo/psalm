@@ -2502,7 +2502,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 $storage->return_type = Type::parseTokens(
-                    array_values($fixed_type_tokens),
+                    \array_values($fixed_type_tokens),
                     null,
                     $this->function_template_types + $class_template_types
                 );
