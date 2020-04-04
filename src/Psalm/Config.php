@@ -2011,9 +2011,9 @@ class Config
             }
             $php_version = $composer_json['require']['php'] ?? null;
 
-            if ($php_version) {
+            if (\is_string($php_version)) {
                 foreach (['5.4', '5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0'] as $candidate) {
-                    if (Semver::satisfies($candidate, (string)$php_version)) {
+                    if (Semver::satisfies($candidate, $php_version)) {
                         return $candidate;
                     }
                 }
