@@ -797,7 +797,6 @@ abstract class Type
                 $if_type,
                 $else_type
             );
-
         }
 
         if (!$parse_tree instanceof ParseTree\Value) {
