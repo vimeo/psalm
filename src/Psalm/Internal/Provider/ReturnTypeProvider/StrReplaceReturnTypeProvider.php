@@ -13,6 +13,9 @@ class StrReplaceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
     public static function getFunctionIds() : array
     {
         return [
+            'str_replace',
+            'str_ireplace',
+            'substr_replace',
             'preg_replace',
             'preg_replace_callback',
         ];
@@ -39,12 +42,14 @@ class StrReplaceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
 
             $return_type = Type::getString();
 
-            $return_type->addType(new Type\Atomic\TNull());
+            if (in_array($function_id, ['preg_replace', 'preg_replace_callback'], true)) {
+                $return_type->addType(new Type\Atomic\TNull());
 
-            $codebase = $statements_source->getCodebase();
+                $codebase = $statements_source->getCodebase();
 
-            if ($codebase->config->ignore_internal_nullable_issues) {
-                $return_type->ignore_nullable_issues = true;
+                if ($codebase->config->ignore_internal_nullable_issues) {
+                    $return_type->ignore_nullable_issues = true;
+                }
             }
 
             return $return_type;
