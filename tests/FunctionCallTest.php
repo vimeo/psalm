@@ -122,7 +122,7 @@ class FunctionCallTest extends TestCase
             'noRedundantConditionAfterMixedOrEmptyArrayCountCheck' => [
                 '<?php
                     function foo(string $s) : void {
-                        $a = json_decode($s) ?: [];
+                        $a = $_GET["s"] ?: [];
                         if (count($a)) {}
                         if (!count($a)) {}
                     }',
