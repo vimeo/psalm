@@ -2475,9 +2475,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 if (!isset($param_type_mapping[$token_body])) {
                                     $template_name = 'TGeneratedFromParam' . $j;
 
+                                    $template_function_id = 'fn-' . strtolower($cased_function_id);
+
+                                    $template_as_type = $param_storage->type
+                                        ? clone $param_storage->type
+                                        : Type::getMixed();
+
                                     $storage->template_types[$template_name] = [
-                                        'fn-' . strtolower($cased_function_id) => [
-                                            $param_storage->type ? clone $param_storage->type : Type::getMixed()
+                                        $template_function_id => [
+                                            $template_as_type
                                         ],
                                     ];
 
@@ -2485,6 +2491,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                         = $storage->template_types[$template_name];
 
                                     $param_type_mapping[$token_body] = $template_name;
+
+                                    $param_storage->type = new Type\Union([
+                                        new Type\Atomic\TTemplateParam(
+                                            $template_name,
+                                            $template_as_type,
+                                            $template_function_id
+                                        )
+                                    ]);
                                 }
 
                                 // spaces are allowed before $foo in get(string $foo) magic method

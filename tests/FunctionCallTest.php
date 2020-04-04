@@ -1256,6 +1256,17 @@ class FunctionCallTest extends TestCase
                     '$a' => 'int',
                 ]
             ],
+            'jsonEncodeString' => [
+                '<?php
+                    $a = json_decode("hello");
+                    $b = json_decode("hello", true);
+                    $c = json_decode("hello", false);',
+                [
+                    '$a' => 'array<int, array<int, array<array-key, mixed>|null|scalar|stdClass>|null|scalar|stdClass>|null|scalar|stdClass',
+                    '$b' => 'array<array-key, array<array-key, array<array-key, mixed>|null|scalar>|null|scalar>|null|scalar',
+                    '$c' => 'array<int, array<int, array<array-key, mixed>|null|scalar|stdClass>|null|scalar|stdClass>|null|scalar|stdClass',
+                ]
+            ],
         ];
     }
 

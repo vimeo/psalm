@@ -478,18 +478,33 @@ class UnionTemplateHandler
                 }
             }
 
+            $matching_input_keys = [];
+
             if ($input_type
                 && (
                     $atomic_type->as->isMixed()
                     || !$codebase
-                    || TypeAnalyzer::isContainedBy(
+                    || TypeAnalyzer::canBeContainedBy(
                         $codebase,
                         $input_type,
-                        $atomic_type->as
+                        $atomic_type->as,
+                        false,
+                        false,
+                        $matching_input_keys
                     )
                 )
             ) {
                 $generic_param = clone $input_type;
+
+                if ($matching_input_keys) {
+                    $generic_param_keys = \array_keys($generic_param->getAtomicTypes());
+
+                    foreach ($generic_param_keys as $atomic_key) {
+                        if (!isset($matching_input_keys[$atomic_key])) {
+                            $generic_param->removeType($atomic_key);
+                        }
+                    }
+                }
 
                 if ($was_nullable && $generic_param->isNullable() && !$generic_param->isNull()) {
                     $generic_param->removeType('null');
