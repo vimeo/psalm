@@ -155,7 +155,7 @@ class TypeChecker extends NodeVisitor
                 $this->source,
                 $atomic->value,
                 $this->code_location,
-                null,
+                $this->source->getFQCLN(),
                 null,
                 $this->suppressed_issues,
                 $this->inferred,
