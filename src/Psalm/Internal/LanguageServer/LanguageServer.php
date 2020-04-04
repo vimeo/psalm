@@ -138,6 +138,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                          * @psalm-suppress UndefinedDocblockClass
                          */
                         $dispatched = $this->dispatch($msg->body);
+                        /** @psalm-suppress MixedAssignment */
                         $result = yield $dispatched;
                     } catch (AdvancedJsonRpc\Error $e) {
                         // If a ResponseError is thrown, send it back in the Response
