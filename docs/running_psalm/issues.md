@@ -111,7 +111,6 @@
  - [MixedReturnStatement](issues/MixedReturnStatement.md)
  - [MixedReturnTypeCoercion](issues/MixedReturnTypeCoercion.md)
  - [MixedStringOffsetAssignment](issues/MixedStringOffsetAssignment.md)
- - [MixedTypeCoercion](issues/MixedTypeCoercion.md)
  - [MoreSpecificImplementedParamType](issues/MoreSpecificImplementedParamType.md)
  - [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
  - [MutableDependency](issues/MutableDependency.md)
