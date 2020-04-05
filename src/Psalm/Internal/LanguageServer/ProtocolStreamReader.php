@@ -53,7 +53,6 @@ class ProtocolStreamReader implements ProtocolReader
              */
             function () use ($input) : \Generator {
                 while ($this->is_accepting_new_requests) {
-                    /** @var Promise<?string> */
                     $read_promise = $input->read();
 
                     $chunk = yield $read_promise;
