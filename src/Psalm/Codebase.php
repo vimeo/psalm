@@ -39,7 +39,6 @@ use function strrpos;
 use function strtolower;
 use function substr;
 use function substr_count;
-use function preg_replace;
 
 class Codebase
 {
@@ -1704,5 +1703,18 @@ class Codebase
             $key_type ?? Type::getMixed(),
             $value_type ?? Type::getMixed(),
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $phantom_classes
+     * @psalm-suppress PossiblyUnusedMethod part of the public API
+     */
+    public function queueClassLikeForScanning(
+        string $fq_classlike_name,
+        bool $analyze_too = false,
+        bool $store_failure = true,
+        array $phantom_classes = []
+    ): void {
+        $this->scanner->queueClassLikeForScanning($fq_classlike_name, $analyze_too, $store_failure, $phantom_classes);
     }
 }
