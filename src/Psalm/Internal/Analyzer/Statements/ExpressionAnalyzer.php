@@ -1913,7 +1913,7 @@ class ExpressionAnalyzer
             $context->inside_call = false;
 
             if ($var_comment_type) {
-                $expression_type = $var_comment_type;
+                $expression_type = clone $var_comment_type;
             } elseif ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->value)) {
                 $expression_type = clone $stmt_var_type;
             } else {
@@ -1966,7 +1966,7 @@ class ExpressionAnalyzer
                                 $statements_analyzer->node_data->setType(
                                     $stmt,
                                     Type::combineUnionTypes(
-                                        $atomic_return_type->type_params[2],
+                                        clone $atomic_return_type->type_params[2],
                                         $expression_type,
                                         $codebase
                                     )
