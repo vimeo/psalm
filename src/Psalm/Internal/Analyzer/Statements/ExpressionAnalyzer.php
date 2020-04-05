@@ -1928,12 +1928,12 @@ class ExpressionAnalyzer
                 $classlike_storage = $codebase->classlike_storage_provider->get($expression_atomic_type->value);
 
                 if ($classlike_storage->yield) {
-                    $yield_type = $classlike_storage->yield;
+                    $yield_type = clone $classlike_storage->yield;
 
                     if ($expression_atomic_type instanceof Type\Atomic\TGenericObject) {
                         $yield_type = PropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
-                            clone $yield_type,
+                            $yield_type,
                             $expression_atomic_type,
                             $classlike_storage,
                             $classlike_storage
