@@ -549,15 +549,32 @@ class UnionTemplateHandler
         }
 
         if ($add_upper_bound && $input_type) {
+            $matching_input_keys = [];
+
             if ($codebase
-                && TypeAnalyzer::isContainedBy(
+                && TypeAnalyzer::canBeContainedBy(
                     $codebase,
                     $input_type,
-                    $replacement_type
+                    $replacement_type,
+                    false,
+                    false,
+                    $matching_input_keys
                 )
             ) {
+                $generic_param = clone $input_type;
+
+                if ($matching_input_keys) {
+                    $generic_param_keys = \array_keys($generic_param->getAtomicTypes());
+
+                    foreach ($generic_param_keys as $atomic_key) {
+                        if (!isset($matching_input_keys[$atomic_key])) {
+                            $generic_param->removeType($atomic_key);
+                        }
+                    }
+                }
+
                 $template_result->template_types[$param_name_key][$atomic_type->defining_class][0]
-                    = clone $input_type;
+                    = $generic_param;
             }
         }
 
