@@ -728,25 +728,25 @@ class Analyzer
         }
 
         foreach ($newly_invalidated_methods as $method_id => $_) {
-            foreach ($method_references_to_class_members as &$referencing_method_ids) {
-                unset($referencing_method_ids[$method_id]);
+            foreach ($method_references_to_class_members as $i => $_) {
+                unset($method_references_to_class_members[$i][$method_id]);
             }
 
-            foreach ($method_references_to_classes as &$referencing_method_ids) {
-                unset($referencing_method_ids[$method_id]);
+            foreach ($method_references_to_classes as $i => $_) {
+                unset($method_references_to_classes[$i][$method_id]);
             }
 
-            foreach ($method_references_to_missing_class_members as &$referencing_method_ids) {
-                unset($referencing_method_ids[$method_id]);
+            foreach ($method_references_to_missing_class_members as $i => $_) {
+                unset($method_references_to_missing_class_members[$i][$method_id]);
             }
 
-            foreach ($references_to_mixed_member_names as &$references) {
-                unset($references[$method_id]);
+            foreach ($references_to_mixed_member_names as $i => $_) {
+                unset($references_to_mixed_member_names[$i][$method_id]);
             }
 
-            foreach ($method_param_uses as &$references) {
-                foreach ($references as &$method_refs) {
-                    unset($method_refs[$method_id]);
+            foreach ($method_param_uses as $i => $_) {
+                foreach ($method_param_uses[$i] as $j => $_) {
+                    unset($method_param_uses[$i][$j][$method_id]);
                 }
             }
         }
@@ -776,20 +776,20 @@ class Analyzer
 
             $this->setMixedCountsForFile($file_path, [0, 0]);
 
-            foreach ($file_references_to_class_members as &$referencing_file_paths) {
-                unset($referencing_file_paths[$file_path]);
+            foreach ($file_references_to_class_members as $i => $_) {
+                unset($file_references_to_class_members[$i][$file_path]);
             }
 
-            foreach ($nonmethod_references_to_classes as &$referencing_file_paths) {
-                unset($referencing_file_paths[$file_path]);
+            foreach ($nonmethod_references_to_classes as $i => $_) {
+                unset($nonmethod_references_to_classes[$i][$file_path]);
             }
 
-            foreach ($references_to_mixed_member_names as &$references) {
-                unset($references[$file_path]);
+            foreach ($references_to_mixed_member_names as $i => $_) {
+                unset($references_to_mixed_member_names[$i][$file_path]);
             }
 
-            foreach ($file_references_to_missing_class_members as &$referencing_file_paths) {
-                unset($referencing_file_paths[$file_path]);
+            foreach ($file_references_to_missing_class_members as $i => $_) {
+                unset($file_references_to_missing_class_members[$i][$file_path]);
             }
         }
 
