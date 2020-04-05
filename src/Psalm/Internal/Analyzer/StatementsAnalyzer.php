@@ -1645,9 +1645,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 ) {
                     $result = $left->getSingleStringLiteral()->value . $right->getSingleStringLiteral()->value;
 
-                    if (strlen($result) < 50) {
-                        return Type::getString($result);
-                    }
+                    return Type::getString($result);
                 }
 
                 return Type::getString();
@@ -1823,7 +1821,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            return Type::getString(strlen($stmt->value) < 30 ? $stmt->value : null);
+            return Type::getString($stmt->value);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
