@@ -308,28 +308,6 @@ class ClassLikes
             $fq_class_name_lc = strtolower($this->classlike_aliases[$fq_class_name_lc]);
         }
 
-        if (!isset($this->existing_classes_lc[$fq_class_name_lc])
-            || !$this->existing_classes_lc[$fq_class_name_lc]
-            || !$this->classlike_storage_provider->has($fq_class_name_lc)
-        ) {
-            if ((
-                !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc] === true
-                )
-                && !$this->classlike_storage_provider->has($fq_class_name_lc)
-            ) {
-                if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
-                    $this->existing_classes_lc[$fq_class_name_lc] = false;
-
-                    return false;
-                }
-
-                return $this->existing_classes_lc[$fq_class_name_lc];
-            }
-
-            return false;
-        }
-
         if ($code_location) {
             if ($calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClass(
@@ -355,6 +333,28 @@ class ClassLikes
                     }
                 }
             }
+        }
+
+        if (!isset($this->existing_classes_lc[$fq_class_name_lc])
+            || !$this->existing_classes_lc[$fq_class_name_lc]
+            || !$this->classlike_storage_provider->has($fq_class_name_lc)
+        ) {
+            if ((
+                !isset($this->existing_classes_lc[$fq_class_name_lc])
+                    || $this->existing_classes_lc[$fq_class_name_lc] === true
+                )
+                && !$this->classlike_storage_provider->has($fq_class_name_lc)
+            ) {
+                if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
+                    $this->existing_classes_lc[$fq_class_name_lc] = false;
+
+                    return false;
+                }
+
+                return $this->existing_classes_lc[$fq_class_name_lc];
+            }
+
+            return false;
         }
 
         if ($this->collect_locations && $code_location) {
