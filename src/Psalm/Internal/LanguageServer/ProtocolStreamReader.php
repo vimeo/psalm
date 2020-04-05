@@ -50,6 +50,8 @@ class ProtocolStreamReader implements ProtocolReader
             /**
              * @return \Generator<int, Promise<?string>, ?string, void>
              * @psalm-suppress MixedReturnTypeCoercion
+             * @psalm-suppress MixedArgument in old Amp versions
+             * @psalm-suppress MixedAssignment in old Amp versions
              */
             function () use ($input) : \Generator {
                 while ($this->is_accepting_new_requests) {
