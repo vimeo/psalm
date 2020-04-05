@@ -107,9 +107,13 @@ jobs:
           at: /home/docker/project/
       - run:
           name: Analyse PHPUnit
-          command: bin/test-with-real-projects.sh
-      - store_artifacts:
-          path: build/psalm.phar
+          command: bin/test-with-real-projects.sh phpunit
+      - run:
+          name: Analyse Collections
+          command: bin/test-with-real-projects.sh collections
+      - run:
+          name: Analyse ProxyManager
+          command: bin/test-with-real-projects.sh proxymanager
 
 # Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
 workflows:
