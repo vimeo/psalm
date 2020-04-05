@@ -6,6 +6,7 @@ use function defined;
 use const DIRECTORY_SEPARATOR;
 use function getcwd;
 use function ini_set;
+use function method_exists;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -152,5 +153,27 @@ class TestCase extends BaseTestCase
         }
 
         return $name;
+    }
+
+    /**
+     * Compatibility alias
+     */
+    public function expectExceptionMessageRegExp(string $regexp): void
+    {
+        if (method_exists($this, 'expectExceptionMessageMatches')) {
+            $this->expectExceptionMessageMatches($regexp);
+        } else {
+            /** @psalm-suppress UndefinedMethod */
+            parent::expectExceptionMessageRegExp($regexp);
+        }
+    }
+
+    public static function assertRegExp(string $pattern, string $string, string $message = ''): void
+    {
+        if (method_exists(self::class, 'assertMatchesRegularExpression')) {
+            self::assertMatchesRegularExpression($pattern, $string, $message);
+        } else {
+            parent::assertRegExp($pattern, $string, $message);
+        }
     }
 }
