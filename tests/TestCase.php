@@ -6,6 +6,7 @@ use function defined;
 use const DIRECTORY_SEPARATOR;
 use function getcwd;
 use function ini_set;
+use function method_exists;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
