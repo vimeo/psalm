@@ -16542,7 +16542,7 @@ return [
 'ZipArchive::getStatusString' => ['string|false'],
 'ZipArchive::getStream' => ['resource|false', 'entryname'=>'string'],
 'ZipArchive::locateName' => ['int|false', 'filename'=>'string', 'flags='=>'int'],
-'ZipArchive::open' => ['resource|int|bool', 'source'=>'string', 'flags='=>'int'],
+'ZipArchive::open' => ['int|bool', 'source'=>'string', 'flags='=>'int'],
 'ZipArchive::renameIndex' => ['bool', 'index'=>'int', 'new_name'=>'string'],
 'ZipArchive::renameName' => ['bool', 'name'=>'string', 'new_name'=>'string'],
 'ZipArchive::setArchiveComment' => ['bool', 'comment'=>'string'],
