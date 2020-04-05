@@ -96,7 +96,6 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MixedReturnStatement](issues/MixedReturnStatement.md)
  - [MixedReturnTypeCoercion](issues/MixedReturnTypeCoercion.md)
  - [MixedStringOffsetAssignment](issues/MixedStringOffsetAssignment.md)
- - [MixedTypeCoercion](issues/MixedTypeCoercion.md)
  - [MutableDependency](issues/MutableDependency.md)
  - [PossiblyNullOperand](issues/PossiblyNullOperand.md)
 
