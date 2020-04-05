@@ -1891,6 +1891,7 @@ class ClassTemplateTest extends TestCase
 
                         public function __construct() {
                             $this->FooArray = new Foo(function(string $s): array {
+                                /** @psalm-suppress MixedAssignment */
                                 $json = \json_decode($s, true);
 
                                 if (! \is_array($json)) {
