@@ -336,6 +336,8 @@ class Analyzer
     {
         $this->progress->start(count($this->files_to_analyze));
 
+        fwrite(STDERR, var_export($this->files_to_analyze, true));
+
         $codebase = $project_analyzer->getCodebase();
 
         $filetype_analyzers = $this->config->getFiletypeAnalyzers();
