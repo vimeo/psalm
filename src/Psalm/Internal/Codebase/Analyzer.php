@@ -336,7 +336,7 @@ class Analyzer
     {
         $this->progress->start(count($this->files_to_analyze));
 
-        fwrite(STDERR, var_export($this->files_to_analyze, true));
+        \ksort($this->files_to_analyze);
 
         $codebase = $project_analyzer->getCodebase();
 
