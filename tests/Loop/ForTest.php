@@ -117,6 +117,28 @@ class ForTest extends \Psalm\Tests\TestCase
 
                     echo $i * $j;'
             ],
+            'forLoopWithSkippingFirst' => [
+                '<?php
+                    for ($i = 0; $i < 2; $i++) {
+                        if ($i === 0) {
+                            continue;
+                        }
+                    }'
+            ],
+            'forLoopWithSkippingAlways' => [
+                '<?php
+                    /**
+                     * @param list<string|null> $arr
+                     */
+                    function test($arr): void {
+                        for ($i = 0; $i < 2; $i++) {
+                            if ($arr[$i] === null) {
+                                continue;
+                            }
+                            echo strlen($arr[$i]);
+                        }
+                    }'
+            ],
         ];
     }
 

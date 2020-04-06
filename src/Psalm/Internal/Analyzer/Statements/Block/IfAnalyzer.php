@@ -900,7 +900,8 @@ class IfAnalyzer
             }
         }
 
-        if ($has_leaving_statements && !$has_break_statement && !$stmt->else && !$stmt->elseifs) {
+        if ($has_leaving_statements && !$has_break_statement && !$has_continue_statement
+            && !$stmt->else && !$stmt->elseifs) {
             if ($if_scope->negated_types) {
                 $changed_var_ids = [];
 
