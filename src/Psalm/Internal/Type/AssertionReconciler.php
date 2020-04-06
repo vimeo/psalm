@@ -754,6 +754,12 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $existing_var_type_part->addIntersectionType($new_type_part);
                     $acceptable_atomic_types[] = $existing_var_type_part;
                 }
+
+                if ($existing_var_type_part instanceof TTemplateParam) {
+                    $existing_var_type_part = clone $existing_var_type_part;
+                    $existing_var_type_part->addIntersectionType($new_type_part);
+                    $acceptable_atomic_types[] = $existing_var_type_part;
+                }
             }
 
             if ($acceptable_atomic_types) {
