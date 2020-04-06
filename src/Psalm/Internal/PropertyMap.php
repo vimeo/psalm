@@ -327,7 +327,7 @@ return [
         'previousSibling' => 'DOMNode|null',
         'nextSibling' => 'DOMNode|null',
         'attributes' => 'null',
-        'ownerDocument' => 'DOMDocument',
+        'ownerDocument' => 'DOMDocument|null',
         'namespaceURI' => 'string|null',
         'prefix' => 'string',
         'localName' => 'string',
