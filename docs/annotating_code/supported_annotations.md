@@ -385,6 +385,18 @@ echo $counter->count; // outputs 1
 $counter->count = 5; // This will fail, as it's mutating a property directly
 ```
 
+### `@psalm-trace`
+
+You can use this annotation to trace inferred type (applied to the *next* statement).
+
+```php
+<?php
+
+/** @psalm-trace $username */ 
+$username = $_GET['username']; // prints something like "test.php:4 $username: mixed"
+
+```
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
