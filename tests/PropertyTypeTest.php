@@ -335,7 +335,7 @@ class PropertyTypeTest extends TestCase
                     $a = new DOMElement("foo");
                     $owner = $a->ownerDocument;',
                 'assertions' => [
-                    '$owner' => 'DOMDocument',
+                    '$owner' => 'DOMDocument|null',
                 ],
             ],
             'propertyMapHydration' => [
