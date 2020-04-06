@@ -69,13 +69,16 @@ jobs:
       - run:
           name: PHPUnit test with coverage
           command: php -dextension=pcov.so vendor/bin/phpunit --coverage-html build/phpunit/coverage-html
+      - run:
+          name: Upload code coverage
+          command: php vendor/bin/php-coveralls -v
       - store_artifacts:
           path: build/phpunit/coverage-html
-      - run:
-          name: Display link to coverage report
-          command: |
-            echo "PHPUnit coverage report available at:"
-            echo https://circleci.com/api/v1.1/project/github/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM}/artifacts/0/home/docker/project/build/phpunit/coverage-html/index.html
+      # - run:
+          # name: Display link to coverage report
+          # command: |
+            # echo "PHPUnit coverage report available at:"
+            # echo https://circleci.com/api/v1.1/project/github/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM}/artifacts/0/home/docker/project/build/phpunit/coverage-html/index.html
   phar-build:
     executor: php-72
     steps:
