@@ -251,6 +251,15 @@ class ReturnTypeAnalyzer
             )
         );
 
+        // hack until we have proper yield type collection
+        if ($function_like_storage
+            && $function_like_storage->has_yield
+            && !$inferred_yield_type
+            && !$inferred_return_type->isVoid()
+        ) {
+            $inferred_return_type = new Type\Union([new Type\Atomic\TNamedObject('Generator')]);
+        }
+
         if ($is_to_string) {
             if (!$inferred_return_type->hasMixed() &&
                 !TypeAnalyzer::isContainedBy(
