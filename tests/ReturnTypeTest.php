@@ -787,24 +787,6 @@ class ReturnTypeTest extends TestCase
                     '$res' => 'iterable<mixed, string>',
                 ],
             ],
-            'yieldWithReturn' => [
-                '<?php
-                    /** @return Generator<int, string, int, int> */
-                    function gen(): Generator {
-                        yield 3 => "abc";
-
-                        $foo = 4;
-
-                        return $foo;
-                    }'
-            ],
-            'echoYield' => [
-                '<?php
-                    /** @return Generator<void, void, string, void> */
-                    function gen(): Generator {
-                        echo yield;
-                    }'
-            ],
         ];
     }
 

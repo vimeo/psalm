@@ -185,89 +185,6 @@ class Php70Test extends TestCase
                         }
                     }',
             ],
-            'generatorWithReturn' => [
-                '<?php
-                    /**
-                     * @return Generator<int,int>
-                     * @psalm-generator-return string
-                     */
-                    function fooFoo(int $i): Generator {
-                        if ($i === 1) {
-                            return "bash";
-                        }
-
-                        yield 1;
-                    }',
-            ],
-            'generatorDelegation' => [
-                '<?php
-                    /**
-                     * @return Generator<int, int, mixed, int>
-                     */
-                    function count_to_ten(): Generator {
-                        yield 1;
-                        yield 2;
-                        yield from [3, 4];
-                        yield from new ArrayIterator([5, 6]);
-                        yield from seven_eight();
-                        return yield from nine_ten();
-                    }
-
-                    /**
-                     * @return Generator<int, int>
-                     */
-                    function seven_eight(): Generator {
-                        yield 7;
-                        yield from eight();
-                    }
-
-                    /**
-                     * @return Generator<int,int>
-                     */
-                    function eight(): Generator {
-                        yield 8;
-                    }
-
-                    /**
-                     * @return Generator<int,int, mixed, int>
-                     */
-                    function nine_ten(): Generator {
-                        yield 9;
-                        return 10;
-                    }
-
-                    $gen = count_to_ten();
-                    foreach ($gen as $num) {
-                        echo "$num ";
-                    }
-                    $gen2 = $gen->getReturn();',
-                'assertions' => [
-                    '$gen' => 'Generator<int, int, mixed, int>',
-                    '$gen2' => 'int',
-                ],
-                'error_levels' => ['MixedAssignment'],
-            ],
-            'yieldFromArray' => [
-                '<?php
-                    /**
-                     * @return Generator<int, int, mixed, void>
-                     */
-                    function Bar() : Generator {
-                        yield from [1];
-                    }',
-            ],
-            'generatorWithNestedYield' => [
-                '<?php
-                    function other_generator(): Generator {
-                      yield "traffic";
-                      return 1;
-                    }
-                    function foo(): Generator {
-                      /** @var int */
-                      $value = yield from other_generator();
-                      var_export($value);
-                    }',
-            ],
             'multipleUse' => [
                 '<?php
                     namespace Name\Space {
@@ -288,65 +205,6 @@ class Php70Test extends TestCase
 
                         new A();
                         new B();
-                    }',
-            ],
-            'generatorVoidReturn' => [
-                '<?php
-                    /**
-                     * @return Generator
-                     */
-                    function generator2() : Generator {
-                        if (rand(0,1)) {
-                            return;
-                        }
-                        yield 2;
-                    }',
-            ],
-            'returnType' => [
-                '<?php
-                    function takesInt(int $i) : void {
-                        echo $i;
-                    }
-
-                    function takesString(string $s) : void {
-                        echo $s;
-                    }
-
-                    /**
-                     * @return Generator<int, string, mixed, int>
-                     */
-                    function other_generator() : Generator {
-                        yield "traffic";
-                        return 1;
-                    }
-
-                    /**
-                     * @return Generator<int, string>
-                     */
-                    function foo() : Generator {
-                        $a = yield from other_generator();
-                        takesInt($a);
-                    }
-
-                    foreach (foo() as $s) {
-                        takesString($s);
-                    }',
-            ],
-            'expectNonNullableTypeWithYield' => [
-                '<?php
-                    function example() : Generator {
-                        yield from [2];
-                        return null;
-                    }',
-            ],
-            'yieldFromIterable' => [
-                '<?php
-                    /**
-                     * @param iterable<int, string> $s
-                     * @return Generator<int, string>
-                     */
-                    function foo(iterable $s) : Traversable {
-                        yield from $s;
                     }',
             ],
         ];
@@ -375,21 +233,6 @@ class Php70Test extends TestCase
                         }
                     };',
                 'error_message' => 'InvalidReturnStatement',
-            ],
-            'expectNonNullableTypeWithNullReturn' => [
-                '<?php
-                    function example() : Generator {
-                        yield from [2];
-                        return null;
-                    }
-
-                    function example2() : Generator {
-                        if (rand(0, 1)) {
-                            return example();
-                        }
-                        return null;
-                    }',
-                'error_message' => 'NullableReturnStatement',
             ],
         ];
     }

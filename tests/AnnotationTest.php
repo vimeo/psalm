@@ -581,16 +581,6 @@ class AnnotationTest extends TestCase
                     foo(null);
                     foo(new \stdClass);',
             ],
-            'generatorReturnType' => [
-                '<?php
-                    /** @return Generator<int, stdClass> */
-                    function g():Generator { yield new stdClass; }
-
-                    $g = g();',
-                'assertions' => [
-                    '$g' => 'Generator<int, stdClass, mixed, mixed>',
-                ],
-            ],
             'returnTypeShouldBeNullable' => [
                 '<?php
                     /**
