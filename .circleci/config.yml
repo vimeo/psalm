@@ -69,6 +69,9 @@ jobs:
       - run:
           name: PHPUnit test with coverage
           command: php -dextension=pcov.so vendor/bin/phpunit --coverage-html build/phpunit/coverage-html
+      - run:
+          name: Upload code coverage
+          command: php vendor/bin/php-coveralls -v
       - store_artifacts:
           path: build/phpunit/coverage-html
       - run:
