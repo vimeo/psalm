@@ -33,7 +33,7 @@ class DocComment
         'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
         'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
         'remove-taint', 'allow-private-mutation', 'readonly-allow-private-mutation',
-        'yield'
+        'yield', 'trace',
     ];
 
     /**
