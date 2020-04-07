@@ -44,7 +44,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'float',
-                    '$c' => 'null|numeric',
+                    '$c' => 'float|int|null',
                 ],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],

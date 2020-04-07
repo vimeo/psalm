@@ -160,54 +160,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                     break;
 
-                case 'var_export':
-                case 'highlight_string':
-                case 'highlight_file':
-                    if (isset($call_args[1])
-                        && ($second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value))
-                    ) {
-                        if ((string) $second_arg_type === 'true') {
-                            return Type::getString();
-                        }
-
-                        return new Type\Union([
-                            new Type\Atomic\TString,
-                            $call_map_key === 'var_export' ? new Type\Atomic\TNull : new Type\Atomic\TBool
-                        ]);
-                    }
-
-                    return $call_map_key === 'var_export' ? Type::getVoid() : Type::getBool();
-
-                case 'print_r':
-                    if (isset($call_args[1])
-                        && ($second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value))
-                    ) {
-                        if ((string) $second_arg_type === 'true') {
-                            return Type::getString();
-                        }
-                    }
-
-                    return new Type\Union([
-                        new Type\Atomic\TString,
-                        new Type\Atomic\TTrue
-                    ]);
-
-                case 'microtime':
-                    if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        if ((string) $first_arg_type === 'true') {
-                            return Type::getFloat();
-                        }
-
-                        if ((string) $first_arg_type === 'false') {
-                            return Type::getString();
-                        }
-                    }
-
-                    return new Type\Union([
-                        new Type\Atomic\TFloat,
-                        new Type\Atomic\TString
-                    ]);
-
                 case 'hrtime':
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         if ((string) $first_arg_type === 'true') {
@@ -240,45 +192,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                 case 'getenv':
                     return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
-
-                case 'gettimeofday':
-                    if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        if ((string) $first_arg_type === 'true') {
-                            return Type::getFloat();
-                        }
-
-                        if ((string) $first_arg_type === 'false') {
-                            return new Type\Union([
-                                new Type\Atomic\TArray([
-                                    Type::getString(),
-                                    Type::getInt()
-                                ])
-                            ]);
-                        }
-                    }
-
-                    break;
-
-                case 'abs':
-                    if (isset($call_args[0]->value)) {
-                        $first_arg = $call_args[0]->value;
-
-                        if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
-                            $numeric_types = [];
-
-                            foreach ($first_arg_type->getAtomicTypes() as $inner_type) {
-                                if ($inner_type->isNumericType()) {
-                                    $numeric_types[] = $inner_type;
-                                }
-                            }
-
-                            if ($numeric_types) {
-                                return new Type\Union($numeric_types);
-                            }
-                        }
-                    }
-
-                    break;
 
                 case 'min':
                 case 'max':
@@ -332,6 +245,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     }
 
                     return Type::getInt(true);
+
 
                 case 'get_parent_class':
                     // this is unreliable, as it's hard to know exactly what's wanted - attempted this in
