@@ -49,7 +49,6 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\FilterVarReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ParseUrlReturnTypeProvider::class);
-        $this->registerClass(ReturnTypeProvider\RangeReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\StrReplaceReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\VersionCompareReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\MktimeReturnTypeProvider::class);

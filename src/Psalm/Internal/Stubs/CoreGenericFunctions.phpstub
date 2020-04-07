@@ -369,3 +369,29 @@ function gettimeofday(bool $return_float = false) {}
  * @return ($number is int ? int : ($number is float ? float : int|float))
  */
 function abs($number) {}
+
+/**
+ * @template T as string|int|float
+ * @template TStep as int|float
+ * @param T $start
+ * @param T $end
+ * @param TStep $step
+ * @return (
+ *     T is int
+ *     ? (TStep is int ? list<int> : list<int|float>)
+ *     : (
+ *         T is float
+ *         ? list<float>
+ *         : (
+ *              T is string
+ *              ? list<string>
+ *              : (
+ *                   T is int|float
+ *                   ? list<int|float>
+ *                   : list<int|float|string>
+ *              )
+ *         )
+ *     )
+ * )
+ */
+function range($start, $end, $step = 1) {}
