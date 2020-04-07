@@ -1517,9 +1517,11 @@ class IfAnalyzer
         }
 
         try {
-            $if_scope->negated_clauses = array_merge(
-                $if_scope->negated_clauses,
-                Algebra::negateFormula($elseif_clauses)
+            $if_scope->negated_clauses = Algebra::simplifyCNF(
+                array_merge(
+                    $if_scope->negated_clauses,
+                    Algebra::negateFormula($elseif_clauses)
+                )
             );
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             $if_scope->negated_clauses = [];
