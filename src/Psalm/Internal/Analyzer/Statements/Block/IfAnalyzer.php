@@ -1071,7 +1071,6 @@ class IfAnalyzer
             );
 
             $elseif_context = $if_conditional_scope->if_context;
-            $original_context = $if_conditional_scope->original_context;
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $cond_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
             $entry_clauses = $if_conditional_scope->entry_clauses;
@@ -1325,7 +1324,7 @@ class IfAnalyzer
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
 
         // update the parent context as necessary
-        $elseif_redefined_vars = $elseif_context->getRedefinedVars($original_context->vars_in_scope);
+        $elseif_redefined_vars = $elseif_context->getRedefinedVars($outer_context->vars_in_scope);
 
         if (!$has_leaving_statements) {
             if ($if_scope->new_vars === null) {
