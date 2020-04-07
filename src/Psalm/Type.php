@@ -1768,7 +1768,7 @@ abstract class Type
                             if (TypeAnalyzer::isAtomicContainedBy(
                                 $codebase,
                                 $type_2_atomic,
-                                $type_1_atomic,
+                                $type_1_atomic
                             )) {
                                 $combined_type->removeType($t1_key);
                                 $combined_type->addType(clone $type_2_atomic);
