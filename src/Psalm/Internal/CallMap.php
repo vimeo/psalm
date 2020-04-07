@@ -2,6 +2,9 @@
 namespace Phan\Language\Internal;
 
 /**
+ * CURRENT PHP TARGET VERSION: 7.4
+ * The version above have to match Psalm\Internal\Codebase\CallMap::PHP_(MAJOR|MINOR)_VERSION
+ *
  * Format
  *
  * '<function_name>' => ['<return_type>, '<arg_name>'=>'<arg_type>']
