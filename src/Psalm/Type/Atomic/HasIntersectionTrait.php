@@ -5,6 +5,7 @@ use function array_map;
 use function implode;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -71,11 +72,10 @@ trait HasIntersectionTrait
         return $this->extra_types;
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
-     */
-    public function replaceIntersectionTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase) : void
-    {
+    public function replaceIntersectionTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ) : void {
         if (!$this->extra_types) {
             return;
         }
@@ -84,9 +84,10 @@ trait HasIntersectionTrait
 
         foreach ($this->extra_types as $extra_type) {
             if ($extra_type instanceof TTemplateParam
-                && isset($template_types[$extra_type->param_name][$extra_type->defining_class])
+                && isset($template_result->upper_bounds[$extra_type->param_name][$extra_type->defining_class])
             ) {
-                $template_type = clone $template_types[$extra_type->param_name][$extra_type->defining_class][0];
+                $template_type = clone $template_result->upper_bounds
+                    [$extra_type->param_name][$extra_type->defining_class][0];
 
                 foreach ($template_type->getAtomicTypes() as $template_type_part) {
                     if ($template_type_part instanceof TNamedObject) {
@@ -96,7 +97,7 @@ trait HasIntersectionTrait
                     }
                 }
             } else {
-                $extra_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
+                $extra_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
                 $new_types[$extra_type->getKey()] = $extra_type;
             }
         }

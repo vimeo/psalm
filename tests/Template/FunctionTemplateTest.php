@@ -1187,6 +1187,29 @@ class FunctionTemplateTest extends TestCase
                         useFooAndBar(decorateWithFoo(decorateWithBar($input)));
                     }'
             ],
+            'bottomTypeInClosureShouldNotBind' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param class-string<T> $className
+                     * @param Closure(T):void $outmaker
+                     * @return T
+                     */
+                    function createProxy(
+                        string $className,
+                        Closure $outmaker
+                    ) : object {
+                        $t = new $className();
+                        $outmaker($t);
+                        return $t;
+                    }
+
+                    class A {
+                        public function bar() : void {}
+                    }
+
+                    createProxy(A::class, function(object $o):void {})->bar();'
+            ],
         ];
     }
 
@@ -1354,7 +1377,7 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     apply(function(int $_i) : void {}, "hello");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'bindFirstTemplatedClosureParameterTypeCoercion' => [
                 '<?php
@@ -1373,7 +1396,7 @@ class FunctionTemplateTest extends TestCase
                     class AChild extends A {}
 
                     apply(function(AChild $_i) : void {}, new A());',
-                'error_message' => 'ArgumentTypeCoercion',
+                'error_message' => 'InvalidArgument',
             ],
 
             'callableDoesNotReturnItself' => [
@@ -1395,7 +1418,7 @@ class FunctionTemplateTest extends TestCase
                     function takesReturnTCallable(callable $s) {}
 
                     takesReturnTCallable($b);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'multipleArgConstraintWithMoreRestrictiveFirstArg' => [
                 '<?php
@@ -1418,7 +1441,7 @@ class FunctionTemplateTest extends TestCase
                       function(A $_a) : void {},
                       new A()
                     );',
-                'error_message' => 'ArgumentTypeCoercion',
+                'error_message' => 'InvalidArgument',
             ],
             'multipleArgConstraintWithMoreRestrictiveSecondArg' => [
                 '<?php
@@ -1441,7 +1464,7 @@ class FunctionTemplateTest extends TestCase
                       function(AChild $_a) : void {},
                       new A()
                     );',
-                'error_message' => 'ArgumentTypeCoercion',
+                'error_message' => 'InvalidArgument',
             ],
             'multipleArgConstraintWithLessRestrictiveThirdArg' => [
                 '<?php
@@ -1464,7 +1487,7 @@ class FunctionTemplateTest extends TestCase
                       function(AChild $_a) : void {},
                       new A()
                     );',
-                'error_message' => 'ArgumentTypeCoercion',
+                'error_message' => 'InvalidArgument',
             ],
             'possiblyInvalidArgumentWithUnionFirstArg' => [
                 '<?php
@@ -1669,6 +1692,32 @@ class FunctionTemplateTest extends TestCase
                         return $t;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'bottomTypeInClosureShouldClash' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param class-string<T> $className
+                     * @param Closure(T):void $outmaker
+                     * @return T
+                     */
+                    function createProxy(
+                        string $className,
+                        Closure $outmaker
+                    ) : object {
+                        $t = new $className();
+                        $outmaker($t);
+                        return $t;
+                    }
+
+                    class A {
+                        public function bar() : void {}
+                    }
+
+                    class B {}
+
+                    createProxy(A::class, function(B $o):void {})->bar();',
+                'error_message' => 'InvalidArgument'
             ],
         ];
     }

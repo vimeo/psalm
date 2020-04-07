@@ -907,10 +907,10 @@ class MethodComparator
                 }
             }
 
-            $template_result = new \Psalm\Internal\Type\TemplateResult($template_types, []);
+            $template_result = new \Psalm\Internal\Type\TemplateResult([], $template_types);
 
             $templated_type->replaceTemplateTypesWithArgTypes(
-                $template_result->template_types,
+                $template_result,
                 $codebase
             );
         }

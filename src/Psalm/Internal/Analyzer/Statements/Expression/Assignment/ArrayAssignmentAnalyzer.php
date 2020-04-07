@@ -589,7 +589,7 @@ class ArrayAssignmentAnalyzer
                         );
 
                         $current_type->replaceTemplateTypesWithArgTypes(
-                            $template_result->generic_params,
+                            $template_result,
                             $codebase
                         );
 

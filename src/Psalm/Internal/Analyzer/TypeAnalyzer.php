@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -2158,7 +2159,8 @@ class TypeAnalyzer
 
                             $new_input_param = clone $new_input_param;
                             $new_input_param->replaceTemplateTypesWithArgTypes(
-                                $replacement_templates
+                                new TemplateResult([], $replacement_templates),
+                                $codebase
                             );
 
                             $new_input_params[] = $new_input_param;

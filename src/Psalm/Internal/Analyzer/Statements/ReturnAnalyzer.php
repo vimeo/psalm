@@ -17,6 +17,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\TypeComparisonResult;
 use Psalm\Internal\Taint\Sink;
 use Psalm\Internal\Taint\Source;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
@@ -243,7 +244,8 @@ class ReturnAnalyzer
                             $local_return_type = clone $local_return_type;
 
                             $local_return_type->replaceTemplateTypesWithArgTypes(
-                                $found_generic_params
+                                new TemplateResult([], $found_generic_params),
+                                $codebase
                             );
                         }
                     }

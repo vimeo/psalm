@@ -199,14 +199,11 @@ class TClassStringMap extends \Psalm\Type\Atomic
         return $map;
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
-     *
-     * @return void
-     */
-    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
-    {
-        $this->value_param->replaceTemplateTypesWithArgTypes($template_types);
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ) : void {
+        $this->value_param->replaceTemplateTypesWithArgTypes($template_result, $codebase);
     }
 
     public function getChildNodes() : array

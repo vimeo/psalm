@@ -456,7 +456,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             );
 
             $mapping_return_type->replaceTemplateTypesWithArgTypes(
-                $template_result->generic_params
+                $template_result,
+                $codebase
             );
         }
 

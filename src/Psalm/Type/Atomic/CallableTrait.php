@@ -260,25 +260,22 @@ trait CallableTrait
         return $callable;
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>     $template_types
-     *
-     * @return void
-     */
-    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
-    {
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ) : void {
         if ($this->params) {
             foreach ($this->params as $param) {
                 if (!$param->type) {
                     continue;
                 }
 
-                $param->type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
+                $param->type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
             }
         }
 
         if ($this->return_type) {
-            $this->return_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
+            $this->return_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
         }
     }
 

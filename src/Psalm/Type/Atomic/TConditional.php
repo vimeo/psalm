@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 use function implode;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Union;
@@ -154,15 +155,12 @@ class TConditional extends \Psalm\Type\Atomic
         return false;
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>     $template_types
-     *
-     * @return void
-     */
-    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
-    {
-        $this->conditional_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
-        $this->if_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
-        $this->else_type->replaceTemplateTypesWithArgTypes($template_types, $codebase);
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ) : void {
+        $this->conditional_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+        $this->if_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+        $this->else_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
     }
 }

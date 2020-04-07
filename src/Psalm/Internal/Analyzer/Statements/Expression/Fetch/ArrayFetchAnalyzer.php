@@ -793,7 +793,7 @@ class ArrayFetchAnalyzer
                             $expected_value_param_get = clone $type->value_param;
 
                             $expected_value_param_get->replaceTemplateTypesWithArgTypes(
-                                $template_result_get->generic_params,
+                                $template_result_get,
                                 $codebase
                             );
 
@@ -801,7 +801,7 @@ class ArrayFetchAnalyzer
                                 $expected_value_param_set = clone $type->value_param;
 
                                 $replacement_type->replaceTemplateTypesWithArgTypes(
-                                    $template_result_set->generic_params,
+                                    $template_result_set,
                                     $codebase
                                 );
 

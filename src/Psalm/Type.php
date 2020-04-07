@@ -20,6 +20,7 @@ use function preg_match;
 use function preg_quote;
 use function preg_replace;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Storage\FunctionLikeParameter;
@@ -1730,7 +1731,8 @@ abstract class Type
      */
     public static function intersectUnionTypes(
         Union $type_1,
-        Union $type_2
+        Union $type_2,
+        Codebase $codebase
     ) {
         $intersection_performed = false;
 
@@ -1760,6 +1762,28 @@ abstract class Type
 
                 foreach ($combined_type->getAtomicTypes() as $t1_key => $type_1_atomic) {
                     foreach ($type_2->getAtomicTypes() as $t2_key => $type_2_atomic) {
+                        if ($type_1_atomic instanceof TNamedObject
+                            && $type_2_atomic instanceof TNamedObject
+                        ) {
+                            if (TypeAnalyzer::isAtomicContainedBy(
+                                $codebase,
+                                $type_2_atomic,
+                                $type_1_atomic,
+                            )) {
+                                $combined_type->removeType($t1_key);
+                                $combined_type->addType(clone $type_2_atomic);
+                                $intersection_performed = true;
+                            } elseif (TypeAnalyzer::isAtomicContainedBy(
+                                $codebase,
+                                $type_1_atomic,
+                                $type_2_atomic
+                            )) {
+                                $combined_type->removeType($t2_key);
+                                $combined_type->addType(clone $type_1_atomic);
+                                $intersection_performed = true;
+                            }
+                        }
+
                         if (($type_1_atomic instanceof TIterable
                                 || $type_1_atomic instanceof TNamedObject
                                 || $type_1_atomic instanceof TTemplateParam

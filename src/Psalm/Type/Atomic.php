@@ -621,13 +621,10 @@ abstract class Atomic implements TypeNode
         return $this;
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>     $template_types
-     *
-     * @return void
-     */
-    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
-    {
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ) : void {
         // do nothing
     }
 

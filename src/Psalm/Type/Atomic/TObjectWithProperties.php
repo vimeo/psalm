@@ -277,16 +277,13 @@ class TObjectWithProperties extends TObject
         return $object_like;
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>     $template_types
-     *
-     * @return void
-     */
-    public function replaceTemplateTypesWithArgTypes(array $template_types, ?\Psalm\Codebase $codebase)
-    {
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ) : void {
         foreach ($this->properties as $property) {
             $property->replaceTemplateTypesWithArgTypes(
-                $template_types,
+                $template_result,
                 $codebase
             );
         }

@@ -205,7 +205,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     } else {
                         $all_intersection_return_type = Type::intersectUnionTypes(
                             $all_intersection_return_type,
-                            $intersection_result->return_type
+                            $intersection_result->return_type,
+                            $codebase
                         ) ?: Type::getMixed();
                     }
                 }
@@ -521,7 +522,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $result,
                         $return_type_candidate,
                         $all_intersection_return_type,
-                        $method_name_lc
+                        $method_name_lc,
+                        $codebase
                     );
 
                     return;
@@ -601,7 +603,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            $class_template_params = $template_result->generic_params;
+            $class_template_params = $template_result->upper_bounds;
 
             if ($method_storage->assertions) {
                 self::applyAssertionsToContext(
@@ -725,7 +727,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $result,
             $return_type_candidate,
             $all_intersection_return_type,
-            $method_name_lc
+            $method_name_lc,
+            $codebase
         );
     }
 
@@ -733,13 +736,15 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         AtomicMethodCallAnalysisResult $result,
         ?Type\Union $return_type_candidate,
         ?Type\Union $all_intersection_return_type,
-        string $method_name
+        string $method_name,
+        Codebase $codebase
     ) : void {
         if ($return_type_candidate) {
             if ($all_intersection_return_type) {
                 $return_type_candidate = Type::intersectUnionTypes(
                     $all_intersection_return_type,
-                    $return_type_candidate
+                    $return_type_candidate,
+                    $codebase
                 ) ?: Type::getMixed();
             }
 

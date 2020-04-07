@@ -67,7 +67,8 @@ class MissingMethodCallHandler
                 if ($all_intersection_return_type) {
                     $return_type_candidate = Type::intersectUnionTypes(
                         $all_intersection_return_type,
-                        $return_type_candidate
+                        $return_type_candidate,
+                        $codebase
                     ) ?: Type::getMixed();
                 }
 
@@ -76,7 +77,8 @@ class MissingMethodCallHandler
                 } else {
                     $result->return_type = Type::combineUnionTypes(
                         $return_type_candidate,
-                        $result->return_type
+                        $result->return_type,
+                        $codebase
                     );
                 }
 
@@ -181,7 +183,8 @@ class MissingMethodCallHandler
                 if ($all_intersection_return_type) {
                     $return_type_candidate = Type::intersectUnionTypes(
                         $all_intersection_return_type,
-                        $return_type_candidate
+                        $return_type_candidate,
+                        $codebase
                     ) ?: Type::getMixed();
                 }
 

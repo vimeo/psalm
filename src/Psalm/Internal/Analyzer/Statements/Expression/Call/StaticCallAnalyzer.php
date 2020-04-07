@@ -912,11 +912,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                             foreach ($bindable_template_types as $template_type) {
                                 if (!isset(
-                                    $template_result->generic_params
+                                    $template_result->upper_bounds
                                         [$template_type->param_name]
                                         [$template_type->defining_class]
                                 )) {
-                                    $template_result->generic_params[$template_type->param_name] = [
+                                    $template_result->upper_bounds[$template_type->param_name] = [
                                         ($template_type->defining_class) => [Type::getEmpty(), 0]
                                     ];
                                 }
@@ -937,7 +937,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $static_type = $fq_class_name;
                         }
 
-                        if ($template_result->generic_params) {
+                        if ($template_result->upper_bounds) {
                             $return_type_candidate = ExpressionAnalyzer::fleshOutType(
                                 $codebase,
                                 $return_type_candidate,
@@ -947,7 +947,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
 
                             $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                                $template_result->generic_params,
+                                $template_result,
                                 $codebase
                             );
                         }
@@ -1033,7 +1033,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
                     }
 
-                    $generic_params = $template_result->generic_params;
+                    $generic_params = $template_result->upper_bounds;
 
                     if ($method_storage->assertions) {
                         self::applyAssertionsToContext(

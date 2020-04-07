@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use Psalm\Internal\Analyzer\FunctionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
@@ -14,6 +15,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
+use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\NullFunctionCall;
@@ -50,7 +52,7 @@ use function explode;
 /**
  * @internal
  */
-class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
+class FunctionCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param   StatementsAnalyzer               $statements_analyzer
@@ -336,6 +338,13 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 // fall through
             }
 
+            CallAnalyzer::checkTemplateResult(
+                $statements_analyzer,
+                $template_result,
+                $code_location,
+                $function_id
+            );
+
             if ($function_name instanceof PhpParser\Node\Name && $function_id) {
                 $stmt_type = self::getFunctionCallReturnType(
                     $statements_analyzer,
@@ -416,7 +425,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         );
 
         if ($function_storage) {
-            $generic_params = $template_result ? $template_result->generic_params : [];
+            $generic_params = $template_result ? $template_result->upper_bounds : [];
 
             if ($function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
@@ -887,8 +896,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             if (!$in_call_map || $is_stubbed) {
                 if ($function_storage && $function_storage->template_types) {
                     foreach ($function_storage->template_types as $template_name => $_) {
-                        if (!isset($template_result->generic_params[$template_name])) {
-                            $template_result->generic_params[$template_name] = [
+                        if (!isset($template_result->upper_bounds[$template_name])) {
+                            $template_result->upper_bounds[$template_name] = [
                                 'fn-' . $function_id => [Type::getEmpty(), 0]
                             ];
                         }
@@ -906,7 +915,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     if ($function_storage && $function_storage->return_type) {
                         $return_type = clone $function_storage->return_type;
 
-                        if ($template_result->generic_params && $function_storage->template_types) {
+                        if ($template_result->upper_bounds && $function_storage->template_types) {
                             $return_type = ExpressionAnalyzer::fleshOutType(
                                 $codebase,
                                 $return_type,
@@ -916,7 +925,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             );
 
                             $return_type->replaceTemplateTypesWithArgTypes(
-                                $template_result->generic_params,
+                                $template_result,
                                 $codebase
                             );
                         }

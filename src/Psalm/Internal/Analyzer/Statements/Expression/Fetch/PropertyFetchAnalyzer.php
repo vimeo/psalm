@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
@@ -935,7 +936,7 @@ class PropertyFetchAnalyzer
             }
 
             $class_property_type->replaceTemplateTypesWithArgTypes(
-                $template_types,
+                new TemplateResult([], $template_types),
                 $codebase
             );
         }

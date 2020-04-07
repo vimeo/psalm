@@ -82,16 +82,16 @@ class MethodCallReturnTypeFetcher
         $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
 
         if (CallMap::inCallMap((string) $call_map_id)) {
-            if (($template_result->generic_params || $class_storage->stubbed)
+            if (($template_result->upper_bounds || $class_storage->stubbed)
                 && isset($class_storage->methods[$method_id->method_name])
                 && ($method_storage = $class_storage->methods[$method_id->method_name])
                 && $method_storage->return_type
             ) {
                 $return_type_candidate = clone $method_storage->return_type;
 
-                if ($template_result->generic_params) {
+                if ($template_result->upper_bounds) {
                     $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                        $template_result->generic_params,
+                        $template_result,
                         $codebase
                     );
                 }
@@ -135,19 +135,19 @@ class MethodCallReturnTypeFetcher
                     foreach ($bindable_template_types as $template_type) {
                         if ($template_type->defining_class !== $fq_class_name
                             && !isset(
-                                $template_result->generic_params
+                                $template_result->upper_bounds
                                     [$template_type->param_name]
                                     [$template_type->defining_class]
                             )
                         ) {
-                            $template_result->generic_params[$template_type->param_name] = [
+                            $template_result->upper_bounds[$template_type->param_name] = [
                                 ($template_type->defining_class) => [Type::getEmpty(), 0]
                             ];
                         }
                     }
                 }
 
-                if ($template_result->generic_params) {
+                if ($template_result->upper_bounds) {
                     $return_type_candidate = ExpressionAnalyzer::fleshOutType(
                         $codebase,
                         $return_type_candidate,
@@ -157,7 +157,7 @@ class MethodCallReturnTypeFetcher
                     );
 
                     $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                        $template_result->generic_params,
+                        $template_result,
                         $codebase
                     );
                 }

@@ -216,15 +216,12 @@ trait GenericTrait
         return $atomic;
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>     $template_types
-     *
-     * @return void
-     */
-    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
-    {
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ) : void {
         foreach ($this->type_params as $offset => $type_param) {
-            $type_param->replaceTemplateTypesWithArgTypes($template_types, $codebase);
+            $type_param->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
             if ($this instanceof Atomic\TArray && $offset === 0 && $type_param->isMixed()) {
                 $this->type_params[0] = \Psalm\Type::getArrayKey();
@@ -236,7 +233,7 @@ trait GenericTrait
         }
 
         if ($this instanceof TGenericObject || $this instanceof TIterable) {
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_types, $codebase);
+            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
         }
     }
 }

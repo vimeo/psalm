@@ -12,6 +12,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\PsalmInternalError;
@@ -2579,7 +2580,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                         if ($template_type_map) {
                             $new_param->replaceTemplateTypesWithArgTypes(
-                                $template_type_map,
+                                new TemplateResult([], $template_type_map),
                                 $codebase
                             );
                         }

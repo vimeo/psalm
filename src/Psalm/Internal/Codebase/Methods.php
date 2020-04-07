@@ -762,7 +762,8 @@ class Methods
                     if (!$old_contained_by_new && !$new_contained_by_old) {
                         $attempted_intersection = Type::intersectUnionTypes(
                             $candidate_type,
-                            $overridden_return_type
+                            $overridden_return_type,
+                            $source_analyzer->getCodebase()
                         );
 
                         if ($attempted_intersection) {

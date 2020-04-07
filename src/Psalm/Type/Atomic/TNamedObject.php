@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 use function implode;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -129,14 +130,11 @@ class TNamedObject extends Atomic
         return $this->value !== 'static';
     }
 
-    /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
-     *
-     * @return void
-     */
-    public function replaceTemplateTypesWithArgTypes(array $template_types, ?Codebase $codebase)
-    {
-        $this->replaceIntersectionTemplateTypesWithArgTypes($template_types, $codebase);
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ) : void {
+        $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
     }
 
     public function getChildNodes() : array

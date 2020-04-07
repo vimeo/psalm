@@ -14,15 +14,20 @@ class TemplateResult
     /**
      * @var array<string, array<string, array{0: Union, 1?: int, 2?: ?int}>>
      */
-    public $generic_params;
+    public $upper_bounds;
+
+    /**
+     * @var array<string, array<string, array{0: Union, 1?: int, 2?: ?int}>>
+     */
+    public $lower_bounds = [];
 
     /**
      * @param  array<string, array<string, array{0: Union}>> $template_types
-     * @param  array<string, array<string, array{0: Union, 1?: int, 2?: ?int}>> $generic_params
+     * @param  array<string, array<string, array{0: Union, 1?: int, 2?: ?int}>> $upper_bounds
      */
-    public function __construct(array $template_types, array $generic_params)
+    public function __construct(array $template_types, array $upper_bounds)
     {
         $this->template_types = $template_types;
-        $this->generic_params = $generic_params;
+        $this->upper_bounds = $upper_bounds;
     }
 }
