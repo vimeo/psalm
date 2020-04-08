@@ -1387,7 +1387,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[$key] = 5;
                         return $out;
                     }'
-            ]
+            ],
         ];
     }
 
@@ -1603,6 +1603,21 @@ class ArrayAssignmentTest extends TestCase
 
                     (new A)->foo()[3] = 5;',
                 'error_message' => 'InvalidArrayAssignment',
+            ],
+            'mergeIntWithMixed' => [
+                '<?php
+                    class A {
+                        private static array $cache = [];
+
+                        public function getCachedMixed(array $cache, string $locale) : string {
+                            if (!isset(self::$cache[$locale])) {
+                                $cache[$locale] = 5;
+                            }
+
+                            return $cache[$locale];
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

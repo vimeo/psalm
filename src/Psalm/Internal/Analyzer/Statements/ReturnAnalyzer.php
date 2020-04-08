@@ -254,7 +254,7 @@ class ReturnAnalyzer
                         return null;
                     }
 
-                    if ($stmt_type->hasMixed()) {
+                    if ($stmt_type->isMixed()) {
                         if ($local_return_type->isVoid() || $local_return_type->isNever()) {
                             if (IssueBuffer::accepts(
                                 new InvalidReturnStatement(
@@ -325,6 +325,20 @@ class ReturnAnalyzer
                         if ($union_comparison_results->type_coerced) {
                             if ($union_comparison_results->type_coerced_from_mixed) {
                                 if (!$union_comparison_results->type_coerced_from_as_mixed) {
+                                    if ($inferred_type->hasMixed()) {
+                                        if (IssueBuffer::accepts(
+                                            new MixedReturnStatement(
+                                                'Could not infer a return type',
+                                                new CodeLocation($source, $stmt->expr)
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
+
+                                        return null;
+                                    }
+
                                     if (IssueBuffer::accepts(
                                         new MixedReturnTypeCoercion(
                                             'The type \'' . $stmt_type->getId() . '\' is more general than the'
@@ -334,8 +348,10 @@ class ReturnAnalyzer
                                         ),
                                         $statements_analyzer->getSuppressedIssues()
                                     )) {
-                                        return false;
+                                        // fall through
                                     }
+
+                                    return null;
                                 }
                             } else {
                                 if (IssueBuffer::accepts(

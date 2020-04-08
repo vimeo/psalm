@@ -1386,9 +1386,7 @@ class IfAnalyzer
                 }
 
                 foreach ($possibly_redefined_vars as $var => $type) {
-                    if ($type->hasMixed()) {
-                        $if_scope->possibly_redefined_vars[$var] = $type;
-                    } elseif (isset($if_scope->possibly_redefined_vars[$var])) {
+                    if (isset($if_scope->possibly_redefined_vars[$var])) {
                         $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
                             $type,
                             $if_scope->possibly_redefined_vars[$var],
@@ -1720,9 +1718,7 @@ class IfAnalyzer
                 }
 
                 foreach ($else_redefined_vars as $var => $type) {
-                    if ($type->hasMixed()) {
-                        $if_scope->possibly_redefined_vars[$var] = $type;
-                    } elseif (isset($if_scope->possibly_redefined_vars[$var])) {
+                    if (isset($if_scope->possibly_redefined_vars[$var])) {
                         $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
                             $type,
                             $if_scope->possibly_redefined_vars[$var],
