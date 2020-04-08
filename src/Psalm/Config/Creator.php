@@ -121,6 +121,7 @@ class Creator
                 $issues_at_level[$issue_level][$issue_type] = 0;
             }
 
+            /** @psalm-suppress MixedOperand */
             $issues_at_level[$issue_level][$issue_type] += 100/$counted_types;
         }
 
