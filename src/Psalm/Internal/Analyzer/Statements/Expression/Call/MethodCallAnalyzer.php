@@ -21,8 +21,9 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use function is_string;
 use function count;
+use function is_string;
+use function array_reduce;
 
 /**
  * @internal
@@ -166,6 +167,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $result = new AtomicMethodCallAnalysisResult();
 
+        $possible_new_class_types = [];
         foreach ($lhs_types as $lhs_type_part) {
             AtomicMethodCallAnalyzer::analyze(
                 $statements_analyzer,
@@ -180,6 +182,23 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 false,
                 $lhs_var_id,
                 $result
+            );
+            if (isset($context->vars_in_scope[$lhs_var_id])
+                && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Type\Union
+                && !$possible_new_class_type->equals($class_type)) {
+                $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
+            }
+        }
+
+        if (count($possible_new_class_types) > 0) {
+            $class_type = array_reduce(
+                $possible_new_class_types,
+                function (?Type\Union $type_1, Type\Union $type_2) use ($codebase): Type\Union {
+                    if ($type_1 === null) {
+                        return $type_2;
+                    }
+                    return Type::combineUnionTypes($type_1, $type_2, $codebase);
+                }
             );
         }
 
@@ -365,8 +384,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         ) {
             $keys_to_remove = [];
 
-            // class_type might have changed via assertion, so we have to fetch it again from context
-            $class_type = clone $context->vars_in_scope[$lhs_var_id];
+            $class_type = clone $class_type;
 
             foreach ($class_type->getAtomicTypes() as $key => $type) {
                 if (!$type instanceof TNamedObject) {
