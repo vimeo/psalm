@@ -412,6 +412,30 @@ class AssertAnnotationTest extends TestCase
 
                     if (!is_int($a)) $a->bar();',
             ],
+            'assertThisType' => [
+                '<?php
+                    class Type {
+                        /**
+                         * @psalm-assert FooType $this
+                         */
+                        public function isFoo() : bool {
+                            if (!$this instanceof FooType) {
+                                throw new \Exception();
+                            }
+                            
+                            return true;
+                        }
+                    }
+
+                    class FooType extends Type {
+                        public function bar(): void {}
+                    }
+
+                    function takesType(Type $t) : void {
+                        $t->isFoo();
+                        $t->bar();
+                    }'
+            ],
             'assertThisTypeIfTrue' => [
                 '<?php
                     class Type {
@@ -1115,6 +1139,31 @@ class AssertAnnotationTest extends TestCase
                         if ($s === "c") {}
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'assertThisType' => [
+                '<?php
+                    class Type {
+                        /**
+                         * @psalm-assert FooType $this
+                         */
+                        public function isFoo() : bool {
+                            if (!$this instanceof FooType) {
+                                throw new \Exception();
+                            }
+                            
+                            return true;
+                        }
+                    }
+
+                    class FooType extends Type {
+                        public function bar(): void {}
+                    }
+
+                    function takesType(Type $t) : void {
+                        $t->bar();
+                        $t->isFoo();
+                    }',
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }
