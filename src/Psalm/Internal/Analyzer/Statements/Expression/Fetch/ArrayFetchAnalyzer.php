@@ -118,7 +118,7 @@ class ArrayFetchAnalyzer
         if ($keyed_array_var_id
             && $context->hasVariable($keyed_array_var_id)
             && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
-            && !$context->vars_in_scope[$keyed_array_var_id]->isVanillaMixed()
+            && !$context->vars_in_scope[$keyed_array_var_id]->hasVanillaMixed()
         ) {
             $statements_analyzer->node_data->setType(
                 $stmt,

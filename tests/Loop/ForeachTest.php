@@ -985,6 +985,20 @@ class ForeachTest extends \Psalm\Tests\TestCase
                         $list = [4, 5, 6];
                     }',
             ],
+            'createNestedArrayInLoop' => [
+                '<?php
+                    function foo() : void {
+                        $arr = [];
+
+                        foreach ([1, 2, 3] as $i) {
+                            if (!isset($arr[$i]["a"])) {
+                                $arr[$i]["a"] = 0;
+                            }
+
+                            $arr[$i]["a"] += 5;
+                        }
+                    }'
+            ],
         ];
     }
 
