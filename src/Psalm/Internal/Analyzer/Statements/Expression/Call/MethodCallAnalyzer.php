@@ -365,7 +365,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         ) {
             $keys_to_remove = [];
 
-            $class_type = clone $class_type;
+            // class_type might have changed via assertion, so we have to fetch it again from context
+            $class_type = clone $context->vars_in_scope[$lhs_var_id];
 
             foreach ($class_type->getAtomicTypes() as $key => $type) {
                 if (!$type instanceof TNamedObject) {
