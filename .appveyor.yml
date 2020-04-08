@@ -49,8 +49,8 @@ install:
     - cd c:\projects\php-project-workspace
     - php -r "phpinfo(INFO_GENERAL);"
     - if NOT DEFINED APPVEYOR_REPO_TAG_NAME (set COMPOSER_ROOT_VERSION=dev-master)
-    - if %DEPS%==low appveyor-retry composer update --no-interaction --no-suggest --prefer-source --no-progress --profile --prefer-lowest --prefer-stable
-    - if %DEPS%==high appveyor-retry composer update --no-interaction --no-suggest --prefer-source --no-progress --profile
+    - if %DEPS%==low appveyor-retry composer update --no-interaction --prefer-source --no-progress --profile --prefer-lowest --prefer-stable
+    - if %DEPS%==high appveyor-retry composer update --no-interaction --prefer-source --no-progress --profile
     - composer show
 
 ## Run the actual test
