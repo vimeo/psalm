@@ -98,6 +98,8 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MixedStringOffsetAssignment](issues/MixedStringOffsetAssignment.md)
  - [MutableDependency](issues/MutableDependency.md)
  - [PossiblyNullOperand](issues/PossiblyNullOperand.md)
+ - [Trace](issues/Trace.md)
+ - [UndefinedTrace](issues/UndefinedTrace.md)
 
 ## Errors ignored at level 3 and higher
 
