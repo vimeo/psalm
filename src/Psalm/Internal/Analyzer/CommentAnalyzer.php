@@ -754,6 +754,7 @@ class CommentAnalyzer
         Aliases $aliases
     ) {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
 
         $info = new ClassLikeDocblockComment();
 
@@ -1012,7 +1013,10 @@ class CommentAnalyzer
                 }
 
                 if ($method_tree instanceof ParseTree\MethodWithReturnTypeTree) {
-                    $docblock_lines[] = '@return ' . Type::getTypeFromTree($method_tree->children[1]);
+                    $docblock_lines[] = '@return ' . Type::getTypeFromTree(
+                        $method_tree->children[1],
+                        $codebase
+                    );
                     $method_tree = $method_tree->children[0];
                 }
 
@@ -1034,7 +1038,7 @@ class CommentAnalyzer
 
 
                     if ($method_tree_child->children) {
-                        $param_type = Type::getTypeFromTree($method_tree_child->children[0]);
+                        $param_type = Type::getTypeFromTree($method_tree_child->children[0], $codebase);
                         $docblock_lines[] = '@param \\' . $param_type . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;
