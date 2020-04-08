@@ -419,7 +419,6 @@ class Methods
             foreach ($params as $i => $param) {
                 if (isset($overridden_storage->params[$i]->type)
                     && $overridden_storage->params[$i]->has_docblock_type
-                    && $overridden_storage->params[$i]->name === $param->name
                 ) {
                     $params[$i] = clone $param;
                     /** @var Type\Union $params[$i]->type */
