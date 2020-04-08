@@ -137,6 +137,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $method_analyzer->analyze($context, new \Psalm\Internal\Provider\NodeDataProvider(), null, true);
+
+                $context->clauses = [];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
