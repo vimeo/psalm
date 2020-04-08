@@ -1377,7 +1377,7 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     apply(function(int $_i) : void {}, "hello");',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidScalarArgument',
             ],
             'bindFirstTemplatedClosureParameterTypeCoercion' => [
                 '<?php
@@ -1396,7 +1396,7 @@ class FunctionTemplateTest extends TestCase
                     class AChild extends A {}
 
                     apply(function(AChild $_i) : void {}, new A());',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
 
             'callableDoesNotReturnItself' => [
@@ -1418,7 +1418,7 @@ class FunctionTemplateTest extends TestCase
                     function takesReturnTCallable(callable $s) {}
 
                     takesReturnTCallable($b);',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidScalarArgument',
             ],
             'multipleArgConstraintWithMoreRestrictiveFirstArg' => [
                 '<?php
@@ -1441,7 +1441,7 @@ class FunctionTemplateTest extends TestCase
                       function(A $_a) : void {},
                       new A()
                     );',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'multipleArgConstraintWithMoreRestrictiveSecondArg' => [
                 '<?php
@@ -1464,7 +1464,7 @@ class FunctionTemplateTest extends TestCase
                       function(AChild $_a) : void {},
                       new A()
                     );',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'multipleArgConstraintWithLessRestrictiveThirdArg' => [
                 '<?php
@@ -1487,7 +1487,7 @@ class FunctionTemplateTest extends TestCase
                       function(AChild $_a) : void {},
                       new A()
                     );',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'possiblyInvalidArgumentWithUnionFirstArg' => [
                 '<?php

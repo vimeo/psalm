@@ -3838,23 +3838,74 @@ class CallAnalyzer
                     if (isset($template_result->upper_bounds[$template_name][$defining_id])) {
                         $upper_bound_type = $template_result->upper_bounds[$template_name][$defining_id][0];
 
+                        $union_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
                         if (!TypeAnalyzer::isContainedBy(
                             $statements_analyzer->getCodebase(),
                             $upper_bound_type,
-                            $lower_bound_type
+                            $lower_bound_type,
+                            false,
+                            false,
+                            $union_comparison_result
                         )) {
-                            if (IssueBuffer::accepts(
-                                new InvalidArgument(
-                                    'Could not reconcile upper and lower bounds '
-                                        . $upper_bound_type->getId() . ' and '
-                                        . $lower_bound_type->getId() . ' for template param '
-                                        . $template_name,
-                                    $code_location,
-                                    $function_id
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // continue
+                            if ($union_comparison_result->type_coerced) {
+                                if ($union_comparison_result->type_coerced_from_mixed) {
+                                    if (IssueBuffer::accepts(
+                                        new MixedArgumentTypeCoercion(
+                                            'Could not reconcile upper and lower bounds '
+                                                . $upper_bound_type->getId() . ' and '
+                                                . $lower_bound_type->getId() . ' for template param '
+                                                . $template_name,
+                                            $code_location,
+                                            $function_id
+                                        ),
+                                        $statements_analyzer->getSuppressedIssues()
+                                    )) {
+                                        // continue
+                                    }
+                                } else {
+                                    if (IssueBuffer::accepts(
+                                        new ArgumentTypeCoercion(
+                                            'Could not reconcile upper and lower bounds '
+                                                . $upper_bound_type->getId() . ' and '
+                                                . $lower_bound_type->getId() . ' for template param '
+                                                . $template_name,
+                                            $code_location,
+                                            $function_id
+                                        ),
+                                        $statements_analyzer->getSuppressedIssues()
+                                    )) {
+                                        // continue
+                                    }
+                                }
+                            } elseif ($union_comparison_result->scalar_type_match_found) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidScalarArgument(
+                                        'Could not reconcile upper and lower bounds '
+                                            . $upper_bound_type->getId() . ' and '
+                                            . $lower_bound_type->getId() . ' for template param '
+                                            . $template_name,
+                                        $code_location,
+                                        $function_id
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // continue
+                                }
+                            } else {
+                                if (IssueBuffer::accepts(
+                                    new InvalidArgument(
+                                        'Could not reconcile upper and lower bounds '
+                                            . $upper_bound_type->getId() . ' and '
+                                            . $lower_bound_type->getId() . ' for template param '
+                                            . $template_name,
+                                        $code_location,
+                                        $function_id
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // continue
+                                }
                             }
                         }
                     } else {
