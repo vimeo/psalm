@@ -14,6 +14,7 @@ cache:
 
 before_install:
     # determine INI file
+    - composer config --global discard-changes true
     - export INI_DIR=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d
     - export INI=$INI_DIR/travis.ini
     - if [[ "$TRAVIS_TAG" = '' ]]; then export COMPOSER_ROOT_VERSION=dev-master; fi
@@ -23,6 +24,7 @@ before_install:
     - if [[ $TRAVIS_PHP_VERSION = nightly ]]; then export DEFAULT_COMPOSER_FLAGS="$DEFAULT_COMPOSER_FLAGS --ignore-platform-reqs"; fi
     - composer validate
     - composer clear-cache
+
 
 install:
   - if [[ "$DEPS" = 'high' ]]; then travis_retry composer $DEFAULT_COMPOSER_FLAGS update; fi
