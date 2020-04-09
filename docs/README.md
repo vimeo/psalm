@@ -60,7 +60,6 @@ There are two main inspirations for Psalm:
     - [Checking non-PHP files](running_psalm/checking_non_php_files.md)
 - Annotating code:
     - [Typing in Psalm](annotating_code/typing_in_psalm.md)
-    - [Docblock Type Syntax](annotating_code/docblock_type_syntax.md)
     - [Supported Annotations](annotating_code/supported_annotations.md)
     - [Template Annotations](annotating_code/templated_annotations.md)
 - Manipulating code:
