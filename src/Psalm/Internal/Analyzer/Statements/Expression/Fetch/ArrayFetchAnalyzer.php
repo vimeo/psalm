@@ -430,8 +430,15 @@ class ArrayFetchAnalyzer
                     }
 
                     $has_valid_offset = true;
-                    $array_access_type = Type::getMixed();
-                    break;
+                    if (!$array_access_type) {
+                        $array_access_type = Type::getMixed();
+                    } else {
+                        $array_access_type = Type::combineUnionTypes(
+                            $array_access_type,
+                            Type::getMixed()
+                        );
+                    }
+                    continue;
                 }
 
                 $type = clone array_values($type->as->getAtomicTypes())[0];

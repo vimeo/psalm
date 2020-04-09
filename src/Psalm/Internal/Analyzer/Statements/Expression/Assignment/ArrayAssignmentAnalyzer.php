@@ -422,7 +422,7 @@ class ArrayAssignmentAnalyzer
                     $array_assignment_type,
                     $codebase,
                     true,
-                    false
+                    true
                 );
             }
 
@@ -644,7 +644,7 @@ class ArrayAssignmentAnalyzer
                     $array_assignment_type,
                     $codebase,
                     true,
-                    false
+                    true
                 );
             }
 

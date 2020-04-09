@@ -335,23 +335,19 @@ class ReturnAnalyzer
                                         )) {
                                             // fall through
                                         }
-
-                                        return null;
+                                    } else {
+                                        if (IssueBuffer::accepts(
+                                            new MixedReturnTypeCoercion(
+                                                'The type \'' . $stmt_type->getId() . '\' is more general than the'
+                                                    . ' declared return type \'' . $local_return_type->getId() . '\''
+                                                    . ' for ' . $cased_method_id,
+                                                new CodeLocation($source, $stmt->expr)
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
                                     }
-
-                                    if (IssueBuffer::accepts(
-                                        new MixedReturnTypeCoercion(
-                                            'The type \'' . $stmt_type->getId() . '\' is more general than the'
-                                                . ' declared return type \'' . $local_return_type->getId() . '\''
-                                                . ' for ' . $cased_method_id,
-                                            new CodeLocation($source, $stmt->expr)
-                                        ),
-                                        $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        // fall through
-                                    }
-
-                                    return null;
                                 }
                             } else {
                                 if (IssueBuffer::accepts(
@@ -363,7 +359,7 @@ class ReturnAnalyzer
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
                                 )) {
-                                    return false;
+                                    // fall throuhg
                                 }
                             }
 
@@ -418,7 +414,7 @@ class ReturnAnalyzer
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
-                                return false;
+                                // fall through
                             }
                         }
                     }
@@ -437,7 +433,7 @@ class ReturnAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            //fall through
                         }
                     }
 
@@ -456,7 +452,7 @@ class ReturnAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            // fall throughg
                         }
                     }
                 }
@@ -472,10 +468,8 @@ class ReturnAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
-
-                    return null;
                 }
             }
         }
