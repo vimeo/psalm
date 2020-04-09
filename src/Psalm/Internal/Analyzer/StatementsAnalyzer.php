@@ -32,6 +32,8 @@ use Psalm\Issue\ForbiddenEcho;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidGlobal;
+use Psalm\Issue\Trace;
+use Psalm\Issue\UndefinedTrace;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\Issue\UnusedVariable;
@@ -935,8 +937,25 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             foreach ($traced_variables as $traced_variable) {
                 if (isset($context->vars_in_scope[$traced_variable])) {
-                    echo $this->getFileName() . ':' . $stmt->getLine() . ' ' . $traced_variable . ': '
-                        . $context->vars_in_scope[$traced_variable]->getId() . "\n";
+                    if (IssueBuffer::accepts(
+                        new Trace(
+                            $traced_variable . ': ' . $context->vars_in_scope[$traced_variable]->getId(),
+                            new CodeLocation($this->source, $stmt)
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new UndefinedTrace(
+                            'Attempt to trace undefined variable ' . $traced_variable,
+                            new CodeLocation($this->source, $stmt)
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }
