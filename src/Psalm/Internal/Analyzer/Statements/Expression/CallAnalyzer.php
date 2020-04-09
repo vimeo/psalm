@@ -3670,6 +3670,8 @@ class CallAnalyzer
                 }
             } elseif (isset($context->vars_in_scope[$assertion->var_id])) {
                 $assertion_var_id = $assertion->var_id;
+            } elseif ($assertion->var_id === '$this' && !is_null($thisName)) {
+                $assertion_var_id = $thisName;
             } elseif (strpos($assertion->var_id, '$this->') === 0 && !is_null($thisName)) {
                 $assertion_var_id = $thisName . str_replace('$this->', '->', $assertion->var_id);
             }

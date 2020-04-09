@@ -412,6 +412,30 @@ class AssertAnnotationTest extends TestCase
 
                     if (!is_int($a)) $a->bar();',
             ],
+            'assertThisType' => [
+                '<?php
+                    class Type {
+                        /**
+                         * @psalm-assert FooType $this
+                         */
+                        public function isFoo() : bool {
+                            if (!$this instanceof FooType) {
+                                throw new \Exception();
+                            }
+                            
+                            return true;
+                        }
+                    }
+
+                    class FooType extends Type {
+                        public function bar(): void {}
+                    }
+
+                    function takesType(Type $t) : void {
+                        $t->isFoo();
+                        $t->bar();
+                    }'
+            ],
             'assertThisTypeIfTrue' => [
                 '<?php
                     class Type {
@@ -431,6 +455,145 @@ class AssertAnnotationTest extends TestCase
                         if ($t->isFoo()) {
                             $t->bar();
                         }
+                    }'
+            ],
+            'assertThisTypeCombined' => [
+                '<?php
+                    class Type {
+                        /**
+                         * @psalm-assert FooType $this
+                         */
+                        public function assertFoo() : void {
+                            if (!$this instanceof FooType) {
+                                throw new \Exception();
+                            }
+                        }
+                        
+                        /**
+                         * @psalm-assert BarType $this
+                         */
+                        public function assertBar() : void {
+                            if (!$this instanceof BarType) {
+                                throw new \Exception();
+                            }
+                        }
+                    }
+
+                    interface FooType {
+                        public function foo(): void;
+                    }
+
+                    interface BarType {
+                        public function bar(): void;
+                    }
+
+                    function takesType(Type $t) : void {
+                        $t->assertFoo();
+                        $t->assertBar();
+                        $t->foo();
+                        $t->bar();
+                    }'
+            ],
+            'assertThisTypeSimpleCombined' => [
+                '<?php
+                    class Type {
+                        /**
+                         * @psalm-assert FooType $this
+                         */
+                        public function assertFoo() : void {
+                            if (!$this instanceof FooType) {
+                                throw new \Exception();
+                            }
+                            return;
+                        }
+                        
+                        /**
+                         * @psalm-assert BarType $this
+                         */
+                        public function assertBar() : void {
+                            if (!$this instanceof BarType) {
+                                throw new \Exception();
+                            }
+                            return;
+                        }
+                    }
+
+                    interface FooType {
+                        public function foo(): void;
+                    }
+
+                    interface BarType {
+                        public function bar(): void;
+                    }
+
+                    /** @param Type&FooType $t */
+                    function takesType(Type $t) : void {
+                        $t->assertBar();
+                        $t->foo();
+                        $t->bar();
+                    }'
+            ],
+            'assertThisTypeIfTrueCombined' => [
+                '<?php
+                    class Type {
+                        /**
+                         * @psalm-assert-if-true FooType $this
+                         */
+                        public function assertFoo() : bool {
+                            return $this instanceof FooType;
+                        }
+                        
+                        /**
+                         * @psalm-assert-if-true BarType $this
+                         */
+                        public function assertBar() : bool {
+                            return $this instanceof BarType;
+                        }
+                    }
+
+                    interface FooType {
+                        public function foo(): void;
+                    }
+
+                    interface BarType {
+                        public function bar(): void;
+                    }
+
+                    function takesType(Type $t) : void {
+                        if ($t->assertFoo() && $t->assertBar()) {
+                            $t->foo();
+                            $t->bar();
+                        }
+                    }'
+            ],
+            'assertThisTypeSimpleAndIfTrueCombined' => [
+                '<?php
+                    class Type {
+                        /**
+                         * @psalm-assert BarType $this
+                         * @psalm-assert-if-true FooType $this
+                         */
+                        public function isFoo() : bool {
+                            if (!$this instanceof BarType) {
+                                throw new \Exception();
+                            }
+                            return $this instanceof FooType;
+                        }
+                    }
+
+                    interface FooType {
+                        public function foo(): void;
+                    }
+
+                    interface BarType {
+                        public function bar(): void;
+                    }
+
+                    function takesType(Type $t) : void {
+                        if ($t->isFoo()) {
+                            $t->foo();
+                        }
+                        $t->bar();
                     }'
             ],
             'assertThisTypeSwitchTrue' => [
@@ -1115,6 +1278,31 @@ class AssertAnnotationTest extends TestCase
                         if ($s === "c") {}
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'assertThisType' => [
+                '<?php
+                    class Type {
+                        /**
+                         * @psalm-assert FooType $this
+                         */
+                        public function isFoo() : bool {
+                            if (!$this instanceof FooType) {
+                                throw new \Exception();
+                            }
+                            
+                            return true;
+                        }
+                    }
+
+                    class FooType extends Type {
+                        public function bar(): void {}
+                    }
+
+                    function takesType(Type $t) : void {
+                        $t->bar();
+                        $t->isFoo();
+                    }',
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }
