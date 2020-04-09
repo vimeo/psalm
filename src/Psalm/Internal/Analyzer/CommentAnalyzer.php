@@ -1061,7 +1061,8 @@ class CommentAnalyzer
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 
-                if (!$statements[0] instanceof \PhpParser\Node\Stmt\Class_
+                if (!$statements
+                    || !$statements[0] instanceof \PhpParser\Node\Stmt\Class_
                     || !isset($statements[0]->stmts[0])
                     || !$statements[0]->stmts[0] instanceof \PhpParser\Node\Stmt\ClassMethod
                 ) {

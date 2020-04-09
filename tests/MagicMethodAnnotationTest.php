@@ -737,6 +737,16 @@ class MagicMethodAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'methodwithDash' => [
+                '<?php
+                    /**
+                     * A test class
+                     *
+                     * @method ClientInterface exchange-connect(array $options = [])
+                     */
+                    abstract class TestClassA {}',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
