@@ -597,14 +597,15 @@ class ArrayAssignmentTest extends TestCase
             ],
             'mixedArrayAssignmentWithStringKeys' => [
                 '<?php
+                    /** @psalm-suppress MixedArgument */
                     function foo(array $a) : array {
+                        /** @psalm-suppress MixedArrayAssignment */
                         $a["b"]["c"] = 5;
+                        /** @psalm-suppress MixedArrayAccess */
                         echo $a["b"]["d"];
                         echo $a["a"];
                         return $a;
                     }',
-                'assertions' => [],
-                'error_levels' => ['MixedArrayAssignment', 'MixedArrayAccess', 'MixedArgument'],
             ],
             'mixedArrayCoercion' => [
                 '<?php
@@ -1388,6 +1389,22 @@ class ArrayAssignmentTest extends TestCase
                         return $out;
                     }'
             ],
+            'mergeWithNestedMixed' => [
+                '<?php
+                    function getArray() : array {
+                        return [];
+                    }
+
+                    $arr = getArray();
+
+                    if (rand(0, 1)) {
+                        /** @psalm-suppress MixedArrayAssignment */
+                        $arr["hello"]["goodbye"] = 5;
+                    }',
+                [
+                    '$arr' => 'array<array-key, array{goodbye: int}|mixed>',
+                ]
+            ],
         ];
     }
 
@@ -1606,16 +1623,29 @@ class ArrayAssignmentTest extends TestCase
             ],
             'mergeIntWithMixed' => [
                 '<?php
-                    class A {
-                        private static array $cache = [];
-
-                        public function getCachedMixed(array $cache, string $locale) : string {
-                            if (!isset(self::$cache[$locale])) {
-                                $cache[$locale] = 5;
-                            }
-
-                            return $cache[$locale];
+                    function getCachedMixed(array $cache, string $locale) : string {
+                        if (!isset($cache[$locale])) {
+                            $cache[$locale] = 5;
                         }
+
+                        return $cache[$locale];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'mergeIntWithNestedMixed' => [
+                '<?php
+                    function getCachedMixed(array $cache, string $locale) : string {
+                        if (!isset($cache[$locale][$locale])) {
+                            /**
+                             * @psalm-suppress MixedArrayAssignment
+                             */
+                            $cache[$locale][$locale] = 5;
+                        }
+
+                        /**
+                         * @psalm-suppress MixedArrayAccess
+                         */
+                        return $cache[$locale][$locale];
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],

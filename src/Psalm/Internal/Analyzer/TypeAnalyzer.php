@@ -83,12 +83,12 @@ class TypeAnalyzer
             $union_comparison_result->scalar_type_match_found = true;
         }
 
-        if ($container_type->hasMixed() && !$container_type->isEmptyMixed()) {
-            return true;
-        }
-
         if ($input_type->possibly_undefined && !$container_type->possibly_undefined) {
             return false;
+        }
+
+        if ($container_type->hasMixed() && !$container_type->isEmptyMixed()) {
+            return true;
         }
 
         foreach ($input_type->getAtomicTypes() as $input_type_part) {

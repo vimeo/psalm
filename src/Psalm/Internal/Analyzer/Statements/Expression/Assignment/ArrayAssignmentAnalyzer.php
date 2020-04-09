@@ -278,8 +278,6 @@ class ArrayAssignmentAnalyzer
                 $child_stmt_type
             );
 
-            $child_stmt_var_type = $array_type;
-
             $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
 
             if ($root_var_id) {
@@ -309,26 +307,6 @@ class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $array_var_id;
-
-            if ($child_stmt_var_type->hasMixed()) {
-                $full_var_id = false;
-
-                while ($child_stmts) {
-                    $child_stmt = array_shift($child_stmts);
-
-                    if ($child_stmt->dim) {
-                        if (ExpressionAnalyzer::analyze(
-                            $statements_analyzer,
-                            $child_stmt->dim,
-                            $context
-                        ) === false) {
-                            return false;
-                        }
-                    }
-                }
-
-                break;
-            }
         }
 
         if ($root_var_id
@@ -416,7 +394,7 @@ class ArrayAssignmentAnalyzer
                         $array_assignment_type,
                         $codebase,
                         true,
-                        false
+                        true
                     );
                 } else {
                     $new_child_type = $child_stmt_type; // noop

@@ -1469,6 +1469,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
             ],
             'combineAfterLoopAssert' => [
                 '<?php
+                    /** @param array<string, string> $array */
                     function foo(array $array) : void {
                         $c = 0;
 
@@ -1480,8 +1481,17 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }',
             ],
-            'assertOnXml' => [
+            'assertOnArrayTwice' => [
                 '<?php
+                    /** @param array<string, string> $array */
+                    function f(array $array) : void {
+                        if ($array["bar"] === "a") {}
+                        if ($array["bar"] === "b") {}
+                    }',
+            ],
+            'assertOnArrayThrice' => [
+                '<?php
+                    /** @param array<string, string> $array */
                     function f(array $array) : void {
                         if ($array["foo"] === "ok") {
                             if ($array["bar"] === "a") {}

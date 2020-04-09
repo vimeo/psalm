@@ -86,6 +86,8 @@ class Reconciler
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
+        $old_new_types = $new_types;
+
         foreach ($new_types as $nk => $type) {
             if (strpos($nk, '[') || strpos($nk, '->')) {
                 if ($type[0][0] === '=isset'
@@ -190,6 +192,7 @@ class Reconciler
             $has_falsyish = false;
             $has_empty = false;
             $has_count_check = false;
+            $is_equality = ($old_new_types[$key] ?? null) === $new_type_parts;
 
             foreach ($new_type_parts as $new_type_part_parts) {
                 foreach ($new_type_part_parts as $new_type_part_part) {
@@ -209,6 +212,10 @@ class Reconciler
                     $has_falsyish = $has_falsyish
                         || $new_type_part_part === 'empty'
                         || $new_type_part_part === 'falsy';
+
+                    $is_equality = $is_equality
+                        && $new_type_part_part[0] === '='
+                        && $new_type_part_part !== '=isset';
 
                     $has_inverted_isset = $has_inverted_isset || $new_type_part_part === '!isset';
 
@@ -289,7 +296,7 @@ class Reconciler
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[$key] = true;
 
-                if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_empty) {
+                if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_empty && !$is_equality) {
                     $key_parts = self::breakUpPathIntoParts($key);
                     self::adjustObjectLikeType(
                         $key_parts,

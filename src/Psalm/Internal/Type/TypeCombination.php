@@ -289,78 +289,83 @@ class TypeCombination
         $new_types = [];
 
         if (count($combination->objectlike_entries)) {
-            if (!$combination->has_mixed || $combination->mixed_from_loop_isset) {
-                if ($combination->array_type_params
-                    && $combination->array_type_params[0]->allStringLiterals()
-                    && $combination->array_always_filled
-                ) {
-                    foreach ($combination->array_type_params[0]->getAtomicTypes() as $atomic_key_type) {
-                        if ($atomic_key_type instanceof TLiteralString) {
-                            $combination->objectlike_entries[$atomic_key_type->value]
-                                = $combination->array_type_params[1];
-                        }
+            if ($combination->array_type_params
+                && $combination->array_type_params[0]->allStringLiterals()
+                && $combination->array_always_filled
+            ) {
+                foreach ($combination->array_type_params[0]->getAtomicTypes() as $atomic_key_type) {
+                    if ($atomic_key_type instanceof TLiteralString) {
+                        $combination->objectlike_entries[$atomic_key_type->value]
+                            = $combination->array_type_params[1];
                     }
-
-                    $combination->array_type_params = [];
-                    $combination->objectlike_sealed = false;
                 }
 
-                if (!$combination->array_type_params
-                    || $combination->array_type_params[1]->isEmpty()
+                $combination->array_type_params = [];
+                $combination->objectlike_sealed = false;
+            }
+
+            if (!$combination->array_type_params
+                || $combination->array_type_params[1]->isEmpty()
+            ) {
+                if (!$overwrite_empty_array
+                    && ($combination->array_type_params
+                        && ($combination->array_type_params[1]->isEmpty()
+                            || $combination->array_type_params[1]->isMixed()))
                 ) {
-                    if (!$overwrite_empty_array
-                        && ($combination->array_type_params
-                            && $combination->array_type_params[1]->isEmpty())
-                    ) {
-                        foreach ($combination->objectlike_entries as $objectlike_entry) {
-                            $objectlike_entry->possibly_undefined = true;
-                        }
+                    foreach ($combination->objectlike_entries as $objectlike_entry) {
+                        $objectlike_entry->possibly_undefined = true;
                     }
+                }
 
-                    if ($combination->objectlike_value_type
-                        && $combination->objectlike_value_type->isMixed()
-                    ) {
-                        $combination->objectlike_entries = array_filter(
-                            $combination->objectlike_entries,
-                            function (Type\Union $type) : bool {
-                                return !$type->possibly_undefined;
-                            }
-                        );
-                    }
-
-                    if ($combination->objectlike_entries) {
-                        if ($combination->all_arrays_callable) {
-                            $objectlike = new TCallableObjectLikeArray($combination->objectlike_entries);
-                        } else {
-                            $objectlike = new ObjectLike($combination->objectlike_entries);
+                if ($combination->objectlike_value_type
+                    && $combination->objectlike_value_type->isMixed()
+                ) {
+                    $combination->objectlike_entries = array_filter(
+                        $combination->objectlike_entries,
+                        function (Type\Union $type) : bool {
+                            return !$type->possibly_undefined;
                         }
+                    );
+                }
 
-                        if ($combination->objectlike_sealed && !$combination->array_type_params) {
-                            $objectlike->sealed = true;
-                        }
-
-                        if ($combination->objectlike_key_type) {
-                            $objectlike->previous_key_type = $combination->objectlike_key_type;
-                        }
-
-                        if ($combination->objectlike_value_type) {
-                            $objectlike->previous_value_type = $combination->objectlike_value_type;
-                        }
-
-                        if ($combination->all_arrays_lists) {
-                            $objectlike->is_list = true;
-                        }
-
-                        $new_types[] = $objectlike;
+                if ($combination->objectlike_entries) {
+                    if ($combination->all_arrays_callable) {
+                        $objectlike = new TCallableObjectLikeArray($combination->objectlike_entries);
                     } else {
-                        $new_types[] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
+                        $objectlike = new ObjectLike($combination->objectlike_entries);
                     }
 
-                    // if we're merging an empty array with an object-like, clobber empty array
-                    $combination->array_type_params = [];
+                    if ($combination->objectlike_sealed && !$combination->array_type_params) {
+                        $objectlike->sealed = true;
+                    }
+
+                    if ($combination->objectlike_key_type) {
+                        $objectlike->previous_key_type = $combination->objectlike_key_type;
+                    } elseif ($combination->array_type_params
+                        && $combination->array_type_params[0]->isArrayKey()
+                    ) {
+                        $objectlike->previous_key_type = $combination->array_type_params[0];
+                    }
+
+                    if ($combination->objectlike_value_type) {
+                        $objectlike->previous_value_type = $combination->objectlike_value_type;
+                    } elseif ($combination->array_type_params
+                        && $combination->array_type_params[1]->isMixed()
+                    ) {
+                        $objectlike->previous_value_type = $combination->array_type_params[1];
+                    }
+
+                    if ($combination->all_arrays_lists) {
+                        $objectlike->is_list = true;
+                    }
+
+                    $new_types[] = $objectlike;
+                } else {
+                    $new_types[] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
                 }
-            } else {
-                $combination->array_type_params = [Type::getMixed(), Type::getMixed()];
+
+                // if we're merging an empty array with an object-like, clobber empty array
+                $combination->array_type_params = [];
             }
         }
 
@@ -423,7 +428,7 @@ class TypeCombination
                     $allow_mixed_union
                 );
 
-                if (!$generic_type_params[1]->isMixed()) {
+                if ($allow_mixed_union || !$generic_type_params[1]->isMixed()) {
                     $generic_type_params[1] = Type::combineUnionTypes(
                         $generic_type_params[1],
                         $objectlike_generic_type,

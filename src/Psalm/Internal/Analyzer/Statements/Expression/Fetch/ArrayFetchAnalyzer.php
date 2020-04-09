@@ -245,7 +245,11 @@ class ArrayFetchAnalyzer
             $stmt_type = Type::getMixed();
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
         } else {
-            if ($stmt_type->possibly_undefined && !$context->inside_isset && !$context->inside_unset) {
+            if ($stmt_type->possibly_undefined
+                && !$context->inside_isset
+                && !$context->inside_unset
+                && ($stmt_var_type && !$stmt_var_type->hasMixed())
+            ) {
                 if (IssueBuffer::accepts(
                     new PossiblyUndefinedArrayOffset(
                         'Possibly undefined array key ' . $keyed_array_var_id,
@@ -865,8 +869,6 @@ class ArrayFetchAnalyzer
                                 );
                             }
                         } elseif ($type->previous_value_type) {
-                            $has_valid_offset = true;
-
                             if ($codebase->config->ensure_array_string_offsets_exist) {
                                 self::checkLiteralStringArrayOffset(
                                     $offset_type,
@@ -892,6 +894,10 @@ class ArrayFetchAnalyzer
                             $type->properties[$key_value] = clone $type->previous_value_type;
 
                             $array_access_type = clone $type->previous_value_type;
+                        } elseif ($array_type->hasMixed()) {
+                            $has_valid_offset = true;
+
+                            $array_access_type = Type::getMixed();
                         } else {
                             if ($type->sealed || !$context->inside_isset) {
                                 $object_like_keys = array_keys($type->properties);
