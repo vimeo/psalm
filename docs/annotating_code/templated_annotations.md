@@ -115,7 +115,7 @@ function array_combine(array $arr, array $arr2) {}
 
 ## `@param class-string<T>`
 
-Psalm also allows you to parameterise class types
+Psalm also allows you to parameterize class types
 
 ```php
 <?php

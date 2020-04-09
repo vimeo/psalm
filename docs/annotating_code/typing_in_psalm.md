@@ -18,7 +18,7 @@ You can use the `/** @var Type */` docblock to annotate both [property declarati
 
 ### Property declaration types
 
-You can specify a particular type for a class property declarion in Psalm by using the `@var` declaration:
+You can specify a particular type for a class property declaration in Psalm by using the `@var` declaration:
 
 ```php
 <?php
