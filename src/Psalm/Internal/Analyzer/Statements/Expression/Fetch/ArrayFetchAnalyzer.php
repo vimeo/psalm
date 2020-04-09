@@ -1126,7 +1126,7 @@ class ArrayFetchAnalyzer
 
             if ($type instanceof TNamedObject) {
                 if (strtolower($type->value) === 'simplexmlelement') {
-                    $array_access_type = new Type\Union([new TNamedObject('SimpleXMLElement')]);
+                    $call_array_access_type = new Type\Union([new TNamedObject('SimpleXMLElement')]);
                 } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
                     $old_data_provider = $statements_analyzer->node_data;
 
@@ -1146,6 +1146,10 @@ class ArrayFetchAnalyzer
                         $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
 
+                    if (!in_array('MixedMethodCall', $suppressed_issues, true)) {
+                        $statements_analyzer->addSuppressedIssues(['MixedMethodCall']);
+                    }
+
                     \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
                         $statements_analyzer,
                         $fake_method_call,
@@ -1156,7 +1160,11 @@ class ArrayFetchAnalyzer
                         $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
 
-                    $array_access_type = $statements_analyzer->node_data->getType(
+                    if (!in_array('MixedMethodCall', $suppressed_issues, true)) {
+                        $statements_analyzer->removeSuppressedIssues(['MixedMethodCall']);
+                    }
+
+                    $call_array_access_type = $statements_analyzer->node_data->getType(
                         $fake_method_call
                     ) ?: Type::getMixed();
 
@@ -1166,6 +1174,10 @@ class ArrayFetchAnalyzer
 
                     if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
                         $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
+                    }
+
+                    if (!in_array('MixedMethodCall', $suppressed_issues, true)) {
+                        $statements_analyzer->addSuppressedIssues(['MixedMethodCall']);
                     }
 
                     if ($in_assignment) {
@@ -1225,12 +1237,12 @@ class ArrayFetchAnalyzer
                             $context
                         );
 
-                        $array_access_type = $statements_analyzer->node_data->getType($fake_get_method_call)
+                        $call_array_access_type = $statements_analyzer->node_data->getType($fake_get_method_call)
                             ?: Type::getMixed();
 
                         $statements_analyzer->node_data = $old_node_data;
                     } else {
-                        $array_access_type = Type::getVoid();
+                        $call_array_access_type = Type::getVoid();
                     }
 
                     $has_array_access = true;
@@ -1238,6 +1250,19 @@ class ArrayFetchAnalyzer
                     if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
                         $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
+
+                    if (!in_array('MixedMethodCall', $suppressed_issues, true)) {
+                        $statements_analyzer->removeSuppressedIssues(['MixedMethodCall']);
+                    }
+                }
+
+                if (!$array_access_type) {
+                    $array_access_type = $call_array_access_type;
+                } else {
+                    $array_access_type = Type::combineUnionTypes(
+                        $array_access_type,
+                        $call_array_access_type
+                    );
                 }
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
