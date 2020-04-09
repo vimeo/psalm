@@ -216,14 +216,6 @@ return [
     'normalizer' => [
         'name' => 'string',
     ],
-    'mysqli-driver' => [
-        'client-info' => 'string',
-        'client-version' => 'string',
-        'driver-version' => 'string',
-        'embedded' => 'string',
-        'reconnect' => 'bool',
-        'report-mode' => 'int',
-    ],
     'norewinditerator' => [
         'name' => 'string',
     ],
@@ -255,6 +247,62 @@ return [
     ],
     'mongoint64' => [
         'value' => 'string',
+    ],
+    'mysqli' => [
+        'affected_rows' => 'int',
+        'client_info' => 'string',
+        'client_version' => 'int',
+        'connect_errno' => 'int',
+        'connect_error' => 'string',
+        'errno' => 'int',
+        'error' => 'string',
+        'error_list' => 'array',
+        'field_count' => 'int',
+        'host_info' => 'string',
+        'info' => 'string',
+        'insert_id' => 'mixed',
+        'protocol_version' => 'string',
+        'server_info' => 'string',
+        'server_version' => 'int',
+        'sqlstate' => 'string',
+        'stat' => 'mixed',
+        'thread_id' => 'int',
+        'warning_count' => 'int',
+    ],
+    'mysqli_driver' => [
+        'client_info' => 'string',
+        'client_version' => 'string',
+        'driver_version' => 'string',
+        'embedded' => 'string',
+        'reconnect' => 'bool',
+        'report_mode' => 'int'
+    ],
+    'mysqli_result' => [
+        'current_field'  => 'int',
+        'field_count' => 'int',
+        'lengths' => 'array',
+        'num_rows' => 'int',
+        'type' => 'mixed',
+    ],
+    'mysqli_sql_exception' => [
+        'sqlstate' => 'string'
+    ],
+    'mysqli_stmt' => [
+        'affected_rows' => 'int',
+        'errno' => 'int',
+        'error' => 'string',
+        'error_list' => 'array',
+        'field_count' => 'int',
+        'id' => 'mixed',
+        'insert_id' => 'int',
+        'num_rows' => 'int',
+        'param_count' => 'int',
+        'sqlstate' => 'string',
+    ],
+    'mysqli_warning' => [
+        'errno' => 'int',
+        'message' => 'string',
+        'sqlstate' => 'mixed',
     ],
     'eventlistener' => [
         'fd' => 'int',
@@ -298,9 +346,6 @@ return [
     ],
     'domnamednodemap' => [
         'length' => 'int',
-    ],
-    'mysqli-sql-exception' => [
-        'sqlstate' => 'string',
     ],
     'splstack' => [
         'name' => 'string',
