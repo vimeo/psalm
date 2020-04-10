@@ -297,6 +297,7 @@ class TryAnalyzer
                         $catch_class_type = new TNamedObject($fq_catch_class);
 
                         if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
+                            && strtolower($fq_catch_class) !== 'throwable'
                             && $codebase->interfaceExists($fq_catch_class)
                             && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
                         ) {
