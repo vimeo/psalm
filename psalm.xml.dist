@@ -55,12 +55,8 @@
         <DeprecatedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />
-            </errorLevel>
-        </DeprecatedMethod>
-
-        <DeprecatedMethod>
-            <errorLevel type="suppress">
-                <directory name="tests" />
+                <referencedMethod name="PhpParser\Comment::getFilePos" />
+                <referencedMethod name="PhpParser\Comment::getLine" />
             </errorLevel>
         </DeprecatedMethod>
 
