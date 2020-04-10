@@ -55,6 +55,8 @@ use function strpos;
 use function substr;
 use Psalm\Issue\InvalidDocblock;
 use Doctrine\Instantiator\Exception\UnexpectedValueException;
+use function array_intersect_key;
+use function array_merge;
 
 class AssertionReconciler extends \Psalm\Type\Reconciler
 {
