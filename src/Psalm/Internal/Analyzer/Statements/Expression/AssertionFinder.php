@@ -81,9 +81,11 @@ class AssertionFinder
                                 continue;
                             }
 
-                            $instanceof_type = new Type\Union([
-                                new Type\Atomic\TNamedObject($instanceof_type)
-                            ]);
+                            $instanceof_type = Type::parseString(
+                                $instanceof_type,
+                                null,
+                                $source->getTemplateTypeMap() ?: []
+                            );
 
                             if (!TypeAnalyzer::canExpressionTypesBeIdentical(
                                 $codebase,
@@ -93,7 +95,8 @@ class AssertionFinder
                                 if ($var_type->from_docblock) {
                                     if (IssueBuffer::accepts(
                                         new RedundantConditionGivenDocblockType(
-                                            $var_type->getId() . ' does not contain ' . $instanceof_type,
+                                            $var_type->getId() . ' does not contain '
+                                                . $instanceof_type->getId(),
                                             new CodeLocation($source, $conditional)
                                         ),
                                         $source->getSuppressedIssues()
@@ -103,7 +106,8 @@ class AssertionFinder
                                 } else {
                                     if (IssueBuffer::accepts(
                                         new RedundantCondition(
-                                            $var_type->getId() . ' cannot be identical to ' . $instanceof_type,
+                                            $var_type->getId() . ' cannot be identical to '
+                                                . $instanceof_type->getId(),
                                             new CodeLocation($source, $conditional)
                                         ),
                                         $source->getSuppressedIssues()
