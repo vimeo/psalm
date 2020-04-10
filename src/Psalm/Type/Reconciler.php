@@ -205,7 +205,8 @@ class Reconciler
                     $has_isset = $has_isset
                         || $new_type_part_part === 'isset'
                         || $new_type_part_part === '=isset'
-                        || $new_type_part_part === 'array-key-exists';
+                        || $new_type_part_part === 'array-key-exists'
+                        || $new_type_part_part === '=string-array-access';
 
                     $has_empty = $has_empty || $new_type_part_part === 'empty';
 
@@ -499,6 +500,10 @@ class Reconciler
                             }
 
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
+
+                            if ($new_base_type_candidate->isMixed() && !$has_isset && !$has_inverted_isset) {
+                                return null;
+                            }
 
                             if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
                                 if ($has_inverted_isset && $new_base_key === $key) {

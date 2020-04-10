@@ -1557,14 +1557,14 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return count() > 0;
                     }',
             ],
-            'assertHasArrayAccess' => [
+            'assertHasArrayAccessSimple' => [
                 '<?php
                     /**
-                     * @return array|ArrayAccess
+                     * @return mixed
                      */
                     function getBar(array $array) {
                         if (isset($array[\'foo\'][\'bar\'])) {
-                            return $array[\'foo\'];
+                            return $array[\'foo\'][\'baz\'];
                         }
 
                         return [];

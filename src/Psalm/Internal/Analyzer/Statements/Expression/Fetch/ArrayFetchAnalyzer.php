@@ -128,6 +128,8 @@ class ArrayFetchAnalyzer
             return;
         }
 
+        $can_store_result = false;
+
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var)) {
@@ -167,6 +169,28 @@ class ArrayFetchAnalyzer
                 null
             );
 
+            if ($stmt->dim && $stmt_var_type->hasArray()) {
+                /**
+                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
+                 * @var TArray|ObjectLike|TList|Type\Atomic\TClassStringMap
+                 */
+                $array_type = $stmt_var_type->getAtomicTypes()['array'];
+
+                if ($array_type instanceof Type\Atomic\TClassStringMap) {
+                    $array_value_type = Type::getMixed();
+                } elseif ($array_type instanceof TArray) {
+                    $array_value_type = $array_type->type_params[1];
+                } elseif ($array_type instanceof TList) {
+                    $array_value_type = $array_type->type_param;
+                } else {
+                    $array_value_type = $array_type->getGenericValueType();
+                }
+
+                if ($context->inside_assignment || !$array_value_type->isMixed()) {
+                    $can_store_result = true;
+                }
+            }
+
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($array_var_id === '$_GET' || $array_var_id === '$_POST' || $array_var_id === '$_COOKIE') {
@@ -197,7 +221,7 @@ class ArrayFetchAnalyzer
                 if ($array_type instanceof TArray) {
                     $const_array_key_type = $array_type->type_params[0];
                 } elseif ($array_type instanceof TList) {
-                    $const_array_key_type = $array_type->type_param;
+                    $const_array_key_type = Type::getInt();
                 } else {
                     $const_array_key_type = $array_type->getGenericKeyType();
                 }
@@ -268,7 +292,7 @@ class ArrayFetchAnalyzer
             $context->vars_in_scope[$dim_var_id] = $new_offset_type;
         }
 
-        if ($keyed_array_var_id && !$context->inside_isset) {
+        if ($keyed_array_var_id && !$context->inside_isset && $can_store_result) {
             $context->vars_in_scope[$keyed_array_var_id] = $stmt_type;
             $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
 
