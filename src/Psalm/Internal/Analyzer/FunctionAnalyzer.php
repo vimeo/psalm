@@ -226,27 +226,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                     break;
 
-                case 'round':
-                    if (isset($call_args[1])) {
-                        $second_arg = $call_args[1]->value;
-
-                        if (($second_arg_type = $statements_analyzer->node_data->getType($second_arg))
-                            && $second_arg_type->isSingleIntLiteral()
-                        ) {
-                            switch ($second_arg_type->getSingleIntLiteral()->value) {
-                                case 0:
-                                    return Type::getInt(true);
-                                default:
-                                    return Type::getFloat();
-                            }
-                        }
-
-                        return new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat]);
-                    }
-
-                    return Type::getInt(true);
-
-
                 case 'get_parent_class':
                     // this is unreliable, as it's hard to know exactly what's wanted - attempted this in
                     // https://github.com/vimeo/psalm/commit/355ed831e1c69c96bbf9bf2654ef64786cbe9fd7
