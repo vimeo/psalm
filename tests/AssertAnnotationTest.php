@@ -422,7 +422,7 @@ class AssertAnnotationTest extends TestCase
                             if (!$this instanceof FooType) {
                                 throw new \Exception();
                             }
-                            
+
                             return true;
                         }
                     }
@@ -468,7 +468,7 @@ class AssertAnnotationTest extends TestCase
                                 throw new \Exception();
                             }
                         }
-                        
+
                         /**
                          * @psalm-assert BarType $this
                          */
@@ -506,7 +506,7 @@ class AssertAnnotationTest extends TestCase
                             }
                             return;
                         }
-                        
+
                         /**
                          * @psalm-assert BarType $this
                          */
@@ -542,7 +542,7 @@ class AssertAnnotationTest extends TestCase
                         public function assertFoo() : bool {
                             return $this instanceof FooType;
                         }
-                        
+
                         /**
                          * @psalm-assert-if-true BarType $this
                          */
@@ -1073,6 +1073,25 @@ class AssertAnnotationTest extends TestCase
                      */
                     function assertStructure($data): void {}'
             ],
+            'intersectArraysAfterAssertion' => [
+                '<?php
+                    /**
+                     * @psalm-assert array{foo: string} $v
+                     */
+                    function hasFoo(array $v): void {}
+
+                    /**
+                     * @psalm-assert array{bar: int} $v
+                     */
+                    function hasBar(array $v): void {}
+
+                    function process(array $data): void {
+                        hasFoo($data);
+                        hasBar($data);
+
+                        echo sprintf("%s %d", $data["foo"], $data["bar"]);
+                    }'
+            ],
         ];
     }
 
@@ -1289,7 +1308,7 @@ class AssertAnnotationTest extends TestCase
                             if (!$this instanceof FooType) {
                                 throw new \Exception();
                             }
-                            
+
                             return true;
                         }
                     }

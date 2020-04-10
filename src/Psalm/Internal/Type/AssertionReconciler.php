@@ -663,10 +663,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         try {
-            if (strpos($assertion, '<') || strpos($assertion, '[')) {
+            if (strpos($assertion, '<') || strpos($assertion, '[') || strpos($assertion, '{')) {
                 $new_type_union = Type::parseString($assertion);
 
-                $new_type_part = \array_values($new_type_union->getAtomicTypes());
+                $new_type_part = \array_values($new_type_union->getAtomicTypes())[0];
             } else {
                 $new_type_part = Atomic::create($assertion, null, $template_type_map);
             }
@@ -714,6 +714,31 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $new_type_part->as = new Type\Union($acceptable_atomic_types);
 
                 return new Type\Union([$new_type_part]);
+            }
+        }
+
+        if ($new_type_part instanceof Type\Atomic\ObjectLike) {
+            $acceptable_atomic_types = [];
+
+            foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
+                if ($existing_var_type_part instanceof Type\Atomic\ObjectLike) {
+                    if (!array_intersect_key(
+                        $existing_var_type_part->properties,
+                        $new_type_part->properties
+                    )) {
+                        $existing_var_type_part = clone $existing_var_type_part;
+                        $existing_var_type_part->properties = array_merge(
+                            $existing_var_type_part->properties,
+                            $new_type_part->properties
+                        );
+
+                        $acceptable_atomic_types[] = $existing_var_type_part;
+                    }
+                }
+            }
+
+            if ($acceptable_atomic_types) {
+                return new Type\Union($acceptable_atomic_types);
             }
         }
 
