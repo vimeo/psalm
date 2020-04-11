@@ -857,7 +857,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * Return current array key
      * @link http://php.net/manual/en/arrayiterator.key.php
      *
-     * @return mixed The current array key.
+     * @return TKey The current array key.
      *
      * @since 5.0.0
      */
