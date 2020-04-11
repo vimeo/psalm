@@ -336,7 +336,7 @@ Output:
 
     --output-format=console
         Changes the output format.
-        Available formats: compact, console, emacs, json, pylint, xml, checkstyle, junit, sonarqube, github
+        Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube, github
 
     --no-progress
         Disable the progress indicator
