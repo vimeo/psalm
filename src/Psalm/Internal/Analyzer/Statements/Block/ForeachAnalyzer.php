@@ -621,7 +621,7 @@ class ForeachAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
             } else {
                 if (IssueBuffer::accepts(
@@ -631,7 +631,7 @@ class ForeachAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
             }
         }
