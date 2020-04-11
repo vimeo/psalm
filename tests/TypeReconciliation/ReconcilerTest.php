@@ -139,7 +139,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'iterableToArray' => ['array<int, int>', 'array', 'iterable<int, int>'],
             'iterableToTraversable' => ['Traversable<int, int>', 'Traversable', 'iterable<int, int>'],
             'callableToCallableArray' => ['callable-array{0: class-string|object, 1: string}', 'array', 'callable'],
-            'callableOrArrayToCallableArray' => ['array<array-key, mixed|object|string>', 'array', 'callable|array'],
+            'callableOrArrayToCallableArray' => ['array<array-key, mixed>', 'array', 'callable|array'],
             'traversableToIntersection' => ['Countable&Traversable', 'Traversable', 'Countable'],
             'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', '!array', 'iterable'],
             'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', '!array', 'iterable<int, string>'],

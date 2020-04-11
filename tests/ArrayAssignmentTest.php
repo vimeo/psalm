@@ -1402,8 +1402,25 @@ class ArrayAssignmentTest extends TestCase
                         $arr["hello"]["goodbye"] = 5;
                     }',
                 [
-                    '$arr' => 'array<array-key, array{goodbye: int}|mixed>',
+                    '$arr' => 'array<array-key, mixed>',
                 ]
+            ],
+            'dontUpdateMixedArrayWithStringKey' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @psalm-suppress MixedArgument
+                     */
+                    function run1(array $arguments): void {
+                        if (rand(0, 1)) {
+                            $arguments["c"] = new A();
+                        }
+
+                        if ($arguments["b"]) {
+                            echo $arguments["b"];
+                        }
+                    }',
             ],
         ];
     }

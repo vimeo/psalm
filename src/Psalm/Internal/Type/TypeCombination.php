@@ -428,7 +428,7 @@ class TypeCombination
                     $allow_mixed_union
                 );
 
-                if ($allow_mixed_union || !$generic_type_params[1]->isMixed()) {
+                if (!$generic_type_params[1]->isMixed()) {
                     $generic_type_params[1] = Type::combineUnionTypes(
                         $generic_type_params[1],
                         $objectlike_generic_type,

@@ -383,7 +383,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineMixedArrayWithObjectLike' => [
-                'array<array-key, int|mixed>',
+                'array<array-key, mixed>',
                 [
                     'array{a: int}',
                     'array',
@@ -523,21 +523,28 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineCallableArrayAndArray' => [
-                'array<array-key, mixed|string>',
+                'array<array-key, mixed>',
                 [
                     'callable-array{class-string, string}',
                     'array',
                 ],
             ],
-            'combineObjectLikeArrayAndArray' => [
+            'combineGenericArrayAndMixedArray' => [
                 'array<array-key, int|mixed>',
+                [
+                    'array<string, int>',
+                    'array<array-key, mixed>',
+                ],
+            ],
+            'combineObjectLikeArrayAndArray' => [
+                'array<array-key, mixed>',
                 [
                     'array{hello: int}',
                     'array<array-key, mixed>',
                 ],
             ],
             'combineObjectLikeArrayAndNestedArray' => [
-                'array<array-key, array{goodbye: int}|mixed>',
+                'array<array-key, mixed>',
                 [
                     'array{hello: array{goodbye: int}}',
                     'array<array-key, mixed>',
