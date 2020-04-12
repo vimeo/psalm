@@ -575,6 +575,51 @@ class MethodCallTest extends TestCase
 
                     takesWithoutArguments(new C);'
             ],
+            'getterTypeInferring' => [
+                '<?php
+                    class A {
+                        /** @var int|string|null */
+                        public $a;
+                        
+                        /** @return int|string|null */
+                        function getA() {
+                            return $this->a;                        
+                        }
+                        
+                        function takesNullOrA(?A $a) : void {}
+                    }
+
+                    $a = new A();
+                    
+                    $a->a = 1;
+                    echo $a->getA() + 2;
+                    
+                    $a->a = "string";
+                    echo strlen($a->getA());
+                    
+                    $a->a = null;
+                    $a->takesNullOrA($a->getA());
+                    '
+            ],
+            'getterAutomagicAssertion' => [
+                '<?php
+                    class A {
+                        /** @var string|null */
+                        public $a;
+                        
+                        /** @return string|null */
+                        function getA() {
+                            return $this->a;                        
+                        }
+                    }
+
+                    $a = new A();
+                    
+                    if ($a->getA()) {
+                        echo strlen($a->getA());
+                    }
+                    '
+            ],
         ];
     }
 
