@@ -1864,11 +1864,22 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->mutation_free_inferred = true;
 
                 if ($stmt->stmts[0]->expr->name instanceof PhpParser\Node\Identifier) {
-                    $storage->plain_getter = $stmt->stmts[0]->expr->name->name;
-                    $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
-                        '$this->' . $storage->plain_getter,
-                        [['!falsy']]
-                    );
+                    $property_name = $stmt->stmts[0]->expr->name->name;
+
+                    if (isset($class_storage->properties[$property_name])
+                        && $class_storage->properties[$property_name]->type
+                        && ($class_storage->properties[$property_name]->type->isNullable()
+                            || $class_storage->properties[$property_name]->type->isFalsable()
+                            || $class_storage->properties[$property_name]->type->hasArray()
+                        )
+                    ) {
+                        $storage->plain_getter = $property_name;
+
+                        $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
+                            '$this->' . $property_name,
+                            [['!falsy']]
+                        );
+                    }
                 }
             } elseif (strpos($stmt->name->name, 'assert') === 0) {
                 $var_assertions = [];
