@@ -228,6 +228,8 @@ class Reconciler
 
             $did_type_exist = isset($existing_types[$key]);
 
+            $has_object_array_access = false;
+
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
                 : self::getValueForKey(
@@ -239,7 +241,8 @@ class Reconciler
                     $has_isset,
                     $has_inverted_isset,
                     $has_empty,
-                    $inside_loop
+                    $inside_loop,
+                    $has_object_array_access
                 );
 
             if ($result_type && empty($result_type->getAtomicTypes())) {
@@ -316,7 +319,9 @@ class Reconciler
                 $result_type->failed_reconciliation = true;
             }
 
-            $existing_types[$key] = $result_type;
+            if (!$has_object_array_access) {
+                $existing_types[$key] = $result_type;
+            }
         }
 
         return $existing_types;
@@ -448,7 +453,8 @@ class Reconciler
         bool $has_isset,
         bool $has_inverted_isset,
         bool $has_empty,
-        bool $inside_loop
+        bool $inside_loop,
+        bool &$has_object_array_access
     ) {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -546,6 +552,9 @@ class Reconciler
                             return Type::getMixed($inside_loop);
                         } elseif ($existing_key_type_part instanceof TString) {
                             $new_base_type_candidate = Type::getString();
+                        } elseif ($existing_key_type_part instanceof Type\Atomic\TNamedObject) {
+                            $has_object_array_access = true;
+                            return null;
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !\is_numeric($array_key[0]))) {

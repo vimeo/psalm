@@ -776,7 +776,12 @@ class ArrayAccessTest extends TestCase
                     $array = new C([]);
                     $array["key"] = [];
                     /** @psalm-suppress PossiblyInvalidArrayAssignment */
-                    $array["key"][] = "testing";',
+                    $array["key"][] = "testing";
+
+                    $c = isset($array["foo"]) ? $array["foo"] : null;',
+                [
+                    '$c' => 'C|null|scalar',
+                ]
             ],
             'singleLetterOffset' => [
                 '<?php
