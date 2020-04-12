@@ -552,7 +552,9 @@ class Reconciler
                             return Type::getMixed($inside_loop);
                         } elseif ($existing_key_type_part instanceof TString) {
                             $new_base_type_candidate = Type::getString();
-                        } elseif ($existing_key_type_part instanceof Type\Atomic\TNamedObject) {
+                        } elseif ($existing_key_type_part instanceof Type\Atomic\TNamedObject
+                            && ($has_isset || $has_inverted_isset)
+                        ) {
                             $has_object_array_access = true;
                             return null;
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
