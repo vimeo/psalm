@@ -580,23 +580,23 @@ class MethodCallTest extends TestCase
                     class A {
                         /** @var int|string|null */
                         public $a;
-                        
+
                         /** @return int|string|null */
                         function getA() {
-                            return $this->a;                        
+                            return $this->a;
                         }
-                        
+
                         function takesNullOrA(?A $a) : void {}
                     }
 
                     $a = new A();
-                    
+
                     $a->a = 1;
                     echo $a->getA() + 2;
-                    
+
                     $a->a = "string";
                     echo strlen($a->getA());
-                    
+
                     $a->a = null;
                     $a->takesNullOrA($a->getA());
                     '
@@ -606,19 +606,36 @@ class MethodCallTest extends TestCase
                     class A {
                         /** @var string|null */
                         public $a;
-                        
+
                         /** @return string|null */
                         function getA() {
-                            return $this->a;                        
+                            return $this->a;
                         }
                     }
 
                     $a = new A();
-                    
+
                     if ($a->getA()) {
                         echo strlen($a->getA());
-                    }
-                    '
+                    }'
+            ],
+            'ignorePossiblyNull' => [
+                '<?php
+                    class Foo {
+                        protected ?string $type = null;
+
+                        public function prepend(array $arr) : string {
+                            return $this->getType();
+                        }
+
+                        /**
+                         * @psalm-ignore-nullable-return
+                         */
+                        public function getType() : ?string
+                        {
+                            return $this->type;
+                        }
+                    }'
             ],
         ];
     }
@@ -1009,25 +1026,25 @@ class MethodCallTest extends TestCase
                     class A {
                         /** @var string|null */
                         public $a;
-                    
+
                         /** @return string|null */
                         function getA() {
-                            return $this->a;                        
+                            return $this->a;
                         }
                     }
-                    
+
                     class AChild extends A {
                         function getA() {
                             return rand(0, 1) ? $this->a : null;
                         }
                     }
-                    
+
                     function foo(A $a) : void {
                         if ($a->getA()) {
                             echo strlen($a->getA());
                         }
                     }
-                    
+
                     foo(new AChild());',
                 'error_message' => 'PossiblyNullArgument'
             ],
@@ -1036,30 +1053,30 @@ class MethodCallTest extends TestCase
                     class A {
                         /** @var string|null */
                         public $a;
-                    
+
                         /** @psalm-assert-if-true string $this->a */
                         function hasA() {
-                            return is_string($this->a);                        
+                            return is_string($this->a);
                         }
 
                         /** @return string|null */
                         function getA() {
-                            return $this->a;                        
+                            return $this->a;
                         }
                     }
-                    
+
                     class AChild extends A {
                         function getA() {
                             return rand(0, 1) ? $this->a : null;
                         }
                     }
-                    
+
                     function foo(A $a) : void {
                         if ($a->hasA()) {
                             echo strlen($a->getA());
                         }
                     }
-                    
+
                     foo(new AChild());',
                 'error_message' => 'PossiblyNullArgument'
             ]
