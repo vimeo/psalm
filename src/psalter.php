@@ -210,7 +210,7 @@ if (isset($options['no-cache'])) {
 } else {
     $providers = new Psalm\Internal\Provider\Providers(
         new Psalm\Internal\Provider\FileProvider(),
-        new Psalm\Internal\Provider\ParserCacheProvider($config),
+        new Psalm\Internal\Provider\ParserCacheProvider($config, false),
         new Psalm\Internal\Provider\FileStorageCacheProvider($config),
         new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config)
     );

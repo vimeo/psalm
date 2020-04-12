@@ -369,6 +369,10 @@ Caching:
         Runs Psalm without using cached representations of unchanged classes and files.
         Useful if you want the afterClassLikeVisit plugin hook to run every time you visit a file.
 
+    --no-file-cache
+        Runs Psalm without using caching every single file for later diffing.
+        This reduces the space Psalm uses on disk and file I/O.
+
 Miscellaneous:
     -h, --help
         Display this help message

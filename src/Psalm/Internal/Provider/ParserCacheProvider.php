@@ -55,12 +55,18 @@ class ParserCacheProvider
      */
     private $new_file_content_hashes = [];
 
+    /**
+     * @var bool
+     */
+    private $use_file_cache;
+
     /** @var bool */
     private $use_igbinary;
 
-    public function __construct(Config $config)
+    public function __construct(Config $config, bool $use_file_cache = true)
     {
         $this->use_igbinary = $config->use_igbinary;
+        $this->use_file_cache = $use_file_cache;
     }
 
     /**
@@ -148,6 +154,10 @@ class ParserCacheProvider
      */
     public function loadExistingFileContentsFromCache($file_path)
     {
+        if (!$this->use_file_cache) {
+            return null;
+        }
+
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
@@ -298,6 +308,10 @@ class ParserCacheProvider
      */
     public function cacheFileContents($file_path, $file_contents)
     {
+        if (!$this->use_file_cache) {
+            return;
+        }
+
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {

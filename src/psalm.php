@@ -43,6 +43,7 @@ $valid_long_options = [
     'monochrome',
     'no-cache',
     'no-reflection-cache',
+    'no-file-cache',
     'output-format:',
     'plugin:',
     'report:',
@@ -487,6 +488,7 @@ if (isset($options['no-cache']) || isset($options['i'])) {
     );
 } else {
     $no_reflection_cache = isset($options['no-reflection-cache']);
+    $no_file_cache = isset($options['no-file-cache']);
 
     $file_storage_cache_provider = $no_reflection_cache
         ? null
@@ -498,7 +500,7 @@ if (isset($options['no-cache']) || isset($options['i'])) {
 
     $providers = new Provider\Providers(
         new Provider\FileProvider,
-        new Provider\ParserCacheProvider($config),
+        new Provider\ParserCacheProvider($config, !$no_file_cache),
         $file_storage_cache_provider,
         $classlike_storage_cache_provider,
         new Provider\FileReferenceCacheProvider($config)
