@@ -327,7 +327,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $key,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation
+                $failed_reconciliation,
+                $inside_loop
             );
         }
 
@@ -338,7 +339,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $key,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation
+                $failed_reconciliation,
+                $inside_loop
             );
         }
 
@@ -1951,7 +1953,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         ?string $key,
         ?CodeLocation $code_location,
         array $suppressed_issues,
-        int &$failed_reconciliation
+        int &$failed_reconciliation,
+        bool $inside_loop
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
@@ -2000,7 +2003,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return Type::getMixed($inside_loop);
     }
 
     /**
@@ -2013,7 +2016,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         ?string $key,
         ?CodeLocation $code_location,
         array $suppressed_issues,
-        int &$failed_reconciliation
+        int &$failed_reconciliation,
+        bool $inside_loop
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
@@ -2057,7 +2061,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return Type::getMixed($inside_loop);
     }
 
     /**

@@ -351,6 +351,42 @@ class WhileTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'assingnedConditionallyReassignedToMixedInLoop' => [
+                '<?php
+                    function foo(array $arr): void {
+                        while (rand(0, 1)) {
+                            $t = true;
+                            if (!empty($arr[0])) {
+                                /** @psalm-suppress MixedAssignment */
+                                $t = $arr[0];
+                            }
+                            if ($t === true) {}
+                        }
+                    }',
+            ],
+            'varChangedAfterUseInsideLoop' => [
+                '<?php
+                    function takesString(string $s) : void {}
+
+                    /**
+                     * @param array<string> $fields
+                     */
+                    function changeVarAfterUse(array $values, array $fields): void {
+                        foreach ($fields as $field) {
+                            if (!isset($values[$field])) {
+                                continue;
+                            }
+
+                            /** @psalm-suppress MixedAssignment */
+                            $value = $values[$field];
+
+                            /** @psalm-suppress MixedArgument */
+                            takesString($value);
+
+                            $values[$field] = null;
+                        }
+                    }',
+            ],
         ];
     }
 

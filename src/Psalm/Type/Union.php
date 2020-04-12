@@ -975,20 +975,8 @@ class Union implements TypeNode
         return isset($this->types['mixed'])
             && !$this->types['mixed']->from_loop_isset
             && get_class($this->types['mixed']) === Type\Atomic\TMixed::class
-            && count($this->types) === 1;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasVanillaMixed()
-    {
-        /**
-         * @psalm-suppress UndefinedPropertyFetch
-         */
-        return isset($this->types['mixed'])
             && !$this->types['mixed']->from_loop_isset
-            && get_class($this->types['mixed']) === Type\Atomic\TMixed::class;
+            && count($this->types) === 1;
     }
 
     /**

@@ -115,10 +115,13 @@ class ArrayFetchAnalyzer
             return false;
         }
 
+        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+
         if ($keyed_array_var_id
             && $context->hasVariable($keyed_array_var_id)
             && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
-            && !$context->vars_in_scope[$keyed_array_var_id]->hasVanillaMixed()
+            && $stmt_var_type
+            && !$stmt_var_type->hasClassStringMap()
         ) {
             $statements_analyzer->node_data->setType(
                 $stmt,
@@ -132,7 +135,7 @@ class ArrayFetchAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var)) {
+        if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
                 if (!$context->inside_isset) {
                     if (IssueBuffer::accepts(
@@ -455,13 +458,16 @@ class ArrayFetchAnalyzer
 
                     $has_valid_offset = true;
                     if (!$array_access_type) {
-                        $array_access_type = Type::getMixed();
+                        $array_access_type = Type::getMixed(
+                            $type instanceof TEmpty
+                        );
                     } else {
                         $array_access_type = Type::combineUnionTypes(
                             $array_access_type,
-                            Type::getMixed()
+                            Type::getMixed($type instanceof TEmpty)
                         );
                     }
+
                     continue;
                 }
 

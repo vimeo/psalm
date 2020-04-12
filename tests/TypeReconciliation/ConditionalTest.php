@@ -2374,7 +2374,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         protected static array $cache = [];
 
                         /**
-                         * @psalm-suppress MixedArrayAccess
                          * @psalm-suppress MixedReturnStatement
                          * @psalm-suppress MixedInferredReturnType
                          */

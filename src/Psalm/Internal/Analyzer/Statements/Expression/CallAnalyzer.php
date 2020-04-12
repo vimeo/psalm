@@ -2017,7 +2017,7 @@ class CallAnalyzer
                 if (IssueBuffer::accepts(
                     new MixedArgument(
                         'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                            . ' cannot be mixed, expecting array',
+                            . ' cannot be ' . $arg_type->getId() . ', expecting array',
                         new CodeLocation($statements_analyzer->getSource(), $arg->value),
                         $cased_method_id
                     ),
@@ -2704,7 +2704,8 @@ class CallAnalyzer
 
             if (IssueBuffer::accepts(
                 new MixedArgument(
-                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be mixed, expecting ' .
+                    'Argument ' . ($argument_offset + 1) . $method_identifier
+                        . ' cannot be ' . $input_type->getId() . ', expecting ' .
                         $param_type,
                     $code_location,
                     $cased_method_id

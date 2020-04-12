@@ -49,6 +49,7 @@ use function str_split;
 use function strpos;
 use function strtolower;
 use function substr;
+use Exception;
 
 class Reconciler
 {
@@ -237,7 +238,8 @@ class Reconciler
                     $code_location,
                     $has_isset,
                     $has_inverted_isset,
-                    $has_empty
+                    $has_empty,
+                    $inside_loop
                 );
 
             if ($result_type && empty($result_type->getAtomicTypes())) {
@@ -445,7 +447,8 @@ class Reconciler
         ?CodeLocation $code_location,
         bool $has_isset,
         bool $has_inverted_isset,
-        bool $has_empty
+        bool $has_empty,
+        bool $inside_loop
     ) {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -502,7 +505,7 @@ class Reconciler
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
 
                             if ($new_base_type_candidate->isMixed() && !$has_isset && !$has_inverted_isset) {
-                                return null;
+                                return $new_base_type_candidate;
                             }
 
                             if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
@@ -530,8 +533,19 @@ class Reconciler
                             || $existing_key_type_part instanceof Type\Atomic\TFalse
                         ) {
                             $new_base_type_candidate = Type::getNull();
+
+                            if ($existing_keys[$base_key]->ignore_nullable_issues) {
+                                $new_base_type_candidate->ignore_nullable_issues = true;
+                            }
                         } elseif ($existing_key_type_part instanceof Type\Atomic\TClassStringMap) {
                             return Type::getMixed();
+                        } elseif ($existing_key_type_part instanceof Type\Atomic\TEmpty
+                            || ($existing_key_type_part instanceof Type\Atomic\TMixed
+                                && $existing_key_type_part->from_loop_isset)
+                        ) {
+                            return Type::getMixed($inside_loop);
+                        } elseif ($existing_key_type_part instanceof TString) {
+                            $new_base_type_candidate = Type::getString();
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !\is_numeric($array_key[0]))) {
