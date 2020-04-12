@@ -503,7 +503,8 @@ if (isset($options['no-cache']) || isset($options['i'])) {
         new Provider\ParserCacheProvider($config, !$no_file_cache),
         $file_storage_cache_provider,
         $classlike_storage_cache_provider,
-        new Provider\FileReferenceCacheProvider($config)
+        new Provider\FileReferenceCacheProvider($config),
+        new Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
     );
 }
 

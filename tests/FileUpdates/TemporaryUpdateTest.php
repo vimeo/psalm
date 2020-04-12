@@ -35,7 +35,8 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
             new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
             null,
             null,
-            new Provider\FakeFileReferenceCacheProvider()
+            new Provider\FakeFileReferenceCacheProvider(),
+            new \Psalm\Tests\Internal\Provider\ProjectCacheProvider()
         );
 
         $this->project_analyzer = new ProjectAnalyzer(

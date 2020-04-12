@@ -26,11 +26,6 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
      */
     private $statements_cache_time = [];
 
-    /**
-     * @var int
-     */
-    private $last_run = 0;
-
     public function __construct()
     {
     }
@@ -101,31 +96,5 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     public function cacheFileContents($file_path, $file_contents)
     {
         $this->file_contents_cache[$file_path] = $file_contents;
-    }
-
-    /**
-     * @return int
-     */
-    public function getLastRun()
-    {
-        return $this->last_run;
-    }
-
-    /**
-     * @param float $start_time
-     *
-     * @return void
-     */
-    public function processSuccessfulRun($start_time)
-    {
-        $this->last_run = (int) $start_time;
-    }
-
-    /**
-     * @return bool
-     */
-    public function canDiffFiles()
-    {
-        return $this->last_run > 0;
     }
 }

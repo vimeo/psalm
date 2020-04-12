@@ -34,12 +34,6 @@ class ParserCacheProvider
     const FILE_HASHES = 'file_hashes_json';
     const PARSER_CACHE_DIRECTORY = 'php-parser';
     const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
-    const GOOD_RUN_NAME = 'good_run';
-
-    /**
-     * @var int|null
-     */
-    private $last_run = null;
 
     /**
      * A map of filename hashes to contents hashes
@@ -334,68 +328,6 @@ class ParserCacheProvider
     }
 
     /**
-     * @return bool
-     */
-    public function canDiffFiles()
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        return $cache_directory && file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
-    }
-
-    /**
-     * @param float $start_time
-     *
-     * @return void
-     */
-    public function processSuccessfulRun($start_time)
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $run_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME;
-
-        touch($run_cache_location, (int)$start_time);
-
-        $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
-
-        if (is_dir($cache_directory)) {
-            $directory_files = scandir($cache_directory);
-
-            foreach ($directory_files as $directory_file) {
-                $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
-
-                if ($directory_file[0] === '.') {
-                    continue;
-                }
-
-                touch($full_path);
-            }
-        }
-    }
-
-    /**
-     * @return int
-     */
-    public function getLastRun()
-    {
-        if ($this->last_run === null) {
-            $cache_directory = Config::getInstance()->getCacheDirectory();
-
-            if (file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME)) {
-                $this->last_run = filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
-            } else {
-                $this->last_run = 0;
-            }
-        }
-
-        return $this->last_run;
-    }
-
-    /**
      * @param  float $time_before
      *
      * @return int
@@ -430,6 +362,36 @@ class ParserCacheProvider
         }
 
         return $removed_count;
+    }
+
+    /**
+     * @param float $start_time
+     *
+     * @return void
+     */
+    public function processSuccessfulRun()
+    {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return;
+        }
+
+        $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
+
+        if (is_dir($cache_directory)) {
+            $directory_files = scandir($cache_directory);
+
+            foreach ($directory_files as $directory_file) {
+                $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
+
+                if ($directory_file[0] === '.') {
+                    continue;
+                }
+
+                touch($full_path);
+            }
+        }
     }
 
     /**

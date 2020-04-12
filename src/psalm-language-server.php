@@ -227,7 +227,8 @@ $providers = new Psalm\Internal\Provider\Providers(
     new Psalm\Internal\Provider\ParserCacheProvider($config),
     new Psalm\Internal\Provider\FileStorageCacheProvider($config),
     new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
-    new Psalm\Internal\Provider\FileReferenceCacheProvider($config)
+    new Psalm\Internal\Provider\FileReferenceCacheProvider($config),
+    new Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
 );
 
 $project_analyzer = new ProjectAnalyzer(

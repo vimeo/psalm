@@ -11,6 +11,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
+use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
@@ -116,6 +117,9 @@ class ProjectAnalyzer
 
     /** @var ?ParserCacheProvider */
     private $parser_cache_provider;
+
+    /** @var ?ProjectCacheProvider */
+    public $project_cache_provider;
 
     /** @var FileReferenceProvider */
     private $file_reference_provider;
@@ -229,6 +233,7 @@ class ProjectAnalyzer
         }
 
         $this->parser_cache_provider = $providers->parser_cache_provider;
+        $this->project_cache_provider = $providers->project_cache_provider;
         $this->file_provider = $providers->file_provider;
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
         $this->file_reference_provider = $providers->file_reference_provider;
@@ -260,6 +265,16 @@ class ProjectAnalyzer
 
         foreach ($this->config->getProjectFiles() as $file_path) {
             $this->addProjectFile($file_path);
+        }
+
+        if ($this->project_cache_provider && $this->project_cache_provider->hasLockfileChanged()) {
+            $this->progress->debug(
+                'Composer lockfile change detected, clearing cache' . "\n"
+            );
+
+            Config::removeCacheDirectory($config->getCacheDirectory());
+
+            $this->project_cache_provider->updateComposerLockHash();
         }
 
         self::$instance = $this;
@@ -475,8 +490,8 @@ class ProjectAnalyzer
 
         if ($is_diff
             && $reference_cache
-            && $this->parser_cache_provider
-            && $this->parser_cache_provider->canDiffFiles()
+            && $this->project_cache_provider
+            && $this->project_cache_provider->canDiffFiles()
         ) {
             $deleted_files = $this->file_reference_provider->getDeletedReferencedFiles();
             $diff_files = $deleted_files;
@@ -553,9 +568,9 @@ class ProjectAnalyzer
             true
         );
 
-        if ($this->parser_cache_provider) {
+        if ($this->project_cache_provider && $this->parser_cache_provider) {
             $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches(
-                $is_diff ? $this->parser_cache_provider->getLastRun() : $start_checks
+                $is_diff ? $this->project_cache_provider->getLastRun() : $start_checks
             );
 
             if ($removed_parser_files) {
@@ -1009,13 +1024,13 @@ class ProjectAnalyzer
     {
         $file_extensions = $config->getFileExtensions();
 
-        if (!$this->parser_cache_provider) {
+        if (!$this->parser_cache_provider || !$this->project_cache_provider) {
             throw new \UnexpectedValueException('Parser cache provider cannot be null here');
         }
 
         $diff_files = [];
 
-        $last_run = $this->parser_cache_provider->getLastRun();
+        $last_run = $this->project_cache_provider->getLastRun();
 
         $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
 

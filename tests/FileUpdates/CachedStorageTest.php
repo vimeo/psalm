@@ -31,7 +31,8 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
             new Provider\ParserInstanceCacheProvider(),
             new Provider\FileStorageInstanceCacheProvider(),
             new Provider\ClassLikeStorageInstanceCacheProvider(),
-            new Provider\FakeFileReferenceCacheProvider()
+            new Provider\FakeFileReferenceCacheProvider(),
+            new Provider\ProjectCacheProvider()
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
