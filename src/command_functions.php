@@ -115,6 +115,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
  *
  * @psalm-suppress MixedArrayAccess
  * @psalm-suppress MixedAssignment
+ * @psalm-suppress PossiblyUndefinedStringArrayOffset
  */
 function getVendorDir($current_dir)
 {
@@ -132,7 +133,9 @@ function getVendorDir($current_dir)
         exit(1);
     }
 
-    if (isset($composer_json['config']['vendor-dir'])
+    if (isset($composer_json['config'])
+        && is_array($composer_json['config'])
+        && isset($composer_json['config']['vendor-dir'])
         && is_string($composer_json['config']['vendor-dir'])
     ) {
         return $composer_json['config']['vendor-dir'];
