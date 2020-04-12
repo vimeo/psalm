@@ -40,10 +40,6 @@
         <class name="LogicException"/>
     </ignoreExceptions>
 
-    <stubs>
-        <file name="src/Psalm/Internal/Stubs/Amp.php"/>
-    </stubs>
-
     <plugins>
         <plugin filename="examples/plugins/FunctionCasingChecker.php"/>
         <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
