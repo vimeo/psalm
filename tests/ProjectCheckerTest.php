@@ -64,7 +64,8 @@ class ProjectCheckerTest extends TestCase
                 new Provider\ParserInstanceCacheProvider(),
                 new Provider\FileStorageInstanceCacheProvider(),
                 new Provider\ClassLikeStorageInstanceCacheProvider(),
-                new Provider\FakeFileReferenceCacheProvider()
+                new Provider\FakeFileReferenceCacheProvider(),
+                new Provider\ProjectCacheProvider()
             ),
             new \Psalm\Report\ReportOptions()
         );

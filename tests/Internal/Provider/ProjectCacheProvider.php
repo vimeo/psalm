@@ -43,7 +43,7 @@ class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
 
     public function hasLockfileChanged() : bool
     {
-        return true;
+        return false;
     }
 
     public function updateComposerLockHash() : void
