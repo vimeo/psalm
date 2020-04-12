@@ -490,20 +490,30 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $can_memoize = false;
 
-        $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
-            $statements_analyzer,
-            $codebase,
-            $stmt,
-            $context,
-            $method_id,
-            $declaring_method_id,
-            $cased_method_id,
-            $lhs_type_part,
-            $static_type,
-            $args,
-            $result,
-            $template_result
-        );
+        $class_storage_for_method = $codebase->methods->getClassLikeStorageForMethod($method_id);
+        $plain_getter_property = null;
+        if ((isset($class_storage_for_method->methods[$method_name_lc]))
+            && !$class_storage_for_method->methods[$method_name_lc]->overridden_somewhere
+            && !$class_storage_for_method->methods[$method_name_lc]->overridden_downstream
+            && ($plain_getter_property = $class_storage_for_method->methods[$method_name_lc]->plain_getter)
+            && isset($context->vars_in_scope[$getter_var_id = $lhs_var_id . '->' . $plain_getter_property])) {
+            $return_type_candidate = $context->vars_in_scope[$getter_var_id];
+        } else {
+            $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
+                $statements_analyzer,
+                $codebase,
+                $stmt,
+                $context,
+                $method_id,
+                $declaring_method_id,
+                $cased_method_id,
+                $lhs_type_part,
+                $static_type,
+                $args,
+                $result,
+                $template_result
+            );
+        }
 
         $in_call_map = CallMap::inCallMap((string) ($declaring_method_id ?: $method_id));
 
