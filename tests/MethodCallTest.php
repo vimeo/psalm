@@ -1004,6 +1004,65 @@ class MethodCallTest extends TestCase
                     (new A)->fooFoo();',
                 'error_message' => 'TooFewArguments',
             ],
+            'getterAutomagicOverridden' => [
+                '<?php
+                    class A {
+                        /** @var string|null */
+                        public $a;
+                    
+                        /** @return string|null */
+                        function getA() {
+                            return $this->a;                        
+                        }
+                    }
+                    
+                    class AChild extends A {
+                        function getA() {
+                            return rand(0, 1) ? $this->a : null;
+                        }
+                    }
+                    
+                    function foo(A $a) : void {
+                        if ($a->getA()) {
+                            echo strlen($a->getA());
+                        }
+                    }
+                    
+                    foo(new AChild());',
+                'error_message' => 'PossiblyNullArgument'
+            ],
+            'getterAutomagicOverriddenWithAssertion' => [
+                '<?php
+                    class A {
+                        /** @var string|null */
+                        public $a;
+                    
+                        /** @psalm-assert-if-true string $this->a */
+                        function hasA() {
+                            return is_string($this->a);                        
+                        }
+
+                        /** @return string|null */
+                        function getA() {
+                            return $this->a;                        
+                        }
+                    }
+                    
+                    class AChild extends A {
+                        function getA() {
+                            return rand(0, 1) ? $this->a : null;
+                        }
+                    }
+                    
+                    function foo(A $a) : void {
+                        if ($a->hasA()) {
+                            echo strlen($a->getA());
+                        }
+                    }
+                    
+                    foo(new AChild());',
+                'error_message' => 'PossiblyNullArgument'
+            ]
         ];
     }
 }
