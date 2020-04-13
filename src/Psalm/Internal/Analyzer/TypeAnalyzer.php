@@ -664,7 +664,10 @@ class TypeAnalyzer
                     || $intersection_input_type instanceof TTemplateParam
                 ) {
                     if ($intersection_container_type_lower === $intersection_input_type_lower) {
-                        if ($container_was_static && !$input_was_static) {
+                        if ($container_was_static
+                            && !$input_was_static
+                            && !$intersection_input_type instanceof TTemplateParam
+                        ) {
                             if ($atomic_comparison_result) {
                                 $atomic_comparison_result->type_coerced = true;
                             }
