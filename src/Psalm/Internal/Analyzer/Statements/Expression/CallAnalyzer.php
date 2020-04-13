@@ -3855,10 +3855,8 @@ class CallAnalyzer
                                 if ($union_comparison_result->type_coerced_from_mixed) {
                                     if (IssueBuffer::accepts(
                                         new MixedArgumentTypeCoercion(
-                                            'Could not reconcile upper and lower bounds '
-                                                . $upper_bound_type->getId() . ' and '
-                                                . $lower_bound_type->getId() . ' for template param '
-                                                . $template_name,
+                                            'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
+                                                . $upper_bound_type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -3869,10 +3867,8 @@ class CallAnalyzer
                                 } else {
                                     if (IssueBuffer::accepts(
                                         new ArgumentTypeCoercion(
-                                            'Could not reconcile upper and lower bounds '
-                                                . $upper_bound_type->getId() . ' and '
-                                                . $lower_bound_type->getId() . ' for template param '
-                                                . $template_name,
+                                            'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
+                                                . $upper_bound_type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -3884,10 +3880,8 @@ class CallAnalyzer
                             } elseif ($union_comparison_result->scalar_type_match_found) {
                                 if (IssueBuffer::accepts(
                                     new InvalidScalarArgument(
-                                        'Could not reconcile upper and lower bounds '
-                                            . $upper_bound_type->getId() . ' and '
-                                            . $lower_bound_type->getId() . ' for template param '
-                                            . $template_name,
+                                        'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
+                                                . $upper_bound_type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
@@ -3898,10 +3892,8 @@ class CallAnalyzer
                             } else {
                                 if (IssueBuffer::accepts(
                                     new InvalidArgument(
-                                        'Could not reconcile upper and lower bounds '
-                                            . $upper_bound_type->getId() . ' and '
-                                            . $lower_bound_type->getId() . ' for template param '
-                                            . $template_name,
+                                        'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
+                                                . $upper_bound_type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
