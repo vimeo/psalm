@@ -1101,7 +1101,12 @@ class ExpressionAnalyzer
                     $offset = 'static::' . $stmt->dim->name;
                 } elseif ($stmt->dim
                     && $source instanceof StatementsAnalyzer
-                    && ($stmt_dim_type = $source->node_data->getType($stmt->dim))) {
+                    && ($stmt_dim_type = $source->node_data->getType($stmt->dim))
+                    && (!$stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch
+                        || !$stmt->dim->name instanceof PhpParser\Node\Identifier
+                        || $stmt->dim->name->name !== 'class'
+                    )
+                ) {
                     if ($stmt_dim_type->isSingleStringLiteral()) {
                         $offset = '\'' . $stmt_dim_type->getSingleStringLiteral()->value . '\'';
                     } elseif ($stmt_dim_type->isSingleIntLiteral()) {
