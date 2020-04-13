@@ -185,7 +185,8 @@ class ArrayAssignmentAnalyzer
                 }
 
                 if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_
-                    || ($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
+                    || (($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
+                            || $child_stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch)
                        && $child_stmt_dim_type->isSingleStringLiteral())
                 ) {
                     if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_) {
@@ -199,7 +200,8 @@ class ArrayAssignmentAnalyzer
                     }
                     $var_id_additions[] = '[\'' . $value . '\']';
                 } elseif ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber
-                    || ($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
+                    || (($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
+                            || $child_stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch)
                         && $child_stmt_dim_type->isSingleIntLiteral())
                 ) {
                     if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {

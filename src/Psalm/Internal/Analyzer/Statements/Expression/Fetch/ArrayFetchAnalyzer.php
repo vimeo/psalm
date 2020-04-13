@@ -82,15 +82,15 @@ class ArrayFetchAnalyzer
             $statements_analyzer
         );
 
+        if ($stmt->dim && ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
+            return false;
+        }
+
         $keyed_array_var_id = ExpressionAnalyzer::getArrayVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
         );
-
-        if ($stmt->dim && ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
-            return false;
-        }
 
         $dim_var_id = null;
         $new_offset_type = null;
