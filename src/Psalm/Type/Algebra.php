@@ -755,7 +755,7 @@ class Algebra
      *
      * @param  array<int, Clause>  $clauses
      *
-     * @return list<Clause>
+     * @return non-empty-list<Clause>
      */
     public static function negateFormula(array $clauses)
     {
@@ -764,6 +764,10 @@ class Algebra
         }
 
         $negated = self::simplifyCNF(self::groupImpossibilities($clauses));
+
+        if (!$negated) {
+            return [new Clause([], true)];
+        }
 
         return $negated;
     }
