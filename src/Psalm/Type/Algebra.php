@@ -546,7 +546,7 @@ class Algebra
     }
 
     /**
-     * @param  array<int, Clause>  $clauses
+     * @param  non-empty-array<int, Clause>  $clauses
      *
      * @return array<int, Clause>
      */
@@ -759,11 +759,21 @@ class Algebra
      */
     public static function negateFormula(array $clauses)
     {
+        if (!$clauses) {
+            return [new Clause([], true)];
+        }
+
         foreach ($clauses as $clause) {
             self::calculateNegation($clause);
         }
 
-        $negated = self::simplifyCNF(self::groupImpossibilities($clauses));
+        $impossible_clauses = self::groupImpossibilities($clauses);
+
+        if (!$impossible_clauses) {
+            return [new Clause([], true)];
+        }
+
+        $negated = self::simplifyCNF($impossible_clauses);
 
         if (!$negated) {
             return [new Clause([], true)];
