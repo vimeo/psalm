@@ -66,16 +66,13 @@ class LoopAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($pre_conditions) {
-            foreach ($pre_conditions as $pre_condition) {
-                $pre_condition_clauses = array_merge(
-                    $pre_condition_clauses,
-                    Algebra::getFormula(
-                        \spl_object_id($pre_condition),
-                        $pre_condition,
-                        $loop_scope->loop_context->self,
-                        $statements_analyzer,
-                        $codebase
-                    )
+            foreach ($pre_conditions as $i => $pre_condition) {
+                $pre_condition_clauses[$i] = Algebra::getFormula(
+                    \spl_object_id($pre_condition),
+                    $pre_condition,
+                    $loop_scope->loop_context->self,
+                    $statements_analyzer,
+                    $codebase
                 );
             }
         } else {
@@ -117,11 +114,11 @@ class LoopAnalyzer
             $old_referenced_var_ids = $inner_context->referenced_var_ids;
             $inner_context->referenced_var_ids = [];
 
-            foreach ($pre_conditions as $pre_condition) {
+            foreach ($pre_conditions as $condition_offset => $pre_condition) {
                 self::applyPreConditionToLoopContext(
                     $statements_analyzer,
                     $pre_condition,
-                    $pre_condition_clauses,
+                    $pre_condition_clauses[$condition_offset],
                     $inner_context,
                     $loop_scope->loop_parent_context,
                     $is_do
@@ -160,12 +157,12 @@ class LoopAnalyzer
 
             IssueBuffer::startRecording();
 
-            foreach ($pre_conditions as $pre_condition) {
+            foreach ($pre_conditions as $condition_offset => $pre_condition) {
                 $asserted_var_ids = array_merge(
                     self::applyPreConditionToLoopContext(
                         $statements_analyzer,
                         $pre_condition,
-                        $pre_condition_clauses,
+                        $pre_condition_clauses[$condition_offset],
                         $loop_scope->loop_context,
                         $loop_scope->loop_parent_context,
                         $is_do
@@ -318,11 +315,11 @@ class LoopAnalyzer
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
 
-                foreach ($pre_conditions as $pre_condition) {
+                foreach ($pre_conditions as $condition_offset => $pre_condition) {
                     self::applyPreConditionToLoopContext(
                         $statements_analyzer,
                         $pre_condition,
-                        $pre_condition_clauses,
+                        $pre_condition_clauses[$condition_offset],
                         $inner_context,
                         $loop_scope->loop_parent_context,
                         false
@@ -436,7 +433,7 @@ class LoopAnalyzer
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
             $negated_pre_condition_types = Algebra::getTruthsFromFormula(
-                Algebra::negateFormula($pre_condition_clauses)
+                Algebra::negateFormula(array_merge(...$pre_condition_clauses))
             );
 
             if ($negated_pre_condition_types) {
