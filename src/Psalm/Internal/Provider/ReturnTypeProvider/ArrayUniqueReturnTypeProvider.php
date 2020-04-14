@@ -45,7 +45,13 @@ class ArrayUniqueReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         }
 
         if ($first_arg_array instanceof Type\Atomic\TArray) {
-            return new Type\Union([clone $first_arg_array]);
+            $first_arg_array = clone $first_arg_array;
+
+            if ($first_arg_array instanceof Type\Atomic\TNonEmptyArray) {
+                $first_arg_array->count = null;
+            }
+
+            return new Type\Union([$first_arg_array]);
         }
 
         if ($first_arg_array instanceof Type\Atomic\TList) {
