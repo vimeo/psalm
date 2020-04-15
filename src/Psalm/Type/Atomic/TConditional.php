@@ -160,7 +160,5 @@ class TConditional extends \Psalm\Type\Atomic
         ?Codebase $codebase
     ) : void {
         $this->conditional_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
-        $this->if_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
-        $this->else_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
     }
 }

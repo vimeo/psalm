@@ -11,6 +11,11 @@ class TNumericString extends TString
         return 'numeric-string';
     }
 
+    public function __toString()
+    {
+        return 'numeric-string';
+    }
+
     public function getId(bool $nested = false)
     {
         return $this->getKey();
