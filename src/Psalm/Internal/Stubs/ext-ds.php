@@ -34,9 +34,9 @@ interface Collection extends Traversable, Countable, JsonSerializable
 final class Deque implements Sequence
 {
     /**
-     * @param iterable<TValue>|null $values
+     * @param iterable<TValue> $values
      */
-    public function __construct(?iterable $values = null)
+    public function __construct(iterable $values = [])
     {
     }
 
@@ -96,9 +96,9 @@ final class Deque implements Sequence
 final class Map implements Collection
 {
     /**
-     * @param iterable<TKey, TValue>|null $values
+     * @param iterable<TKey, TValue> $values
      */
-    public function __construct(?iterable $values = null)
+    public function __construct(iterable $values = [])
     {
     }
 
@@ -729,9 +729,9 @@ final class Set implements Collection
 final class Stack implements Collection
 {
     /**
-     * @param iterable<TValue>|null $values
+     * @param iterable<TValue> $values
      */
-    public function __construct(?iterable $values = null)
+    public function __construct(iterable $values = [])
     {
     }
 
@@ -780,9 +780,9 @@ final class Stack implements Collection
 final class Queue implements Collection
 {
     /**
-     * @param iterable<TValue>|null $values
+     * @param iterable<TValue> $values
      */
-    public function __construct(?iterable $values = null)
+    public function __construct(iterable $values = [])
     {
     }
 
