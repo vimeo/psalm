@@ -1238,6 +1238,24 @@ class FunctionCallTest extends TestCase
                     '$a' => 'int',
                 ]
             ],
+            'dateTest' => [
+                '<?php
+                    $y = date("Y");
+                    $m = date("m");
+                    $F = date("F");
+                    $y2 = date("Y", 10000);
+                    $F2 = date("F", 10000);
+                    /** @psalm-suppress MixedArgument */
+                    $F3 = date("F", $_GET["F3"]);',
+                [
+                    '$y' => 'numeric-string',
+                    '$m' => 'numeric-string',
+                    '$F' => 'string',
+                    '$y2' => 'numeric-string',
+                    '$F2' => 'string',
+                    '$F3' => 'false|string',
+                ]
+            ],
         ];
     }
 

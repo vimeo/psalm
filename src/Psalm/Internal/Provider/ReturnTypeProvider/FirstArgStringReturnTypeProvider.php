@@ -13,7 +13,6 @@ class FirstArgStringReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRet
     {
         return [
             'crypt',
-            'date',
         ];
     }
 
