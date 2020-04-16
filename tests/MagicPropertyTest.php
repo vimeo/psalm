@@ -634,6 +634,19 @@ class MagicPropertyTest extends TestCase
     public function providerInvalidCodeParse()
     {
         return [
+            'annotationWithoutGetter' => [
+                '<?php
+                    /**
+                     * @property bool $is_protected
+                     */
+                    final class Page {
+                        public function isProtected(): bool
+                        {
+                            return $this->is_protected;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
+            ],
             'propertyDocblockInvalidAssignment' => [
                 '<?php
                     /**
