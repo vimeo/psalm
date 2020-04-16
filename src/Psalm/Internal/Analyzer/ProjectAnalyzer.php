@@ -216,6 +216,20 @@ class ProjectAnalyzer
     ];
 
     /**
+     * When this is true, the language server will send the diagnostic code with a help link.
+     *
+     * @var bool
+     */
+    public $language_server_use_extended_diagnostic_codes = false;
+
+    /**
+     * If this is true then the language server will send log messages to the client with additional information.
+     *
+     * @var bool
+     */
+    public $language_server_verbose = false;
+
+    /**
      * @param array<ReportOptions> $generated_report_options
      * @param int           $threads
      * @param string        $reports
@@ -367,7 +381,7 @@ class ProjectAnalyzer
             $this->checkDirWithConfig($dir_name, $this->config);
         }
 
-        @cli_set_process_title('Psalm PHP Language Server');
+        @cli_set_process_title('Psalm ' . PSALM_VERSION . ' - PHP Language Server');
 
         if (!$socket_server_mode && $address) {
             // Connect to a TCP server

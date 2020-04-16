@@ -99,6 +99,12 @@ class IssueData
     public $error_level;
 
     /**
+     * @var int
+     * @readonly
+     */
+    public $shortcode;
+
+    /**
      * @var string
      * @readonly
      */
@@ -157,6 +163,7 @@ class IssueData
         $this->snippet_to = $snippet_to;
         $this->column_from = $column_from;
         $this->column_to = $column_to;
+        $this->shortcode = $shortcode;
         $this->error_level = $error_level;
         $this->link = 'https://psalm.dev/' . \str_pad((string) $shortcode, 3, "0", \STR_PAD_LEFT);
     }
