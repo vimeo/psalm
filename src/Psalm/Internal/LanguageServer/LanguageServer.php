@@ -383,7 +383,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                         'Psalm'
                     );
 
-                    $code = 'PS' . \str_pad((string) $issue_data->shortcode, 3, "0", \STR_PAD_LEFT);
+                    //$code = 'PS' . \str_pad((string) $issue_data->shortcode, 3, "0", \STR_PAD_LEFT);
+                    $code = $issue_data->link;
 
                     if ($this->project_analyzer->language_server_use_extended_diagnostic_codes) {
                         // Added in VSCode 1.43.0 and will be part of the LSP 3.16.0 standard.
