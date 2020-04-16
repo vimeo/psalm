@@ -326,7 +326,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             }
 
             $all_file_paths_to_analyze = array_keys($all_files_to_analyze);
-            $codebase->analyzer->addFilesToAnalyze(array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze));
+            $codebase->analyzer->addFilesToAnalyze(
+                array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze)
+            );
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
             $this->emitIssues($all_files_to_analyze);
@@ -489,7 +491,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         } catch (\Throwable $err) {
             return new Success(null);
         }
-
     }
 
     /**
