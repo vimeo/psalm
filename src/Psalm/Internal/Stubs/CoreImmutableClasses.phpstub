@@ -61,7 +61,7 @@ class Exception implements Throwable
 
     /**
      * @psalm-mutation-free
-     * @return int|string
+     * @return int
      */
     public final function getCode(){}
 
@@ -115,7 +115,7 @@ class Error implements Throwable
 
     /**
      * @psalm-mutation-free
-     * @return int|string
+     * @return int
      */
     public final function getCode(){}
 
