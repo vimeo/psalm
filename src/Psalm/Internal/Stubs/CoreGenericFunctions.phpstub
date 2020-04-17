@@ -1,13 +1,12 @@
 <?php
 /**
  * @psalm-template T as array-key
- * @psalm-template A as non-empty-array<T, mixed>|array<T, mixed>
  *
- * @param A     $arr
- * @param mixed $search_value
- * @param bool  $strict
+ * @param array<T, mixed> $arr
+ * @param mixed           $search_value
+ * @param bool            $strict
  *
- * @return (A is non-empty-array ? non-empty-list<T> : list<T>)
+ * @return list<T>
  * @psalm-pure
  */
 function array_keys(array $arr, $search_value = null, bool $strict = false)
