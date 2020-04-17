@@ -176,6 +176,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $suppressed_issues,
             $failed_reconciliation,
             $is_equality,
+            $is_strict_equality,
             $inside_loop
         );
 

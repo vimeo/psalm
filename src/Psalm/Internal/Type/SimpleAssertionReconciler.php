@@ -74,6 +74,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         array $suppressed_issues = [],
         int &$failed_reconciliation = 0,
         bool $is_equality = false,
+        bool $is_strict_equality = false,
         bool $inside_loop = false
     ) : ?Type\Union {
         if ($assertion === 'mixed' && $existing_var_type->hasMixed()) {
@@ -293,18 +294,20 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
+                $is_strict_equality
             );
         }
 
-        if ($assertion === 'int' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'int') {
             return self::reconcileInt(
                 $existing_var_type,
                 $key,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
+                $is_strict_equality
             );
         }
 
@@ -560,12 +563,17 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
+        bool $is_strict_equality
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed()) {
+            if ($is_equality && !$is_strict_equality) {
+                return $existing_var_type;
+            }
+
             return Type::getString();
         }
 
@@ -645,8 +653,17 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
+        bool $is_strict_equality
     ) : Union {
+        if ($existing_var_type->hasMixed()) {
+            if ($is_equality && !$is_strict_equality) {
+                return $existing_var_type;
+            }
+
+            return Type::getInt();
+        }
+
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
