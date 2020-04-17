@@ -30,6 +30,8 @@ $valid_long_options = [
     'tcp-server',
     'disable-on-change::',
     'enable-autocomplete',
+    'use-extended-diagnostic-codes',
+    'verbose'
 ];
 
 $args = array_slice($argv, 1);
@@ -146,8 +148,19 @@ Options:
 
     --enable-autocomplete[=BOOL]
         Enables or disables autocomplete on methods and properties. Default is true.
+
+    --use-extended-diagnostic-codes
+        Enables sending help uri links with the code in diagnostic messages.
+
+    --verbose
+        Will send log messages to the client with information.
 HELP;
 
+    exit;
+}
+
+if (array_key_exists('v', $options)) {
+    echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
     exit;
 }
 
@@ -179,11 +192,6 @@ if (isset($options['r']) && is_string($options['r'])) {
 $vendor_dir = getVendorDir($current_dir);
 
 $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
-
-if (array_key_exists('v', $options)) {
-    echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
-    exit;
-}
 
 $ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
 
@@ -248,6 +256,14 @@ $config->visitComposerAutoloadFiles($project_analyzer);
 
 if ($find_dead_code) {
     $project_analyzer->getCodebase()->reportUnusedCode();
+}
+
+if (isset($options['use-extended-diagnostic-codes'])) {
+    $project_analyzer->language_server_use_extended_diagnostic_codes = true;
+}
+
+if (isset($options['verbose'])) {
+    $project_analyzer->language_server_verbose = true;
 }
 
 $project_analyzer->server($options['tcp'] ?? null, isset($options['tcp-server']) ? true : false);

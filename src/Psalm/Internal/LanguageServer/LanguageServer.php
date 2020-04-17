@@ -179,6 +179,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         );
 
         $this->client = new LanguageClient($reader, $writer);
+
+        $this->verboseLog("Language server has started.");
     }
 
     /**
@@ -200,16 +202,25 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         return call(
             /** @return \Generator<int, true, mixed, InitializeResult> */
             function () use ($capabilities, $rootPath, $processId) {
+                $this->verboseLog("Initializing...");
+                $this->clientStatus('initializing');
+
                 // Eventually, this might block on something. Leave it as a generator.
                 /** @psalm-suppress TypeDoesNotContainType */
                 if (false) {
                     yield true;
                 }
 
+                $this->verboseLog("Initializing: Getting code base...");
+                $this->clientStatus('initializing', 'getting code base');
                 $codebase = $this->project_analyzer->getCodebase();
 
+                $this->verboseLog("Initializing: Scanning files...");
+                $this->clientStatus('initializing', 'scanning files');
                 $codebase->scanFiles($this->project_analyzer->threads);
 
+                $this->verboseLog("Initializing: Registering stub files...");
+                $this->clientStatus('initializing', 'registering stub files');
                 $codebase->config->visitStubFiles($codebase, null);
 
                 if ($this->textDocument === null) {
@@ -257,6 +268,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 $serverCapabilities->xdefinitionProvider = false;
                 $serverCapabilities->dependenciesProvider = false;
 
+                $this->verboseLog("Initializing: Complete.");
+                $this->clientStatus('initialized');
                 return new InitializeResult($serverCapabilities);
             }
         );
@@ -269,6 +282,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function initialized()
     {
+        $this->clientStatus('running');
     }
 
     /**
@@ -292,30 +306,39 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function doAnalysis()
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $this->clientStatus('analyzing');
 
-        $all_files_to_analyze = $this->onchange_paths_to_analyze + $this->onsave_paths_to_analyze;
+        try {
+            $codebase = $this->project_analyzer->getCodebase();
 
-        if (!$all_files_to_analyze) {
-            return;
+            $all_files_to_analyze = $this->onchange_paths_to_analyze + $this->onsave_paths_to_analyze;
+
+            if (!$all_files_to_analyze) {
+                return;
+            }
+
+            if ($this->onsave_paths_to_analyze) {
+                $codebase->reloadFiles($this->project_analyzer, array_keys($this->onsave_paths_to_analyze));
+            }
+
+            if ($this->onchange_paths_to_analyze) {
+                $codebase->reloadFiles($this->project_analyzer, array_keys($this->onchange_paths_to_analyze));
+            }
+
+            $all_file_paths_to_analyze = array_keys($all_files_to_analyze);
+            $codebase->analyzer->addFilesToAnalyze(
+                array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze)
+            );
+            $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+            $this->emitIssues($all_files_to_analyze);
+
+            $this->onchange_paths_to_analyze = [];
+            $this->onsave_paths_to_analyze = [];
+        } finally {
+            // we are done, so set the status back to running
+            $this->clientStatus('running');
         }
-
-        if ($this->onsave_paths_to_analyze) {
-            $codebase->reloadFiles($this->project_analyzer, array_keys($this->onsave_paths_to_analyze));
-        }
-
-        if ($this->onchange_paths_to_analyze) {
-            $codebase->reloadFiles($this->project_analyzer, array_keys($this->onchange_paths_to_analyze));
-        }
-
-        $all_file_paths_to_analyze = array_keys($all_files_to_analyze);
-        $codebase->analyzer->addFilesToAnalyze(array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze));
-        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-        $this->emitIssues($all_files_to_analyze);
-
-        $this->onchange_paths_to_analyze = [];
-        $this->onsave_paths_to_analyze = [];
     }
 
     /**
@@ -352,14 +375,35 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                             $diagnostic_severity = DiagnosticSeverity::ERROR;
                             break;
                     }
-                    // TODO: copy issue code in 'json' format
-                    return new Diagnostic(
+                    $diagnostic = new Diagnostic(
                         $description,
                         $range,
                         null,
                         $diagnostic_severity,
                         'Psalm'
                     );
+
+                    //$code = 'PS' . \str_pad((string) $issue_data->shortcode, 3, "0", \STR_PAD_LEFT);
+                    $code = $issue_data->link;
+
+                    if ($this->project_analyzer->language_server_use_extended_diagnostic_codes) {
+                        // Added in VSCode 1.43.0 and will be part of the LSP 3.16.0 standard.
+                        // Since this new functionality is not backwards compatible, we use a
+                        // configuration option so the end user must opt in to it using the cli argument.
+                        // https://github.com/microsoft/vscode/blob/1.43.0/src/vs/vscode.d.ts#L4688-L4699
+
+                        /** @psalm-suppress InvalidPropertyAssignmentValue */
+                        $diagnostic->code = [
+                            "value" => $code,
+                            "target" => $issue_data->link,
+                        ];
+                    } else {
+                        // the Diagnostic constructor only takes `int` for the code, but the property can be
+                        // `int` or `string`, so we set the property directly because we want to use a `string`
+                        $diagnostic->code = $code;
+                    }
+
+                    return $diagnostic;
                 },
                 $data[$file_path] ?? []
             );
@@ -377,12 +421,15 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function shutdown()
     {
+        $this->clientStatus('closing');
+        $this->verboseLog("Shutting down...");
         $codebase = $this->project_analyzer->getCodebase();
         $scanned_files = $codebase->scanner->getScannedFiles();
         $codebase->file_reference_provider->updateReferenceCache(
             $codebase,
             $scanned_files
         );
+        $this->clientStatus('closed');
         return new Success(null);
     }
 
@@ -394,6 +441,57 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     public function exit()
     {
         exit(0);
+    }
+
+
+    /**
+     * Send log message to the client
+     *
+     * @param string $message The log message to send to the client.
+     * @psalm-param 1|2|3|4 $type
+     * @param integer $type The log type:
+     *  - 1 = Error
+     *  - 2 = Warning
+     *  - 3 = Info
+     *  - 4 = Log
+     * @return Promise
+     */
+    private function verboseLog(string $message, int $type = 4): Promise
+    {
+        if ($this->project_analyzer->language_server_verbose) {
+            try {
+                return $this->client->logMessage(
+                    '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
+                    $type
+                );
+            } catch (\Throwable $err) {
+                // do nothing
+            }
+        }
+        return new Success(null);
+    }
+
+    /**
+     * Send status message to client.  This is the same as sending a log message,
+     * except this is meant for parsing by the client to present status updates in a UI.
+     *
+     * @param string $status The log message to send to the client. Should not contain colons `:`.
+     * @param string|null $additional_info This is additional info that the client
+     *                                       can use as part of the display message.
+     * @return Promise
+     */
+    private function clientStatus(string $status, string $additional_info = null): Promise
+    {
+        try {
+            // here we send a notification to the client using the telemetry notification method
+            return $this->client->logMessage(
+                $status . (!empty($additional_info) ? ': ' . $additional_info : ''),
+                3,
+                'telemetry/event'
+            );
+        } catch (\Throwable $err) {
+            return new Success(null);
+        }
     }
 
     /**

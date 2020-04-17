@@ -125,6 +125,7 @@ echo $a;';
                 'column_from' => 10,
                 'column_to' => 17,
                 'error_level' => -1,
+                'shortcode' => 24,
                 'link' => 'https://psalm.dev/024'
             ],
             [
@@ -144,6 +145,7 @@ echo $a;';
                 'column_from' => 42,
                 'column_to' => 49,
                 'error_level' => 1,
+                'shortcode' => 47,
                 'link' => 'https://psalm.dev/047'
             ],
             [
@@ -163,6 +165,7 @@ echo $a;';
                 'column_from' => 6,
                 'column_to' => 15,
                 'error_level' => -1,
+                'shortcode' => 20,
                 'link' => 'https://psalm.dev/020'
             ],
             [
@@ -182,6 +185,7 @@ echo $a;';
                 'column_from' => 6,
                 'column_to' => 8,
                 'error_level' => 3,
+                'shortcode' => 126,
                 'link' => 'https://psalm.dev/126'
             ],
         ];
