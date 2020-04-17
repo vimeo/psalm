@@ -1535,7 +1535,28 @@ class ExpressionAnalyzer
 
         if ($return_type instanceof Type\Atomic\TConditional) {
             if ($evaluate_conditional_types) {
-                $all_conditional_return_types = [];
+                $assertion = null;
+
+                if ($return_type->conditional_type->isSingle()) {
+                    foreach ($return_type->conditional_type->getAtomicTypes() as $condition_atomic_type) {
+                        $candidate = self::fleshOutAtomicType(
+                            $codebase,
+                            $condition_atomic_type,
+                            $self_class,
+                            $static_class_type,
+                            $parent_class,
+                            $evaluate_class_constants,
+                            $evaluate_conditional_types,
+                            $final
+                        );
+
+                        if (!is_array($candidate)) {
+                            $assertion = $candidate->getAssertionString();
+                        }
+                    }
+                }
+
+                $if_conditional_return_types = [];
 
                 foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
                     $candidate = self::fleshOutAtomicType(
@@ -1549,15 +1570,15 @@ class ExpressionAnalyzer
                         $final
                     );
 
-                    if (is_array($candidate)) {
-                        $all_conditional_return_types = array_merge(
-                            $all_conditional_return_types,
-                            $candidate
-                        );
-                    } else {
-                        $all_conditional_return_types[] = $candidate;
-                    }
+                    $candidate_types = is_array($candidate) ? $candidate : [$candidate];
+
+                    $if_conditional_return_types = array_merge(
+                        $if_conditional_return_types,
+                        $candidate_types
+                    );
                 }
+
+                $else_conditional_return_types = [];
 
                 foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
                     $candidate = self::fleshOutAtomicType(
@@ -1571,15 +1592,52 @@ class ExpressionAnalyzer
                         $final
                     );
 
-                    if (is_array($candidate)) {
-                        $all_conditional_return_types = array_merge(
-                            $all_conditional_return_types,
-                            $candidate
-                        );
-                    } else {
-                        $all_conditional_return_types[] = $candidate;
+                    $candidate_types = is_array($candidate) ? $candidate : [$candidate];
+
+                    $else_conditional_return_types = array_merge(
+                        $else_conditional_return_types,
+                        $candidate_types
+                    );
+                }
+
+                if ($assertion && $return_type->param_name === (string) $return_type->if_type) {
+                    $if_conditional_return_type = TypeCombination::combineTypes(
+                        $if_conditional_return_types,
+                        $codebase
+                    );
+
+                    $if_conditional_return_type = \Psalm\Internal\Type\SimpleAssertionReconciler::reconcile(
+                        $assertion,
+                        $codebase,
+                        $if_conditional_return_type
+                    );
+
+
+                    if ($if_conditional_return_type) {
+                        $if_conditional_return_types = array_values($if_conditional_return_type->getAtomicTypes());
                     }
                 }
+
+                if ($assertion && $return_type->param_name === (string) $return_type->else_type) {
+                    $else_conditional_return_type = TypeCombination::combineTypes(
+                        $else_conditional_return_types,
+                        $codebase
+                    );
+
+                    $else_conditional_return_type = \Psalm\Internal\Type\SimpleNegatedAssertionReconciler::reconcile(
+                        $assertion,
+                        $else_conditional_return_type
+                    );
+
+                    if ($else_conditional_return_type) {
+                        $else_conditional_return_types = array_values($else_conditional_return_type->getAtomicTypes());
+                    }
+                }
+
+                $all_conditional_return_types = array_merge(
+                    $if_conditional_return_types,
+                    $else_conditional_return_types
+                );
 
                 foreach ($all_conditional_return_types as $i => $conditional_return_type) {
                     if ($conditional_return_type instanceof Type\Atomic\TVoid

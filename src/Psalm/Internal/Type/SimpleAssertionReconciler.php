@@ -351,6 +351,23 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
+        if ($existing_var_type->isSingle()
+            && $existing_var_type->hasTemplate()
+            && strpos($assertion, '-') === false
+        ) {
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TTemplateParam) {
+                    if ($atomic_type->as->hasMixed()
+                        || $atomic_type->as->hasObject()
+                    ) {
+                        $atomic_type->as = Type::parseString($assertion);
+
+                        return $existing_var_type;
+                    }
+                }
+            }
+        }
+
         return null;
     }
 
@@ -573,6 +590,17 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
                 if ($type->as->hasString() || $type->as->hasMixed()) {
+                    $type = clone $type;
+
+                    $type->as = self::reconcileString(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality
+                    );
+
                     $string_types[] = $type;
                 }
 

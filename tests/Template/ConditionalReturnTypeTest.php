@@ -284,6 +284,58 @@ class ConditionalReturnTypeTest extends TestCase
                     app(A::class)->test1();
                     app()->test2();'
             ],
+            'refineTypeInConditionalWithString' => [
+                '<?php
+                    /**
+                     * @template TInput
+                     *
+                     * @param TInput $input
+                     *
+                     * @return (TInput is string ? TInput : \'hello\')
+                     */
+                    function foobaz($input): string {
+                        if (is_string($input)) {
+                            return $input;
+                        }
+
+                        return "hello";
+                    }
+
+                    $a = foobaz("boop");
+                    $b = foobaz(4);',
+                [
+                    '$a' => 'string',
+                    '$b' => 'string',
+                ]
+            ],
+            'refineTypeInConditionalWithClassName' => [
+                '<?php
+                    class A {}
+                    class AChild extends A {}
+                    class B {}
+
+                    /**
+                     * @template TInput as object
+                     *
+                     * @param TInput $input
+                     *
+                     * @return (TInput is A ? TInput : A)
+                     */
+                    function foobaz(object $input): A {
+                        if ($input instanceof A) {
+                            return $input;
+                        }
+
+                        return new A();
+                    }
+
+                    $a = foobaz(new AChild());
+                    $b = foobaz(new B());',
+                [
+                    '$a' => 'AChild',
+                    '$b' => 'A',
+                ]
+            ],
         ];
     }
 }

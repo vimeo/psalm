@@ -765,7 +765,9 @@ class ReturnTypeAnalyzer
             $storage->return_type,
             $classlike_storage ? $classlike_storage->name : null,
             $classlike_storage ? $classlike_storage->name : null,
-            $parent_class
+            $parent_class,
+            true,
+            true
         );
 
         if ($fleshed_out_return_type->check(
