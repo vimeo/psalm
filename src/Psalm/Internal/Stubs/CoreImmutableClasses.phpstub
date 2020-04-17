@@ -21,7 +21,7 @@ interface Throwable
     /**
      * @psalm-mutation-free
      */
-    public final function getMessage() : string {}
+    public final function getMessage() : string;
 }
 
 class Exception implements Throwable
