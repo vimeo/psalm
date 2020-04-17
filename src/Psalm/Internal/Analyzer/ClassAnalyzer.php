@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Aliases;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -1050,7 +1051,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
 
             if ($class_template_params) {
-                $fleshed_out_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $fleshed_out_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
                     $fleshed_out_type,
                     $template_result,
                     $codebase,
@@ -1862,7 +1863,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 []
             );
 
-            $return_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $return_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
                 $return_type,
                 $template_result,
                 $codebase,
@@ -1970,8 +1971,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         if ($parent_storage->template_types && $storage->template_type_extends) {
             $i = 0;
 
+            $previous_extended = [];
+
             foreach ($parent_storage->template_types as $template_name => $type_map) {
-                foreach ($type_map as $template_type) {
+                foreach ($type_map as $declaring_class => $template_type) {
                     if (isset($storage->template_type_extends[$parent_storage->name][$template_name])) {
                         $extended_type = $storage->template_type_extends[$parent_storage->name][$template_name];
 
@@ -2001,19 +2004,40 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             }
                         }
 
-                        if (!$template_type[0]->isMixed()
-                            && !TypeAnalyzer::isContainedBy($codebase, $extended_type, $template_type[0])
-                        ) {
-                            if (IssueBuffer::accepts(
-                                new InvalidTemplateParam(
-                                    'Extended template param ' . $template_name
-                                        . ' expects type ' . $template_type[0]->getId()
-                                        . ', type ' . $extended_type->getId() . ' given',
-                                    $code_location
-                                ),
-                                $storage->suppressed_issues + $this->getSuppressedIssues()
-                            )) {
-                                // fall through
+                        if (!$template_type[0]->isMixed()) {
+                            $template_type_copy = clone $template_type[0];
+
+                            $template_result = new \Psalm\Internal\Type\TemplateResult(
+                                $previous_extended ?: [],
+                                []
+                            );
+
+                            $template_type_copy = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                                $template_type_copy,
+                                $template_result,
+                                $codebase,
+                                null,
+                                $extended_type,
+                                null,
+                                null
+                            );
+
+                            if (!TypeAnalyzer::isContainedBy($codebase, $extended_type, $template_type_copy)) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidTemplateParam(
+                                        'Extended template param ' . $template_name
+                                            . ' expects type ' . $template_type[0]->getId()
+                                            . ', type ' . $extended_type->getId() . ' given',
+                                        $code_location
+                                    ),
+                                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } else {
+                                $previous_extended[$template_name] = [
+                                    $declaring_class => [$extended_type]
+                                ];
                             }
                         }
                     }

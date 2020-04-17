@@ -1134,7 +1134,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                             $this->aliases,
                                             $storage->template_types,
                                             $this->type_aliases
-                                        )
+                                        ),
+                                        null,
+                                        $storage->template_types
                                     );
                                 } catch (TypeParseTreeException $e) {
                                     $storage->docblock_issues[] = new InvalidDocblock(
