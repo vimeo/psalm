@@ -22,6 +22,36 @@ interface Throwable
      * @psalm-mutation-free
      */
     public final function getMessage() : string;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getCode() : int;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getFile() : string;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getLine() : int;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getTrace() : array;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getPrevious() : ?Throwable;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getTraceAsString() : string;
 }
 
 class Exception implements Throwable
@@ -61,21 +91,33 @@ class Exception implements Throwable
 
     /**
      * @psalm-mutation-free
-     * @return int
      */
-    public final function getCode(){}
+    public final function getCode(): int {}
 
     /**
      * @psalm-mutation-free
-     * @return string
      */
-    public final function getFile(){}
+    public final function getFile(): string {}
 
     /**
      * @psalm-mutation-free
-     * @return int
      */
-    public final function getLine(){}
+    public final function getLine(): int {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getTrace() : array {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getPrevious() : ?Throwable {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getTraceAsString() : string {}
 }
 
 class Error implements Throwable
@@ -115,19 +157,31 @@ class Error implements Throwable
 
     /**
      * @psalm-mutation-free
-     * @return int
      */
-    public final function getCode(){}
+    public final function getCode(): int {}
 
     /**
      * @psalm-mutation-free
-     * @return string
      */
-    public final function getFile(){}
+    public final function getFile(): string {}
 
     /**
      * @psalm-mutation-free
-     * @return int
      */
-    public final function getLine(){}
+    public final function getLine(): int{}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getTrace() : array {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getPrevious() : ?Throwable {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getTraceAsString() : string {}
 }
