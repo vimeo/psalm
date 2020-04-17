@@ -137,7 +137,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if ($assertion === 'object' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'object') {
             return self::reconcileObject(
                 $existing_var_type,
                 $key,
@@ -148,7 +148,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if ($assertion === 'resource' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'resource') {
             return self::reconcileResource(
                 $existing_var_type,
                 $key,
@@ -159,7 +159,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if ($assertion === 'callable' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'callable') {
             return self::reconcileCallable(
                 $codebase,
                 $existing_var_type,
@@ -253,7 +253,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if ($assertion === 'numeric' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'numeric') {
             return self::reconcileNumeric(
                 $existing_var_type,
                 $key,
@@ -264,7 +264,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if ($assertion === 'scalar' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'scalar') {
             return self::reconcileScalar(
                 $existing_var_type,
                 $key,
@@ -275,7 +275,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if ($assertion === 'bool' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'bool') {
             return self::reconcileBool(
                 $existing_var_type,
                 $key,
@@ -286,7 +286,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if ($assertion === 'string' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'string') {
             return self::reconcileString(
                 $existing_var_type,
                 $key,
@@ -548,6 +548,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
+        if ($existing_var_type->hasMixed()) {
+            return Type::getString();
+        }
+
         $string_types = [];
         $did_remove_type = false;
 
@@ -686,6 +690,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         int &$failed_reconciliation,
         bool $is_equality
     ) : Union {
+        if ($existing_var_type->hasMixed()) {
+            return Type::getBool();
+        }
+
         $bool_types = [];
         $did_remove_type = false;
 
@@ -747,6 +755,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         int &$failed_reconciliation,
         bool $is_equality
     ) : Union {
+        if ($existing_var_type->hasMixed()) {
+            return Type::getScalar();
+        }
+
         $scalar_types = [];
         $did_remove_type = false;
 
@@ -804,6 +816,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         int &$failed_reconciliation,
         bool $is_equality
     ) : Union {
+        if ($existing_var_type->hasMixed()) {
+            return Type::getNumeric();
+        }
+
         $old_var_type_string = $existing_var_type->getId();
 
         $numeric_types = [];
@@ -875,6 +891,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         int &$failed_reconciliation,
         bool $is_equality
     ) : Union {
+        if ($existing_var_type->hasMixed()) {
+            return Type::getObject();
+        }
+
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
@@ -940,6 +960,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         int &$failed_reconciliation,
         bool $is_equality
     ) : Union {
+        if ($existing_var_type->hasMixed()) {
+            return Type::getResource();
+        }
+
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
@@ -1514,6 +1538,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         int &$failed_reconciliation,
         bool $is_equality
     ) : Union {
+        if ($existing_var_type->hasMixed()) {
+            return Type::parseString('callable');
+        }
+
         $old_var_type_string = $existing_var_type->getId();
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
