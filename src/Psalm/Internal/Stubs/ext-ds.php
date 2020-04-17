@@ -516,9 +516,9 @@ interface Sequence extends Collection
 final class Vector implements Sequence
 {
     /**
-     * @param iterable<TValue>|null $values
+     * @param iterable<TValue> $values
      */
-    public function __construct(?iterable $values = null)
+    public function __construct(iterable $values = [])
     {
     }
 
@@ -574,9 +574,9 @@ final class Vector implements Sequence
 final class Set implements Collection
 {
     /**
-     * @param iterable<TValue>|null $values
+     * @param iterable<TValue> $values
      */
-    public function __construct(?iterable $values = null)
+    public function __construct(iterable $values = [])
     {
     }
 
