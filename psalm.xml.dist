@@ -138,6 +138,8 @@
                 <directory name="src/Psalm/Internal/Provider/ReturnTypeProvider" />
                 <file name="src/Psalm/Internal/Type/AssertionReconciler.php" />
                 <file name="src/Psalm/Internal/Type/NegatedAssertionReconciler.php" />
+                <file name="src/Psalm/Internal/Type/SimpleAssertionReconciler.php" />
+                <file name="src/Psalm/Internal/Type/SimpleNegatedAssertionReconciler.php" />
                 <directory name="tests"/>
             </errorLevel>
         </PossiblyUndefinedStringArrayOffset>
