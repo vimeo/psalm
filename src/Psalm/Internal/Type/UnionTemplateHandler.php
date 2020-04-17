@@ -121,6 +121,7 @@ class UnionTemplateHandler
                 $calling_function,
                 $template_result,
                 $codebase,
+                $statements_analyzer,
                 $replace,
                 $add_upper_bound,
                 $depth,
@@ -390,6 +391,7 @@ class UnionTemplateHandler
         ?string $calling_function,
         TemplateResult $template_result,
         ?Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer,
         bool $replace,
         bool $add_upper_bound,
         int $depth,
@@ -494,6 +496,20 @@ class UnionTemplateHandler
                     )
                 )
             ) {
+                $atomic_type->as = self::replaceTemplateTypesWithStandins(
+                    $atomic_type->as,
+                    $template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $input_type,
+                    $input_arg_offset,
+                    $calling_class,
+                    $calling_function,
+                    $replace,
+                    $add_upper_bound,
+                    $depth + 1
+                );
+
                 $generic_param = clone $input_type;
 
                 if ($matching_input_keys) {

@@ -608,6 +608,18 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType('null');
         }
 
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TTemplateParam) {
+                if ($type->as->hasType('null') && !$type->as->isNull()) {
+                    $type->as->removeType('null');
+
+                    $did_remove_type = true;
+
+                    $existing_var_type->bustCache();
+                }
+            }
+        }
+
         if (!$did_remove_type || empty($existing_var_type->getAtomicTypes())) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
