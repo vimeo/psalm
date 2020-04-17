@@ -93,7 +93,7 @@ class FunctionTemplateTest extends TestCase
                      * @template T as array-key
                      *
                      * @param array<T, mixed> $arr
-                     * @return array<int, T>
+                     * @return list<T>
                      */
                     function my_array_keys($arr) {
                         return array_keys($arr);
@@ -101,7 +101,24 @@ class FunctionTemplateTest extends TestCase
 
                     $a = my_array_keys(["hello" => 5, "goodbye" => new \Exception()]);',
                 'assertions' => [
-                    '$a' => 'array<int, string>',
+                    '$a' => 'list<string>',
+                ],
+            ],
+            'genericNonEmptyArrayKeys' => [
+                '<?php
+                    /**
+                     * @template T as array-key
+                     *
+                     * @param non-empty-array<T, mixed> $arr
+                     * @return non-empty-list<T>
+                     */
+                    function my_array_keys($arr) {
+                        return array_keys($arr);
+                    }
+
+                    $a = my_array_keys(["hello" => 5, "goodbye" => new \Exception()]);',
+                'assertions' => [
+                    '$a' => 'non-empty-list<string>',
                 ],
             ],
             'genericArrayFlip' => [
