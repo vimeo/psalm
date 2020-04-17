@@ -1132,7 +1132,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                         Type::fixUpLocalType(
                                             $template_map[2],
                                             $this->aliases,
-                                            null,
+                                            $storage->template_types,
                                             $this->type_aliases
                                         )
                                     );
