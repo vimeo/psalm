@@ -3492,6 +3492,24 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             return new UnresolvedConstant\ScalarValue($aliases->namespace);
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->dim) {
+            $left = self::getUnresolvedClassConstExpr(
+                $stmt->var,
+                $aliases,
+                $fq_classlike_name
+            );
+
+            $right = self::getUnresolvedClassConstExpr(
+                $stmt->dim,
+                $aliases,
+                $fq_classlike_name
+            );
+
+            if ($left && $right) {
+                return new UnresolvedConstant\ArrayOffsetFetch($left, $right);
+            }
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             if ($stmt->class instanceof PhpParser\Node\Name
                 && $stmt->name instanceof PhpParser\Node\Identifier

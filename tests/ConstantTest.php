@@ -782,6 +782,24 @@ class ConstantTest extends TestCase
 
                     A::test();'
             ],
+            'referenceClassConstantWithSelf' => [
+                '<?php
+                    abstract class A {
+                        public const KEYS = [];
+                        public const VALUES = [];
+                    }
+
+                    class B extends A {
+                        public const VALUES = [\'there\' => self::KEYS[\'hi\']];
+                        public const KEYS = [\'hi\' => CONSTANTS::THERE];
+                    }
+
+                    class CONSTANTS {
+                        public const THERE = \'there\';
+                    }
+
+                    echo B::VALUES["there"];'
+            ],
         ];
     }
 

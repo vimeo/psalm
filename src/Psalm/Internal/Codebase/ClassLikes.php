@@ -1540,10 +1540,6 @@ class ClassLikes
             throw new \InvalidArgumentException('Must specify $visibility');
         }
 
-        if (isset($type_candidates[$constant_name])) {
-            return $type_candidates[$constant_name];
-        }
-
         if (isset($fallbacks[$constant_name])) {
             return new Type\Union([
                 $this->resolveConstantType(
@@ -1552,6 +1548,10 @@ class ClassLikes
                     $visited_constant_ids
                 )
             ]);
+        }
+
+        if (isset($type_candidates[$constant_name])) {
+            return $type_candidates[$constant_name];
         }
 
         return null;
@@ -1747,6 +1747,31 @@ class ClassLikes
 
             if ($found_type) {
                 return \array_values($found_type->getAtomicTypes())[0];
+            }
+        }
+
+        if ($c instanceof UnresolvedConstant\ArrayOffsetFetch) {
+            $var_type = $this->resolveConstantType(
+                $c->array,
+                $statements_analyzer,
+                $visited_constant_ids + [$c_id => true]
+            );
+
+            $offset_type = $this->resolveConstantType(
+                $c->offset,
+                $statements_analyzer,
+                $visited_constant_ids + [$c_id => true]
+            );
+
+            if ($var_type instanceof Type\Atomic\ObjectLike
+                && ($offset_type instanceof Type\Atomic\TLiteralInt
+                    || $offset_type instanceof Type\Atomic\TLiteralString)
+            ) {
+                $union = $var_type->properties[$offset_type->value] ?? null;
+
+                if ($union && $union->isSingle()) {
+                    return \array_values($union->getAtomicTypes())[0];
+                }
             }
         }
 
