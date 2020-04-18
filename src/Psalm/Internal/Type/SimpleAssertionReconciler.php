@@ -1018,8 +1018,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality,
-                        $is_strict_equality
+                        $is_equality
                     );
 
                     $object_types[] = $type;
