@@ -25,8 +25,10 @@ interface Throwable
 
     /**
      * @psalm-mutation-free
+     *
+     * @return int|string https://www.php.net/manual/en/throwable.getcode.php
      */
-    public final function getCode() : int;
+    public final function getCode();
 
     /**
      * @psalm-mutation-free
@@ -91,8 +93,10 @@ class Exception implements Throwable
 
     /**
      * @psalm-mutation-free
+     *
+     * @return int|string https://www.php.net/manual/en/throwable.getcode.php
      */
-    public final function getCode(): int {}
+    public final function getCode() {}
 
     /**
      * @psalm-mutation-free
