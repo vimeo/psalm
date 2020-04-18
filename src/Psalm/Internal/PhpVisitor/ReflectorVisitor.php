@@ -1266,10 +1266,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             $name_location ?: $class_location
                         );
                     } else {
-                        $storage->mixin_fqcln = Type::getFQCLNFromString(
+                        $mixin_fqcln = Type::getFQCLNFromString(
                             $docblock_info->mixin,
                             $this->aliases
                         );
+
+                        $storage->mixin_fqcln = $mixin_fqcln;
+
+                        $this->codebase->scanner->queueClassLikeForScanning($mixin_fqcln);
+                        $this->file_storage->referenced_classlikes[strtolower($mixin_fqcln)] = $mixin_fqcln;
 
                         // if there's a mixin, assume it's the reason for the __call
                         $storage->sealed_properties = true;
