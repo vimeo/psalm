@@ -791,7 +791,17 @@ class Union implements TypeNode
      */
     public function isNullable()
     {
-        return isset($this->types['null']);
+        if (isset($this->types['null'])) {
+            return true;
+        }
+
+        foreach ($this->types as $type) {
+            if ($type instanceof TTemplateParam && $type->as->isNullable()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -799,7 +809,17 @@ class Union implements TypeNode
      */
     public function isFalsable()
     {
-        return isset($this->types['false']);
+        if (isset($this->types['false'])) {
+            return true;
+        }
+
+        foreach ($this->types as $type) {
+            if ($type instanceof TTemplateParam && $type->as->isFalsable()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
