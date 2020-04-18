@@ -107,11 +107,11 @@ class ArrayFunctionCallTest extends TestCase
                         return array_filter($a, "is_object");
                     }',
             ],
-            'arrayKeys' => [
+            'arrayKeysNonEmpty' => [
                 '<?php
                     $a = array_keys(["a" => 1, "b" => 2]);',
                 'assertions' => [
-                    '$a' => 'list<string>',
+                    '$a' => 'non-empty-list<string>',
                 ],
             ],
             'arrayKeysMixed' => [
