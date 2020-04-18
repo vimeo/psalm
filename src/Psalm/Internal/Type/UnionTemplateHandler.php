@@ -272,7 +272,7 @@ class UnionTemplateHandler
 
     private static function findMatchingAtomicTypeForTemplate(
         Union $input_type,
-        Atomic $atomic_type,
+        Atomic $base_type,
         string $key,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer
@@ -286,17 +286,17 @@ class UnionTemplateHandler
                 return $atomic_input_type;
             }
 
-            if ($atomic_input_type instanceof Atomic\TFn && $atomic_type instanceof Atomic\TFn) {
+            if ($atomic_input_type instanceof Atomic\TFn && $base_type instanceof Atomic\TFn) {
                 return $atomic_input_type;
             }
 
             if ($atomic_input_type instanceof Atomic\TCallable
-                && $atomic_type instanceof Atomic\TCallable
+                && $base_type instanceof Atomic\TCallable
             ) {
                 return $atomic_input_type;
             }
 
-            if ($atomic_input_type instanceof Atomic\TFn && $atomic_type instanceof Atomic\TCallable) {
+            if ($atomic_input_type instanceof Atomic\TFn && $base_type instanceof Atomic\TCallable) {
                 return $atomic_input_type;
             }
 
@@ -312,7 +312,7 @@ class UnionTemplateHandler
                 return $atomic_input_type;
             }
 
-            if ($atomic_type instanceof Atomic\TCallable) {
+            if ($base_type instanceof Atomic\TCallable) {
                 $matching_atomic_type = TypeAnalyzer::getCallableFromAtomic(
                     $codebase,
                     $atomic_input_type,
@@ -326,17 +326,17 @@ class UnionTemplateHandler
             }
 
             if ($atomic_input_type instanceof Atomic\TNamedObject
-                && ($atomic_type instanceof Atomic\TNamedObject
-                    || $atomic_type instanceof Atomic\TIterable)
+                && ($base_type instanceof Atomic\TNamedObject
+                    || $base_type instanceof Atomic\TIterable)
             ) {
-                if ($atomic_type instanceof Atomic\TIterable) {
+                if ($base_type instanceof Atomic\TIterable) {
                     if ($atomic_input_type->value === 'Traversable') {
                         return $atomic_input_type;
                     }
 
-                    $atomic_type = new Atomic\TGenericObject(
+                    $base_type = new Atomic\TGenericObject(
                         'Traversable',
-                        $atomic_type->type_params
+                        $base_type->type_params
                     );
                 }
 
@@ -345,13 +345,13 @@ class UnionTemplateHandler
                         $codebase->classlike_storage_provider->get($atomic_input_type->value);
 
                     if ($atomic_input_type instanceof Atomic\TGenericObject
-                        && isset($classlike_storage->template_type_extends[$atomic_type->value])
+                        && isset($classlike_storage->template_type_extends[$base_type->value])
                     ) {
                         return $atomic_input_type;
                     }
 
-                    if (isset($classlike_storage->template_type_extends[$atomic_type->value])) {
-                        $extends_list = $classlike_storage->template_type_extends[$atomic_type->value];
+                    if (isset($classlike_storage->template_type_extends[$base_type->value])) {
+                        $extends_list = $classlike_storage->template_type_extends[$base_type->value];
 
                         $new_generic_params = [];
 
@@ -425,6 +425,22 @@ class UnionTemplateHandler
                     $atomic_types[] = clone $as_atomic_type;
                 }
             } else {
+                if ($depth < 10) {
+                    $replacement_type = self::replaceTemplateTypesWithStandins(
+                        $replacement_type,
+                        $template_result,
+                        $codebase,
+                        $statements_analyzer,
+                        $input_type,
+                        $input_arg_offset,
+                        $calling_class,
+                        $calling_function,
+                        $replace,
+                        $add_upper_bound,
+                        $depth + 1
+                    );
+                }
+
                 foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
                     $replacements_found = false;
 
