@@ -814,7 +814,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$a' => 'array{0: string, 1: int}',
                     '$a_values' => 'non-empty-list<int|string>',
-                    '$a_keys' => 'list<int>',
+                    '$a_keys' => 'non-empty-list<int>',
                 ],
             ],
             'changeIntOffsetKeyValuesWithDirectAssignment' => [
