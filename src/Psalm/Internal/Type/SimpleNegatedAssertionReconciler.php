@@ -385,13 +385,16 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if ($type->as->hasType('null') && !$type->as->isNull()) {
-                    $type->as->removeType('null');
+                $type->as = self::reconcileNull(
+                    $type->as,
+                    null,
+                    null,
+                    $suppressed_issues,
+                    $failed_reconciliation,
+                    $is_equality
+                );
 
-                    $did_remove_type = true;
-
-                    $existing_var_type->bustCache();
-                }
+                $existing_var_type->bustCache();
             }
         }
 
@@ -675,11 +678,29 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasScalar() || $is_equality) {
+                if (!$is_equality && !$type->as->isMixed()) {
+                    $template_did_fail = 0;
+
+                    $type = clone $type;
+
+                    $type->as = self::reconcileScalar(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $template_did_fail,
+                        $is_equality
+                    );
+
+                    $did_remove_type = true;
+
+                    if (!$template_did_fail) {
+                        $non_scalar_types[] = $type;
+                    }
+                } else {
+                    $did_remove_type = true;
                     $non_scalar_types[] = $type;
                 }
-
-                $did_remove_type = true;
             } elseif (!($type instanceof Scalar)) {
                 $non_scalar_types[] = $type;
             } else {
@@ -740,11 +761,29 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasObject() || $is_equality) {
+                if (!$is_equality && !$type->as->isMixed()) {
+                    $template_did_fail = 0;
+
+                    $type = clone $type;
+
+                    $type->as = self::reconcileObject(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $template_did_fail,
+                        $is_equality
+                    );
+
+                    $did_remove_type = true;
+
+                    if (!$template_did_fail) {
+                        $non_object_types[] = $type;
+                    }
+                } else {
+                    $did_remove_type = true;
                     $non_object_types[] = $type;
                 }
-
-                $did_remove_type = true;
             } elseif ($type instanceof TCallable) {
                 $non_object_types[] = new Atomic\TCallableArray([
                     Type::getArrayKey(),
@@ -813,11 +852,27 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasNumeric() || $is_equality) {
-                    if ($type->as->hasMixed()) {
-                        $did_remove_type = true;
-                    }
+                if (!$is_equality && !$type->as->isMixed()) {
+                    $template_did_fail = 0;
 
+                    $type = clone $type;
+
+                    $type->as = self::reconcileNumeric(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $template_did_fail,
+                        $is_equality
+                    );
+
+                    $did_remove_type = true;
+
+                    if (!$template_did_fail) {
+                        $non_numeric_types[] = $type;
+                    }
+                } else {
+                    $did_remove_type = true;
                     $non_numeric_types[] = $type;
                 }
             } elseif ($type instanceof TArrayKey) {
@@ -883,11 +938,27 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasInt() || $is_equality) {
-                    if ($type->as->hasMixed()) {
-                        $did_remove_type = true;
-                    }
+                if (!$is_equality && !$type->as->isMixed()) {
+                    $template_did_fail = 0;
 
+                    $type = clone $type;
+
+                    $type->as = self::reconcileInt(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $template_did_fail,
+                        $is_equality
+                    );
+
+                    $did_remove_type = true;
+
+                    if (!$template_did_fail) {
+                        $non_int_types[] = $type;
+                    }
+                } else {
+                    $did_remove_type = true;
                     $non_int_types[] = $type;
                 }
             } elseif ($type instanceof TArrayKey) {
@@ -960,11 +1031,27 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasFloat() || $is_equality) {
-                    if ($type->as->hasMixed()) {
-                        $did_remove_type = true;
-                    }
+                if (!$is_equality && !$type->as->isMixed()) {
+                    $template_did_fail = 0;
 
+                    $type = clone $type;
+
+                    $type->as = self::reconcileFloat(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $template_did_fail,
+                        $is_equality
+                    );
+
+                    $did_remove_type = true;
+
+                    if (!$template_did_fail) {
+                        $non_float_types[] = $type;
+                    }
+                } else {
+                    $did_remove_type = true;
                     $non_float_types[] = $type;
                 }
             } elseif ($type instanceof TScalar) {
@@ -1032,11 +1119,27 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasString() || $is_equality) {
-                    if ($type->as->hasMixed()) {
-                        $did_remove_type = true;
-                    }
+                if (!$is_equality && !$type->as->isMixed()) {
+                    $template_did_fail = 0;
 
+                    $type = clone $type;
+
+                    $type->as = self::reconcileString(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $template_did_fail,
+                        $is_equality
+                    );
+
+                    $did_remove_type = true;
+
+                    if (!$template_did_fail) {
+                        $non_string_types[] = $type;
+                    }
+                } else {
+                    $did_remove_type = true;
                     $non_string_types[] = $type;
                 }
             } elseif ($type instanceof TArrayKey) {
@@ -1117,11 +1220,27 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasArray() || $is_equality) {
-                    if ($type->as->hasMixed()) {
-                        $did_remove_type = true;
-                    }
+                if (!$is_equality && !$type->as->isMixed()) {
+                    $template_did_fail = 0;
 
+                    $type = clone $type;
+
+                    $type->as = self::reconcileArray(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $template_did_fail,
+                        $is_equality
+                    );
+
+                    $did_remove_type = true;
+
+                    if (!$template_did_fail) {
+                        $non_array_types[] = $type;
+                    }
+                } else {
+                    $did_remove_type = true;
                     $non_array_types[] = $type;
                 }
             } elseif ($type instanceof TCallable) {

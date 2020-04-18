@@ -690,6 +690,18 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
                 if ($type->as->hasInt() || $type->as->hasMixed()) {
+                    $type = clone $type;
+
+                    $type->as = self::reconcileInt(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality,
+                        $is_strict_equality
+                    );
+
                     $int_types[] = $type;
                 }
 
@@ -755,6 +767,17 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
                 if ($type->as->hasBool() || $type->as->hasMixed()) {
+                    $type = clone $type;
+
+                    $type->as = self::reconcileBool(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality
+                    );
+
                     $bool_types[] = $type;
                 }
 
@@ -815,7 +838,18 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             if ($type instanceof Scalar) {
                 $scalar_types[] = $type;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasScalarType() || $type->as->hasMixed()) {
+                if ($type->as->hasScalar() || $type->as->hasMixed()) {
+                    $type = clone $type;
+
+                    $type->as = self::reconcileScalar(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality
+                    );
+
                     $scalar_types[] = $type;
                 }
 
@@ -893,7 +927,21 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $numeric_types[] = new TInt();
                 $numeric_types[] = new TNumericString();
             } elseif ($type instanceof TTemplateParam) {
-                $numeric_types[] = $type;
+                if ($type->as->hasNumeric() || $type->as->hasMixed()) {
+                    $type = clone $type;
+
+                    $type->as = self::reconcileNumeric(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality
+                    );
+
+                    $numeric_types[] = $type;
+                }
+
                 $did_remove_type = true;
             } else {
                 $did_remove_type = true;
@@ -960,10 +1008,24 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $type->as = Type::getObject();
                 $object_types[] = $type;
                 $did_remove_type = true;
-            } elseif ($type instanceof TTemplateParam
-                && $type->as->hasObject()
-            ) {
-                $object_types[] = $type;
+            } elseif ($type instanceof TTemplateParam) {
+                if ($type->as->hasObject() || $type->as->hasMixed()) {
+                    $type = clone $type;
+
+                    $type->as = self::reconcileObject(
+                        $type->as,
+                        null,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality,
+                        $is_strict_equality
+                    );
+
+                    $object_types[] = $type;
+                }
+
+                $did_remove_type = true;
             } else {
                 $did_remove_type = true;
             }
