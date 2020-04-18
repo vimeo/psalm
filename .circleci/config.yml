@@ -111,10 +111,6 @@ workflows:
       - "Code Style Analysis":
           requires:
             - install-and-self-analyse
-      - coverage:
-          requires:
-            - test
-            - "Code Style Analysis"
       - phar-build:
           requires:
             - test
