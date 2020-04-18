@@ -210,6 +210,72 @@ class PureAnnotationTest extends TestCase
 
                     echo getMessage(new Exception("test"));'
             ],
+            'exceptionGetCode' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function getCode(Throwable $e): int {
+                        return $e->getCode();
+                    }
+
+                    echo getCode(new Exception("test"));'
+            ],
+            'exceptionGetFile' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function getFile(Throwable $e): string {
+                        return $e->getFile();
+                    }
+
+                    echo getFile(new Exception("test"));'
+            ],
+            'exceptionGetLine' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function getLine(Throwable $e): int {
+                        return $e->getLine();
+                    }
+
+                    echo getLine(new Exception("test"));'
+            ],
+            'exceptionGetTrace' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function getTrace(Throwable $e): array {
+                        return $e->getTrace();
+                    }
+
+                    echo count(getTrace(new Exception("test")));'
+            ],
+            'exceptionGetPrevious' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function getPrevious(Throwable $e): ?Throwable {
+                        return $e->getPrevious();
+                    }
+
+                    echo gettype(getPrevious(new Exception("test")));'
+            ],
+            'exceptionGetTraceAsString' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function getTraceAsString(Throwable $e): string {
+                        return $e->getTraceAsString();
+                    }
+
+                    echo getTraceAsString(new Exception("test"));'
+            ],
         ];
     }
 
