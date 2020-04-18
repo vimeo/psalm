@@ -3679,6 +3679,144 @@ class ClassTemplateExtendsTest extends TestCase
                     /** @extends BaseRepository<TeacherViewData, TeacherModel> */
                     class TeacherRepository extends BaseRepository {}'
             ],
+            'templateInheritedPropertyCorrectly' => [
+                '<?php
+                    /**
+                     * @template TKey1
+                     * @template TValue1
+                     */
+                    class Pair
+                    {
+                        /** @psalm-var TKey1 */
+                        public $one;
+
+                        /** @psalm-var TValue1 */
+                        public $two;
+
+                        /**
+                         * @psalm-param TKey1 $key
+                         * @psalm-param TValue1 $value
+                         */
+                        public function __construct($key, $value) {
+                            $this->one = $key;
+                            $this->two = $value;
+                        }
+                    }
+
+                    /**
+                     * @template TValue2
+                     * @extends Pair<string, TValue2>
+                     */
+                    class StringKeyedPair extends Pair {
+                        /**
+                         * @param TValue2 $value
+                         */
+                        public function __construct(string $key, $value) {
+                            parent::__construct($key, $value);
+                        }
+                    }
+
+                    $pair = new StringKeyedPair("somekey", 250);
+                    $a = $pair->two;
+                    $b = $pair->one;',
+                [
+                    '$pair' => 'StringKeyedPair<int>',
+                    '$a' => 'int',
+                    '$b' => 'string',
+                ]
+            ],
+            'templateInheritedPropertySameName' => [
+                '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    class Pair
+                    {
+                        /** @psalm-var TKey */
+                        public $one;
+
+                        /** @psalm-var TValue */
+                        public $two;
+
+                        /**
+                         * @psalm-param TKey $key
+                         * @psalm-param TValue $value
+                         */
+                        public function __construct($key, $value) {
+                            $this->one = $key;
+                            $this->two = $value;
+                        }
+                    }
+
+                    /**
+                     * @template TValue
+                     * @extends Pair<string, TValue>
+                     */
+                    class StringKeyedPair extends Pair {
+                        /**
+                         * @param TValue $value
+                         */
+                        public function __construct(string $key, $value) {
+                            parent::__construct($key, $value);
+                        }
+                    }
+
+                    $pair = new StringKeyedPair("somekey", 250);
+                    $a = $pair->two;
+                    $b = $pair->one;',
+                [
+                    '$pair' => 'StringKeyedPair<int>',
+                    '$a' => 'int',
+                    '$b' => 'string',
+                ]
+            ],
+            'templateInheritedPropertySameNameFlipped' => [
+                '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    class Pair
+                    {
+                        /** @psalm-var TKey */
+                        public $one;
+
+                        /** @psalm-var TValue */
+                        public $two;
+
+                        /**
+                         * @psalm-param TKey $key
+                         * @psalm-param TValue $value
+                         */
+                        public function __construct($key, $value) {
+                            $this->one = $key;
+                            $this->two = $value;
+                        }
+                    }
+
+                    /**
+                     * @template TValue
+                     * @extends Pair<TValue, string>
+                     */
+                    class StringKeyedPair extends Pair {
+                        /**
+                         * @param TValue $value
+                         */
+                        public function __construct(string $key, $value) {
+                            parent::__construct($value, $key);
+                        }
+                    }
+
+                    $pair = new StringKeyedPair("somekey", 250);
+                    $a = $pair->one;
+                    $b = $pair->two;',
+                [
+                    '$pair' => 'StringKeyedPair<int>',
+                    '$a' => 'int',
+                    '$b' => 'string',
+                ]
+            ]
         ];
     }
 

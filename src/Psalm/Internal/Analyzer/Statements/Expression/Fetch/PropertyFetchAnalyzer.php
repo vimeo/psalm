@@ -916,22 +916,54 @@ class PropertyFetchAnalyzer
             $calling_class_storage->template_types ?: []
         );
 
+        $extended_types = $calling_class_storage->template_type_extends;
+
         if ($template_types) {
-            $reversed_class_template_types = array_reverse(array_keys($template_types));
+            if ($calling_class_storage->template_types) {
+                foreach ($lhs_type_part->type_params as $param_offset => $lhs_param_type) {
+                    $i = -1;
 
-            $provided_type_param_count = count($lhs_type_part->type_params);
+                    foreach ($calling_class_storage->template_types as $calling_param_name => $_) {
+                        $i++;
 
-            foreach ($reversed_class_template_types as $i => $type_name) {
-                if (isset($lhs_type_part->type_params[$provided_type_param_count - 1 - $i])) {
-                    $template_types[$type_name][$declaring_class_storage->name] = [
-                        $lhs_type_part->type_params[$provided_type_param_count - 1 - $i],
-                        0
-                    ];
-                } else {
-                    $template_types[$type_name][$declaring_class_storage->name] = [
-                        Type::getMixed(),
-                        0
-                    ];
+                        if ($i === $param_offset) {
+                            $template_types[$calling_param_name][$calling_class_storage->name] = [
+                                $lhs_param_type,
+                                0
+                            ];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            foreach ($template_types as $type_name => $_) {
+                if (isset($extended_types[$declaring_class_storage->name][$type_name])) {
+                    $mapped_type = $extended_types[$declaring_class_storage->name][$type_name];
+
+                    foreach ($mapped_type->getAtomicTypes() as $mapped_type_atomic) {
+                        if (!$mapped_type_atomic instanceof Type\Atomic\TTemplateParam) {
+                            continue;
+                        }
+
+                        $param_name = $mapped_type_atomic->param_name;
+
+                        $position = false;
+
+                        if (isset($calling_class_storage->template_types[$param_name])) {
+                            $position = \array_search(
+                                $param_name,
+                                array_keys($calling_class_storage->template_types)
+                            );
+                        }
+
+                        if ($position !== false && isset($lhs_type_part->type_params[$position])) {
+                            $template_types[$type_name][$declaring_class_storage->name] = [
+                                $lhs_type_part->type_params[$position],
+                                0
+                            ];
+                        }
+                    }
                 }
             }
 
