@@ -1011,25 +1011,27 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         return;
                     }
 
-                    if ($context->pure && !$method_storage->pure) {
-                        if (IssueBuffer::accepts(
-                            new ImpureMethodCall(
-                                'Cannot call an impure method from a pure context',
-                                new CodeLocation($source, $stmt->name)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } elseif ($context->mutation_free && !$method_storage->mutation_free) {
-                        if (IssueBuffer::accepts(
-                            new ImpureMethodCall(
-                                'Cannot call an possibly-mutating method from a mutation-free context',
-                                new CodeLocation($source, $stmt->name)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
+                    if (!$context->inside_throw) {
+                        if ($context->pure && !$method_storage->pure) {
+                            if (IssueBuffer::accepts(
+                                new ImpureMethodCall(
+                                    'Cannot call an impure method from a pure context',
+                                    new CodeLocation($source, $stmt->name)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } elseif ($context->mutation_free && !$method_storage->mutation_free) {
+                            if (IssueBuffer::accepts(
+                                new ImpureMethodCall(
+                                    'Cannot call an possibly-mutating method from a mutation-free context',
+                                    new CodeLocation($source, $stmt->name)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
                         }
                     }
 
