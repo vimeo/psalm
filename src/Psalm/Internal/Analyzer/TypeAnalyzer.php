@@ -684,6 +684,23 @@ class TypeAnalyzer
                         continue 2;
                     }
 
+                    if ($intersection_container_type_lower === 'iterable') {
+                        if ($intersection_input_type_lower === 'traversable'
+                            || ($codebase->classlikes->classExists($intersection_input_type_lower)
+                                && $codebase->classlikes->classImplements(
+                                    $intersection_input_type_lower,
+                                    'Traversable'
+                                ))
+                            || ($codebase->classlikes->interfaceExists($intersection_input_type_lower)
+                                && $codebase->classlikes->interfaceExtends(
+                                    $intersection_input_type_lower,
+                                    'Traversable'
+                                ))
+                        ) {
+                            continue 2;
+                        }
+                    }
+
                     if ($intersection_input_type_lower === 'traversable'
                         && $intersection_container_type_lower === 'iterable'
                     ) {
