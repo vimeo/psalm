@@ -13,6 +13,7 @@ use function ob_start;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\IncludeCollector;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\Progress\EchoProgress;
@@ -57,6 +58,7 @@ class ProjectCheckerTest extends TestCase
      */
     private function getProjectAnalyzerWithConfig(Config $config)
     {
+        $config->setIncludeCollector(new IncludeCollector());
         return new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
             new \Psalm\Internal\Provider\Providers(

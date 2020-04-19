@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\IncludeCollector;
 use Psalm\Tests\Internal\Provider;
 use function dirname;
 use function getcwd;
@@ -144,6 +145,7 @@ class VariadicTest extends TestCase
         );
         $project_analyzer->setPhpVersion('7.3');
 
+        $config->setIncludeCollector(new IncludeCollector());
         $config->visitComposerAutoloadFiles($project_analyzer, null);
 
         return $project_analyzer;
