@@ -30,7 +30,6 @@ class Creator
 {
     const TEMPLATE = '<?xml version="1.0"?>
 <psalm
-    totallyTyped="true"
     errorLevel="1"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -65,14 +64,6 @@ class Creator
             '<directory name="' . $vendor_dir . '" />',
             $template
         );
-
-        if ($level > 1) {
-            $template = str_replace(
-                'totallyTyped="true"',
-                'totallyTyped="false"',
-                $template
-            );
-        }
 
         $template = str_replace(
             'errorLevel="1"',

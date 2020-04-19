@@ -32,7 +32,6 @@ class CreatorTest extends \Psalm\Tests\TestCase
 
         $this->assertSame('<?xml version="1.0"?>
 <psalm
-    totallyTyped="true"
     errorLevel="1"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
