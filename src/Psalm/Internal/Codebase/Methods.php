@@ -556,7 +556,7 @@ class Methods
      * @param array<string, array<int|string, Type\Union>> $extends
      * @return list<Type\Atomic>
      */
-    private static function getExtendedTemplatedTypes(
+    public static function getExtendedTemplatedTypes(
         Type\Atomic\TTemplateParam $atomic_type,
         array $extends
     ) : array {

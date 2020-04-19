@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
@@ -2147,12 +2148,25 @@ class TypeAnalyzer
                             $new_input_param = null;
 
                             foreach ($extended_input_param_type->getAtomicTypes() as $et) {
-                                if ($et instanceof TTemplateParam
-                                    && $et->param_name
-                                    && isset($input_class_storage->template_types[$et->param_name])
+                                if ($et instanceof TTemplateParam) {
+                                    $ets = Methods::getExtendedTemplatedTypes(
+                                        $et,
+                                        $template_extends
+                                    );
+                                } else {
+                                    $ets = [];
+                                }
+
+                                if ($ets
+                                    && $ets[0] instanceof TTemplateParam
+                                    && isset(
+                                        $input_class_storage->template_types
+                                            [$ets[0]->param_name]
+                                            [$ets[0]->defining_class]
+                                    )
                                 ) {
                                     $old_params_offset = (int) array_search(
-                                        $et->param_name,
+                                        $ets[0]->param_name,
                                         array_keys($input_class_storage->template_types)
                                     );
 
