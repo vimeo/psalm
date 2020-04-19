@@ -544,6 +544,7 @@ class UnusedVariableTest extends TestCase
                     function example() : void {
                         global $a;
                         echo $a;
+                        $a = "hello";
                     }
                     example();',
             ],

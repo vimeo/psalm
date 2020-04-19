@@ -774,6 +774,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                         : $this->getGlobalType($var_id);
 
                                 $context->vars_possibly_in_scope[$var_id] = true;
+
+                                $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint();
                             }
                         }
                     }
