@@ -47,6 +47,10 @@ class TClassString extends TString
         return $this->getKey();
     }
 
+    public function getAssertionString() {
+        return 'class-string';
+    }
+
     /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes

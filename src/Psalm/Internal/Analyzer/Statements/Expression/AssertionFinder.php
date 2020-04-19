@@ -871,7 +871,7 @@ class AssertionFinder
                 throw new \UnexpectedValueException('$getclass_position value');
             }
 
-            if ($getclass_expr instanceof PhpParser\Node\Expr\FuncCall) {
+            if ($getclass_expr instanceof PhpParser\Node\Expr\FuncCall && isset($getclass_expr->args[0])) {
                 $var_name = ExpressionAnalyzer::getArrayVarId(
                     $getclass_expr->args[0]->value,
                     $this_class_name,
