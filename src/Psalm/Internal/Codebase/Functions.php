@@ -368,6 +368,9 @@ class Functions
             'mysqli_next_result', 'mysqli_options', 'mysqli_ping', 'mysqli_query', 'mysqli_report',
             'mysqli_rollback', 'mysqli_savepoint', 'mysqli_set_charset', 'mysqli_ssl_set',
 
+            // script execution
+            'ignore_user_abort',
+
             // ftp
             'ftp_close',
         ];
