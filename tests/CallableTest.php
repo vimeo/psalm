@@ -1063,6 +1063,51 @@ class CallableTest extends TestCase
                     run("ff");',
                 'error_message' => 'UndefinedFunction',
             ],
+            'requireMatchingTemplateParams' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param T $item
+                     * @param callable(T): void $action
+                     * @return void
+                     */
+                    function execute($item, $action) {
+                        $action($item);
+                    }
+
+                    class A {}
+                    class B {}
+
+                    function action_b( B $item ): void {
+                    }
+
+                    execute( new A(), "action_b" );
+                    ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'requireMatchingTemplateParamsInNamespace' => [
+                '<?php
+                    namespace NS;
+                    /**
+                     * @template T
+                     * @param T $item
+                     * @param callable(T): void $action
+                     * @return void
+                     */
+                    function execute($item, $action) {
+                        $action($item);
+                    }
+
+                    class A {}
+                    class B {}
+
+                    function action_b( B $item ): void {
+                    }
+
+                    execute( new A(), "\NS\action_b" );
+                    ',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
