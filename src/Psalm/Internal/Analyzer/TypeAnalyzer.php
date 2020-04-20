@@ -51,7 +51,9 @@ use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use function get_class;
 use function array_merge;
+use function strpos;
 use function strtolower;
+use function substr;
 use function in_array;
 use function array_values;
 use function count;
@@ -1869,7 +1871,7 @@ class TypeAnalyzer
             try {
                 $function_storage = $codebase->functions->getStorage(
                     $statements_analyzer,
-                    $input_type_part->value
+                    self::getNormalizedCallableFunctionId($input_type_part)
                 );
 
                 return new TCallable(
@@ -2795,5 +2797,15 @@ class TypeAnalyzer
         $unique_type->possibly_undefined = $possibly_undefined;
 
         return $unique_type;
+    }
+
+    /**
+     * @param TLiteralString $atomic_type
+     * @return string
+     */
+    public static function getNormalizedCallableFunctionId($atomic_type) {
+        $lowercase = strtolower($atomic_type->value);
+
+        return strpos($lowercase, '\\') === 0 ? substr($lowercase, 1) : $lowercase;
     }
 }
