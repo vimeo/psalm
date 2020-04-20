@@ -2004,6 +2004,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->aliases
                 );
 
+                if ($class_storage && !$class_storage->is_trait && $return_type_fq_classlike_name === 'self') {
+                    $return_type_fq_classlike_name = $class_storage->name;
+                }
+
                 $return_type_string = $return_type_fq_classlike_name . $suffix;
             }
 

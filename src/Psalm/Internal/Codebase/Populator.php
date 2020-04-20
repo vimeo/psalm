@@ -351,7 +351,12 @@ class Populator
                                 && $declaring_method_storage->return_type
                                     !== $declaring_method_storage->signature_return_type
                             ) {
-                                if ($declaring_method_storage->signature_return_type) {
+                                if ($declaring_method_storage->signature_return_type
+                                    && TypeAnalyzer::isSimplyContainedBy(
+                                        $method_storage->signature_return_type,
+                                        $declaring_method_storage->signature_return_type
+                                    )
+                                ) {
                                     $method_storage->return_type = $declaring_method_storage->return_type;
                                     $method_storage->inherited_return_type = true;
                                 } elseif (TypeAnalyzer::isSimplyContainedBy(
@@ -857,6 +862,10 @@ class Populator
                                 && $interface_method_storage->signature_return_type
                                 && $interface_method_storage->return_type
                                     !== $interface_method_storage->signature_return_type
+                                && TypeAnalyzer::isSimplyContainedBy(
+                                    $interface_method_storage->signature_return_type,
+                                    $method_storage->signature_return_type
+                                )
                             ) {
                                 $method_storage->return_type = $interface_method_storage->return_type;
                                 $method_storage->inherited_return_type = true;
