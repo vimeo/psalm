@@ -1063,7 +1063,7 @@ class CallableTest extends TestCase
                     run("ff");',
                 'error_message' => 'UndefinedFunction',
             ],
-            'requireMatchingTemplateParams' => [
+            'requireMatchingTemplateParamsNoNamespace' => [
                 '<?php
                     /**
                      * @template T
