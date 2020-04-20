@@ -1050,6 +1050,19 @@ class CallableTest extends TestCase
                     a($fn);',
                 'error_message' => 'UndefinedVariable',
             ],
+            'dontQualifyStringCallables' => [
+                '<?php
+                    namespace NS;
+
+                    function ff() : void {}
+
+                    function run(callable $f) : void {
+                        $f();
+                    }
+
+                    run("ff");',
+                'error_message' => 'UndefinedFunction',
+            ],
         ];
     }
 }
