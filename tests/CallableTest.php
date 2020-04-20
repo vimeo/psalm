@@ -1098,13 +1098,13 @@ class CallableTest extends TestCase
                         $action($item);
                     }
 
-                    class A {}
-                    class B {}
+                    class C {}
+                    class D {}
 
-                    function action_b( B $item ): void {
+                    function action_d( \NS\D $item ): void {
                     }
 
-                    execute( new A(), "\NS\action_b" );
+                    execute( new \NS\C(), "\NS\action_d" );
                     ',
                 'error_message' => 'InvalidArgument',
             ],
