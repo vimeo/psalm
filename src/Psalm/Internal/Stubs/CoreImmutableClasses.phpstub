@@ -21,39 +21,39 @@ interface Throwable
     /**
      * @psalm-mutation-free
      */
-    public final function getMessage() : string;
+    public function getMessage() : string;
 
     /**
      * @psalm-mutation-free
      *
      * @return int|string https://www.php.net/manual/en/throwable.getcode.php
      */
-    public final function getCode();
+    public function getCode();
 
     /**
      * @psalm-mutation-free
      */
-    public final function getFile() : string;
+    public function getFile() : string;
 
     /**
      * @psalm-mutation-free
      */
-    public final function getLine() : int;
+    public function getLine() : int;
 
     /**
      * @psalm-mutation-free
      */
-    public final function getTrace() : array;
+    public function getTrace() : array;
 
     /**
      * @psalm-mutation-free
      */
-    public final function getPrevious() : ?Throwable;
+    public function getPrevious() : ?Throwable;
 
     /**
      * @psalm-mutation-free
      */
-    public final function getTraceAsString() : string;
+    public function getTraceAsString() : string;
 }
 
 class Exception implements Throwable
