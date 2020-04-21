@@ -724,7 +724,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                             $function_storage = $codebase->functions->getStorage(
                                 $this,
-                                $method_id
+                                strtolower($method_id)
                             );
 
                             $return_type = $function_storage->return_type;

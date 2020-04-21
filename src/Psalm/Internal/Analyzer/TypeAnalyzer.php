@@ -1869,7 +1869,7 @@ class TypeAnalyzer
             try {
                 $function_storage = $codebase->functions->getStorage(
                     $statements_analyzer,
-                    $input_type_part->value
+                    strtolower($input_type_part->value)
                 );
 
                 return new TCallable(

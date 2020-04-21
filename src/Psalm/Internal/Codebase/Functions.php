@@ -28,7 +28,7 @@ class Functions
     private $file_storage_provider;
 
     /**
-     * @var array<string, FunctionLikeStorage>
+     * @var array<lowercase-string, FunctionLikeStorage>
      */
     private static $stubbed_functions;
 
@@ -57,14 +57,21 @@ class Functions
         self::$stubbed_functions = [];
     }
 
+    /**
+     * @param lowercase-string $function_id
+     */
     public function getStorage(
         ?StatementsAnalyzer $statements_analyzer,
         string $function_id,
         ?string $root_file_path = null,
         ?string $checked_file_path = null
     ) : FunctionLikeStorage {
-        if (isset(self::$stubbed_functions[strtolower($function_id)])) {
-            return self::$stubbed_functions[strtolower($function_id)];
+        if ($function_id[0] === '\\') {
+            $function_id = substr($function_id, 1);
+        }
+
+        if (isset(self::$stubbed_functions[$function_id])) {
+            return self::$stubbed_functions[$function_id];
         }
 
         $file_storage = null;
