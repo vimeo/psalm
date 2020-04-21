@@ -2807,7 +2807,7 @@ class TypeAnalyzer
      * @param TLiteralString $input_type
      * @return string
      */
-    public static function getNormalizedCallableFunctionId($input_type)
+    public static function getNormalizedCallableFunctionId(TLiteralString $input_type): string
     {
         $lowercase = strtolower($input_type->value);
         return strpos($lowercase, '\\') === 0 ? substr($lowercase, 1) : $lowercase;
