@@ -204,7 +204,12 @@ class CallAnalyzer
 
             $class_analyzer = $source->getSource();
 
-            if ($class_analyzer instanceof ClassLikeAnalyzer && !$method_storage->is_static) {
+            if ($class_analyzer instanceof ClassLikeAnalyzer
+                && !$method_storage->is_static
+                && ($context->collect_nonprivate_initializations
+                    || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || $method_storage->final)
+            ) {
                 $local_vars_in_scope = [];
                 $local_vars_possibly_in_scope = [];
 

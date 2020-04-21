@@ -1147,6 +1147,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $uninitialized_variables = [];
         $uninitialized_properties = [];
         $uninitialized_typed_properties = [];
+        $uninitialized_private_properties = false;
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
             $property_class_name = $codebase->properties->getDeclaringClassForProperty(
@@ -1205,6 +1206,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $fq_class_name_lc . '::__construct',
                 strtolower($property_class_name) . '::$' . $property_name
             );
+
+            if ($property->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                $uninitialized_private_properties = true;
+            }
 
             $uninitialized_variables[] = '$this->' . $property_name;
             $uninitialized_properties[$property_class_name . '::$' . $property_name] = $property;
@@ -1305,6 +1310,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $was_collecting_initializations = $class_context->collect_initializations;
 
                 $class_context->collect_initializations = true;
+                $class_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
 
                 $constructor_analyzer = $this->analyzeClassMethod(
                     $fake_stmt,
@@ -1324,6 +1330,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         if ($constructor_analyzer) {
             $method_context = clone $class_context;
             $method_context->collect_initializations = true;
+            $method_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
             $method_context->self = $fq_class_name;
 
             $this_atomic_object_type = new Type\Atomic\TNamedObject($fq_class_name);
@@ -1379,11 +1386,16 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     && $error_location
                     && (!$end_type->initialized || $property_storage !== $constructor_class_property_storage)
                 ) {
+                    $expected_visibility = $uninitialized_private_properties
+                        ? 'private or final '
+                        : '';
+
                     if (IssueBuffer::accepts(
                         new PropertyNotSetInConstructor(
                             'Property ' . $class_storage->name . '::$' . $property_name
-                                . ' is not defined in constructor of ' .
-                                $this->fq_class_name . ' and in any methods called in the constructor',
+                                . ' is not defined in constructor of '
+                                . $this->fq_class_name . ' and in any ' . $expected_visibility
+                                . 'methods called in the constructor',
                             $error_location,
                             $property_id
                         ),

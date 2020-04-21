@@ -170,11 +170,18 @@ class Context
     public $collect_mutations = false;
 
     /**
-     * Whether or not to do a deep analysis and collect initializations from private methods
+     * Whether or not to do a deep analysis and collect initializations from private or final methods
      *
      * @var bool
      */
     public $collect_initializations = false;
+
+    /**
+     * Whether or not to do a deep analysis and collect initializations from public non-final methods
+     *
+     * @var bool
+     */
+    public $collect_nonprivate_initializations = false;
 
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties

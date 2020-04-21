@@ -348,6 +348,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         $call_context = new Context($this_context->self);
         $call_context->collect_mutations = $this_context->collect_mutations;
         $call_context->collect_initializations = $this_context->collect_initializations;
+        $call_context->collect_nonprivate_initializations = $this_context->collect_nonprivate_initializations;
         $call_context->initialized_methods = $this_context->initialized_methods;
         $call_context->include_location = $this_context->include_location;
         $call_context->calling_method_id = $this_context->calling_method_id;

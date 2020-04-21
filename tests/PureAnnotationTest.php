@@ -68,11 +68,11 @@ class PureAnnotationTest extends TestCase
                             return $this->options;
                         }
 
-                        function setOptions(array $options): void {
+                        public final function setOptions(array $options): void {
                             $this->options = $options;
                         }
 
-                        function setDefaultOptions(array $defaultOptions): void {
+                        public final function setDefaultOptions(array $defaultOptions): void {
                             $this->defaultOptions = $defaultOptions;
                         }
                     }',
