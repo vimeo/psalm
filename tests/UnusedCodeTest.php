@@ -674,7 +674,6 @@ class UnusedCodeTest extends TestCase
 
                     $items = new IterableResult();
 
-                    /** @psalm-suppress MixedAssignment */
                     foreach ($items as $_item) {}'
             ],
             'usedThroughNewClassStringOfBase' => [
