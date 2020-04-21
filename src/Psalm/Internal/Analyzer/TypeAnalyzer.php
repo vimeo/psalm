@@ -2800,12 +2800,16 @@ class TypeAnalyzer
     }
 
     /**
-     * @param TLiteralString $atomic_type
+     * Function names are lowercased and the leading \ is removed.
+     *
+     * \NS\some_function => ns\some_function
+     *
+     * @param TLiteralString $input_type
      * @return string
      */
-    public static function getNormalizedCallableFunctionId($atomic_type) {
-        $lowercase = strtolower($atomic_type->value);
-
+    public static function getNormalizedCallableFunctionId($input_type)
+    {
+        $lowercase = strtolower($input_type->value);
         return strpos($lowercase, '\\') === 0 ? substr($lowercase, 1) : $lowercase;
     }
 }
