@@ -872,7 +872,7 @@ class Codebase
             return $this->methods->getStorage($declaring_method_id);
         }
 
-        return $this->functions->getStorage($statements_analyzer, $function_id);
+        return $this->functions->getStorage($statements_analyzer, strtolower($function_id));
     }
 
     /**
@@ -1307,7 +1307,7 @@ class Codebase
             $params = $method_storage->params;
         } else {
             try {
-                $function_storage = $this->functions->getStorage(null, $function_symbol);
+                $function_storage = $this->functions->getStorage(null, strtolower($function_symbol));
 
                 $params = $function_storage->params;
             } catch (\Exception $exception) {

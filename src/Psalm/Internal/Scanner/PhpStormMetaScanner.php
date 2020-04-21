@@ -300,7 +300,7 @@ class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            $function_id
+                            strtolower($function_id)
                         );
 
                         return $storage->return_type ?: Type::getMixed();
@@ -335,7 +335,7 @@ class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            $function_id
+                            strtolower($function_id)
                         );
 
                         return $storage->return_type ?: Type::getMixed();
@@ -385,7 +385,7 @@ class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            $function_id
+                            strtolower($function_id)
                         );
 
                         return $storage->return_type ?: Type::getMixed();

@@ -1871,7 +1871,7 @@ class TypeAnalyzer
             try {
                 $function_storage = $codebase->functions->getStorage(
                     $statements_analyzer,
-                    self::getNormalizedCallableFunctionId($input_type_part)
+                    strtolower($input_type_part->value)
                 );
 
                 return new TCallable(

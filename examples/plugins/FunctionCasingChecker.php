@@ -92,7 +92,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                 $statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
                     ? $statements_source
                     : null,
-                $function_id
+                strtolower($function_id)
             );
 
             if (!$function_storage->cased_name) {
