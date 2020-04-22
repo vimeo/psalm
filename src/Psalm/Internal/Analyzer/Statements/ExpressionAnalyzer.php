@@ -1648,7 +1648,9 @@ class ExpressionAnalyzer
                     }
                 }
 
-                return $all_conditional_return_types;
+                $combined = TypeCombination::combineTypes($all_conditional_return_types);
+
+                return array_values($combined->getAtomicTypes());
             }
 
             $return_type->conditional_type = self::fleshOutType(
