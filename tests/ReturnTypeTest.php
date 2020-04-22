@@ -787,6 +787,17 @@ class ReturnTypeTest extends TestCase
                     '$res' => 'iterable<mixed, string>',
                 ],
             ],
+            'mixedAssignmentWithUnderscore' => [
+                '<?php
+                    $gen = (function (): Generator {
+                        yield 1 => \'a\';
+                        yield 2 => \'b\';
+                    })();
+
+                    foreach ($gen as $k => $_) {
+                        echo "$k\n";
+                    }'
+            ],
         ];
     }
 

@@ -32,6 +32,7 @@ use Psalm\Type;
 use function is_string;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -342,6 +343,7 @@ class AssignmentAnalyzer
             if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch
                 && !strpos($root_var_id ?? '', '->')
                 && !$comment_type
+                && substr($var_id ?? '', 0, 2) !== '$_'
             ) {
                 if (IssueBuffer::accepts(
                     new MixedAssignment(
