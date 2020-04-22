@@ -1648,7 +1648,10 @@ class ExpressionAnalyzer
                     }
                 }
 
-                $combined = TypeCombination::combineTypes($all_conditional_return_types);
+                $combined = TypeCombination::combineTypes(
+                    $all_conditional_return_types,
+                    $codebase
+                );
 
                 return array_values($combined->getAtomicTypes());
             }
