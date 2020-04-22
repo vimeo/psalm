@@ -1649,7 +1649,7 @@ class ExpressionAnalyzer
                 }
 
                 $combined = TypeCombination::combineTypes(
-                    $all_conditional_return_types,
+                    array_values($all_conditional_return_types),
                     $codebase
                 );
 
