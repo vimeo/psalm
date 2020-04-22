@@ -957,7 +957,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $return_type_candidate,
                             $self_fq_class_name,
                             $static_type,
-                            $class_storage->parent_class
+                            $class_storage->parent_class,
+                            true,
+                            false,
+                            \is_string($static_type)
+                                && $static_type !== $context->self
                         );
 
                         $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
