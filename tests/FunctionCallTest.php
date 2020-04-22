@@ -238,6 +238,9 @@ class FunctionCallTest extends TestCase
             ],
             'compact' => [
                 '<?php
+                    /**
+                     * @return array<string, mixed>
+                     */
                     function test(): array {
                         return compact(["val"]);
                     }',
@@ -1173,6 +1176,9 @@ class FunctionCallTest extends TestCase
             ],
             'compactDefinedVariable' => [
                 '<?php
+                    /**
+                     * @return array<string, mixed>
+                     */
                     function foo(int $a, string $b, bool $c) : array {
                         return compact("a", "b", "c");
                     }',
@@ -1647,6 +1653,9 @@ class FunctionCallTest extends TestCase
             ],
             'compactUndefinedVariable' => [
                 '<?php
+                    /**
+                     * @return array<string, mixed>
+                     */
                     function foo() : array {
                         return compact("a", "b", "c");
                     }',

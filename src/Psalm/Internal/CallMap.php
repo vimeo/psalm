@@ -1147,7 +1147,7 @@ return [
 'commonmark\render\latex' => ['string', 'node'=>'CommonMark\Node', 'options='=>'int', 'width='=>'int'],
 'commonmark\render\man' => ['string', 'node'=>'CommonMark\Node', 'options='=>'int', 'width='=>'int'],
 'commonmark\render\xml' => ['string', 'node'=>'CommonMark\Node', 'options='=>'int'],
-'compact' => ['array', 'var_name'=>'string|array', '...var_names='=>'string|array'],
+'compact' => ['array<string, mixed>', 'var_name'=>'string|array', '...var_names='=>'string|array'],
 'COMPersistHelper::__construct' => ['void', 'com_object'=>'object'],
 'COMPersistHelper::GetCurFile' => ['string'],
 'COMPersistHelper::GetMaxStreamSize' => ['int'],
