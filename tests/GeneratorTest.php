@@ -223,6 +223,14 @@ class GeneratorTest extends TestCase
                         return 5;
                     }'
             ],
+            'iteratorUnion' => [
+                '<?php
+                    /** @return Iterator|IteratorAggregate */
+                    function getIteratorOrAggregate() {
+                        yield 2;
+                    }
+                    echo json_encode(iterator_to_array(getIteratorOrAggregate()));'
+            ],
         ];
     }
 
