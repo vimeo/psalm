@@ -8,7 +8,7 @@ Make sure to check out the [Contributing to Open Source on GitHub](https://guide
 
 You can create an issue [here](https://github.com/vimeo/psalm/issues/new), but before you do, follow these guidelines:
 
-* Make sure that you are using the latest version (`dev-master`).
+* Make sure that you are using the latest version (`master`).
 * It’s by no means a requirement, but if it's a bug, and you provide demonstration code that can be pasted into https://psalm.dev, it will likely get fixed faster.
 
 ## Pull Requests
