@@ -97,21 +97,6 @@ interface Iterator extends Traversable {
 }
 
 /**
- * @template TIterator as IteratorAggregate|RecursiveIterator
- * @mixin TIterator
- */
-class RecursiveIteratorIterator {
-    /**
-     * @param TIterator $iterator
-     * @param int $mode
-     * @param int $flags
-     *
-     * @return void
-     */
-    public function __construct($iterator, $mode = 0, $flags = 0) {}
-}
-
-/**
  * @template-covariant TKey
  * @template-covariant TValue
  *
@@ -127,17 +112,20 @@ interface OuterIterator extends Iterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @template TIterator as Traversable<TKey, TValue>
  *
  * @template-implements OuterIterator<TKey, TValue>
+ *
+ * @mixin TIterator
  */
 class IteratorIterator implements OuterIterator {
     /**
-     * @param Traversable<TKey, TValue> $iterator
+     * @param TIterator $iterator
      */
     public function __construct(Traversable $iterator) {}
 
     /**
-     * @return Iterator<TKey, TValue>
+     * @return TIterator
      */
     public function getInnerIterator() {}
 
@@ -188,6 +176,21 @@ class IteratorIterator implements OuterIterator {
      * @since 5.0.0
      */
     public function rewind() {}
+}
+
+/**
+ * @template TIterator as RecursiveIterator|IteratorAggregate
+ * @mixin TIterator
+ */
+class RecursiveIteratorIterator implements OuterIterator {
+    /**
+     * @param TIterator $iterator
+     * @param int $mode
+     * @param int $flags
+     *
+     * @return void
+     */
+    public function __construct($iterator, $mode = 0, $flags = 0) {}
 }
 
 /**
