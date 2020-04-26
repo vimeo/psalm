@@ -1261,10 +1261,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 if ($docblock_info->mixin) {
                     if (isset($this->class_template_types[$docblock_info->mixin])) {
-                        $storage->docblock_issues[] = new InvalidDocblock(
-                            'Templates are not currently supported for @mixin',
-                            $name_location ?: $class_location
-                        );
+                        $storage->mixin_param = $docblock_info->mixin;
                     } else {
                         $mixin_fqcln = Type::getFQCLNFromString(
                             $docblock_info->mixin,

@@ -97,6 +97,21 @@ interface Iterator extends Traversable {
 }
 
 /**
+ * @template TIterator as IteratorAggregate|RecursiveIterator
+ * @mixin TIterator
+ */
+class RecursiveIteratorIterator {
+    /**
+     * @param TIterator $iterator
+     * @param int $mode
+     * @param int $flags
+     *
+     * @return void
+     */
+    public function __construct($iterator, $mode = 0, $flags = 0) {}
+}
+
+/**
  * @template-covariant TKey
  * @template-covariant TValue
  *

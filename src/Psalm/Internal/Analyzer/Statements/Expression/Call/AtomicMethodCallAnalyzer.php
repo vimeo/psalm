@@ -254,6 +254,53 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         );
 
         if (!$naive_method_exists
+            && $class_storage->mixin_param
+            && $lhs_type_part instanceof Type\Atomic\TGenericObject
+            && $class_storage->template_types
+        ) {
+            $param_position = \array_search(
+                $class_storage->mixin_param,
+                \array_keys($class_storage->template_types)
+            );
+
+            if ($param_position !== false
+                && isset($lhs_type_part->type_params[$param_position])
+            ) {
+                if ($lhs_type_part->type_params[$param_position]->isSingle()) {
+                    $lhs_type_part_new = array_values(
+                        $lhs_type_part->type_params[$param_position]->getAtomicTypes()
+                    )[0];
+
+                    if ($lhs_type_part_new instanceof Type\Atomic\TNamedObject) {
+                        $new_method_id = new MethodIdentifier(
+                            $lhs_type_part_new->value,
+                            $method_name_lc
+                        );
+
+                        if ($codebase->methods->methodExists(
+                            $new_method_id,
+                            $context->calling_method_id,
+                            $codebase->collect_locations
+                                ? new CodeLocation($source, $stmt->name)
+                                : null,
+                            !$context->collect_initializations
+                                && !$context->collect_mutations
+                                ? $statements_analyzer
+                                : null,
+                            $statements_analyzer->getFilePath()
+                        )) {
+                            $lhs_type_part = $lhs_type_part_new;
+                            $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+                            $naive_method_exists = true;
+                            $method_id = $new_method_id;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
                 $context,

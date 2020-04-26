@@ -103,6 +103,11 @@ class ClassLikeStorage
     public $mixin_fqcln = null;
 
     /**
+     * @var null|string
+     */
+    public $mixin_param = null;
+
+    /**
      * @var array<string, bool>
      */
     public $deprecated_constants = [];
