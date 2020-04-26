@@ -1262,6 +1262,20 @@ class FunctionCallTest extends TestCase
                     '$F3' => 'false|string',
                 ]
             ],
+            'sscanfReturnTypeWithTwoParameters' => [
+                '<?php
+                    $data = sscanf("42 psalm road", "%s %s");',
+                [
+                    '$data' => 'list<float|int|string>',
+                ]
+            ],
+            'sscanfReturnTypeWithMoreThanTwoParameters' => [
+                '<?php
+                    $n = sscanf("42 psalm road", "%s %s", $p1, $p2);',
+                [
+                    '$n' => 'int',
+                ]
+            ],
         ];
     }
 
