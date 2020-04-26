@@ -648,6 +648,10 @@ abstract class Type
                     );
                 }
 
+                if ($property_key[0] === '\'' || $property_key[0] === '"') {
+                    $property_key = \stripslashes(substr($property_key, 1, -1));
+                }
+
                 if (!$property_type instanceof Union) {
                     $property_type = new Union([$property_type]);
                 }

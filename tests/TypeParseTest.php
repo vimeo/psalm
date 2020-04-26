@@ -401,6 +401,23 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testObjectLikeWithSpace()
+    {
+        $this->assertSame('array{\'a \': int, \'b  \': string}', (string) Type:: parseString('array{\'a \': int, \'b  \': string}'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testObjectLikeWithQuotedKeys()
+    {
+        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type:: parseString('array{\'"\': int, \'\\\'\': string}'));
+        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type:: parseString('array{"\\"": int, "\\\'": string}'));
+    }
+
+    /**
+     * @return void
+     */
     public function testObjectLikeWithoutClosingBracket()
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);

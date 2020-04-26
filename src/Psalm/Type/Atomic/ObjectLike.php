@@ -75,13 +75,11 @@ class ObjectLike extends \Psalm\Type\Atomic
     public function __toString()
     {
         $union_type_parts = array_map(
-            /**
-             * @param  string|int $name
-             * @param  Union $type
-             *
-             * @return string
-             */
             function ($name, Union $type) {
+                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n]/', $name)) {
+                    $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
+                }
+
                 return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
             },
             array_keys($this->properties),
@@ -95,13 +93,11 @@ class ObjectLike extends \Psalm\Type\Atomic
     public function getId(bool $nested = false)
     {
         $union_type_parts = array_map(
-            /**
-             * @param  string|int $name
-             * @param  Union $type
-             *
-             * @return string
-             */
             function ($name, Union $type) {
+                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n]/', $name)) {
+                    $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
+                }
+
                 return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
             },
             array_keys($this->properties),
@@ -143,12 +139,6 @@ class ObjectLike extends \Psalm\Type\Atomic
                 implode(
                     ', ',
                     array_map(
-                        /**
-                         * @param  string|int $name
-                         * @param  Union  $type
-                         *
-                         * @return string
-                         */
                         function (
                             $name,
                             Union $type
@@ -158,6 +148,10 @@ class ObjectLike extends \Psalm\Type\Atomic
                             $this_class,
                             $use_phpdoc_format
                         ) {
+                            if (\is_string($name) && \preg_match('/[ "\'\\\\.\n]/', $name)) {
+                                $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
+                            }
+
                             return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->toNamespacedString(
                                 $namespace,
                                 $aliased_classes,
