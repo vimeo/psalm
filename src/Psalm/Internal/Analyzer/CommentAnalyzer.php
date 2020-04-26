@@ -1145,8 +1145,14 @@ class CommentAnalyzer
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
 
+                    $name = trim($line_parts[1]);
+
+                    if (!preg_match('/^\$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)$/', $name)) {
+                        throw new DocblockParseException('Badly-formatted @property name');
+                    }
+
                     $info->properties[] = [
-                        'name' => trim($line_parts[1]),
+                        'name' => $name,
                         'type' => $line_parts[0],
                         'line_number' => $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset),
                         'tag' => $property_tag,
