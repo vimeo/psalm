@@ -1620,7 +1620,8 @@ class Union implements TypeNode
         array $phantom_classes = [],
         bool $inferred = true,
         bool $inherited = false,
-        bool $prevent_template_covariance = false
+        bool $prevent_template_covariance = false,
+        ?string $calling_method_id = null
     ) : bool {
         if ($this->checked) {
             return true;
@@ -1633,7 +1634,8 @@ class Union implements TypeNode
             $phantom_classes,
             $inferred,
             $inherited,
-            $prevent_template_covariance
+            $prevent_template_covariance,
+            $calling_method_id
         );
 
         $checker->traverseArray($this->types);

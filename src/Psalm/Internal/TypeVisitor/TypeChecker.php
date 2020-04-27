@@ -63,6 +63,8 @@ class TypeChecker extends NodeVisitor
     /** @var bool */
     private $has_errors = false;
 
+    private $calling_method_id;
+
     /**
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
@@ -79,7 +81,8 @@ class TypeChecker extends NodeVisitor
         array $phantom_classes = [],
         bool $inferred = true,
         bool $inherited = false,
-        bool $prevent_template_covariance = false
+        bool $prevent_template_covariance = false,
+        ?string $calling_method_id = null
     ) {
         $this->source = $source;
         $this->code_location = $code_location;
@@ -88,6 +91,7 @@ class TypeChecker extends NodeVisitor
         $this->inferred = $inferred;
         $this->inherited = $inherited;
         $this->prevent_template_covariance = $prevent_template_covariance;
+        $this->calling_method_id = $calling_method_id;
     }
 
     /**
@@ -156,7 +160,7 @@ class TypeChecker extends NodeVisitor
                 $atomic->value,
                 $this->code_location,
                 $this->source->getFQCLN(),
-                null,
+                $this->calling_method_id,
                 $this->suppressed_issues,
                 $this->inferred,
                 false,

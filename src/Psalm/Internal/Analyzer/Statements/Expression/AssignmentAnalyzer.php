@@ -144,7 +144,10 @@ class AssignmentAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                         $statements_analyzer->getSuppressedIssues(),
                         [],
-                        false
+                        false,
+                        false,
+                        false,
+                        $context->calling_method_id
                     );
 
                     $type_location = null;

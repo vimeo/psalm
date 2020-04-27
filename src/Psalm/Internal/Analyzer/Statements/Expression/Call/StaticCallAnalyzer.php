@@ -979,7 +979,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 $statements_analyzer,
                                 new CodeLocation($source, $stmt),
                                 $statements_analyzer->getSuppressedIssues(),
-                                $context->phantom_classes
+                                $context->phantom_classes,
+                                true,
+                                false,
+                                false,
+                                $context->calling_method_id
                             );
                         }
                     }

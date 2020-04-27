@@ -979,7 +979,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
                                 $statements_analyzer,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 $statements_analyzer->getSuppressedIssues(),
-                                $context->phantom_classes
+                                $context->phantom_classes,
+                                true,
+                                false,
+                                false,
+                                $context->calling_method_id
                             );
                         }
                     }

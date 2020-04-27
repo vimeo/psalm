@@ -197,7 +197,11 @@ class MethodCallReturnTypeFetcher
                         $statements_analyzer,
                         new CodeLocation($statements_analyzer, $stmt),
                         $statements_analyzer->getSuppressedIssues(),
-                        $context->phantom_classes
+                        $context->phantom_classes,
+                        true,
+                        false,
+                        false,
+                        $context->calling_method_id
                     );
                 }
             } else {
