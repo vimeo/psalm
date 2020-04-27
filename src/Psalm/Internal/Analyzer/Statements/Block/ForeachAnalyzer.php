@@ -865,7 +865,7 @@ class ForeachAnalyzer
                         $statements_analyzer,
                         $foreach_expr,
                         $context,
-                        'current'
+                        'key'
                     );
 
                     if ($iterator_value_type && !$iterator_value_type->isMixed()) {
