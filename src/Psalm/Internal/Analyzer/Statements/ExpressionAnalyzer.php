@@ -2229,7 +2229,7 @@ class ExpressionAnalyzer
             }
 
             if ($atomic_type instanceof TNamedObject
-                || $atomic_type instanceof TObject
+                || $atomic_type instanceof Type\Atomic\TObjectWithProperties
             ) {
                 $intersection_types = [$atomic_type];
 
