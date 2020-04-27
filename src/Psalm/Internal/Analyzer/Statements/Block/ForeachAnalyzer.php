@@ -854,46 +854,33 @@ class ForeachAnalyzer
                         )
                     )
                 ) {
-                    $old_data_provider = $statements_analyzer->node_data;
-
-                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-                    $fake_method_call = new PhpParser\Node\Expr\MethodCall(
-                        $foreach_expr,
-                        new PhpParser\Node\Identifier('current', $foreach_expr->getAttributes())
-                    );
-
-                    $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-                    if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
-                        $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
-                    }
-
-                    $was_inside_call = $context->inside_call;
-
-                    $context->inside_call = true;
-
-                    \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                    $iterator_value_type = self::getFakeMethodCallType(
                         $statements_analyzer,
-                        $fake_method_call,
-                        $context
+                        $foreach_expr,
+                        $context,
+                        'current'
                     );
 
-                    $context->inside_call = $was_inside_call;
+                    $iterator_key_type = self::getFakeMethodCallType(
+                        $statements_analyzer,
+                        $foreach_expr,
+                        $context,
+                        'current'
+                    );
 
-                    if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
-                        $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
+                    if ($iterator_value_type && !$iterator_value_type->isMixed()) {
+                        if (!$value_type) {
+                            $value_type = $iterator_value_type;
+                        } else {
+                            $value_type = Type::combineUnionTypes($value_type, $iterator_value_type);
+                        }
                     }
 
-                    $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?: null;
-
-                    $statements_analyzer->node_data = $old_data_provider;
-
-                    if ($iterator_class_type && !$iterator_class_type->isMixed()) {
-                        if (!$value_type) {
-                            $value_type = $iterator_class_type;
+                    if ($iterator_key_type && !$iterator_key_type->isMixed()) {
+                        if (!$key_type) {
+                            $key_type = $iterator_key_type;
                         } else {
-                            $value_type = Type::combineUnionTypes($value_type, $iterator_class_type);
+                            $key_type = Type::combineUnionTypes($key_type, $iterator_key_type);
                         }
                     }
                 }
@@ -1013,6 +1000,58 @@ class ForeachAnalyzer
 
             return;
         }
+    }
+
+    private static function getFakeMethodCallType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $foreach_expr,
+        Context $context,
+        string $method_name
+    ) : ?Type\Union {
+        $old_data_provider = $statements_analyzer->node_data;
+
+        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+            $foreach_expr,
+            new PhpParser\Node\Identifier($method_name, $foreach_expr->getAttributes())
+        );
+
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
+        }
+
+        if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['PossiblyUndefinedMethod']);
+        }
+
+        $was_inside_call = $context->inside_call;
+
+        $context->inside_call = true;
+
+        \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+            $statements_analyzer,
+            $fake_method_call,
+            $context
+        );
+
+        $context->inside_call = $was_inside_call;
+
+        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
+        }
+
+        if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
+        }
+
+        $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?: null;
+
+        $statements_analyzer->node_data = $old_data_provider;
+
+        return $iterator_class_type;
     }
 
     /**
