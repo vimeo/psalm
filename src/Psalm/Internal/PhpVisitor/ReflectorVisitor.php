@@ -1260,22 +1260,41 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->psalm_internal = $docblock_info->psalm_internal;
 
                 if ($docblock_info->mixin) {
-                    if (isset($this->class_template_types[$docblock_info->mixin])) {
-                        $storage->mixin_param = $docblock_info->mixin;
-                    } else {
-                        $mixin_fqcln = Type::getFQCLNFromString(
+                    $mixin_type = Type::parseTokens(
+                        Type::fixUpLocalType(
                             $docblock_info->mixin,
-                            $this->aliases
-                        );
+                            $this->aliases,
+                            $this->class_template_types
+                        ),
+                        null,
+                        $this->class_template_types
+                    );
 
-                        $storage->mixin_fqcln = $mixin_fqcln;
+                    $mixin_type->queueClassLikesForScanning(
+                        $this->codebase,
+                        $this->file_storage,
+                        $storage->template_types ?: []
+                    );
 
-                        $this->codebase->scanner->queueClassLikeForScanning($mixin_fqcln);
-                        $this->file_storage->referenced_classlikes[strtolower($mixin_fqcln)] = $mixin_fqcln;
+                    if ($mixin_type->isSingle()) {
+                        $mixin_type = array_values($mixin_type->getAtomicTypes())[0];
 
-                        // if there's a mixin, assume it's the reason for the __call
-                        $storage->sealed_properties = true;
-                        $storage->sealed_methods = true;
+                        if ($mixin_type instanceof Type\Atomic\TNamedObject) {
+                            if ($mixin_type instanceof Type\Atomic\TGenericObject) {
+                                $storage->mixin = $mixin_type;
+                            } else {
+                                $storage->mixin_fqcln = $mixin_type->value;
+
+                                $this->file_storage->referenced_classlikes[strtolower($storage->mixin_fqcln)]
+                                    = $storage->mixin_fqcln;
+
+                                // if there's a mixin, assume it's the reason for the __call
+                                $storage->sealed_properties = true;
+                                $storage->sealed_methods = true;
+                            }
+                        } elseif ($mixin_type instanceof Type\Atomic\TTemplateParam) {
+                            $storage->mixin = $mixin_type;
+                        }
                     }
                 }
 

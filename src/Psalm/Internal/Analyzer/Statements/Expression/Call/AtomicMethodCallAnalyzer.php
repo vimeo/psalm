@@ -254,12 +254,12 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         );
 
         if (!$naive_method_exists
-            && $class_storage->mixin_param
+            && $class_storage->mixin instanceof Type\Atomic\TTemplateParam
             && $lhs_type_part instanceof Type\Atomic\TGenericObject
             && $class_storage->template_types
         ) {
             $param_position = \array_search(
-                $class_storage->mixin_param,
+                $class_storage->mixin->param_name,
                 \array_keys($class_storage->template_types)
             );
 
@@ -289,7 +289,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 : null,
                             $statements_analyzer->getFilePath()
                         )) {
-                            $lhs_type_part = $lhs_type_part_new;
+                            $lhs_type_part = clone $lhs_type_part_new;
                             $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
                             $naive_method_exists = true;
@@ -297,6 +297,33 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         }
                     }
                 }
+            }
+        } elseif (!$naive_method_exists
+            && $class_storage->mixin instanceof Type\Atomic\TNamedObject
+        ) {
+            $new_method_id = new MethodIdentifier(
+                $class_storage->mixin->value,
+                $method_name_lc
+            );
+
+            if ($codebase->methods->methodExists(
+                $new_method_id,
+                $context->calling_method_id,
+                $codebase->collect_locations
+                    ? new CodeLocation($source, $stmt->name)
+                    : null,
+                !$context->collect_initializations
+                    && !$context->collect_mutations
+                    ? $statements_analyzer
+                    : null,
+                $statements_analyzer->getFilePath()
+            )) {
+                $fq_class_name = $class_storage->mixin->value;
+                $lhs_type_part = clone $class_storage->mixin;
+                $class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
+
+                $naive_method_exists = true;
+                $method_id = $new_method_id;
             }
         }
 
