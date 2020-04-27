@@ -2229,39 +2229,51 @@ class ExpressionAnalyzer
             }
 
             if ($atomic_type instanceof TNamedObject
-                && $codebase->methods->methodExists(
-                    new \Psalm\Internal\MethodIdentifier(
-                        $atomic_type->value,
-                        '__tostring'
-                    )
-                )
+                || $atomic_type instanceof TObject
             ) {
-                $return_type = $codebase->methods->getMethodReturnType(
-                    new \Psalm\Internal\MethodIdentifier(
-                        $atomic_type->value,
-                        '__tostring'
-                    ),
-                    $self_class
-                );
+                $intersection_types = [$atomic_type];
 
-                if ($return_type) {
-                    $castable_types = array_merge(
-                        $castable_types,
-                        array_values($return_type->getAtomicTypes())
-                    );
-                } else {
-                    $castable_types[] = new TString();
+                if ($atomic_type->extra_types) {
+                    $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
                 }
 
-                continue;
-            }
+                foreach ($intersection_types as $intersection_type) {
+                    if ($intersection_type instanceof TNamedObject
+                        && $codebase->methods->methodExists(
+                            new \Psalm\Internal\MethodIdentifier(
+                                $intersection_type->value,
+                                '__tostring'
+                            )
+                        )
+                    ) {
+                        $return_type = $codebase->methods->getMethodReturnType(
+                            new \Psalm\Internal\MethodIdentifier(
+                                $intersection_type->value,
+                                '__tostring'
+                            ),
+                            $self_class
+                        );
 
-            if ($atomic_type instanceof Type\Atomic\TObjectWithProperties
-                && isset($atomic_type->methods['__toString'])
-            ) {
-                $castable_types[] = new TString();
+                        if ($return_type) {
+                            $castable_types = array_merge(
+                                $castable_types,
+                                array_values($return_type->getAtomicTypes())
+                            );
+                        } else {
+                            $castable_types[] = new TString();
+                        }
 
-                continue;
+                        continue 2;
+                    }
+
+                    if ($intersection_type instanceof Type\Atomic\TObjectWithProperties
+                        && isset($intersection_type->methods['__toString'])
+                    ) {
+                        $castable_types[] = new TString();
+
+                        continue 2;
+                    }
+                }
             }
 
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {

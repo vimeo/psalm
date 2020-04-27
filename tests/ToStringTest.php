@@ -119,6 +119,29 @@ class ToStringTest extends TestCase
                         }
                     }'
             ],
+            'intersectionCanBeString' => [
+                '<?php
+                    interface EmptyInterface {}
+
+                    class StringCastable implements EmptyInterface
+                    {
+                        public function __toString()
+                        {
+                            return \'I am castable\';
+                        }
+                    }
+
+                    function factory(): EmptyInterface
+                    {
+                        return new StringCastable();
+                    }
+
+                    $object = factory();
+                    if (method_exists($object, \'__toString\')) {
+                        $a = (string) $object;
+                        echo $a;
+                    }'
+            ],
         ];
     }
 
