@@ -1980,4 +1980,9 @@ abstract class Type
     {
         self::$memoized_tokens = [];
     }
+
+    public static function union(Atomic ...$types): Union
+    {
+        return new Union($types);
+    }
 }
