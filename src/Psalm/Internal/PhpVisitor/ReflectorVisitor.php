@@ -1277,7 +1277,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     );
 
                     if ($mixin_type->isSingle()) {
-                        $mixin_type = array_values($mixin_type->getAtomicTypes())[0];
+                        $mixin_type = \array_values($mixin_type->getAtomicTypes())[0];
 
                         if ($mixin_type instanceof Type\Atomic\TNamedObject) {
                             if ($mixin_type instanceof Type\Atomic\TGenericObject) {
