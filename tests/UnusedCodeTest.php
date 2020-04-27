@@ -670,6 +670,10 @@ class UnusedCodeTest extends TestCase
                         public function current() {
                             return $this->current;
                         }
+
+                        public function key() {
+                            return 5;
+                        }
                     }
 
                     $items = new IterableResult();
