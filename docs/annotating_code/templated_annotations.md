@@ -113,7 +113,7 @@ function array_combine(array $arr, array $arr2) {}
 - `@template` tag order matters for class docblocks, as they dictate the order in which those generic parameters are referenced in docblocks.
 - The names of your templated types (e.g. `TKey`, `TValue` don't matter outside the scope of the class or function in which they're declared.
 
-## @param class-string&gt;T&gt;
+## @param class-string&lt;T&gt;
 
 Psalm also allows you to parameterize class types
 
