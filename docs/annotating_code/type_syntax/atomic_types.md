@@ -39,7 +39,7 @@ Atomic types are the basic building block of all type information used in Psalm.
 
 - [null](value_types.md#null)
 - [true, false](value_types.md#true-false)
-- [6, 7.0, "fourty-two" and 'fourty two'](value_types.md#some_string-4-314)
+- [6, 7.0, "forty-two" and 'forty two'](value_types.md#some_string-4-314)
 - [Foo\Bar::MY_SCALAR_CONST](value_types.md#regular-class-constants)
 
 ## Magical types

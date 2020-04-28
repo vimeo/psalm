@@ -2535,7 +2535,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
             ],
             'assertHardConditionalWithString' => [
                 '<?php
-                    interface Convertor {
+                    interface Converter {
                         function maybeConvert(string $value): ?SomeObject;
                     }
 
@@ -2543,8 +2543,8 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         function isValid(): bool;
                     }
 
-                    function exampleWithOr(Convertor $convertor, string $value): SomeObject {
-                        if (($value = $convertor->maybeConvert($value)) === null || !$value->isValid()) {
+                    function exampleWithOr(Converter $converter, string $value): SomeObject {
+                        if (($value = $converter->maybeConvert($value)) === null || !$value->isValid()) {
                             throw new Exception();
                         }
 
