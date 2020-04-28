@@ -766,13 +766,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        $plugin_classes = $codebase->config->after_functionlike_checks;
+        $plugin_functions = $codebase->config->after_functionlike_checks;
 
-        if ($plugin_classes) {
+        if ($plugin_functions) {
             $file_manipulations = [];
 
-            foreach ($plugin_classes as $plugin_fq_class_name) {
-                if ($plugin_fq_class_name::afterStatementAnalysis(
+            foreach ($plugin_functions as $plugin_function_name) {
+                if ($plugin_function_name::afterStatementAnalysis(
                     $this->function,
                     $storage,
                     $this,
