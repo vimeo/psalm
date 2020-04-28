@@ -249,11 +249,12 @@ function uksort(array &$arr, callable $callback): bool
 }
 
 /**
+ * @psalm-template K of array-key
  * @psalm-template T
  *
- * @param array<string, T> $arr
+ * @param array<K,T> $arr
  *
- * @return array<string, T>
+ * @return array<K,T>
  * @psalm-pure
  */
 function array_change_key_case(array $arr, int $case = CASE_LOWER)
