@@ -1268,7 +1268,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->getAliases()
                 );
 
-                if ($fq_const_name !== null) {
+                if ($fq_const_name !== null && isset($stmt->args[1])) {
                     $second_arg = $stmt->args[1];
                     $was_in_call = $context->inside_call;
                     $context->inside_call = true;
