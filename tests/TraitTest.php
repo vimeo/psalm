@@ -907,16 +907,16 @@ class TraitTest extends TestCase
 
                     class Person {
                         use HelloTrait {
-                            sayHello as orginalSayHello;
+                            sayHello as originalSayHello;
                         }
 
                         protected function sayHello() : string {
-                            return $this->orginalSayHello();
+                            return $this->originalSayHello();
                         }
                     }
 
                     class BrokenPerson extends Person {
-                        protected function orginalSayHello() : string {
+                        protected function originalSayHello() : string {
                             return "bad";
                         }
                     }',
