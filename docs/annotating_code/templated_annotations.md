@@ -10,11 +10,11 @@ Let's look at a simple class `MyContainer`:
 <?php
 class MyContainer {
   private $value;
-  
+
   public function __construct($value) {
     $this->value = $value;
   }
-  
+
   public function getValue() {
     return $this->value;
   }
@@ -33,12 +33,12 @@ Templated annotations provide us with a workaround - we can define a generic/tem
 class MyContainer {
   /** @var T */
   private $value;
-  
+
   /** @param T $value */
   public function __construct($value) {
     $this->value = $value;
   }
-  
+
   /** @return T */
   public function getValue() {
     return $this->value;
@@ -53,12 +53,12 @@ Now we can substitute values for that templated param when we reference `MyConta
 class One_off_instance_of_MyContainer {
   /** @var int */
   private $value;
-  
+
   /** @param int $value */
   public function __construct($value) {
     $this->value = $value;
   }
-  
+
   /** @return int */
   public function getValue() {
     return $this->value;
@@ -113,7 +113,7 @@ function array_combine(array $arr, array $arr2) {}
 - `@template` tag order matters for class docblocks, as they dictate the order in which those generic parameters are referenced in docblocks.
 - The names of your templated types (e.g. `TKey`, `TValue` don't matter outside the scope of the class or function in which they're declared.
 
-## `@param class-string<T>`
+## @param class-string&gt;T&gt;
 
 Psalm also allows you to parameterize class types
 
@@ -299,14 +299,14 @@ class Collection {
      * @var array<int, T>
      */
     public array $list;
-  
+
     /**
      * @param array<int, T> $list
      */
     public function __construct(array $list) {
         $this->list = $list;
     }
-  
+
     /**
      * @param T $t
      */
@@ -409,14 +409,14 @@ class Collection {
      * @var array<int, T>
      */
     public array $list = [];
-  
+
     /**
      * @param array<int, T> $list
      */
     public function __construct(array $list) {
         $this->list = $list;
     }
-  
+
     /**
      * @param T $t
      * @return Collection<T>
