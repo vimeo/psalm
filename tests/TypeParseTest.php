@@ -665,7 +665,23 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is string ? string : array<string, string>)',
-            (string) Type::parseString('(T is string ? string : array<string, string>)', null, ['T' => ['' => [Type::getArray()]]])
+            (string) Type::parseString(
+                '(T is string ? string : array<string, string>)',
+                null,
+                ['T' => ['' => [Type::getArray()]]]
+            )
+        );
+    }
+
+    public function testConditionalTypeWithCallable() : void
+    {
+        $this->assertSame(
+            '(T is string ? callable(string, string):string : callable(mixed...):mixed)',
+            (string) Type::parseString(
+                '(T is string ? callable(string, string):string : callable(mixed...):mixed)',
+                null,
+                ['T' => ['' => [Type::getArray()]]]
+            )
         );
     }
 
