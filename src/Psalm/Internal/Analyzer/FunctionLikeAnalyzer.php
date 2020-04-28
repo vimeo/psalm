@@ -766,6 +766,31 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        $plugin_classes = $codebase->config->after_functionlike_checks;
+
+        if ($plugin_classes) {
+            $file_manipulations = [];
+
+            foreach ($plugin_classes as $plugin_fq_class_name) {
+                if ($plugin_fq_class_name::afterStatementAnalysis(
+                    $this->function,
+                    $storage,
+                    $this,
+                    $codebase,
+                    $file_manipulations
+                ) === false) {
+                    return false;
+                }
+            }
+
+            if ($file_manipulations) {
+                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                    $this->getFilePath(),
+                    $file_manipulations
+                );
+            }
+        }
+
         return null;
     }
 

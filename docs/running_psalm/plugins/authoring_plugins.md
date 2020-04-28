@@ -19,6 +19,7 @@ class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
 - `AfterEveryFunctionCallAnalysisInterface` - called after Psalm evaluates any function call. Cannot influence the call further.
 - `AfterExpressionAnalysisInterface` - called after Psalm evaluates an expression.
 - `AfterFunctionCallAnalysisInterface` - called after Psalm evaluates a function call to any function defined within the project itself. Can alter the return type or perform modifications of the call.
+- `AfterFunctionLikeAnalysisInterface` - called after Psalm has completed its analysis of a given function-like.
 - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
 - `AfterStatementAnalysisInterface` - called after Psalm evaluates an statement.
 - `FunctionExistenceProviderInterface` - can be used to override Psalm's builtin function existence checks for one or more functions.
