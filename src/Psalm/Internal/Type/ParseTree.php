@@ -103,6 +103,10 @@ class ParseTree
 
                         $new_parent_leaf = new ParseTree\IndexedAccessTree($next_token[0], $current_parent);
                     } else {
+                        if ($current_leaf instanceof ParseTree\ObjectLikePropertyTree) {
+                            throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+                        }
+
                         $new_parent_leaf = new ParseTree\GenericTree('array', $current_parent);
                     }
 

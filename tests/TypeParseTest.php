@@ -427,6 +427,15 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testObjectLikeArrayInType()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('array{a:[]}');
+    }
+
+    /**
+     * @return void
+     */
     public function testObjectWithSimpleArgs()
     {
         $this->assertSame('object{a:int, b:string}', (string) Type::parseString('object{a:int, b:string}'));
