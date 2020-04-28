@@ -496,6 +496,13 @@ class Config
      */
     public $before_analyze_file = [];
 
+    /**
+     * Static methods to be called after functionlike checks have completed
+     *
+     * @var class-string<Hook\AfterFunctionLikeAnalysisInterface>[]
+     */
+    public $after_functionlike_checks = [];
+
     /** @var array<string, mixed> */
     private $predefined_constants;
 
