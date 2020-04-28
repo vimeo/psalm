@@ -341,8 +341,8 @@ Allows you to hard-code a serializer for Psalm to use when caching data. By defa
 
 ## Project settings
 
-#### &lt;projectFiles>`
-Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the &lt;ignoreFiles>` directive, e.g.
+#### &lt;projectFiles&gt;
+Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive, e.g.
 ```xml
 <projectFiles>
   <directory name="src" />
