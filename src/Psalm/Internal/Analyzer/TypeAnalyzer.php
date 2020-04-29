@@ -94,9 +94,9 @@ class TypeAnalyzer
 
         $container_has_template = $container_type->hasTemplateOrStatic();
 
-        $input_atomic_types = array_reverse($input_type->getAtomicTypes());
+        $input_atomic_types = \array_reverse($input_type->getAtomicTypes());
 
-        while ($input_type_part = array_pop($input_atomic_types)) {
+        while ($input_type_part = \array_pop($input_atomic_types)) {
             if ($input_type_part instanceof TNull && $ignore_null) {
                 continue;
             }
