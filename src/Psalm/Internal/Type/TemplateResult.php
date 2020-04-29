@@ -21,6 +21,8 @@ class TemplateResult
      */
     public $lower_bounds = [];
 
+    public $lower_bounds_unintersectable_types = [];
+
     /**
      * @param  array<string, array<string, array{0: Union}>> $template_types
      * @param  array<string, array<string, array{0: Union, 1?: int, 2?: ?int}>> $upper_bounds

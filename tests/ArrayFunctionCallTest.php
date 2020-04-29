@@ -1529,6 +1529,12 @@ class ArrayFunctionCallTest extends TestCase
                     ints($brr);',
                 'error_message' => 'ArgumentTypeCoercion - src/somefile.php:5:26 - Argument 1 of ints expects list<int>, parent type array<int, int(2)|int(3)|int(4)|int(5)> provided',
             ],
+            'usortOneParamInvalid' => [
+                '<?php
+                    $list = [3, 2, 5, 9];
+                    usort($list, fn(int $a, string $b): int => (int) ($a > $b));',
+                'error_message' => 'InvalidScalarArgument'
+            ],
         ];
     }
 }

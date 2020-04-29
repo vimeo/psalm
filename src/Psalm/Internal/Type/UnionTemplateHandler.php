@@ -616,8 +616,17 @@ class UnionTemplateHandler
                         $codebase
                     );
 
-                    $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0]
-                        = $intersection_type ?: \Psalm\Type::getMixed();
+                    if ($intersection_type) {
+                        $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0]
+                            = $intersection_type;
+                    } else {
+                        $template_result->lower_bounds_unintersectable_types[]
+                            = $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0];
+                        $template_result->lower_bounds_unintersectable_types[] = $generic_param;
+
+                        $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0]
+                            = \Psalm\Type::getMixed();
+                    }
                 } else {
                     $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0]
                         = $generic_param;
