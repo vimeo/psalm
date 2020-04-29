@@ -613,6 +613,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $codebase
                 );
 
+                $closure_yield_type = $closure_yield_types
+                    ? \Psalm\Internal\Type\TypeCombination::combineTypes($closure_yield_types)
+                    : null;
+
+                if ($closure_yield_type) {
+                    $closure_return_type = $closure_yield_type;
+                }
+
                 if (($storage->return_type === $storage->signature_return_type)
                     && (!$storage->return_type
                         || $storage->return_type->hasMixed()
