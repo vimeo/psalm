@@ -404,7 +404,6 @@ class ConditionalReturnTypeTest extends TestCase
                             return $result;
                         }
 
-                        /** @psalm-suppress InvalidReturnStatement */
                         return new Promise($result);
                     }
 
