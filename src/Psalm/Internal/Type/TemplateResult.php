@@ -21,6 +21,9 @@ class TemplateResult
      */
     public $lower_bounds = [];
 
+    /**
+     * @var list<Union>
+     */
     public $lower_bounds_unintersectable_types = [];
 
     /**
