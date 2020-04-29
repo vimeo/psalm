@@ -92,12 +92,24 @@ class TypeAnalyzer
             return true;
         }
 
-        foreach ($input_type->getAtomicTypes() as $input_type_part) {
+        $container_has_template = $container_type->hasTemplateOrStatic();
+
+        $input_atomic_types = array_reverse($input_type->getAtomicTypes());
+
+        while ($input_type_part = array_pop($input_atomic_types)) {
             if ($input_type_part instanceof TNull && $ignore_null) {
                 continue;
             }
 
             if ($input_type_part instanceof TFalse && $ignore_false) {
+                continue;
+            }
+
+            if ($input_type_part instanceof TTemplateParam
+                && !$container_has_template
+                && !$input_type_part->extra_types
+            ) {
+                $input_atomic_types = array_merge($input_type_part->as->getAtomicTypes(), $input_atomic_types);
                 continue;
             }
 

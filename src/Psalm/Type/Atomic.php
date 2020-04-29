@@ -552,6 +552,10 @@ abstract class Atomic implements TypeNode
                 }
             }
         }
+
+        if ($this instanceof TTemplateParam) {
+            $this->as = clone $this->as;
+        }
     }
 
     /**

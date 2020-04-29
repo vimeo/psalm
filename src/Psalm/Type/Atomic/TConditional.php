@@ -78,6 +78,7 @@ class TConditional extends \Psalm\Type\Atomic
         $this->conditional_type = clone $this->conditional_type;
         $this->if_type = clone $this->if_type;
         $this->else_type = clone $this->else_type;
+        $this->as_type = clone $this->as_type;
     }
 
     /**

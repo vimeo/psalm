@@ -954,7 +954,41 @@ class Union implements TypeNode
         return (bool) array_filter(
             $this->types,
             function (Atomic $type) : bool {
-                return $type instanceof Type\Atomic\TTemplateParam;
+                return $type instanceof Type\Atomic\TTemplateParam
+                    || ($type instanceof Type\Atomic\TNamedObject
+                        && $type->extra_types
+                        && array_filter(
+                            $type->extra_types,
+                            function ($t) {
+                                return $t instanceof Type\Atomic\TTemplateParam;
+                            }
+                        )
+                    );
+            }
+        );
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasTemplateOrStatic()
+    {
+        return (bool) array_filter(
+            $this->types,
+            function (Atomic $type) : bool {
+                return $type instanceof Type\Atomic\TTemplateParam
+                    || ($type instanceof Type\Atomic\TNamedObject
+                        && ($type->was_static
+                            || ($type->extra_types
+                                && array_filter(
+                                    $type->extra_types,
+                                    function ($t) {
+                                        return $t instanceof Type\Atomic\TTemplateParam;
+                                    }
+                                )
+                            )
+                        )
+                    );
             }
         );
     }
@@ -1334,7 +1368,14 @@ class Union implements TypeNode
 
                 $class_template_type = null;
 
+                $atomic_type = clone $atomic_type;
+
                 if ($template_type) {
+                    $atomic_type->as_type->replaceTemplateTypesWithArgTypes(
+                        $template_result,
+                        $codebase
+                    );
+
                     if (TypeAnalyzer::isContainedBy(
                         $codebase,
                         $template_type,
