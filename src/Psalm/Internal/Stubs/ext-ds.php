@@ -564,7 +564,9 @@ final class Vector implements Sequence
      * @param callable(TValue): TNewValue $callback
      * @return Vector<TNewValue>
      */
-    public function map(callable $callback): Vector;
+    public function map(callable $callback): Vector
+    {
+    }
 }
 
 /**
