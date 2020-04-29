@@ -289,7 +289,7 @@ class ReturnTypeCollector
                     }
                 }
 
-                $yield_types = [
+                $return_types = [
                     new Atomic\TGenericObject(
                         'Generator',
                         [
@@ -300,6 +300,8 @@ class ReturnTypeCollector
                         ]
                     ),
                 ];
+
+                $yield_types = [];
             }
         }
 

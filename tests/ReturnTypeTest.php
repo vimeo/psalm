@@ -798,6 +798,30 @@ class ReturnTypeTest extends TestCase
                         echo "$k\n";
                     }'
             ],
+            'infersGeneratorReturnType' => [
+                '<?php
+
+                /**
+                 * @param \Generator<mixed, mixed, mixed, int> $gen
+                 */
+                function accept(\Generator $gen): void {
+                    /** @psalm-suppress ForbiddenCode */
+                    var_dump($gen);
+                }
+
+                accept((function () {
+                    yield;
+
+                    return 42;
+                })());
+
+                accept((function (): \Generator {
+                    yield;
+
+                    return 42;
+                })());
+                ',
+            ],
         ];
     }
 
