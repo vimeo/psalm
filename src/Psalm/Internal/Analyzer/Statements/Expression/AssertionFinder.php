@@ -1908,17 +1908,17 @@ class AssertionFinder
             }
         } elseif ($class_exists_check_type = self::hasClassExistsCheck($expr)) {
             if ($first_var_name) {
-                if ($class_exists_check_type === 2) {
+                if ($class_exists_check_type === 2 || $prefix) {
                     $if_types[$first_var_name] = [[$prefix . 'class-string']];
-                } elseif (!$prefix) {
+                } else {
                     $if_types[$first_var_name] = [['=class-string']];
                 }
             }
         } elseif ($class_exists_check_type = self::hasTraitExistsCheck($expr)) {
             if ($first_var_name) {
-                if ($class_exists_check_type === 2) {
+                if ($class_exists_check_type === 2 || $prefix) {
                     $if_types[$first_var_name] = [[$prefix . 'trait-string']];
-                } elseif (!$prefix) {
+                } else {
                     $if_types[$first_var_name] = [['=trait-string']];
                 }
             }
