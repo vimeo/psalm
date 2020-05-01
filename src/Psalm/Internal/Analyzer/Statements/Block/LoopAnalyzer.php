@@ -432,9 +432,14 @@ class LoopAnalyzer
         if ($pre_conditions && $pre_condition_clauses && !ScopeAnalyzer::doesEverBreak($stmts)) {
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
-            $negated_pre_condition_types = Algebra::getTruthsFromFormula(
-                Algebra::negateFormula(array_merge(...$pre_condition_clauses))
-            );
+
+            try {
+                $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
+            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                $negated_pre_condition_clauses = [];
+            }
+
+            $negated_pre_condition_types = Algebra::getTruthsFromFormula($negated_pre_condition_clauses);
 
             if ($negated_pre_condition_types) {
                 $changed_var_ids = [];
