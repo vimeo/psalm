@@ -167,6 +167,28 @@ class MixinAnnotationTest extends TestCase
                     '$b' => 'string',
                 ]
             ],
+            'selfTemplatedMixin' => [
+                '<?php
+
+                    /**
+                     * @template T
+                     */
+                    abstract class Foo {
+                        /** @return T */
+                        abstract public function hi();
+                    }
+
+                    /**
+                     * @mixin Foo<self>
+                     */
+                    class Bar {}
+
+                    $bar = new Bar();
+                    $b = $bar->hi();',
+                [
+                    '$b' => 'Bar',
+                ]
+            ],
         ];
     }
 }
