@@ -318,12 +318,27 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     : null,
                 $statements_analyzer->getFilePath()
             )) {
-                $fq_class_name = $class_storage->mixin->value;
-                $lhs_type_part = clone $class_storage->mixin;
-                $class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
+                $lhs_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    new Type\Union([clone $class_storage->mixin]),
+                    $fq_class_name,
+                    new Type\Atomic\TNamedObject($fq_class_name),
+                    $class_storage->parent_class
+                );
 
-                $naive_method_exists = true;
-                $method_id = $new_method_id;
+                $new_lhs_type_parts = \array_values($lhs_type->getAtomicTypes());
+
+                if (count($new_lhs_type_parts) === 1
+                    && $new_lhs_type_parts[0] instanceof Type\Atomic\TNamedObject
+                ) {
+                    $lhs_type_part = $new_lhs_type_parts[0];
+                    $fq_class_name = $class_storage->mixin->value;
+
+                    $class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
+
+                    $naive_method_exists = true;
+                    $method_id = $new_method_id;
+                }
             }
         }
 
