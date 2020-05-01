@@ -391,7 +391,10 @@ class ParseTree
                 case '?':
                     if ($next_token === null || $next_token[0] !== ':') {
                         while (($current_leaf instanceof ParseTree\Value
-                                || $current_leaf instanceof ParseTree\UnionTree)
+                                || $current_leaf instanceof ParseTree\UnionTree
+                                || $current_leaf instanceof ParseTree\ObjectLikeTree
+                                || $current_leaf instanceof ParseTree\GenericTree
+                                || $current_leaf instanceof ParseTree\IntersectionTree)
                             && $current_leaf->parent
                         ) {
                             $current_leaf = $current_leaf->parent;

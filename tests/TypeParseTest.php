@@ -662,6 +662,39 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testConditionalTypeWithObjectLikeArray()
+    {
+        $this->assertSame(
+            '(T is array{a: string} ? string : int)',
+            (string) Type::parseString('(T is array{a: string} ? string : int)', null, ['T' => ['' => [Type::getArray()]]])
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testConditionalTypeWithGeneric()
+    {
+        $this->assertSame(
+            '(T is array<array-key, string> ? string : int)',
+            (string) Type::parseString('(T is array<string> ? string : int)', null, ['T' => ['' => [Type::getArray()]]])
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testConditionalTypeWithIntersection()
+    {
+        $this->assertSame(
+            '(T is A&B ? string : int)',
+            (string) Type::parseString('(T is A&B ? string : int)', null, ['T' => ['' => [Type::getArray()]]])
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testConditionalTypeWithoutSpaces()
     {
         $this->assertSame(
