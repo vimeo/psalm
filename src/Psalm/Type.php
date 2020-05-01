@@ -859,6 +859,10 @@ abstract class Type
                 throw new TypeParseTreeException('Unrecognized template \'' . $template_param_name . '\'');
             }
 
+            if (count($parse_tree->children) !== 2) {
+                throw new TypeParseTreeException('Invalid conditional');
+            }
+
             $first_class = array_keys($template_type_map[$template_param_name])[0];
 
             $conditional_type = self::getTypeFromTree(

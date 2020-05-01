@@ -340,6 +340,10 @@ class ParseTree
                     }
 
                     if ($current_parent && $current_parent instanceof ParseTree\ConditionalTree) {
+                        if (count($current_parent->children) > 1) {
+                            throw new TypeParseTreeException('Cannot process colon in conditional twice');
+                        }
+
                         $current_leaf = $current_parent;
                         $current_parent = $current_parent->parent;
                         break;

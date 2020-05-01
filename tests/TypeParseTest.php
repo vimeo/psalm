@@ -714,6 +714,26 @@ class TypeParseTest extends TestCase
         );
     }
 
+    /**
+     * @return void
+     */
+    public function testConditionalTypeWithCallableElseBool()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('(T is string ? callable() : bool)', null, ['T' => ['' => [Type::getArray()]]]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testConditionalTypeWithCallableReturningBoolElseBool()
+    {
+        $this->assertSame(
+            '(T is string ? callable():bool : bool)',
+            (string) Type::parseString('(T is string ? (callable() : bool) : bool)', null, ['T' => ['' => [Type::getArray()]]])
+        );
+    }
+
     public function testConditionalTypeWithGenerics() : void
     {
         $this->assertSame(
@@ -726,7 +746,19 @@ class TypeParseTest extends TestCase
         );
     }
 
-    public function testConditionalTypeWithCallable() : void
+    public function testConditionalTypeWithCallableBracketed() : void
+    {
+        $this->assertSame(
+            '(T is string ? callable(string, string):string : callable(mixed...):mixed)',
+            (string) Type::parseString(
+                '(T is string ? (callable(string, string):string) : (callable(mixed...):mixed))',
+                null,
+                ['T' => ['' => [Type::getArray()]]]
+            )
+        );
+    }
+
+    public function testConditionalTypeWithCallableNotBracketed() : void
     {
         $this->assertSame(
             '(T is string ? callable(string, string):string : callable(mixed...):mixed)',
