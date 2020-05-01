@@ -504,7 +504,9 @@ class TypeCombination
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
             $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
 
-            $new_types[] = new TGenericObject($generic_type, $generic_type_params);
+            $generic_object = new TGenericObject($generic_type, $generic_type_params);
+            $generic_object->extra_types = $combination->extra_types;
+            $new_types[] = $generic_object;
         }
 
         if ($combination->class_string_types) {

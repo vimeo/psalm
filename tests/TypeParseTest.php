@@ -203,6 +203,17 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testIteratorAndTraversableOrNull()
+    {
+        $this->assertSame(
+            'Iterator<mixed, int>&Traversable|null',
+            (string) Type::parseString('Iterator<mixed, int>&Traversable|null')
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testIntersectionAfterGeneric()
     {
         $this->assertSame('Countable&iterable<mixed, int>&I', (string) Type::parseString('Countable&iterable<int>&I'));
