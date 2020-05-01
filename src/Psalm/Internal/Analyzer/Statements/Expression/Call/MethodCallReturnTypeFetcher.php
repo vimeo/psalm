@@ -140,9 +140,15 @@ class MethodCallReturnTypeFetcher
                                     [$template_type->defining_class]
                             )
                         ) {
-                            $template_result->upper_bounds[$template_type->param_name] = [
-                                ($template_type->defining_class) => [Type::getEmpty(), 0]
-                            ];
+                            if ($template_type->param_name === 'TFunctionArgCount') {
+                                $template_result->upper_bounds[$template_type->param_name] = [
+                                    'fn-' . $method_id => [Type::getInt(false, \count($stmt->args)), 0]
+                                ];
+                            } else {
+                                $template_result->upper_bounds[$template_type->param_name] = [
+                                    ($template_type->defining_class) => [Type::getEmpty(), 0]
+                                ];
+                            }
                         }
                     }
                 }
