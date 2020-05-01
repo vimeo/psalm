@@ -165,6 +165,12 @@ class ParseTree
                         && !$current_leaf instanceof ParseTree\CallableTree
                         && !$current_leaf instanceof ParseTree\MethodTree);
 
+                    if ($current_leaf instanceof ParseTree\EncapsulationTree
+                        || $current_leaf instanceof ParseTree\CallableTree
+                    ) {
+                        $current_leaf->terminated = true;
+                    }
+
                     break;
 
                 case '>':
@@ -176,6 +182,8 @@ class ParseTree
                         $current_leaf = $current_leaf->parent;
                     } while (!$current_leaf instanceof ParseTree\GenericTree);
 
+                    $current_leaf->terminated = true;
+
                     break;
 
                 case '}':
@@ -186,6 +194,8 @@ class ParseTree
 
                         $current_leaf = $current_leaf->parent;
                     } while (!$current_leaf instanceof ParseTree\ObjectLikeTree);
+
+                    $current_leaf->terminated = true;
 
                     break;
 
@@ -392,8 +402,14 @@ class ParseTree
                     if ($next_token === null || $next_token[0] !== ':') {
                         while (($current_leaf instanceof ParseTree\Value
                                 || $current_leaf instanceof ParseTree\UnionTree
-                                || $current_leaf instanceof ParseTree\ObjectLikeTree
-                                || $current_leaf instanceof ParseTree\GenericTree
+                                || ($current_leaf instanceof ParseTree\ObjectLikeTree
+                                    && $current_leaf->terminated)
+                                || ($current_leaf instanceof ParseTree\GenericTree
+                                    && $current_leaf->terminated)
+                                || ($current_leaf instanceof ParseTree\EncapsulationTree
+                                    && $current_leaf->terminated)
+                                || ($current_leaf instanceof ParseTree\CallableTree
+                                    && $current_leaf->terminated)
                                 || $current_leaf instanceof ParseTree\IntersectionTree)
                             && $current_leaf->parent
                         ) {

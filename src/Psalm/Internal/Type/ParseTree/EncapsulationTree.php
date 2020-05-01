@@ -6,4 +6,8 @@ namespace Psalm\Internal\Type\ParseTree;
  */
 class EncapsulationTree extends \Psalm\Internal\Type\ParseTree
 {
+    /**
+     * @var bool
+     */
+    public $terminated = false;
 }

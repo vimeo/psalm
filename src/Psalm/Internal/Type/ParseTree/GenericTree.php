@@ -12,6 +12,11 @@ class GenericTree extends \Psalm\Internal\Type\ParseTree
     public $value;
 
     /**
+     * @var bool
+     */
+    public $terminated = false;
+
+    /**
      * @param string $value
      * @param \Psalm\Internal\Type\ParseTree|null $parent
      */

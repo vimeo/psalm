@@ -673,7 +673,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testConditionalTypeWithGeneric()
+    public function testConditionalTypeWithGenericIs()
     {
         $this->assertSame(
             '(T is array<array-key, string> ? string : int)',
