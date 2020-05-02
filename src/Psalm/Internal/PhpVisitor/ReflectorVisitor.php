@@ -1264,7 +1264,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         Type::fixUpLocalType(
                             $docblock_info->mixin,
                             $this->aliases,
-                            $this->class_template_types
+                            $this->class_template_types,
+                            $this->type_aliases,
+                            $fq_classlike_name
                         ),
                         null,
                         $this->class_template_types
