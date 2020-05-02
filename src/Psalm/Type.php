@@ -1147,6 +1147,17 @@ abstract class Type
                 || $char === '&'
                 || $char === '='
             ) {
+                if ($char === '('
+                    && $type_tokens[$rtc][0] === 'func_num_args'
+                    && isset($chars[$i + 1])
+                    && $chars[$i + 1] === ')'
+                ) {
+                    $type_tokens[$rtc][0] = 'func_num_args()';
+                    ++$i;
+
+                    continue;
+                }
+
                 if ($type_tokens[$rtc][0] === '') {
                     $type_tokens[$rtc] = [$char, $i];
                 } else {

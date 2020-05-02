@@ -1036,6 +1036,28 @@ class TypeAnalyzer
             return false;
         }
 
+        if ($input_type_part instanceof TConditional) {
+            $input_atomic_types = array_merge(
+                array_values($input_type_part->if_type->getAtomicTypes()),
+                array_values($input_type_part->else_type->getAtomicTypes())
+            );
+
+            foreach ($input_atomic_types as $input_as_type_part) {
+                if (self::isAtomicContainedBy(
+                    $codebase,
+                    $input_as_type_part,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $atomic_comparison_result
+                )) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         if ($container_type_part instanceof GetClassT) {
             $first_type = array_values($container_type_part->as_type->getAtomicTypes())[0];
 

@@ -421,6 +421,46 @@ class ConditionalReturnTypeTest extends TestCase
                     '$c2' => 'Promise<int>',
                 ]
             ],
+            'conditionalReturnShouldMatchInherited' => [
+                '<?php
+                    interface I {
+                        public function test1(bool $idOnly): array;
+                    }
+
+                    class Test implements I
+                    {
+                        /**
+                         * @template T1 as bool
+                         * @param T1 $idOnly
+                         * @psalm-return (T1 is true ? array : array)
+                         */
+                        public function test1(bool $idOnly): array {
+                            return [];
+                        }
+                    }'
+            ],
+            'conditionalOnArgCount' => [
+                '<?php
+                    /**
+                     * @return (func_num_args() is 0 ? false : string)
+                     */
+                    function zeroArgsFalseOneArgString(string $s = "") {
+                        if (func_num_args() === 0) {
+                            return false;
+                        }
+
+                        return $s;
+                    }
+
+                    $a = zeroArgsFalseOneArgString();
+                    $b = zeroArgsFalseOneArgString("");
+                    $c = zeroArgsFalseOneArgString("hello");',
+                [
+                    '$a' => 'false',
+                    '$b' => 'string',
+                    '$c' => 'string',
+                ]
+            ],
         ];
     }
 }

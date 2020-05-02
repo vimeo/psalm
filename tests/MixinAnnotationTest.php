@@ -167,27 +167,41 @@ class MixinAnnotationTest extends TestCase
                     '$b' => 'string',
                 ]
             ],
-            'selfTemplatedMixin' => [
+            'templatedMixinSelf' => [
                 '<?php
-
                     /**
                      * @template T
                      */
-                    abstract class Foo {
-                        /** @return T */
-                        abstract public function hi();
+                    class Animal {
+                        /** @var T */
+                        private $item;
+
+                        /**
+                         * @param T $item
+                         */
+                        public function __construct($item) {
+                            $this->item = $item;
+                        }
+
+                        /**
+                         * @return T
+                         */
+                        public function get() {
+                            return $this->item;
+                        }
                     }
 
                     /**
-                     * @mixin Foo<self>
+                     * @mixin Animal<self>
                      */
-                    class Bar {}
+                    class Dog {
+                        public function __construct() {
+                        }
+                    }
 
-                    $bar = new Bar();
-                    $b = $bar->hi();',
-                [
-                    '$b' => 'Bar',
-                ]
+                    function getDog(): Dog {
+                        return (new Dog())->get();
+                    }'
             ],
         ];
     }

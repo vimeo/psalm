@@ -2515,15 +2515,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 // This checks for param references in the return type tokens
                 // If found, the param is replaced with a generated template param
                 foreach ($fixed_type_tokens as $i => $type_token) {
-                    if ($type_token[0][0] === '$') {
-                        $token_body = $type_token[0];
+                    $token_body = $type_token[0];
+                    $template_function_id = 'fn-' . strtolower($cased_function_id);
 
+                    if ($token_body[0] === '$') {
                         foreach ($storage->params as $j => $param_storage) {
                             if ('$' . $param_storage->name === $token_body) {
                                 if (!isset($param_type_mapping[$token_body])) {
                                     $template_name = 'TGeneratedFromParam' . $j;
-
-                                    $template_function_id = 'fn-' . strtolower($cased_function_id);
 
                                     $template_as_type = $param_storage->type
                                         ? clone $param_storage->type
@@ -2558,8 +2557,25 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 }
 
                                 $fixed_type_tokens[$i][0] = $param_type_mapping[$token_body];
+
+                                continue 2;
                             }
                         }
+                    }
+
+                    if ($token_body === 'func_num_args()') {
+                        $template_name = 'TFunctionArgCount';
+
+                        $storage->template_types[$template_name] = [
+                            $template_function_id => [
+                                Type::getInt()
+                            ],
+                        ];
+
+                        $this->function_template_types[$template_name]
+                            = $storage->template_types[$template_name];
+
+                        $fixed_type_tokens[$i][0] = $template_name;
                     }
                 }
 

@@ -897,9 +897,15 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 if ($function_storage && $function_storage->template_types) {
                     foreach ($function_storage->template_types as $template_name => $_) {
                         if (!isset($template_result->upper_bounds[$template_name])) {
-                            $template_result->upper_bounds[$template_name] = [
-                                'fn-' . $function_id => [Type::getEmpty(), 0]
-                            ];
+                            if ($template_name === 'TFunctionArgCount') {
+                                $template_result->upper_bounds[$template_name] = [
+                                    'fn-' . $function_id => [Type::getInt(false, count($stmt->args)), 0]
+                                ];
+                            } else {
+                                $template_result->upper_bounds[$template_name] = [
+                                    'fn-' . $function_id => [Type::getEmpty(), 0]
+                                ];
+                            }
                         }
                     }
                 }
