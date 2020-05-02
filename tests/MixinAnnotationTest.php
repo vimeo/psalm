@@ -195,12 +195,32 @@ class MixinAnnotationTest extends TestCase
                      * @mixin Animal<self>
                      */
                     class Dog {
-                        public function __construct() {
-                        }
+                        public function __construct() {}
                     }
 
                     function getDog(): Dog {
                         return (new Dog())->get();
+                    }'
+            ],
+            'inheritPropertyAnnotations' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                        /** @return mixed */
+                        public function __get(string $s) {
+                            return 5;
+                        }
+                    }
+
+                    /**
+                     * @mixin A
+                     */
+                    class B {}
+
+                    function toArray(B $b) : string {
+                        return $b->foo;
                     }'
             ],
         ];
