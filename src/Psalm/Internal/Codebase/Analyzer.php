@@ -1106,6 +1106,24 @@ class Analyzer
      *
      * @return void
      */
+    public function decrementMixedCount($file_path)
+    {
+        if (!$this->count_mixed) {
+            return;
+        }
+
+        if (!isset($this->mixed_counts[$file_path])) {
+            return;
+        }
+
+        --$this->mixed_counts[$file_path][0];
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return void
+     */
     public function incrementNonMixedCount($file_path)
     {
         if (!$this->count_mixed) {

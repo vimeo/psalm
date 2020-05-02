@@ -850,7 +850,19 @@ class FunctionCallAnalyzer extends CallAnalyzer
             );
 
             foreach ($changed_var_ids as $var_id => $_) {
-                if ($first_appearance = $statements_analyzer->getFirstAppearance($var_id)) {
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
+
+                if ($first_appearance && $context->vars_in_scope[$var_id]->hasMixed()) {
+                    if (!$context->collect_initializations
+                        && !$context->collect_mutations
+                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                        && (!(($parent_source = $statements_analyzer->getSource())
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                                || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    ) {
+                        $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
+                    }
+
                     IssueBuffer::remove(
                         $statements_analyzer->getFilePath(),
                         'MixedAssignment',
