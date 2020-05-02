@@ -1136,6 +1136,13 @@ class AnnotationTest extends TestCase
                     '$arr' => 'array{\'foo\\\\bar\nbaz\': string}'
                 ]
             ],
+            'doubleSpaceBeforeAt' => [
+                '<?php
+                    /**
+                     *  @param string $c
+                     */
+                    function foo($c) : void {}'
+            ],
         ];
     }
 

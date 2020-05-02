@@ -203,7 +203,7 @@ class DocComment
 
         $last = false;
         foreach ($lines as $k => $line) {
-            if (preg_match('/^[ \t]*\*?\s?@\w/i', $line)) {
+            if (preg_match('/^[ \t]*\*?\s*@\w/i', $line)) {
                 $last = $k;
             } elseif (preg_match('/^\s*\r?$/', $line)) {
                 $last = false;
@@ -222,7 +222,7 @@ class DocComment
 
             $line = str_replace("\r", '', $line);
 
-            if (preg_match('/^[ \t]*\*?\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
+            if (preg_match('/^[ \t]*\*?\s*@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
                 /** @var array<int, array{string, int}> $matches */
                 list($full_match_info, $type_info, $data_info) = $matches;
 
