@@ -827,6 +827,26 @@ class PropertyFetchAnalyzer
                     $declaring_class_storage->parent_class
                 );
 
+                if ($declaring_class_storage->template_types) {
+                    if (!$lhs_type_part instanceof TGenericObject) {
+                        $type_params = [];
+
+                        foreach ($declaring_class_storage->template_types as $type_map) {
+                            $type_params[] = clone array_values($type_map)[0][0];
+                        }
+
+                        $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
+                    }
+
+                    $class_property_type = self::localizePropertyType(
+                        $codebase,
+                        $class_property_type,
+                        $lhs_type_part,
+                        $class_storage,
+                        $declaring_class_storage
+                    );
+                }
+
                 if ($lhs_type_part instanceof TGenericObject) {
                     $class_property_type = self::localizePropertyType(
                         $codebase,

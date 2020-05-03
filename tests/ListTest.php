@@ -61,7 +61,10 @@ class ListTest extends TestCase
                     /** @psalm-suppress MissingReturnType */
                     function getMixed() {}
 
-                    /** @psalm-suppress MixedAssignment */
+                    /**
+                     * @psalm-suppress MixedArrayAccess
+                     * @psalm-suppress MixedAssignment
+                     */
                     list($a, list($b, $c)) = getMixed();',
                 'assertions' => [
                     '$a' => 'mixed',
