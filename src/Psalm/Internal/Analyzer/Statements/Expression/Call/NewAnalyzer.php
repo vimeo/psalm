@@ -288,9 +288,25 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $statements_analyzer->node_data->setType($stmt, $new_type);
                     }
 
+                    self::checkFunctionArguments(
+                        $statements_analyzer,
+                        $stmt->args,
+                        null,
+                        null,
+                        $context
+                    );
+
                     return null;
                 }
             } else {
+                self::checkFunctionArguments(
+                    $statements_analyzer,
+                    $stmt->args,
+                    null,
+                    null,
+                    $context
+                );
+
                 return null;
             }
         }
@@ -311,6 +327,14 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
             if ($context->check_classes) {
                 if ($context->isPhantomClass($fq_class_name)) {
+                    self::checkFunctionArguments(
+                        $statements_analyzer,
+                        $stmt->args,
+                        null,
+                        null,
+                        $context
+                    );
+
                     return null;
                 }
 
@@ -323,6 +347,14 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $statements_analyzer->getSuppressedIssues(),
                     false
                 ) === false) {
+                    self::checkFunctionArguments(
+                        $statements_analyzer,
+                        $stmt->args,
+                        null,
+                        null,
+                        $context
+                    );
+
                     return;
                 }
 
@@ -543,6 +575,14 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt_type->reference_free = true;
                     }
                 }
+            } else {
+                self::checkFunctionArguments(
+                    $statements_analyzer,
+                    $stmt->args,
+                    null,
+                    null,
+                    $context
+                );
             }
         }
 

@@ -1100,7 +1100,13 @@ class MethodCallTest extends TestCase
 
                     foo(new AChild());',
                 'error_message' => 'PossiblyNullArgument'
-            ]
+            ],
+            'checkVariableInUnknownClassConstructor' => [
+                '<?php
+                    /** @psalm-suppress UndefinedClass */
+                    new Missing($class_arg);',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
         ];
     }
 }
