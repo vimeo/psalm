@@ -17,13 +17,17 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpurePropertyAssignment;
+use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\LoopInvalidation;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\MixedAssignment;
+use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\NoValue;
+use Psalm\Issue\PossiblyInvalidArrayAccess;
+use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\UnnecessaryVarAnnotation;
@@ -537,7 +541,60 @@ class AssignmentAnalyzer
                             $doc_comment
                         );
 
-                        continue 2;
+                        continue;
+                    }
+
+                    if ($assign_value_atomic_type instanceof Type\Atomic\TMixed) {
+                        if (IssueBuffer::accepts(
+                            new MixedArrayAccess(
+                                'Cannot access array value on mixed variable ' . $array_var_id,
+                                new CodeLocation($statements_analyzer->getSource(), $var)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } elseif ($assign_value_atomic_type instanceof Type\Atomic\TNull) {
+                        if (IssueBuffer::accepts(
+                            new PossiblyNullArrayAccess(
+                                'Cannot access array value on null variable ' . $array_var_id,
+                                new CodeLocation($statements_analyzer->getSource(), $var)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )
+                        ) {
+                            // do nothing
+                        }
+                    } elseif (!$assign_value_atomic_type instanceof Type\Atomic\TArray
+                        && !$assign_value_atomic_type instanceof Type\Atomic\ObjectLike
+                        && !$assign_value_atomic_type instanceof Type\Atomic\TList
+                    ) {
+                        if ($assign_value_type->hasArray()) {
+                            if (IssueBuffer::accepts(
+                                new PossiblyInvalidArrayAccess(
+                                    'Cannot access array value on non-array variable '
+                                        . $array_var_id . ' of type ' . $assign_value_atomic_type->getId(),
+                                    new CodeLocation($statements_analyzer->getSource(), $var)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )
+                            ) {
+                                // do nothing
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new InvalidArrayAccess(
+                                    'Cannot access array value on non-array variable '
+                                        . $array_var_id . ' of type ' . $assign_value_atomic_type->getId(),
+                                    new CodeLocation($statements_analyzer->getSource(), $var)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )
+                            ) {
+                                // do nothing
+                            }
+                        }
+
                     }
 
                     if ($var instanceof PhpParser\Node\Expr\List_
@@ -564,6 +621,8 @@ class AssignmentAnalyzer
                             $context,
                             $doc_comment
                         );
+
+                        continue;
                     }
 
                     if ($list_var_id) {

@@ -896,6 +896,7 @@ class ArrayAccessTest extends TestCase
 
                             $popped = array_pop($this->a);
 
+                            /** @psalm-suppress MixedArrayAccess */
                             [$this->b, $this->c] = $popped;
                         }
                     }'
@@ -1223,6 +1224,18 @@ class ArrayAccessTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArrayOffset'
+            ],
+            'destructureNullable' => [
+                '<?php
+                    /**
+                     * @return null|array
+                     */
+                    function maybeReturnArray(): ?array {
+                        return rand(0, 1) ? null : ["key" => 1];
+                    }
+
+                    ["key" => $a] = maybeReturnArray();',
+                'error_message' => 'PossiblyNullArrayAccess',
             ],
         ];
     }
