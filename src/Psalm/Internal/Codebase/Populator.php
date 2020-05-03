@@ -1187,7 +1187,9 @@ class Populator
                         $implementing_method_id->fq_class_name
                     );
 
-                    if (!$implementing_class_storage->methods[$implementing_method_id->method_name]->abstract) {
+                    if (!$implementing_class_storage->methods[$implementing_method_id->method_name]->abstract
+                        || !empty($storage->methods[$implementing_method_id->method_name]->abstract)
+                    ) {
                         continue;
                     }
                 }
