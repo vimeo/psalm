@@ -598,7 +598,6 @@ class AssignmentAnalyzer
                                 // do nothing
                             }
                         }
-
                     }
 
                     if ($var instanceof PhpParser\Node\Expr\List_
