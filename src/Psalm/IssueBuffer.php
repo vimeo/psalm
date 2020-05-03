@@ -422,10 +422,6 @@ class IssueBuffer
             throw new \UnexpectedValueException('Cannot finish without stdout report options');
         }
 
-        if ($project_analyzer->stdout_report_options->format === Report::TYPE_CONSOLE) {
-            echo "\n";
-        }
-
         $codebase = $project_analyzer->getCodebase();
 
         $error_count = 0;
@@ -434,6 +430,10 @@ class IssueBuffer
         $issues_data = [];
 
         if (self::$issues_data) {
+            if ($project_analyzer->stdout_report_options->format === Report::TYPE_CONSOLE) {
+                echo "\n";
+            }
+
             \ksort(self::$issues_data);
 
             foreach (self::$issues_data as $file_path => $file_issues) {
@@ -494,13 +494,13 @@ class IssueBuffer
                     }
                 }
             }
-
-            echo self::getOutput(
-                $issues_data,
-                $project_analyzer->stdout_report_options,
-                $codebase->analyzer->getTotalTypeCoverage($codebase)
-            );
         }
+
+        echo self::getOutput(
+            $issues_data,
+            $project_analyzer->stdout_report_options,
+            $codebase->analyzer->getTotalTypeCoverage($codebase)
+        );
 
         foreach ($issues_data as $file_issues) {
             foreach ($file_issues as $issue_data) {
