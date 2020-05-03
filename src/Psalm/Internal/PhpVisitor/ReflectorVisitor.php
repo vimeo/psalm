@@ -116,7 +116,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var PhpParser\Node\Name|null */
     private $namespace_name;
 
-    /** @var PhpParser\Node\Expr\FuncCall|null */
+    /** @var PhpParser\Node\Expr|null */
     private $exists_cond_expr;
 
     /**
