@@ -571,6 +571,7 @@ class AssignmentAnalyzer
                     } elseif (!$assign_value_atomic_type instanceof Type\Atomic\TArray
                         && !$assign_value_atomic_type instanceof Type\Atomic\ObjectLike
                         && !$assign_value_atomic_type instanceof Type\Atomic\TList
+                        && !$assign_value_type->hasArrayAccessInterface($codebase)
                     ) {
                         if ($assign_value_type->hasArray()) {
                             if (IssueBuffer::accepts(
