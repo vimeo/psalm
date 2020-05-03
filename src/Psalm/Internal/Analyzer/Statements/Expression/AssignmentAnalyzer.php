@@ -509,6 +509,7 @@ class AssignmentAnalyzer
                 );
 
                 $new_assign_type = null;
+                $assigned = false;
 
                 foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
                     if ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike
@@ -540,6 +541,8 @@ class AssignmentAnalyzer
                             $context,
                             $doc_comment
                         );
+
+                        $assigned = true;
 
                         continue;
                     }
@@ -713,43 +716,45 @@ class AssignmentAnalyzer
                     }
                 }
 
-                foreach ($var_comments as $var_comment) {
-                    if (!$var_comment->type) {
-                        continue;
+                if (!$assigned) {
+                    foreach ($var_comments as $var_comment) {
+                        if (!$var_comment->type) {
+                            continue;
+                        }
+
+                        try {
+                            if ($var_comment->var_id === $list_var_id) {
+                                $var_comment_type = ExpressionAnalyzer::fleshOutType(
+                                    $codebase,
+                                    $var_comment->type,
+                                    $context->self,
+                                    $context->self,
+                                    $statements_analyzer->getParentFQCLN()
+                                );
+
+                                $var_comment_type->setFromDocblock();
+
+                                $new_assign_type = $var_comment_type;
+                                break;
+                            }
+                        } catch (\UnexpectedValueException $e) {
+                            if (IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    (string)$e->getMessage(),
+                                    new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                                )
+                            )) {
+                                // fall through
+                            }
+                        }
                     }
 
-                    try {
-                        if ($var_comment->var_id === $list_var_id) {
-                            $var_comment_type = ExpressionAnalyzer::fleshOutType(
-                                $codebase,
-                                $var_comment->type,
-                                $context->self,
-                                $context->self,
-                                $statements_analyzer->getParentFQCLN()
-                            );
+                    if ($list_var_id) {
+                        $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
 
-                            $var_comment_type->setFromDocblock();
-
-                            $new_assign_type = $var_comment_type;
-                            break;
+                        if ($context->error_suppressing && ($offset || $can_be_empty)) {
+                            $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
                         }
-                    } catch (\UnexpectedValueException $e) {
-                        if (IssueBuffer::accepts(
-                            new InvalidDocblock(
-                                (string)$e->getMessage(),
-                                new CodeLocation($statements_analyzer->getSource(), $assign_var)
-                            )
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-
-                if ($list_var_id) {
-                    $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
-
-                    if ($context->error_suppressing && ($offset || $can_be_empty)) {
-                        $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
                     }
                 }
             }
