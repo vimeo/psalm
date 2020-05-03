@@ -119,9 +119,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var PhpParser\Node\Expr\FuncCall|null */
     private $exists_cond_expr;
 
-    /** @var PhpParser\Node\Expr\FuncCall|null */
-    private $not_exists_cond_expr;
-
     /**
      * @var ?int
      */
@@ -507,7 +504,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             || $node->cond->expr->name->parts === ['interface_exists']
                         )
                     ) {
-                        $this->not_exists_cond_expr = $node->cond->expr;
+                        $this->exists_cond_expr = $node->cond;
                     }
                 } elseif ($node->cond instanceof PhpParser\Node\Expr\FuncCall
                     && $node->cond->name instanceof PhpParser\Node\Name
@@ -541,9 +538,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
 
-            if (($this->exists_cond_expr && !$this->enterConditional($this->exists_cond_expr))
-                || ($this->not_exists_cond_expr && $this->enterConditional($this->not_exists_cond_expr))
-            ) {
+            if ($this->exists_cond_expr && !$this->enterConditional($this->exists_cond_expr)) {
                 // the else node should terminate the agreement
                 $this->skip_if_descendants = $node->else ? $node->else->getLine() : $node->getLine();
             }
@@ -551,11 +546,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if ($this->skip_if_descendants === $node->getLine()) {
                 $this->skip_if_descendants = null;
                 $this->exists_cond_expr = null;
-                $this->not_exists_cond_expr = null;
             } elseif (!$this->skip_if_descendants) {
-                if (($this->exists_cond_expr && $this->enterConditional($this->exists_cond_expr))
-                    || ($this->not_exists_cond_expr && !$this->enterConditional($this->not_exists_cond_expr))
-                ) {
+                if ($this->exists_cond_expr && $this->enterConditional($this->exists_cond_expr)) {
                     $this->skip_if_descendants = $node->getLine();
                 }
             }
@@ -695,18 +687,29 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\If_ && $node->getLine() === $this->skip_if_descendants) {
             $this->exists_cond_expr = null;
-            $this->not_exists_cond_expr = null;
             $this->skip_if_descendants = null;
         } elseif ($node instanceof PhpParser\Node\Stmt\Else_ && $node->getLine() === $this->skip_if_descendants) {
             $this->exists_cond_expr = null;
-            $this->not_exists_cond_expr = null;
             $this->skip_if_descendants = null;
         }
 
         return null;
     }
 
-    private function enterConditional(PhpParser\Node\Expr\FuncCall $function) : bool
+    private function enterConditional(PhpParser\Node\Expr $expr) : bool
+    {
+        if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
+            return !$this->enterConditional($expr->expr);
+        }
+
+        if (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
+            return true;
+        }
+
+        return $this->functionEvaluatesToTrue($expr);
+    }
+
+    private function functionEvaluatesToTrue(PhpParser\Node\Expr\FuncCall $function) : bool
     {
         if (!$function->name instanceof PhpParser\Node\Name) {
             return true;
