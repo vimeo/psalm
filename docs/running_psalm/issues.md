@@ -182,7 +182,6 @@
  - [TooManyArguments](issues/TooManyArguments.md)
  - [TooManyTemplateParams](issues/TooManyTemplateParams.md)
  - [TraitMethodSignatureMismatch](issues/TraitMethodSignatureMismatch.md)
- - [TypeCoercion](issues/TypeCoercion.md)
  - [TypeDoesNotContainNull](issues/TypeDoesNotContainNull.md)
  - [TypeDoesNotContainType](issues/TypeDoesNotContainType.md)
  - [UncaughtThrowInGlobalScope](issues/UncaughtThrowInGlobalScope.md)
