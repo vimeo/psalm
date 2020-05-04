@@ -173,7 +173,11 @@ class MethodCallReturnTypeFetcher
                     $return_type_candidate,
                     $self_fq_class_name,
                     $static_type,
-                    $class_storage->parent_class
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    $static_type instanceof Type\Atomic\TNamedObject
+                        && $codebase->classlike_storage_provider->get($static_type->value)->final
                 );
 
                 if ($codebase->taint) {
