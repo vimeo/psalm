@@ -401,6 +401,6 @@ $username = $_GET['username']; // prints something like "test.php:4 $username: m
 
 ## Type Syntax
 
-Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
+Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
 
 A detailed write-up is found in [Typing in Psalm](typing_in_psalm.md)
