@@ -548,7 +548,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && $function_param->location
                 && !isset($implemented_docblock_param_types[$offset])
             ) {
-                if ($this->function instanceof Closure) {
+                if ($this->function instanceof Closure
+                    || $this->function instanceof ArrowFunction
+                ) {
                     IssueBuffer::accepts(
                         new MissingClosureParamType(
                             'Parameter $' . $function_param->name . ' has no provided type',
@@ -835,7 +837,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 || !$storage->cased_name
                 || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
-                if ($this->function instanceof Closure) {
+                if ($this->function instanceof Closure
+                    || $this->function instanceof ArrowFunction
+                ) {
                     if (IssueBuffer::accepts(
                         new UnusedClosureParam(
                             'Param ' . $var_name . ' is never referenced in this method',
