@@ -1973,10 +1973,24 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             foreach ($stmt->stmts as $function_stmt) {
                 if ($function_stmt instanceof PhpParser\Node\Stmt\Expression
                     && $function_stmt->expr instanceof PhpParser\Node\Expr\Assign
-                    && ($function_stmt->expr->expr instanceof PhpParser\Node\Expr\FuncCall)
-                    && ($function_stmt->expr->expr->name instanceof PhpParser\Node\Name)
+                    && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\FuncCall
+                    && $function_stmt->expr->expr->name instanceof PhpParser\Node\Name
                 ) {
                     $function_id = implode('\\', $function_stmt->expr->expr->name->parts);
+
+                    if ($function_id === 'func_get_arg'
+                        || $function_id === 'func_get_args'
+                        || $function_id === 'func_num_args'
+                    ) {
+                        $storage->variadic = true;
+                    }
+                } elseif ($function_stmt instanceof PhpParser\Node\Stmt\If_
+                    && $function_stmt->cond instanceof PhpParser\Node\Expr\BinaryOp
+                    && $function_stmt->cond->left instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                    && $function_stmt->cond->left->left instanceof PhpParser\Node\Expr\FuncCall
+                    && $function_stmt->cond->left->left->name instanceof PhpParser\Node\Name
+                ) {
+                    $function_id = implode('\\', $function_stmt->cond->left->left->name->parts);
 
                     if ($function_id === 'func_get_arg'
                         || $function_id === 'func_get_args'
