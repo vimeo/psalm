@@ -598,6 +598,23 @@ class MagicMethodAnnotationTest extends TestCase
                     /** @psalm-suppress UndefinedMagicMethod */
                     $child->foo();'
             ],
+            'allowFinalOverrider' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return static
+                         */
+                        public static function foo()
+                        {
+                            return new static();
+                        }
+                    }
+
+                    /**
+                     * @method static B foo()
+                     */
+                    final class B extends A {}'
+            ],
         ];
     }
 

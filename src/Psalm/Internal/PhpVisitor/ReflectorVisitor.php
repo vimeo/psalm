@@ -1592,6 +1592,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->defining_fqcln = '';
             $storage->is_static = $stmt->isStatic();
             $class_storage = $this->classlike_storages[count($this->classlike_storages) - 1];
+            $storage->final = $class_storage->final;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
