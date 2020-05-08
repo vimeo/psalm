@@ -852,7 +852,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
             foreach ($changed_var_ids as $var_id => $_) {
                 $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
 
-                if ($first_appearance && $context->vars_in_scope[$var_id]->hasMixed()) {
+                if ($first_appearance
+                    && isset($context->vars_in_scope[$var_id])
+                    && $context->vars_in_scope[$var_id]->hasMixed()
+                ) {
                     if (!$context->collect_initializations
                         && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()

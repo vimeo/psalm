@@ -953,6 +953,19 @@ class IssetTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'assertOnPossiblyDefined' => [
+                '<?php
+                    function crashes(): void {
+                        if (rand(0,1)) {
+                            $dt = new \DateTime;
+                        }
+                        /**
+                         * @psalm-suppress PossiblyUndefinedVariable
+                         * @psalm-suppress MixedArgument
+                         */
+                        assert($dt);
+                    }'
+            ],
         ];
     }
 
