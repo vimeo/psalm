@@ -313,7 +313,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                             continue;
                         }
 
-                        if (!$codebase->classlikes->classExists($callable_fq_class_name)) {
+                        if (!$codebase->classlikes->classOrInterfaceExists($callable_fq_class_name)) {
                             continue;
                         }
 
