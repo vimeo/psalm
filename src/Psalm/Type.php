@@ -623,6 +623,8 @@ abstract class Type
 
             $type = $parse_tree->value;
 
+            $is_tuple = true;
+
             foreach ($parse_tree->children as $i => $property_branch) {
                 if (!$property_branch instanceof ParseTree\ObjectLikePropertyTree) {
                     $property_type = self::getTypeFromTree(
@@ -642,6 +644,7 @@ abstract class Type
                     );
                     $property_maybe_undefined = $property_branch->possibly_undefined;
                     $property_key = $property_branch->value;
+                    $is_tuple = false;
                 } else {
                     throw new TypeParseTreeException(
                         'Missing property type'
@@ -679,7 +682,13 @@ abstract class Type
                 return new Atomic\TCallableObjectLikeArray($properties);
             }
 
-            return new ObjectLike($properties);
+            $object_like = new ObjectLike($properties);
+
+            if ($is_tuple) {
+                $object_like->sealed = true;
+            }
+
+            return $object_like;
         }
 
         if ($parse_tree instanceof ParseTree\CallableWithReturnTypeTree) {

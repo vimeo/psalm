@@ -1237,6 +1237,18 @@ class ArrayAccessTest extends TestCase
                     ["key" => $a] = maybeReturnArray();',
                 'error_message' => 'PossiblyNullArrayAccess',
             ],
+            'destructureTuple' => [
+                '<?php
+                    /**
+                     * @return array{int, int}
+                     */
+                    function size(): array {
+                        return [10, 20];
+                    }
+
+                    [$width, $height, $depth] = size();',
+                'error_message' => 'InvalidArrayOffset',
+            ],
         ];
     }
 }

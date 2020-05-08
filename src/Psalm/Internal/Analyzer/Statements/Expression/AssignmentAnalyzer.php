@@ -514,37 +514,51 @@ class AssignmentAnalyzer
                 foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
                     if ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike
                         && !$assign_var_item->key
-                        && isset($assign_value_atomic_type->properties[$offset]) // if object-like has int offsets
                     ) {
-                        $offset_type = $assign_value_atomic_type->properties[(string)$offset];
+                        // if object-like has int offsets
+                        if (isset($assign_value_atomic_type->properties[$offset])) {
+                            $offset_type = $assign_value_atomic_type->properties[(string)$offset];
 
-                        if ($offset_type->possibly_undefined) {
+                            if ($offset_type->possibly_undefined) {
+                                if (IssueBuffer::accepts(
+                                    new PossiblyUndefinedArrayOffset(
+                                        'Possibly undefined array key',
+                                        new CodeLocation($statements_analyzer->getSource(), $var)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+
+                                $offset_type = clone $offset_type;
+                                $offset_type->possibly_undefined = false;
+                            }
+
+                            self::analyze(
+                                $statements_analyzer,
+                                $var,
+                                null,
+                                $offset_type,
+                                $context,
+                                $doc_comment
+                            );
+
+                            $assigned = true;
+
+                            continue;
+                        }
+
+                        if ($assign_value_atomic_type->sealed) {
                             if (IssueBuffer::accepts(
-                                new PossiblyUndefinedArrayOffset(
-                                    'Possibly undefined array key',
+                                new InvalidArrayOffset(
+                                    'Cannot access value with offset ' . $offset,
                                     new CodeLocation($statements_analyzer->getSource(), $var)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
                                 // fall through
                             }
-
-                            $offset_type = clone $offset_type;
-                            $offset_type->possibly_undefined = false;
                         }
-
-                        self::analyze(
-                            $statements_analyzer,
-                            $var,
-                            null,
-                            $offset_type,
-                            $context,
-                            $doc_comment
-                        );
-
-                        $assigned = true;
-
-                        continue;
                     }
 
                     if ($assign_value_atomic_type instanceof Type\Atomic\TMixed) {
