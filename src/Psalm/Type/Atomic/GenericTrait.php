@@ -175,13 +175,25 @@ trait GenericTrait
             $input_type = new Atomic\TArray([Type::getInt(), $input_type->type_param]);
         }
 
+        $input_object_type_params = [];
+
+        if ($input_type instanceof Atomic\TGenericObject
+            && ($this instanceof Atomic\TGenericObject || $this instanceof Atomic\TIterable)
+            && $codebase
+        ) {
+            $input_object_type_params = UnionTemplateHandler::getMappedGenericTypeParams(
+                $codebase,
+                $input_type,
+                $this
+            );
+        }
+
         $atomic = clone $this;
 
         foreach ($atomic->type_params as $offset => $type_param) {
             $input_type_param = null;
 
-            if (($input_type instanceof Atomic\TGenericObject
-                    || $input_type instanceof Atomic\TIterable
+            if (($input_type instanceof Atomic\TIterable
                     || $input_type instanceof Atomic\TArray)
                 &&
                     isset($input_type->type_params[$offset])
@@ -195,6 +207,10 @@ trait GenericTrait
                 } else {
                     throw new \UnexpectedValueException('Not expecting offset of ' . $offset);
                 }
+            } elseif ($input_type instanceof Atomic\TNamedObject
+                && isset($input_object_type_params[$offset])
+            ) {
+                $input_type_param = $input_object_type_params[$offset];
             }
 
             /** @psalm-suppress PropertyTypeCoercion */
