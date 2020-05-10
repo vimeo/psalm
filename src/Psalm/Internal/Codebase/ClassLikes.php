@@ -2315,6 +2315,11 @@ class ClassLikes
             && $this->existing_classlikes_lc[$fq_classlike_name_lc];
     }
 
+    public function forgetMissingClassLikes() : void
+    {
+        $this->existing_classlikes_lc = \array_filter($this->existing_classlikes_lc);
+    }
+
     /**
      * @param string $fq_class_name
      *

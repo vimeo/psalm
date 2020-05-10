@@ -1876,6 +1876,10 @@ class Config
         }
 
         if ($this->autoloader) {
+            // somee classes that we think are missing may not actually be missing
+            // as they might be autoloadable once we require the autoloader below
+            $codebase->classlikes->forgetMissingClassLikes();
+
             // do this in a separate method so scope does not leak
             $this->requireAutoloader($this->autoloader);
 
