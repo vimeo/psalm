@@ -330,7 +330,7 @@ function takesDogList(Collection $dog_collection) : void {
 }
 ```
 
-That last call `addAnimal($doc_collection)` breaks the type of the collection – suddenly a collection of dogs becomes a collection of dogs _or_ cats. That is bad.
+That last call `addAnimal($dog_collection)` breaks the type of the collection – suddenly a collection of dogs becomes a collection of dogs _or_ cats. That is bad.
 
 To prevent this, Psalm emits an error when calling `addAnimal($dog_collection)` saying "addAnimal expects a `Collection<Animal>`, but `Collection<Dog>` was passed". If you haven't encountered this rule before it's probably confusing to you – any function that accepted an `Animal` would be happy to accept a subtype thereof. But as we see in the example above, doing so can lead to problems.
 
