@@ -155,6 +155,8 @@ class LoopAnalyzer
 
             $original_mixed_counts = $analyzer->getMixedCountsForFile($statements_analyzer->getFilePath());
 
+            $pre_condition_vars_in_scope = $loop_scope->loop_context->vars_in_scope;
+
             IssueBuffer::startRecording();
 
             foreach ($pre_conditions as $condition_offset => $pre_condition) {
@@ -314,6 +316,15 @@ class LoopAnalyzer
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
+
+                foreach ($pre_loop_context->vars_in_scope as $var_id => $_) {
+                    if (!isset($pre_condition_vars_in_scope[$var_id])
+                        && strpos($var_id, '->') === false
+                        && strpos($var_id, '[') === false
+                    ) {
+                        $inner_context->vars_in_scope[$var_id]->possibly_undefined = true;
+                    }
+                }
 
                 foreach ($pre_conditions as $condition_offset => $pre_condition) {
                     self::applyPreConditionToLoopContext(
