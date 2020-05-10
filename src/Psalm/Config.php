@@ -1857,8 +1857,9 @@ class Config
 
         $autoload_files_files = array_unique($autoload_files_files);
 
+        $codebase = $project_analyzer->getCodebase();
+
         if ($autoload_files_files) {
-            $codebase = $project_analyzer->getCodebase();
             $codebase->register_autoload_files = true;
 
             foreach ($autoload_files_files as $file_path) {
