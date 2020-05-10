@@ -319,8 +319,8 @@ class LoopAnalyzer
 
                 foreach ($pre_loop_context->vars_in_scope as $var_id => $_) {
                     if (!isset($pre_condition_vars_in_scope[$var_id])
-                        && strpos($var_id, '->') === false
-                        && strpos($var_id, '[') === false
+                        && \strpos($var_id, '->') === false
+                        && \strpos($var_id, '[') === false
                     ) {
                         $inner_context->vars_in_scope[$var_id]->possibly_undefined = true;
                     }
