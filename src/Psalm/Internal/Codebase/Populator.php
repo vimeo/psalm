@@ -202,10 +202,6 @@ class Populator
 
         $this->populateDataFromImplementedInterfaces($storage, $storage_provider, $dependent_classlikes);
 
-        if ($storage->mixin_fqcln) {
-            $this->populateDataFromMixin($storage, $storage_provider, $dependent_classlikes, $storage->mixin_fqcln);
-        }
-
         if ($storage->location) {
             $file_path = $storage->location->file_path;
 
@@ -446,35 +442,6 @@ class Populator
         }
     }
 
-    /**
-     * @return void
-     */
-    private function populateDataFromMixin(
-        ClassLikeStorage $storage,
-        ClassLikeStorageProvider $storage_provider,
-        array $dependent_classlikes,
-        string $mixin_fqcln
-    ) {
-        try {
-            $mixin_fqcln = strtolower(
-                $this->classlikes->getUnAliasedName(
-                    $mixin_fqcln
-                )
-            );
-            $mixin_storage = $storage_provider->get($mixin_fqcln);
-        } catch (\InvalidArgumentException $e) {
-            return;
-        }
-
-        $this->populateClassLikeStorage($mixin_storage, $dependent_classlikes);
-
-        $this->inheritMethodsFromParent($storage, $mixin_storage, true);
-        $this->inheritPropertiesFromParent($storage, $mixin_storage, true);
-
-        $storage->pseudo_property_get_types += $mixin_storage->pseudo_property_get_types;
-        $storage->pseudo_property_set_types += $mixin_storage->pseudo_property_set_types;
-    }
-
     private static function extendType(
         Type\Union $type,
         ClassLikeStorage $storage
@@ -611,6 +578,10 @@ class Populator
             $parent_storage->protected_class_constants,
             $storage->protected_class_constants
         );
+
+        if ($parent_storage->mixin && !$storage->mixin) {
+            $storage->mixin = $parent_storage->mixin;
+        }
 
         foreach ($parent_storage->public_class_constant_nodes as $name => $_) {
             $storage->public_class_constants[$name] = Type::getMixed();

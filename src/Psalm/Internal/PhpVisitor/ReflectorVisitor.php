@@ -1270,20 +1270,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     if ($mixin_type->isSingle()) {
                         $mixin_type = \array_values($mixin_type->getAtomicTypes())[0];
 
-                        if ($mixin_type instanceof Type\Atomic\TNamedObject) {
-                            if ($mixin_type instanceof Type\Atomic\TGenericObject) {
-                                $storage->mixin = $mixin_type;
-                            } else {
-                                $storage->mixin_fqcln = $mixin_type->value;
-
-                                $this->file_storage->referenced_classlikes[strtolower($storage->mixin_fqcln)]
-                                    = $storage->mixin_fqcln;
-
-                                // if there's a mixin, assume it's the reason for the __call
-                                $storage->sealed_properties = true;
-                                $storage->sealed_methods = true;
-                            }
-                        } elseif ($mixin_type instanceof Type\Atomic\TTemplateParam) {
+                        if ($mixin_type instanceof Type\Atomic\TNamedObject
+                            || $mixin_type instanceof Type\Atomic\TTemplateParam
+                        ) {
                             $storage->mixin = $mixin_type;
                         }
                     }

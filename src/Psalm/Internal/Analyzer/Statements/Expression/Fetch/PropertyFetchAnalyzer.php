@@ -488,11 +488,49 @@ class PropertyFetchAnalyzer
                 $class_exists = true;
             }
 
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
             $property_id = $fq_class_name . '::$' . $prop_name;
 
+            $naive_property_exists = $codebase->properties->propertyExists(
+                $property_id,
+                true,
+                $statements_analyzer,
+                $context,
+                $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
+            );
+
+            // add method before changing fq_class_name
             $get_method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__get');
+
+            if (!$naive_property_exists
+                && $class_storage->mixin instanceof Type\Atomic\TNamedObject
+            ) {
+                $new_property_id = $class_storage->mixin->value . '::$' . $prop_name;
+                $new_class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
+
+                if ($codebase->properties->propertyExists(
+                    $new_property_id,
+                    true,
+                    $statements_analyzer,
+                    $context,
+                    $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
+                )
+                    || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])
+                ) {
+                    $fq_class_name = $class_storage->mixin->value;
+                    $lhs_type_part = clone $class_storage->mixin;
+                    $class_storage = $new_class_storage;
+
+                    if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
+                        $naive_property_exists = true;
+                    }
+
+                    $property_id = $new_property_id;
+                }
+            }
+
             if ($codebase->methods->methodExists($get_method_id)
-                && (!$codebase->properties->propertyExists($property_id, true, $statements_analyzer, $context)
+                && (!$naive_property_exists
                     || ($stmt_var_id !== '$this'
                         && $fq_class_name !== $context->self
                         && ClassLikeAnalyzer::checkPropertyVisibility(
@@ -506,8 +544,6 @@ class PropertyFetchAnalyzer
                 )
             ) {
                 $has_magic_getter = true;
-
-                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
                     $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
@@ -580,7 +616,9 @@ class PropertyFetchAnalyzer
                     continue;
                 }
 
-                if (!$class_exists) {
+                if ($interface_exists) {
+                    $property_id = $lhs_type_part->value . '::$' . $prop_name;
+
                     if (IssueBuffer::accepts(
                         new UndefinedMagicPropertyFetch(
                             'Magic instance property ' . $property_id . ' is not defined',
@@ -591,11 +629,9 @@ class PropertyFetchAnalyzer
                     )) {
                         // fall through
                     }
-                }
-            }
 
-            if (!$class_exists) {
-                continue;
+                    continue;
+                }
             }
 
             if ($codebase->store_node_types
@@ -609,17 +645,9 @@ class PropertyFetchAnalyzer
                 );
             }
 
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
             $config = $statements_analyzer->getProjectAnalyzer()->getConfig();
 
-            if (!$codebase->properties->propertyExists(
-                $property_id,
-                true,
-                $statements_analyzer,
-                $context,
-                $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
-            )
-            ) {
+            if (!$naive_property_exists) {
                 if ($config->use_phpdoc_property_without_magic_or_parent
                     && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
                 ) {

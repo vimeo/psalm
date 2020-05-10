@@ -207,17 +207,17 @@ class MixinAnnotationTest extends TestCase
                     /**
                      * @property string $foo
                      */
-                    class A {
+                    class A {}
+
+                    /**
+                     * @mixin A
+                     */
+                    class B {
                         /** @return mixed */
                         public function __get(string $s) {
                             return 5;
                         }
                     }
-
-                    /**
-                     * @mixin A
-                     */
-                    class B {}
 
                     function toArray(B $b) : string {
                         return $b->foo;

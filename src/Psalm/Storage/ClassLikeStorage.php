@@ -98,11 +98,6 @@ class ClassLikeStorage
     public $psalm_internal = null;
 
     /**
-     * @var null|string
-     */
-    public $mixin_fqcln = null;
-
-    /**
      * @var null|Type\Atomic\TTemplateParam|Type\Atomic\TNamedObject
      */
     public $mixin = null;
