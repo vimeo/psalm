@@ -66,20 +66,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
         if (!$call_args) {
             switch ($call_map_key) {
-                case 'getenv':
-                    return new Type\Union([new Type\Atomic\TArray([Type::getArrayKey(), Type::getString()])]);
-
-                case 'gettimeofday':
-                    return new Type\Union([
-                        new Type\Atomic\TArray([
-                            Type::getString(),
-                            Type::getInt()
-                        ])
-                    ]);
-
-                case 'microtime':
-                    return Type::getString();
-
                 case 'hrtime':
                     return new Type\Union([
                         new Type\Atomic\ObjectLike([
@@ -111,13 +97,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
             }
         } else {
             switch ($call_map_key) {
-                case 'pathinfo':
-                    if (isset($call_args[1])) {
-                        return Type::getString();
-                    }
-
-                    return Type::getArray();
-
                 case 'count':
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         $atomic_types = $first_arg_type->getAtomicTypes();
@@ -189,42 +168,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     $int = Type::getInt();
                     $int->from_calculation = true;
                     return $int;
-
-                case 'getenv':
-                    return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
-
-                case 'min':
-                case 'max':
-                    if (isset($call_args[0])) {
-                        $first_arg = $call_args[0]->value;
-
-                        if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
-                            if ($first_arg_type->hasArray()) {
-                                /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                                $array_type = $first_arg_type->getAtomicTypes()['array'];
-                                if ($array_type instanceof Type\Atomic\ObjectLike) {
-                                    return $array_type->getGenericValueType();
-                                }
-
-                                if ($array_type instanceof Type\Atomic\TArray) {
-                                    return clone $array_type->type_params[1];
-                                }
-
-                                if ($array_type instanceof Type\Atomic\TList) {
-                                    return clone $array_type->type_param;
-                                }
-                            } elseif ($first_arg_type->hasScalarType()
-                                && isset($call_args[1])
-                                && ($second_arg = $call_args[1]->value)
-                                && ($second_arg_type = $statements_analyzer->node_data->getType($second_arg))
-                                && $second_arg_type->hasScalarType()
-                            ) {
-                                return Type::combineUnionTypes($first_arg_type, $second_arg_type);
-                            }
-                        }
-                    }
-
-                    break;
 
                 case 'get_parent_class':
                     // this is unreliable, as it's hard to know exactly what's wanted - attempted this in

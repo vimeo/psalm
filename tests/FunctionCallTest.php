@@ -274,7 +274,7 @@ class FunctionCallTest extends TestCase
                     $a = getenv();
                     $b = getenv("some_key");',
                 'assertions' => [
-                    '$a' => 'array<array-key, string>',
+                    '$a' => 'array<string, string>',
                     '$b' => 'false|string',
                 ],
             ],

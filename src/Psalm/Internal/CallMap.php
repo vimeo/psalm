@@ -3659,7 +3659,7 @@ return [
 'getservbyname' => ['int|false', 'service'=>'string', 'protocol'=>'string'],
 'getservbyport' => ['string|false', 'port'=>'int', 'protocol'=>'string'],
 'gettext' => ['string', 'msgid'=>'string'],
-'gettimeofday' => ['array'],
+'gettimeofday' => ['array<string, int>'],
 'gettimeofday\'1' => ['float', 'get_as_float='=>'true'],
 'gettype' => ['string', 'var'=>'mixed'],
 'glob' => ['list<string>|false', 'pattern'=>'string', 'flags='=>'int'],

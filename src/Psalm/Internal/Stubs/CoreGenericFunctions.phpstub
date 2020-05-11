@@ -413,3 +413,39 @@ function date(string $format, int $timestamp = 0) {}
  * @return (func_num_args() is 2 ? list<float|int|string> : int)
  */
 function sscanf(string $str, string $format, &...$vars) {}
+
+/**
+ * @return (
+ *     func_num_args() is 1
+ *     ? array{dirname: string, basename: string, extension?: string, filename: string}
+ *     : string
+ * )
+ */
+function pathinfo(string $path, int $options = \PATHINFO_DIRNAME) {}
+
+/**
+ * @template T as scalar
+ * @template TFirstArg as array<T>|T
+ *
+ * @param TFirstArg $arg_1
+ * @param T $arg_2
+ *
+ * @return T
+ */
+function min($arg_1, ...$arg_2) {}
+
+/**
+ * @template T as scalar
+ * @template TFirstArg as array<T>|T
+ *
+ * @param TFirstArg $arg_1
+ * @param T $arg_2
+ *
+ * @return T
+ */
+function max($arg_1, ...$arg_2) {}
+
+/**
+ * @return (func_num_args() is 0 ? array<string, string> : string|false)
+ */
+function getenv(string $varname = '', bool $local_only = false) {}
