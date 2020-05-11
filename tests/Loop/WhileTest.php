@@ -420,24 +420,7 @@ class WhileTest extends \Psalm\Tests\TestCase
                         $str    = "";
                         $offset = 0;
                         while (preg_match($reg, $content, $parse, PREG_OFFSET_CAPTURE, $offset)) {
-                            // si une balise a ete detectee
-                            if($parse[1][0]) {
-                                // sauvegarde du texte precedent si il existe
-                                if($str !== "") {
-                                    $tmp[] = ["txt", $str];
-                                }
-
-                                // sauvegarde de la balise
-                                $tmp[] = ["code", trim($parse[1][0])];
-
-                                // initialisation du texte suivant
-                                $str = "";
-                            } else {
-                                // ajout du texte a la fin de celui qui est deja detecte
-                                $str .= $parse[2][0];
-                            }
-                            // Update offset to the end of the match
-                            $offset = $parse[0][1] + strlen($parse[0][0]);
+                            $str .= "hello";
                             unset($parse);
                         }
                     }'
