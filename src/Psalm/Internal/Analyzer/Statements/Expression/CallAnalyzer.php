@@ -2783,6 +2783,10 @@ class CallAnalyzer
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
 
+        if ($function_param->by_ref) {
+            $param_type->possibly_undefined = true;
+        }
+
         $param_type = TypeAnalyzer::simplifyUnionType(
             $codebase,
             $param_type
@@ -3810,7 +3814,10 @@ class CallAnalyzer
 
                     $codebase = $statements_analyzer->getCodebase();
 
-                    if ($first_appearance && $context->vars_in_scope[$var_id]->hasMixed()) {
+                    if ($first_appearance
+                        && isset($context->vars_in_scope[$var_id])
+                        && $context->vars_in_scope[$var_id]->hasMixed()
+                    ) {
                         if (!$context->collect_initializations
                             && !$context->collect_mutations
                             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()

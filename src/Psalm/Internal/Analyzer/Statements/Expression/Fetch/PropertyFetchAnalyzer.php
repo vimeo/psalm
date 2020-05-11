@@ -616,7 +616,7 @@ class PropertyFetchAnalyzer
                     continue;
                 }
 
-                if ($interface_exists) {
+                if (!$class_exists) {
                     $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
                     if (IssueBuffer::accepts(

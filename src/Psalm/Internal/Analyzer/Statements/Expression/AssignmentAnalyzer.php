@@ -588,7 +588,13 @@ class AssignmentAnalyzer
                         && !$assign_value_type->hasArrayAccessInterface($codebase)
                     ) {
                         if ($assign_value_type->hasArray()) {
-                            if (IssueBuffer::accepts(
+                            if (($assign_value_atomic_type instanceof Type\Atomic\TFalse
+                                    && $assign_value_type->ignore_falsable_issues)
+                                || ($assign_value_atomic_type instanceof Type\Atomic\TNull
+                                    && $assign_value_type->ignore_nullable_issues)
+                            ) {
+                                // do nothing
+                            } elseif (IssueBuffer::accepts(
                                 new PossiblyInvalidArrayAccess(
                                     'Cannot access array value on non-array variable '
                                         . $array_var_id . ' of type ' . $assign_value_atomic_type->getId(),
