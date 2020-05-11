@@ -764,6 +764,14 @@ class MagicMethodAnnotationTest extends TestCase
                     abstract class TestClassA {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'methodWithAmpersandAndSpace' => [
+                '<?php
+                    /**
+                     * @method void alloc(string & $result)
+                     */
+                    class Foo {}',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

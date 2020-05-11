@@ -1038,7 +1038,13 @@ class CommentAnalyzer
 
 
                     if ($method_tree_child->children) {
-                        $param_type = Type::getTypeFromTree($method_tree_child->children[0], $codebase);
+                        try {
+                            $param_type = Type::getTypeFromTree($method_tree_child->children[0], $codebase);
+                        } catch (\Exception $e) {
+                            throw new DocblockParseException(
+                                'Badly-formatted @method string ' . $method_entry . ' - ' . $e
+                            );
+                        }
                         $docblock_lines[] = '@param \\' . $param_type . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;
