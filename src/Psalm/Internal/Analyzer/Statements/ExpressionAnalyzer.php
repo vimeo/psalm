@@ -1403,7 +1403,7 @@ class ExpressionAnalyzer
                     continue;
                 }
 
-                $comment_type = \Psalm\Internal\Type\UnionExpander::expand(
+                $comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $var_comment->type,
                     $context->self,

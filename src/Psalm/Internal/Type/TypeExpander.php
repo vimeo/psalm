@@ -39,7 +39,7 @@ use function current;
 /**
  * @internal
  */
-class UnionExpander
+class TypeExpander
 {
     /**
      * @param  Type\Union   $return_type
@@ -48,7 +48,7 @@ class UnionExpander
      *
      * @return Type\Union
      */
-    public static function expand(
+    public static function expandUnion(
         Codebase $codebase,
         Type\Union $return_type,
         ?string $self_class,
@@ -63,7 +63,7 @@ class UnionExpander
         $new_return_type_parts = [];
 
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
-            $parts = self::expandAtomicType(
+            $parts = self::expandAtomic(
                 $codebase,
                 $return_type_part,
                 $self_class,
@@ -103,7 +103,7 @@ class UnionExpander
      *
      * @return Type\Atomic|non-empty-array<int, Type\Atomic>
      */
-    private static function expandAtomicType(
+    private static function expandAtomic(
         Codebase $codebase,
         Type\Atomic &$return_type,
         ?string $self_class,
@@ -120,7 +120,7 @@ class UnionExpander
                 $new_intersection_types = [];
 
                 foreach ($return_type->extra_types as &$extra_type) {
-                    self::expandAtomicType(
+                    self::expandAtomic(
                         $codebase,
                         $extra_type,
                         $self_class,
@@ -196,7 +196,7 @@ class UnionExpander
         ) {
             $new_as_type = clone $return_type->as_type;
 
-            self::expandAtomicType(
+            self::expandAtomic(
                 $codebase,
                 $new_as_type,
                 $self_class,
@@ -321,7 +321,7 @@ class UnionExpander
             || $return_type instanceof Type\Atomic\TIterable
         ) {
             foreach ($return_type->type_params as &$type_param) {
-                $type_param = self::expand(
+                $type_param = self::expandUnion(
                     $codebase,
                     $type_param,
                     $self_class,
@@ -334,7 +334,7 @@ class UnionExpander
             }
         } elseif ($return_type instanceof Type\Atomic\ObjectLike) {
             foreach ($return_type->properties as &$property_type) {
-                $property_type = self::expand(
+                $property_type = self::expandUnion(
                     $codebase,
                     $property_type,
                     $self_class,
@@ -346,7 +346,7 @@ class UnionExpander
                 );
             }
         } elseif ($return_type instanceof Type\Atomic\TList) {
-            $return_type->type_param = self::expand(
+            $return_type->type_param = self::expandUnion(
                 $codebase,
                 $return_type->type_param,
                 $self_class,
@@ -362,7 +362,7 @@ class UnionExpander
             if ($return_type->params) {
                 foreach ($return_type->params as $param) {
                     if ($param->type) {
-                        $param->type = self::expand(
+                        $param->type = self::expandUnion(
                             $codebase,
                             $param->type,
                             $self_class,
@@ -376,7 +376,7 @@ class UnionExpander
                 }
             }
             if ($return_type->return_type) {
-                $return_type->return_type = self::expand(
+                $return_type->return_type = self::expandUnion(
                     $codebase,
                     $return_type->return_type,
                     $self_class,
@@ -395,7 +395,7 @@ class UnionExpander
 
                 if ($return_type->conditional_type->isSingle()) {
                     foreach ($return_type->conditional_type->getAtomicTypes() as $condition_atomic_type) {
-                        $candidate = self::expandAtomicType(
+                        $candidate = self::expandAtomic(
                             $codebase,
                             $condition_atomic_type,
                             $self_class,
@@ -415,7 +415,7 @@ class UnionExpander
                 $if_conditional_return_types = [];
 
                 foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
-                    $candidate = self::expandAtomicType(
+                    $candidate = self::expandAtomic(
                         $codebase,
                         $if_atomic_type,
                         $self_class,
@@ -437,7 +437,7 @@ class UnionExpander
                 $else_conditional_return_types = [];
 
                 foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
-                    $candidate = self::expandAtomicType(
+                    $candidate = self::expandAtomic(
                         $codebase,
                         $else_atomic_type,
                         $self_class,
@@ -512,7 +512,7 @@ class UnionExpander
                 return array_values($combined->getAtomicTypes());
             }
 
-            $return_type->conditional_type = self::expand(
+            $return_type->conditional_type = self::expandUnion(
                 $codebase,
                 $return_type->conditional_type,
                 $self_class,
@@ -523,7 +523,7 @@ class UnionExpander
                 $final
             );
 
-            $return_type->if_type = self::expand(
+            $return_type->if_type = self::expandUnion(
                 $codebase,
                 $return_type->if_type,
                 $self_class,
@@ -534,7 +534,7 @@ class UnionExpander
                 $final
             );
 
-            $return_type->else_type = self::expand(
+            $return_type->else_type = self::expandUnion(
                 $codebase,
                 $return_type->else_type,
                 $self_class,

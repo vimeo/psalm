@@ -944,7 +944,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
 
                         if ($template_result->upper_bounds) {
-                            $return_type_candidate = \Psalm\Internal\Type\UnionExpander::expand(
+                            $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
                                 $codebase,
                                 $return_type_candidate,
                                 null,
@@ -958,7 +958,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         }
 
-                        $return_type_candidate = \Psalm\Internal\Type\UnionExpander::expand(
+                        $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
                             $codebase,
                             $return_type_candidate,
                             $self_fq_class_name,
@@ -1316,7 +1316,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if ($pseudo_method_storage->return_type) {
             $return_type_candidate = clone $pseudo_method_storage->return_type;
 
-            $return_type_candidate = \Psalm\Internal\Type\UnionExpander::expand(
+            $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $statements_analyzer->getCodebase(),
                 $return_type_candidate,
                 $fq_class_name,

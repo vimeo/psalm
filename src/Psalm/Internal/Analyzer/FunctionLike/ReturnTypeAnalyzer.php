@@ -242,7 +242,7 @@ class ReturnTypeAnalyzer
 
         $inferred_return_type = TypeAnalyzer::simplifyUnionType(
             $codebase,
-            \Psalm\Internal\Type\UnionExpander::expand(
+            \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $inferred_return_type,
                 $source->getFQCLN(),
@@ -375,7 +375,7 @@ class ReturnTypeAnalyzer
         }
 
         // passing it through fleshOutTypes eradicates errant $ vars
-        $declared_return_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $declared_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $return_type,
             $self_fq_class_name,
@@ -719,7 +719,7 @@ class ReturnTypeAnalyzer
                 }
             }
 
-            $fleshed_out_return_type = \Psalm\Internal\Type\UnionExpander::expand(
+            $fleshed_out_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $storage->return_type,
                 $classlike_storage ? $classlike_storage->name : null,
@@ -738,7 +738,7 @@ class ReturnTypeAnalyzer
             return;
         }
 
-        $fleshed_out_signature_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $fleshed_out_signature_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $storage->signature_return_type,
             $classlike_storage ? $classlike_storage->name : null,
@@ -760,7 +760,7 @@ class ReturnTypeAnalyzer
             return;
         }
 
-        $fleshed_out_return_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $fleshed_out_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $storage->return_type,
             $classlike_storage ? $classlike_storage->name : null,

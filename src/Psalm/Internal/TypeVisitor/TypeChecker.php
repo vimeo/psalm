@@ -248,7 +248,7 @@ class TypeChecker extends NodeVisitor
                 $expected_type_param = \reset(\array_values($expected_type_params)[$i])[0];
                 $template_name = \array_keys($expected_type_params)[$i];
 
-                $type_param = \Psalm\Internal\Type\UnionExpander::expand(
+                $type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $type_param,
                     $this->source->getFQCLN(),

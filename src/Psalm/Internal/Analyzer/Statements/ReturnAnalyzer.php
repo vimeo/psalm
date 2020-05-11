@@ -88,7 +88,7 @@ class ReturnAnalyzer
                     continue;
                 }
 
-                $comment_type = \Psalm\Internal\Type\UnionExpander::expand(
+                $comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $var_comment->type,
                     $context->self,
@@ -186,7 +186,7 @@ class ReturnAnalyzer
             $cased_method_id = $source->getCorrectlyCasedMethodId();
 
             if ($stmt->expr && $storage->location) {
-                $inferred_type = \Psalm\Internal\Type\UnionExpander::expand(
+                $inferred_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $stmt_type,
                     $source->getFQCLN(),

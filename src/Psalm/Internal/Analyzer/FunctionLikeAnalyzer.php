@@ -330,7 +330,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         } else { // Closure
             if ($storage->return_type) {
-                $closure_return_type = \Psalm\Internal\Type\UnionExpander::expand(
+                $closure_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $storage->return_type,
                     $context->self,
@@ -958,7 +958,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($signature_type) {
-                $signature_type = \Psalm\Internal\Type\UnionExpander::expand(
+                $signature_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $signature_type,
                     $context->self,
@@ -980,7 +980,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $param_type = clone $function_param->type;
                 }
 
-                $param_type = \Psalm\Internal\Type\UnionExpander::expand(
+                $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $param_type,
                     $context->self,
@@ -1006,7 +1006,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if (!$non_null_param_types && isset($implemented_docblock_param_types[$offset])) {
                     $param_type = clone $implemented_docblock_param_types[$offset];
 
-                    $param_type = \Psalm\Internal\Type\UnionExpander::expand(
+                    $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                         $codebase,
                         $param_type,
                         $context->self,
@@ -1301,7 +1301,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && $storage->return_type_location
             && $storage->return_type_location !== $storage->signature_return_type_location
         ) {
-            $replace_type = \Psalm\Internal\Type\UnionExpander::expand(
+            $replace_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $storage->return_type,
                 $context->self,
@@ -1325,7 +1325,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && $function_param->type_location !== $function_param->signature_type_location
                 && $function_param->type_location->file_path === $this->getFilePath()
             ) {
-                $replace_type = \Psalm\Internal\Type\UnionExpander::expand(
+                $replace_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $function_param->type,
                     $context->self,
@@ -1766,7 +1766,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             return $this->local_return_type;
         }
 
-        $this->local_return_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $this->local_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $this->codebase,
             $storage_return_type,
             $this->getFQCLN(),

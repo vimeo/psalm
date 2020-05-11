@@ -421,7 +421,7 @@ class MethodComparator
         array $suppressed_issues
     ) : void {
         $guide_param_signature_type = $guide_param->signature_type
-            ? \Psalm\Internal\Type\UnionExpander::expand(
+            ? \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $guide_param->signature_type,
                 $guide_classlike_storage->is_trait && $guide_method_storage->abstract
@@ -436,7 +436,7 @@ class MethodComparator
             )
             : null;
 
-        $implementer_param_signature_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $implementer_param_signature_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $implementer_param_signature_type,
             $implementer_classlike_storage->name,
@@ -521,7 +521,7 @@ class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues
     ) : void {
-        $implementer_method_storage_param_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $implementer_method_storage_param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $implementer_param_type,
             $implementer_classlike_storage->name,
@@ -529,7 +529,7 @@ class MethodComparator
             $implementer_classlike_storage->parent_class
         );
 
-        $guide_method_storage_param_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $guide_method_storage_param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $guide_param_type,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
@@ -676,7 +676,7 @@ class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues
     ) : void {
-        $guide_signature_return_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $guide_signature_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $guide_signature_return_type,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
@@ -695,7 +695,7 @@ class MethodComparator
         );
 
         $implementer_signature_return_type = $implementer_method_storage->signature_return_type
-            ? \Psalm\Internal\Type\UnionExpander::expand(
+            ? \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $implementer_method_storage->signature_return_type,
                 $implementer_classlike_storage->is_trait
@@ -767,7 +767,7 @@ class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues
     ) : void {
-        $implementer_method_storage_return_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $implementer_method_storage_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $implementer_return_type,
             $implementer_classlike_storage->name,
@@ -775,7 +775,7 @@ class MethodComparator
             $implementer_classlike_storage->parent_class
         );
 
-        $guide_method_storage_return_type = \Psalm\Internal\Type\UnionExpander::expand(
+        $guide_method_storage_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $guide_return_type,
             $guide_classlike_storage->is_trait

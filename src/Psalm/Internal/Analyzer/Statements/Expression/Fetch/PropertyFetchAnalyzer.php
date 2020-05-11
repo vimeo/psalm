@@ -847,7 +847,7 @@ class PropertyFetchAnalyzer
 
                 $class_property_type = Type::getMixed();
             } else {
-                $class_property_type = \Psalm\Internal\Type\UnionExpander::expand(
+                $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     clone $class_property_type,
                     $declaring_class_storage->name,
@@ -1345,7 +1345,7 @@ class PropertyFetchAnalyzer
 
         if ($var_id) {
             if ($property->type) {
-                $context->vars_in_scope[$var_id] = \Psalm\Internal\Type\UnionExpander::expand(
+                $context->vars_in_scope[$var_id] = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     clone $property->type,
                     $class_storage->name,

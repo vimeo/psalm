@@ -56,7 +56,7 @@ class MissingMethodCallHandler
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = clone $pseudo_method_storage->return_type;
 
-                $return_type_candidate = \Psalm\Internal\Type\UnionExpander::expand(
+                $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
                     $fq_class_name,

@@ -1961,7 +1961,7 @@ class TypeAnalyzer
                     $converted_return_type = null;
 
                     if ($method_storage->return_type) {
-                        $converted_return_type = \Psalm\Internal\Type\UnionExpander::expand(
+                        $converted_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                             $codebase,
                             $method_storage->return_type,
                             $method_fqcln,
