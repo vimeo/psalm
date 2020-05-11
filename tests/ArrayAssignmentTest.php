@@ -64,7 +64,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = [4];
                     }',
                 'assertions' => [
-                    '$out' => 'non-empty-list<array{0: int}>',
+                    '$out' => 'non-empty-list<array{int}>',
                 ],
             ],
             'generic2dArrayCreationAddedInIf' => [
@@ -193,7 +193,7 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'assertions' => [
                     '$foo' => 'array{0: string, 1: string, 2: string}',
-                    '$bar' => 'array{0: int, 1: int, 2: int}',
+                    '$bar' => 'array{int, int, int}',
                     '$bat' => 'non-empty-array<string, int>',
                 ],
             ],
@@ -257,7 +257,7 @@ class ArrayAssignmentTest extends TestCase
                         "baz" => [1]
                     ];',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{a: string}, baz: array{0: int}}',
+                    '$foo' => 'array{bar: array{a: string}, baz: array{int}}',
                 ],
             ],
             'implicitObjectLikeCreation' => [
@@ -278,7 +278,7 @@ class ArrayAssignmentTest extends TestCase
                     ];
                     $foo["bar"]["bam"]["baz"] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{a: string, bam: array{baz: string}}, baz: array{0: int}}',
+                    '$foo' => 'array{bar: array{a: string, bam: array{baz: string}}, baz: array{int}}',
                 ],
             ],
             'conflictingTypesWithAssignment2' => [
@@ -436,7 +436,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["a"] = 1;
                     $foo += ["b" => [2, 3]];',
                 'assertions' => [
-                    '$foo' => 'array{a: int, b: array{0: int, 1: int}}',
+                    '$foo' => 'array{a: int, b: array{int, int}}',
                 ],
             ],
             'nestedObjectLikeArrayAddition' => [
@@ -445,7 +445,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["root"]["a"] = 1;
                     $foo["root"] += ["b" => [2, 3]];',
                 'assertions' => [
-                    '$foo' => 'array{root: array{a: int, b: array{0: int, 1: int}}}',
+                    '$foo' => 'array{root: array{a: int, b: array{int, int}}}',
                 ],
             ],
             'updateStringIntKey1' => [
@@ -812,7 +812,7 @@ class ArrayAssignmentTest extends TestCase
                     $a_values = array_values($a);
                     $a_keys = array_keys($a);',
                 'assertions' => [
-                    '$a' => 'array{0: string, 1: int}',
+                    '$a' => 'array{string, int}',
                     '$a_values' => 'non-empty-list<int|string>',
                     '$a_keys' => 'non-empty-list<int>',
                 ],
@@ -822,7 +822,7 @@ class ArrayAssignmentTest extends TestCase
                     $b = ["hello", 5];
                     $b[0] = 3;',
                 'assertions' => [
-                    '$b' => 'array{0: int, 1: int}',
+                    '$b' => 'array{int, int}',
                 ],
             ],
             'changeIntOffsetKeyValuesAfterCopy' => [
@@ -831,8 +831,8 @@ class ArrayAssignmentTest extends TestCase
                     $c = $b;
                     $c[0] = 3;',
                 'assertions' => [
-                    '$b' => 'array{0: string, 1: int}',
-                    '$c' => 'array{0: int, 1: int}',
+                    '$b' => 'array{string, int}',
+                    '$c' => 'array{int, int}',
                 ],
             ],
             'mergeIntOffsetValues' => [
@@ -1196,8 +1196,8 @@ class ArrayAssignmentTest extends TestCase
 
                     $b[] = rand(0, 10);',
                 'assertions' => [
-                    '$a' => 'array{0: int, 1: int, 2: int}',
-                    '$b' => 'array{0: int, 1: int, 2: int, 3: int}',
+                    '$a' => 'array{int, int, int}',
+                    '$b' => 'array{int, int, int, int}',
                 ],
             ],
             'listMergedWithObjectLikeList' => [
@@ -1281,8 +1281,8 @@ class ArrayAssignmentTest extends TestCase
                     $arr2 = [...$arr1];
                     $arr3 = [1 => 0, ...$arr1];',
                 [
-                    '$result' => 'array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int}',
-                    '$arr2' => 'array{0: int, 1: int, 2: int}',
+                    '$result' => 'array{int, int, int, int, int, int, int, int}',
+                    '$arr2' => 'array{int, int, int}',
                     '$arr3' => 'array{1: int, 2: int, 3: int, 4: int}',
                 ]
             ],

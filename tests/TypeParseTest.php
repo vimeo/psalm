@@ -289,7 +289,7 @@ class TypeParseTest extends TestCase
 
     public function testIterableContainingObjectLike() : void
     {
-        $this->assertSame('iterable<string, array{0: int}>', Type::parseString('iterable<string, array{int}>')->getId());
+        $this->assertSame('iterable<string, array{int}>', Type::parseString('iterable<string, array{int}>')->getId());
     }
 
     /**
@@ -488,7 +488,7 @@ class TypeParseTest extends TestCase
     public function testObjectLikeWithIntKeysAndUnionArgs()
     {
         $this->assertSame(
-            'array{0: null|stdClass}',
+            'array{null|stdClass}',
             (string)Type::parseString('array{stdClass|null}')
         );
     }
@@ -499,12 +499,12 @@ class TypeParseTest extends TestCase
     public function testObjectLikeWithIntKeysAndGenericArgs()
     {
         $this->assertSame(
-            'array{0: array<array-key, mixed>}',
+            'array{array<array-key, mixed>}',
             (string)Type::parseString('array{array}')
         );
 
         $this->assertSame(
-            'array{0: array<int, string>}',
+            'array{array<int, string>}',
             (string)Type::parseString('array{array<int, string>}')
         );
     }

@@ -459,7 +459,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$vars' => 'array{x: string, y: string}',
                     '$c' => 'string',
                     '$d' => 'string',
-                    '$more_vars' => 'array{0: string, 1: string}',
+                    '$more_vars' => 'array{string, string}',
                     '$e' => 'int',
                 ],
             ],
@@ -909,11 +909,12 @@ class ArrayFunctionCallTest extends TestCase
                     $b = ["a", "b", "c"];
                     array_splice($a, -1, 1, $b);
                     $d = [1, 2, 3];
-                    array_splice($d, -1, 1);',
+                    $e = array_splice($d, -1, 1);',
                 'assertions' => [
                     '$a' => 'non-empty-list<int|string>',
-                    '$b' => 'array{0: string, 1: string, 2: string}',
-                    '$c' => 'array{0: int, 1: int, 2: int}',
+                    '$b' => 'array{string, string, string}',
+                    '$c' => 'array{int, int, int}',
+                    '$e' => 'array<array-key, mixed>'
                 ],
             ],
             'arraySpliceOtherType' => [
@@ -921,7 +922,7 @@ class ArrayFunctionCallTest extends TestCase
                     $d = [["red"], ["green"], ["blue"]];
                     array_splice($d, -1, 1, "foo");',
                 'assertions' => [
-                    '$d' => 'array<int, array{0: string}|string>',
+                    '$d' => 'array<int, array{string}|string>',
                 ],
             ],
             'ksortPreserveShape' => [
