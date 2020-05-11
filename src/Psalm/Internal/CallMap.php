@@ -10152,7 +10152,7 @@ return [
 'proc_close' => ['int', 'process'=>'resource'],
 'proc_get_status' => ['array|false', 'process'=>'resource'],
 'proc_nice' => ['bool', 'priority'=>'int'],
-'proc_open' => ['resource|false', 'command'=>'string', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
+'proc_open' => ['resource|false', 'command'=>'string|array', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
 'proc_terminate' => ['bool', 'process'=>'resource', 'signal='=>'int'],
 'projectionObj::__construct' => ['void', 'projectionString'=>'string'],
 'projectionObj::getUnits' => ['int'],

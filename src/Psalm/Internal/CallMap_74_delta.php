@@ -17,10 +17,12 @@ return [
 'new' => [
     'password_hash' => ['string|null', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     'password_needs_rehash' => ['bool', 'hash'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
+    'proc_open' => ['resource|false', 'command'=>'string|array', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
     'ReflectionProperty::getType' => ['?ReflectionType'],
 ],
 'old' => [
     'password_hash' => ['string|false', 'password'=>'string', 'algo'=>'int', 'options='=>'array'],
     'password_needs_rehash' => ['bool', 'hash'=>'string', 'algo'=>'int', 'options='=>'array'],
+    'proc_open' => ['resource|false', 'command'=>'string', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
 ]
 ];
