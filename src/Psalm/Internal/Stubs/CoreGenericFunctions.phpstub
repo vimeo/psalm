@@ -406,3 +406,10 @@ function range($start, $end, $step = 1) {}
  * )
  */
 function date(string $format, int $timestamp = 0) {}
+
+/**
+ * @param mixed $vars
+ * @param-out string|int|float $vars
+ * @return (func_num_args() is 2 ? list<float|int|string> : int)
+ */
+function sscanf(string $str, string $format, &...$vars) {}

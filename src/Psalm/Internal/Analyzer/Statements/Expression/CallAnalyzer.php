@@ -1754,6 +1754,10 @@ class CallAnalyzer
 
                 if (isset($function_storage->param_out_types[$argument_offset])) {
                     $by_ref_out_type = $function_storage->param_out_types[$argument_offset];
+                } elseif ($argument_offset >= count($function_params)
+                    && isset($function_storage->param_out_types[count($function_params) - 1])
+                ) {
+                    $by_ref_out_type = $function_storage->param_out_types[count($function_params) - 1];
                 }
 
                 if ($by_ref_type && $by_ref_type->isNullable()) {
