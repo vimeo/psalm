@@ -1038,7 +1038,12 @@ class CommentAnalyzer
 
 
                     if ($method_tree_child->children) {
-                        $param_type = Type::getTypeFromTree($method_tree_child->children[0], $codebase);
+                        try {
+                            $param_type = Type::getTypeFromTree($method_tree_child->children[0], $codebase);
+                        }
+                        catch (TypeParseTreeException $e) {
+                            throw new DocblockParseException('Badly-formatted @method parameters for ' . $method_entry.'; have you checked if a variable passed by reference has a space between the ampersand and the start of the variable?');
+                        }
                         $docblock_lines[] = '@param \\' . $param_type . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;
