@@ -115,7 +115,7 @@ class ForeachAnalyzer
                 continue;
             }
 
-            $comment_type = ExpressionAnalyzer::fleshOutType(
+            $comment_type = \Psalm\Internal\Type\UnionExpander::expand(
                 $codebase,
                 $var_comment->type,
                 $context->self,
@@ -287,7 +287,7 @@ class ForeachAnalyzer
                 continue;
             }
 
-            $comment_type = ExpressionAnalyzer::fleshOutType(
+            $comment_type = \Psalm\Internal\Type\UnionExpander::expand(
                 $codebase,
                 $var_comment->type,
                 $context->self,

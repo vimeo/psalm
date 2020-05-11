@@ -937,7 +937,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $return_type = clone $function_storage->return_type;
 
                         if ($template_result->upper_bounds && $function_storage->template_types) {
-                            $return_type = ExpressionAnalyzer::fleshOutType(
+                            $return_type = \Psalm\Internal\Type\UnionExpander::expand(
                                 $codebase,
                                 $return_type,
                                 null,
@@ -951,7 +951,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             );
                         }
 
-                        $return_type = ExpressionAnalyzer::fleshOutType(
+                        $return_type = \Psalm\Internal\Type\UnionExpander::expand(
                             $codebase,
                             $return_type,
                             null,

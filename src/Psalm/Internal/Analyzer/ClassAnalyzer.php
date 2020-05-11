@@ -761,7 +761,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             && $property_storage->type_location
                             && $property_storage->type_location !== $property_storage->signature_type_location
                         ) {
-                            $replace_type = ExpressionAnalyzer::fleshOutType(
+                            $replace_type = \Psalm\Internal\Type\UnionExpander::expand(
                                 $codebase,
                                 $property_storage->type,
                                 $this->getFQCLN(),
@@ -1027,7 +1027,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $property_type_location = $property_storage->type_location;
 
             $fleshed_out_type = !$property_type->isMixed()
-                ? ExpressionAnalyzer::fleshOutType(
+                ? \Psalm\Internal\Type\UnionExpander::expand(
                     $codebase,
                     $property_type,
                     $fq_class_name,
@@ -1086,7 +1086,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             if (isset($class_context->vars_in_scope['$this->' . $property_name])) {
                 $fleshed_out_type = !$property_type->isMixed()
-                    ? ExpressionAnalyzer::fleshOutType(
+                    ? \Psalm\Internal\Type\UnionExpander::expand(
                         $codebase,
                         $property_type,
                         $fq_class_name,

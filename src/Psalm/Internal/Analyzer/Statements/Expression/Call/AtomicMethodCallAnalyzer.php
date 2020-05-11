@@ -1012,7 +1012,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $second_arg_type = $statements_analyzer->node_data->getType($stmt->args[1]->value);
 
                 if (isset($class_storage->pseudo_property_set_types['$' . $prop_name]) && $second_arg_type) {
-                    $pseudo_set_type = ExpressionAnalyzer::fleshOutType(
+                    $pseudo_set_type = \Psalm\Internal\Type\UnionExpander::expand(
                         $codebase,
                         $class_storage->pseudo_property_set_types['$' . $prop_name],
                         $fq_class_name,

@@ -133,7 +133,7 @@ class AssignmentAnalyzer
                 }
 
                 try {
-                    $var_comment_type = ExpressionAnalyzer::fleshOutType(
+                    $var_comment_type = \Psalm\Internal\Type\UnionExpander::expand(
                         $codebase,
                         $var_comment->type,
                         $context->self,
@@ -744,7 +744,7 @@ class AssignmentAnalyzer
 
                         try {
                             if ($var_comment->var_id === $list_var_id) {
-                                $var_comment_type = ExpressionAnalyzer::fleshOutType(
+                                $var_comment_type = \Psalm\Internal\Type\UnionExpander::expand(
                                     $codebase,
                                     $var_comment->type,
                                     $context->self,

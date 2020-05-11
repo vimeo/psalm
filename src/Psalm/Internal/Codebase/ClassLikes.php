@@ -952,7 +952,7 @@ class ClassLikes
                 ) {
                     $bounds = $source_property_storage->type_location->getSelectionBounds();
 
-                    $replace_type = \Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer::fleshOutType(
+                    $replace_type = \Psalm\Internal\Type\UnionExpander::expand(
                         $codebase,
                         $source_property_storage->type,
                         $source_classlike_storage->name,

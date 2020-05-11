@@ -875,7 +875,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             continue;
                         }
 
-                        $comment_type = ExpressionAnalyzer::fleshOutType(
+                        $comment_type = \Psalm\Internal\Type\UnionExpander::expand(
                             $codebase,
                             $var_comment->type,
                             $context->self,
@@ -1550,7 +1550,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
 
                     try {
-                        $var_comment_type = ExpressionAnalyzer::fleshOutType(
+                        $var_comment_type = \Psalm\Internal\Type\UnionExpander::expand(
                             $codebase,
                             $var_comment->type,
                             $context->self,

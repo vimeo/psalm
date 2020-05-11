@@ -1961,7 +1961,7 @@ class TypeAnalyzer
                     $converted_return_type = null;
 
                     if ($method_storage->return_type) {
-                        $converted_return_type = ExpressionAnalyzer::fleshOutType(
+                        $converted_return_type = \Psalm\Internal\Type\UnionExpander::expand(
                             $codebase,
                             $method_storage->return_type,
                             $method_fqcln,

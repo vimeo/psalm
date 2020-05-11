@@ -109,7 +109,7 @@ class MethodCallReturnTypeFetcher
                 $return_type_candidate->ignore_falsable_issues = true;
             }
 
-            $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+            $return_type_candidate = \Psalm\Internal\Type\UnionExpander::expand(
                 $codebase,
                 $return_type_candidate,
                 $fq_class_name,
@@ -154,7 +154,7 @@ class MethodCallReturnTypeFetcher
                 }
 
                 if ($template_result->upper_bounds) {
-                    $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                    $return_type_candidate = \Psalm\Internal\Type\UnionExpander::expand(
                         $codebase,
                         $return_type_candidate,
                         null,
@@ -168,7 +168,7 @@ class MethodCallReturnTypeFetcher
                     );
                 }
 
-                $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                $return_type_candidate = \Psalm\Internal\Type\UnionExpander::expand(
                     $codebase,
                     $return_type_candidate,
                     $self_fq_class_name,

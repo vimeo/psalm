@@ -363,7 +363,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                             $static_class = $class_storage->name;
                         }
 
-                        $return_type = ExpressionAnalyzer::fleshOutType(
+                        $return_type = \Psalm\Internal\Type\UnionExpander::expand(
                             $codebase,
                             $return_type,
                             $self_class,

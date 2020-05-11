@@ -101,7 +101,7 @@ class PropertyAssignmentAnalyzer
             if ($class_property_type) {
                 $class_storage = $codebase->classlike_storage_provider->get($context->self);
 
-                $class_property_type = ExpressionAnalyzer::fleshOutType(
+                $class_property_type = \Psalm\Internal\Type\UnionExpander::expand(
                     $codebase,
                     clone $class_property_type,
                     $class_storage->name,
@@ -721,7 +721,7 @@ class PropertyAssignmentAnalyzer
                         }
                     }
                 } else {
-                    $class_property_type = ExpressionAnalyzer::fleshOutType(
+                    $class_property_type = \Psalm\Internal\Type\UnionExpander::expand(
                         $codebase,
                         clone $class_property_type,
                         $fq_class_name,
@@ -1263,7 +1263,7 @@ class PropertyAssignmentAnalyzer
             return null;
         }
 
-        $class_property_type = ExpressionAnalyzer::fleshOutType(
+        $class_property_type = \Psalm\Internal\Type\UnionExpander::expand(
             $codebase,
             $class_property_type,
             $fq_class_name,

@@ -646,7 +646,7 @@ class Reconciler
                                     );
 
                                     if ($method_return_type) {
-                                        $class_property_type = ExpressionAnalyzer::fleshOutType(
+                                        $class_property_type = \Psalm\Internal\Type\UnionExpander::expand(
                                             $codebase,
                                             clone $method_return_type,
                                             $declaring_class,
@@ -684,7 +684,7 @@ class Reconciler
                                     );
 
                                     if ($class_property_type) {
-                                        $class_property_type = ExpressionAnalyzer::fleshOutType(
+                                        $class_property_type = \Psalm\Internal\Type\UnionExpander::expand(
                                             $codebase,
                                             clone $class_property_type,
                                             $declaring_class_storage->name,

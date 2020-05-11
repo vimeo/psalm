@@ -1984,7 +1984,7 @@ class CallAnalyzer
             }
         }
 
-        $fleshed_out_type = ExpressionAnalyzer::fleshOutType(
+        $fleshed_out_type = \Psalm\Internal\Type\UnionExpander::expand(
             $codebase,
             $param_type,
             $classlike_storage ? $classlike_storage->name : null,
@@ -1996,7 +1996,7 @@ class CallAnalyzer
         );
 
         $fleshed_out_signature_type = $function_param->signature_type
-            ? ExpressionAnalyzer::fleshOutType(
+            ? \Psalm\Internal\Type\UnionExpander::expand(
                 $codebase,
                 $function_param->signature_type,
                 $classlike_storage ? $classlike_storage->name : null,
