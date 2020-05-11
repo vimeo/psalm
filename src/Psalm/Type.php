@@ -686,6 +686,7 @@ abstract class Type
 
             if ($is_tuple) {
                 $object_like->sealed = true;
+                $object_like->is_list = true;
             }
 
             return $object_like;
