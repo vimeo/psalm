@@ -66,6 +66,10 @@ class Functions
         ?string $root_file_path = null,
         ?string $checked_file_path = null
     ) : FunctionLikeStorage {
+        if (!$function_id) {
+            throw new \UnexpectedValueException('Empty function_id');
+        }
+
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
         }
