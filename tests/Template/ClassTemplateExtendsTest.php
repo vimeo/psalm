@@ -4079,6 +4079,19 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }'
             ],
+            'extendIteratorIterator' => [
+                '<?php
+                    /**
+                     * @template-covariant TKey
+                     * @template-covariant TValue
+                     *
+                     * @template-extends IteratorIterator<TKey, TValue, Traversable<TKey, TValue>>
+                     */
+                    abstract class MyFilterIterator extends IteratorIterator {
+                         /** @return bool */
+                         public abstract function accept () {}
+                    }'
+            ],
         ];
     }
 

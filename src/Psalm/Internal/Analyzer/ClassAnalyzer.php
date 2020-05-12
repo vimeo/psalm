@@ -2038,7 +2038,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 if (IssueBuffer::accepts(
                                     new InvalidTemplateParam(
                                         'Extended template param ' . $template_name
-                                            . ' expects type ' . $template_type[0]->getId()
+                                            . ' expects type ' . $template_type_copy->getId()
                                             . ', type ' . $extended_type->getId() . ' given',
                                         $code_location
                                     ),
@@ -2051,6 +2051,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                     $declaring_class => [$extended_type]
                                 ];
                             }
+                        } else {
+                            $previous_extended[$template_name] = [
+                                $declaring_class => [$extended_type]
+                            ];
                         }
                     }
                 }
