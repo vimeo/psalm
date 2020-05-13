@@ -322,8 +322,8 @@ class TypeTokenizer
     }
 
     /**
-     * @param  array<string, mixed>|null    $template_type_map
-     * @param  array<string, array<int, array{0: string, 1: int}>>|null   $type_aliases
+     * @param  array<string, mixed>|null       $template_type_map
+     * @param  array<string, TypeAlias>|null   $type_aliases
      *
      * @return list<array{0: string, 1: int}>
      */
@@ -443,17 +443,21 @@ class TypeTokenizer
             }
 
             if (isset($type_aliases[$string_type_token[0]])) {
-                $replacement_tokens = $type_aliases[$string_type_token[0]];
+                $type_alias = $type_aliases[$string_type_token[0]];
 
-                array_unshift($replacement_tokens, ['(', $i]);
-                array_push($replacement_tokens, [')', $i]);
+                if ($type_alias->replacement_tokens) {
+                    $replacement_tokens = $type_alias->replacement_tokens;
 
-                $diff = count($replacement_tokens) - 1;
+                    array_unshift($replacement_tokens, ['(', $i]);
+                    array_push($replacement_tokens, [')', $i]);
 
-                array_splice($type_tokens, $i, 1, $replacement_tokens);
+                    $diff = count($replacement_tokens) - 1;
 
-                $i += $diff;
-                $l += $diff;
+                    array_splice($type_tokens, $i, 1, $replacement_tokens);
+
+                    $i += $diff;
+                    $l += $diff;
+                }
             } else {
                 $type_tokens[$i][0] = \Psalm\Type::getFQCLNFromString(
                     $string_type_token[0],

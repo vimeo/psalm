@@ -12,6 +12,7 @@ use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\ParseTree;
+use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type;
@@ -46,7 +47,7 @@ class CommentAnalyzer
 
     /**
      * @param  array<string, array<string, array{Type\Union}>>|null   $template_type_map
-     * @param  array<string, array<int, array{0: string, 1: int}>> $type_aliases
+     * @param  array<string, TypeAlias> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
@@ -73,7 +74,7 @@ class CommentAnalyzer
 
     /**
      * @param  array<string, array<string, array{Type\Union}>>|null   $template_type_map
-     * @param  array<string, array<int, array{0: string, 1: int}>> $type_aliases
+     * @param  array<string, TypeAlias> $type_aliases
      * @param array{description:string, specials:array<string, array<int, string>>} $parsed_docblock
      *
      * @return VarDocblockComment[]
@@ -240,11 +241,11 @@ class CommentAnalyzer
 
     /**
      * @param  Aliases          $aliases
-     * @param  array<string, array<int, array{0: string, 1: int}>> $type_aliases
+     * @param  array<string, TypeAlias> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return array<string, list<array{0: string, 1: int}>>
+     * @return array<string, TypeAlias>
      */
     public static function getTypeAliasesFromComment(
         PhpParser\Comment\Doc $comment,
@@ -267,11 +268,11 @@ class CommentAnalyzer
     /**
      * @param  array<string>    $type_alias_comment_lines
      * @param  Aliases          $aliases
-     * @param  array<string, array<int, array{0: string, 1: int}>> $type_aliases
+     * @param  array<string, TypeAlias> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return array<string, list<array{0: string, 1: int}>>
+     * @return array<string, TypeAlias>
      */
     private static function getTypeAliasesFromCommentLines(
         array $type_alias_comment_lines,
@@ -335,7 +336,7 @@ class CommentAnalyzer
                 throw new DocblockParseException($type_string . ' is not a valid type');
             }
 
-            $type_alias_tokens[$type_alias] = $type_tokens;
+            $type_alias_tokens[$type_alias] = new TypeAlias($type_tokens);
         }
 
         return $type_alias_tokens;

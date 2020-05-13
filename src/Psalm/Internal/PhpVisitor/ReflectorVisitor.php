@@ -42,6 +42,7 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\DuplicateClass;
@@ -127,7 +128,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     private $skip_if_descendants = null;
 
     /**
-     * @var array<string, array<int, array{0: string, 1: int}>>
+     * @var array<string, TypeAlias>
      */
     private $type_aliases = [];
 
@@ -164,9 +165,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $this->type_aliases
                     );
 
-                    foreach ($type_alias_tokens as $type_tokens) {
-                        // finds issues, if there are any
-                        TypeParser::parseTokens($type_tokens);
+                    foreach ($type_alias_tokens as $type_alias) {
+                        if ($type_alias->replacement_tokens) {
+                            // finds issues, if there are any
+                            TypeParser::parseTokens($type_alias->replacement_tokens);
+                        }
                     }
 
                     $this->type_aliases += $type_alias_tokens;
