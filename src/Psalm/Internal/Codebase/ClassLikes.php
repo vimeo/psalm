@@ -1866,7 +1866,17 @@ class ClassLikes
             );
 
             if (!$method_referenced
-                && (substr($method_name, 0, 2) !== '__' || $method_name === '__construct')
+                && $method_name !== '__destruct'
+                && $method_name !== '__clone'
+                && $method_name !== '__invoke'
+                && $method_name !== '__unset'
+                && $method_name !== '__sleep'
+                && $method_name !== '__wakeup'
+                && $method_name !== '__serialize'
+                && $method_name !== '__unserialize'
+                && $method_name !== '__set_state'
+                && $method_name !== '__debuginfo'
+                && $method_name !== '__tostring' // can be called in array_unique
                 && $method_storage->location
             ) {
                 $method_location = $method_storage->location;
@@ -2188,7 +2198,6 @@ class ClassLikes
             }
 
             if ((!$property_referenced || $property_constructor_referenced)
-                && (substr($property_name, 0, 2) !== '__' || $property_name === '__construct')
                 && $property_storage->location
             ) {
                 $property_id = $classlike_storage->name . '::$' . $property_name;

@@ -529,8 +529,7 @@ class PropertyFetchAnalyzer
                 }
             }
 
-            if ($codebase->methods->methodExists($get_method_id)
-                && (!$naive_property_exists
+            if ((!$naive_property_exists
                     || ($stmt_var_id !== '$this'
                         && $fq_class_name !== $context->self
                         && ClassLikeAnalyzer::checkPropertyVisibility(
@@ -541,6 +540,18 @@ class PropertyFetchAnalyzer
                             $statements_analyzer->getSuppressedIssues(),
                             false
                         ) !== true)
+                )
+                && $codebase->methods->methodExists(
+                    $get_method_id,
+                    $context->calling_method_id,
+                    $codebase->collect_locations
+                        ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        : null,
+                    !$context->collect_initializations
+                        && !$context->collect_mutations
+                        ? $statements_analyzer
+                        : null,
+                    $statements_analyzer->getFilePath()
                 )
             ) {
                 $has_magic_getter = true;

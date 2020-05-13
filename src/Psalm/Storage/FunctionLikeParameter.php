@@ -112,13 +112,6 @@ class FunctionLikeParameter
         $this->default_type = $default_type;
     }
 
-    public function __toString()
-    {
-        return ($this->type ?: 'mixed')
-            . ($this->is_variadic ? '...' : '')
-            . ($this->is_optional ? '=' : '');
-    }
-
     public function getId() : string
     {
         return ($this->type ? $this->type->getId() : 'mixed')

@@ -355,7 +355,15 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             if (!$interface_has_method
                 && $codebase->methods->methodExists(
                     new MethodIdentifier($fq_class_name, '__call'),
-                    $context->calling_method_id
+                    $context->calling_method_id,
+                    $codebase->collect_locations
+                        ? new CodeLocation($source, $stmt->name)
+                        : null,
+                    !$context->collect_initializations
+                        && !$context->collect_mutations
+                        ? $statements_analyzer
+                        : null,
+                    $statements_analyzer->getFilePath()
                 )
             ) {
                 $new_call_context = MissingMethodCallHandler::handleMagicMethod(

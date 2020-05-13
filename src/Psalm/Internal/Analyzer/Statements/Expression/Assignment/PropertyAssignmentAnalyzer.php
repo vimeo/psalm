@@ -354,8 +354,7 @@ class PropertyAssignmentAnalyzer
 
                 $set_method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__set');
 
-                if ($codebase->methods->methodExists($set_method_id)
-                    && (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)
+                if ((!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)
                         || ($lhs_var_id !== '$this'
                             && $fq_class_name !== $context->self
                             && ClassLikeAnalyzer::checkPropertyVisibility(
@@ -366,6 +365,18 @@ class PropertyAssignmentAnalyzer
                                 $statements_analyzer->getSuppressedIssues(),
                                 false
                             ) !== true)
+                    )
+                    && $codebase->methods->methodExists(
+                        $set_method_id,
+                        $context->calling_method_id,
+                        $codebase->collect_locations
+                            ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            : null,
+                        !$context->collect_initializations
+                            && !$context->collect_mutations
+                            ? $statements_analyzer
+                            : null,
+                        $statements_analyzer->getFilePath()
                     )
                 ) {
                     $has_magic_setter = true;

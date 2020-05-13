@@ -1847,21 +1847,32 @@ class BinaryOpAnalyzer
                     }
                 }
 
-                if ($context->mutation_free) {
-                    foreach ($left_type->getAtomicTypes() as $atomic_type) {
-                        if ($atomic_type instanceof TNamedObject) {
+                foreach ($left_type->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TNamedObject) {
+                        $to_string_method_id = new \Psalm\Internal\MethodIdentifier(
+                            $atomic_type->value,
+                            '__tostring'
+                        );
+
+                        if ($codebase->methods->methodExists(
+                            $to_string_method_id,
+                            $context->calling_method_id,
+                            $codebase->collect_locations
+                                ? new CodeLocation($statements_analyzer->getSource(), $left)
+                                : null,
+                            !$context->collect_initializations
+                                && !$context->collect_mutations
+                                ? $statements_analyzer
+                                : null,
+                            $statements_analyzer->getFilePath()
+                        )) {
                             try {
-                                $storage = $codebase->methods->getStorage(
-                                    new \Psalm\Internal\MethodIdentifier(
-                                        $atomic_type->value,
-                                        '__tostring'
-                                    )
-                                );
+                                $storage = $codebase->methods->getStorage($to_string_method_id);
                             } catch (\UnexpectedValueException $e) {
                                 continue;
                             }
 
-                            if (!$storage->mutation_free) {
+                            if ($context->mutation_free && !$storage->mutation_free) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
                                         'Cannot call a possibly-mutating method '
@@ -1923,21 +1934,32 @@ class BinaryOpAnalyzer
                     }
                 }
 
-                if ($context->mutation_free) {
-                    foreach ($right_type->getAtomicTypes() as $atomic_type) {
-                        if ($atomic_type instanceof TNamedObject) {
+                foreach ($right_type->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TNamedObject) {
+                        $to_string_method_id = new \Psalm\Internal\MethodIdentifier(
+                            $atomic_type->value,
+                            '__tostring'
+                        );
+
+                        if ($codebase->methods->methodExists(
+                            $to_string_method_id,
+                            $context->calling_method_id,
+                            $codebase->collect_locations
+                                ? new CodeLocation($statements_analyzer->getSource(), $right)
+                                : null,
+                            !$context->collect_initializations
+                                && !$context->collect_mutations
+                                ? $statements_analyzer
+                                : null,
+                            $statements_analyzer->getFilePath()
+                        )) {
                             try {
-                                $storage = $codebase->methods->getStorage(
-                                    new \Psalm\Internal\MethodIdentifier(
-                                        $atomic_type->value,
-                                        '__tostring'
-                                    )
-                                );
+                                $storage = $codebase->methods->getStorage($to_string_method_id);
                             } catch (\UnexpectedValueException $e) {
                                 continue;
                             }
 
-                            if (!$storage->mutation_free) {
+                            if ($context->mutation_free && !$storage->mutation_free) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
                                         'Cannot call a possibly-mutating method '

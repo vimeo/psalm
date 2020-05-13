@@ -612,7 +612,7 @@ class ExpressionAnalyzer
             }
 
             if ($statements_analyzer->node_data->getType($stmt->expr)) {
-                $stmt_type = self::castStringAttempt($statements_analyzer, $stmt->expr, true);
+                $stmt_type = self::castStringAttempt($statements_analyzer, $context, $stmt->expr, true);
             } else {
                 $stmt_type = Type::getString();
             }
@@ -1677,7 +1677,7 @@ class ExpressionAnalyzer
             }
 
             if ($statements_analyzer->node_data->getType($part)) {
-                self::castStringAttempt($statements_analyzer, $part);
+                self::castStringAttempt($statements_analyzer, $context, $part);
             }
         }
 
@@ -1688,6 +1688,7 @@ class ExpressionAnalyzer
 
     private static function castStringAttempt(
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false
     ) : Type\Union {
@@ -1730,32 +1731,33 @@ class ExpressionAnalyzer
                 }
 
                 foreach ($intersection_types as $intersection_type) {
-                    if ($intersection_type instanceof TNamedObject
-                        && $codebase->methods->methodExists(
-                            new \Psalm\Internal\MethodIdentifier(
-                                $intersection_type->value,
-                                '__tostring'
-                            )
-                        )
-                    ) {
-                        $return_type = $codebase->methods->getMethodReturnType(
-                            new \Psalm\Internal\MethodIdentifier(
-                                $intersection_type->value,
-                                '__tostring'
-                            ),
-                            $self_class
+                    if ($intersection_type instanceof TNamedObject) {
+                        $intersection_method_id = new \Psalm\Internal\MethodIdentifier(
+                            $intersection_type->value,
+                            '__tostring'
                         );
 
-                        if ($return_type) {
-                            $castable_types = array_merge(
-                                $castable_types,
-                                array_values($return_type->getAtomicTypes())
+                        if ($codebase->methods->methodExists(
+                            $intersection_method_id,
+                            $context->calling_method_id,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        )) {
+                            $return_type = $codebase->methods->getMethodReturnType(
+                                $intersection_method_id,
+                                $self_class
                             );
-                        } else {
-                            $castable_types[] = new TString();
-                        }
 
-                        continue 2;
+                            if ($return_type) {
+                                $castable_types = array_merge(
+                                    $castable_types,
+                                    array_values($return_type->getAtomicTypes())
+                                );
+                            } else {
+                                $castable_types[] = new TString();
+                            }
+
+                            continue 2;
+                        }
                     }
 
                     if ($intersection_type instanceof Type\Atomic\TObjectWithProperties
