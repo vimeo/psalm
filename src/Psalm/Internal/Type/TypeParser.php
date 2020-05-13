@@ -53,13 +53,15 @@ class TypeParser
      * @param  list<array{0: string, 1: int}> $type_tokens
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
+     * @param  array<string, TypeAlias> $type_aliases
      *
      * @return Union
      */
     public static function parseTokens(
         array $type_tokens,
         array $php_version = null,
-        array $template_type_map = []
+        array $template_type_map = [],
+        array $type_aliases = []
     ) {
         if (count($type_tokens) === 1) {
             $only_token = $type_tokens[0];
@@ -89,7 +91,8 @@ class TypeParser
             $parse_tree,
             $codebase,
             $php_version,
-            $template_type_map
+            $template_type_map,
+            $type_aliases
         );
 
         if (!($parsed_type instanceof Union)) {
@@ -103,6 +106,7 @@ class TypeParser
      * @param  ParseTree $parse_tree
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
+     * @param  array<string, TypeAlias> $type_aliases
      *
      * @return  Atomic|Union
      */
@@ -110,7 +114,8 @@ class TypeParser
         ParseTree $parse_tree,
         Codebase $codebase,
         array $php_version = null,
-        array $template_type_map = []
+        array $template_type_map = [],
+        array $type_aliases = []
     ) {
         if ($parse_tree instanceof ParseTree\GenericTree) {
             $generic_type = $parse_tree->value;
@@ -122,7 +127,8 @@ class TypeParser
                     $child_tree,
                     $codebase,
                     null,
-                    $template_type_map
+                    $template_type_map,
+                    $type_aliases
                 );
 
                 if ($generic_type === 'class-string-map'
@@ -339,7 +345,8 @@ class TypeParser
                         $child_tree->children[0],
                         $codebase,
                         null,
-                        $template_type_map
+                        $template_type_map,
+                        $type_aliases
                     );
                     $has_null = true;
                 } else {
@@ -347,7 +354,8 @@ class TypeParser
                         $child_tree,
                         $codebase,
                         null,
-                        $template_type_map
+                        $template_type_map,
+                        $type_aliases
                     );
                 }
 
@@ -380,12 +388,13 @@ class TypeParser
                 /**
                  * @return Atomic
                  */
-                function (ParseTree $child_tree) use ($codebase, $template_type_map) {
+                function (ParseTree $child_tree) use ($codebase, $template_type_map, $type_aliases) {
                     $atomic_type = self::getTypeFromTree(
                         $child_tree,
                         $codebase,
                         null,
-                        $template_type_map
+                        $template_type_map,
+                        $type_aliases
                     );
 
                     if (!$atomic_type instanceof Atomic) {
@@ -492,7 +501,8 @@ class TypeParser
                         $property_branch,
                         $codebase,
                         null,
-                        $template_type_map
+                        $template_type_map,
+                        $type_aliases
                     );
                     $property_maybe_undefined = false;
                     $property_key = (string)$i;
@@ -501,7 +511,8 @@ class TypeParser
                         $property_branch->children[0],
                         $codebase,
                         null,
-                        $template_type_map
+                        $template_type_map,
+                        $type_aliases
                     );
                     $property_maybe_undefined = $property_branch->possibly_undefined;
                     $property_key = $property_branch->value;
@@ -558,7 +569,8 @@ class TypeParser
                 $parse_tree->children[0],
                 $codebase,
                 null,
-                $template_type_map
+                $template_type_map,
+                $type_aliases
             );
 
             if (!$callable_type instanceof TCallable && !$callable_type instanceof TFn) {
@@ -573,7 +585,8 @@ class TypeParser
                 $parse_tree->children[1],
                 $codebase,
                 null,
-                $template_type_map
+                $template_type_map,
+                $type_aliases
             );
 
             $callable_type->return_type = $return_type instanceof Union ? $return_type : new Union([$return_type]);
@@ -586,7 +599,7 @@ class TypeParser
                 /**
                  * @return FunctionLikeParameter
                  */
-                function (ParseTree $child_tree) use ($codebase, $template_type_map) {
+                function (ParseTree $child_tree) use ($codebase, $template_type_map, $type_aliases) {
                     $is_variadic = false;
                     $is_optional = false;
 
@@ -595,7 +608,8 @@ class TypeParser
                             $child_tree->children[0],
                             $codebase,
                             null,
-                            $template_type_map
+                            $template_type_map,
+                            $type_aliases
                         );
                         $is_variadic = $child_tree->variadic;
                         $is_optional = $child_tree->has_default;
@@ -604,7 +618,13 @@ class TypeParser
                             $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
                         }
 
-                        $tree_type = self::getTypeFromTree($child_tree, $codebase, null, $template_type_map);
+                        $tree_type = self::getTypeFromTree(
+                            $child_tree,
+                            $codebase,
+                            null,
+                            $template_type_map,
+                            $type_aliases
+                        );
                     }
 
                     $tree_type = $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
@@ -636,7 +656,13 @@ class TypeParser
         }
 
         if ($parse_tree instanceof ParseTree\EncapsulationTree) {
-            return self::getTypeFromTree($parse_tree->children[0], $codebase, null, $template_type_map);
+            return self::getTypeFromTree(
+                $parse_tree->children[0],
+                $codebase,
+                null,
+                $template_type_map,
+                $type_aliases
+            );
         }
 
         if ($parse_tree instanceof ParseTree\NullableTree) {
@@ -648,7 +674,8 @@ class TypeParser
                 $parse_tree->children[0],
                 $codebase,
                 null,
-                $template_type_map
+                $template_type_map,
+                $type_aliases
             );
 
             if ($non_nullable_type instanceof Union) {
@@ -740,21 +767,24 @@ class TypeParser
                 $parse_tree->condition->children[0],
                 $codebase,
                 null,
-                $template_type_map
+                $template_type_map,
+                $type_aliases
             );
 
             $if_type = self::getTypeFromTree(
                 $parse_tree->children[0],
                 $codebase,
                 null,
-                $template_type_map
+                $template_type_map,
+                $type_aliases
             );
 
             $else_type = self::getTypeFromTree(
                 $parse_tree->children[1],
                 $codebase,
                 null,
-                $template_type_map
+                $template_type_map,
+                $type_aliases
             );
 
             if ($conditional_type instanceof Atomic) {
@@ -821,7 +851,7 @@ class TypeParser
 
         $atomic_type_string = TypeTokenizer::fixScalarTerms($parse_tree->value, $php_version);
 
-        $atomic_type = Atomic::create($atomic_type_string, $php_version, $template_type_map);
+        $atomic_type = Atomic::create($atomic_type_string, $php_version, $template_type_map, $type_aliases);
 
         $atomic_type->offset_start = $parse_tree->offset_start;
         $atomic_type->offset_end = $parse_tree->offset_end;

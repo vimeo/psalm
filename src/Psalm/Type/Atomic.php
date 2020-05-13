@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeAlias;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\ReservedWord;
@@ -60,6 +61,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TVoid;
 use function reset;
 use function strpos;
@@ -98,13 +100,15 @@ abstract class Atomic implements TypeNode
      * @param  string $value
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
+     * @param  array<string, TypeAlias> $type_aliases
      *
      * @return Atomic
      */
     public static function create(
         $value,
         array $php_version = null,
-        array $template_type_map = []
+        array $template_type_map = [],
+        array $type_aliases = []
     ) {
         switch ($value) {
             case 'int':
@@ -252,6 +256,16 @@ abstract class Atomic implements TypeNode
                 $template_type_map[$value][$first_class][0],
                 $first_class
             );
+        }
+
+        if (isset($type_aliases[$value])) {
+            $type_alias = $type_aliases[$value];
+
+            if ($type_alias->declaring_fq_classlike_name && $type_alias->alias_name) {
+                return new TTypeAlias($type_alias->declaring_fq_classlike_name, $type_alias->alias_name);
+            }
+
+            throw new \UnexpectedValueException('This should never happen');
         }
 
         return new TNamedObject($value);
