@@ -11,9 +11,7 @@ use function array_merge;
 use function array_values;
 use function count;
 use function is_string;
-use function reset;
 use function strpos;
-use function strval;
 use function substr;
 
 class UnionTemplateHandler

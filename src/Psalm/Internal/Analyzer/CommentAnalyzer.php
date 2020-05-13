@@ -12,6 +12,8 @@ use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\ParseTree;
+use Psalm\Internal\Type\TypeParser;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type;
 use function trim;
 use function substr_count;
@@ -130,7 +132,7 @@ class CommentAnalyzer
                     }
 
                     try {
-                        $var_type_tokens = Type::fixUpLocalType(
+                        $var_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                             $line_parts[0],
                             $aliases,
                             $template_type_map,
@@ -154,7 +156,7 @@ class CommentAnalyzer
                 }
 
                 try {
-                    $defined_type = Type::parseTokens($var_type_tokens, null, $template_type_map ?: []);
+                    $defined_type = TypeParser::parseTokens($var_type_tokens, null, $template_type_map ?: []);
                 } catch (TypeParseTreeException $e) {
                     throw new DocblockParseException(
                         $line_parts[0] .
@@ -323,7 +325,7 @@ class CommentAnalyzer
             $type_string = preg_replace('/\}[^>^\}]*$/', '}', $type_string);
 
             try {
-                $type_tokens = Type::fixUpLocalType(
+                $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                     $type_string,
                     $aliases,
                     null,
@@ -997,7 +999,7 @@ class CommentAnalyzer
 
                 try {
                     $method_tree = ParseTree::createFromTokens(
-                        Type::fixUpLocalType(
+                        TypeTokenizer::getFullyQualifiedTokens(
                             $method_entry,
                             $aliases,
                             null
@@ -1013,7 +1015,7 @@ class CommentAnalyzer
                 }
 
                 if ($method_tree instanceof ParseTree\MethodWithReturnTypeTree) {
-                    $docblock_lines[] = '@return ' . Type::getTypeFromTree(
+                    $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
                         $method_tree->children[1],
                         $codebase
                     );
@@ -1039,7 +1041,7 @@ class CommentAnalyzer
 
                     if ($method_tree_child->children) {
                         try {
-                            $param_type = Type::getTypeFromTree($method_tree_child->children[0], $codebase);
+                            $param_type = TypeParser::getTypeFromTree($method_tree_child->children[0], $codebase);
                         } catch (\Exception $e) {
                             throw new DocblockParseException(
                                 'Badly-formatted @method string ' . $method_entry . ' - ' . $e

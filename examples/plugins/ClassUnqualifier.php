@@ -32,7 +32,7 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
         }
 
         if (strpos($candidate_type, '\\' . $fq_class_name) !== false) {
-            $type_tokens = Type::tokenize($candidate_type, false);
+            $type_tokens = \Psalm\Internal\Type\TypeTokenizer::tokenize($candidate_type, false);
 
             foreach ($type_tokens as &$type_token) {
                 if ($type_token[0] === ('\\' . $fq_class_name)

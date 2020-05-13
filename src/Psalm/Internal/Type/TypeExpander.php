@@ -1,40 +1,17 @@
 <?php
 namespace Psalm\Internal\Type;
 
-use PhpParser;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
-use Psalm\Config;
-use Psalm\Context;
-use Psalm\FileSource;
-use Psalm\IssueBuffer;
-use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
-use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TList;
-use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TString;
-use Psalm\Internal\Type\TypeCombination;
 use function strpos;
 use function is_string;
-use function in_array;
 use function strtolower;
-use function get_class;
 use function count;
-use function implode;
 use function is_array;
 use function array_merge;
 use function array_values;
-use function array_map;
-use function current;
 
 /**
  * @internal

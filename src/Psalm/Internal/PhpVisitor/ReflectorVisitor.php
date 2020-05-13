@@ -42,6 +42,8 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\TypeParser;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
@@ -164,7 +166,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     foreach ($type_alias_tokens as $type_tokens) {
                         // finds issues, if there are any
-                        Type::parseTokens($type_tokens);
+                        TypeParser::parseTokens($type_tokens);
                     }
 
                     $this->type_aliases += $type_alias_tokens;
@@ -1117,8 +1119,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         if ($template_map[1] !== null && $template_map[2] !== null) {
                             if (trim($template_map[2])) {
                                 try {
-                                    $template_type = Type::parseTokens(
-                                        Type::fixUpLocalType(
+                                    $template_type = TypeParser::parseTokens(
+                                        TypeTokenizer::getFullyQualifiedTokens(
                                             $template_map[2],
                                             $this->aliases,
                                             $storage->template_types,
@@ -1166,7 +1168,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 if ($docblock_info->yield) {
-                    $yield_type_tokens = Type::fixUpLocalType(
+                    $yield_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                         $docblock_info->yield,
                         $this->aliases,
                         $storage->template_types,
@@ -1174,7 +1176,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     );
 
                     try {
-                        $yield_type = Type::parseTokens(
+                        $yield_type = TypeParser::parseTokens(
                             $yield_type_tokens,
                             null,
                             $storage->template_types ?: []
@@ -1197,7 +1199,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 if ($docblock_info->properties) {
                     foreach ($docblock_info->properties as $property) {
-                        $pseudo_property_type_tokens = Type::fixUpLocalType(
+                        $pseudo_property_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                             $property['type'],
                             $this->aliases,
                             null,
@@ -1205,7 +1207,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         );
 
                         try {
-                            $pseudo_property_type = Type::parseTokens($pseudo_property_type_tokens);
+                            $pseudo_property_type = TypeParser::parseTokens($pseudo_property_type_tokens);
                             $pseudo_property_type->setFromDocblock();
                             $pseudo_property_type->queueClassLikesForScanning(
                                 $this->codebase,
@@ -1249,8 +1251,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->psalm_internal = $docblock_info->psalm_internal;
 
                 if ($docblock_info->mixin) {
-                    $mixin_type = Type::parseTokens(
-                        Type::fixUpLocalType(
+                    $mixin_type = TypeParser::parseTokens(
+                        TypeTokenizer::getFullyQualifiedTokens(
                             $docblock_info->mixin,
                             $this->aliases,
                             $this->class_template_types,
@@ -1319,8 +1321,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         try {
-            $extended_union_type = Type::parseTokens(
-                Type::fixUpLocalType(
+            $extended_union_type = TypeParser::parseTokens(
+                TypeTokenizer::getFullyQualifiedTokens(
                     $extended_class_name,
                     $this->aliases,
                     $this->class_template_types,
@@ -1405,8 +1407,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         try {
-            $implemented_union_type = Type::parseTokens(
-                Type::fixUpLocalType(
+            $implemented_union_type = TypeParser::parseTokens(
+                TypeTokenizer::getFullyQualifiedTokens(
                     $implemented_class_name,
                     $this->aliases,
                     $this->class_template_types,
@@ -1493,8 +1495,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         try {
-            $used_union_type = Type::parseTokens(
-                Type::fixUpLocalType(
+            $used_union_type = TypeParser::parseTokens(
+                TypeTokenizer::getFullyQualifiedTokens(
                     $used_class_name,
                     $this->aliases,
                     $this->class_template_types,
@@ -2178,8 +2180,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 if ($template_map[1] !== null && $template_map[2] !== null) {
                     if (trim($template_map[2])) {
                         try {
-                            $template_type = Type::parseTokens(
-                                Type::fixUpLocalType(
+                            $template_type = TypeParser::parseTokens(
+                                TypeTokenizer::getFullyQualifiedTokens(
                                     $template_map[2],
                                     $this->aliases,
                                     $storage->template_types + ($template_types ?: []),
@@ -2323,8 +2325,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         foreach ($docblock_info->globals as $global) {
             try {
-                $storage->global_types[$global['name']] = Type::parseTokens(
-                    Type::fixUpLocalType(
+                $storage->global_types[$global['name']] = TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
                         $global['type'],
                         $this->aliases,
                         null,
@@ -2368,8 +2370,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $param_name = substr($docblock_param_out['name'], 1);
 
             try {
-                $out_type = Type::parseTokens(
-                    Type::fixUpLocalType(
+                $out_type = TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
                         $docblock_param_out['type'],
                         $this->aliases,
                         $this->function_template_types + $class_template_types,
@@ -2495,7 +2497,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             try {
-                $fixed_type_tokens = Type::fixUpLocalType(
+                $fixed_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                     $docblock_return_type,
                     $this->aliases,
                     $this->function_template_types + $class_template_types,
@@ -2572,7 +2574,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
                 }
 
-                $storage->return_type = Type::parseTokens(
+                $storage->return_type = TypeParser::parseTokens(
                     \array_values($fixed_type_tokens),
                     null,
                     $this->function_template_types + $class_template_types
@@ -2737,8 +2739,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             ? $this->class_template_types
             : [];
 
-        $namespaced_type = Type::parseTokens(
-            Type::fixUpLocalType(
+        $namespaced_type = TypeParser::parseTokens(
+            TypeTokenizer::getFullyQualifiedTokens(
                 $assertion_type,
                 $this->aliases,
                 $this->function_template_types + $class_template_types,
@@ -2992,8 +2994,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             try {
-                $new_param_type = Type::parseTokens(
-                    Type::fixUpLocalType(
+                $new_param_type = TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
                         $docblock_param['type'],
                         $this->aliases,
                         $this->function_template_types + $class_template_types,

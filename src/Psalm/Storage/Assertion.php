@@ -44,7 +44,7 @@ class Assertion
                     $first_rule = $rules[0];
 
                     if ($template_type_map) {
-                        $rule_tokens = \Psalm\Type::tokenize($first_rule);
+                        $rule_tokens = \Psalm\Internal\Type\TypeTokenizer::tokenize($first_rule);
 
                         $substitute = false;
 

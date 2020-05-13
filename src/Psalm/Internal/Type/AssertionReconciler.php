@@ -3,58 +3,29 @@ namespace Psalm\Internal\Type;
 
 use function array_filter;
 use function count;
-use function explode;
 use function get_class;
-use function implode;
 use function is_string;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\DocblockTypeContradiction;
-use Psalm\Issue\ParadoxicalCondition;
-use Psalm\Issue\PsalmInternalError;
-use Psalm\Issue\RedundantCondition;
-use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
-use Psalm\Type\Atomic\ObjectLike;
-use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TArrayKey;
-use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
-use Psalm\Type\Atomic\TCallableList;
-use Psalm\Type\Atomic\TCallableObjectLikeArray;
 use Psalm\Type\Atomic\TClassString;
-use Psalm\Type\Atomic\TEmpty;
-use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TNumeric;
-use Psalm\Type\Atomic\TNumericString;
-use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TResource;
-use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTrue;
 use function strpos;
 use function substr;
 use Psalm\Issue\InvalidDocblock;
-use Doctrine\Instantiator\Exception\UnexpectedValueException;
 use function array_intersect_key;
 use function array_merge;
 
@@ -253,7 +224,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                                 $existing_var_type,
                                 $new_type
                             )
-                        )
+                    )
                         || (
                             $old_type_has_interface_string
                             && !TypeAnalyzer::isContainedBy(
@@ -496,7 +467,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         $existing_var_type,
                         $new_type
                     )
-                )
+            )
                 || (
                     $old_type_has_interface
                     && !TypeAnalyzer::isContainedBy(
