@@ -50,10 +50,6 @@ jobs:
     - php: 7.4
       env: DEPS="high"
 
-    - php: nightly
-      env: DEPS="high"
-      allow_failures: true
-
     - php: 7.3
       env: DEPS="high"
       script:
