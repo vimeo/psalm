@@ -136,7 +136,7 @@ array_map(
 );
 
 if (!array_key_exists('use-ini-defaults', $options)) {
-    ini_set('display_errors', '1');
+    ini_set('display_errors', 'stderr');
     ini_set('display_startup_errors', '1');
     ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
 }
