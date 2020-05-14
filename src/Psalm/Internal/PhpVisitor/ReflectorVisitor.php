@@ -1137,7 +1137,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                             $this->type_aliases
                                         ),
                                         null,
-                                        $storage->template_types
+                                        $storage->template_types,
+                                        $this->type_aliases
                                     );
                                 } catch (TypeParseTreeException $e) {
                                     $storage->docblock_issues[] = new InvalidDocblock(
@@ -1189,7 +1190,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $yield_type = TypeParser::parseTokens(
                             $yield_type_tokens,
                             null,
-                            $storage->template_types ?: []
+                            $storage->template_types ?: [],
+                            $this->type_aliases
                         );
                         $yield_type->setFromDocblock();
                         $yield_type->queueClassLikesForScanning(
@@ -1291,7 +1293,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             $fq_classlike_name
                         ),
                         null,
-                        $this->class_template_types
+                        $this->class_template_types,
+                        $this->type_aliases
                     );
 
                     $mixin_type->queueClassLikesForScanning(
@@ -1360,7 +1363,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->type_aliases
                 ),
                 null,
-                $this->class_template_types
+                $this->class_template_types,
+                $this->type_aliases
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1446,7 +1450,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->type_aliases
                 ),
                 null,
-                $this->class_template_types
+                $this->class_template_types,
+                $this->type_aliases
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1534,7 +1539,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->type_aliases
                 ),
                 null,
-                $this->class_template_types
+                $this->class_template_types,
+                $this->type_aliases
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -2219,7 +2225,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                     $this->type_aliases
                                 ),
                                 null,
-                                $storage->template_types + ($template_types ?: [])
+                                $storage->template_types + ($template_types ?: []),
+                                $this->type_aliases
                             );
                         } catch (TypeParseTreeException $e) {
                             $storage->docblock_issues[] = new InvalidDocblock(
@@ -2409,7 +2416,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $this->type_aliases
                     ),
                     null,
-                    $this->function_template_types + $class_template_types
+                    $this->function_template_types + $class_template_types,
+                    $this->type_aliases
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -2608,7 +2616,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->return_type = TypeParser::parseTokens(
                     \array_values($fixed_type_tokens),
                     null,
-                    $this->function_template_types + $class_template_types
+                    $this->function_template_types + $class_template_types,
+                    $this->type_aliases
                 );
 
                 $storage->return_type->setFromDocblock();
@@ -3034,7 +3043,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $fq_classlike_name
                     ),
                     null,
-                    $this->function_template_types + $class_template_types
+                    $this->function_template_types + $class_template_types,
+                    $this->type_aliases
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
