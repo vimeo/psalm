@@ -261,7 +261,7 @@ abstract class Atomic implements TypeNode
         if (isset($type_aliases[$value])) {
             $type_alias = $type_aliases[$value];
 
-            if ($type_alias->declaring_fq_classlike_name && $type_alias->alias_name) {
+            if ($type_alias instanceof TypeAlias\LinkableTypeAlias) {
                 return new TTypeAlias($type_alias->declaring_fq_classlike_name, $type_alias->alias_name);
             }
 

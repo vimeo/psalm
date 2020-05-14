@@ -132,6 +132,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      */
     private $type_aliases = [];
 
+    /**
+     * @var array<string, TypeAlias>
+     */
+    private $classlike_type_aliases = [];
+
     public function __construct(
         Codebase $codebase,
         FileStorage $file_storage,
@@ -159,20 +164,24 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc) {
                 try {
-                    $type_alias_tokens = CommentAnalyzer::getTypeAliasesFromComment(
+                    $type_aliases = CommentAnalyzer::getTypeAliasesFromComment(
                         $comment,
                         $this->aliases,
                         $this->type_aliases
                     );
 
-                    foreach ($type_alias_tokens as $type_alias) {
-                        if ($type_alias->replacement_tokens) {
-                            // finds issues, if there are any
-                            TypeParser::parseTokens($type_alias->replacement_tokens);
-                        }
+                    foreach ($type_aliases as $type_alias) {
+                        // finds issues, if there are any
+                        TypeParser::parseTokens($type_alias->replacement_tokens);
                     }
 
-                    $this->type_aliases += $type_alias_tokens;
+                    $this->type_aliases += $type_aliases;
+
+                    if ($type_aliases
+                        && $node instanceof PhpParser\Node\Stmt\ClassLike
+                    ) {
+                        $this->classlike_type_aliases = $type_aliases;
+                    }
                 } catch (DocblockParseException $e) {
                     $this->file_storage->docblock_issues[] = new InvalidDocblock(
                         (string)$e->getMessage(),
@@ -566,38 +575,36 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $fq_classlike_name = array_pop($this->fq_classlike_names);
 
+            if (!$this->classlike_storages) {
+                throw new \UnexpectedValueException('$this->classlike_storages cannot be empty');
+            }
+
+            $classlike_storage = array_pop($this->classlike_storages);
+
             if (PropertyMap::inPropertyMap($fq_classlike_name)) {
                 $mapped_properties = PropertyMap::getPropertyMap()[strtolower($fq_classlike_name)];
-
-                if (!$this->classlike_storages) {
-                    throw new \UnexpectedValueException('$this->classlike_storages cannot be empty');
-                }
-
-                $storage = $this->classlike_storages[count($this->classlike_storages) - 1];
 
                 foreach ($mapped_properties as $property_name => $public_mapped_property) {
                     $property_type = Type::parseString($public_mapped_property);
 
                     $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
 
-                    if (!isset($storage->properties[$property_name])) {
-                        $storage->properties[$property_name] = new PropertyStorage();
+                    if (!isset($classlike_storage->properties[$property_name])) {
+                        $classlike_storage->properties[$property_name] = new PropertyStorage();
                     }
 
-                    $storage->properties[$property_name]->type = $property_type;
+                    $classlike_storage->properties[$property_name]->type = $property_type;
 
                     $property_id = $fq_classlike_name . '::$' . $property_name;
 
-                    $storage->declaring_property_ids[$property_name] = $fq_classlike_name;
-                    $storage->appearing_property_ids[$property_name] = $property_id;
+                    $classlike_storage->declaring_property_ids[$property_name] = $fq_classlike_name;
+                    $classlike_storage->appearing_property_ids[$property_name] = $property_id;
                 }
             }
 
-            if (!$this->classlike_storages) {
-                throw new \LogicException('$this->classlike_storages should not be empty');
-            }
+            $classlike_storage->type_aliases = $this->classlike_type_aliases;
 
-            $classlike_storage = array_pop($this->classlike_storages);
+            $this->classlike_type_aliases = [];
 
             if ($classlike_storage->has_visitor_issues) {
                 $this->file_storage->has_visitor_issues = true;
@@ -1247,6 +1254,27 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
 
                     $storage->sealed_methods = true;
+                }
+
+                foreach ($docblock_info->imported_types as $imported_type_data) {
+                    if (count($imported_type_data) > 2 && $imported_type_data[1] === 'from') {
+                        $type_alias_name = $as_alias_name = $imported_type_data[0];
+                        $declaring_classlike_name = $imported_type_data[2];
+
+                        if (count($imported_type_data) > 4 && $imported_type_data[3] === 'as') {
+                            $as_alias_name = $imported_type_data[4];
+                        }
+
+                        $declaring_fq_classlike_name = Type::getFQCLNFromString(
+                            $declaring_classlike_name,
+                            $this->aliases
+                        );
+
+                        $this->type_aliases[$as_alias_name] = new TypeAlias\LinkableTypeAlias(
+                            $declaring_fq_classlike_name,
+                            $type_alias_name
+                        );
+                    }
                 }
 
                 $storage->deprecated = $docblock_info->deprecated;

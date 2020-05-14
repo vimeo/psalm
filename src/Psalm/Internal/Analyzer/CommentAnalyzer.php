@@ -245,7 +245,7 @@ class CommentAnalyzer
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return array<string, TypeAlias>
+     * @return array<string, TypeAlias\InlineTypeAlias>
      */
     public static function getTypeAliasesFromComment(
         PhpParser\Comment\Doc $comment,
@@ -272,7 +272,7 @@ class CommentAnalyzer
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return array<string, TypeAlias>
+     * @return array<string, TypeAlias\InlineTypeAlias>
      */
     private static function getTypeAliasesFromCommentLines(
         array $type_alias_comment_lines,
@@ -336,7 +336,7 @@ class CommentAnalyzer
                 throw new DocblockParseException($type_string . ' is not a valid type');
             }
 
-            $type_alias_tokens[$type_alias] = new TypeAlias($type_tokens);
+            $type_alias_tokens[$type_alias] = new TypeAlias\InlineTypeAlias($type_tokens);
         }
 
         return $type_alias_tokens;
@@ -944,6 +944,13 @@ class CommentAnalyzer
         if (isset($parsed_docblock['specials']['psalm-suppress'])) {
             foreach ($parsed_docblock['specials']['psalm-suppress'] as $offset => $suppress_entry) {
                 $info->suppressed_issues[$offset + $comment->getFilePos()] = preg_split('/[\s]+/', $suppress_entry)[0];
+            }
+        }
+
+        if (isset($parsed_docblock['specials']['psalm-import-type'])) {
+            foreach ($parsed_docblock['specials']['psalm-import-type'] as $imported_type_entry) {
+                /** @psalm-suppress InvalidPropertyAssignmentValue */
+                $info->imported_types[] = preg_split('/[\s]+/', $imported_type_entry)[0];
             }
         }
 

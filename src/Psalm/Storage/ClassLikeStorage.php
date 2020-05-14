@@ -394,6 +394,11 @@ class ClassLikeStorage
     public $docblock_issues = [];
 
     /**
+     * @var array<string, \Psalm\Internal\Type\TypeAlias>
+     */
+    public $type_aliases = [];
+
+    /**
      * @param string $name
      */
     public function __construct($name)

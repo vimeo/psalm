@@ -445,7 +445,7 @@ class TypeTokenizer
             if (isset($type_aliases[$string_type_token[0]])) {
                 $type_alias = $type_aliases[$string_type_token[0]];
 
-                if ($type_alias->replacement_tokens) {
+                if ($type_alias instanceof TypeAlias\InlineTypeAlias) {
                     $replacement_tokens = $type_alias->replacement_tokens;
 
                     array_unshift($replacement_tokens, ['(', $i]);
