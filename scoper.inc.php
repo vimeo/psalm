@@ -28,8 +28,8 @@ return [
         function ($filePath, $prefix, $contents) {
             if (strpos($filePath, 'src/Psalm') === 0) {
                 return str_replace(
-                    [' \\Psalm\\Internal\\', ' \\PhpParser\\'],
-                    [' \\' . $prefix . '\\Psalm\\Internal\\', ' \\' . $prefix . '\\PhpParser\\'],
+                    [' \\PhpParser\\'],
+                    [' \\' . $prefix . '\\PhpParser\\'],
                     $contents
                 );
             }
