@@ -1,5 +1,55 @@
 # Authoring Plugins
 
+## Quick start
+
+### Using a template repository
+
+Head over to [plugin template repository](https://github.com/weirdan/psalm-plugin-skeleton) on Github and click `Use this template` button.
+
+### Using skeleton project
+
+Run `composer create-project weirdan/psalm-plugin-skeleton:dev-master your-plugin-name` to quickly bootstrap a new plugin project in `your-plugin-name` folder. Make sure you adjust namespaces in `composer.json`, `Plugin.php` and `tests` folder.
+
+
+## Stub files
+
+Stub files provide a way to override third-party type information when you cannot add Psalm's extended docblocks to the upstream source files directly.
+By convention, stub files have `.phpstub` extension to avoid IDEs treating them as actual php code.
+
+## Generating stubs
+
+Dev-require the library you want to tweak types for, e.g.
+```
+composer require --dev cakephp/chronos
+```
+Then generate the stubs
+```
+vendor/bin/psalm --generate-stubs=stubs/chronos.phpstub
+```
+Open the generated file and remove everything not related to the library you're stubbing. Tweak the docblocks to provide more accurate types.
+
+## Registering stub files
+
+Skeleton/template project includes the code to register all `.phpstub` files from the `stubs` directory.
+
+To register a stub file manually use `Psalm\Plugin\RegistrationInterface::addStubFile()`.
+
+## Publishing your plugin on Packagist
+
+Follow instructions on packagist.org under 'Publishing Packages' section.
+
+## Advanced topics
+
+### Starting from scratch
+
+Composer-based plugin is a composer package which conforms to these requirements:
+
+1. Its `type` field is set to `psalm-plugin`
+2. It has `extra.psalm.pluginClass` subkey in its `composer.json` that reference an entry-point class that will be invoked to register the plugin into Psalm runtime.
+3. Entry-point class implements `Psalm\Plugin\PluginEntryPointInterface`
+
+### Psalm API
+
 Plugins may implement one of (or more than one of) `Psalm\Plugin\Hook\*` interface(s).
 
 ```php
@@ -9,7 +59,7 @@ class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
 }
 ```
 
-`Psalm\Plugin\Hook\*` offers 19 interfaces that you can implement:
+`Psalm\Plugin\Hook\*` offers the following interfaces that you can implement:
 
 - `AfterAnalysisInterface` - called after Psalm has completed its analysis. Use this hook if you want to do something with the analysis results.
 - `AfterClassLikeAnalysisInterface` - called after Psalm has completed its analysis of a given class.
@@ -38,7 +88,7 @@ Here are a couple of example plugins:
  - [PreventFloatAssignmentChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/PreventFloatAssignmentChecker.php) - prevents assignment to floats
  - [FunctionCasingChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/FunctionCasingChecker.php) - checks that your functions and methods are correctly-cased
 
-To ensure your plugin runs when Psalm does, add it to your [config](../configuration.md):
+To ensure your plugin runs when Psalm does, add it to your [config](../configuration.md) (not needed for composer-based plugins):
 ```xml
     <plugins>
         <plugin filename="src/plugins/SomePlugin.php" />
@@ -76,26 +126,7 @@ You can also use more complex rules in the `<issueHandler />` element, as you ca
 </PluginIssue>
 ```
 
-## Authoring composer-based plugins
-
-### Requirements
-
-Composer-based plugin is a composer package which conforms to these requirements:
-
-1. Its `type` field is set to `psalm-plugin`
-2. It has `extra.psalm.pluginClass` subkey in its `composer.json` that reference an entry-point class that will be invoked to register the plugin into Psalm runtime.
-3. Entry-point class implements `Psalm\Plugin\PluginEntryPointInterface`
-
-### Using skeleton project
-
-Run `composer create-project weirdan/psalm-plugin-skeleton:dev-master your-plugin-name` to quickly bootstrap a new plugin project in `your-plugin-name` folder. Make sure you adjust namespaces in `composer.json`, `Plugin.php` and `tests` folder.
-
-### Upgrading file-based plugin to composer-based version
+## Upgrading file-based plugin to composer-based version
 
 Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/tree/master/examples/plugins/composer-based/echo-checker/).
 
-### Registering stub files
-
-Use `Psalm\Plugin\RegistrationInterface::addStubFile()`. See the [sample plugin](https://github.com/weirdan/psalm-doctrine-collections/).
-
-Stub files provide a way to override third-party type information when you cannot add Psalm's extended docblocks to the upstream source files directly.
