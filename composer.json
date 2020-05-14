@@ -68,8 +68,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Psalm\\Plugin\\": "src/Psalm/Plugin",
-            "Psalm\\": "src/Psalm"
+            "Psalm\\": "src/Psalm/"
         },
         "files": [
             "src/functions.php",
@@ -78,7 +77,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Psalm\\Tests\\": "tests"
+            "Psalm\\Tests\\": "tests/"
         }
     },
     "repositories": [
