@@ -2,9 +2,9 @@
 
 namespace Psalm\Report;
 
+use Psalm\Internal\Json\Json;
 use Psalm\Report;
 
-use function json_encode;
 use function array_values;
 
 class JsonReport extends Report
@@ -14,6 +14,6 @@ class JsonReport extends Report
      */
     public function create(): string
     {
-        return json_encode(array_values($this->issues_data)) . "\n";
+        return Json::encode(array_values($this->issues_data)) . "\n";
     }
 }
