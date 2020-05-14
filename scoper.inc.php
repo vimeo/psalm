@@ -70,8 +70,8 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            $ret = preg_replace(
-                '/' . $prefix . '\\\\Psalm\\\\(?=!Internal)/',
+            $ret = str_replace(
+                $prefix . '\\Psalm\\',
                 'Psalm\\',
                 $contents
             );
@@ -80,7 +80,7 @@ return [
     ],
     'whitelist' => [
         \Composer\Autoload\ClassLoader::class,
-        'Psalm\\*',
+        'Psalm\*',
     ],
     'files-whitelist' => [
         'src/Psalm/Internal/PropertyMap.php',
