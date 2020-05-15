@@ -3,9 +3,16 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
+use function implode;
+use function array_map;
 
 class TTypeAlias extends \Psalm\Type\Atomic
 {
+    /**
+     * @var array<string, TTypeAlias>|null
+     */
+    public $extra_types;
+
     /** @var string */
     public $declaring_fq_classlike_name;
 
@@ -31,6 +38,18 @@ class TTypeAlias extends \Psalm\Type\Atomic
      */
     public function __toString()
     {
+        if ($this->extra_types) {
+            return $this->getKey() . '&' . implode(
+                '&',
+                array_map(
+                    function ($type) {
+                        return (string) $type;
+                    },
+                    $this->extra_types
+                )
+            );
+        }
+
         return $this->getKey();
     }
 
@@ -39,6 +58,18 @@ class TTypeAlias extends \Psalm\Type\Atomic
      */
     public function getId(bool $nested = false)
     {
+        if ($this->extra_types) {
+            return $this->getKey() . '&' . implode(
+                '&',
+                array_map(
+                    function ($type) {
+                        return $type->getId(true);
+                    },
+                    $this->extra_types
+                )
+            );
+        }
+
         return $this->getKey();
     }
 
