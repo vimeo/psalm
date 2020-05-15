@@ -2050,13 +2050,29 @@ class BinaryOpAnalyzer
                     : null;
 
                 if (($left_type->getId() === 'lowercase-string'
+                        || $left_type->getId() === 'non-empty-lowercase-string'
+                        || $left_type->isInt()
                         || ($left_type_literal_value !== null
                             && strtolower($left_type_literal_value) === $left_type_literal_value))
                     && ($right_type->getId() === 'lowercase-string'
+                        || $right_type->getId() === 'non-empty-lowercase-string'
+                        || $right_type->isInt()
                         || ($right_type_literal_value !== null
                             && strtolower($right_type_literal_value) === $right_type_literal_value))
                 ) {
-                    $result_type = new Type\Union([new Type\Atomic\TLowercaseString()]);
+                    if ($left_type->getId() === 'non-empty-lowercase-string'
+                        || $left_type->isInt()
+                        || ($left_type_literal_value !== null
+                            && strtolower($left_type_literal_value) === $left_type_literal_value)
+                        || $right_type->getId() === 'non-empty-lowercase-string'
+                        || $right_type->isInt()
+                        || ($right_type_literal_value !== null
+                            && strtolower($right_type_literal_value) === $right_type_literal_value)
+                    ) {
+                        $result_type = new Type\Union([new Type\Atomic\TNonEmptyLowercaseString()]);
+                    } else {
+                        $result_type = new Type\Union([new Type\Atomic\TLowercaseString()]);
+                    }
                 } elseif ($left_type->getId() === 'non-empty-string'
                     || $right_type->getId() === 'non-empty-string'
                     || $left_type_literal_value

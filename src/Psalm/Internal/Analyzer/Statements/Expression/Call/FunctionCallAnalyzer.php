@@ -882,6 +882,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
     }
 
+    /**
+     * @param non-empty-string $function_id
+     */
     private static function getFunctionCallReturnType(
         StatementsAnalyzer $statements_analyzer,
         \Psalm\Codebase $codebase,
@@ -1011,6 +1014,15 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 } catch (\InvalidArgumentException $e) {
                     // this can happen when the function was defined in the Config startup script
                     $stmt_type = Type::getMixed();
+                }
+
+                if ($codebase->taint && $stmt_type) {
+                    FunctionAnalyzer::taintBuiltinFunctionReturn(
+                        $statements_analyzer,
+                        $function_id,
+                        $stmt->args,
+                        $stmt_type
+                    );
                 }
             } else {
                 $stmt_type = FunctionAnalyzer::getReturnTypeFromCallMapWithArgs(

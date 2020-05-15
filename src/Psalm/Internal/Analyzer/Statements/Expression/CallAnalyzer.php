@@ -3492,7 +3492,10 @@ class CallAnalyzer
      * @param  PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat
      *         $callable_arg
      *
-     * @return string[]
+     * @return non-empty-string[]
+     *
+     * @psalm-suppress LessSpecificReturnStatement
+     * @psalm-suppress MoreSpecificReturnType
      */
     public static function getFunctionIdsFromCallableArg(
         \Psalm\FileSource $file_source,
@@ -3596,8 +3599,8 @@ class CallAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer    $statements_analyzer
-     * @param  string               $function_id
+     * @param  StatementsAnalyzer   $statements_analyzer
+     * @param  non-empty-string     $function_id
      * @param  CodeLocation         $code_location
      * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
      *
@@ -3615,6 +3618,7 @@ class CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
+            /** @var non-empty-lowercase-string */
             $root_function_id = preg_replace('/.*\\\/', '', $function_id);
 
             if ($can_be_in_root_scope

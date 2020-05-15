@@ -186,6 +186,9 @@ abstract class Atomic implements TypeNode
             case 'lowercase-string':
                 return new Type\Atomic\TLowercaseString();
 
+            case 'non-empty-lowercase-string':
+                return new Type\Atomic\TNonEmptyLowercaseString();
+
             case 'resource':
                 return $php_version !== null ? new TNamedObject($value) : new TResource();
 

@@ -848,7 +848,9 @@ class Union implements TypeNode
      */
     public function hasLowercaseString()
     {
-        return isset($this->types['string']) && $this->types['string'] instanceof Atomic\TLowercaseString;
+        return isset($this->types['string'])
+            && ($this->types['string'] instanceof Atomic\TLowercaseString
+                || $this->types['string'] instanceof Atomic\TNonEmptyLowercaseString);
     }
 
     /**

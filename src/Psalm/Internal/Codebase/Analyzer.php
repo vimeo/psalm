@@ -28,12 +28,12 @@ use function array_diff_key;
 use function array_values;
 
 /**
- * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
+ * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: non-empty-string}>
  *
  * @psalm-type  FileMapType = array{
  *      0: TaggedCodeType,
  *      1: TaggedCodeType,
- *      2: array<int, array{0: int, 1: string, 2: int}>
+ *      2: array<int, array{0: int, 1: non-empty-string, 2: int}>
  * }
  *
  * @psalm-type  WorkerData = array{
@@ -140,17 +140,17 @@ class Analyzer
     private $existing_issues = [];
 
     /**
-     * @var array<string, array<int, array{0: int, 1: string}>>
+     * @var array<string, array<int, array{0: int, 1: non-empty-string}>>
      */
     private $reference_map = [];
 
     /**
-     * @var array<string, array<int, array{0: int, 1: string}>>
+     * @var array<string, array<int, array{0: int, 1: non-empty-string}>>
      */
     private $type_map = [];
 
     /**
-     * @var array<string, array<int, array{0: int, 1: string, 2: int}>>
+     * @var array<string, array<int, array{0: int, 1: non-empty-string, 2: int}>>
      */
     private $argument_map = [];
 
@@ -1159,6 +1159,10 @@ class Analyzer
         string $node_type,
         PhpParser\Node $parent_node = null
     ) {
+        if (!$node_type) {
+            throw new \UnexpectedValueException('non-empty node_type expected');
+        }
+
         $this->type_map[$file_path][(int)$node->getAttribute('startFilePos')] = [
             ($parent_node ? (int)$parent_node->getAttribute('endFilePos') : (int)$node->getAttribute('endFilePos')) + 1,
             $node_type,
@@ -1172,6 +1176,10 @@ class Analyzer
         string $reference,
         int $argument_number
     ): void {
+        if (!$reference) {
+            throw new \UnexpectedValueException('non-empty node_type expected');
+        }
+
         $this->argument_map[$file_path][$start_position] = [
             $end_position,
             $reference,
@@ -1184,6 +1192,10 @@ class Analyzer
      */
     public function addNodeReference(string $file_path, PhpParser\Node $node, string $reference)
     {
+        if (!$reference) {
+            throw new \UnexpectedValueException('non-empty node_type expected');
+        }
+
         $this->reference_map[$file_path][(int)$node->getAttribute('startFilePos')] = [
             (int)$node->getAttribute('endFilePos') + 1,
             $reference,
@@ -1195,6 +1207,10 @@ class Analyzer
      */
     public function addOffsetReference(string $file_path, int $start, int $end, string $reference)
     {
+        if (!$reference) {
+            throw new \UnexpectedValueException('non-empty node_type expected');
+        }
+
         $this->reference_map[$file_path][$start] = [
             $end,
             $reference,

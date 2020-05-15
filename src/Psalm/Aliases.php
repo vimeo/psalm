@@ -14,7 +14,7 @@ class Aliases
     public $uses_flipped;
 
     /**
-     * @var array<string, string>
+     * @var array<string, non-empty-string>
      */
     public $functions;
 
@@ -48,7 +48,7 @@ class Aliases
     /**
      * @param string|null           $namespace
      * @param array<string, string> $uses
-     * @param array<string, string> $functions
+     * @param array<string, non-empty-string> $functions
      * @param array<string, string> $constants
      * @param array<string, string> $uses_flipped
      * @param array<string, string> $functions_flipped

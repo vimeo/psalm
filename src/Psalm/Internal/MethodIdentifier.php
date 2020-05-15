@@ -43,7 +43,7 @@ class MethodIdentifier
         return new static($method_id_parts[0], \strtolower($method_id_parts[1]));
     }
 
-    /** @return string */
+    /** @return non-empty-string */
     public function __toString()
     {
         return $this->fq_class_name . '::' . $this->method_name;

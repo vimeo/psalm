@@ -715,6 +715,15 @@ class ArrayFunctionCallTest extends TestCase
                 '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
             ],
+            'implodeNonEmptyArrayAndString' => [
+                '<?php
+                    /** @var non-empty-array<non-empty-string> */
+                    $l = ["a", "b"];
+                    $a = implode(":", $l);',
+                [
+                    '$a===' => 'non-empty-string',
+                ]
+            ],
             'key' => [
                 '<?php
                     $a = ["one" => 1, "two" => 3];

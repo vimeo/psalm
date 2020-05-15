@@ -1586,9 +1586,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             throw new \UnexpectedValueException('This is weird');
         }
 
-        return $codebase->functions->getStorage($statements_analyzer, strtolower($function_id));
+        return $codebase->functions->getStorage($statements_analyzer, $function_id);
     }
 
+    /** @return non-empty-string */
     public function getId() : string
     {
         if ($this instanceof MethodAnalyzer) {

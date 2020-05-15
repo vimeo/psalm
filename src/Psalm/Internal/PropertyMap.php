@@ -461,6 +461,9 @@ return [
     'phpparser\\node\\expr\\staticcall' => [
         'args' => 'array<int, PhpParser\Node\Arg>',
     ],
+    'phpparser\\node\\name' => [
+        'parts' => 'non-empty-array<non-empty-string>',
+    ],
     'phpparser\\node\\stmt\\namespace_' => [
         'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],

@@ -449,3 +449,23 @@ function max($arg_1, ...$arg_2) {}
  * @return (func_num_args() is 0 ? array<string, string> : string|false)
  */
 function getenv(string $varname = '', bool $local_only = false) {}
+
+/**
+ * @return (
+ *     $str is non-empty-string ? non-empty-lowercase-string : lowercase-string
+ * )
+ */
+function strtolower(string $str) : string {}
+
+/**
+ * @param string|array $glue
+ *
+ * @return (
+ *     $glue is non-empty-string
+ *     ? ($pieces is non-empty-array
+ *         ? non-empty-string
+ *         : string)
+ *     : string
+ * )
+ */
+function implode($glue, array $pieces = []) : string {}

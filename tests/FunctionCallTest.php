@@ -1756,6 +1756,16 @@ class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
+            'strtolowerEmptiness' => [
+                '<?php
+                    /** @param non-empty-string $s */
+                    function foo(string $s) : void {
+                        $s = strtolower($s);
+
+                        if ($s) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }

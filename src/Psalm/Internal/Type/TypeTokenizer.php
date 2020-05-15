@@ -45,6 +45,7 @@ class TypeTokenizer
         'mysql-escaped-string' => true,
         'html-escaped-string' => true,
         'lowercase-string' => true,
+        'non-empty-lowercase-string' => true,
         'boolean' => true,
         'integer' => true,
         'double' => true,

@@ -58,7 +58,7 @@ class Functions
     }
 
     /**
-     * @param lowercase-string $function_id
+     * @param non-empty-lowercase-string $function_id
      */
     public function getStorage(
         ?StatementsAnalyzer $statements_analyzer,
@@ -66,10 +66,6 @@ class Functions
         ?string $root_file_path = null,
         ?string $checked_file_path = null
     ) : FunctionLikeStorage {
-        if (!$function_id) {
-            throw new \UnexpectedValueException('Empty function_id');
-        }
-
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
         }
@@ -220,19 +216,21 @@ class Functions
     }
 
     /**
-     * @param  string                   $function_name
+     * @param  non-empty-string         $function_name
      * @param  StatementsSource         $source
      *
-     * @return string
+     * @return non-empty-string
      */
-    public function getFullyQualifiedFunctionNameFromString($function_name, StatementsSource $source)
+    public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source)
     {
-        if (empty($function_name)) {
-            throw new \InvalidArgumentException('$function_name cannot be empty');
-        }
-
         if ($function_name[0] === '\\') {
-            return substr($function_name, 1);
+            $function_name = substr($function_name, 1);
+
+            if ($function_name === '') {
+                throw new \UnexpectedValueException('Malformed function name');
+            }
+
+            return $function_name;
         }
 
         $function_name_lcase = strtolower($function_name);

@@ -36,11 +36,14 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
@@ -1173,7 +1176,25 @@ class TypeCombination
 
                         unset($combination->value_types['string']);
                     } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
-                        $combination->value_types['string'] = new TString();
+                        if (get_class($type) === TNonEmptyString::class
+                            && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
+                        ) {
+                            $combination->value_types['string'] = $type;
+                        } elseif (get_class($combination->value_types['string']) === TNonEmptyString::class
+                            && get_class($type) === TNonEmptyLowercaseString::class
+                        ) {
+                            $combination->value_types['string'] = $combination->value_types['string'];
+                        } elseif (get_class($type) === TLowercaseString::class
+                            && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
+                        ) {
+                            $combination->value_types['string'] = $type;
+                        } elseif (get_class($combination->value_types['string']) === TLowercaseString::class
+                            && get_class($type) === TNonEmptyLowercaseString::class
+                        ) {
+                            $combination->value_types['string'] = $combination->value_types['string'];
+                        } else {
+                            $combination->value_types['string'] = new TString();
+                        }
                     }
                 }
 

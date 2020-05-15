@@ -599,11 +599,12 @@ class ReturnAnalyzer
             return;
         }
 
-        $closure_id = (new ClosureAnalyzer($expr, $statements_analyzer))->getId();
+        $closure_id = (new ClosureAnalyzer($expr, $statements_analyzer))->getClosureId();
         $closure_storage = $statements_analyzer
             ->getCodebase()
             ->getFunctionLikeStorage($statements_analyzer, $closure_id);
 
+        /** @psalm-suppress ArgumentTypeCoercion */
         $parent_fn_storage = $statements_analyzer
             ->getCodebase()
             ->getFunctionLikeStorage(

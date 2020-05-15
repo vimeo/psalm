@@ -13782,7 +13782,7 @@ return [
 'strstr' => ['string|false', 'haystack'=>'string', 'needle'=>'mixed', 'before_needle='=>'bool'],
 'strtok' => ['string|false', 'str'=>'string', 'token'=>'string'],
 'strtok\'1' => ['string|false', 'token'=>'string'],
-'strtolower' => ['lowercase-string', 'str'=>'string'],
+'strtolower' => ['string', 'str'=>'string'],
 'strtotime' => ['int|false', 'time'=>'string', 'now='=>'int'],
 'strtoupper' => ['string', 'str'=>'string'],
 'strtr' => ['string', 'str'=>'string', 'from'=>'string', 'to'=>'string'],

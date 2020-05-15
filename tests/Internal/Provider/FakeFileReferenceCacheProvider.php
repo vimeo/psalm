@@ -47,9 +47,9 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      * @var array<
      *      string,
      *      array{
-     *          0: array<int, array{0: int, 1: string}>,
-     *          1: array<int, array{0: int, 1: string}>,
-     *          2: array<int, array{0: int, 1: string, 2: int}>
+     *          0: array<int, array{0: int, 1: non-empty-string}>,
+     *          1: array<int, array{0: int, 1: non-empty-string}>,
+     *          2: array<int, array{0: int, 1: non-empty-string, 2: int}>
      *      }
      *  >
      */
@@ -258,9 +258,9 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      * @return array<
      *      string,
      *      array{
-     *          0: array<int, array{0: int, 1: string}>,
-     *          1: array<int, array{0: int, 1: string}>,
-     *          2: array<int, array{0: int, 1: string, 2: int}>
+     *          0: array<int, array{0: int, 1: non-empty-string}>,
+     *          1: array<int, array{0: int, 1: non-empty-string}>,
+     *          2: array<int, array{0: int, 1: non-empty-string, 2: int}>
      *      }
      *  >
      */
@@ -273,9 +273,9 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      * @param array<
      *      string,
      *      array{
-     *          0: array<int, array{0: int, 1: string}>,
-     *          1: array<int, array{0: int, 1: string}>,
-     *          2: array<int, array{0: int, 1: string, 2: int}>
+     *          0: array<int, array{0: int, 1: non-empty-string}>,
+     *          1: array<int, array{0: int, 1: non-empty-string}>,
+     *          2: array<int, array{0: int, 1: non-empty-string, 2: int}>
      *      }
      *  > $file_maps
      *

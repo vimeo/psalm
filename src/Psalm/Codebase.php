@@ -851,6 +851,8 @@ class Codebase
     /**
      * Given a function id, return the function like storage for
      * a method, closure, or function.
+     *
+     * @param non-empty-string $function_id
      */
     public function getFunctionLikeStorage(
         StatementsAnalyzer $statements_analyzer,
@@ -1236,7 +1238,7 @@ class Codebase
     }
 
     /**
-     * @return array{0: string, 1: int, 2: Range}|null
+     * @return array{0: non-empty-string, 1: int, 2: Range}|null
      */
     public function getFunctionArgumentAtPosition(string $file_path, Position $position)
     {
@@ -1290,7 +1292,7 @@ class Codebase
     }
 
     /**
-     * @param  string $function_symbol
+     * @param  non-empty-string $function_symbol
      */
     public function getSignatureInformation(string $function_symbol) : ?\LanguageServerProtocol\SignatureInformation
     {

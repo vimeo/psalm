@@ -212,7 +212,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
                             $part_match_found = true;
                         }
-                    } else {
+                    } elseif ($mapping_function_id_part) {
                         if (strpos($mapping_function_id_part, '::') !== false) {
                             list($callable_fq_class_name, $method_name) = explode('::', $mapping_function_id_part);
 

@@ -380,10 +380,11 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                             $function_id_return_type = $return_type;
                         }
                     } else {
-                        if (!$codebase->functions->functionExists(
-                            $statements_source,
-                            $mapping_function_id_part
-                        )
+                        if (!$mapping_function_id_part
+                            || !$codebase->functions->functionExists(
+                                $statements_source,
+                                $mapping_function_id_part
+                            )
                         ) {
                             $function_id_return_type = Type::getMixed();
                             continue;

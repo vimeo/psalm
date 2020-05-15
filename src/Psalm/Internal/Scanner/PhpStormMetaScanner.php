@@ -256,6 +256,7 @@ class PhpStormMetaScanner
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
                     /**
+                     * @param non-empty-string $function_id
                      * @param array<PhpParser\Node\Arg> $call_args
                      */
                     function (
@@ -310,6 +311,7 @@ class PhpStormMetaScanner
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
                     /**
+                     * @param non-empty-string $function_id
                      * @param array<PhpParser\Node\Arg> $call_args
                      */
                     function (
@@ -345,6 +347,7 @@ class PhpStormMetaScanner
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
                     /**
+                     * @param non-empty-string $function_id
                      * @param array<PhpParser\Node\Arg> $call_args
                      */
                     function (

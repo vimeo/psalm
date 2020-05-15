@@ -293,12 +293,13 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @return string
+     * @return non-empty-lowercase-string
      */
     public function getFunctionId()
     {
         $namespace = $this->source->getNamespace();
 
+        /** @var non-empty-lowercase-string */
         return ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($this->function->name->name);
     }
 }

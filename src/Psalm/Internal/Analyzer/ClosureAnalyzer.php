@@ -38,7 +38,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @return string
+     * @return non-empty-lowercase-string
      */
     public function getClosureId()
     {

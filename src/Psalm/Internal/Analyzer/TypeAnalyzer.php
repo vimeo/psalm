@@ -878,22 +878,44 @@ class TypeAnalyzer
             return false;
         }
 
-        if ($input_type_part instanceof Type\Atomic\TLowercaseString
+        if (($input_type_part instanceof Type\Atomic\TLowercaseString
+                || $input_type_part instanceof Type\Atomic\TNonEmptyLowercaseString)
             && get_class($container_type_part) === TString::class
         ) {
             return true;
         }
 
-        if ($container_type_part instanceof Type\Atomic\TLowercaseString
+        if (($container_type_part instanceof Type\Atomic\TLowercaseString
+                || $container_type_part instanceof Type\Atomic\TNonEmptyLowercaseString)
             && $input_type_part instanceof TString
         ) {
-            if ($input_type_part instanceof Type\Atomic\TLowercaseString) {
+            if (($input_type_part instanceof Type\Atomic\TLowercaseString
+                    && $container_type_part instanceof Type\Atomic\TLowercaseString)
+                || ($input_type_part instanceof Type\Atomic\TNonEmptyLowercaseString
+                    && $container_type_part instanceof Type\Atomic\TNonEmptyLowercaseString)
+            ) {
                 return true;
+            }
+
+            if ($input_type_part instanceof Type\Atomic\TNonEmptyLowercaseString
+                && $container_type_part instanceof Type\Atomic\TLowercaseString
+            ) {
+                return true;
+            }
+
+            if ($input_type_part instanceof Type\Atomic\TLowercaseString
+                && $container_type_part instanceof Type\Atomic\TNonEmptyLowercaseString
+            ) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+
+                return false;
             }
 
             if ($input_type_part instanceof TLiteralString) {
                 if (strtolower($input_type_part->value) === $input_type_part->value) {
-                    return true;
+                    return $input_type_part->value || $container_type_part instanceof Type\Atomic\TLowercaseString;
                 }
 
                 return false;
@@ -1427,11 +1449,14 @@ class TypeAnalyzer
             return false;
         }
 
-        if ($input_type_part instanceof Type\Atomic\TLowercaseString
+        if (($input_type_part instanceof Type\Atomic\TLowercaseString
+                || $input_type_part instanceof Type\Atomic\TNonEmptyLowercaseString)
             && $container_type_part instanceof TLiteralString
             && strtolower($container_type_part->value) === $container_type_part->value
         ) {
-            if ($atomic_comparison_result) {
+            if ($atomic_comparison_result
+                && ($container_type_part->value || $input_type_part instanceof Type\Atomic\TLowercaseString)
+            ) {
                 $atomic_comparison_result->type_coerced = true;
                 $atomic_comparison_result->type_coerced_from_scalar = true;
             }
@@ -1899,7 +1924,7 @@ class TypeAnalyzer
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null
     ) : ?TCallable {
-        if ($input_type_part instanceof TLiteralString) {
+        if ($input_type_part instanceof TLiteralString && $input_type_part->value) {
             try {
                 $function_storage = $codebase->functions->getStorage(
                     $statements_analyzer,
