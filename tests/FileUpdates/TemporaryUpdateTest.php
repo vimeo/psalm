@@ -1121,7 +1121,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[79, 238, 238], []],
+                'error_positions' => [[79, 238, 280, 238], []],
             ],
             'fixClassRef' => [
                 [
