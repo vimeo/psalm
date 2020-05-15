@@ -30,6 +30,12 @@ use function array_values;
 /**
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
  *
+ * @psalm-type  FileMapType = array{
+ *      0: TaggedCodeType,
+ *      1: TaggedCodeType,
+ *      2: array<int, array{0: int, 1: string, 2: int}>
+ * }
+ *
  * @psalm-type  WorkerData = array{
  *      issues: array<string, list<IssueData>>,
  *      fixable_issue_counts: array<string, int>,
@@ -44,14 +50,7 @@ use function array_values;
  *      method_references_to_missing_class_members: array<string, array<string,bool>>,
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
  *      analyzed_methods: array<string, array<string, int>>,
- *      file_maps: array<
- *          string,
- *          array{
- *              0: TaggedCodeType,
- *              1: TaggedCodeType,
- *              2: array<int, array{0: int, 1: string, 2: int}>
- *         }
- *      >,
+ *      file_maps: array<string, FileMapType>,
  *      class_locations: array<string, array<int, \Psalm\CodeLocation>>,
  *      class_method_locations: array<string, array<int, \Psalm\CodeLocation>>,
  *      class_property_locations: array<string, array<int, \Psalm\CodeLocation>>,
@@ -1459,14 +1458,7 @@ class Analyzer
     }
 
     /**
-     * @return array<
-     *      string,
-     *      array{
-     *          0: TaggedCodeType,
-     *          1: TaggedCodeType,
-     *          2: array<int, array{0: int, 1: string, 2: int}>
-     *      }
-     * >
+     * @return array<string, FileMapType>
      */
     public function getFileMaps()
     {
@@ -1496,11 +1488,7 @@ class Analyzer
     }
 
     /**
-     * @return array{
-     *     0: TaggedCodeType,
-     *     1: TaggedCodeType,
-     *     2: array<int, array{0: int, 1: string, 2: int}>
-     * }
+     * @return FileMapType
      */
     public function getMapsForFile(string $file_path)
     {

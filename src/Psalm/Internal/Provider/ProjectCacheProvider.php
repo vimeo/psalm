@@ -13,9 +13,6 @@ use function serialize;
 use function unserialize;
 
 /**
- * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
- */
-/**
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
  */
