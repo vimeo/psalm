@@ -78,7 +78,7 @@ class ReportOutputTest extends TestCase
     {
         $file_contents = '<?php
 function psalmCanVerify(int $your_code): ?string {
-  return $as_you . "type";
+  return $as_you_____type;
 }
 
 // and it supports PHP 5.4 - 7.1
@@ -113,20 +113,40 @@ echo $a;';
                 'line_from' => 3,
                 'line_to' => 3,
                 'type' => 'UndefinedVariable',
-                'message' => 'Cannot find referenced variable $as_you',
+                'message' => 'Cannot find referenced variable $as_you_____type',
                 'file_name' => 'somefile.php',
                 'file_path' => 'somefile.php',
-                'snippet' => '  return $as_you . "type";',
-                'selected_text' => '$as_you',
+                'snippet' => '  return $as_you_____type;',
+                'selected_text' => '$as_you_____type',
                 'from' => 66,
-                'to' => 73,
+                'to' => 82,
                 'snippet_from' => 57,
                 'snippet_to' => 83,
                 'column_from' => 10,
-                'column_to' => 17,
+                'column_to' => 26,
                 'error_level' => -1,
                 'shortcode' => 24,
                 'link' => 'https://psalm.dev/024'
+            ],
+            [
+                'severity' => 'error',
+                'line_from' => 3,
+                'line_to' => 3,
+                'type' => 'MixedReturnStatement',
+                'message' => 'Could not infer a return type',
+                'file_name' => 'somefile.php',
+                'file_path' => 'somefile.php',
+                'snippet' => '  return $as_you_____type;',
+                'selected_text' => '$as_you_____type',
+                'from' => 66,
+                'to' => 82,
+                'snippet_from' => 57,
+                'snippet_to' => 83,
+                'column_from' => 10,
+                'column_to' => 26,
+                'error_level' => 1,
+                'shortcode' => 138,
+                'link' => 'https://psalm.dev/138',
             ],
             [
                 'severity' => 'error',
@@ -244,13 +264,29 @@ echo $a;';
                     'engineId' => 'Psalm',
                     'ruleId' => 'UndefinedVariable',
                     'primaryLocation' => [
-                        'message' => 'Cannot find referenced variable $as_you',
+                        'message' => 'Cannot find referenced variable $as_you_____type',
                         'filePath' => 'somefile.php',
                         'textRange' => [
                             'startLine' => 3,
                             'endLine' => 3,
                             'startColumn' => 9,
-                            'endColumn' => 16,
+                            'endColumn' => 25,
+                        ],
+                    ],
+                    'type' => 'CODE_SMELL',
+                    'severity' => 'CRITICAL',
+                ],
+                [
+                    'engineId' => 'Psalm',
+                    'ruleId' => 'MixedReturnStatement',
+                    'primaryLocation' => [
+                        'message' => 'Could not infer a return type',
+                        'filePath' => 'somefile.php',
+                        'textRange' => [
+                            'startLine' => 3,
+                            'endLine' => 3,
+                            'startColumn' => 9,
+                            'endColumn' => 25,
                         ],
                     ],
                     'type' => 'CODE_SMELL',
@@ -326,7 +362,8 @@ echo $a;';
         $emacs_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.emacs'])[0];
 
         $this->assertSame(
-            'somefile.php:3:10:error - Cannot find referenced variable $as_you
+            'somefile.php:3:10:error - Cannot find referenced variable $as_you_____type
+somefile.php:3:10:error - Could not infer a return type
 somefile.php:2:42:error - Could not verify return type \'null|string\' for psalmCanVerify
 somefile.php:7:6:error - Const CHANGE_ME is not defined
 somefile.php:15:6:warning - Possibly undefined global variable $a, first seen on line 10
@@ -345,7 +382,8 @@ somefile.php:15:6:warning - Possibly undefined global variable $a, first seen on
         $pylint_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.pylint'])[0];
 
         $this->assertSame(
-            'somefile.php:3: [E0001] UndefinedVariable: Cannot find referenced variable $as_you (column 10)
+            'somefile.php:3: [E0001] UndefinedVariable: Cannot find referenced variable $as_you_____type (column 10)
+somefile.php:3: [E0001] MixedReturnStatement: Could not infer a return type (column 10)
 somefile.php:2: [E0001] MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify (column 42)
 somefile.php:7: [E0001] UndefinedConstant: Const CHANGE_ME is not defined (column 6)
 somefile.php:15: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10 (column 6)
@@ -365,8 +403,11 @@ somefile.php:15: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined glo
         $console_report_options->use_color = false;
 
         $this->assertSame(
-            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you (see https://psalm.dev/024)
-  return $as_you . "type";
+            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
+  return $as_you_____type;
+
+ERROR: MixedReturnStatement - somefile.php:3:10 - Could not infer a return type (see https://psalm.dev/138)
+  return $as_you_____type;
 
 ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify (see https://psalm.dev/047)
 function psalmCanVerify(int $your_code): ?string {
@@ -394,8 +435,11 @@ echo $a
         $console_report_options->show_info = false;
 
         $this->assertSame(
-            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you (see https://psalm.dev/024)
-  return $as_you . "type";
+            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
+  return $as_you_____type;
+
+ERROR: MixedReturnStatement - somefile.php:3:10 - Could not infer a return type (see https://psalm.dev/138)
+  return $as_you_____type;
 
 ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify (see https://psalm.dev/047)
 function psalmCanVerify(int $your_code): ?string {
@@ -420,7 +464,10 @@ echo CHANGE_ME;
         $console_report_options->use_color = false;
 
         $this->assertSame(
-            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you (see https://psalm.dev/024)
+            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
+
+
+ERROR: MixedReturnStatement - somefile.php:3:10 - Could not infer a return type (see https://psalm.dev/138)
 
 
 ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify (see https://psalm.dev/047)
@@ -454,7 +501,8 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n" .
             '| SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                   |' . "\n" .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n" .
-            '| ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you                       |' . "\n" .
+            '| ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you_____type              |' . "\n" .
+            '| ERROR    | 3    | MixedReturnStatement            | Could not infer a return type                                 |' . "\n" .
             '| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'null|string\' for psalmCanVerify |' . "\n" .
             '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . "\n" .
             '| INFO     | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . "\n" .
@@ -476,7 +524,10 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
             '<?xml version="1.0" encoding="UTF-8"?>
 <checkstyle>
 <file name="somefile.php">
- <error line="3" column="10" severity="error" message="UndefinedVariable: Cannot find referenced variable $as_you"/>
+ <error line="3" column="10" severity="error" message="UndefinedVariable: Cannot find referenced variable $as_you_____type"/>
+</file>
+<file name="somefile.php">
+ <error line="3" column="10" severity="error" message="MixedReturnStatement: Could not infer a return type"/>
 </file>
 <file name="somefile.php">
  <error line="2" column="42" severity="error" message="MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify"/>
@@ -512,16 +563,26 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
 
         $this->assertSame(
             '<?xml version="1.0" encoding="UTF-8"?>
-<testsuites failures="3" errors="0" name="psalm" tests="4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/junit-team/junit5/r5.5.1/platform-tests/src/test/resources/jenkins-junit.xsd">
-  <testsuite name="somefile.php" failures="3" errors="0" tests="4">
+<testsuites failures="4" errors="0" name="psalm" tests="5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/junit-team/junit5/r5.5.1/platform-tests/src/test/resources/jenkins-junit.xsd">
+  <testsuite name="somefile.php" failures="4" errors="0" tests="5">
     <testcase name="somefile.php:3" classname="UndefinedVariable" assertions="1">
-      <failure type="UndefinedVariable">message: Cannot find referenced variable $as_you
+      <failure type="UndefinedVariable">message: Cannot find referenced variable $as_you_____type
 type: UndefinedVariable
-snippet: return $as_you . "type";
-selected_text: $as_you
+snippet: return $as_you_____type;
+selected_text: $as_you_____type
 line: 3
 column_from: 10
-column_to: 17
+column_to: 26
+</failure>
+    </testcase>
+    <testcase name="somefile.php:3" classname="MixedReturnStatement" assertions="1">
+      <failure type="MixedReturnStatement">message: Could not infer a return type
+type: MixedReturnStatement
+snippet: return $as_you_____type;
+selected_text: $as_you_____type
+line: 3
+column_from: 10
+column_to: 26
 </failure>
     </testcase>
     <testcase name="somefile.php:2" classname="MixedInferredReturnType" assertions="1">
