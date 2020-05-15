@@ -157,7 +157,12 @@ class CommentAnalyzer
                 }
 
                 try {
-                    $defined_type = TypeParser::parseTokens($var_type_tokens, null, $template_type_map ?: []);
+                    $defined_type = TypeParser::parseTokens(
+                        $var_type_tokens,
+                        null,
+                        $template_type_map ?: [],
+                        $type_aliases ?: []
+                    );
                 } catch (TypeParseTreeException $e) {
                     throw new DocblockParseException(
                         $line_parts[0] .
@@ -950,7 +955,7 @@ class CommentAnalyzer
         if (isset($parsed_docblock['specials']['psalm-import-type'])) {
             foreach ($parsed_docblock['specials']['psalm-import-type'] as $imported_type_entry) {
                 /** @psalm-suppress InvalidPropertyAssignmentValue */
-                $info->imported_types[] = preg_split('/[\s]+/', $imported_type_entry)[0];
+                $info->imported_types[] = preg_split('/[\s]+/', $imported_type_entry);
             }
         }
 

@@ -253,6 +253,30 @@ class TypeExpander
             return $return_type;
         }
 
+        if ($return_type instanceof Type\Atomic\TTypeAlias) {
+            $declaring_fq_classlike_name = $return_type->declaring_fq_classlike_name;
+
+            if ($declaring_fq_classlike_name === 'self' && $self_class) {
+                $declaring_fq_classlike_name = $self_class;
+            }
+
+            if ($evaluate_class_constants && $codebase->classOrInterfaceExists($declaring_fq_classlike_name)) {
+                $class_storage = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name);
+
+                $type_alias_name = $return_type->alias_name;
+
+                if (isset($class_storage->type_aliases[$type_alias_name])) {
+                    $resolved_type_alias = $class_storage->type_aliases[$type_alias_name];
+
+                    if ($resolved_type_alias->replacement_atomic_types) {
+                        return $resolved_type_alias->replacement_atomic_types;
+                    }
+                }
+            }
+
+            return $return_type;
+        }
+
         if ($return_type instanceof Type\Atomic\TKeyOfClassConstant
             || $return_type instanceof Type\Atomic\TValueOfClassConstant
         ) {

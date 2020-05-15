@@ -394,7 +394,7 @@ class ClassLikeStorage
     public $docblock_issues = [];
 
     /**
-     * @var array<string, \Psalm\Internal\Type\TypeAlias>
+     * @var array<string, \Psalm\Internal\Type\TypeAlias\ClassTypeAlias>
      */
     public $type_aliases = [];
 

@@ -133,7 +133,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     private $type_aliases = [];
 
     /**
-     * @var array<string, TypeAlias>
+     * @var array<string, TypeAlias\InlineTypeAlias>
      */
     private $classlike_type_aliases = [];
 
@@ -602,7 +602,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
 
-            $classlike_storage->type_aliases = $this->classlike_type_aliases;
+            $classlike_storage->type_aliases = \array_map(
+                function (TypeAlias\InlineTypeAlias $t) {
+                    $union = TypeParser::parseTokens(
+                        $t->replacement_tokens,
+                        null,
+                        [],
+                        $this->type_aliases
+                    );
+
+                    $union->setFromDocblock();
+
+                    return new TypeAlias\ClassTypeAlias(
+                        \array_values($union->getAtomicTypes())
+                    );
+                },
+                $this->classlike_type_aliases
+            );
 
             $this->classlike_type_aliases = [];
 
