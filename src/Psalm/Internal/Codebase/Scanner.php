@@ -25,6 +25,18 @@ use function strtolower;
 use function substr;
 
 /**
+ * @psalm-type  ThreadData = array{
+ *     0: array<string, string>,
+ *     1: array<string, string>,
+ *     2: array<string, string>,
+ *     3: array<string, bool>,
+ *     4: array<string, bool>,
+ *     5: array<string, string>,
+ *     6: array<string, bool>,
+ *     7: array<string, bool>,
+ *     8: array<string, bool>
+ * }
+ *
  * @psalm-type  PoolData = array{
  *     classlikes_data:array{
  *         0:array<lowercase-string, bool>,
@@ -35,17 +47,7 @@ use function substr;
  *         5:array<string, bool>,
  *         6:array<string, bool>
  *     },
- *     scanner_data:array{
- *         0:array<string, string>,
- *         1:array<string, string>,
- *         2:array<string, string>,
- *         3:array<string, bool>,
- *         4:array<string, bool>,
- *         5:array<string, string>,
- *         6:array<string, bool>,
- *         7:array<string, bool>,
- *         8:array<string, bool>
- *     },
+ *     scanner_data: ThreadData,
  *     issues:array<string, list<IssueData>>,
  *     changed_members:array<string, array<string, bool>>,
  *     unchanged_signature_members:array<string, array<string, bool>>,
@@ -761,17 +763,7 @@ class Scanner
     }
 
     /**
-     * @return array{
-     *     0: array<string, string>,
-     *     1: array<string, string>,
-     *     2: array<string, string>,
-     *     3: array<string, bool>,
-     *     4: array<string, bool>,
-     *     5: array<string, string>,
-     *     6: array<string, bool>,
-     *     7: array<string, bool>,
-     *     8: array<string, bool>
-     * }
+     * @return ThreadData
      */
     public function getThreadData()
     {
@@ -789,17 +781,7 @@ class Scanner
     }
 
     /**
-     * @param array{
-     *     0: array<string, string>,
-     *     1: array<string, string>,
-     *     2: array<string, string>,
-     *     3: array<string, bool>,
-     *     4: array<string, bool>,
-     *     5: array<string, string>,
-     *     6: array<string, bool>,
-     *     7: array<string, bool>,
-     *     8: array<string, bool>
-     * } $thread_data
+     * @param ThreadData $thread_data
      *
      * @return void
      */
