@@ -177,7 +177,7 @@ class VariableFetchAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            // fall through
                         }
 
                         $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -197,7 +197,7 @@ class VariableFetchAnalyzer
 
                     $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
-                    return false;
+                    return null;
                 }
             }
 
@@ -228,7 +228,7 @@ class VariableFetchAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                         (bool) $statements_analyzer->getBranchPoint($var_name)
                     )) {
-                        return false;
+                        return;
                     }
                 } else {
                     if ($codebase->alter_code) {
