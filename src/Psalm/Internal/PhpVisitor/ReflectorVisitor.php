@@ -1288,6 +1288,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             $this->aliases
                         );
 
+                        $this->codebase->scanner->queueClassLikeForScanning($declaring_fq_classlike_name);
+                        $this->file_storage->referenced_classlikes[strtolower($declaring_fq_classlike_name)]
+                            = $declaring_fq_classlike_name;
+
                         $this->type_aliases[$as_alias_name] = new TypeAlias\LinkableTypeAlias(
                             $declaring_fq_classlike_name,
                             $type_alias_name
