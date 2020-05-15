@@ -155,6 +155,40 @@ class TypeAnnotationTest extends TestCase
                         return $r;
                     }',
             ],
+            'classTypeAlias' => [
+                '<?php
+                    /** @psalm-type PhoneType = array{phone: string} */
+                    class Phone {
+                        /** @psalm-return PhoneType */
+                        public function toArray(): array {
+                            return ["phone" => "Nokia"];
+                        }
+                    }
+
+                    /** @psalm-type NameType = array{name: string} */
+                    class Name {
+                        /** @psalm-return NameType */
+                        function toArray(): array {
+                            return ["name" => "Matt"];
+                        }
+                    }
+
+                    /**
+                     * @psalm-import-type PhoneType from Phone as PhoneType2
+                     * @psalm-import-type NameType from Name as NameType2
+                     *
+                     * @psalm-type UserType = PhoneType2&NameType2
+                     */
+                    class User {
+                        /** @psalm-return UserType */
+                        function toArray(): array {
+                            return array_merge(
+                                (new Name)->toArray(),
+                                (new Phone)->toArray()
+                            );
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -182,6 +216,41 @@ class TypeAnnotationTest extends TestCase
                     /** @psalm-return array{0:bool,1:aType} */
                     function f(): array {
                         return [(bool)rand(0,1), rand(0,1) ? "z" : null];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'classTypeAliasInvalidReturn' => [
+                '<?php
+                    /** @psalm-type PhoneType = array{phone: string} */
+                    class Phone {
+                        /** @psalm-return PhoneType */
+                        public function toArray(): array {
+                            return ["phone" => "Nokia"];
+                        }
+                    }
+
+                    /** @psalm-type NameType = array{name: string} */
+                    class Name {
+                        /** @psalm-return NameType */
+                        function toArray(): array {
+                            return ["name" => "Matt"];
+                        }
+                    }
+
+                    /**
+                     * @psalm-import-type PhoneType from Phone as PhoneType2
+                     * @psalm-import-type NameType from Name as NameType2
+                     *
+                     * @psalm-type UserType = PhoneType2&NameType2
+                     */
+                    class User {
+                        /** @psalm-return UserType */
+                        function toArray(): array {
+                            return array_merge(
+                                (new Name)->toArray(),
+                                ["foo" => "bar"]
+                            );
+                        }
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],

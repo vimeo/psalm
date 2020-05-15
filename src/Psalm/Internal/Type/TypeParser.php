@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
 use function array_key_exists;
 use function strlen;
@@ -447,42 +448,61 @@ class TypeParser
 
             $keyed_intersection_types = [];
 
-            foreach ($intersection_types as $intersection_type) {
-                if (!$intersection_type instanceof TIterable
-                    && !$intersection_type instanceof TNamedObject
-                    && !$intersection_type instanceof TTemplateParam
-                    && !$intersection_type instanceof TObjectWithProperties
-                ) {
-                    throw new TypeParseTreeException(
-                        'Intersection types must be all objects or all object-like arrays, '
-                            . get_class($intersection_type) . ' provided'
-                    );
+            if ($intersection_types[0] instanceof TTypeAlias) {
+                foreach ($intersection_types as $intersection_type) {
+                    if (!$intersection_type instanceof TTypeAlias) {
+                        throw new TypeParseTreeException(
+                            'Intersection types with a type alias can only be comprised of other type aliases, '
+                                . get_class($intersection_type) . ' provided'
+                        );
+                    }
+
+                    $keyed_intersection_types[$intersection_type->getKey()] = $intersection_type;
                 }
 
-                $keyed_intersection_types[
-                    $intersection_type instanceof TIterable
-                        ? $intersection_type->getId()
-                        : $intersection_type->getKey()
-                    ] = $intersection_type;
-            }
+                $first_type = array_shift($keyed_intersection_types);
 
-            $intersect_static = false;
+                if ($keyed_intersection_types) {
+                    $first_type->extra_types = $keyed_intersection_types;
+                }
+            } else {
+                foreach ($intersection_types as $intersection_type) {
+                    if (!$intersection_type instanceof TIterable
+                        && !$intersection_type instanceof TNamedObject
+                        && !$intersection_type instanceof TTemplateParam
+                        && !$intersection_type instanceof TObjectWithProperties
+                    ) {
+                        throw new TypeParseTreeException(
+                            'Intersection types must be all objects or all object-like arrays, '
+                                . get_class($intersection_type) . ' provided'
+                        );
+                    }
 
-            if (isset($keyed_intersection_types['static'])) {
-                unset($keyed_intersection_types['static']);
-                $intersect_static = true;
-            }
+                    $keyed_intersection_types[
+                        $intersection_type instanceof TIterable
+                            ? $intersection_type->getId()
+                            : $intersection_type->getKey()
+                        ] = $intersection_type;
+                }
 
-            $first_type = array_shift($keyed_intersection_types);
+                $intersect_static = false;
 
-            if ($intersect_static
-                && $first_type instanceof TNamedObject
-            ) {
-                $first_type->was_static = true;
-            }
+                if (isset($keyed_intersection_types['static'])) {
+                    unset($keyed_intersection_types['static']);
+                    $intersect_static = true;
+                }
 
-            if ($keyed_intersection_types) {
-                $first_type->extra_types = $keyed_intersection_types;
+                $first_type = array_shift($keyed_intersection_types);
+
+                if ($intersect_static
+                    && $first_type instanceof TNamedObject
+                ) {
+                    $first_type->was_static = true;
+                }
+
+                if ($keyed_intersection_types) {
+                    $first_type->extra_types = $keyed_intersection_types;
+                }
             }
 
             return $first_type;
