@@ -750,15 +750,11 @@ class AssertionFinder
                 && ($var_type = $source->node_data->getType($base_conditional))
                 && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
             ) {
-                $null_type = Type::getEmptyArray();
+                $empty_array_type = Type::getEmptyArray();
 
-                if (!TypeAnalyzer::isContainedBy(
+                if (!TypeAnalyzer::canExpressionTypesBeIdentical(
                     $codebase,
-                    $var_type,
-                    $null_type
-                ) && !TypeAnalyzer::isContainedBy(
-                    $codebase,
-                    $null_type,
+                    $empty_array_type,
                     $var_type
                 )) {
                     if ($var_type->from_docblock) {

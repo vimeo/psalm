@@ -1254,6 +1254,19 @@ class FunctionTemplateTest extends TestCase
 
                     createProxy(A::class, \'Ns\foo\')->bar();',
             ],
+            'compareToEmptyArray' => [
+                '<?php
+                    /**
+                     * @template T
+                     *
+                     * @param T $a
+                     * @return T
+                     */
+                    function ex($a) {
+                        if($a === []) {}
+                        return $a;
+                    }'
+            ],
         ];
     }
 
