@@ -1897,6 +1897,20 @@ class AssertionFinder
         } elseif (self::hasCallableCheck($expr)) {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'callable']];
+            } elseif ($expr->args[0]->value instanceof PhpParser\Node\Expr\Array_
+                && isset($expr->args[0]->value->items[0], $expr->args[0]->value->items[1])
+                && $expr->args[0]->value->items[1]->value instanceof PhpParser\Node\Scalar\String_
+            ) {
+                $first_var_name_in_array_argument = ExpressionAnalyzer::getArrayVarId(
+                    $expr->args[0]->value->items[0]->value,
+                    $this_class_name,
+                    $source
+                );
+                if ($first_var_name_in_array_argument) {
+                    $if_types[$first_var_name_in_array_argument] = [
+                        [$prefix . 'hasmethod-' . $expr->args[0]->value->items[1]->value->value]
+                    ];
+                }
             }
         } elseif (self::hasIterableCheck($expr)) {
             if ($first_var_name) {
