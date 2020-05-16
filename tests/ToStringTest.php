@@ -140,7 +140,13 @@ class ToStringTest extends TestCase
                     if (method_exists($object, \'__toString\')) {
                         $a = (string) $object;
                         echo $a;
-                    }'
+                    }
+
+                    if (is_callable([$object, \'__toString\'])) {
+                        $a = (string) $object;
+                        echo $a;
+                    }
+                    '
             ],
         ];
     }
