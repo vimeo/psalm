@@ -78,7 +78,7 @@ class TypeParser
             } else {
                 $only_token[0] = TypeTokenizer::fixScalarTerms($only_token[0], $php_version);
 
-                $atomic = Atomic::create($only_token[0], $php_version, $template_type_map);
+                $atomic = Atomic::create($only_token[0], $php_version, $template_type_map, $type_aliases);
                 $atomic->offset_start = 0;
                 $atomic->offset_end = strlen($only_token[0]);
 
