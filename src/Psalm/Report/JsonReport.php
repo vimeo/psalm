@@ -14,6 +14,8 @@ class JsonReport extends Report
      */
     public function create(): string
     {
-        return Json::encode(array_values($this->issues_data)) . "\n";
+        $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;
+
+        return Json::encode(array_values($this->issues_data), $options) . "\n";
     }
 }

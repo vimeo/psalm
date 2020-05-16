@@ -41,6 +41,8 @@ class SonarqubeReport extends Report
             ];
         }
 
-        return Json::encode($report) . "\n";
+        $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;
+
+        return Json::encode($report, $options) . "\n";
     }
 }

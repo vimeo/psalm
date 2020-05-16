@@ -9,14 +9,19 @@ use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
 
 /**
- * Provides pretty printed JSON output.
+ * Provides ability of pretty printed JSON output.
  */
 class Json
 {
     /**
      * @var int
      */
-    protected const OPTIONS = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+    public const PRETTY = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+
+    /**
+     * @var int
+     */
+    public const DEFAULT = 0;
 
     /**
      * @param mixed $data
@@ -26,7 +31,7 @@ class Json
     public static function encode($data, ?int $options = null): string
     {
         if ($options === null) {
-            $options = static::OPTIONS;
+            $options = static::DEFAULT;
         }
 
         $result = json_encode($data, $options);

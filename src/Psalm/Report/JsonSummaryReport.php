@@ -23,10 +23,12 @@ class JsonSummaryReport extends Report
             ++$type_counts[$type];
         }
 
+        $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;
+
         return Json::encode([
             'issue_counts' => $type_counts,
             'mixed_expression_count' => $this->mixed_expression_count,
             'total_expression_count' => $this->total_expression_count,
-        ]) . "\n";
+        ], $options) . "\n";
     }
 }
