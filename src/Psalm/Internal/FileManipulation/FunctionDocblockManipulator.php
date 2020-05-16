@@ -325,6 +325,8 @@ class FunctionDocblockManipulator
             $parsed_docblock = ['description' => '', 'specials' => []];
         }
 
+        $modified_docblock = false;
+
         foreach ($this->new_phpdoc_param_types as $param_name => $phpdoc_type) {
             $found_in_params = false;
             $new_param_block = $phpdoc_type . ' ' . '$' . $param_name;
@@ -334,6 +336,7 @@ class FunctionDocblockManipulator
                     $doc_parts = CommentAnalyzer::splitDocLine($param_block);
 
                     if (($doc_parts[1] ?? null) === '$' . $param_name) {
+                        $modified_docblock = true;
                         $param_block = $new_param_block;
                         $found_in_params = true;
                         break;
@@ -342,11 +345,13 @@ class FunctionDocblockManipulator
             }
 
             if (!$found_in_params) {
+                $modified_docblock = true;
                 $parsed_docblock['specials']['param'][] = $new_param_block;
             }
         }
 
         if ($this->new_phpdoc_return_type) {
+            $modified_docblock = true;
             $parsed_docblock['specials']['return'] = [
                 $this->new_phpdoc_return_type
                     . ($this->return_type_description ? (' ' . $this->return_type_description) : ''),
@@ -354,7 +359,12 @@ class FunctionDocblockManipulator
         }
 
         if ($this->new_phpdoc_return_type !== $this->new_psalm_return_type && $this->new_psalm_return_type) {
+            $modified_docblock = true;
             $parsed_docblock['specials']['psalm-return'] = [$this->new_psalm_return_type];
+        }
+
+        if (!$modified_docblock) {
+            return (string)$docblock . "\n" . $this->indentation;
         }
 
         if (!$parsed_docblock['specials'] && !$parsed_docblock['description']) {
