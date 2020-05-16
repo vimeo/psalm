@@ -318,6 +318,38 @@ class TypeAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'classTypeInvalidAlias' => [
+                '<?php
+                class Phone {
+                    function toArray(): array {
+                        return ["name" => "Matt"];
+                    }
+                }
+
+                /**
+                 * @psalm-import-type PhoneType from Phone
+                 */
+                class User {
+                    /** @psalm-return UserType */
+                    function toArray(): array {
+                        return (new Phone)->toArray();
+                    }
+                }',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'classTypeAliasFromInvalidClass' => [
+                '<?php
+                /**
+                 * @psalm-import-type PhoneType from Phone
+                 */
+                class User {
+                    /** @psalm-return UserType */
+                    function toArray(): array {
+                        return [];
+                    }
+                }',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
         ];
     }
 }
