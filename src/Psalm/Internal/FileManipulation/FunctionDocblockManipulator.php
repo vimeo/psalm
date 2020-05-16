@@ -363,12 +363,12 @@ class FunctionDocblockManipulator
             $parsed_docblock['specials']['psalm-return'] = [$this->new_psalm_return_type];
         }
 
-        if (!$modified_docblock) {
-            return (string)$docblock . "\n" . $this->indentation;
-        }
-
         if (!$parsed_docblock['specials'] && !$parsed_docblock['description']) {
             return '';
+        }
+
+        if (!$modified_docblock) {
+            return (string)$docblock . "\n" . $this->indentation;
         }
 
         return DocComment::render($parsed_docblock, $this->indentation);
