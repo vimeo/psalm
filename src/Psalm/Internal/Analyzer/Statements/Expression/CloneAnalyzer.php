@@ -2,11 +2,13 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidClone;
+use Psalm\Issue\PossiblyInvalidClone;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -21,6 +23,7 @@ class CloneAnalyzer
         PhpParser\Node\Expr\Clone_ $stmt,
         Context $context
     ) : bool {
+        $codebase_methods = $statements_analyzer->getCodebase()->methods;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
@@ -32,12 +35,43 @@ class CloneAnalyzer
 
             $immutable_cloned = false;
 
-            foreach ($clone_type->getAtomicTypes() as $clone_type_part) {
-                if (!$clone_type_part instanceof TNamedObject
-                    && !$clone_type_part instanceof TObject
-                    && !$clone_type_part instanceof TMixed
-                    && !$clone_type_part instanceof TTemplateParam
+            $invalid_clones = [];
+            $possibly_valid = false;
+            $atomic_types = $clone_type->getAtomicTypes();
+
+            while ($atomic_types) {
+                $clone_type_part = \array_pop($atomic_types);
+
+                if ($clone_type_part instanceof TMixed ||
+                    $clone_type_part instanceof TObject
                 ) {
+                    $invalid_clones[] = $clone_type_part->getId();
+                    $possibly_valid = true;
+                } elseif ($clone_type_part instanceof TNamedObject) {
+                    $clone_method_id = new \Psalm\Internal\MethodIdentifier(
+                        $clone_type_part->value,
+                        '__clone'
+                    );
+
+                    $does_method_exist = $codebase_methods->methodExists(
+                        $clone_method_id,
+                        $context->calling_method_id,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    );
+                    $is_method_visible = MethodAnalyzer::isMethodVisible(
+                        $clone_method_id,
+                        $context,
+                        $statements_analyzer->getSource()
+                    );
+                    if ($does_method_exist && !$is_method_visible) {
+                        $invalid_clones[] = $clone_type_part->getId();
+                    } else {
+                        $possibly_valid = true;
+                        $immutable_cloned = true;
+                    }
+                } elseif ($clone_type_part instanceof TTemplateParam) {
+                    $atomic_types = array_merge($atomic_types, $clone_type_part->as->getAtomicTypes());
+                } else {
                     if ($clone_type_part instanceof Type\Atomic\TFalse
                         && $clone_type->ignore_falsable_issues
                     ) {
@@ -50,22 +84,34 @@ class CloneAnalyzer
                         continue;
                     }
 
+                    $invalid_clones[] = $clone_type_part->getId();
+                }
+            }
+
+            if ($invalid_clones) {
+                if ($possibly_valid) {
                     if (IssueBuffer::accepts(
-                        new InvalidClone(
-                            'Cannot clone ' . $clone_type_part,
+                        new PossiblyInvalidClone(
+                            'Cannot clone ' . $invalid_clones[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
-
-                    return true;
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidClone(
+                            'Cannot clone ' . $invalid_clones[0],
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
 
-                if ($clone_type_part instanceof TNamedObject) {
-                    $immutable_cloned = true;
-                }
+                return true;
             }
 
             $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);

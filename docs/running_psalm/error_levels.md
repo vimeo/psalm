@@ -147,6 +147,7 @@ These issues are treated as errors at level 3 and below.
  - [PossiblyInvalidArrayAssignment](issues/PossiblyInvalidArrayAssignment.md)
  - [PossiblyInvalidArrayOffset](issues/PossiblyInvalidArrayOffset.md)
  - [PossiblyInvalidCast](issues/PossiblyInvalidCast.md)
+ - [PossiblyInvalidClone](issues/PossiblyInvalidClone.md)
  - [PossiblyInvalidFunctionCall](issues/PossiblyInvalidFunctionCall.md)
  - [PossiblyInvalidIterator](issues/PossiblyInvalidIterator.md)
  - [PossiblyInvalidMethodCall](issues/PossiblyInvalidMethodCall.md)
