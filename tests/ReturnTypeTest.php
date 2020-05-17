@@ -721,6 +721,22 @@ class ReturnTypeTest extends TestCase
                     '$res' => 'iterable<mixed, string>',
                 ],
             ],
+            'infersArrowClosureReturnTypes' => [
+                '<?php
+                    /**
+                     * @param Closure(int, int): bool $op
+                     * @return Closure(int): bool
+                     */
+                    function reflexive(Closure $op): Closure {
+                        return fn ($x) => $op($x, $x) === true;
+                    }
+
+                    $res = reflexive(fn(int $a, int $b): bool => $a === $b);
+                ',
+                'assertions' => [
+                    '$res' => 'Closure(int):bool',
+                ],
+            ],
             'infersClosureReturnTypesWithPartialTypehinting' => [
                 '<?php
                     /**
