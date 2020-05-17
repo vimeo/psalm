@@ -35,10 +35,11 @@ class CloneAnalyzer
 
             $immutable_cloned = false;
 
+            $types = [];
             $invalid_clones = [];
             $possibly_valid = false;
             $atomic_types = $clone_type->getAtomicTypes();
-
+            
             while ($atomic_types) {
                 $clone_type_part = \array_pop($atomic_types);
 
