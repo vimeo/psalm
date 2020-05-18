@@ -129,7 +129,9 @@ class ReturnAnalyzer
         if ($stmt->expr) {
             $context->inside_call = true;
 
-            if (ClosureAnalyzer::isExprClosureLike($stmt->expr)) {
+            if ($stmt->expr instanceof PhpParser\Node\Expr\Closure
+                || $stmt->expr instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
                 self::potentiallyInferTypesOnClosureFromParentReturnType(
                     $statements_analyzer,
                     $stmt->expr,
