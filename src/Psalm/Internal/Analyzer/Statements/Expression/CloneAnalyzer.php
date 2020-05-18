@@ -69,7 +69,7 @@ class CloneAnalyzer
                         $immutable_cloned = true;
                     }
                 } elseif ($clone_type_part instanceof TTemplateParam) {
-                    $atomic_types = array_merge($atomic_types, $clone_type_part->as->getAtomicTypes());
+                    $atomic_types = \array_merge($atomic_types, $clone_type_part->as->getAtomicTypes());
                 } else {
                     if ($clone_type_part instanceof Type\Atomic\TFalse
                         && $clone_type->ignore_falsable_issues
