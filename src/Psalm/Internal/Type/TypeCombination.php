@@ -1115,7 +1115,6 @@ class TypeCombination
 
                     if (isset($combination->value_types['string'])
                         && $combination->value_types['string'] instanceof Type\Atomic\TNumericString
-                        && $type instanceof TLiteralString
                         && \is_numeric($type->value)
                     ) {
                         // do nothing
