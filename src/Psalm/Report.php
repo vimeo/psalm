@@ -51,6 +51,9 @@ abstract class Report
     /** @var bool */
     protected $show_info;
 
+    /** @var bool */
+    protected $pretty;
+
     /** @var int */
     protected $mixed_expression_count;
 
@@ -86,6 +89,7 @@ abstract class Report
         $this->use_color = $report_options->use_color;
         $this->show_snippet = $report_options->show_snippet;
         $this->show_info = $report_options->show_info;
+        $this->pretty = $report_options->pretty;
 
         $this->mixed_expression_count = $mixed_expression_count;
         $this->total_expression_count = $total_expression_count;
