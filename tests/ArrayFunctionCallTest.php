@@ -570,7 +570,35 @@ class ArrayFunctionCallTest extends TestCase
                 '<?php
                     $foo = array_sum([]) + 1;',
                 'assertions' => [
+                    '$foo' => 'int',
+                ],
+            ],
+            'arraySumOnlyInt' => [
+                '<?php
+                    $foo = array_sum([5,18]);',
+                'assertions' => [
+                    '$foo' => 'int',
+                ],
+            ],
+            'arraySumOnlyFloat' => [
+                '<?php
+                    $foo = array_sum([5.1,18.2]);',
+                'assertions' => [
+                    '$foo' => 'float',
+                ],
+            ],
+            'arraySumNumeric' => [
+                '<?php
+                    $foo = array_sum(["5","18"]);',
+                'assertions' => [
                     '$foo' => 'float|int',
+                ],
+            ],
+            'arraySumMix' => [
+                '<?php
+                    $foo = array_sum([5,18.5]);',
+                'assertions' => [
+                    '$foo' => 'float',
                 ],
             ],
             'arrayMapWithArrayAndCallable' => [

@@ -469,3 +469,17 @@ function strtolower(string $str) : string {}
  * )
  */
 function implode($glue, array $pieces = []) : string {}
+
+/**
+ * @param array $input
+ *
+ * @return (
+ *     $input is array<int> 
+ *     ? int 
+ *     : ($input is array<float>
+ *         ? float
+ *         : float|int
+ *     )
+ * )
+ */
+function array_sum(array $input) {}
