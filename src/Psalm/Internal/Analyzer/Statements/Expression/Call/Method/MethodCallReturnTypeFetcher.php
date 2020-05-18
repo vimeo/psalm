@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
+namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;

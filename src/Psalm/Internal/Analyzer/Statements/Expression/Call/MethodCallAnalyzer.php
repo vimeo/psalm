@@ -164,11 +164,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $lhs_types = $class_type->getAtomicTypes();
 
-        $result = new AtomicMethodCallAnalysisResult();
+        $result = new Method\AtomicMethodCallAnalysisResult();
 
         $possible_new_class_types = [];
         foreach ($lhs_types as $lhs_type_part) {
-            AtomicMethodCallAnalyzer::analyze(
+            Method\AtomicMethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $codebase,

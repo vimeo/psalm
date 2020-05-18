@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
+namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
