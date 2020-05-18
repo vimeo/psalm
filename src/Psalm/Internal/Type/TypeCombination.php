@@ -1113,7 +1113,13 @@ class TypeCombination
 
                     $combination->strings = null;
 
-                    if (isset($combination->value_types['class-string'])
+                    if (isset($combination->value_types['string'])
+                        && $combination->value_types['string'] instanceof Type\Atomic\TNumericString
+                        && $type instanceof TLiteralString
+                        && \is_numeric($type->value)
+                    ) {
+                        // do nothing
+                    } elseif (isset($combination->value_types['class-string'])
                         && $type instanceof TLiteralClassString
                     ) {
                         // do nothing
@@ -1140,26 +1146,45 @@ class TypeCombination
 
                 if (!isset($combination->value_types['string'])) {
                     if ($combination->strings) {
-                        $has_non_literal_class_string = false;
+                        if ($type instanceof Type\Atomic\TNumericString) {
+                            $has_non_numeric_string = false;
 
-                        $shared_classlikes = $codebase ? $combination->getSharedTypes($codebase) : [];
-
-                        foreach ($combination->strings as $string_type) {
-                            if (!$string_type instanceof TLiteralClassString) {
-                                $has_non_literal_class_string = true;
-                                break;
+                            foreach ($combination->strings as $string_type) {
+                                if (!\is_numeric($string_type->value)) {
+                                    $has_non_numeric_string = true;
+                                    break;
+                                }
                             }
-                        }
 
-                        if ($has_non_literal_class_string ||
-                            !$type instanceof TClassString
-                        ) {
-                            $combination->value_types[$type_key] = new TString();
-                        } else {
-                            if (isset($shared_classlikes[$type->as]) && $type->as_type) {
-                                $combination->class_string_types[$type->as] = $type->as_type;
+                            if ($has_non_numeric_string) {
+                                $combination->value_types['string'] = new TString();
                             } else {
-                                $combination->class_string_types['object'] = new TObject();
+                                $combination->value_types['string'] = $type;
+                            }
+
+                            $combination->strings = null;
+                        } else {
+                            $has_non_literal_class_string = false;
+
+                            $shared_classlikes = $codebase ? $combination->getSharedTypes($codebase) : [];
+
+                            foreach ($combination->strings as $string_type) {
+                                if (!$string_type instanceof TLiteralClassString) {
+                                    $has_non_literal_class_string = true;
+                                    break;
+                                }
+                            }
+
+                            if ($has_non_literal_class_string ||
+                                !$type instanceof TClassString
+                            ) {
+                                $combination->value_types[$type_key] = new TString();
+                            } else {
+                                if (isset($shared_classlikes[$type->as]) && $type->as_type) {
+                                    $combination->class_string_types[$type->as] = $type->as_type;
+                                } else {
+                                    $combination->class_string_types['object'] = new TObject();
+                                }
                             }
                         }
                     } else {

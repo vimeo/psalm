@@ -550,6 +550,20 @@ class TypeCombinationTest extends TestCase
                     'array<array-key, mixed>',
                 ],
             ],
+            'combineNumericStringWithLiteralString' => [
+                'numeric-string',
+                [
+                    'numeric-string',
+                    '"1"',
+                ],
+            ],
+            'combineLiteralStringWithNumericString' => [
+                'numeric-string',
+                [
+                    '"1"',
+                    'numeric-string',
+                ],
+            ],
         ];
     }
 
