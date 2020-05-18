@@ -13,9 +13,6 @@ use const JSON_UNESCAPED_UNICODE;
  */
 class Json
 {
-    /**
-     * @var int
-     */
     public const PRETTY = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
 
     /**
@@ -31,7 +28,7 @@ class Json
     public static function encode($data, ?int $options = null): string
     {
         if ($options === null) {
-            $options = static::DEFAULT;
+            $options = self::DEFAULT;
         }
 
         $result = json_encode($data, $options);
