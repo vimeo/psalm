@@ -693,6 +693,24 @@ class ValueTest extends TestCase
                         return 5;
                     }',
             ],
+            'numericStringCastFromInt' => [
+                '<?php
+                    /**
+                     * @return numeric-string
+                     */
+                    function makeNumStringFromInt(int $v) {
+                        return (string) $v;
+                    }',
+            ],
+            'numericStringCastFromFloat' => [
+                '<?php
+                    /**
+                     * @return numeric-string
+                     */
+                    function makeNumStringFromFloat(float $v) {
+                        return (string) $v;
+                    }'
+                ],
         ];
     }
 

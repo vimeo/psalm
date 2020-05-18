@@ -718,7 +718,7 @@ class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res' => 'iterable<mixed, string>',
+                    '$res' => 'iterable<mixed, numeric-string>',
                 ],
             ],
             'infersArrowClosureReturnTypes' => [
@@ -756,7 +756,7 @@ class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res' => 'iterable<mixed, string>',
+                    '$res' => 'iterable<mixed, numeric-string>',
                 ],
             ],
             'infersCallableReturnTypes' => [
@@ -778,7 +778,7 @@ class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res' => 'iterable<mixed, string>',
+                    '$res' => 'iterable<mixed, numeric-string>',
                 ],
             ],
             'infersCallableReturnTypesWithPartialTypehinting' => [
@@ -800,7 +800,7 @@ class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res' => 'iterable<mixed, string>',
+                    '$res' => 'iterable<mixed, numeric-string>',
                 ],
             ],
             'mixedAssignmentWithUnderscore' => [
