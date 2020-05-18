@@ -20,23 +20,16 @@ use function count;
  */
 class ArrayAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Expr\Array_  $stmt
-     * @param   Context                     $context
-     *
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Array_ $stmt,
         Context $context
-    ) {
+    ) : bool {
         // if the array is empty, this special type allows us to match any other array type against it
         if (empty($stmt->items)) {
             $statements_analyzer->node_data->setType($stmt, Type::getEmptyArray());
 
-            return null;
+            return true;
         }
 
         $item_key_atomic_types = [];
@@ -223,7 +216,7 @@ class ArrayAnalyzer
             }
 
             if ($item->byRef) {
-                $var_id = ExpressionAnalyzer::getArrayVarId(
+                $var_id = ExpressionIdentifier::getArrayVarId(
                     $item->value,
                     $statements_analyzer->getFQCLN(),
                     $statements_analyzer
@@ -314,7 +307,7 @@ class ArrayAnalyzer
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-            return null;
+            return true;
         }
 
         if ($all_list) {
@@ -335,7 +328,7 @@ class ArrayAnalyzer
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-            return null;
+            return true;
         }
 
         $array_type = new Type\Atomic\TNonEmptyArray([
@@ -359,6 +352,6 @@ class ArrayAnalyzer
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-        return null;
+        return true;
     }
 }

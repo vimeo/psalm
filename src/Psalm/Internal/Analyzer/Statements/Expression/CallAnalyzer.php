@@ -261,8 +261,6 @@ class CallAnalyzer
      * @param  Context                          $context
      * @param  CodeLocation                     $code_location
      * @param  StatementsAnalyzer               $statements_analyzer
-     *
-     * @return false|null
      */
     protected static function checkMethodArgs(
         ?\Psalm\Internal\MethodIdentifier $method_id,
@@ -271,7 +269,7 @@ class CallAnalyzer
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer
-    ) {
+    ) : bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $method_params = $method_id
@@ -290,7 +288,7 @@ class CallAnalyzer
         }
 
         if (!$method_id || $method_params === null) {
-            return;
+            return true;
         }
 
         $fq_class_name = $method_id->fq_class_name;
@@ -361,7 +359,7 @@ class CallAnalyzer
             );
         }
 
-        return null;
+        return true;
     }
 
     /**
@@ -634,7 +632,7 @@ class CallAnalyzer
                         || $arg->value instanceof PhpParser\Node\Expr\PreInc
                         || $arg->value instanceof PhpParser\Node\Expr\PreDec)
                 ) {
-                    $var_id = ExpressionAnalyzer::getVarId(
+                    $var_id = ExpressionIdentifier::getVarId(
                         $arg->value->var,
                         $statements_analyzer->getFQCLN(),
                         $statements_analyzer
@@ -708,7 +706,7 @@ class CallAnalyzer
         ) {
             $var_id = '$' . $arg->value->name->name;
         } else {
-            $var_id = ExpressionAnalyzer::getVarId(
+            $var_id = ExpressionIdentifier::getVarId(
                 $arg->value,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer
@@ -783,7 +781,7 @@ class CallAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context
     ) {
-        $var_id = ExpressionAnalyzer::getVarId(
+        $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -857,7 +855,7 @@ class CallAnalyzer
 
                 $by_ref_type = new Type\Union([clone $array_type]);
 
-                ExpressionAnalyzer::assignByRefParam(
+                AssignmentAnalyzer::assignByRefParam(
                     $statements_analyzer,
                     $arg->value,
                     $by_ref_type,
@@ -1004,7 +1002,7 @@ class CallAnalyzer
                 }
             }
 
-            ExpressionAnalyzer::assignByRefParam(
+            AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
                 $array_arg,
                 $by_ref_type,
@@ -1134,7 +1132,7 @@ class CallAnalyzer
 
             $by_ref_type = TypeCombination::combineTypes([$array_type, $replacement_array_type]);
 
-            ExpressionAnalyzer::assignByRefParam(
+            AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
                 $array_arg,
                 $by_ref_type,
@@ -1148,7 +1146,7 @@ class CallAnalyzer
 
         $array_type = Type::getArray();
 
-        ExpressionAnalyzer::assignByRefParam(
+        AssignmentAnalyzer::assignByRefParam(
             $statements_analyzer,
             $array_arg,
             $array_type,
@@ -1166,7 +1164,7 @@ class CallAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context
     ) {
-        $var_id = ExpressionAnalyzer::getVarId(
+        $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -1822,7 +1820,7 @@ class CallAnalyzer
 
             $by_ref_type = $by_ref_type ?: Type::getMixed();
 
-            ExpressionAnalyzer::assignByRefParam(
+            AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
                 $arg->value,
                 $by_ref_type,
@@ -3412,7 +3410,7 @@ class CallAnalyzer
             }
         }
 
-        $var_id = ExpressionAnalyzer::getVarId(
+        $var_id = ExpressionIdentifier::getVarId(
             $input_expr,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -3681,7 +3679,7 @@ class CallAnalyzer
 
                 $arg_value = $args[$assertion->var_id]->value;
 
-                $arg_var_id = ExpressionAnalyzer::getArrayVarId($arg_value, null, $statements_analyzer);
+                $arg_var_id = ExpressionIdentifier::getArrayVarId($arg_value, null, $statements_analyzer);
 
                 if ($arg_var_id) {
                     $assertion_var_id = $arg_var_id;

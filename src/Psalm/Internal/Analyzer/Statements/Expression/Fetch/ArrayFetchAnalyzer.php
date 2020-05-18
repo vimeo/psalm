@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\CodeLocation;
@@ -64,19 +65,12 @@ use Psalm\Internal\Type\TemplateResult;
  */
 class ArrayFetchAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer                   $statements_analyzer
-     * @param   PhpParser\Node\Expr\ArrayDimFetch   $stmt
-     * @param   Context                             $context
-     *
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context
-    ) {
-        $array_var_id = ExpressionAnalyzer::getArrayVarId(
+    ) : bool {
+        $array_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -86,7 +80,7 @@ class ArrayFetchAnalyzer
             return false;
         }
 
-        $keyed_array_var_id = ExpressionAnalyzer::getArrayVarId(
+        $keyed_array_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -98,7 +92,7 @@ class ArrayFetchAnalyzer
         if ($stmt->dim) {
             $used_key_type = $statements_analyzer->node_data->getType($stmt->dim) ?: Type::getMixed();
 
-            $dim_var_id = ExpressionAnalyzer::getArrayVarId(
+            $dim_var_id = ExpressionIdentifier::getArrayVarId(
                 $stmt->dim,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer
@@ -128,7 +122,7 @@ class ArrayFetchAnalyzer
                 clone $context->vars_in_scope[$keyed_array_var_id]
             );
 
-            return;
+            return true;
         }
 
         $can_store_result = false;
@@ -158,7 +152,7 @@ class ArrayFetchAnalyzer
                     $statements_analyzer->node_data->setType($stmt, Type::getNull());
                 }
 
-                return;
+                return true;
             }
 
             $stmt_type = self::getArrayAccessTypeGivenOffset(
@@ -319,7 +313,7 @@ class ArrayFetchAnalyzer
             }
         }
 
-        return null;
+        return true;
     }
 
     /**

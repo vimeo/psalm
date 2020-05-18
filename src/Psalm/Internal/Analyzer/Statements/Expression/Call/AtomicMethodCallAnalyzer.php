@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
@@ -703,7 +704,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             if ($method_storage->assertions) {
                 self::applyAssertionsToContext(
                     $stmt->name,
-                    ExpressionAnalyzer::getArrayVarId($stmt->var, null, $statements_analyzer),
+                    ExpressionIdentifier::getArrayVarId($stmt->var, null, $statements_analyzer),
                     $method_storage->assertions,
                     $args,
                     $class_template_params,

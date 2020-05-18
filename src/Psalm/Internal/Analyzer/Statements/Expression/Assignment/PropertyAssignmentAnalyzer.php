@@ -7,6 +7,7 @@ use PhpParser\Node\Stmt\PropertyProperty;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\PropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
@@ -15,7 +16,6 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
-use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
@@ -124,13 +124,13 @@ class PropertyAssignmentAnalyzer
                 return null;
             }
 
-            $lhs_var_id = ExpressionAnalyzer::getVarId(
+            $lhs_var_id = ExpressionIdentifier::getVarId(
                 $stmt->var,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer
             );
 
-            $var_id = ExpressionAnalyzer::getVarId(
+            $var_id = ExpressionIdentifier::getVarId(
                 $stmt,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer
@@ -1128,7 +1128,7 @@ class PropertyAssignmentAnalyzer
         Type\Union $assignment_value_type,
         Context $context
     ) {
-        $var_id = ExpressionAnalyzer::getArrayVarId(
+        $var_id = ExpressionIdentifier::getArrayVarId(
             $stmt,
             $context->self,
             $statements_analyzer

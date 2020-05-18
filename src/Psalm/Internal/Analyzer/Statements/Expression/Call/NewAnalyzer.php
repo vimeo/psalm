@@ -32,18 +32,11 @@ use function is_string;
  */
 class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Expr\New_    $stmt
-     * @param   Context                     $context
-     *
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context
-    ) {
+    ) : bool {
         $fq_class_name = null;
 
         $codebase = $statements_analyzer->getCodebase();
@@ -296,7 +289,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $context
                     );
 
-                    return null;
+                    return true;
                 }
             } else {
                 self::checkFunctionArguments(
@@ -307,7 +300,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $context
                 );
 
-                return null;
+                return true;
             }
         }
 
@@ -335,7 +328,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $context
                     );
 
-                    return null;
+                    return true;
                 }
 
                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
@@ -355,7 +348,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $context
                     );
 
-                    return;
+                    return true;
                 }
 
                 if ($codebase->interfaceExists($fq_class_name)) {
@@ -368,7 +361,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     )) {
                     }
 
-                    return null;
+                    return true;
                 }
             }
 
@@ -398,7 +391,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return;
+                        return true;
                     }
                 }
 
@@ -590,7 +583,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             $context->removeAllObjectVars();
         }
 
-        return null;
+        return true;
     }
 
     /**

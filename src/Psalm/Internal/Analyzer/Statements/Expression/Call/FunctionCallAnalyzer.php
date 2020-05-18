@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\FunctionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
@@ -15,7 +16,6 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
-use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\NullFunctionCall;
@@ -54,18 +54,11 @@ use function explode;
  */
 class FunctionCallAnalyzer extends CallAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\FuncCall    $stmt
-     * @param   Context                         $context
-     *
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context
-    ) {
+    ) : bool {
         $function_name = $stmt->name;
 
         $function_id = null;
@@ -128,7 +121,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             );
 
             if ($expr_function_exists === false) {
-                return;
+                return true;
             }
 
             if ($expr_function_exists === true) {
@@ -218,7 +211,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             // fall through
                         }
 
-                        return;
+                        return true;
                     }
                 }
             } else {
@@ -522,7 +515,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $statements_analyzer->node_data->setType($real_stmt, Type::getMixed());
         }
 
-        return null;
+        return true;
     }
 
     /**
@@ -1247,7 +1240,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
         } elseif ($function_name->parts === ['file_exists'] && $first_arg) {
-            $var_id = ExpressionAnalyzer::getArrayVarId($first_arg->value, null);
+            $var_id = ExpressionIdentifier::getArrayVarId($first_arg->value, null);
 
             if ($var_id) {
                 $context->phantom_files[$var_id] = true;

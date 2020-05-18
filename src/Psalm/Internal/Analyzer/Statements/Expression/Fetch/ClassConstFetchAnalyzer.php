@@ -26,18 +26,11 @@ use function explode;
  */
 class ClassConstFetchAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer                   $statements_analyzer
-     * @param   PhpParser\Node\Expr\ClassConstFetch $stmt
-     * @param   Context                             $context
-     *
-     * @return  null|false
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
         Context $context
-    ) {
+    ) : bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
@@ -55,7 +48,7 @@ class ClassConstFetchAnalyzer
                         return false;
                     }
 
-                    return;
+                    return true;
                 }
 
                 $fq_class_name = $context->self;
@@ -73,7 +66,7 @@ class ClassConstFetchAnalyzer
                         return false;
                     }
 
-                    return;
+                    return true;
                 }
             } else {
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
@@ -95,7 +88,7 @@ class ClassConstFetchAnalyzer
                             false,
                             true
                         ) === false) {
-                            return;
+                            return true;
                         }
                     }
                 }
@@ -162,14 +155,14 @@ class ClassConstFetchAnalyzer
                     );
                 }
 
-                return null;
+                return true;
             }
 
             // if we're ignoring that the class doesn't exist, exit anyway
             if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
-                return null;
+                return true;
             }
 
             if ($codebase->store_node_types
@@ -184,7 +177,7 @@ class ClassConstFetchAnalyzer
             }
 
             if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-                return;
+                return true;
             }
 
             $const_id = $fq_class_name . '::' . $stmt->name;
@@ -224,7 +217,7 @@ class ClassConstFetchAnalyzer
                     $statements_analyzer
                 );
             } catch (\InvalidArgumentException $_) {
-                return;
+                return true;
             } catch (\Psalm\Exception\CircularReferenceException $e) {
                 if (IssueBuffer::accepts(
                     new CircularReference(
@@ -236,7 +229,7 @@ class ClassConstFetchAnalyzer
                     // fall through
                 }
 
-                return;
+                return true;
             }
 
             if (!$class_constant_type) {
@@ -271,7 +264,7 @@ class ClassConstFetchAnalyzer
                     }
                 }
 
-                return;
+                return true;
             }
 
             if ($context->calling_method_id) {
@@ -348,7 +341,7 @@ class ClassConstFetchAnalyzer
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
 
-            return null;
+            return true;
         }
 
         if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
@@ -382,7 +375,7 @@ class ClassConstFetchAnalyzer
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
 
-            return;
+            return true;
         }
 
         $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -391,6 +384,6 @@ class ClassConstFetchAnalyzer
             return false;
         }
 
-        return null;
+        return true;
     }
 }

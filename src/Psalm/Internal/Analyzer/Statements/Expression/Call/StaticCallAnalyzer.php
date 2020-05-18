@@ -40,18 +40,11 @@ use Psalm\Internal\Taint\Source;
  */
 class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\StaticCall  $stmt
-     * @param   Context                         $context
-     *
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context
-    ) {
+    ) : bool {
         $method_id = null;
         $cased_method_id = null;
 
@@ -89,7 +82,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             return false;
                         }
 
-                        return;
+                        return true;
                     }
 
                     $fq_class_name = $class_storage->parent_class;
@@ -115,11 +108,11 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         return false;
                     }
 
-                    return;
+                    return true;
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
-                    return null;
+                    return true;
                 }
             } elseif ($context->check_classes) {
                 $aliases = $statements_analyzer->getAliases();
@@ -139,7 +132,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {
-                    return null;
+                    return true;
                 }
 
                 $does_class_exist = false;
@@ -176,7 +169,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if (!$does_class_exist) {
-                    return $does_class_exist;
+                    return $does_class_exist !== false;
                 }
             }
 
@@ -211,7 +204,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 return false;
             }
 
-            return null;
+            return true;
         }
 
         $has_mock = false;
@@ -491,7 +484,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             }
 
                             if ($pseudo_method_storage->return_type) {
-                                return;
+                                return true;
                             }
                         } else {
                             if (self::checkFunctionArguments(
@@ -544,7 +537,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
 
                         if ($pseudo_method_storage->return_type) {
-                            return;
+                            return true;
                         }
                     }
 
@@ -559,7 +552,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             return false;
                         }
 
-                        return null;
+                        return true;
                     }
                 }
 
@@ -592,7 +585,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         );
                     }
 
-                    return;
+                    return true;
                 }
 
                 $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
@@ -615,7 +608,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             //
                         }
 
-                        return;
+                        return true;
                     }
 
                     $appearing_method_class_name = $appearing_method_id->fq_class_name;
@@ -781,7 +774,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
                         }
 
-                        return null;
+                        return true;
                     }
                 }
 
@@ -1022,7 +1015,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             // fall through
                         }
 
-                        return;
+                        return true;
                     }
 
                     if (!$context->inside_throw) {
@@ -1273,6 +1266,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if (!$statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         }
+
+        return true;
     }
 
     /**

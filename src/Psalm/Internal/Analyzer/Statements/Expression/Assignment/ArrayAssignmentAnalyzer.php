@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -46,7 +47,7 @@ class ArrayAssignmentAnalyzer
         Type\Union $assignment_value_type
     ) {
         $nesting = 0;
-        $var_id = ExpressionAnalyzer::getVarId(
+        $var_id = ExpressionIdentifier::getVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
@@ -134,7 +135,7 @@ class ArrayAssignmentAnalyzer
         $reversed_child_stmts = [];
 
         // gets a variable id that *may* contain array keys
-        $root_var_id = ExpressionAnalyzer::getRootVarId(
+        $root_var_id = ExpressionIdentifier::getArrayVarId(
             $root_array_expr,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -218,7 +219,7 @@ class ArrayAssignmentAnalyzer
                 } elseif ($child_stmt->dim instanceof PhpParser\Node\Expr\PropertyFetch
                     && $child_stmt->dim->name instanceof PhpParser\Node\Identifier
                 ) {
-                    $object_id = ExpressionAnalyzer::getArrayVarId(
+                    $object_id = ExpressionIdentifier::getArrayVarId(
                         $child_stmt->dim->var,
                         $statements_analyzer->getFQCLN(),
                         $statements_analyzer

@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -50,7 +51,7 @@ class SwitchAnalyzer
         }
         $context->inside_conditional = false;
 
-        $switch_var_id = ExpressionAnalyzer::getArrayVarId(
+        $switch_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->cond,
             null,
             $statements_analyzer

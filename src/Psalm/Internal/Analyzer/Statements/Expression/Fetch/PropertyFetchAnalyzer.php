@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TemplateResult;
@@ -39,7 +40,6 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use function strtolower;
 use function array_values;
 use function in_array;
-use function array_reverse;
 use function array_keys;
 use function count;
 use function explode;
@@ -50,18 +50,11 @@ use Psalm\Internal\Taint\Source;
  */
 class PropertyFetchAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer                   $statements_analyzer
-     * @param   PhpParser\Node\Expr\PropertyFetch   $stmt
-     * @param   Context                             $context
-     *
-     * @return  false|null
-     */
     public static function analyzeInstance(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context
-    ) {
+    ) : bool {
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 return false;
@@ -84,13 +77,13 @@ class PropertyFetchAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $stmt_var_id = ExpressionAnalyzer::getArrayVarId(
+        $stmt_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
         );
 
-        $var_id = ExpressionAnalyzer::getArrayVarId(
+        $var_id = ExpressionIdentifier::getArrayVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -214,7 +207,7 @@ class PropertyFetchAnalyzer
                 }
             }
 
-            return null;
+            return true;
         }
 
         if ($stmt_var_id && $context->hasVariable($stmt_var_id, $statements_analyzer)) {
@@ -224,7 +217,7 @@ class PropertyFetchAnalyzer
         }
 
         if (!$stmt_var_type) {
-            return null;
+            return true;
         }
 
         if ($stmt_var_type->isNull()) {
@@ -238,7 +231,7 @@ class PropertyFetchAnalyzer
                 return false;
             }
 
-            return null;
+            return true;
         }
 
         if ($stmt_var_type->isEmpty()) {
@@ -252,7 +245,7 @@ class PropertyFetchAnalyzer
                 return false;
             }
 
-            return null;
+            return true;
         }
 
         if ($stmt_var_type->hasMixed()) {
@@ -335,7 +328,7 @@ class PropertyFetchAnalyzer
                 }
             }
 
-            return null;
+            return true;
         }
 
         $invalid_fetch_types = [];
@@ -448,11 +441,11 @@ class PropertyFetchAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return null;
+                            return true;
                         }
 
                         if (!$codebase->methodExists($fq_class_name . '::__set')) {
-                            return null;
+                            return true;
                         }
                     }
                 }
@@ -482,7 +475,7 @@ class PropertyFetchAnalyzer
                         }
                     }
 
-                    return null;
+                    return true;
                 }
             } else {
                 $class_exists = true;
@@ -685,7 +678,7 @@ class PropertyFetchAnalyzer
                     $property_id = $context->self . '::$' . $prop_name;
                 } else {
                     if ($context->inside_isset || $context->collect_initializations) {
-                        return;
+                        return true;
                     }
 
                     if ($stmt_var_id === '$this') {
@@ -733,7 +726,7 @@ class PropertyFetchAnalyzer
                         $context->vars_in_scope[$var_id] = $stmt_type;
                     }
 
-                    return;
+                    return true;
                 }
             }
 
@@ -960,6 +953,8 @@ class PropertyFetchAnalyzer
         if ($var_id) {
             $context->vars_in_scope[$var_id] = $statements_analyzer->node_data->getType($stmt) ?: Type::getMixed();
         }
+
+        return true;
     }
 
     public static function localizePropertyType(
@@ -1063,19 +1058,17 @@ class PropertyFetchAnalyzer
      * @param   StatementsAnalyzer                       $statements_analyzer
      * @param   PhpParser\Node\Expr\StaticPropertyFetch $stmt
      * @param   Context                                 $context
-     *
-     * @return  null|false
      */
     public static function analyzeStatic(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
-    ) {
+    ) : bool {
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable ||
             $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch
         ) {
             // @todo check this
-            return null;
+            return true;
         }
 
         $fq_class_name = null;
@@ -1100,14 +1093,14 @@ class PropertyFetchAnalyzer
                             return false;
                         }
 
-                        return;
+                        return true;
                     }
                 } else {
                     $fq_class_name = (string)$context->self;
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
-                    return null;
+                    return true;
                 }
             } else {
                 $aliases = $statements_analyzer->getAliases();
@@ -1127,7 +1120,7 @@ class PropertyFetchAnalyzer
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {
-                    return null;
+                    return true;
                 }
 
                 if ($context->check_classes) {
@@ -1187,7 +1180,7 @@ class PropertyFetchAnalyzer
                 );
             }
 
-            return null;
+            return true;
         }
 
         if (!$fq_class_name
@@ -1195,10 +1188,10 @@ class PropertyFetchAnalyzer
             || !$context->check_variables
             || ExpressionAnalyzer::isMock($fq_class_name)
         ) {
-            return null;
+            return true;
         }
 
-        $var_id = ExpressionAnalyzer::getVarId(
+        $var_id = ExpressionIdentifier::getVarId(
             $stmt,
             $context->self ?: $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -1260,7 +1253,7 @@ class PropertyFetchAnalyzer
                 );
             }
 
-            return null;
+            return true;
         }
 
         if (!$codebase->properties->propertyExists(
@@ -1284,7 +1277,7 @@ class PropertyFetchAnalyzer
                 // fall through
             }
 
-            return;
+            return true;
         }
 
         if (ClassLikeAnalyzer::checkPropertyVisibility(
@@ -1385,6 +1378,6 @@ class PropertyFetchAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         }
 
-        return null;
+        return true;
     }
 }

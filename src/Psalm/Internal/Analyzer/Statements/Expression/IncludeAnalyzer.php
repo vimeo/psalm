@@ -37,15 +37,12 @@ use function preg_replace;
  */
 class IncludeAnalyzer
 {
-    /**
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Include_ $stmt,
         Context $context,
         Context $global_context = null
-    ) {
+    ) : bool {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 
@@ -108,7 +105,7 @@ class IncludeAnalyzer
 
             // if the file is already included, we can't check much more
             if (in_array(realpath($path_to_file), get_included_files(), true)) {
-                return null;
+                return true;
             }
 
             $current_file_analyzer = $statements_analyzer->getFileAnalyzer();
@@ -119,7 +116,7 @@ class IncludeAnalyzer
                     || ($statements_analyzer->hasAlreadyRequiredFilePath($path_to_file)
                         && !$codebase->file_storage_provider->get($path_to_file)->has_extra_statements)
                 ) {
-                    return null;
+                    return true;
                 }
 
                 $current_file_analyzer->addRequiredFilePath($path_to_file);
@@ -175,7 +172,7 @@ class IncludeAnalyzer
 
                 $include_file_analyzer->clearSourceBeforeDestruction();
 
-                return null;
+                return true;
             }
 
             $source = $statements_analyzer->getSource();
@@ -190,7 +187,7 @@ class IncludeAnalyzer
                 // fall through
             }
         } else {
-            $var_id = ExpressionAnalyzer::getArrayVarId($stmt->expr, null);
+            $var_id = ExpressionIdentifier::getArrayVarId($stmt->expr, null);
 
             if (!$var_id || !isset($context->phantom_files[$var_id])) {
                 $source = $statements_analyzer->getSource();
@@ -213,7 +210,7 @@ class IncludeAnalyzer
             $context->check_functions = false;
         }
 
-        return null;
+        return true;
     }
 
     /**

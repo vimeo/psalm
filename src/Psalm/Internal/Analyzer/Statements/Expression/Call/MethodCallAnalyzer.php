@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -34,15 +35,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
      * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Expr\MethodCall  $stmt
      * @param   Context                         $context
-     *
-     * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
         bool $real_method_call = true
-    ) {
+    ) : bool {
         $was_inside_call = $context->inside_call;
 
         $context->inside_call = true;
@@ -76,7 +75,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         }
 
-        $lhs_var_id = ExpressionAnalyzer::getArrayVarId(
+        $lhs_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -103,7 +102,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 return false;
             }
 
-            return null;
+            return true;
         }
 
         if ($class_type
@@ -120,7 +119,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 return false;
             }
 
-            return null;
+            return true;
         }
 
         if ($class_type
@@ -270,7 +269,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
             }
 
-            return null;
+            return true;
         }
 
         if ($result->non_existent_interface_method_ids) {
@@ -300,7 +299,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
             }
 
-            return null;
+            return true;
         }
 
         if ($result->too_many_arguments && $result->too_many_arguments_method_ids) {
@@ -404,5 +403,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             $context->vars_in_scope[$lhs_var_id] = $class_type;
         }
+
+        return true;
     }
 }

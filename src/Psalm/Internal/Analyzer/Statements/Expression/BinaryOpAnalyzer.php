@@ -55,21 +55,13 @@ use function strlen;
  */
 class BinaryOpAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\BinaryOp    $stmt
-     * @param   Context                         $context
-     * @param   int                             $nesting
-     *
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
         int $nesting = 0,
         bool $from_stmt = false
-    ) {
+    ) : bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 20) {
@@ -94,7 +86,7 @@ class BinaryOpAnalyzer
                     return false;
                 }
 
-                return null;
+                return true;
             }
 
             $pre_referenced_var_ids = $context->referenced_var_ids;
@@ -290,7 +282,7 @@ class BinaryOpAnalyzer
                     return false;
                 }
 
-                return null;
+                return true;
             }
 
             if (!$stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
@@ -473,7 +465,7 @@ class BinaryOpAnalyzer
                     }
                 }
             } elseif ($stmt->left instanceof PhpParser\Node\Expr\Assign) {
-                $var_id = ExpressionAnalyzer::getVarId($stmt->left->var, $context->self);
+                $var_id = ExpressionIdentifier::getVarId($stmt->left->var, $context->self);
 
                 if ($var_id && isset($left_context->vars_in_scope[$var_id])) {
                     $left_inferred_reconciled = AssertionReconciler::reconcile(
@@ -678,7 +670,7 @@ class BinaryOpAnalyzer
                     && !$naive_type->hasMixed()
                     && !$naive_type->isNullable()
                 ) {
-                    $var_id = ExpressionAnalyzer::getVarId($stmt->left, $context->self);
+                    $var_id = ExpressionIdentifier::getVarId($stmt->left, $context->self);
 
                     if (!$var_id
                         || ($var_id !== '$_SESSION' && $var_id !== '$_SERVER' && !isset($changed_var_ids[$var_id]))
@@ -993,7 +985,7 @@ class BinaryOpAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getInt());
         }
 
-        return null;
+        return true;
     }
 
     private static function hasArrayDimFetch(PhpParser\Node\Expr $expr) : bool

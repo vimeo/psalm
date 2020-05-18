@@ -3,6 +3,7 @@ namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 
 /**
  * @internal
@@ -35,8 +36,8 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     public function enterNode(PhpParser\Node $node)
     {
         if ($node instanceof PhpParser\Node\Expr\Assign) {
-            $left_var_id = ExpressionAnalyzer::getRootVarId($node->var, $this->this_class_name);
-            $right_var_id = ExpressionAnalyzer::getRootVarId($node->expr, $this->this_class_name);
+            $left_var_id = ExpressionIdentifier::getRootVarId($node->var, $this->this_class_name);
+            $right_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
 
             if ($left_var_id) {
                 $this->assignment_map[$left_var_id][$right_var_id ?: 'isset'] = true;
@@ -49,7 +50,7 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             || $node instanceof PhpParser\Node\Expr\PreDec
             || $node instanceof PhpParser\Node\Expr\AssignOp
         ) {
-            $var_id = ExpressionAnalyzer::getRootVarId($node->var, $this->this_class_name);
+            $var_id = ExpressionIdentifier::getRootVarId($node->var, $this->this_class_name);
 
             if ($var_id) {
                 $this->assignment_map[$var_id][$var_id] = true;
@@ -58,7 +59,7 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall) {
             foreach ($node->args as $arg) {
-                $arg_var_id = ExpressionAnalyzer::getRootVarId($arg->value, $this->this_class_name);
+                $arg_var_id = ExpressionIdentifier::getRootVarId($arg->value, $this->this_class_name);
 
                 if ($arg_var_id) {
                     $this->assignment_map[$arg_var_id][$arg_var_id] = true;
@@ -66,7 +67,7 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Unset_) {
             foreach ($node->vars as $arg) {
-                $arg_var_id = ExpressionAnalyzer::getRootVarId($arg, $this->this_class_name);
+                $arg_var_id = ExpressionIdentifier::getRootVarId($arg, $this->this_class_name);
 
                 if ($arg_var_id) {
                     $this->assignment_map[$arg_var_id][$arg_var_id] = true;

@@ -25,18 +25,11 @@ use function array_intersect_key;
  */
 class TernaryAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Expr\Ternary $stmt
-     * @param   Context                     $context
-     *
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Ternary $stmt,
         Context $context
-    ) {
+    ) : bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $if_scope = new \Psalm\Internal\Scope\IfScope();
@@ -271,6 +264,6 @@ class TernaryAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         }
 
-        return null;
+        return true;
     }
 }

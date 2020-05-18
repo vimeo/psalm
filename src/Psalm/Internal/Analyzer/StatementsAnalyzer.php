@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\PropertyAssignmentA
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
@@ -1393,7 +1394,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         foreach ($stmt->vars as $var) {
             ExpressionAnalyzer::analyze($this, $var, $context);
 
-            $var_id = ExpressionAnalyzer::getArrayVarId(
+            $var_id = ExpressionIdentifier::getArrayVarId(
                 $var,
                 $this->getFQCLN(),
                 $this
@@ -1404,7 +1405,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
 
             if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch && $var->dim) {
-                $root_var_id = ExpressionAnalyzer::getArrayVarId(
+                $root_var_id = ExpressionIdentifier::getArrayVarId(
                     $var->var,
                     $this->getFQCLN(),
                     $this
