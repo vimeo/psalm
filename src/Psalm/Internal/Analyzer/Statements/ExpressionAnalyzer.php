@@ -1707,6 +1707,16 @@ class ExpressionAnalyzer
         while ($atomic_types) {
             $atomic_type = \array_pop($atomic_types);
 
+            if (
+                $atomic_type instanceof TFloat
+                || $atomic_type instanceof TInt
+                || $atomic_type instanceof Type\Atomic\TNumeric
+                || $atomic_type instanceof Type\Atomic\TNumericString
+            ) {
+                $castable_types[] = new Type\Atomic\TNumericString();
+                continue;
+            }
+
             if ($atomic_type instanceof TString) {
                 $valid_strings[] = $atomic_type;
                 continue;
