@@ -308,7 +308,14 @@ class AssertionFinder
 
             if ($typed_value_position) {
                 if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    $var_name = null;
+                    /** @var PhpParser\Node\Expr $conditional->left */
+                    $var_name = ExpressionAnalyzer::getArrayVarId(
+                        $conditional->left,
+                        $this_class_name,
+                        $source
+                    );
+
+                    $expr = $conditional->right;
                 } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
                     /** @var PhpParser\Node\Expr $conditional->left */
                     $var_name = ExpressionAnalyzer::getArrayVarId(
@@ -316,11 +323,21 @@ class AssertionFinder
                         $this_class_name,
                         $source
                     );
+
+                    $expr = $conditional->left;
                 } else {
                     throw new \UnexpectedValueException('$typed_value_position value');
                 }
 
-                if ($var_name) {
+                $expr_type = $source instanceof StatementsAnalyzer
+                    ? $source->node_data->getType($expr)
+                    : null;
+
+                if ($var_name
+                    && $expr_type
+                    && $expr_type->isSingleIntLiteral()
+                    && ($expr_type->getSingleIntLiteral()->value === 0)
+                ) {
                     $if_types[$var_name] = [['=isset']];
                 }
 
