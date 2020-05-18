@@ -14,9 +14,12 @@ use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Internal\Type\TypeCombination;
@@ -200,7 +203,6 @@ class CastAnalyzer
             if ($atomic_type instanceof TFloat
                 || $atomic_type instanceof TInt
                 || $atomic_type instanceof Type\Atomic\TNumeric
-                || $atomic_type instanceof Type\Atomic\TNumericString
             ) {
                 $castable_types[] = new Type\Atomic\TNumericString();
                 continue;
