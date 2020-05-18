@@ -101,6 +101,7 @@
  - [MixedArrayOffset](issues/MixedArrayOffset.md)
  - [MixedArrayTypeCoercion](issues/MixedArrayTypeCoercion.md)
  - [MixedAssignment](issues/MixedAssignment.md)
+ - [MixedClone](issues/MixedClone.md)
  - [MixedFunctionCall](issues/MixedFunctionCall.md)
  - [MixedInferredReturnType](issues/MixedInferredReturnType.md)
  - [MixedMethodCall](issues/MixedMethodCall.md)
