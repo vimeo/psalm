@@ -57,12 +57,18 @@ class CloneTest extends TestCase
                     clone $a;',
                 'error_message' => 'InvalidClone',
             ],
+            'possiblyInvalidIntClone' => [
+                '<?php
+                    $a = rand(0, 1) ? 5 : new Exception();
+                    clone $a;',
+                'error_message' => 'PossiblyInvalidClone',
+            ],
             'invalidMixedClone' => [
                 '<?php
                     /** @var mixed $a */
                     $a = 5;
                     clone $a;',
-                'error_message' => 'PossiblyInvalidClone',
+                'error_message' => 'MixedClone',
             ],
             'notVisibleCloneMethod' => [
                 '<?php
@@ -87,13 +93,24 @@ class CloneTest extends TestCase
             'possiblyInvalidGenericClone' => [
                 '<?php
                     /**
-                     * @template T
+                     * @template T as int|Exception
                      * @param T $a
                      */
                     function foo($a): void {
                         clone $a;
                     }',
                 'error_message' => 'PossiblyInvalidClone',
+            ],
+            'mixedGenericClone' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     */
+                    function foo($a): void {
+                        clone $a;
+                    }',
+                'error_message' => 'MixedClone',
             ],
             'mixedTypeInferredIfErrors' => [
                 '<?php

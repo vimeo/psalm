@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidClone;
+use Psalm\Issue\MixedClone;
 use Psalm\Issue\PossiblyInvalidClone;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -36,15 +37,17 @@ class CloneAnalyzer
             $immutable_cloned = false;
 
             $invalid_clones = [];
+            $mixed_clone = false;
+
             $possibly_valid = false;
             $atomic_types = $clone_type->getAtomicTypes();
+
             while ($atomic_types) {
                 $clone_type_part = \array_pop($atomic_types);
 
-                if ($clone_type_part instanceof TMixed ||
-                    $clone_type_part instanceof TObject
-                ) {
-                    $invalid_clones[] = $clone_type_part->getId();
+                if ($clone_type_part instanceof TMixed) {
+                    $mixed_clone = true;
+                } elseif ($clone_type_part instanceof TObject) {
                     $possibly_valid = true;
                 } elseif ($clone_type_part instanceof TNamedObject) {
                     $clone_method_id = new \Psalm\Internal\MethodIdentifier(
@@ -84,6 +87,18 @@ class CloneAnalyzer
                     }
 
                     $invalid_clones[] = $clone_type_part->getId();
+                }
+            }
+
+            if ($mixed_clone) {
+                if (IssueBuffer::accepts(
+                    new MixedClone(
+                        'Cannot clone mixed',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
             }
 
