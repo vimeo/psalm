@@ -32,13 +32,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         parent::__construct($function, $source, $storage);
     }
 
-    /** @pararm PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $expr */
-    public static function isExprClosureLike(PhpParser\Node\Expr $function): bool
-    {
-        return $function instanceof PhpParser\Node\Expr\Closure
-            || $function instanceof PhpParser\Node\Expr\ArrowFunction;
-    }
-
     public function getTemplateTypeMap()
     {
         return $this->source->getTemplateTypeMap();
