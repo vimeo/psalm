@@ -1048,7 +1048,7 @@ class AssignmentAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul
             || $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow
         ) {
-            BinaryOpAnalyzer::analyzeNonDivArithmeticOp(
+            BinaryOp\NonDivArithmeticOpAnalyzer::analyze(
                 $statements_analyzer,
                 $statements_analyzer->node_data,
                 $stmt->var,
@@ -1080,7 +1080,7 @@ class AssignmentAnalyzer
             $context->vars_in_scope[$array_var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
             $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
-            BinaryOpAnalyzer::analyzeConcatOp(
+            BinaryOp\ConcatAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->var,
                 $stmt->expr,
@@ -1102,7 +1102,7 @@ class AssignmentAnalyzer
                 || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight
             )
         ) {
-            BinaryOpAnalyzer::analyzeNonDivArithmeticOp(
+            BinaryOp\NonDivArithmeticOpAnalyzer::analyze(
                 $statements_analyzer,
                 $statements_analyzer->node_data,
                 $stmt->var,

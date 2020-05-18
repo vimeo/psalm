@@ -11,7 +11,7 @@ use Psalm\Internal\Analyzer\Statements\Block\SwitchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\TryAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\WhileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\PropertyAssignmentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonDivArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -1773,7 +1773,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
             ) {
-                BinaryOpAnalyzer::analyzeNonDivArithmeticOp(
+                NonDivArithmeticOpAnalyzer::analyze(
                     $file_source instanceof StatementsSource ? $file_source : null,
                     $nodes,
                     $stmt->left,

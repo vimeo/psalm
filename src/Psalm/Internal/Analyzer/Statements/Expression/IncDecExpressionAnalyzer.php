@@ -42,7 +42,7 @@ class IncDecExpressionAnalyzer
             $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
             $statements_analyzer->node_data->setType($fake_right_expr, Type::getInt());
 
-            BinaryOpAnalyzer::analyzeNonDivArithmeticOp(
+            BinaryOp\NonDivArithmeticOpAnalyzer::analyze(
                 $statements_analyzer,
                 $statements_analyzer->node_data,
                 $stmt->var,
