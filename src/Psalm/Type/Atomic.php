@@ -169,7 +169,7 @@ abstract class Atomic implements TypeNode
                 return new TArray([new Union([new TArrayKey]), new Union([new TMixed])]);
 
             case 'non-empty-array':
-                return new TNonEmptyArray([new Union([new TMixed]), new Union([new TMixed])]);
+                return new TNonEmptyArray([new Union([new TArrayKey]), new Union([new TMixed])]);
 
             case 'callable-array':
                 return new Type\Atomic\TCallableArray([new Union([new TArrayKey]), new Union([new TMixed])]);
