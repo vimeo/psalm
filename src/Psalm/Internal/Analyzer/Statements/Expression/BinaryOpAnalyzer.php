@@ -31,23 +31,31 @@ class BinaryOpAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
-            return BinaryOp\AndAnalyzer::analyze(
+            $expr_result = BinaryOp\AndAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
                 $from_stmt
             );
+
+            $statements_analyzer->node_data->setType($stmt, Type::getBool());
+
+            return $expr_result;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
         ) {
-            return BinaryOp\OrAnalyzer::analyze(
+            $expr_result = BinaryOp\OrAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
                 $from_stmt
             );
+
+            $statements_analyzer->node_data->setType($stmt, Type::getBool());
+
+            return $expr_result;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
@@ -79,12 +87,21 @@ class BinaryOpAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+            $stmt_type = Type::getString();
+
             BinaryOp\ConcatAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->left,
                 $stmt->right,
-                $context
+                $context,
+                $result_type
             );
+
+            if ($result_type) {
+                $stmt_type = $result_type;
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             return true;
         }
