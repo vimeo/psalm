@@ -212,9 +212,15 @@ class CastAnalyzer
                 continue;
             }
 
+            if ($atomic_type instanceof TNull
+                || $atomic_type instanceof TFalse
+            ) {
+                $valid_strings[] = new Typee\Atomic\TLiteralString('');
+                continue;
+            }
+
             if ($atomic_type instanceof TMixed
                 || $atomic_type instanceof Type\Atomic\TResource
-                || $atomic_type instanceof Type\Atomic\TNull
                 || $atomic_type instanceof Type\Atomic\Scalar
             ) {
                 $castable_types[] = new TString();
