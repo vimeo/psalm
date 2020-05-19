@@ -635,6 +635,12 @@ class ParseTree
                         case '::':
                             $nexter_token = $i + 2 < $c ? $type_tokens[$i + 2] : null;
 
+                            if ($current_leaf instanceof ParseTree\ObjectLikeTree) {
+                                throw new TypeParseTreeException(
+                                    'Unexpected :: in array key'
+                                );
+                            }
+
                             if (!$nexter_token
                                 || (!preg_match('/^([a-zA-Z_][a-zA-Z_0-9]*\*?|\*)$/', $nexter_token[0])
                                     && strtolower($nexter_token[0]) !== 'class')

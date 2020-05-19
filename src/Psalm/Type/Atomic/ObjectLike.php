@@ -80,7 +80,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                     return (string) $type;
                 }
 
-                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n]/', $name)) {
+                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
                     $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
                 }
 
@@ -106,7 +106,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                     return $type->getId();
                 }
 
-                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n]/', $name)) {
+                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
                     $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
                 }
 
@@ -164,7 +164,7 @@ class ObjectLike extends \Psalm\Type\Atomic
                             $this_class,
                             $use_phpdoc_format
                         ) {
-                            if (\is_string($name) && \preg_match('/[ "\'\\\\.\n]/', $name)) {
+                            if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
                                 $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
                             }
 

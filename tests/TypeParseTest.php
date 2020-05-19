@@ -429,6 +429,23 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testObjectLikeWithClassConstantKey()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('array{self::FOO: string}');
+    }
+
+    /**
+     * @return void
+     */
+    public function testObjectLikeWithQuotedClassConstantKey()
+    {
+        $this->assertSame('array{\'self::FOO\': string}', (string) Type:: parseString('array{"self::FOO": string}'));
+    }
+
+    /**
+     * @return void
+     */
     public function testObjectLikeWithoutClosingBracket()
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
