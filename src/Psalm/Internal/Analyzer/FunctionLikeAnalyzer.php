@@ -609,16 +609,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 true
             );
 
-            if ($closure_return_types) {
-                $closure_return_type = \Psalm\Internal\Type\TypeCombination::combineTypes(
+            $closure_return_type = $closure_return_types
+                ? \Psalm\Internal\Type\TypeCombination::combineTypes(
                     $closure_return_types,
                     $codebase
-                );
+                )
+                : null;
 
-                $closure_yield_type = $closure_yield_types
-                    ? \Psalm\Internal\Type\TypeCombination::combineTypes($closure_yield_types)
-                    : null;
+            $closure_yield_type = $closure_yield_types
+                ? \Psalm\Internal\Type\TypeCombination::combineTypes(
+                    $closure_yield_types,
+                    $codebase
+                )
+                : null;
 
+            if ($closure_return_type || $closure_yield_type) {
                 if ($closure_yield_type) {
                     $closure_return_type = $closure_yield_type;
                 }

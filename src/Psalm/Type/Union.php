@@ -1378,6 +1378,10 @@ class Union implements TypeNode
                         $codebase
                     );
 
+                    if ($atomic_type->as_type->isNullable() && $template_type->isVoid()) {
+                        $template_type = Type::getNull();
+                    }
+
                     if (TypeAnalyzer::isContainedBy(
                         $codebase,
                         $template_type,
