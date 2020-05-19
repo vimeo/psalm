@@ -41,13 +41,13 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use function array_values;
 use function count;
 use function in_array;
 use function strtolower;
 use function explode;
 use Psalm\Internal\Taint\Sink;
 use Psalm\Internal\Taint\Source;
-use Psalm\Type\Atomic\TTemplateParam;
 
 /**
  * @internal
