@@ -450,6 +450,18 @@ class AssignmentAnalyzer
                         );
                     }
 
+                    if ($codebase->store_node_types
+                        && !$context->collect_initializations
+                        && !$context->collect_mutations
+                    ) {
+                        $location = new CodeLocation($statements_analyzer, $assign_var);
+                        $codebase->analyzer->addNodeReference(
+                            $statements_analyzer->getFilePath(),
+                            $assign_var,
+                            $location->raw_file_start . '-' . $location->raw_file_end . ':' . $assign_value_type->getId()
+                        );
+                    }
+
                     if (isset($context->byref_constraints[$var_id]) || $assign_value_type->by_ref) {
                         $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
                     }
