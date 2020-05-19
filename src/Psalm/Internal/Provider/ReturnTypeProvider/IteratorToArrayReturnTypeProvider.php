@@ -83,7 +83,7 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
                     ? $key_type
                     : Type::getArrayKey();
 
-                if ($key_type->isMixed()) {
+                if ($key_type->hasMixed()) {
                     $key_type = Type::getArrayKey();
                 }
 
