@@ -69,13 +69,15 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         $key_column_name = null;
         $third_arg_type = null;
         // calculate key column name
-        if (isset($call_args[2])
-            && ($third_arg_type = $statements_source->node_data->getType($call_args[2]->value))
-        ) {
-            if ($third_arg_type->isSingleIntLiteral()) {
-                $key_column_name = $third_arg_type->getSingleIntLiteral()->value;
-            } elseif ($third_arg_type->isSingleStringLiteral()) {
-                $key_column_name = $third_arg_type->getSingleStringLiteral()->value;
+        if (isset($call_args[2])) {
+            $third_arg_type = $statements_source->node_data->getType($call_args[2]->value);
+
+            if ($third_arg_type) {
+                if ($third_arg_type->isSingleIntLiteral()) {
+                    $key_column_name = $third_arg_type->getSingleIntLiteral()->value;
+                } elseif ($third_arg_type->isSingleStringLiteral()) {
+                    $key_column_name = $third_arg_type->getSingleStringLiteral()->value;
+                }
             }
         }
 
