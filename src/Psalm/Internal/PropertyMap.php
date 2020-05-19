@@ -509,4 +509,14 @@ return [
     'phpparser\\node\\stmt\\interface_' => [
         'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
+    'rdkafka\\message' => [
+        'err' => 'int',
+        'topic_name' => 'string',
+        'partition' => 'int',
+        'payload' => 'string',
+        'key' => 'string|null',
+        'offset' => 'int',
+        'timestamp' => 'int',
+        'headers' => 'array<string, string>|null',
+    ],
 ];
