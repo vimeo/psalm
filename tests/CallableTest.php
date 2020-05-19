@@ -1063,6 +1063,20 @@ class CallableTest extends TestCase
                     run("ff");',
                 'error_message' => 'UndefinedFunction',
             ],
+            'badCustomFunction' => [
+                '<?php
+                    /**
+                     * @param callable(int):bool $func
+                     */
+                    function takesFunction(callable $func) : void {}
+
+                    function myFunction( string $foo ) : bool {
+                        return false;
+                    }
+
+                    takesFunction("myFunction");',
+                'error_message' => 'InvalidScalarArgument',
+            ],
         ];
     }
 }

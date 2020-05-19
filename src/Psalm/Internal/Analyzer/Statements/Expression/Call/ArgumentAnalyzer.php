@@ -579,6 +579,25 @@ class ArgumentAnalyzer
             $param_type
         );
 
+        if ($param_type->hasCallableType()
+            && $param_type->isSingle()
+            && $input_type->isSingleStringLiteral()
+        ) {
+            foreach ($input_type->getAtomicTypes() as $key => $atomic_type) {
+                $candidate_callable = TypeAnalyzer::getCallableFromAtomic(
+                    $codebase,
+                    $atomic_type,
+                    null,
+                    $statements_analyzer
+                );
+
+                if ($candidate_callable) {
+                    $input_type->removeType($key);
+                    $input_type->addType($candidate_callable);
+                }
+            }
+        }
+
         $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
 
         $type_match_found = TypeAnalyzer::isContainedBy(
