@@ -213,9 +213,9 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNull
-                || $atomic_type instanceof TFalse
+                || $atomic_type instanceof Type\Atomic\TFalse
             ) {
-                $valid_strings[] = new Typee\Atomic\TLiteralString('');
+                $valid_strings[] = new Type\Atomic\TLiteralString('');
                 continue;
             }
 
