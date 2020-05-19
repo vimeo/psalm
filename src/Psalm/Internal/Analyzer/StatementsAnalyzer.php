@@ -12,7 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Block\TryAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\WhileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\PropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonDivArithmeticOpAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -620,7 +620,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $context->inside_call = false;
 
                     if ($expr_type = $this->node_data->getType($expr)) {
-                        if (CallAnalyzer::checkFunctionArgumentType(
+                        if (ArgumentAnalyzer::verifyType(
                             $this,
                             $expr_type,
                             Type::getString(),

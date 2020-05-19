@@ -201,7 +201,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $is_maybe_root_function
                     ) === false
                     ) {
-                        if (self::checkFunctionArguments(
+                        if (ArgumentsAnalyzer::analyze(
                             $statements_analyzer,
                             $stmt->args,
                             null,
@@ -283,7 +283,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $set_inside_conditional = true;
         }
 
-        if (self::checkFunctionArguments(
+        if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $stmt->args,
             $function_params,
@@ -317,7 +317,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             // do this here to allow closure param checks
             if ($function_params !== null
-                && self::checkFunctionLikeArgumentsMatch(
+                && ArgumentsAnalyzer::checkArgumentsMatch(
                     $statements_analyzer,
                     $stmt->args,
                     $function_id,
@@ -327,7 +327,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $template_result,
                     $code_location,
                     $context
-                ) === false) {
+                ) === false
+            ) {
                 // fall through
             }
 

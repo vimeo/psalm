@@ -3,16 +3,11 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\FalseOperand;
-use Psalm\Issue\ImplicitToStringCast;
-use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
 use Psalm\Issue\NullOperand;
@@ -23,7 +18,6 @@ use Psalm\Issue\StringIncrement;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use Psalm\Type\Algebra;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -35,20 +29,10 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
-use Psalm\Type\Reconciler;
-use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\TypeCombination;
-use function array_merge;
 use function array_diff_key;
-use function array_filter;
-use function array_intersect_key;
 use function array_values;
-use function array_map;
-use function array_keys;
-use function preg_match;
-use function preg_quote;
 use function strtolower;
-use function strlen;
 
 /**
  * @internal

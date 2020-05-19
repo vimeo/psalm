@@ -25,7 +25,7 @@ class PrintAnalyzer
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-            if (CallAnalyzer::checkFunctionArgumentType(
+            if (Call\ArgumentAnalyzer::verifyType(
                 $statements_analyzer,
                 $stmt_expr_type,
                 Type::getString(),
