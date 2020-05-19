@@ -10427,6 +10427,7 @@ return [
 'rd_kafka_errno2err' => ['int', 'errnox'=>'int'],
 'rd_kafka_offset_tail' => ['int', 'cnt'=>'int'],
 'RdKafka::addBrokers' => ['int', 'broker_list'=>'string'],
+'RdKafka::flush' => ['int', 'timeout_ms'=>'int'],
 'RdKafka::getMetadata' => ['RdKafka\Metadata', 'all_topics'=>'bool', 'only_topic='=>'RdKafka\Topic', 'timeout_ms'=>'int'],
 'RdKafka::getOutQLen' => ['int'],
 'RdKafka::newQueue' => ['RdKafka\Queue'],
