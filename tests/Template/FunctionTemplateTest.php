@@ -1267,6 +1267,17 @@ class FunctionTemplateTest extends TestCase
                         return $a;
                     }'
             ],
+            'templatedObjectReference' => [
+                '<?php
+                    class A { /** @var int */ public $x = 0;}
+
+                    /**
+                     * @template T as A
+                     * @param T $obj
+                     */
+                    function foo(A &$obj): void { $obj->x = 1; }
+                '
+            ],
         ];
     }
 

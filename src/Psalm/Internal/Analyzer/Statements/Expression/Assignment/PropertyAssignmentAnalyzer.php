@@ -47,6 +47,7 @@ use function strtolower;
 use function explode;
 use Psalm\Internal\Taint\Sink;
 use Psalm\Internal\Taint\Source;
+use Psalm\Type\Atomic\TTemplateParam;
 
 /**
  * @internal
@@ -235,6 +236,20 @@ class PropertyAssignmentAnalyzer
                     && count($lhs_type->getAtomicTypes()) > 1
                 ) {
                     continue;
+                }
+
+                if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
+                    $extra_types = $lhs_type_part->extra_types;
+
+                    $lhs_type_part = array_values(
+                        $lhs_type_part->as->getAtomicTypes()
+                    )[0];
+
+                    $lhs_type_part->from_docblock = true;
+
+                    if ($lhs_type_part instanceof TNamedObject) {
+                        $lhs_type_part->extra_types = $extra_types;
+                    }
                 }
 
                 if (!$lhs_type_part instanceof TObject && !$lhs_type_part instanceof TNamedObject) {
@@ -789,7 +804,7 @@ class PropertyAssignmentAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidPropertyAssignment(
                             $lhs_var_id . ' with non-object type \'' . $invalid_assignment_type .
-                            '\' cannot treated as an object',
+                            '\' cannot be treated as an object',
                             new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                         ),
                         $statements_analyzer->getSuppressedIssues()
