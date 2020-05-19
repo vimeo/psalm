@@ -2,18 +2,11 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
-use Psalm\Codebase;
-use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Issue\ContinueOutsideLoop;
-use Psalm\Issue\ParadoxicalCondition;
-use Psalm\IssueBuffer;
-use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
@@ -21,10 +14,6 @@ use Psalm\Type\Reconciler;
 use function count;
 use function in_array;
 use function array_merge;
-use function is_string;
-use function substr;
-use function array_intersect_key;
-use function array_diff_key;
 
 /**
  * @internal

@@ -1029,6 +1029,31 @@ class PropertyAssignmentAnalyzer
         return null;
     }
 
+    public static function analyzeStatement(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Property $stmt,
+        Context $context
+    ): void {
+        foreach ($stmt->props as $prop) {
+            if ($prop->default) {
+                ExpressionAnalyzer::analyze($statements_analyzer, $prop->default, $context);
+
+                if ($prop_default_type = $statements_analyzer->node_data->getType($prop->default)) {
+                    if (self::analyzeInstance(
+                        $statements_analyzer,
+                        $prop,
+                        $prop->name->name,
+                        $prop->default,
+                        $prop_default_type,
+                        $context
+                    ) === false) {
+                        // fall through
+                    }
+                }
+            }
+        }
+    }
+
     private static function taintProperty(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,

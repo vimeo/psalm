@@ -16,12 +16,26 @@ use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use function is_string;
+use function in_array;
 
 /**
  * @internal
  */
 class VariableFetchAnalyzer
 {
+    const SUPER_GLOBALS = [
+        '$GLOBALS',
+        '$_SERVER',
+        '$_GET',
+        '$_POST',
+        '$_FILES',
+        '$_COOKIE',
+        '$_SESSION',
+        '$_REQUEST',
+        '$_ENV',
+        '$http_response_header',
+    ];
+
     /**
      * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Expr\Variable    $stmt
@@ -110,7 +124,7 @@ class VariableFetchAnalyzer
             return true;
         }
 
-        if (is_string($stmt->name) && $statements_analyzer->isSuperGlobal('$' . $stmt->name)) {
+        if (is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name)) {
             $var_name = '$' . $stmt->name;
 
             if (isset($context->vars_in_scope[$var_name])) {
@@ -119,7 +133,7 @@ class VariableFetchAnalyzer
                 return true;
             }
 
-            $type = $statements_analyzer->getGlobalType($var_name);
+            $type = self::getGlobalType($var_name);
 
             $statements_analyzer->node_data->setType($stmt, $type);
             $context->vars_in_scope[$var_name] = clone $type;
@@ -329,5 +343,41 @@ class VariableFetchAnalyzer
         }
 
         return true;
+    }
+
+    public static function isSuperGlobal(string $var_id) : bool
+    {
+        return in_array(
+            $var_id,
+            self::SUPER_GLOBALS,
+            true
+        );
+    }
+
+    public static function getGlobalType(string $var_id) : Type\Union
+    {
+        $config = \Psalm\Config::getInstance();
+
+        if (isset($config->globals[$var_id])) {
+            return Type::parseString($config->globals[$var_id]);
+        }
+
+        if ($var_id === '$argv') {
+            return new Type\Union([
+                new Type\Atomic\TArray([Type::getInt(), Type::getString()]),
+            ]);
+        }
+
+        if ($var_id === '$argc') {
+            return Type::getInt();
+        }
+
+        if (self::isSuperGlobal($var_id)) {
+            $type = Type::getArray();
+
+            return $type;
+        }
+
+        return Type::getMixed();
     }
 }

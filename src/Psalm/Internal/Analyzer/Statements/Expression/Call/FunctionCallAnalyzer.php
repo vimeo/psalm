@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
@@ -1288,7 +1289,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         } elseif ($function_name->parts === ['define']) {
             if ($first_arg) {
-                $fq_const_name = StatementsAnalyzer::getConstName(
+                $fq_const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg->value,
                     $statements_analyzer->node_data,
                     $codebase,
@@ -1302,7 +1303,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
                     $context->inside_call = $was_in_call;
 
-                    $statements_analyzer->setConstType(
+                    ConstFetchAnalyzer::setConstType(
+                        $statements_analyzer,
                         $fq_const_name,
                         $statements_analyzer->node_data->getType($second_arg->value) ?: Type::getMixed(),
                         $context
@@ -1313,7 +1315,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         } elseif ($function_name->parts === ['constant']) {
             if ($first_arg) {
-                $fq_const_name = StatementsAnalyzer::getConstName(
+                $fq_const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg->value,
                     $statements_analyzer->node_data,
                     $codebase,
@@ -1321,7 +1323,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 );
 
                 if ($fq_const_name !== null) {
-                    $const_type = $statements_analyzer->getConstType(
+                    $const_type = ConstFetchAnalyzer::getConstType(
+                        $statements_analyzer,
                         $fq_const_name,
                         true,
                         $context

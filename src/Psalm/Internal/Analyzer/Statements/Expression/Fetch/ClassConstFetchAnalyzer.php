@@ -386,4 +386,37 @@ class ClassConstFetchAnalyzer
 
         return true;
     }
+
+    public static function analyzeClassConstAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\ClassConst $stmt,
+        Context $context
+    ): void {
+        $const_visibility = \ReflectionProperty::IS_PUBLIC;
+
+        if ($stmt->isProtected()) {
+            $const_visibility = \ReflectionProperty::IS_PROTECTED;
+        }
+
+        if ($stmt->isPrivate()) {
+            $const_visibility = \ReflectionProperty::IS_PRIVATE;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        foreach ($stmt->consts as $const) {
+            ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
+
+            if (($const_type = $statements_analyzer->node_data->getType($const->value))
+                && !$const_type->hasMixed()
+            ) {
+                $codebase->classlikes->setConstantType(
+                    (string)$statements_analyzer->getFQCLN(),
+                    $const->name->name,
+                    $const_type,
+                    $const_visibility
+                );
+            }
+        }
+    }
 }

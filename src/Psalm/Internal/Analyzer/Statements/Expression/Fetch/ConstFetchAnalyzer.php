@@ -2,8 +2,12 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
+use Psalm\Aliases;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -13,6 +17,8 @@ use Psalm\Type;
 use function array_key_exists;
 use function implode;
 use function strtolower;
+use function explode;
+use function array_pop;
 
 /**
  * @internal
@@ -52,7 +58,8 @@ class ConstFetchAnalyzer
                 break;
 
             default:
-                $const_type = $statements_analyzer->getConstType(
+                $const_type = self::getConstType(
+                    $statements_analyzer,
                     $const_name,
                     $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
                     $context
@@ -167,5 +174,140 @@ class ConstFetchAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * @param   string  $const_name
+     * @param   bool    $is_fully_qualified
+     * @param   Context $context
+     *
+     * @return  Type\Union|null
+     */
+    public static function getConstType(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        bool $is_fully_qualified,
+        ?Context $context
+    ) {
+        $aliased_constants = $statements_analyzer->getAliases()->constants;
+
+        if (isset($aliased_constants[$const_name])) {
+            $fq_const_name = $aliased_constants[$const_name];
+        } elseif ($is_fully_qualified) {
+            $fq_const_name = $const_name;
+        } else {
+            $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
+        }
+
+        if ($fq_const_name) {
+            $const_name_parts = explode('\\', $fq_const_name);
+            $const_name = array_pop($const_name_parts);
+            $namespace_name = implode('\\', $const_name_parts);
+            $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
+                $namespace_name,
+                \ReflectionProperty::IS_PUBLIC
+            );
+
+            if (isset($namespace_constants[$const_name])) {
+                return $namespace_constants[$const_name];
+            }
+        }
+
+        if ($context && $context->hasVariable($fq_const_name, $statements_analyzer)) {
+            return $context->vars_in_scope[$fq_const_name];
+        }
+
+        $file_path = $statements_analyzer->getRootFilePath();
+        $codebase = $statements_analyzer->getCodebase();
+
+        $file_storage_provider = $codebase->file_storage_provider;
+
+        $file_storage = $file_storage_provider->get($file_path);
+
+        if (isset($file_storage->declaring_constants[$const_name])) {
+            $constant_file_path = $file_storage->declaring_constants[$const_name];
+
+            return $file_storage_provider->get($constant_file_path)->constants[$const_name];
+        }
+
+        if (isset($file_storage->declaring_constants[$fq_const_name])) {
+            $constant_file_path = $file_storage->declaring_constants[$fq_const_name];
+
+            return $file_storage_provider->get($constant_file_path)->constants[$fq_const_name];
+        }
+
+        return ConstFetchAnalyzer::getGlobalConstType($codebase, $fq_const_name, $const_name)
+            ?? ConstFetchAnalyzer::getGlobalConstType($codebase, $const_name, $const_name);
+    }
+
+    /**
+     * @param   string      $const_name
+     * @param   Type\Union  $const_type
+     * @param   Context     $context
+     *
+     * @return  void
+     */
+    public static function setConstType(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        Type\Union $const_type,
+        Context $context
+    ) {
+        $context->vars_in_scope[$const_name] = $const_type;
+        $context->constants[$const_name] = $const_type;
+
+        $source = $statements_analyzer->getSource();
+
+        if ($source instanceof NamespaceAnalyzer) {
+            $source->setConstType($const_name, $const_type);
+        }
+    }
+
+    public static function getConstName(
+        PhpParser\Node\Expr $first_arg_value,
+        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        Codebase $codebase,
+        Aliases $aliases
+    ) : ?string {
+        $const_name = null;
+
+        if ($first_arg_value instanceof PhpParser\Node\Scalar\String_) {
+            $const_name = $first_arg_value->value;
+        } elseif ($first_arg_type = $type_provider->getType($first_arg_value)) {
+            if ($first_arg_type->isSingleStringLiteral()) {
+                $const_name = $first_arg_type->getSingleStringLiteral()->value;
+            }
+        } else {
+            $simple_type = SimpleTypeInferer::infer($codebase, $type_provider, $first_arg_value, $aliases);
+
+            if ($simple_type && $simple_type->isSingleStringLiteral()) {
+                $const_name = $simple_type->getSingleStringLiteral()->value;
+            }
+        }
+
+        return $const_name;
+    }
+
+    /**
+     * @param   PhpParser\Node\Stmt\Const_  $stmt
+     * @param   Context                     $context
+     *
+     * @return  void
+     */
+    public static function analyzeConstAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Const_ $stmt,
+        Context $context
+    ) {
+        foreach ($stmt->consts as $const) {
+            ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
+
+            self::setConstType(
+                $statements_analyzer,
+                $const->name->name,
+                $statements_analyzer->node_data->getType($const->value) ?: Type::getMixed(),
+                $context
+            );
+        }
     }
 }

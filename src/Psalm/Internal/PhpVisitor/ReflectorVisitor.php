@@ -34,7 +34,9 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Internal\Codebase\PropertyMap;
@@ -491,7 +493,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Const_) {
             foreach ($node->consts as $const) {
-                $const_type = StatementsAnalyzer::getSimpleType(
+                $const_type = SimpleTypeInferer::infer(
                     $this->codebase,
                     new \Psalm\Internal\Provider\NodeDataProvider(),
                     $const->value,
@@ -829,7 +831,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
             if ($first_arg_value && $second_arg_value) {
                 $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();
-                $const_name = StatementsAnalyzer::getConstName(
+                $const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg_value,
                     $type_provider,
                     $this->codebase,
@@ -837,7 +839,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 );
 
                 if ($const_name !== null) {
-                    $const_type = StatementsAnalyzer::getSimpleType(
+                    $const_type = SimpleTypeInferer::infer(
                         $this->codebase,
                         $type_provider,
                         $second_arg_value,
@@ -2945,7 +2947,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $is_nullable,
             $param->variadic,
             $param->default
-                ? StatementsAnalyzer::getSimpleType(
+                ? SimpleTypeInferer::infer(
                     $this->codebase,
                     new \Psalm\Internal\Provider\NodeDataProvider(),
                     $param->default,
@@ -3303,7 +3305,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             if (!$signature_type && !$doc_var_group_type) {
                 if ($property->default) {
-                    $property_storage->suggested_type = StatementsAnalyzer::getSimpleType(
+                    $property_storage->suggested_type = SimpleTypeInferer::infer(
                         $this->codebase,
                         new \Psalm\Internal\Provider\NodeDataProvider(),
                         $property->default,
@@ -3422,7 +3424,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         foreach ($stmt->consts as $const) {
-            $const_type = StatementsAnalyzer::getSimpleType(
+            $const_type = SimpleTypeInferer::infer(
                 $this->codebase,
                 new \Psalm\Internal\Provider\NodeDataProvider(),
                 $const->value,

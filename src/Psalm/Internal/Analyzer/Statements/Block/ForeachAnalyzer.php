@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -149,7 +150,7 @@ class ForeachAnalyzer
             }
 
             if (isset($context->vars_in_scope[$var_comment->var_id])
-                || $statements_analyzer->isSuperGlobal($var_comment->var_id)
+                || VariableFetchAnalyzer::isSuperGlobal($var_comment->var_id)
             ) {
                 if ($codebase->find_unused_variables
                     && $doc_comment

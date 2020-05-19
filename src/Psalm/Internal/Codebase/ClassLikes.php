@@ -18,6 +18,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -1777,7 +1778,8 @@ class ClassLikes
 
         if ($c instanceof UnresolvedConstant\Constant) {
             if ($statements_analyzer) {
-                $found_type = $statements_analyzer->getConstType(
+                $found_type = ConstFetchAnalyzer::getConstType(
+                    $statements_analyzer,
                     $c->name,
                     $c->is_fully_qualified,
                     null

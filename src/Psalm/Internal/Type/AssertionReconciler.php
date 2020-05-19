@@ -8,6 +8,7 @@ use function is_string;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -82,9 +83,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($existing_var_type === null
             && is_string($key)
-            && $statements_analyzer->isSuperGlobal($key)
+            && VariableFetchAnalyzer::isSuperGlobal($key)
         ) {
-            $existing_var_type = $statements_analyzer->getGlobalType($key);
+            $existing_var_type = VariableFetchAnalyzer::getGlobalType($key);
         }
 
         if ($existing_var_type === null) {
