@@ -1034,7 +1034,7 @@ class Codebase
     public function getSymbolInformation(string $file_path, string $symbol)
     {
         if (\is_numeric($symbol[0])) {
-            return \preg_replace('/[^:]*:/', '', $symbol);
+            return \preg_replace('/^[^:]*:/', '', $symbol);
         }
 
         try {
