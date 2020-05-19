@@ -225,7 +225,20 @@ class PropertyAssignmentAnalyzer
 
             $has_valid_assignment_type = false;
 
-            foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
+            $lhs_atomic_types = $lhs_type->getAtomicTypes();
+
+            while ($lhs_atomic_types) {
+                $lhs_type_part = \array_pop($lhs_atomic_types);
+
+                if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
+                    $lhs_atomic_types = \array_merge(
+                        $lhs_atomic_types,
+                        $lhs_type_part->as->getAtomicTypes()
+                    );
+
+                    continue;
+                }
+
                 if ($lhs_type_part instanceof TNull) {
                     continue;
                 }
