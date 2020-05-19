@@ -6,14 +6,9 @@ build:
     analysis:
       project_setup:
         override: true
-      tests:
-        override: [php-scrutinizer-run]
-    php70:
+    php74:
       environment:
-        php: 7.0
-    php71:
-      environment:
-        php: 7.1
+        php: 7.4
 
 checks:
     php: true
