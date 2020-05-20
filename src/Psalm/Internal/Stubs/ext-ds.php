@@ -195,7 +195,11 @@ final class Map implements Collection
      * @template TDefault
      * @param TKey $key
      * @param TDefault $default
-     * @return TValue|TDefault
+     * @return (
+     *     func_num_args() is 1
+     *     ? TValue
+     *     : TValue|TDefault
+     * )
      * @throws OutOfBoundsException
      */
     public function get($key, $default = null)
@@ -254,7 +258,11 @@ final class Map implements Collection
      * @template TDefault
      * @param TKey $key
      * @param TDefault $default
-     * @return TValue|TDefault
+     * @return (
+     *     func_num_args() is 1
+     *     ? TValue
+     *     : TValue|TDefault
+     * )
      * @throws \OutOfBoundsException
      */
     public function remove($key, $default = null)
