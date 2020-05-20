@@ -458,7 +458,9 @@ class AssignmentAnalyzer
                         $codebase->analyzer->addNodeReference(
                             $statements_analyzer->getFilePath(),
                             $assign_var,
-                            $location->raw_file_start . '-' . $location->raw_file_end . ':' . $assign_value_type->getId()
+                            $location->raw_file_start
+                                . '-' . $location->raw_file_end
+                                . ':' . $assign_value_type->getId()
                         );
                     }
 
