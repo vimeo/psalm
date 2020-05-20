@@ -139,26 +139,40 @@ class YieldAnalyzer
             $expression_type = Type::getEmpty();
         }
 
+        $yield_type = null;
+
         foreach ($expression_type->getAtomicTypes() as $expression_atomic_type) {
             if ($expression_atomic_type instanceof Type\Atomic\TNamedObject) {
                 $classlike_storage = $codebase->classlike_storage_provider->get($expression_atomic_type->value);
 
                 if ($classlike_storage->yield) {
                     if ($expression_atomic_type instanceof Type\Atomic\TGenericObject) {
-                        $yield_type = PropertyFetchAnalyzer::localizePropertyType(
+                        $yield_candidate_type = PropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
                             clone $classlike_storage->yield,
                             $expression_atomic_type,
                             $classlike_storage,
                             $classlike_storage
                         );
+
+                        if ($yield_type) {
+                            $yield_type = Type::combineUnionTypes(
+                                $yield_type,
+                                $yield_candidate_type,
+                                $codebase
+                            );
+                        } else {
+                            $yield_type = $yield_candidate_type;
+                        }
                     } else {
                         $yield_type = Type::getMixed();
                     }
-
-                    $expression_type->substitute($expression_type, $yield_type);
                 }
             }
+        }
+
+        if ($yield_type) {
+            $expression_type->substitute($expression_type, $yield_type);
         }
 
         $statements_analyzer->node_data->setType($stmt, $expression_type);
