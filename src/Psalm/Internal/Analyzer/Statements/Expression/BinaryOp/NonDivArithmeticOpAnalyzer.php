@@ -457,14 +457,13 @@ class NonDivArithmeticOpAnalyzer
                     if (!isset($properties[$key])) {
                         $properties[$key] = $type;
                     } elseif ($properties[$key]->possibly_undefined) {
-                        $properties[$key]->possibly_undefined = $properties[$key]->possibly_undefined
-                            && $type->possibly_undefined;
-
                         $properties[$key] = Type::combineUnionTypes(
                             $properties[$key],
                             $type,
                             $codebase
                         );
+
+                        $properties[$key]->possibly_undefined = $type->possibly_undefined;
                     }
                 }
 
