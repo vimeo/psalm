@@ -147,12 +147,22 @@ class ArrayFunctionCallTest extends TestCase
                     '$c' => 'array<string, int>|false',
                 ],
             ],
-            'arrayMerge' => [
+            'arrayMergeIntArrays' => [
                 '<?php
                     $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
                     '$d' => 'array{0: string, 1: string, 2: string, 3: int, 4: int, 5: int}',
                 ],
+            ],
+            'arrayMergePossiblyUndefined' => [
+                '<?php
+                    /**
+                     * @param array{host?:string} $opts
+                     * @return array{host:string|int}
+                     */
+                    function b(array $opts): array {
+                        return array_merge(["host" => 5], $opts);
+                    }',
             ],
             'arrayMergeListResult' => [
                 '<?php

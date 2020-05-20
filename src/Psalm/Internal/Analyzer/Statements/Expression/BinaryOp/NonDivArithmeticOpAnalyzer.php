@@ -451,7 +451,22 @@ class NonDivArithmeticOpAnalyzer
                     $left_type_part->properties
                 );
 
-                $properties = $left_type_part->properties + $right_type_part->properties;
+                $properties = $left_type_part->properties;
+
+                foreach ($right_type_part->properties as $key => $type) {
+                    if (!isset($properties[$key])) {
+                        $properties[$key] = $type;
+                    } elseif ($properties[$key]->possibly_undefined) {
+                        $properties[$key]->possibly_undefined = $properties[$key]->possibly_undefined
+                            && $type->possibly_undefined;
+
+                        $properties[$key] = Type::combineUnionTypes(
+                            $properties[$key],
+                            $type,
+                            $codebase
+                        );
+                    }
+                }
 
                 if (!$left_type_part->sealed) {
                     foreach ($definitely_existing_mixed_right_properties as $key => $type) {
