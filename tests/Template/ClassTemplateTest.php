@@ -2728,7 +2728,7 @@ class ClassTemplateTest extends TestCase
                      * @return T
                      */
                     function unwrap(array $containers) {
-                        return array_map(fn($container) => $container->get(), $containers);
+                        return array_map(fn($container) => $container->get(), $containers)[0];
                     }
 
                     /**
