@@ -889,8 +889,19 @@ class Config
 
         $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
 
+        $cwd = null;
+
+        if ($config->resolve_from_config_file) {
+            $cwd = getcwd();
+            chdir($config->base_dir);
+        }
+
         if (is_dir($config->cache_directory) === false && @mkdir($config->cache_directory, 0777, true) === false) {
             trigger_error('Could not create cache directory: ' . $config->cache_directory, E_USER_ERROR);
+        }
+
+        if ($cwd) {
+            chdir($cwd);
         }
 
         if (isset($config_xml['serializer'])) {
