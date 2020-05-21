@@ -443,6 +443,10 @@ class TypeTokenizer
                 continue;
             }
 
+            if ($string_type_token[0] === 'func_num_args()') {
+                continue;
+            }
+
             if (isset($type_aliases[$string_type_token[0]])) {
                 $type_alias = $type_aliases[$string_type_token[0]];
 
