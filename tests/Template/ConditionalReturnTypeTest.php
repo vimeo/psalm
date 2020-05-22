@@ -481,7 +481,7 @@ class ConditionalReturnTypeTest extends TestCase
                     /**
                      * @psalm-return ($name is "foo" ? string : null)
                      */
-                    function get(string $name) {
+                    function get(string $name) : ?string {
                         if ($name === "foo") {
                             return "hello";
                         }
