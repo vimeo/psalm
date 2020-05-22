@@ -730,6 +730,54 @@ class ConfigTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
+    public function testUnchainedMethodCallMemoize()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm memoizeMethodCallResults="true">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class SomeClass {
+                    private ?int $int;
+
+                    public function __construct() {
+                        $this->int = 1;
+                    }
+
+                    public function getInt(): ?int {
+                        return $this->int;
+                    }
+                }
+
+                function printInt(int $int): void {
+                    echo $int;
+                }
+
+                $obj = new SomeClass();
+
+                if ($obj->getInt()) {
+                    printInt($obj->getInt());
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testThing()
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

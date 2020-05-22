@@ -758,7 +758,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if (!$args && $lhs_var_id) {
-            if ($config->memoize_method_calls || $can_memoize) {
+            if (($config->memoize_method_calls || $can_memoize) && !$plain_getter_property) {
                 $method_var_id = $lhs_var_id . '->' . $method_name_lc . '()';
 
                 if (isset($context->vars_in_scope[$method_var_id])) {
