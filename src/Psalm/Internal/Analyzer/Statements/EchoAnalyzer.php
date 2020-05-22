@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Taint\Sink;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
@@ -26,14 +27,33 @@ class EchoAnalyzer
             false
         );
 
-        $echo_param->sink = Type\Union::TAINTED_INPUT_HTML
-            | Type\Union::TAINTED_USER_SECRET
-            | Type\Union::TAINTED_SYSTEM_SECRET;
+        $codebase = $statements_analyzer->getCodebase();
 
         foreach ($stmt->exprs as $i => $expr) {
             $context->inside_call = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $expr, $context);
             $context->inside_call = false;
+
+            if ($codebase->taint) {
+                $expr_location = new CodeLocation($statements_analyzer->getSource(), $expr);
+                $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                $echo_param_sink = Sink::getForMethodArgument(
+                    'echo',
+                    'echo',
+                    (int) $i,
+                    $expr_location,
+                    $call_location
+                );
+
+                $echo_param_sink->taints = [
+                    Type\Union::TAINTED_INPUT_HTML,
+                    Type\Union::TAINTED_USER_SECRET,
+                    Type\Union::TAINTED_SYSTEM_SECRET
+                ];
+
+                $codebase->taint->addSink($echo_param_sink);
+            }
 
             if ($expr_type = $statements_analyzer->node_data->getType($expr)) {
                 if (ArgumentAnalyzer::verifyType(
@@ -49,7 +69,7 @@ class EchoAnalyzer
                     $echo_param,
                     false,
                     null,
-                    false,
+                    true,
                     true,
                     new CodeLocation($statements_analyzer, $stmt)
                 ) === false) {
@@ -57,8 +77,6 @@ class EchoAnalyzer
                 }
             }
         }
-
-        $codebase = $statements_analyzer->getCodebase();
 
         if ($codebase->config->forbid_echo) {
             if (IssueBuffer::accepts(

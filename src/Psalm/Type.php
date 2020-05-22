@@ -516,19 +516,15 @@ abstract class Type
             if ($both_failed_reconciliation) {
                 $combined_type->failed_reconciliation = true;
             }
-
-            if ($type_1->tainted || $type_2->tainted) {
-                $combined_type->tainted = $type_1->tainted & $type_2->tainted;
-            }
         }
 
         if ($type_1->possibly_undefined || $type_2->possibly_undefined) {
             $combined_type->possibly_undefined = true;
         }
 
-        if ($type_1->sources || $type_2->sources) {
-            $combined_type->sources = \array_unique(
-                array_merge($type_1->sources ?: [], $type_2->sources ?: [])
+        if ($type_1->parent_nodes || $type_2->parent_nodes) {
+            $combined_type->parent_nodes = \array_unique(
+                array_merge($type_1->parent_nodes ?: [], $type_2->parent_nodes ?: [])
             );
         }
 

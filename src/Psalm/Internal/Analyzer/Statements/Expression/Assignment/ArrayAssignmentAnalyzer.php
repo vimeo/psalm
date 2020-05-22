@@ -150,15 +150,13 @@ class ArrayAssignmentAnalyzer
 
         $child_stmt = null;
 
-        $taint_sources = [];
-        $taint_type = 0;
+        $parent_taint_nodes = [];
 
         if ($codebase->taint
             && $assign_value
             && ($assign_value_type = $statements_analyzer->node_data->getType($assign_value))
         ) {
-            $taint_sources = $assign_value_type->sources;
-            $taint_type = $assign_value_type->tainted ?: 0;
+            $parent_taint_nodes = $assign_value_type->parent_nodes;
         }
 
         // First go from the root element up, and go as far as we can to figure out what
@@ -672,9 +670,8 @@ class ArrayAssignmentAnalyzer
             $root_type = $new_child_type;
         }
 
-        if ($codebase->taint && $taint_sources) {
-            $root_type->sources = \array_merge($taint_sources, $root_type->sources ?: []);
-            $root_type->tainted = $taint_type | $root_type->tainted;
+        if ($codebase->taint && $parent_taint_nodes) {
+            $root_type->parent_nodes = \array_merge($parent_taint_nodes, $root_type->parent_nodes ?: []);
         }
 
         $statements_analyzer->node_data->setType($root_array_expr, $root_type);

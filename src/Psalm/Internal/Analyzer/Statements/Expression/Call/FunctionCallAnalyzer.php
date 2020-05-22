@@ -14,6 +14,7 @@ use Psalm\Internal\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Taint\TaintNode;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
@@ -482,35 +483,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $function_id,
                 $context
             );
-        }
-
-        if ($codebase->taint
-            && $function_id
-            && $in_call_map
-            && $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args)
-            && ($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
-        ) {
-            if ($function_id === 'substr'
-                && isset($stmt->args[0])
-                && ($first_arg_type = $statements_analyzer->node_data->getType($stmt->args[0]->value))
-            ) {
-                $stmt_type->sources = $first_arg_type->sources ?? null;
-                $stmt_type->tainted = $first_arg_type->tainted ?? null;
-            }
-
-            if (($function_id === 'str_replace' || $function_id === 'preg_replace')
-                && count($stmt->args) >= 3
-            ) {
-                $second_arg_type = $statements_analyzer->node_data->getType($stmt->args[1]->value);
-                $third_arg_type = $statements_analyzer->node_data->getType($stmt->args[2]->value);
-
-                $stmt_type->sources = array_merge(
-                    $second_arg_type->sources ?? [],
-                    $third_arg_type->sources ?? []
-                );
-
-                $stmt_type->tainted = ($second_arg_type->tainted ?? 0) | ($third_arg_type->tainted ?? 0);
-            }
         }
 
         if (!$statements_analyzer->node_data->getType($real_stmt)) {
@@ -1010,15 +982,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     // this can happen when the function was defined in the Config startup script
                     $stmt_type = Type::getMixed();
                 }
-
-                if ($codebase->taint && $stmt_type) {
-                    FunctionAnalyzer::taintBuiltinFunctionReturn(
-                        $statements_analyzer,
-                        $function_id,
-                        $stmt->args,
-                        $stmt_type
-                    );
-                }
             } else {
                 $stmt_type = FunctionAnalyzer::getReturnTypeFromCallMapWithArgs(
                     $statements_analyzer,
@@ -1026,15 +989,45 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $stmt->args,
                     $context
                 );
+            }
+        }
 
-                if ($codebase->taint) {
-                    FunctionAnalyzer::taintBuiltinFunctionReturn(
-                        $statements_analyzer,
-                        $function_id,
-                        $stmt->args,
-                        $stmt_type
-                    );
-                }
+        if ($codebase->taint && $function_storage && $function_storage->return_source_params && $stmt_type) {
+            foreach ($function_storage->return_source_params as $i) {
+                $arg_location = new CodeLocation(
+                    $statements_analyzer->getSource(),
+                    $stmt->args[$i]->value
+                );
+
+                $return_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                $function_param_sink = TaintNode::getForMethodArgument(
+                    $function_id,
+                    $function_id,
+                    $i,
+                    $arg_location,
+                    $function_storage->specialize_call ? $return_location : null
+                );
+
+                $codebase->taint->addTaintNode($function_param_sink);
+
+                $function_return_sink = TaintNode::getForMethodReturn(
+                    $function_id,
+                    $function_id,
+                    $return_location,
+                    $function_storage->specialize_call ? $return_location : null
+                );
+
+                $codebase->taint->addTaintNode($function_return_sink);
+
+                $codebase->taint->addPath(
+                    $function_param_sink,
+                    $function_return_sink,
+                    $function_storage->added_taints,
+                    $function_storage->removed_taints
+                );
+
+                $stmt_type->parent_nodes[] = $function_return_sink;
             }
         }
 

@@ -84,7 +84,7 @@ class AssignmentAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $remove_taint = false;
+        $removed_taints = [];
 
         if ($doc_comment) {
             $file_path = $statements_analyzer->getRootFilePath();
@@ -124,8 +124,8 @@ class AssignmentAnalyzer
             }
 
             foreach ($var_comments as $var_comment) {
-                if ($var_comment->remove_taint) {
-                    $remove_taint = true;
+                if ($var_comment->removed_taints) {
+                    $removed_taints = $var_comment->removed_taints;
                 }
 
                 if (!$var_comment->type) {
@@ -940,10 +940,20 @@ class AssignmentAnalyzer
                 return $context->vars_in_scope[$var_id];
             }
 
-            if ($remove_taint && $context->vars_in_scope[$var_id]->sources) {
-                $context->vars_in_scope[$var_id]->sources = null;
+            if ($codebase->taint) {
+                if ($context->vars_in_scope[$var_id]->parent_nodes) {
+                    $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
-                $context->vars_in_scope[$var_id]->tainted = null;
+                    $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($var_id, $var_location);
+
+                    $codebase->taint->addTaintNode($new_parent_node);
+
+                    foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
+                        $codebase->taint->addPath($parent_node, $new_parent_node, [], $removed_taints);
+                    }
+
+                    $context->vars_in_scope[$var_id]->parent_nodes = [$new_parent_node];
+                }
             }
         }
 

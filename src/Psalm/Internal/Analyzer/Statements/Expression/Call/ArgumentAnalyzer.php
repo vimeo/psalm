@@ -11,7 +11,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Taint\Sink;
-use Psalm\Internal\Taint\Source;
+use Psalm\Internal\Taint\TaintNode;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\CodeLocation;
@@ -63,7 +63,7 @@ class ArgumentAnalyzer
         Context $context,
         array $class_generic_params,
         ?TemplateResult $template_result,
-        bool $function_is_pure,
+        bool $specialize_taint,
         bool $in_call_map
     ) {
         $codebase = $statements_analyzer->getCodebase();
@@ -137,7 +137,7 @@ class ArgumentAnalyzer
             $context,
             $class_generic_params,
             $template_result,
-            $function_is_pure,
+            $specialize_taint,
             $in_call_map
         ) === false) {
             return false;
@@ -166,7 +166,7 @@ class ArgumentAnalyzer
         Context $context,
         ?array $class_generic_params,
         ?TemplateResult $template_result,
-        bool $function_is_pure,
+        bool $specialize_taint,
         bool $in_call_map
     ) {
         if (!$function_param->type) {
@@ -404,7 +404,7 @@ class ArgumentAnalyzer
             $function_param,
             $arg->unpack,
             $unpacked_atomic_array,
-            $function_is_pure,
+            $specialize_taint,
             $in_call_map,
             $function_location
         ) === false) {
@@ -429,7 +429,7 @@ class ArgumentAnalyzer
         FunctionLikeParameter $function_param,
         bool $unpack,
         ?Type\Atomic $unpacked_atomic_array,
-        bool $function_is_pure,
+        bool $specialize_taint,
         bool $in_call_map,
         CodeLocation $function_location
     ) {
@@ -474,7 +474,7 @@ class ArgumentAnalyzer
                     $function_location,
                     $function_param,
                     $input_type,
-                    $function_is_pure
+                    $specialize_taint
                 );
             }
 
@@ -537,7 +537,7 @@ class ArgumentAnalyzer
                     $function_location,
                     $function_param,
                     $input_type,
-                    $function_is_pure
+                    $specialize_taint
                 );
             }
 
@@ -628,7 +628,7 @@ class ArgumentAnalyzer
                 $function_location,
                 $function_param,
                 $input_type,
-                $function_is_pure
+                $specialize_taint
             );
 
             if ($old_input_type !== $input_type) {
@@ -1123,7 +1123,7 @@ class ArgumentAnalyzer
         CodeLocation $function_location,
         FunctionLikeParameter $function_param,
         Type\Union &$input_type,
-        bool $function_is_pure
+        bool $specialize_taint
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1131,39 +1131,55 @@ class ArgumentAnalyzer
             return;
         }
 
-        $method_sink = Sink::getForMethodArgument(
-            $cased_method_id,
-            $cased_method_id,
-            $argument_offset,
-            $code_location
-        );
+        if ($specialize_taint) {
+            $method_node = TaintNode::getForMethodArgument(
+                $cased_method_id,
+                $cased_method_id,
+                $argument_offset,
+                $code_location,
+                $function_location
+            );
+        } else {
+            $method_node = TaintNode::getForMethodArgument(
+                $cased_method_id,
+                $cased_method_id,
+                $argument_offset,
+                $code_location
+            );
+        }
 
-        $child_sink = null;
-
-        if (($function_param->sink || ($child_sink = $codebase->taint->hasPreviousSink($method_sink, $suffixes)))
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-            && $input_type->sources
-        ) {
-            $all_possible_sinks = [];
-
-            foreach ($input_type->sources as $source) {
-                if ($codebase->taint->hasExistingSink($source)) {
-                    continue;
-                }
-
-                $base_sink = new Sink(
-                    $source->id,
-                    $source->label,
-                    $source->code_location
+        if ($function_param->sinks) {
+            if ($specialize_taint) {
+                $sink = Sink::getForMethodArgument(
+                    $cased_method_id,
+                    $cased_method_id,
+                    $argument_offset,
+                    $code_location,
+                    $function_location
                 );
+            } else {
+                $sink = Sink::getForMethodArgument(
+                    $cased_method_id,
+                    $cased_method_id,
+                    $argument_offset,
+                    $code_location
+                );
+            }
 
-                $base_sink->children = [$child_sink ?: $method_sink];
+            $sink->taints = $function_param->sinks;
 
-                $all_possible_sinks[] = $base_sink;
+            $codebase->taint->addSink($sink);
+        }
 
-                if (strpos($source->id, '::') && strpos($source->id, '#')) {
-                    list($fq_classlike_name, $method_name) = explode('::', $source->id);
-                    list(, $cased_method_name) = explode('::', $source->label);
+        $codebase->taint->addTaintNode($method_node);
+
+        if (!in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && $input_type->parent_nodes
+        ) {
+            foreach ($input_type->parent_nodes as $parent_node) {
+                if (strpos($parent_node->id, '::') && strpos($parent_node->id, '#')) {
+                    list($fq_classlike_name, $method_name) = explode('::', $parent_node->id);
+                    list(, $cased_method_name) = explode('::', $parent_node->label);
 
                     $method_name_parts = explode('#', $method_name);
                     list($cased_method_name) = explode('#', $cased_method_name);
@@ -1176,7 +1192,7 @@ class ArgumentAnalyzer
                         $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
                             $dependent_classlike_lc
                         );
-                        $new_sink = Sink::getForMethodArgument(
+                        $new_sink = TaintNode::getForMethodArgument(
                             $dependent_classlike_lc . '::' . $method_name,
                             $dependent_classlike_storage->name . '::' . $cased_method_name,
                             (int) $method_name_parts[1] - 1,
@@ -1184,16 +1200,13 @@ class ArgumentAnalyzer
                             null
                         );
 
-                        $new_sink->children = [$child_sink ?: $method_sink];
-
-                        $new_sink->taint = $child_sink ? $child_sink->taint : $function_param->sink;
-
-                        $all_possible_sinks[] = $new_sink;
+                        $codebase->taint->addTaintNode($new_sink);
+                        $codebase->taint->addPath($new_sink, $method_node);
                     }
 
                     if (isset($class_storage->overridden_method_ids[$method_name])) {
                         foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
-                            $new_sink = Sink::getForMethodArgument(
+                            $new_sink = TaintNode::getForMethodArgument(
                                 (string) $parent_method_id,
                                 $codebase->methods->getCasedMethodId($parent_method_id),
                                 (int) $method_name_parts[1] - 1,
@@ -1201,95 +1214,24 @@ class ArgumentAnalyzer
                                 null
                             );
 
-                            $new_sink->taint = $child_sink ? $child_sink->taint : $function_param->sink;
-                            $new_sink->children = [$child_sink ?: $method_sink];
-
-                            $all_possible_sinks[] = $new_sink;
+                            $codebase->taint->addTaintNode($new_sink);
+                            $codebase->taint->addPath($new_sink, $method_node);
                         }
                     }
                 }
             }
-
-            $codebase->taint->addSinks(
-                $all_possible_sinks
-            );
         }
 
-        if ($function_param->sink
-            && $input_type->tainted
-            && ($function_param->sink & $input_type->tainted)
-            && $input_type->sources
-        ) {
-            $method_sink = Sink::getForMethodArgument(
-                $cased_method_id,
-                $cased_method_id,
-                $argument_offset,
-                $code_location
-            );
-
-            $existing_sink = $codebase->taint->hasExistingSink($method_sink);
-
-            foreach ($input_type->sources as $input_source) {
-                $existing_source = $codebase->taint->hasExistingSource($input_source);
-
-                if (IssueBuffer::accepts(
-                    new TaintedInput(
-                        'in path ' . $codebase->taint->getPredecessorPath($existing_source ?: $input_source)
-                            . ' out path ' . $codebase->taint->getSuccessorPath($existing_sink ?: $method_sink),
-                        $code_location
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+        if ($input_type->parent_nodes) {
+            foreach ($input_type->parent_nodes as $parent_node) {
+                $codebase->taint->addTaintNode($method_node);
+                $codebase->taint->addPath($parent_node, $method_node);
             }
-        } elseif ($input_type->sources) {
-            if ($function_is_pure) {
-                $codebase->taint->addSpecialization(
-                    strtolower($cased_method_id . '#' . ($argument_offset + 1)),
-                    $function_location->file_name . ':' . $function_location->raw_file_start
-                );
-            }
-
-            foreach ($input_type->sources as $type_source) {
-                if (($previous_source = $codebase->taint->hasPreviousSource($type_source)) || $input_type->tainted) {
-                    if ($function_is_pure) {
-                        $method_source = Source::getForMethodArgument(
-                            $cased_method_id,
-                            $cased_method_id,
-                            $argument_offset,
-                            $code_location,
-                            $function_location
-                        );
-                    } else {
-                        $method_source = Source::getForMethodArgument(
-                            $cased_method_id,
-                            $cased_method_id,
-                            $argument_offset,
-                            $code_location
-                        );
-                    }
-
-                    $method_source->taint = $input_type->tainted ?: 0;
-
-                    $method_source->parents = [$previous_source ?: $type_source];
-
-                    $codebase->taint->addSources(
-                        [$method_source]
-                    );
-                }
-            }
-        } elseif ($input_type->tainted) {
-            throw new \UnexpectedValueException(
-                'sources should exist for tainted var in '
-                    . $code_location->getShortSummary()
-            );
         }
 
         if ($function_param->assert_untainted) {
             $input_type = clone $input_type;
-            $input_type->tainted = null;
-            $input_type->sources = [];
+            $input_type->parent_nodes = [];
         }
     }
 }

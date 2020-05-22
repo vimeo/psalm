@@ -69,9 +69,9 @@ class FunctionLikeParameter
     public $is_variadic;
 
     /**
-     * @var int
+     * @var array<string>|null
      */
-    public $sink = 0;
+    public $sinks;
 
     /**
      * @var bool

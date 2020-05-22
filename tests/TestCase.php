@@ -125,11 +125,7 @@ class TestCase extends BaseTestCase
         $file_analyzer->analyze($context);
 
         if ($codebase->taint) {
-            while ($codebase->taint->hasNewSinksAndSources()) {
-                $codebase->taint->clearNewSinksAndSources();
-
-                $file_analyzer->analyze($context);
-            }
+            $codebase->taint->connectSinksAndSources();
         }
 
         if ($track_unused_suppressions) {

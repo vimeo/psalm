@@ -494,24 +494,17 @@ class ConcatAnalyzer
 
         if ($codebase->taint && $result_type) {
             $sources = [];
-            $either_tainted = 0;
 
             if ($left_type) {
-                $sources = $left_type->sources ?: [];
-                $either_tainted = $left_type->tainted;
+                $sources = $left_type->parent_nodes ?: [];
             }
 
             if ($right_type) {
-                $sources = array_merge($sources, $right_type->sources ?: []);
-                $either_tainted = $either_tainted | $right_type->tainted;
+                $sources = array_merge($sources, $right_type->parent_nodes ?: []);
             }
 
             if ($sources) {
-                $result_type->sources = $sources;
-            }
-
-            if ($either_tainted) {
-                $result_type->tainted = $either_tainted;
+                $result_type->parent_nodes = $sources;
             }
         }
     }

@@ -32,8 +32,9 @@ class DocComment
         'ignore-variable-method', 'ignore-variable-property', 'internal',
         'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
         'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
-        'remove-taint', 'allow-private-mutation', 'readonly-allow-private-mutation',
-        'yield', 'trace', 'import-type',
+        'allow-private-mutation', 'readonly-allow-private-mutation',
+        'yield', 'trace', 'import-type', 'flow', 'specialize-call', 'taint-add',
+        'taint-remove'
     ];
 
     /**

@@ -9,7 +9,7 @@ class TaintTest extends TestCase
     /**
      * @return void
      */
-    public function testTaintedInputFromReturnType()
+    public function testTaintedInputFromReturnTypeSimple()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('TaintedInput');
@@ -105,8 +105,8 @@ class TaintTest extends TestCase
             'somefile.php',
             '<?php
                 class A {
-                    /** @psalm-suppress TaintedInput */
                     public function deleteUser(PDO $pdo) : void {
+                        /** @psalm-taint-remove sql */
                         $userId = (string) $_GET["user_id"];
                         $pdo->exec("delete from users where user_id = " . $userId);
                     }
@@ -127,8 +127,10 @@ class TaintTest extends TestCase
             'somefile.php',
             '<?php
                 class A {
-                    /** @psalm-suppress TaintedInput */
                     public function deleteUser(PDOWrapper $pdo) : void {
+                        /**
+                         * @psalm-taint-remove sql
+                         */
                         $userId = (string) $_GET["user_id"];
                         $pdo->exec("delete from users where user_id = " . $userId);
                     }
@@ -145,7 +147,7 @@ class TaintTest extends TestCase
 
                 class PDOWrapper {
                     /**
-                     * @psalm-taint-sink $sql
+                     * @psalm-taint-sink sql $sql
                      */
                     public function exec(string $sql) : void {}
                 }'
@@ -224,7 +226,7 @@ class TaintTest extends TestCase
 
                 class PDOWrapper {
                     /**
-                     * @psalm-taint-sink $sql
+                     * @psalm-taint-sink sql $sql
                      */
                     public function exec(string $sql) : void {}
                 }'
@@ -239,7 +241,7 @@ class TaintTest extends TestCase
     public function testTaintedInputFromParam()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('path: $_GET (somefile.php:4:41) -> A::getUserId (somefile.php:3:37) -> A::getAppendedUserId (somefile.php:7:37) -> A::getAppendedUserId (somefile.php:12:42) -> A::deleteUser#2 (somefile.php:16:65) -> PDO::exec#1 (somefile.php:17:36)');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:13:49 - Detected tainted sql in path: $_GET (somefile.php:4:41) -> A::getUserId (somefile.php:8:41) -> A::getAppendedUserId (somefile.php:12:35) -> $userId (somefile.php:12:25) -> A::deleteUser#2 (somefile.php:13:49) -> PDO::exec#1 (somefile.php:17:36)');
 
         $this->project_analyzer->trackTaintedInputs();
 
@@ -376,7 +378,7 @@ class TaintTest extends TestCase
     public function testTaintedInputToParamAlternatePath()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('TaintedInput - somefile.php:23:40 - path: $_GET (somefile.php:7:63) -> A::getAppendedUserId#1 (somefile.php:7:54) -> A::getAppendedUserId (somefile.php:11:37) -> A::getAppendedUserId (somefile.php:7:36) -> A::deleteUser#3 (somefile.php:19:81) -> PDO::exec#1 (somefile.php:23:40)');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:7:29 - Detected tainted sql in path: $_GET (somefile.php:7:63) -> A::getAppendedUserId#1 (somefile.php:7:54) -> A::getAppendedUserId (somefile.php:11:37) -> A::deleteUser#3 (somefile.php:7:29) -> PDO::exec#1 (somefile.php:23:40)');
 
         $this->project_analyzer->trackTaintedInputs();
 
@@ -419,7 +421,7 @@ class TaintTest extends TestCase
     public function testTaintedInParentLoader()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('TaintedInput - somefile.php:16:40 - path: $_GET (somefile.php:28:39) -> C::foo#1 (somefile.php:28:30) -> AGrandChild::loadFull#1 (somefile.php:24:47) -> AGrandChild::loadFull#1 (somefile.php:6:45) -> A::loadPartial#1 (somefile.php:16:40) -> PDO::exec#1 (somefile.php:16:40)');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:16:40 - Detected tainted sql in path: $_GET (somefile.php:28:39) -> C::foo#1 (somefile.php:28:30) -> AGrandChild::loadFull#1 (somefile.php:24:47) -> A::loadPartial#1 (somefile.php:16:40) -> PDO::exec#1 (somefile.php:16:40)');
 
         $this->project_analyzer->trackTaintedInputs();
 
@@ -611,7 +613,7 @@ class TaintTest extends TestCase
                      * @psalm-pure
                      */
                     public static function shorten(string $str) : string {
-                        return $str;
+                        return substr($str, 0, 100);
                     }
                 }
 
@@ -897,7 +899,7 @@ class TaintTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testTaintOnStrReplaceCall() : void
+    public function testTaintOnStrReplaceCallSimple() : void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('TaintedInput');
@@ -934,7 +936,7 @@ class TaintTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testTaintOnStrReplaceCallRemoved() : void
+    public function testTaintOnStrReplaceCallRemovedInFunction() : void
     {
         $this->project_analyzer->trackTaintedInputs();
 
@@ -944,7 +946,7 @@ class TaintTest extends TestCase
                 class U {
                     /**
                      * @psalm-pure
-                     * @psalm-remove-taint
+                     * @psalm-taint-remove html
                      */
                     public static function shorten(string $s) : string {
                         return str_replace("foo", "bar", $s);
@@ -991,7 +993,7 @@ class TaintTest extends TestCase
                 class V1 extends V {
                     public function foo(O1 $o) : void {
                         /**
-                         * @psalm-remove-taint
+                         * @psalm-taint-remove html
                          */
                         $a = str_replace("foo", "bar", $o->s);
                         echo $a;

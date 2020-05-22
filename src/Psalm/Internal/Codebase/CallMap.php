@@ -286,13 +286,15 @@ class CallMap
                         || $call_map_key === 'file_put_contents'
                         || $call_map_key === 'fopen')
                 ) {
-                    $function_param->sink = Type\Union::TAINTED_INPUT_SHELL;
+                    $function_param->sinks[] = Type\Union::TAINTED_INPUT_SHELL;
                 }
 
                 if ($arg_offset === 0
                     && ($call_map_key === 'print_r')
                 ) {
-                    $function_param->sink = Type\Union::TAINTED_INPUT_HTML;
+                    $function_param->sinks[] = Type\Union::TAINTED_INPUT_HTML;
+                    $function_param->sinks[] = Type\Union::TAINTED_USER_SECRET;
+                    $function_param->sinks[] = Type\Union::TAINTED_SYSTEM_SECRET;
                 }
 
                 $function_param->signature_type = null;

@@ -192,7 +192,12 @@ class CommentAnalyzer
                 $var_comment->allow_private_mutation
                     = isset($parsed_docblock['specials']['psalm-allow-private-mutation'])
                     || isset($parsed_docblock['specials']['psalm-readonly-allow-private-mutation']);
-                $var_comment->remove_taint = isset($parsed_docblock['specials']['psalm-remove-taint']);
+                if (isset($parsed_docblock['specials']['psalm-taint-remove'])) {
+                    foreach ($parsed_docblock['specials']['psalm-taint-remove'] as $param) {
+                        $param = trim($param);
+                        $var_comment->removed_taints[] = $param;
+                    }
+                }
 
                 if (isset($parsed_docblock['specials']['psalm-internal'])) {
                     $psalm_internal = reset($parsed_docblock['specials']['psalm-internal']);
@@ -218,7 +223,7 @@ class CommentAnalyzer
                 || isset($parsed_docblock['specials']['readonly'])
                 || isset($parsed_docblock['specials']['psalm-readonly'])
                 || isset($parsed_docblock['specials']['psalm-readonly-allow-private-mutation'])
-                || isset($parsed_docblock['specials']['psalm-remove-taint']))
+                || isset($parsed_docblock['specials']['psalm-taint-remove']))
         ) {
             $var_comment = new VarDocblockComment();
             $var_comment->deprecated = isset($parsed_docblock['specials']['deprecated']);
@@ -229,7 +234,13 @@ class CommentAnalyzer
             $var_comment->allow_private_mutation
                 = isset($parsed_docblock['specials']['psalm-allow-private-mutation'])
                 || isset($parsed_docblock['specials']['psalm-readonly-allow-private-mutation']);
-            $var_comment->remove_taint = isset($parsed_docblock['specials']['psalm-remove-taint']);
+
+            if (isset($parsed_docblock['specials']['psalm-taint-remove'])) {
+                foreach ($parsed_docblock['specials']['psalm-taint-remove'] as $param) {
+                    $param = trim($param);
+                    $var_comment->removed_taints[] = $param;
+                }
+            }
 
             $var_comments[] = $var_comment;
         }
@@ -477,11 +488,34 @@ class CommentAnalyzer
             }
         }
 
+        if (isset($parsed_docblock['specials']['psalm-flow'])) {
+            $flow = trim(reset($parsed_docblock['specials']['psalm-flow']));
+            $info->flow = $flow;
+        }
+
         if (isset($parsed_docblock['specials']['psalm-taint-sink'])) {
             foreach ($parsed_docblock['specials']['psalm-taint-sink'] as $param) {
-                $param = trim($param);
+                $param_parts = preg_split('/\s+/', trim($param));
 
-                $info->taint_sink_params[] = ['name' => $param];
+                if (count($param_parts) === 2) {
+                    $info->taint_sink_params[] = ['name' => trim($param_parts[1]), 'taint' => trim($param_parts[0])];
+                } else {
+                    throw new DocblockParseException('Badly-formatted @psalm-taint-sink');
+                }
+            }
+        }
+
+        if (isset($parsed_docblock['specials']['psalm-taint-add'])) {
+            foreach ($parsed_docblock['specials']['psalm-taint-add'] as $param) {
+                $param = trim($param);
+                $info->added_taints[] = $param;
+            }
+        }
+
+        if (isset($parsed_docblock['specials']['psalm-taint-remove'])) {
+            foreach ($parsed_docblock['specials']['psalm-taint-remove'] as $param) {
+                $param = trim($param);
+                $info->removed_taints[] = $param;
             }
         }
 
@@ -548,10 +582,6 @@ class CommentAnalyzer
             if (! $info->internal) {
                 throw new DocblockParseException('@psalm-internal annotation used without @internal');
             }
-        }
-
-        if (isset($parsed_docblock['specials']['psalm-remove-taint'])) {
-            $info->remove_taint = true;
         }
 
         if (isset($parsed_docblock['specials']['psalm-suppress'])) {

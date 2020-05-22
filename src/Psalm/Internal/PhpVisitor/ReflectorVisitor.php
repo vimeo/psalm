@@ -65,6 +65,7 @@ use function strpos;
 use function strtolower;
 use function substr;
 use function trim;
+use function preg_split;
 
 /**
  * @internal
@@ -2175,14 +2176,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         if ($docblock_info->pure) {
             $storage->pure = true;
+            $storage->specialize_call = true;
             $storage->mutation_free = true;
             if ($storage instanceof MethodStorage) {
                 $storage->external_mutation_free = true;
             }
         }
 
-        if ($docblock_info->remove_taint) {
-            $storage->remove_taint = true;
+        if ($docblock_info->specialize_call) {
+            $storage->specialize_call = true;
         }
 
         if ($docblock_info->ignore_nullable_return && $storage->return_type) {
@@ -2468,7 +2470,32 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             foreach ($storage->params as $param_storage) {
                 if ($param_storage->name === $param_name) {
-                    $param_storage->sink = (int) Type\Union::TAINTED_INPUT;
+                    $param_storage->sinks[] = $taint_sink_param['taint'];
+                }
+            }
+        }
+
+        $storage->added_taints = $docblock_info->added_taints;
+        $storage->removed_taints = $docblock_info->removed_taints;
+
+        if ($docblock_info->flow) {
+            $flow_parts = explode('->', $docblock_info->flow);
+
+            if (isset($flow_parts[1]) && trim($flow_parts[1]) === 'return') {
+                $source_param_string = trim($flow_parts[0]);
+
+                if ($source_param_string[0] === '(' && substr($source_param_string, -1) === ')') {
+                    $source_params = preg_split('/, ?/', substr($source_param_string, 1, -1));
+
+                    foreach ($source_params as $source_param) {
+                        $source_param = substr($source_param, 1);
+
+                        foreach ($storage->params as $i => $param_storage) {
+                            if ($param_storage->name === $source_param) {
+                                $storage->return_source_params[] = $i;
+                            }
+                        }
+                    }
                 }
             }
         }

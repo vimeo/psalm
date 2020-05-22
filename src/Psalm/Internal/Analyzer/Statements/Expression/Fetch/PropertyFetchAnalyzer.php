@@ -43,7 +43,7 @@ use function in_array;
 use function array_keys;
 use function count;
 use function explode;
-use Psalm\Internal\Taint\Source;
+use Psalm\Internal\Taint\TaintNode;
 
 /**
  * @internal
@@ -1039,18 +1039,16 @@ class PropertyFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($codebase->taint) {
-            $method_source = new Source(
+            $property_source = new TaintNode(
                 $property_id,
                 $property_id,
-                new CodeLocation($statements_analyzer, $stmt->name)
+                new CodeLocation($statements_analyzer, $stmt->name),
+                null
             );
 
-            $type->sources = [$method_source];
+            $codebase->taint->addTaintNode($property_source);
 
-            if ($tainted_source = $codebase->taint->hasPreviousSource($method_source)) {
-                $type->tainted = $tainted_source->taint;
-                $method_source->taint = $type->tainted;
-            }
+            $type->parent_nodes = [$property_source];
         }
     }
 

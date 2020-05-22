@@ -67,8 +67,7 @@ class TypeExpander
         $fleshed_out_type->by_ref = $return_type->by_ref;
         $fleshed_out_type->initialized = $return_type->initialized;
         $fleshed_out_type->had_template = $return_type->had_template;
-        $fleshed_out_type->sources = $return_type->sources;
-        $fleshed_out_type->tainted = $return_type->tainted;
+        $fleshed_out_type->parent_nodes = $return_type->parent_nodes;
 
         return $fleshed_out_type;
     }

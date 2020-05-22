@@ -36,21 +36,12 @@ use Doctrine\Instantiator\Exception\UnexpectedValueException;
 
 class Union implements TypeNode
 {
-    const TAINTED_INPUT_SQL = 1;
-    const TAINTED_INPUT_HTML = 2;
-    const TAINTED_INPUT_SHELL = 4;
-    const TAINTED_USER_SECRET = 8;
-    const TAINTED_SYSTEM_SECRET = 16;
-
-    const TAINTED_INPUT = self::TAINTED_INPUT_SQL
-        | self::TAINTED_INPUT_HTML
-        | self::TAINTED_INPUT_SHELL;
-
-    const TAINTED = self::TAINTED_INPUT_SQL
-        | self::TAINTED_INPUT_HTML
-        | self::TAINTED_INPUT_SHELL
-        | self::TAINTED_USER_SECRET
-        | self::TAINTED_SYSTEM_SECRET;
+    const TAINTED_INPUT_SQL = 'sql';
+    const TAINTED_INPUT_HTML = 'html';
+    const TAINTED_INPUT_SHELL = 'shell';
+    const TAINTED_USER_SECRET = 'user_secret';
+    const TAINTED_SYSTEM_SECRET = 'system_secret';
+    const TAINTED_INPUT = [self::TAINTED_INPUT_SQL, self::TAINTED_INPUT_HTML, self::TAINTED_INPUT_SHELL];
 
     /**
      * @var non-empty-array<string, Atomic>
@@ -180,14 +171,9 @@ class Union implements TypeNode
     private $id;
 
     /**
-     * @var ?int
+     * @var ?array<\Psalm\Internal\Taint\Taintable>
      */
-    public $tainted = null;
-
-    /**
-     * @var ?array<\Psalm\Internal\Taint\Source>
-     */
-    public $sources;
+    public $parent_nodes;
 
     /**
      * @var bool

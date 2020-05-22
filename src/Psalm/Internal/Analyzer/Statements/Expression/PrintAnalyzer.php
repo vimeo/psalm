@@ -38,7 +38,7 @@ class PrintAnalyzer
                 new FunctionLikeParameter('var', false),
                 false,
                 null,
-                false,
+                true,
                 true,
                 new CodeLocation($statements_analyzer->getSource(), $stmt)
             ) === false) {

@@ -35,6 +35,8 @@ class CastAnalyzer
         PhpParser\Node\Expr\Cast $stmt,
         Context $context
     ) : bool {
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -96,10 +98,9 @@ class CastAnalyzer
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if (($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))
-                && $stmt_expr_type->tainted
+                && $codebase->taint
             ) {
-                $stmt_type->tainted = $stmt_expr_type->tainted;
-                $stmt_type->sources = $stmt_expr_type->sources;
+                $stmt_type->parent_nodes = $stmt_expr_type->parent_nodes;
             }
 
             return true;

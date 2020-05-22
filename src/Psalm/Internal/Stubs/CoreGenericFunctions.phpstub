@@ -249,32 +249,36 @@ function uksort(array &$arr, callable $callback): bool
 }
 
 /**
+ * @psalm-pure
+ *
  * @psalm-template K of array-key
  * @psalm-template T
  *
  * @param array<K,T> $arr
  *
  * @return array<K,T>
- * @psalm-pure
  */
 function array_change_key_case(array $arr, int $case = CASE_LOWER)
 {
 }
 
 /**
+ * @psalm-pure
+ *
  * @psalm-template TKey as array-key
  *
  * @param TKey $key
  * @param array<TKey, mixed> $search
  *
  * @return bool
- * @psalm-pure
  */
 function array_key_exists($key, array $search) : bool
 {
 }
 
 /**
+ * @psalm-pure
+ *
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
@@ -282,13 +286,14 @@ function array_key_exists($key, array $search) : bool
  * @param array<TKey, TValue> ...$arr2
  *
  * @return array<TKey, TValue>
- * @psalm-pure
  */
 function array_merge_recursive(array $arr, array ...$arr2)
 {
 }
 
 /**
+ * @psalm-pure
+ *
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
@@ -296,13 +301,14 @@ function array_merge_recursive(array $arr, array ...$arr2)
  * @param TValue $value
  *
  * @return array<TKey, TValue>
- * @psalm-pure
  */
 function array_fill_keys(array $keys, $value): array
 {
 }
 
 /**
+ * @psalm-pure
+ *
  * @psalm-template TKey
  *
  * @param string $pattern
@@ -334,6 +340,9 @@ function sodium_memzero(string &$reference): void
  * @param mixed $var
  * @param bool $return
  * @return ($return is true ? string : void)
+ *
+ * @psalm-specialize-call
+ * @psalm-flow ($var) -> return
  */
 function var_export($var, bool $return = false) {}
 
@@ -341,38 +350,55 @@ function var_export($var, bool $return = false) {}
  * @param mixed $var
  * @param bool $return
  * @return ($return is true ? string : true)
+ *
+ * @psalm-specialize-call
+ * @psalm-flow ($var) -> return
  */
 function print_r($var, bool $return = false) {}
 
 /**
+ * @psalm-pure
+ *
  * @param mixed $var
  * @return ($return is true ? string : bool)
  */
 function highlight_file($var, bool $return = false) {}
 
 /**
+ * @psalm-pure
+ *
  * @param mixed $var
  * @return ($return is true ? string : bool)
+ *
+ * @psalm-flow ($var) -> return
  */
 function highlight_string($var, bool $return = false) {}
 
 /**
+ * @psalm-pure
+ *
  * @return ($get_as_float is true ? float : string)
  */
 function microtime(bool $get_as_float = false) {}
 
 /**
+ * @psalm-pure
+ *
  * @return ($return_float is true ? float : array<string, int>)
  */
 function gettimeofday(bool $return_float = false) {}
 
 /**
+ * @psalm-pure
+ *
  * @param numeric $number
  * @return ($number is int ? int : ($number is float ? float : int|float))
  */
 function abs($number) {}
 
 /**
+ * @psalm-pure
+ *
  * @template T as string|int|float
  * @template TStep as int|float
  * @param T $start
@@ -399,6 +425,8 @@ function abs($number) {}
 function range($start, $end, $step = 1) {}
 
 /**
+ * @psalm-pure
+ *
  * @return (
  *     $format is 'd'|'j'|'N'|'w'|'z'|'W'|'m'|'n'|'t'|'L'|'o'|'Y'|'y'|'B'|'g'|'G'|'h'|'H'|'i'|'s'|'u'|'v'|'Z'|'U'|'I'
  *     ? numeric-string
@@ -408,6 +436,8 @@ function range($start, $end, $step = 1) {}
 function date(string $format, int $timestamp = 0) {}
 
 /**
+ * @psalm-pure
+ *
  * @param mixed $vars
  * @param-out string|int|float $vars
  * @return (func_num_args() is 2 ? list<float|int|string> : int)
@@ -415,6 +445,8 @@ function date(string $format, int $timestamp = 0) {}
 function sscanf(string $str, string $format, &...$vars) {}
 
 /**
+ * @psalm-pure
+ *
  * @return (
  *     func_num_args() is 1
  *     ? array{dirname: string, basename: string, extension?: string, filename: string}
@@ -424,6 +456,8 @@ function sscanf(string $str, string $format, &...$vars) {}
 function pathinfo(string $path, int $options = \PATHINFO_DIRNAME) {}
 
 /**
+ * @psalm-pure
+ *
  * @template T as scalar
  * @template TFirstArg as array<T>|T
  *
@@ -435,6 +469,8 @@ function pathinfo(string $path, int $options = \PATHINFO_DIRNAME) {}
 function min($arg_1, ...$arg_2) {}
 
 /**
+ * @psalm-pure
+ *
  * @template T as scalar
  * @template TFirstArg as array<T>|T
  *
@@ -446,18 +482,33 @@ function min($arg_1, ...$arg_2) {}
 function max($arg_1, ...$arg_2) {}
 
 /**
+ * @psalm-pure
+ *
  * @return (func_num_args() is 0 ? array<string, string> : string|false)
  */
 function getenv(string $varname = '', bool $local_only = false) {}
 
 /**
+ * @psalm-pure
+ *
  * @return (
  *     $str is non-empty-string ? non-empty-lowercase-string : lowercase-string
  * )
+ *
+ * @psalm-flow ($str) -> return
  */
 function strtolower(string $str) : string {}
 
 /**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function strtoupper(string $str) : string {}
+
+/**
+ * @psalm-pure
+ *
  * @param string|array $glue
  *
  * @return (
@@ -467,6 +518,8 @@ function strtolower(string $str) : string {}
  *         : string)
  *     : string
  * )
+ *
+ * @psalm-flow ($glue, $pieces) -> return
  */
 function implode($glue, array $pieces = []) : string {}
 
@@ -474,8 +527,8 @@ function implode($glue, array $pieces = []) : string {}
  * @param array $input
  *
  * @return (
- *     $input is array<int> 
- *     ? int 
+ *     $input is array<int>
+ *     ? int
  *     : ($input is array<float>
  *         ? float
  *         : float|int
@@ -483,3 +536,99 @@ function implode($glue, array $pieces = []) : string {}
  * )
  */
 function array_sum(array $input) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-remove html
+ * @psalm-flow ($str) -> return
+ */
+function strip_tags(string $str, ?string $allowable_tags = null) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-remove html
+ *
+ * @psalm-flow ($string) -> return
+ */
+function htmlentities(string $string, ?int $quote_style = null, ?string $charset = null, bool $double_encode = true) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-add html
+ *
+ * @psalm-flow ($string) -> return
+ */
+function html_entity_decode(string $string, ?int $quote_style = null, ?string $charset = null) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-remove html
+ * @psalm-taint-remove sql
+ *
+ * @psalm-flow ($string) -> return
+ */
+function htmlspecialchars(string $string, int $flags = ENT_COMPAT | ENT_HTML401, string $encoding = 'UTF-8', bool $double_encode = true) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-add html
+ * @psalm-taint-add sql
+ *
+ * @psalm-flow ($string) -> return
+ */
+function htmlspecialchars_decode(string $string, ?int $quote_style = null) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @param string|string[] $search
+ * @param string|string[] $replace
+ * @param string|string[] $subject
+ * @param int $count
+ * @return string|string[]
+ *
+ * @psalm-flow ($replace, $subject) -> return
+ */
+function str_replace($search, $replace, $subject, &$count = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @param string|string[] $search
+ * @param string|string[] $replace
+ * @param string|string[] $subject
+ * @param int $count
+ * @return string|string[]
+ *
+ * @psalm-flow ($replace, $subject) -> return
+ */
+function preg_replace($search, $replace, $subject, int $limit = -1, &$count = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @return string|false
+ * @psalm-ignore-falsable-return
+ *
+ * @psalm-flow ($string) -> return
+ */
+function substr(string $string, int $start, ?int $length = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function preg_quote(string $str, ?string $delimiter = null) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($format, $args) -> return
+ */
+function sprintf(string $format, ...$args) : string {}

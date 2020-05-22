@@ -45,8 +45,7 @@ use function count;
 use function in_array;
 use function strtolower;
 use function explode;
-use Psalm\Internal\Taint\Sink;
-use Psalm\Internal\Taint\Source;
+use Psalm\Internal\Taint\TaintNode;
 
 /**
  * @internal
@@ -1081,72 +1080,19 @@ class PropertyAssignmentAnalyzer
 
         $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $method_sink = new Sink(
+        $property_node = new TaintNode(
             $property_id,
             $property_id,
-            $code_location
+            $code_location,
+            null
         );
 
-        if ($assignment_value_type->tainted) {
-            $method_sink->taint = $assignment_value_type->tainted;
-        }
+        $codebase->taint->addTaintNode($property_node);
 
-        if ($child_sink = $codebase->taint->hasPreviousSink($method_sink)) {
-            if ($assignment_value_type->sources) {
-                $codebase->taint->addSinks(
-                    \array_map(
-                        function (Source $assignment_source) use ($child_sink) {
-                            $new_sink = new Sink(
-                                $assignment_source->id,
-                                $assignment_source->label,
-                                $assignment_source->code_location
-                            );
-
-                            $new_sink->children = [$child_sink];
-
-                            return $new_sink;
-                        },
-                        $assignment_value_type->sources
-                    )
-                );
+        if ($assignment_value_type->parent_nodes) {
+            foreach ($assignment_value_type->parent_nodes as $parent_node) {
+                $codebase->taint->addPath($parent_node, $property_node);
             }
-        }
-
-        if ($assignment_value_type->sources) {
-            foreach ($assignment_value_type->sources as $type_source) {
-                if (($previous_source = $codebase->taint->hasPreviousSource($type_source))
-                    || $assignment_value_type->tainted
-                ) {
-                    if (!$previous_source) {
-                        $previous_source = new Source(
-                            $type_source->id,
-                            $type_source->label,
-                            $type_source->code_location
-                        );
-
-                        $previous_source->taint = $assignment_value_type->tainted;
-                    }
-
-                    $new_source = new Source(
-                        $property_id,
-                        $property_id,
-                        $code_location
-                    );
-
-                    $new_source->parents = [$previous_source];
-                    $new_source->taint = $previous_source->taint;
-
-                    $codebase->taint->addSources(
-                        [$new_source]
-                    );
-                }
-            }
-        } elseif ($assignment_value_type->tainted) {
-            throw new \UnexpectedValueException(
-                'sources should exist for tainted var in '
-                    . $statements_analyzer->getFileName() . ':'
-                    . $stmt->getLine()
-            );
         }
     }
 

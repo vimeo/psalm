@@ -12,7 +12,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use function strtolower;
-use Psalm\Internal\Taint\Source;
+use Psalm\Internal\Taint\TaintNode;
 
 class MethodCallReturnTypeFetcher
 {
@@ -179,13 +179,24 @@ class MethodCallReturnTypeFetcher
                         && $codebase->classlike_storage_provider->get($static_type->value)->final
                 );
 
-                if ($codebase->taint) {
-                    $return_type_candidate->sources = [
-                        new Source(
-                            strtolower((string) $method_id),
-                            $cased_method_id,
-                            new CodeLocation($statements_analyzer, $stmt->name)
-                        )
+                if ($codebase->taint && $declaring_method_id) {
+                    $method_storage = $codebase->methods->getStorage(
+                        $declaring_method_id
+                    );
+
+                    $node_location = new CodeLocation($statements_analyzer, $stmt);
+
+                    $method_call_node = TaintNode::getForMethodReturn(
+                        (string) $method_id,
+                        $cased_method_id,
+                        $node_location,
+                        $method_storage->specialize_call ? $node_location : null
+                    );
+
+                    $codebase->taint->addTaintNode($method_call_node);
+
+                    $return_type_candidate->parent_nodes = [
+                        $method_call_node
                     ];
                 }
 

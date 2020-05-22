@@ -3,6 +3,8 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Taint\TaintNode;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
 use function strtolower;
@@ -222,75 +224,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
         }
 
         return $call_map_return_type;
-    }
-
-    /**
-     * @param  array<PhpParser\Node\Arg>   $call_args
-     */
-    public static function taintBuiltinFunctionReturn(
-        StatementsAnalyzer $statements_analyzer,
-        string $function_id,
-        array $call_args,
-        Type\Union $return_type
-    ) : void {
-        $codebase = $statements_analyzer->getCodebase();
-
-        if (!$codebase->taint) {
-            return;
-        }
-
-        switch ($function_id) {
-            case 'htmlspecialchars':
-                if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))
-                    && $first_arg_type->tainted
-                ) {
-                    // input is now safe from tainted sql and html
-                    $return_type->tainted = $first_arg_type->tainted
-                        & ~(Type\Union::TAINTED_INPUT_SQL | Type\Union::TAINTED_INPUT_HTML);
-                    $return_type->sources = $first_arg_type->sources;
-                }
-                break;
-
-            case 'strtolower':
-            case 'strtoupper':
-            case 'sprintf':
-            case 'preg_quote':
-            case 'substr':
-                if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))
-                    && $first_arg_type->tainted
-                ) {
-                    $return_type->tainted = $first_arg_type->tainted;
-                    $return_type->sources = $first_arg_type->sources;
-                }
-
-                break;
-
-            case 'str_replace':
-            case 'preg_replace':
-                $first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value);
-                $third_arg_type = $statements_analyzer->node_data->getType($call_args[2]->value);
-
-                $first_arg_taint = $first_arg_type->tainted ?? 0;
-                $third_arg_taint = $third_arg_type->tainted ?? 0;
-                if ($first_arg_taint || $third_arg_taint) {
-                    $return_type->tainted = $first_arg_taint | $third_arg_taint;
-                    $return_type->sources = $first_arg_type->sources ?? [];
-                }
-
-                break;
-
-            case 'htmlentities':
-            case 'striptags':
-                if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))
-                    && $first_arg_type->tainted
-                ) {
-                    // input is now safe from tainted html
-                    $return_type->tainted = $first_arg_type->tainted
-                        & ~Type\Union::TAINTED_INPUT_HTML;
-                    $return_type->sources = $first_arg_type->sources;
-                }
-                break;
-        }
     }
 
     /**

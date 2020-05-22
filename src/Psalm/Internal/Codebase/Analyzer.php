@@ -268,40 +268,24 @@ class Analyzer
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint) {
-            $i = 0;
-            while ($codebase->taint->hasNewSinksAndSources() && ++$i <= 4) {
-                $project_analyzer->progress->write("\n\n" . 'Found tainted inputs, reanalysing' . "\n\n");
-
-                $this->files_to_analyze = $codebase->taint->getFilesToAnalyze(
-                    $codebase->file_reference_provider,
-                    $codebase->file_storage_provider,
-                    $codebase->classlike_storage_provider,
-                    $codebase->config
-                );
-
-                $codebase->taint->clearNewSinksAndSources();
-
-                $this->doAnalysis($project_analyzer, $pool_size, true);
-            }
-
-            $this->progress->finish();
-        } else {
-            $this->progress->finish();
-
-            if ($consolidate_analyzed_data) {
-                $project_analyzer->consolidateAnalyzedData();
-            }
-
-            foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
-                $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
-
-                foreach ($file_issues as $issue_data) {
-                    $codebase->file_reference_provider->addIssue($file_path, $issue_data);
-                }
-            }
-
-            $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
+            $codebase->taint->connectSinksAndSources();
         }
+
+        $this->progress->finish();
+
+        if ($consolidate_analyzed_data) {
+            $project_analyzer->consolidateAnalyzedData();
+        }
+
+        foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
+            $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
+
+            foreach ($file_issues as $issue_data) {
+                $codebase->file_reference_provider->addIssue($file_path, $issue_data);
+            }
+        }
+
+        $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
         if ($codebase->track_unused_suppressions) {
             IssueBuffer::processUnusedSuppressions($codebase->file_provider);

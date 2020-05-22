@@ -14,8 +14,7 @@ use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
-use Psalm\Internal\Taint\Sink;
-use Psalm\Internal\Taint\Source;
+use Psalm\Internal\Taint\TaintNode;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
@@ -194,7 +193,6 @@ class ReturnAnalyzer
                 );
 
                 self::handleTaints(
-                    $statements_analyzer,
                     $codebase,
                     $stmt,
                     $cased_method_id,
@@ -477,109 +475,37 @@ class ReturnAnalyzer
     }
 
     private static function handleTaints(
-        StatementsAnalyzer $statements_analyzer,
         \Psalm\Codebase $codebase,
         PhpParser\Node\Stmt\Return_ $stmt,
         string $cased_method_id,
         Type\Union $inferred_type,
         \Psalm\Storage\FunctionLikeStorage $storage
     ) : void {
-        if (!$codebase->taint || !$stmt->expr || !$storage->location || $storage->remove_taint) {
+        if (!$codebase->taint || !$stmt->expr || !$storage->location) {
             return;
         }
 
-        $method_sink = new Sink(
+        $method_node = TaintNode::getForMethodReturn(
             strtolower($cased_method_id),
             $cased_method_id,
             $storage->location
         );
 
-        if ($previous_sink = $codebase->taint->hasPreviousSink($method_sink, $suffixes)) {
-            if ($inferred_type->sources) {
-                if ($suffixes !== null) {
-                    $new_sinks = [];
+        $codebase->taint->addTaintNode($method_node);
 
-                    foreach ($suffixes as $suffix) {
-                        foreach ($inferred_type->sources as $inferred_source) {
-                            $codebase->taint->addSpecialization($inferred_source->id, $suffix);
-
-                            $new_sink = new Sink(
-                                $inferred_source->id . '-' . $suffix,
-                                $inferred_source->label,
-                                $inferred_source->code_location
-                            );
-
-                            $new_sink->children = [$previous_sink];
-
-                            $new_sinks[] = $new_sink;
-                        }
-                    }
-                } else {
-                    $new_sinks = \array_map(
-                        function (Source $inferred_source) use ($previous_sink) {
-                            $new_sink = new Sink(
-                                $inferred_source->id,
-                                $inferred_source->label,
-                                $inferred_source->code_location
-                            );
-
-                            $new_sink->children = [$previous_sink];
-                            return $new_sink;
-                        },
-                        $inferred_type->sources
-                    );
-                }
-
-                $codebase->taint->addSinks(
-                    $new_sinks
-                );
-            }
+        if ($storage->specialize_call) {
+            //$codebase->taint->addSpecializedCall($cased_method_id);
         }
 
-        if ($inferred_type->sources) {
-            foreach ($inferred_type->sources as $type_source) {
-                if (($previous_source = $codebase->taint->hasPreviousSource($type_source, $suffixes))
-                    || $inferred_type->tainted
-                ) {
-                    if ($suffixes !== null) {
-                        $new_sources = [];
-
-                        foreach ($suffixes as $suffix) {
-                            $codebase->taint->addSpecialization(strtolower($cased_method_id), $suffix);
-
-                            $new_source = new Source(
-                                strtolower($cased_method_id . '-' . $suffix),
-                                $cased_method_id,
-                                $storage->location
-                            );
-
-                            $new_source->parents = [$previous_source ?: $type_source];
-
-                            $new_sources[] = $new_source;
-                        }
-                    } else {
-                        $new_source = new Source(
-                            strtolower($cased_method_id),
-                            $cased_method_id,
-                            $storage->location
-                        );
-
-                        $new_source->parents = [$previous_source ?: $type_source];
-
-                        $new_sources = [$new_source];
-                    }
-
-                    $codebase->taint->addSources(
-                        $new_sources
-                    );
-                }
+        if ($inferred_type->parent_nodes) {
+            foreach ($inferred_type->parent_nodes as $parent_node) {
+                $codebase->taint->addPath(
+                    $parent_node,
+                    $method_node,
+                    $storage->added_taints,
+                    $storage->removed_taints
+                );
             }
-        } elseif ($inferred_type->tainted) {
-            throw new \UnexpectedValueException(
-                'sources should exist for tainted var in '
-                    . $statements_analyzer->getFileName() . ':'
-                    . $stmt->getLine()
-            );
         }
     }
 

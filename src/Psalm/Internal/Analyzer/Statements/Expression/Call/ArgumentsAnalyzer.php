@@ -554,7 +554,7 @@ class ArgumentsAnalyzer
                 $context,
                 $class_generic_params,
                 $template_result,
-                $function_storage ? $function_storage->pure : false,
+                $function_storage ? $function_storage->pure : true,
                 $in_call_map
             ) === false) {
                 return false;

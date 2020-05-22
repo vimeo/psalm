@@ -48,8 +48,7 @@ class ArrayAnalyzer
 
         $all_list = true;
 
-        $taint_sources = [];
-        $either_tainted = 0;
+        $parent_taint_nodes = [];
 
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
@@ -205,13 +204,11 @@ class ArrayAnalyzer
 
             if ($codebase->taint) {
                 if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
-                    $taint_sources = array_merge($taint_sources, $item_value_type->sources ?: []);
-                    $either_tainted = $either_tainted | $item_value_type->tainted;
+                    $parent_taint_nodes = array_merge($parent_taint_nodes, $item_value_type->parent_nodes ?: []);
                 }
 
                 if ($item->key && ($item_key_type = $statements_analyzer->node_data->getType($item->key))) {
-                    $taint_sources = array_merge($taint_sources, $item_key_type->sources ?: []);
-                    $either_tainted = $either_tainted | $item_key_type->tainted;
+                    $parent_taint_nodes = array_merge($parent_taint_nodes, $item_key_type->parent_nodes ?: []);
                 }
             }
 
@@ -297,12 +294,8 @@ class ArrayAnalyzer
 
             $stmt_type = new Type\Union([$object_like]);
 
-            if ($taint_sources) {
-                $stmt_type->sources = $taint_sources;
-            }
-
-            if ($either_tainted) {
-                $stmt_type->tainted = $either_tainted;
+            if ($parent_taint_nodes) {
+                $stmt_type->parent_nodes = $parent_taint_nodes;
             }
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -318,12 +311,8 @@ class ArrayAnalyzer
                 $array_type,
             ]);
 
-            if ($taint_sources) {
-                $stmt_type->sources = $taint_sources;
-            }
-
-            if ($either_tainted) {
-                $stmt_type->tainted = $either_tainted;
+            if ($parent_taint_nodes) {
+                $stmt_type->parent_nodes = $parent_taint_nodes;
             }
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -342,12 +331,8 @@ class ArrayAnalyzer
             $array_type,
         ]);
 
-        if ($taint_sources) {
-            $stmt_type->sources = $taint_sources;
-        }
-
-        if ($either_tainted) {
-            $stmt_type->tainted = $either_tainted;
+        if ($parent_taint_nodes) {
+            $stmt_type->parent_nodes = $parent_taint_nodes;
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);

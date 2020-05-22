@@ -33,7 +33,7 @@ use function strpos;
 use function is_string;
 use function strlen;
 use function substr;
-use Psalm\Internal\Taint\Source;
+use Psalm\Internal\Taint\TaintNode;
 
 /**
  * @internal
@@ -1150,27 +1150,26 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if ($return_type_candidate) {
                     if ($codebase->taint) {
-                        if ($method_storage && $method_storage->pure) {
-                            $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+                        $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                            $method_source = new Source(
-                                strtolower(
-                                    $method_id
-                                        . '-' . $code_location->file_name
-                                        . ':' . $code_location->raw_file_start
-                                ),
+                        if ($method_storage && $method_storage->pure) {
+                            $method_source = TaintNode::getForMethodReturn(
+                                (string) $method_id,
                                 $cased_method_id,
-                                new CodeLocation($source, $stmt->name)
+                                $code_location,
+                                $code_location
                             );
                         } else {
-                            $method_source = new Source(
-                                strtolower((string) $method_id),
+                            $method_source = TaintNode::getForMethodReturn(
+                                (string) $method_id,
                                 $cased_method_id,
-                                new CodeLocation($source, $stmt->name)
+                                $code_location
                             );
                         }
 
-                        $return_type_candidate->sources = [$method_source];
+                        $codebase->taint->addTaintNode($method_source);
+
+                        $return_type_candidate->parent_nodes = [$method_source];
                     }
 
                     if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {

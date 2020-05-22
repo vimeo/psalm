@@ -57,6 +57,7 @@ use function strtolower;
 use function in_array;
 use function is_int;
 use function preg_match;
+use Psalm\Internal\Taint\TaintNode;
 use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Type\TemplateResult;
 
@@ -190,16 +191,24 @@ class ArrayFetchAnalyzer
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-            if ($array_var_id === '$_GET' || $array_var_id === '$_POST' || $array_var_id === '$_COOKIE') {
-                $stmt_type->tainted = (int) Type\Union::TAINTED_INPUT;
-                $stmt_type->sources = [
-                    new Source(
+            if ($codebase->taint) {
+                if ($array_var_id === '$_GET' || $array_var_id === '$_POST' || $array_var_id === '$_COOKIE') {
+                    $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                    $server_taint_source = new Source(
+                        $array_var_id . ':' . $taint_location->file_name . ':' . $taint_location->raw_file_start,
                         $array_var_id,
-                        $array_var_id,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        (int) Type\Union::TAINTED_INPUT
-                    )
-                ];
+                        $taint_location,
+                        null,
+                        Type\Union::TAINTED_INPUT
+                    );
+
+                    $codebase->taint->addSource($server_taint_source);
+
+                    $stmt_type->parent_nodes = [
+                        $server_taint_source
+                    ];
+                }
             }
 
             if ($context->inside_isset
@@ -299,17 +308,11 @@ class ArrayFetchAnalyzer
 
         if ($codebase->taint && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))) {
             $sources = [];
-            $either_tainted = 0;
 
-            $sources = \array_merge($sources, $stmt_var_type->sources ?: []);
-            $either_tainted = $either_tainted | $stmt_var_type->tainted;
+            $sources = \array_merge($sources, $stmt_var_type->parent_nodes ?: []);
 
             if ($sources) {
-                $stmt_type->sources = $sources;
-            }
-
-            if ($either_tainted) {
-                $stmt_type->tainted = $either_tainted;
+                $stmt_type->parent_nodes = $sources;
             }
         }
 

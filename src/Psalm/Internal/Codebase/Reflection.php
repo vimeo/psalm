@@ -289,7 +289,7 @@ class Reflection
                 }
 
                 if ($declaring_method_id === 'PDO::exec' && $i === 0) {
-                    $param->sink = Type\Union::TAINTED_INPUT_SQL;
+                    $param->sinks = [Type\Union::TAINTED_INPUT_SQL];
                 }
             }
 
