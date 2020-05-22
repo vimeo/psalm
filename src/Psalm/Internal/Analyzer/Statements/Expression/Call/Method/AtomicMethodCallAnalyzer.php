@@ -579,30 +579,20 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         $class_storage_for_method = $codebase->methods->getClassLikeStorageForMethod($method_id);
         $plain_getter_property = null;
 
-        if ($lhs_var_id !== '$this'
-            && (isset($class_storage_for_method->methods[$method_name_lc]))
-            && !$class_storage_for_method->methods[$method_name_lc]->overridden_somewhere
-            && !$class_storage_for_method->methods[$method_name_lc]->overridden_downstream
-            && ($plain_getter_property = $class_storage_for_method->methods[$method_name_lc]->plain_getter)
-            && isset($context->vars_in_scope[$getter_var_id = $lhs_var_id . '->' . $plain_getter_property])
-        ) {
-            $return_type_candidate = clone $context->vars_in_scope[$getter_var_id];
-        } else {
-            $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
-                $statements_analyzer,
-                $codebase,
-                $stmt,
-                $context,
-                $method_id,
-                $declaring_method_id,
-                $cased_method_id,
-                $lhs_type_part,
-                $static_type,
-                $args,
-                $result,
-                $template_result
-            );
-        }
+        $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $context,
+            $method_id,
+            $declaring_method_id,
+            $cased_method_id,
+            $lhs_type_part,
+            $static_type,
+            $args,
+            $result,
+            $template_result
+        );
 
         $in_call_map = CallMap::inCallMap((string) ($declaring_method_id ?: $method_id));
 
@@ -656,6 +646,33 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($method_storage) {
+            if (!$context->collect_mutations && !$context->collect_initializations) {
+                $can_memoize = MethodCallPurityAnalyzer::analyze(
+                    $statements_analyzer,
+                    $codebase,
+                    $stmt,
+                    $lhs_var_id,
+                    $cased_method_id,
+                    $method_id,
+                    $method_storage,
+                    $class_storage,
+                    $context,
+                    $config
+                );
+            }
+
+            if (!$can_memoize) {
+                if ($lhs_var_id !== '$this'
+                    && (isset($class_storage_for_method->methods[$method_name_lc]))
+                    && !$class_storage_for_method->methods[$method_name_lc]->overridden_somewhere
+                    && !$class_storage_for_method->methods[$method_name_lc]->overridden_downstream
+                    && ($plain_getter_property = $class_storage_for_method->methods[$method_name_lc]->plain_getter)
+                    && isset($context->vars_in_scope[$getter_var_id = $lhs_var_id . '->' . $plain_getter_property])
+                ) {
+                    $return_type_candidate = clone $context->vars_in_scope[$getter_var_id];
+                }
+            }
+
             $has_packed_arg = false;
             foreach ($args as $arg) {
                 $has_packed_arg = $has_packed_arg || $arg->unpack;
@@ -685,21 +702,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 } else {
                     $result->too_many_arguments_method_ids[] = $declaring_method_id ?: $method_id;
                 }
-            }
-
-            if (!$context->collect_mutations && !$context->collect_initializations) {
-                $can_memoize = MethodCallPurityAnalyzer::analyze(
-                    $statements_analyzer,
-                    $codebase,
-                    $stmt,
-                    $lhs_var_id,
-                    $cased_method_id,
-                    $method_id,
-                    $method_storage,
-                    $class_storage,
-                    $context,
-                    $config
-                );
             }
 
             $class_template_params = $template_result->upper_bounds;
