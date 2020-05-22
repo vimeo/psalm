@@ -959,6 +959,19 @@ class Union implements TypeNode
     /**
      * @return bool
      */
+    public function hasConditional()
+    {
+        return (bool) array_filter(
+            $this->types,
+            function (Atomic $type) : bool {
+                return $type instanceof Type\Atomic\TConditional;
+            }
+        );
+    }
+
+    /**
+     * @return bool
+     */
     public function hasTemplateOrStatic()
     {
         return (bool) array_filter(

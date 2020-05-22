@@ -2689,6 +2689,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     if ($storage->signature_return_type->isNullable()
                         && !$storage->return_type->isNullable()
+                        && !$storage->return_type->hasTemplate()
+                        && !$storage->return_type->hasConditional()
                     ) {
                         $storage->return_type->addType(new Type\Atomic\TNull());
                     }
