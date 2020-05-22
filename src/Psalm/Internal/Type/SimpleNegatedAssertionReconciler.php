@@ -617,6 +617,33 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             $existing_var_type->addType(new TTrue);
         }
 
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                if (!$is_equality && !$existing_var_atomic_type->as->isMixed()) {
+                    $template_did_fail = 0;
+
+                    $existing_var_atomic_type = clone $existing_var_atomic_type;
+
+                    $existing_var_atomic_type->as = self::reconcileFalsyOrEmpty(
+                        $assertion,
+                        $existing_var_atomic_type->as,
+                        $key,
+                        $code_location,
+                        $suppressed_issues,
+                        $template_did_fail,
+                        $is_equality,
+                        $is_strict_equality
+                    );
+
+                    $did_remove_type = true;
+
+                    if (!$template_did_fail) {
+                        $existing_var_type->addType($existing_var_atomic_type);
+                    }
+                }
+            }
+        }
+
         self::removeFalsyNegatedLiteralTypes(
             $existing_var_type,
             $did_remove_type
