@@ -575,6 +575,13 @@ final class Vector implements Sequence
     public function map(callable $callback): Vector
     {
     }
+
+    /**
+     * @return array<TValue>
+     */
+    public function toArray(): array
+    {
+    }
 }
 
 /**
