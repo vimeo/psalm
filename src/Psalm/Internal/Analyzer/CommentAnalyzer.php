@@ -527,6 +527,10 @@ class CommentAnalyzer
             }
         }
 
+        if (isset($parsed_docblock['specials']['psalm-specialize-call'])) {
+            $info->specialize_call = true;
+        }
+
         if (isset($parsed_docblock['specials']['global'])) {
             foreach ($parsed_docblock['specials']['global'] as $offset => $global) {
                 $line_parts = self::splitDocLine($global);

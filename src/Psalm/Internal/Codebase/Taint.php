@@ -38,9 +38,6 @@ class Taint
     /** @var array<string, array<string, array{array<string>, array<string>}>> */
     private $forward_edges = [];
 
-    /** @var array<string, array<string, array{array<string>, array<string>}>> */
-    private $backward_edges = [];
-
     /** @var array<string, array<string, true>> */
     private $specialized_calls = [];
 
@@ -77,7 +74,6 @@ class Taint
         $to_id = $to->id;
 
         $this->forward_edges[$from_id][$to_id] = [$added_taints, $removed_taints];
-        $this->backward_edges[$to_id][$from_id] = [$added_taints, $removed_taints];
     }
 
     public function getPredecessorPath(Taintable $source) : string
@@ -137,21 +133,7 @@ class Taint
             if (!isset($this->forward_edges[$key])) {
                 $this->forward_edges[$key] = $map;
             } else {
-                $this->forward_edges[$key] = \array_merge(
-                    $this->forward_edges[$key],
-                    $map
-                );
-            }
-        }
-
-        foreach ($taint->backward_edges as $key => $map) {
-            if (!isset($this->backward_edges[$key])) {
-                $this->backward_edges[$key] = $map;
-            } else {
-                $this->backward_edges[$key] = \array_merge(
-                    $this->backward_edges[$key],
-                    $map
-                );
+                $this->forward_edges[$key] += $map;
             }
         }
     }
@@ -159,12 +141,11 @@ class Taint
     public function connectSinksAndSources() : void
     {
         $visited_source_ids = [];
-        //$visited_sink_ids = [];
 
         $sources = $this->sources;
         $sinks = $this->sinks;
 
-        for ($i = 0; count($sinks) && count($sources) && $i < 10; $i++) {
+        for ($i = 0; count($sinks) && count($sources) && $i < 20; $i++) {
             $new_sources = [];
 
             foreach ($sources as $source) {
@@ -241,83 +222,6 @@ class Taint
                     $new_sources[$to_id] = $new_destination;
                 }
             }
-
-            /**
-            $new_sinks = [];
-
-            foreach ($sinks as $sink) {
-                $sink_taints = $sink->taints;
-                \sort($sink_taints);
-
-                $visited_sink_ids[$sink->id][implode(',', $sink_taints)] = true;
-
-                if (!isset($this->backward_edges[$sink->id])) {
-                    continue;
-                }
-
-                foreach ($this->backward_edges[$sink->id] as $from_id => [$added_taints, $removed_taints]) {
-                    if (!isset($this->nodes[$from_id])) {
-                        continue;
-                    }
-
-                    $new_taints = \array_unique(
-                        \array_diff(
-                            \array_merge($sink_taints, $added_taints),
-                            $removed_taints
-                        )
-                    );
-
-                    \sort($new_taints);
-
-                    $destination_node = $this->nodes[$from_id];
-
-                    if (isset($visited_sink_ids[$from_id][implode(',', $new_taints)])) {
-                        continue;
-                    }
-
-                    if (isset($sources[$from_id])) {
-                        $matching_taints = array_intersect($sources[$from_id]->taints, $new_taints);
-
-                        if ($matching_taints) {
-                            if (IssueBuffer::accepts(
-                                new TaintedInput(
-                                    'Detected taints ' . implode(', ', $matching_taints)
-                                        . ' in path: ' . $this->getPredecessorPath($sources[$from_id])
-                                        . ' -> ' . $this->getSuccessorPath($sink),
-                                    $sink->code_location
-                                )
-                            )) {
-                                // fall through
-                            }
-                        }
-                    } elseif (isset($new_sources[$from_id])) {
-                        $matching_taints = array_intersect($new_sources[$from_id]->taints, $new_taints);
-
-                        if ($matching_taints) {
-                            if (IssueBuffer::accepts(
-                                new TaintedInput(
-                                    'Detected taints ' . implode(', ', $matching_taints)
-                                        . ' in path: ' . $this->getPredecessorPath($new_sources[$from_id])
-                                        . ' -> ' . $this->getSuccessorPath($sink),
-                                    $sink->code_location
-                                )
-                            )) {
-                                // fall through
-                            }
-                        }
-                    }
-
-                    $new_destination = clone $this->nodes[$from_id];
-                    $new_destination->taints = $new_taints;
-                    $new_destination->previous = $sink;
-                    $new_destination->specialized_calls = $source->specialized_calls;
-
-                    $new_sinks[$from_id] = $new_destination;
-                }
-            }
-
-            $sinks = $new_sinks;
-            */
 
             $sources = $new_sources;
         }

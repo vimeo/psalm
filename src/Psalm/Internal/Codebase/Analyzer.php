@@ -411,6 +411,8 @@ class Analyzer
 
                     $file_reference_provider = $codebase->file_reference_provider;
 
+                    $codebase->taint = new \Psalm\Internal\Codebase\Taint();
+
                     $file_reference_provider->setNonMethodReferencesToClasses([]);
                     $file_reference_provider->setCallingMethodReferencesToClassMembers([]);
                     $file_reference_provider->setFileReferencesToClassMembers([]);

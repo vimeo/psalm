@@ -629,6 +629,8 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
 /**
  * @psalm-pure
  *
+ * @param string|int|float $args
+ *
  * @psalm-flow ($format, $args) -> return
  */
 function sprintf(string $format, ...$args) : string {}

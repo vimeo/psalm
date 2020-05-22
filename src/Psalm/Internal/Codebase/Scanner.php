@@ -54,7 +54,8 @@ use function substr;
  *     diff_map:array<string, array<int, array{0:int, 1:int, 2:int, 3:int}>>,
  *     classlike_storage:array<string, \Psalm\Storage\ClassLikeStorage>,
  *     file_storage:array<string, \Psalm\Storage\FileStorage>,
- *     new_file_content_hashes: array<string, string>
+ *     new_file_content_hashes: array<string, string>,
+ *     taint_data: ?\Psalm\Internal\Codebase\Taint
  * }
  */
 
@@ -430,6 +431,7 @@ class Scanner
                         'new_file_content_hashes' => $statements_provider->parser_cache_provider
                             ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
                             : [],
+                        'taint_data' => $codebase->taint,
                     ];
                 }
             );
@@ -452,6 +454,9 @@ class Scanner
                 $this->codebase->statements_provider->addDiffMap(
                     $pool_data['diff_map']
                 );
+                if ($this->codebase->taint && $pool_data['taint_data']) {
+                    $this->codebase->taint->addThreadData($pool_data['taint_data']);
+                }
 
                 $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
                 $this->codebase->classlike_storage_provider->addMore($pool_data['classlike_storage']);
