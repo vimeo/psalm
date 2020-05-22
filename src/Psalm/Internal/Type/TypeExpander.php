@@ -358,7 +358,9 @@ class TypeExpander
             );
         }
 
-        if ($return_type instanceof Type\Atomic\TCallable) {
+        if ($return_type instanceof Type\Atomic\TCallable
+            || $return_type instanceof Type\Atomic\TFn
+        ) {
             if ($return_type->params) {
                 foreach ($return_type->params as $param) {
                     if ($param->type) {

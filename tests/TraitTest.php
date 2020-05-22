@@ -937,28 +937,6 @@ class TraitTest extends TestCase
                         use T;
                     }'
             ],
-            'resolveTraitClosureReturn' => [
-                '<?php
-                    trait A {
-                        /**
-                         * @psalm-param static $i
-                         */
-                        function takesStatic($i) : void {}
-
-                        /**
-                         * @psalm-param callable(mixed...):static $i
-                         *
-                         */
-                        function takesACall(callable $i) : void {}
-                    }
-                    class B {
-                        use A;
-                        public function call() : void {
-                            $this->takesStatic($this);
-                            $this->takesACall(function() {return $this;});
-                        }
-                    }'
-            ],
         ];
     }
 

@@ -785,6 +785,32 @@ class CallableTest extends TestCase
 
                     $test();'
             ],
+            'resolveTraitClosureReturn' => [
+                '<?php
+                    class B {
+                        /**
+                         * @psalm-param callable(mixed...):static $i
+                         */
+                        function takesACall(callable $i) : void {}
+
+                        public function call() : void {
+                            $this->takesACall(function() {return $this;});
+                        }
+                    }'
+            ],
+            'retunClosureReturningStatic' => [
+                '<?php
+                    class C {
+                        /**
+                         * @return Closure():static
+                         */
+                        public static function foo() {
+                            return function() {
+                                return new static();
+                            };
+                        }
+                    }',
+            ],
         ];
     }
 
