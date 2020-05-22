@@ -1039,16 +1039,29 @@ class PropertyFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($codebase->taint) {
-            $property_source = new TaintNode(
+            $code_location = new CodeLocation($statements_analyzer, $stmt->name);
+
+            $localized_property_node = new TaintNode(
+                $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
                 $property_id,
-                $property_id,
-                new CodeLocation($statements_analyzer, $stmt->name),
+                $code_location,
                 null
             );
 
-            $codebase->taint->addTaintNode($property_source);
+            $codebase->taint->addTaintNode($localized_property_node);
 
-            $type->parent_nodes = [$property_source];
+            $property_node = new TaintNode(
+                $property_id,
+                $property_id,
+                null,
+                null
+            );
+
+            $codebase->taint->addTaintNode($property_node);
+
+            $codebase->taint->addPath($property_node, $localized_property_node);
+
+            $type->parent_nodes = [$localized_property_node];
         }
     }
 

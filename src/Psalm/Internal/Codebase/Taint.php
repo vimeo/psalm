@@ -27,48 +27,39 @@ use function array_intersect;
 class Taint
 {
     /** @var array<string, Source> */
-    private static $sources = [];
+    private $sources = [];
 
     /** @var array<string, TaintNode> */
-    private static $nodes = [];
+    private $nodes = [];
 
     /** @var array<string, Sink> */
-    private static $sinks = [];
+    private $sinks = [];
 
     /** @var array<string, array<string, array{array<string>, array<string>}>> */
-    private static $forward_edges = [];
+    private $forward_edges = [];
 
     /** @var array<string, array<string, array{array<string>, array<string>}>> */
-    private static $backward_edges = [];
+    private $backward_edges = [];
 
     /** @var array<string, array<string, true>> */
-    private static $specialized_calls = [];
-
-    public function __construct()
-    {
-        self::$sinks = [];
-        self::$sources = [];
-        self::$nodes = [];
-        self::$forward_edges = [];
-        self::$backward_edges = [];
-    }
+    private $specialized_calls = [];
 
     public function addSource(Source $node) : void
     {
-        self::$sources[$node->id] = $node;
+        $this->sources[$node->id] = $node;
     }
 
     public function addSink(Sink $node) : void
     {
-        self::$sinks[$node->id] = $node;
+        $this->sinks[$node->id] = $node;
     }
 
     public function addTaintNode(TaintNode $node) : void
     {
-        self::$nodes[$node->id] = $node;
+        $this->nodes[$node->id] = $node;
 
         if ($node->unspecialized_id && $node->specialization_key) {
-            self::$specialized_calls[$node->specialization_key][$node->unspecialized_id] = true;
+            $this->specialized_calls[$node->specialization_key][$node->unspecialized_id] = true;
         }
     }
 
@@ -85,8 +76,8 @@ class Taint
         $from_id = $from->id;
         $to_id = $to->id;
 
-        self::$forward_edges[$from_id][$to_id] = [$added_taints, $removed_taints];
-        self::$backward_edges[$to_id][$from_id] = [$added_taints, $removed_taints];
+        $this->forward_edges[$from_id][$to_id] = [$added_taints, $removed_taints];
+        $this->backward_edges[$to_id][$from_id] = [$added_taints, $removed_taints];
     }
 
     public function getPredecessorPath(Taintable $source) : string
@@ -170,8 +161,8 @@ class Taint
         $visited_source_ids = [];
         //$visited_sink_ids = [];
 
-        $sources = self::$sources;
-        $sinks = self::$sinks;
+        $sources = $this->sources;
+        $sinks = $this->sinks;
 
         for ($i = 0; count($sinks) && count($sources) && $i < 10; $i++) {
             $new_sources = [];
@@ -182,29 +173,29 @@ class Taint
 
                 $visited_source_ids[$source->id][implode(',', $source_taints)] = true;
 
-                if (!isset(self::$forward_edges[$source->id])) {
+                if (!isset($this->forward_edges[$source->id])) {
                     $source = clone $source;
 
-                    if ($source->specialization_key && isset(self::$specialized_calls[$source->specialization_key])) {
+                    if ($source->specialization_key && isset($this->specialized_calls[$source->specialization_key])) {
                         $source->specialized_calls[$source->specialization_key]
-                            = self::$specialized_calls[$source->specialization_key];
+                            = $this->specialized_calls[$source->specialization_key];
 
                         $source->id = substr($source->id, 0, -strlen($source->specialization_key) - 1);
                     } else {
                         foreach ($source->specialized_calls as $key => $map) {
-                            if (isset($map[$source->id]) && isset(self::$forward_edges[$source->id . '-' . $key])) {
+                            if (isset($map[$source->id]) && isset($this->forward_edges[$source->id . '-' . $key])) {
                                 $source->id = $source->id . '-' . $key;
                             }
                         }
                     }
 
-                    if (!isset(self::$forward_edges[$source->id])) {
+                    if (!isset($this->forward_edges[$source->id])) {
                         continue;
                     }
                 }
 
-                foreach (self::$forward_edges[$source->id] as $to_id => [$added_taints, $removed_taints]) {
-                    if (!isset(self::$nodes[$to_id])) {
+                foreach ($this->forward_edges[$source->id] as $to_id => [$added_taints, $removed_taints]) {
+                    if (!isset($this->nodes[$to_id])) {
                         continue;
                     }
 
@@ -217,7 +208,7 @@ class Taint
 
                     \sort($new_taints);
 
-                    $destination_node = self::$nodes[$to_id];
+                    $destination_node = $this->nodes[$to_id];
 
                     if (isset($visited_source_ids[$to_id][implode(',', $new_taints)])) {
                         continue;
@@ -232,7 +223,7 @@ class Taint
                                     'Detected tainted ' . implode(', ', $matching_taints)
                                         . ' in path: ' . $this->getPredecessorPath($source)
                                         . ' -> ' . $this->getSuccessorPath($sinks[$to_id]),
-                                    $source->code_location
+                                    $sinks[$to_id]->code_location ?: $source->code_location
                                 )
                             )) {
                                 // fall through
@@ -260,12 +251,12 @@ class Taint
 
                 $visited_sink_ids[$sink->id][implode(',', $sink_taints)] = true;
 
-                if (!isset(self::$backward_edges[$sink->id])) {
+                if (!isset($this->backward_edges[$sink->id])) {
                     continue;
                 }
 
-                foreach (self::$backward_edges[$sink->id] as $from_id => [$added_taints, $removed_taints]) {
-                    if (!isset(self::$nodes[$from_id])) {
+                foreach ($this->backward_edges[$sink->id] as $from_id => [$added_taints, $removed_taints]) {
+                    if (!isset($this->nodes[$from_id])) {
                         continue;
                     }
 
@@ -278,7 +269,7 @@ class Taint
 
                     \sort($new_taints);
 
-                    $destination_node = self::$nodes[$from_id];
+                    $destination_node = $this->nodes[$from_id];
 
                     if (isset($visited_sink_ids[$from_id][implode(',', $new_taints)])) {
                         continue;
@@ -316,7 +307,7 @@ class Taint
                         }
                     }
 
-                    $new_destination = clone self::$nodes[$from_id];
+                    $new_destination = clone $this->nodes[$from_id];
                     $new_destination->taints = $new_taints;
                     $new_destination->previous = $sink;
                     $new_destination->specialized_calls = $source->specialized_calls;

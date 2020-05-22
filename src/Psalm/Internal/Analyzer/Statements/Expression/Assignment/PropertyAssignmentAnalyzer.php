@@ -1080,18 +1080,29 @@ class PropertyAssignmentAnalyzer
 
         $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $property_node = new TaintNode(
-            $property_id,
+        $localized_property_node = new TaintNode(
+            $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
             $property_id,
             $code_location,
             null
         );
 
+        $codebase->taint->addTaintNode($localized_property_node);
+
+        $property_node = new TaintNode(
+            $property_id,
+            $property_id,
+            null,
+            null
+        );
+
         $codebase->taint->addTaintNode($property_node);
+
+        $codebase->taint->addPath($localized_property_node, $property_node);
 
         if ($assignment_value_type->parent_nodes) {
             foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                $codebase->taint->addPath($parent_node, $property_node);
+                $codebase->taint->addPath($parent_node, $localized_property_node);
             }
         }
     }

@@ -40,7 +40,7 @@ abstract class Taintable
         string $id,
         string $label,
         ?CodeLocation $code_location,
-        ?string $specialization_key,
+        ?string $specialization_key = null,
         array $taints = []
     ) {
         $this->id = $id;

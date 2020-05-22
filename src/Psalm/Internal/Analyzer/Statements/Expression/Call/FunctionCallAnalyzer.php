@@ -994,6 +994,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->taint && $function_storage && $function_storage->return_source_params && $stmt_type) {
             foreach ($function_storage->return_source_params as $i) {
+                if (!isset($stmt->args[$i])) {
+                    continue;
+                }
+
                 $arg_location = new CodeLocation(
                     $statements_analyzer->getSource(),
                     $stmt->args[$i]->value
