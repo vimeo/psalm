@@ -23,7 +23,9 @@ class BinaryOpAnalyzer
         int $nesting = 0,
         bool $from_stmt = false
     ) : bool {
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 20) {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 100) {
+            $statements_analyzer->node_data->setType($stmt, Type::getBool());
+
             // ignore deeply-nested string concatenation
             return true;
         }

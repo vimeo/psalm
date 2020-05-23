@@ -1872,6 +1872,7 @@ class ClassLikes
                 && $method_name !== '__clone'
                 && $method_name !== '__invoke'
                 && $method_name !== '__unset'
+                && $method_name !== '__isset'
                 && $method_name !== '__sleep'
                 && $method_name !== '__wakeup'
                 && $method_name !== '__serialize'
