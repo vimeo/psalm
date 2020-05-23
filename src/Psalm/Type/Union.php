@@ -36,12 +36,18 @@ use Doctrine\Instantiator\Exception\UnexpectedValueException;
 
 class Union implements TypeNode
 {
+    const TAINTED_INPUT_TEXT = 'text';
     const TAINTED_INPUT_SQL = 'sql';
     const TAINTED_INPUT_HTML = 'html';
     const TAINTED_INPUT_SHELL = 'shell';
     const TAINTED_USER_SECRET = 'user_secret';
     const TAINTED_SYSTEM_SECRET = 'system_secret';
-    const TAINTED_INPUT = [self::TAINTED_INPUT_SQL, self::TAINTED_INPUT_HTML, self::TAINTED_INPUT_SHELL];
+    const TAINTED_INPUT = [
+        self::TAINTED_INPUT_HTML,
+        self::TAINTED_INPUT_SHELL,
+        self::TAINTED_INPUT_SQL,
+        self::TAINTED_INPUT_TEXT,
+    ];
 
     /**
      * @var non-empty-array<string, Atomic>

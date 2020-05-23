@@ -458,7 +458,7 @@ function pathinfo(string $path, int $options = \PATHINFO_DIRNAME) {}
 /**
  * @psalm-pure
  *
- * @template T as scalar
+ * @template T as string|int|float
  * @template TFirstArg as array<T>|T
  *
  * @param TFirstArg $arg_1
@@ -471,7 +471,7 @@ function min($arg_1, ...$arg_2) {}
 /**
  * @psalm-pure
  *
- * @template T as scalar
+ * @template T as string|int|float
  * @template TFirstArg as array<T>|T
  *
  * @param TFirstArg $arg_1

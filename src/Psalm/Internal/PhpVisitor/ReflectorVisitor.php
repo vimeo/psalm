@@ -3740,6 +3740,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $path_to_file = IncludeAnalyzer::getPathTo(
                 $stmt->expr,
                 null,
+                null,
                 $this->file_path,
                 $this->config
             );

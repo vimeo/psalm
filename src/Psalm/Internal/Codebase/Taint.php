@@ -49,6 +49,8 @@ class Taint
     public function addSink(Sink $node) : void
     {
         $this->sinks[$node->id] = $node;
+        // in the rare case the sink is the _next_ node, this is necessary
+        $this->nodes[$node->id] = $node;
     }
 
     public function addTaintNode(TaintNode $node) : void

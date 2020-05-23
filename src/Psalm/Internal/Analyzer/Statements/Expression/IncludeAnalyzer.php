@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Taint\Sink;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -95,6 +96,7 @@ class IncludeAnalyzer
             $path_to_file = self::getPathTo(
                 $stmt->expr,
                 $statements_analyzer->node_data,
+                $statements_analyzer,
                 $statements_analyzer->getFileName(),
                 $config
             );
@@ -223,6 +225,7 @@ class IncludeAnalyzer
     public static function getPathTo(
         PhpParser\Node\Expr $stmt,
         ?\Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        ?StatementsAnalyzer $statements_analyzer,
         $file_name,
         Config $config
     ) {
@@ -243,10 +246,9 @@ class IncludeAnalyzer
             return $stmt->value;
         }
 
-        if ($type_provider
-            && ($stmt_type = $type_provider->getType($stmt))
-            && $stmt_type->isSingleStringLiteral()
-        ) {
+        $stmt_type = $type_provider ? $type_provider->getType($stmt) : null;
+
+        if ($stmt_type && $stmt_type->isSingleStringLiteral()) {
             if (DIRECTORY_SEPARATOR !== '/') {
                 return str_replace(
                     '/',
@@ -256,6 +258,30 @@ class IncludeAnalyzer
             }
 
             return $stmt_type->getSingleStringLiteral()->value;
+        }
+
+        if ($stmt_type && $statements_analyzer) {
+            $codebase = $statements_analyzer->getCodebase();
+
+            if ($codebase->taint) {
+                $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                $include_param_sink = Sink::getForMethodArgument(
+                    'include',
+                    'include',
+                    0,
+                    $arg_location,
+                    $arg_location
+                );
+
+                $include_param_sink->taints = [\Psalm\Type\Union::TAINTED_INPUT_TEXT];
+
+                $codebase->taint->addSink($include_param_sink);
+
+                foreach ($stmt_type->parent_nodes as $parent_node) {
+                    $codebase->taint->addPath($parent_node, $include_param_sink);
+                }
+            }
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
@@ -269,8 +295,8 @@ class IncludeAnalyzer
                 }
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-            $left_string = self::getPathTo($stmt->left, $type_provider, $file_name, $config);
-            $right_string = self::getPathTo($stmt->right, $type_provider, $file_name, $config);
+            $left_string = self::getPathTo($stmt->left, $type_provider, $statements_analyzer, $file_name, $config);
+            $right_string = self::getPathTo($stmt->right, $type_provider, $statements_analyzer, $file_name, $config);
 
             if ($left_string && $right_string) {
                 return $left_string . $right_string;
@@ -290,7 +316,13 @@ class IncludeAnalyzer
                     }
                 }
 
-                $evaled_path = self::getPathTo($stmt->args[0]->value, $type_provider, $file_name, $config);
+                $evaled_path = self::getPathTo(
+                    $stmt->args[0]->value,
+                    $type_provider,
+                    $statements_analyzer,
+                    $file_name,
+                    $config
+                );
 
                 if (!$evaled_path) {
                     return null;
