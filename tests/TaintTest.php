@@ -72,9 +72,8 @@ class TaintTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                $a = (string) $_GET["file"];
-                $b = "hello" . $a;
-                eval(str_replace("a", "b", $b));'
+                $a = $_GET["file"];
+                eval("<?php" . $a);'
         );
 
         $this->analyzeFile('somefile.php', new Context());

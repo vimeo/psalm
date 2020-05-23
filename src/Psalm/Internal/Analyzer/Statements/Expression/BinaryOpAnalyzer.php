@@ -103,6 +103,27 @@ class BinaryOpAnalyzer
                 $stmt_type = $result_type;
             }
 
+            $codebase = $statements_analyzer->getCodebase();
+
+            if ($codebase->taint && $stmt_type) {
+                $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
+                $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
+
+                $sources = [];
+
+                if ($stmt_left_type) {
+                    $sources = $stmt_left_type->parent_nodes ?: [];
+                }
+
+                if ($stmt_right_type) {
+                    $sources = array_merge($sources, $stmt_right_type->parent_nodes ?: []);
+                }
+
+                if ($sources) {
+                    $stmt_type->parent_nodes = $sources;
+                }
+            }
+
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             return true;

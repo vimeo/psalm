@@ -634,3 +634,13 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
  * @psalm-flow ($format, $args) -> return
  */
 function sprintf(string $format, ...$args) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @return string|false
+ * @psalm-ignore-falsable-return
+ *
+ * @psalm-flow ($path) -> return
+ */
+function realpath(string $path) {}

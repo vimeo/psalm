@@ -1115,6 +1115,25 @@ class AssignmentAnalyzer
             if ($result_type && $array_var_id) {
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
+
+                if ($codebase->taint && $result_type) {
+                    $stmt_left_type = $statements_analyzer->node_data->getType($stmt->var);
+                    $stmt_right_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+                    $sources = [];
+
+                    if ($stmt_left_type) {
+                        $sources = $stmt_left_type->parent_nodes ?: [];
+                    }
+
+                    if ($stmt_right_type) {
+                        $sources = array_merge($sources, $stmt_right_type->parent_nodes ?: []);
+                    }
+
+                    if ($sources) {
+                        $result_type->parent_nodes = $sources;
+                    }
+                }
             }
         } elseif ($stmt_var_type
             && $stmt_expr_type

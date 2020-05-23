@@ -491,21 +491,5 @@ class ConcatAnalyzer
                 }
             }
         }
-
-        if ($codebase->taint && $result_type) {
-            $sources = [];
-
-            if ($left_type) {
-                $sources = $left_type->parent_nodes ?: [];
-            }
-
-            if ($right_type) {
-                $sources = array_merge($sources, $right_type->parent_nodes ?: []);
-            }
-
-            if ($sources) {
-                $result_type->parent_nodes = $sources;
-            }
-        }
     }
 }
