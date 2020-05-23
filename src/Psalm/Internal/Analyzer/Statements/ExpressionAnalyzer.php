@@ -322,10 +322,8 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Eval_) {
-            $context->check_classes = false;
-            $context->check_variables = false;
-
-            return self::analyze($statements_analyzer, $stmt->expr, $context);
+            Expression\EvalAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return true;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
