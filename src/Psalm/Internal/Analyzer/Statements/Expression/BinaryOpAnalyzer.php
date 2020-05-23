@@ -105,7 +105,7 @@ class BinaryOpAnalyzer
 
             $codebase = $statements_analyzer->getCodebase();
 
-            if ($codebase->taint && $stmt_type) {
+            if ($codebase->taint) {
                 $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
                 $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
 
