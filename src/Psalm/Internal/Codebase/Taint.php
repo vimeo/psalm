@@ -29,7 +29,7 @@ class Taint
     /** @var array<string, Source> */
     private $sources = [];
 
-    /** @var array<string, TaintNode> */
+    /** @var array<string, Taintable> */
     private $nodes = [];
 
     /** @var array<string, Sink> */

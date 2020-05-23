@@ -16,8 +16,7 @@ class EvalAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Eval_ $stmt,
-        Context $context,
-        Context $global_context = null
+        Context $context
     ) : void {
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context);
 
@@ -26,7 +25,7 @@ class EvalAnalyzer
         if ($expr_type) {
             $codebase = $statements_analyzer->getCodebase();
 
-            if ($codebase->taint) {
+            if ($codebase->taint && $expr_type->parent_nodes) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
                 $eval_param_sink = Sink::getForMethodArgument(
