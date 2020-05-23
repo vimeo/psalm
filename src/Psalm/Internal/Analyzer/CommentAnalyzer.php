@@ -499,8 +499,6 @@ class CommentAnalyzer
 
                 if (count($param_parts) === 2) {
                     $info->taint_sink_params[] = ['name' => trim($param_parts[1]), 'taint' => trim($param_parts[0])];
-                } else {
-                    throw new DocblockParseException('Badly-formatted @psalm-taint-sink');
                 }
             }
         }
