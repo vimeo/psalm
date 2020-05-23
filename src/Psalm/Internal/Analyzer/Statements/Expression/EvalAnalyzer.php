@@ -50,4 +50,3 @@ class EvalAnalyzer
         $context->check_variables = false;
     }
 }
-

@@ -37,6 +37,7 @@ use function is_string;
 use function strpos;
 use function strtolower;
 use function substr;
+use function array_merge;
 
 /**
  * @internal

@@ -10,6 +10,7 @@ use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use function array_merge;
 
 /**
  * @internal
