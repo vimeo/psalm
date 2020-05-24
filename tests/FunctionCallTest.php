@@ -586,8 +586,8 @@ class FunctionCallTest extends TestCase
                     $porta = parse_url("", PHP_URL_PORT);
                     $porte = parse_url("localhost:443", PHP_URL_PORT);',
                 'assertions' => [
-                    '$porta' => 'int|null',
-                    '$porte' => 'int|null',
+                    '$porta' => 'false|int|null',
+                    '$porte' => 'false|int|null',
                 ],
                 'error_levels' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
