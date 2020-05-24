@@ -1121,18 +1121,23 @@ class AssignmentAnalyzer
                     $stmt_left_type = $statements_analyzer->node_data->getType($stmt->var);
                     $stmt_right_type = $statements_analyzer->node_data->getType($stmt->expr);
 
-                    $sources = [];
+                    $var_location = new CodeLocation($statements_analyzer, $stmt);
 
-                    if ($stmt_left_type) {
-                        $sources = $stmt_left_type->parent_nodes ?: [];
+                    $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($array_var_id, $var_location);
+                    $codebase->taint->addTaintNode($new_parent_node);
+
+                    $result_type->parent_nodes = [$new_parent_node];
+
+                    if ($stmt_left_type && $stmt_left_type->parent_nodes) {
+                        foreach ($stmt_left_type->parent_nodes as $parent_node) {
+                            $codebase->taint->addPath($parent_node, $new_parent_node);
+                        }
                     }
 
-                    if ($stmt_right_type) {
-                        $sources = array_merge($sources, $stmt_right_type->parent_nodes ?: []);
-                    }
-
-                    if ($sources) {
-                        $result_type->parent_nodes = $sources;
+                    if ($stmt_right_type && $stmt_right_type->parent_nodes) {
+                        foreach ($stmt_right_type->parent_nodes as $parent_node) {
+                            $codebase->taint->addPath($parent_node, $new_parent_node);
+                        }
                     }
                 }
             }
