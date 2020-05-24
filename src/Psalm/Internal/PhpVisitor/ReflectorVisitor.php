@@ -2830,17 +2830,27 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             ? $this->class_template_types
             : [];
 
-        $namespaced_type = TypeParser::parseTokens(
-            TypeTokenizer::getFullyQualifiedTokens(
-                $assertion_type,
-                $this->aliases,
-                $this->function_template_types + $class_template_types,
-                $this->type_aliases,
-                null,
-                null,
-                true
-            )
-        );
+        try {
+            $namespaced_type = TypeParser::parseTokens(
+                TypeTokenizer::getFullyQualifiedTokens(
+                    $assertion_type,
+                    $this->aliases,
+                    $this->function_template_types + $class_template_types,
+                    $this->type_aliases,
+                    null,
+                    null,
+                    true
+                )
+            );
+        } catch (TypeParseTreeException $e) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                'Invalid @psalm-assert union type ' . $e,
+                new CodeLocation($this->file_scanner, $stmt, null, true)
+            );
+
+            return null;
+        }
+
 
         if ($prefix && count($namespaced_type->getAtomicTypes()) > 1) {
             $storage->docblock_issues[] = new InvalidDocblock(

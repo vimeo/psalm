@@ -505,7 +505,7 @@ class AssertAnnotationTest extends TestCase
                                 throw new \Exception();
                             }
                         }
-                        
+
                         /**
                          * @psalm-assert BarType $this
                          */
@@ -514,7 +514,7 @@ class AssertAnnotationTest extends TestCase
                                 throw new \Exception();
                             }
                         }
-                        
+
                         function takesType(Type $t) : void {
                             $t->assertFoo();
                             $t->assertBar();
@@ -1360,6 +1360,16 @@ class AssertAnnotationTest extends TestCase
                         $t->isFoo();
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'invalidUnionAssertion' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @psalm-assert null|!ExpectedType $value
+                         */
+                        public static function foo($value);
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
