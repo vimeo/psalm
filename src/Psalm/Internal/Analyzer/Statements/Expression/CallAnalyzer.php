@@ -803,8 +803,8 @@ class CallAnalyzer
                                 if ($union_comparison_result->type_coerced_from_mixed) {
                                     if (IssueBuffer::accepts(
                                         new MixedArgumentTypeCoercion(
-                                            'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
-                                                . $upper_bound_type->getId(),
+                                            'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
+                                                . $lower_bound_type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -815,8 +815,8 @@ class CallAnalyzer
                                 } else {
                                     if (IssueBuffer::accepts(
                                         new ArgumentTypeCoercion(
-                                            'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
-                                                . $upper_bound_type->getId(),
+                                            'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
+                                                . $lower_bound_type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -828,8 +828,8 @@ class CallAnalyzer
                             } elseif ($union_comparison_result->scalar_type_match_found) {
                                 if (IssueBuffer::accepts(
                                     new InvalidScalarArgument(
-                                        'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
-                                                . $upper_bound_type->getId(),
+                                        'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
+                                                . $lower_bound_type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
@@ -840,8 +840,8 @@ class CallAnalyzer
                             } else {
                                 if (IssueBuffer::accepts(
                                     new InvalidArgument(
-                                        'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
-                                                . $upper_bound_type->getId(),
+                                        'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
+                                                . $lower_bound_type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
