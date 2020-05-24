@@ -1422,6 +1422,17 @@ class ArrayAssignmentTest extends TestCase
                         }
                     }',
             ],
+            'manipulateArrayTwice' => [
+                '<?php
+                    /** @var array */
+                    $options = [];
+                    $options[\'a\'] = 1;
+                    /** @psalm-suppress MixedArrayAssignment */
+                    $options[\'b\'][\'c\'] = 2;',
+                [
+                    '$options[\'b\']' => 'array{c: int}|mixed'
+                ]
+            ],
         ];
     }
 

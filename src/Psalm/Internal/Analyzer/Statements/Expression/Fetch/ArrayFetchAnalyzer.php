@@ -531,7 +531,7 @@ class ArrayFetchAnalyzer
                 if ($in_assignment
                     && $type instanceof TArray
                     && (($type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty())
-                        || ($type->type_params[1]->isMixed() && \is_string($key_value)))
+                        || ($type->type_params[1]->hasMixed() && \is_string($key_value)))
                 ) {
                     $from_empty_array = $type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty();
 
@@ -558,6 +558,13 @@ class ArrayFetchAnalyzer
                         $array_type->addType(new Type\Atomic\TNonEmptyList($replacement_type));
                         continue;
                     }
+                } elseif ($in_assignment
+                    && $type instanceof ObjectLike
+                    && $type->previous_value_type
+                    && $type->previous_value_type->isMixed()
+                    && $key_value !== null
+                ) {
+                    $type->properties[$key_value] = Type::getMixed();
                 }
 
                 $offset_type = self::replaceOffsetTypeWithInts($offset_type);
