@@ -586,8 +586,8 @@ class FunctionCallTest extends TestCase
                     $porta = parse_url("", PHP_URL_PORT);
                     $porte = parse_url("localhost:443", PHP_URL_PORT);',
                 'assertions' => [
-                    '$porta' => 'int|null',
-                    '$porte' => 'int|null',
+                    '$porta' => 'false|int|null',
+                    '$porte' => 'false|int|null',
                 ],
                 'error_levels' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
@@ -625,14 +625,14 @@ class FunctionCallTest extends TestCase
                     $fragment = parse_url($url, PHP_URL_FRAGMENT);',
                 'assertions' => [
                     '$components' => 'array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
-                    '$scheme' => 'null|string',
-                    '$host' => 'null|string',
-                    '$port' => 'int|null',
-                    '$user' => 'null|string',
-                    '$pass' => 'null|string',
-                    '$path' => 'null|string',
-                    '$query' => 'null|string',
-                    '$fragment' => 'null|string',
+                    '$scheme' => 'false|null|string',
+                    '$host' => 'false|null|string',
+                    '$port' => 'false|int|null',
+                    '$user' => 'false|null|string',
+                    '$pass' => 'false|null|string',
+                    '$path' => 'false|null|string',
+                    '$query' => 'false|null|string',
+                    '$fragment' => 'false|null|string',
                 ],
             ],
             'triggerUserError' => [
