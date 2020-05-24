@@ -10134,7 +10134,7 @@ return [
 'preg_filter' => ['null|string|string[]', 'regex'=>'mixed', 'replace'=>'mixed', 'subject'=>'mixed', 'limit='=>'int', '&w_count='=>'int'],
 'preg_grep' => ['array', 'regex'=>'string', 'input'=>'array', 'flags='=>'int'],
 'preg_last_error' => ['int'],
-'preg_match' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_subpatterns='=>'string[]', 'flags='=>'0|', 'offset='=>'int'],
+'preg_match' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_subpatterns='=>'string[]|null', 'flags='=>'0|', 'offset='=>'int'],
 'preg_match\'1' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_subpatterns='=>'array', 'flags='=>'int', 'offset='=>'int'],
 'preg_match_all' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_subpatterns='=>'array', 'flags='=>'int', 'offset='=>'int'],
 'preg_quote' => ['string', 'str'=>'string', 'delim_char='=>'string'],
