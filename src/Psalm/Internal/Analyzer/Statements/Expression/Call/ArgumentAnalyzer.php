@@ -1146,6 +1146,43 @@ class ArgumentAnalyzer
                 $argument_offset,
                 $code_location
             );
+
+            if (strpos($cased_method_id, '::')) {
+                list($fq_classlike_name, $cased_method_name) = explode('::', $cased_method_id);
+                $method_name = strtolower($cased_method_name);
+                $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
+
+                foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+                    $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
+                        $dependent_classlike_lc
+                    );
+                    $new_sink = TaintNode::getForMethodArgument(
+                        $dependent_classlike_lc . '::' . $method_name,
+                        $dependent_classlike_storage->name . '::' . $cased_method_name,
+                        $argument_offset,
+                        $code_location,
+                        null
+                    );
+
+                    $codebase->taint->addTaintNode($new_sink);
+                    $codebase->taint->addPath($method_node, $new_sink);
+                }
+
+                if (isset($class_storage->overridden_method_ids[$method_name])) {
+                    foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
+                        $new_sink = TaintNode::getForMethodArgument(
+                            (string) $parent_method_id,
+                            $codebase->methods->getCasedMethodId($parent_method_id),
+                            $argument_offset,
+                            $code_location,
+                            null
+                        );
+
+                        $codebase->taint->addTaintNode($new_sink);
+                        $codebase->taint->addPath($method_node, $new_sink);
+                    }
+                }
+            }
         }
 
         if ($function_param->sinks) {
@@ -1172,55 +1209,6 @@ class ArgumentAnalyzer
         }
 
         $codebase->taint->addTaintNode($method_node);
-
-        if (!in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-            && $input_type->parent_nodes
-        ) {
-            foreach ($input_type->parent_nodes as $parent_node) {
-                if (strpos($parent_node->id, '::') && strpos($parent_node->id, '#')) {
-                    list($fq_classlike_name, $method_name) = explode('::', $parent_node->id);
-                    list(, $cased_method_name) = explode('::', $parent_node->label);
-
-                    $method_name_parts = explode('#', $method_name);
-                    list($cased_method_name) = explode('#', $cased_method_name);
-
-                    $method_name = strtolower($method_name_parts[0]);
-
-                    $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
-
-                    foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
-                        $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
-                            $dependent_classlike_lc
-                        );
-                        $new_sink = TaintNode::getForMethodArgument(
-                            $dependent_classlike_lc . '::' . $method_name,
-                            $dependent_classlike_storage->name . '::' . $cased_method_name,
-                            (int) $method_name_parts[1] - 1,
-                            $code_location,
-                            null
-                        );
-
-                        $codebase->taint->addTaintNode($new_sink);
-                        $codebase->taint->addPath($new_sink, $method_node);
-                    }
-
-                    if (isset($class_storage->overridden_method_ids[$method_name])) {
-                        foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
-                            $new_sink = TaintNode::getForMethodArgument(
-                                (string) $parent_method_id,
-                                $codebase->methods->getCasedMethodId($parent_method_id),
-                                (int) $method_name_parts[1] - 1,
-                                $code_location,
-                                null
-                            );
-
-                            $codebase->taint->addTaintNode($new_sink);
-                            $codebase->taint->addPath($new_sink, $method_node);
-                        }
-                    }
-                }
-            }
-        }
 
         if ($input_type->parent_nodes) {
             foreach ($input_type->parent_nodes as $parent_node) {
