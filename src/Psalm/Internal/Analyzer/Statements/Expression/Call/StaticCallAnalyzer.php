@@ -911,7 +911,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 )) {
                                     if ($template_type->param_name === 'TFunctionArgCount') {
                                         $template_result->upper_bounds[$template_type->param_name] = [
-                                            'fn-' . $method_id => [Type::getInt(false, count($stmt->args)), 0]
+                                            'fn-' . strtolower((string) $method_id) => [
+                                                Type::getInt(false, count($stmt->args)),
+                                                0
+                                            ]
                                         ];
                                     } else {
                                         $template_result->upper_bounds[$template_type->param_name] = [

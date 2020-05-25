@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\TypeVisitor;
 
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\TypeNode;
@@ -24,6 +25,12 @@ class TemplateTypeCollector extends NodeVisitor
             $this->template_types[] = new TTemplateParam(
                 $type->param_name,
                 $extends ? new Union([$extends]) : \Psalm\Type::getMixed(),
+                $type->defining_class
+            );
+        } elseif ($type instanceof TConditional) {
+            $this->template_types[] = new TTemplateParam(
+                $type->param_name,
+                \Psalm\Type::getMixed(),
                 $type->defining_class
             );
         }
