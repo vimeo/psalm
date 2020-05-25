@@ -33,7 +33,7 @@ class MethodCallReturnTypeFetcher
         array $args,
         AtomicMethodCallAnalysisResult $result,
         TemplateResult $template_result
-    ) : ?Type\Union {
+    ) : Type\Union {
         $call_map_id = $declaring_method_id ?: $method_id;
 
         $fq_class_name = $method_id->fq_class_name;
@@ -149,27 +149,6 @@ class MethodCallReturnTypeFetcher
                         && $codebase->classlike_storage_provider->get($static_type->value)->final
                 );
 
-                if ($codebase->taint && $declaring_method_id) {
-                    $method_storage = $codebase->methods->getStorage(
-                        $declaring_method_id
-                    );
-
-                    $node_location = new CodeLocation($statements_analyzer, $stmt);
-
-                    $method_call_node = TaintNode::getForMethodReturn(
-                        (string) $method_id,
-                        $cased_method_id,
-                        $node_location,
-                        $method_storage->specialize_call ? $node_location : null
-                    );
-
-                    $codebase->taint->addTaintNode($method_call_node);
-
-                    $return_type_candidate->parent_nodes = [
-                        $method_call_node
-                    ];
-                }
-
                 $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
                     $method_id,
                     $secondary_return_type_location
@@ -199,6 +178,31 @@ class MethodCallReturnTypeFetcher
                     $result->returns_by_ref
                         || $codebase->methods->getMethodReturnsByRef($method_id);
             }
+        }
+
+        if (!$return_type_candidate) {
+            $return_type_candidate = $method_name === '__tostring' ? Type::getString() : Type::getMixed();
+        }
+
+        if ($codebase->taint && $declaring_method_id) {
+            $method_storage = $codebase->methods->getStorage(
+                $declaring_method_id
+            );
+
+            $node_location = new CodeLocation($statements_analyzer, $stmt);
+
+            $method_call_node = TaintNode::getForMethodReturn(
+                (string) $method_id,
+                $cased_method_id,
+                $node_location,
+                $method_storage->specialize_call ? $node_location : null
+            );
+
+            $codebase->taint->addTaintNode($method_call_node);
+
+            $return_type_candidate->parent_nodes = [
+                $method_call_node
+            ];
         }
 
         return $return_type_candidate;

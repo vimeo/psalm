@@ -170,7 +170,7 @@ class ArgumentAnalyzer
         bool $in_call_map
     ) {
         if (!$function_param->type) {
-            if (!$codebase->infer_types_from_usage) {
+            if (!$codebase->infer_types_from_usage && !$codebase->taint) {
                 return;
             }
 

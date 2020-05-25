@@ -770,7 +770,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         /** @psalm-suppress UndefinedPropertyAssignment */
                         $stmt->pure = true;
                     }
-                } elseif ($return_type_candidate) {
+                } else {
                     $context->vars_in_scope[$method_var_id] = $return_type_candidate;
                 }
             }

@@ -41,6 +41,9 @@ class Taint
     /** @var array<string, array<string, true>> */
     private $specialized_calls = [];
 
+    /** @var array<string, array<string, true>> */
+    private $specializations = [];
+
     public function addSource(Source $node) : void
     {
         $this->sources[$node->id] = $node;
@@ -59,6 +62,7 @@ class Taint
 
         if ($node->unspecialized_id && $node->specialization_key) {
             $this->specialized_calls[$node->specialization_key][$node->unspecialized_id] = true;
+            $this->specializations[$node->unspecialized_id][$node->specialization_key] = true;
         }
     }
 
@@ -138,6 +142,14 @@ class Taint
                 $this->forward_edges[$key] += $map;
             }
         }
+
+        foreach ($taint->specializations as $key => $map) {
+            if (!isset($this->specializations[$key])) {
+                $this->specializations[$key] = $map;
+            } else {
+                $this->specializations[$key] += $map;
+            }
+        }
     }
 
     public function connectSinksAndSources() : void
@@ -164,6 +176,11 @@ class Taint
                             = $this->specialized_calls[$source->specialization_key];
 
                         $source->id = substr($source->id, 0, -strlen($source->specialization_key) - 1);
+                    } elseif (isset($this->specializations[$source->id])) {
+                        foreach ($this->specializations[$source->id] as $specialization => $_) {
+                            // TODO: generate multiple new sources
+                            $source->id = $source->id . '-' . $specialization;
+                        }
                     } else {
                         foreach ($source->specialized_calls as $key => $map) {
                             if (isset($map[$source->id]) && isset($this->forward_edges[$source->id . '-' . $key])) {
