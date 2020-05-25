@@ -2757,7 +2757,7 @@ class ClassTemplateTest extends TestCase
                     /** @var Foo<Enum::TYPE_ONE> $foo */
                     $foo = new Foo();'
             ],
-            'extendedPropertyTypeParameterised' => [
+            'SKIPPED-extendedPropertyTypeParameterised' => [
                 '<?php
                     namespace App;
 
