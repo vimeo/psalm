@@ -8,6 +8,7 @@ use Psalm\Context;
 class MixinAnnotationTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -222,6 +223,45 @@ class MixinAnnotationTest extends TestCase
                     function toArray(B $b) : string {
                         return $b->foo;
                     }'
+            ],
+        ];
+    }
+
+    /**
+     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     */
+    public function providerInvalidCodeParse()
+    {
+        return [
+            'undefinedMixinClass' => [
+                '<?php
+                    /** @mixin B */
+                    class A {}',
+                'error_message' => 'UndefinedDocblockClass'
+            ],
+            'undefinedMixinClassWithPropertyFetch' => [
+                '<?php
+                    /** @mixin B */
+                    class A {}
+
+                    (new A)->foo;',
+                'error_message' => 'UndefinedPropertyFetch'
+            ],
+            'undefinedMixinClassWithPropertyAssignment' => [
+                '<?php
+                    /** @mixin B */
+                    class A {}
+
+                    (new A)->foo = "bar";',
+                'error_message' => 'UndefinedPropertyAssignment'
+            ],
+            'undefinedMixinClassWithMethodCall' => [
+                '<?php
+                    /** @mixin B */
+                    class A {}
+
+                    (new A)->foo();',
+                'error_message' => 'UndefinedMethod'
             ],
         ];
     }

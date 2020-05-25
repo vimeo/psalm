@@ -1326,6 +1326,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $storage->template_types ?: []
                     );
 
+                    $mixin_type->setFromDocblock();
+
                     if ($mixin_type->isSingle()) {
                         $mixin_type = \array_values($mixin_type->getAtomicTypes())[0];
 

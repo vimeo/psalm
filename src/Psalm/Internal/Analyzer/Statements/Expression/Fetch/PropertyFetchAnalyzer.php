@@ -499,16 +499,24 @@ class PropertyFetchAnalyzer
                 && $class_storage->mixin instanceof Type\Atomic\TNamedObject
             ) {
                 $new_property_id = $class_storage->mixin->value . '::$' . $prop_name;
-                $new_class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
 
-                if ($codebase->properties->propertyExists(
-                    $new_property_id,
-                    true,
-                    $statements_analyzer,
-                    $context,
-                    $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
-                )
-                    || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])
+                try {
+                    $new_class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
+                } catch (\InvalidArgumentException $e) {
+                    $new_class_storage = null;
+                }
+
+                if ($new_class_storage
+                    && ($codebase->properties->propertyExists(
+                            $new_property_id,
+                            true,
+                            $statements_analyzer,
+                            $context,
+                            $codebase->collect_locations
+                                ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                : null
+                        )
+                        || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
                 ) {
                     $fq_class_name = $class_storage->mixin->value;
                     $lhs_type_part = clone $class_storage->mixin;

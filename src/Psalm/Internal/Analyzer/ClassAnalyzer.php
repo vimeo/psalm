@@ -487,6 +487,20 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
+        if ($storage->mixin) {
+            $union = new Type\Union([$storage->mixin]);
+            $union->check(
+                $this,
+                new CodeLocation(
+                    $this,
+                    $class->name ?: $class,
+                    null,
+                    true
+                ),
+                $this->getSuppressedIssues()
+            );
+        }
+
         if ($storage->template_type_extends) {
             foreach ($storage->template_type_extends as $type_map) {
                 foreach ($type_map as $atomic_type) {
