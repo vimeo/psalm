@@ -88,12 +88,13 @@ class MethodCallReturnTypeFetcher
             ) {
                 $return_type_candidate = clone $method_storage->return_type;
 
-                if ($template_result->upper_bounds) {
-                    $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                        $template_result,
-                        $codebase
-                    );
-                }
+                $return_type_candidate = self::replaceTemplateTypes(
+                    $return_type_candidate,
+                    $template_result,
+                    $method_id,
+                    \count($stmt->args),
+                    $codebase
+                );
             } else {
                 $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $call_map_id);
 
@@ -128,47 +129,13 @@ class MethodCallReturnTypeFetcher
             if ($return_type_candidate) {
                 $return_type_candidate = clone $return_type_candidate;
 
-                if ($template_result->template_types) {
-                    $bindable_template_types = $return_type_candidate->getTemplateTypes();
-
-                    foreach ($bindable_template_types as $template_type) {
-                        if ($template_type->defining_class !== $fq_class_name
-                            && !isset(
-                                $template_result->upper_bounds
-                                    [$template_type->param_name]
-                                    [$template_type->defining_class]
-                            )
-                        ) {
-                            if ($template_type->param_name === 'TFunctionArgCount') {
-                                $template_result->upper_bounds[$template_type->param_name] = [
-                                    'fn-' . strtolower((string) $method_id) => [
-                                        Type::getInt(false, \count($stmt->args)),
-                                        0
-                                    ]
-                                ];
-                            } else {
-                                $template_result->upper_bounds[$template_type->param_name] = [
-                                    ($template_type->defining_class) => [Type::getEmpty(), 0]
-                                ];
-                            }
-                        }
-                    }
-                }
-
-                if ($template_result->upper_bounds) {
-                    $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                        $codebase,
-                        $return_type_candidate,
-                        null,
-                        null,
-                        null
-                    );
-
-                    $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                        $template_result,
-                        $codebase
-                    );
-                }
+                $return_type_candidate = self::replaceTemplateTypes(
+                    $return_type_candidate,
+                    $template_result,
+                    $method_id,
+                    \count($stmt->args),
+                    $codebase
+                );
 
                 $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
@@ -232,6 +199,58 @@ class MethodCallReturnTypeFetcher
                     $result->returns_by_ref
                         || $codebase->methods->getMethodReturnsByRef($method_id);
             }
+        }
+
+        return $return_type_candidate;
+    }
+
+    private static function replaceTemplateTypes(
+        Type\Union $return_type_candidate,
+        TemplateResult $template_result,
+        MethodIdentifier $method_id,
+        int $arg_count,
+        Codebase $codebase
+    ) : Type\Union {
+        if ($template_result->template_types) {
+            $bindable_template_types = $return_type_candidate->getTemplateTypes();
+
+            foreach ($bindable_template_types as $template_type) {
+                if ($template_type->defining_class !== $method_id->fq_class_name
+                    && !isset(
+                        $template_result->upper_bounds
+                            [$template_type->param_name]
+                            [$template_type->defining_class]
+                    )
+                ) {
+                    if ($template_type->param_name === 'TFunctionArgCount') {
+                        $template_result->upper_bounds[$template_type->param_name] = [
+                            'fn-' . strtolower((string) $method_id) => [
+                                Type::getInt(false, $arg_count),
+                                0
+                            ]
+                        ];
+                    } else {
+                        $template_result->upper_bounds[$template_type->param_name] = [
+                            ($template_type->defining_class) => [Type::getEmpty(), 0]
+                        ];
+                    }
+                }
+            }
+        }
+
+        if ($template_result->upper_bounds) {
+            $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $codebase,
+                $return_type_candidate,
+                null,
+                null,
+                null
+            );
+
+            $return_type_candidate->replaceTemplateTypesWithArgTypes(
+                $template_result,
+                $codebase
+            );
         }
 
         return $return_type_candidate;
