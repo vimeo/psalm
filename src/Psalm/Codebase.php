@@ -20,7 +20,7 @@ use function preg_match;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -1313,8 +1313,8 @@ class Codebase
 
                 $params = $function_storage->params;
             } catch (\Exception $exception) {
-                if (CallMap::inCallMap($function_symbol)) {
-                    $callables = CallMap::getCallablesFromCallMap($function_symbol);
+                if (InternalCallMapHandler::inCallMap($function_symbol)) {
+                    $callables = InternalCallMapHandler::getCallablesFromCallMap($function_symbol);
 
                     if (!$callables || !$callables[0]->params) {
                         return null;

@@ -3,7 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Codebase;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -1943,7 +1943,7 @@ class TypeAnalyzer
                     $function_storage->pure
                 );
             } catch (\UnexpectedValueException $e) {
-                if (CallMap::inCallMap($input_type_part->value)) {
+                if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
                     $args = [];
 
                     $nodes = new \Psalm\Internal\Provider\NodeDataProvider();
@@ -1962,7 +1962,7 @@ class TypeAnalyzer
                         }
                     }
 
-                    $matching_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
+                    $matching_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
                         $codebase,
                         $input_type_part->value,
                         $args,

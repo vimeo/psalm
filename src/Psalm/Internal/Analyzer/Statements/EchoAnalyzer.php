@@ -47,9 +47,9 @@ class EchoAnalyzer
                 );
 
                 $echo_param_sink->taints = [
-                    Type\Union::TAINTED_INPUT_HTML,
-                    Type\Union::TAINTED_USER_SECRET,
-                    Type\Union::TAINTED_SYSTEM_SECRET
+                    Type\TaintKind::INPUT_HTML,
+                    Type\TaintKind::USER_SECRET,
+                    Type\TaintKind::SYSTEM_SECRET
                 ];
 
                 $codebase->taint->addSink($echo_param_sink);

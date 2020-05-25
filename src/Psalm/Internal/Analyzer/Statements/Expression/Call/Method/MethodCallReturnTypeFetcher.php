@@ -3,7 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -80,7 +80,7 @@ class MethodCallReturnTypeFetcher
 
         $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
 
-        if (CallMap::inCallMap((string) $call_map_id)) {
+        if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
             if (($template_result->upper_bounds || $class_storage->stubbed)
                 && isset($class_storage->methods[$method_id->method_name])
                 && ($method_storage = $class_storage->methods[$method_id->method_name])
@@ -95,7 +95,7 @@ class MethodCallReturnTypeFetcher
                     );
                 }
             } else {
-                $callmap_callables = CallMap::getCallablesFromCallMap((string) $call_map_id);
+                $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $call_map_id);
 
                 if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
                     throw new \UnexpectedValueException('Shouldn’t get here');

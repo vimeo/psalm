@@ -262,7 +262,8 @@ class Methods
         }
 
         if (!$class_storage->user_defined
-            && (CallMap::inCallMap((string) $method_id) || ($old_method_id && CallMap::inCallMap($old_method_id)))
+            && (InternalCallMapHandler::inCallMap((string) $method_id)
+                || ($old_method_id && InternalCallMapHandler::inCallMap($old_method_id)))
         ) {
             return true;
         }
@@ -333,11 +334,11 @@ class Methods
         $callmap_id = $declaring_method_id ?: $method_id;
 
         // functions
-        if (CallMap::inCallMap((string) $callmap_id)) {
+        if (InternalCallMapHandler::inCallMap((string) $callmap_id)) {
             $class_storage = $this->classlike_storage_provider->get($callmap_id->fq_class_name);
 
             if (!$class_storage->stubbed) {
-                $function_callables = CallMap::getCallablesFromCallMap((string) $callmap_id);
+                $function_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $callmap_id);
 
                 if ($function_callables === null) {
                     throw new \UnexpectedValueException(
@@ -369,7 +370,7 @@ class Methods
                     }
                 }
 
-                $matching_callable = CallMap::getMatchingCallableFromCallMapOptions(
+                $matching_callable = InternalCallMapHandler::getMatchingCallableFromCallMapOptions(
                     $source->getCodebase(),
                     $function_callables,
                     $args,
@@ -664,7 +665,7 @@ class Methods
 
         if (!$appearing_fq_class_storage->user_defined
             && !$appearing_fq_class_storage->stubbed
-            && CallMap::inCallMap((string) $appearing_method_id)
+            && InternalCallMapHandler::inCallMap((string) $appearing_method_id)
         ) {
             if ((string) $appearing_method_id === 'Closure::fromcallable'
                 && isset($args[0])
@@ -703,7 +704,7 @@ class Methods
                 }
             }
 
-            $callmap_callables = CallMap::getCallablesFromCallMap((string) $appearing_method_id);
+            $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $appearing_method_id);
 
             if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
                 throw new \UnexpectedValueException('Shouldn’t get here');
@@ -811,7 +812,7 @@ class Methods
 
         $fq_class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
 
-        if (!$fq_class_storage->user_defined && CallMap::inCallMap((string) $method_id)) {
+        if (!$fq_class_storage->user_defined && InternalCallMapHandler::inCallMap((string) $method_id)) {
             return false;
         }
 
@@ -1021,7 +1022,7 @@ class Methods
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if ($declaring_method_id === null) {
-            if (CallMap::inCallMap((string) $method_id)) {
+            if (InternalCallMapHandler::inCallMap((string) $method_id)) {
                 $declaring_method_id = $method_id;
             } else {
                 throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);

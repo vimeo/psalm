@@ -10,7 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -102,9 +102,9 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             $second_arg_value = $function_call_arg->value;
 
             if ($second_arg_value instanceof PhpParser\Node\Scalar\String_
-                && CallMap::inCallMap($second_arg_value->value)
+                && InternalCallMapHandler::inCallMap($second_arg_value->value)
             ) {
-                $callables = CallMap::getCallablesFromCallMap($second_arg_value->value);
+                $callables = InternalCallMapHandler::getCallablesFromCallMap($second_arg_value->value);
 
                 if ($callables) {
                     $callable = clone $callables[0];

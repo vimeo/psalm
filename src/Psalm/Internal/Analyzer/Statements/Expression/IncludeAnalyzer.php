@@ -274,7 +274,7 @@ class IncludeAnalyzer
                     $arg_location
                 );
 
-                $include_param_sink->taints = [\Psalm\Type\Union::TAINTED_INPUT_TEXT];
+                $include_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
 
                 $codebase->taint->addSink($include_param_sink);
 

@@ -36,7 +36,7 @@ class EvalAnalyzer
                     $arg_location
                 );
 
-                $eval_param_sink->taints = [\Psalm\Type\Union::TAINTED_INPUT_TEXT];
+                $eval_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
 
                 $codebase->taint->addSink($eval_param_sink);
 

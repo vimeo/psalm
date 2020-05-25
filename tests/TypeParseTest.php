@@ -1229,7 +1229,7 @@ class TypeParseTest extends TestCase
      */
     public function testValidCallMapType()
     {
-        $callmap_types = \Psalm\Internal\Codebase\CallMap::getCallMap();
+        $callmap_types = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallMap();
 
         foreach ($callmap_types as $signature) {
             $return_type = $signature[0] ?? null;

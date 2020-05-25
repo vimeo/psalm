@@ -10,7 +10,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -157,14 +157,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
             if (!$namespaced_function_exists
                 && !$function_name instanceof PhpParser\Node\Name\FullyQualified
             ) {
-                $in_call_map = CallMap::inCallMap($original_function_id);
+                $in_call_map = InternalCallMapHandler::inCallMap($original_function_id);
                 $is_stubbed = $codebase_functions->hasStubbedFunction($original_function_id);
 
                 if ($is_stubbed || $in_call_map) {
                     $function_id = $original_function_id;
                 }
             } else {
-                $in_call_map = CallMap::inCallMap($function_id);
+                $in_call_map = InternalCallMapHandler::inCallMap($function_id);
                 $is_stubbed = $codebase_functions->hasStubbedFunction($function_id);
             }
 
@@ -251,7 +251,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             ];
                         }
                     } else {
-                        $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
+                        $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
                             $codebase,
                             $function_id,
                             $stmt->args,
@@ -304,7 +304,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         if ($function_exists) {
             if ($function_name instanceof PhpParser\Node\Name && $function_id) {
                 if (!$is_stubbed && $in_call_map) {
-                    $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
+                    $function_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
                         $codebase,
                         $function_id,
                         $stmt->args,

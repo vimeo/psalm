@@ -10,7 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -275,7 +275,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         PhpParser\Node\Arg $function_call_arg,
         ?\Psalm\Internal\Type\ArrayType $array_arg_type
     ) : Type\Union {
-        $call_map = CallMap::getCallMap();
+        $call_map = InternalCallMapHandler::getCallMap();
 
         $mapping_return_type = null;
         $closure_param_type = null;

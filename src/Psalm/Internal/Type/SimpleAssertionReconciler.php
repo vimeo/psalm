@@ -1657,7 +1657,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $callable_types[] = new Type\Atomic\TCallableString();
                 $did_remove_type = true;
             } elseif (get_class($type) === Type\Atomic\TLiteralString::class
-                && \Psalm\Internal\Codebase\CallMap::inCallMap($type->value)
+                && \Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap($type->value)
             ) {
                 $callable_types[] = $type;
                 $did_remove_type = true;

@@ -2,7 +2,7 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Taint\TaintNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -59,7 +59,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
     ) {
         $call_map_key = strtolower($function_id);
 
-        $call_map = CallMap::getCallMap();
+        $call_map = InternalCallMapHandler::getCallMap();
 
         $codebase = $statements_analyzer->getCodebase();
 

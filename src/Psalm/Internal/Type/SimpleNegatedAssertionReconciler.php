@@ -200,7 +200,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
     ) : Type\Union {
         foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
             if ($type instanceof Type\Atomic\TLiteralString
-                && \Psalm\Internal\Codebase\CallMap::inCallMap($type->value)
+                && \Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap($type->value)
             ) {
                 $existing_var_type->removeType($atomic_key);
             }

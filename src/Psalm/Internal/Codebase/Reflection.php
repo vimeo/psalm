@@ -261,8 +261,6 @@ class Reflection
         $storage->mutation_free = $storage->external_mutation_free
             = $method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone';
 
-        $declaring_method_id = $declaring_class->name . '::' . $method_name_lc;
-
         $class_storage->declaring_method_ids[$method_name_lc] = new \Psalm\Internal\MethodIdentifier(
             $declaring_class->name,
             $method_name_lc
@@ -278,18 +276,14 @@ class Reflection
             ? ClassLikeAnalyzer::VISIBILITY_PRIVATE
             : ($method->isProtected() ? ClassLikeAnalyzer::VISIBILITY_PROTECTED : ClassLikeAnalyzer::VISIBILITY_PUBLIC);
 
-        $callables = CallMap::getCallablesFromCallMap($method_id);
+        $callables = InternalCallMapHandler::getCallablesFromCallMap($method_id);
 
         if ($callables && $callables[0]->params !== null && $callables[0]->return_type !== null) {
             $storage->params = [];
 
-            foreach ($callables[0]->params as $i => $param) {
+            foreach ($callables[0]->params as $param) {
                 if ($param->type) {
                     $param->type->queueClassLikesForScanning($this->codebase);
-                }
-
-                if ($declaring_method_id === 'PDO::exec' && $i === 0) {
-                    $param->sinks = [Type\Union::TAINTED_INPUT_SQL];
                 }
             }
 
@@ -364,8 +358,8 @@ class Reflection
 
             $storage = self::$builtin_functions[$function_id] = new FunctionLikeStorage();
 
-            if (CallMap::inCallMap($function_id)) {
-                $callmap_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
+            if (InternalCallMapHandler::inCallMap($function_id)) {
+                $callmap_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
                     $this->codebase,
                     $function_id,
                     [],

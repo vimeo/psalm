@@ -582,7 +582,7 @@ class ArgumentAnalyzer
         if ($param_type->hasCallableType()
             && $param_type->isSingle()
             && $input_type->isSingleStringLiteral()
-            && !\Psalm\Internal\Codebase\CallMap::inCallMap($input_type->getSingleStringLiteral()->value)
+            && !\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap($input_type->getSingleStringLiteral()->value)
         ) {
             foreach ($input_type->getAtomicTypes() as $key => $atomic_type) {
                 $candidate_callable = TypeAnalyzer::getCallableFromAtomic(

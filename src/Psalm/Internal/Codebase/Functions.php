@@ -402,7 +402,7 @@ class Functions
             return true;
         }
 
-        $function_callable = \Psalm\Internal\Codebase\CallMap::getCallableFromCallMapById(
+        $function_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
             $codebase,
             $function_id,
             $args ?: [],

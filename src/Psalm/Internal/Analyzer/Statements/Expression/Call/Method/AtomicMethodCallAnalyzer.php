@@ -13,7 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -594,7 +594,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result
         );
 
-        $in_call_map = CallMap::inCallMap((string) ($declaring_method_id ?: $method_id));
+        $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?: $method_id));
 
         if (!$in_call_map) {
             $name_code_location = new CodeLocation($statements_analyzer, $stmt->name);

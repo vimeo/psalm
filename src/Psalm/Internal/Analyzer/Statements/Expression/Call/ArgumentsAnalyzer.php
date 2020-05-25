@@ -9,7 +9,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
@@ -361,7 +361,7 @@ class ArgumentsAnalyzer
         CodeLocation $code_location,
         Context $context
     ) {
-        $in_call_map = $method_id ? CallMap::inCallMap((string) $method_id) : false;
+        $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
         $cased_method_id = (string) $method_id;
 
@@ -838,7 +838,7 @@ class ArgumentsAnalyzer
                 $by_ref_type,
                 $by_ref_out_type ?: $by_ref_type,
                 $context,
-                $method_id && (strpos($method_id, '::') !== false || !CallMap::inCallMap($method_id)),
+                $method_id && (strpos($method_id, '::') !== false || !InternalCallMapHandler::inCallMap($method_id)),
                 $check_null_ref
             );
         }

@@ -8,7 +8,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\CodeLocation;
@@ -559,8 +559,8 @@ class ArrayFunctionArgumentsAnalyzer
                         $function_id
                     );
 
-                    if (CallMap::inCallMap($function_id)) {
-                        $callmap_callables = CallMap::getCallablesFromCallMap($function_id);
+                    if (InternalCallMapHandler::inCallMap($function_id)) {
+                        $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap($function_id);
 
                         if ($callmap_callables === null) {
                             throw new \UnexpectedValueException('This should not happen');

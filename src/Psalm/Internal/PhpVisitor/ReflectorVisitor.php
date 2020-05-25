@@ -38,7 +38,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\PropertyMap;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
@@ -350,7 +350,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
             $function_id = implode('\\', $node->name->parts);
-            if (CallMap::inCallMap($function_id)) {
+            if (InternalCallMapHandler::inCallMap($function_id)) {
                 $this->registerClassMapFunctionCall($function_id, $node);
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
@@ -806,7 +806,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         string $function_id,
         PhpParser\Node\Expr\FuncCall $node
     ) {
-        $callables = CallMap::getCallablesFromCallMap($function_id);
+        $callables = InternalCallMapHandler::getCallablesFromCallMap($function_id);
 
         if ($callables) {
             foreach ($callables as $callable) {

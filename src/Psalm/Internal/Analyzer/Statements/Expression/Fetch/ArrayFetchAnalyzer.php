@@ -200,7 +200,7 @@ class ArrayFetchAnalyzer
                         $array_var_id,
                         $taint_location,
                         null,
-                        Type\Union::TAINTED_INPUT
+                        Type\TaintKindGroup::ALL_INPUT
                     );
 
                     $codebase->taint->addSource($server_taint_source);

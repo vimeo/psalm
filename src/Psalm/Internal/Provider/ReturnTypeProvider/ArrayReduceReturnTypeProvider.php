@@ -9,7 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -190,7 +190,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                 $function_call_arg
             );
 
-            $call_map = CallMap::getCallMap();
+            $call_map = InternalCallMapHandler::getCallMap();
 
             foreach ($mapping_function_ids as $mapping_function_id) {
                 $mapping_function_id = strtolower($mapping_function_id);

@@ -21,7 +21,7 @@ use function version_compare;
  *
  * Gets values from the call map array, which stores data about native functions and methods
  */
-class CallMap
+class InternalCallMapHandler
 {
     const PHP_MAJOR_VERSION = 7;
     const PHP_MINOR_VERSION = 4;
@@ -45,6 +45,11 @@ class CallMap
      * @var array<array<int, TCallable>>|null
      */
     private static $call_map_callables = [];
+
+    /**
+     * @var array<string, list<list<Type\TaintKind::*>>>
+     */
+    private static $taint_sink_map = [];
 
     /**
      * @param  string                           $method_id
@@ -277,24 +282,8 @@ class CallMap
                     $variadic
                 );
 
-                if ($arg_offset === 0
-                    && ($call_map_key === 'exec'
-                        || $call_map_key === 'shell_exec'
-                        || $call_map_key === 'passthru'
-                        || $call_map_key === 'system'
-                        || $call_map_key === 'pcntl_exec'
-                        || $call_map_key === 'file_put_contents'
-                        || $call_map_key === 'fopen')
-                ) {
-                    $function_param->sinks[] = Type\Union::TAINTED_INPUT_SHELL;
-                }
-
-                if ($arg_offset === 0
-                    && ($call_map_key === 'print_r')
-                ) {
-                    $function_param->sinks[] = Type\Union::TAINTED_INPUT_HTML;
-                    $function_param->sinks[] = Type\Union::TAINTED_USER_SECRET;
-                    $function_param->sinks[] = Type\Union::TAINTED_SYSTEM_SECRET;
+                if (isset(self::$taint_sink_map[$call_map_key][$arg_offset])) {
+                    $function_param->sinks = self::$taint_sink_map[$call_map_key][$arg_offset];
                 }
 
                 $function_param->signature_type = null;
@@ -347,6 +336,16 @@ class CallMap
         foreach ($call_map as $key => $value) {
             $cased_key = strtolower($key);
             self::$call_map[$cased_key] = $value;
+        }
+
+        /**
+         * @var array<string, list<list<Type\TaintKind::*>>>
+         */
+        $taint_map = require(__DIR__ . '/../InternalTaintSinkMap.php');
+
+        foreach ($taint_map as $key => $value) {
+            $cased_key = strtolower($key);
+            self::$taint_sink_map[$cased_key] = $value;
         }
 
         if (version_compare($analyzer_version, $current_version, '<')) {
