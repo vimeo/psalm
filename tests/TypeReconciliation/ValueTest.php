@@ -891,6 +891,18 @@ class ValueTest extends TestCase
                     if ("C" === "c") {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'numericStringCoerceToLiteral' => [
+                '<?php
+                    /** @param "0"|"1" $s */
+                    function foo(string $s) : void {}
+
+                    function bar(string $s) : void {
+                        if (is_numeric($s)) {
+                            foo($s);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion'
+            ],
         ];
     }
 }

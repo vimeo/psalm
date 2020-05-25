@@ -1563,6 +1563,14 @@ class TypeAnalyzer
             && ($input_type_part instanceof TNumericString
                 || $input_type_part instanceof THtmlEscapedString)
         ) {
+            if ($container_type_part instanceof TLiteralString) {
+                if (\is_numeric($container_type_part->value) && $atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+
+                return false;
+            }
+
             return true;
         }
 
