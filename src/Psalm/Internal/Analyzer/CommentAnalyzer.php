@@ -525,7 +525,7 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($parsed_docblock['specials']['psalm-specialize-call'])) {
+        if (isset($parsed_docblock['specials']['psalm-taint-specialize'])) {
             $info->specialize_call = true;
         }
 
