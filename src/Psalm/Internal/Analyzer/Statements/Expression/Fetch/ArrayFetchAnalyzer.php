@@ -1593,7 +1593,7 @@ class ArrayFetchAnalyzer
         Type\Union $stmt_type,
         string $array_var_id
     ) : void {
-        if ($codebase->taint) {
+        if ($codebase->taint && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())) {
             if ($array_var_id === '$_GET' || $array_var_id === '$_POST' || $array_var_id === '$_COOKIE') {
                 $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 

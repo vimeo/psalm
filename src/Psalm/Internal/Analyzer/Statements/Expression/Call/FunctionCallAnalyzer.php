@@ -992,7 +992,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($codebase->taint && $function_storage && $function_storage->return_source_params && $stmt_type) {
+        if ($codebase->taint
+            && $function_storage
+            && $function_storage->return_source_params
+            && $stmt_type
+            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+        ) {
             foreach ($function_storage->return_source_params as $i) {
                 if (!isset($stmt->args[$i])) {
                     continue;

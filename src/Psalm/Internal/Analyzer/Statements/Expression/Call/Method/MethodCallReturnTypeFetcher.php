@@ -184,7 +184,10 @@ class MethodCallReturnTypeFetcher
             $return_type_candidate = $method_name === '__tostring' ? Type::getString() : Type::getMixed();
         }
 
-        if ($codebase->taint && $declaring_method_id) {
+        if ($codebase->taint
+            && $declaring_method_id
+            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+        ) {
             $method_storage = $codebase->methods->getStorage(
                 $declaring_method_id
             );

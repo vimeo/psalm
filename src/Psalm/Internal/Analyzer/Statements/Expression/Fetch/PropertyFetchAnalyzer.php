@@ -1046,7 +1046,7 @@ class PropertyFetchAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($codebase->taint) {
+        if ($codebase->taint && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())) {
             $code_location = new CodeLocation($statements_analyzer, $stmt->name);
 
             $localized_property_node = new TaintNode(

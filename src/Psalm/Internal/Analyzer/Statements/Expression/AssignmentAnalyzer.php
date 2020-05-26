@@ -941,7 +941,9 @@ class AssignmentAnalyzer
                 return $context->vars_in_scope[$var_id];
             }
 
-            if ($codebase->taint) {
+            if ($codebase->taint
+                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+            ) {
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
                     $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
@@ -1117,7 +1119,10 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
 
-                if ($codebase->taint && $result_type) {
+                if ($codebase->taint
+                    && $result_type
+                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                ) {
                     $stmt_left_type = $statements_analyzer->node_data->getType($stmt->var);
                     $stmt_right_type = $statements_analyzer->node_data->getType($stmt->expr);
 

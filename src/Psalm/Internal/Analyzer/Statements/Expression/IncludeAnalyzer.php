@@ -263,7 +263,10 @@ class IncludeAnalyzer
         if ($stmt_type && $statements_analyzer) {
             $codebase = $statements_analyzer->getCodebase();
 
-            if ($codebase->taint && $stmt_type->parent_nodes) {
+            if ($codebase->taint
+                && $stmt_type->parent_nodes
+                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+            ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $include_param_sink = Sink::getForMethodArgument(

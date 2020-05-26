@@ -25,7 +25,10 @@ class EvalAnalyzer
         if ($expr_type) {
             $codebase = $statements_analyzer->getCodebase();
 
-            if ($codebase->taint && $expr_type->parent_nodes) {
+            if ($codebase->taint
+                && $expr_type->parent_nodes
+                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+            ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
                 $eval_param_sink = Sink::getForMethodArgument(

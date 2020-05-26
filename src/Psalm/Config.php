@@ -40,6 +40,7 @@ use function preg_quote;
 use function preg_replace;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
+use Psalm\Config\TaintAnalysisFileFilter;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -550,6 +551,11 @@ class Config
      */
     public $max_string_length = 1000;
 
+    /**
+     * @var ProjectFileFilter|null
+     */
+    protected $taint_analysis_ignored_files;
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -892,6 +898,14 @@ class Config
 
         if (isset($config_xml->projectFiles)) {
             $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $base_dir, true);
+        }
+
+        if (isset($config_xml->taintAnalysis->ignoreFiles)) {
+            $config->taint_analysis_ignored_files = TaintAnalysisFileFilter::loadFromXMLElement(
+                $config_xml->taintAnalysis->ignoreFiles,
+                $base_dir,
+                false
+            );
         }
 
         if (isset($config_xml->fileExtensions)) {
@@ -1347,6 +1361,12 @@ class Config
     public function mustBeIgnored($file_path)
     {
         return $this->project_files && $this->project_files->forbids($file_path);
+    }
+
+    public function trackTaintsInPath(string $file_path) : bool
+    {
+        return !$this->taint_analysis_ignored_files
+            || $this->taint_analysis_ignored_files->allows($file_path);
     }
 
     public function getReportingLevelForIssue(CodeIssue $e) : string

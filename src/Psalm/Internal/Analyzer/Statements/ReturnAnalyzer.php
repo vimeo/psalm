@@ -192,13 +192,17 @@ class ReturnAnalyzer
                     $source->getParentFQCLN()
                 );
 
-                self::handleTaints(
-                    $codebase,
-                    $stmt,
-                    $cased_method_id,
-                    $inferred_type,
-                    $storage
-                );
+                if ($codebase->taint
+                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                ) {
+                    self::handleTaints(
+                        $codebase,
+                        $stmt,
+                        $cased_method_id,
+                        $inferred_type,
+                        $storage
+                    );
+                }
 
                 if ($storage instanceof \Psalm\Storage\MethodStorage && $context->self) {
                     $self_class = $context->self;
@@ -492,10 +496,6 @@ class ReturnAnalyzer
         );
 
         $codebase->taint->addTaintNode($method_node);
-
-        if ($storage->specialize_call) {
-            //$codebase->taint->addSpecializedCall($cased_method_id);
-        }
 
         if ($inferred_type->parent_nodes) {
             foreach ($inferred_type->parent_nodes as $parent_node) {
