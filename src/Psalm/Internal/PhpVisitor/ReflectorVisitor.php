@@ -1198,14 +1198,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 if ($docblock_info->yield) {
-                    $yield_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
-                        $docblock_info->yield,
-                        $this->aliases,
-                        $storage->template_types,
-                        $this->type_aliases
-                    );
-
                     try {
+                        $yield_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                            $docblock_info->yield,
+                            $this->aliases,
+                            $storage->template_types,
+                            $this->type_aliases
+                        );
+
                         $yield_type = TypeParser::parseTokens(
                             $yield_type_tokens,
                             null,
