@@ -1285,6 +1285,10 @@ class PropertyFetchAnalyzer
                 : null
         )
         ) {
+            if ($context->inside_isset) {
+                return true;
+            }
+
             if (IssueBuffer::accepts(
                 new UndefinedPropertyFetch(
                     'Static property ' . $property_id . ' is not defined',
