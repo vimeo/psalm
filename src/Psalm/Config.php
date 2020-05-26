@@ -552,7 +552,7 @@ class Config
     public $max_string_length = 1000;
 
     /**
-     * @var ProjectFileFilter|null
+     * @var TaintAnalysisFileFilter|null
      */
     protected $taint_analysis_ignored_files;
 

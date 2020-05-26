@@ -1120,7 +1120,6 @@ class AssignmentAnalyzer
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
 
                 if ($codebase->taint
-                    && $result_type
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                 ) {
                     $stmt_left_type = $statements_analyzer->node_data->getType($stmt->var);
