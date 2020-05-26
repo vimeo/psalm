@@ -346,7 +346,7 @@ class ScopeAnalyzer
      *
      * @return  bool
      */
-    public static function onlyThrowsOrExits(array $stmts)
+    public static function onlyThrowsOrExits(\Psalm\NodeTypeProvider $type_provider, array $stmts)
     {
         if (empty($stmts)) {
             return false;
@@ -360,6 +360,14 @@ class ScopeAnalyzer
                     && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
             ) {
                 return true;
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
+                $stmt_type = $type_provider->getType($stmt->expr);
+
+                if ($stmt_type && $stmt_type->isNever()) {
+                    return true;
+                }
             }
         }
 
