@@ -574,11 +574,6 @@ class ArgumentAnalyzer
             $param_type->possibly_undefined = true;
         }
 
-        $param_type = TypeAnalyzer::simplifyUnionType(
-            $codebase,
-            $param_type
-        );
-
         if ($param_type->hasCallableType()
             && $param_type->isSingle()
             && $input_type->isSingleStringLiteral()
