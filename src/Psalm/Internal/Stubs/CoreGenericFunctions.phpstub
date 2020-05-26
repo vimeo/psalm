@@ -458,32 +458,6 @@ function pathinfo(string $path, int $options = \PATHINFO_DIRNAME) {}
 /**
  * @psalm-pure
  *
- * @template T as string|int|float
- * @template TFirstArg as array<T>|T
- *
- * @param TFirstArg $arg_1
- * @param T $arg_2
- *
- * @return T
- */
-function min($arg_1, ...$arg_2) {}
-
-/**
- * @psalm-pure
- *
- * @template T as string|int|float
- * @template TFirstArg as array<T>|T
- *
- * @param TFirstArg $arg_1
- * @param T $arg_2
- *
- * @return T
- */
-function max($arg_1, ...$arg_2) {}
-
-/**
- * @psalm-pure
- *
  * @return (func_num_args() is 0 ? array<string, string> : string|false)
  */
 function getenv(string $varname = '', bool $local_only = false) {}

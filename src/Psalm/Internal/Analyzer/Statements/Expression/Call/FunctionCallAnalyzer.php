@@ -1412,23 +1412,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 }
             }
-        } elseif (($function_id === 'min' || $function_id === 'max')
-            && count($stmt->args) === 1
-            && $first_arg
-        ) {
-            $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
-
-            if ($first_arg_type && $first_arg_type->hasScalarType()) {
-                if (IssueBuffer::accepts(
-                    new \Psalm\Issue\TooFewArguments(
-                        $function_id . ' must have more than one argument unless an array is passed',
-                        new CodeLocation($statements_analyzer, $function_name)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
         }
     }
 }

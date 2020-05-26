@@ -172,6 +172,39 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     $int->from_calculation = true;
                     return $int;
 
+                case 'min':
+                case 'max':
+                    if (isset($call_args[0])) {
+                        $first_arg = $call_args[0]->value;
+
+                        if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
+                            if ($first_arg_type->hasArray()) {
+                                /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+                                $array_type = $first_arg_type->getAtomicTypes()['array'];
+                                if ($array_type instanceof Type\Atomic\ObjectLike) {
+                                    return $array_type->getGenericValueType();
+                                }
+
+                                if ($array_type instanceof Type\Atomic\TArray) {
+                                    return clone $array_type->type_params[1];
+                                }
+
+                                if ($array_type instanceof Type\Atomic\TList) {
+                                    return clone $array_type->type_param;
+                                }
+                            } elseif ($first_arg_type->hasScalarType()
+                                && isset($call_args[1])
+                                && ($second_arg = $call_args[1]->value)
+                                && ($second_arg_type = $statements_analyzer->node_data->getType($second_arg))
+                                && $second_arg_type->hasScalarType()
+                            ) {
+                                return Type::combineUnionTypes($first_arg_type, $second_arg_type);
+                            }
+                        }
+                    }
+
+                    break;
+
                 case 'get_parent_class':
                     // this is unreliable, as it's hard to know exactly what's wanted - attempted this in
                     // https://github.com/vimeo/psalm/commit/355ed831e1c69c96bbf9bf2654ef64786cbe9fd7
