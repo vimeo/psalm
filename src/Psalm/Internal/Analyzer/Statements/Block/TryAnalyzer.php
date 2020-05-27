@@ -211,6 +211,8 @@ class TryAnalyzer
                     $statements_analyzer->getAliases()
                 );
 
+                $fq_catch_class = $codebase->classlikes->getUnAliasedName($fq_catch_class);
+
                 if ($codebase->alter_code && $fq_catch_class) {
                     $codebase->classlikes->handleClassLikeReferenceInMigration(
                         $codebase,
