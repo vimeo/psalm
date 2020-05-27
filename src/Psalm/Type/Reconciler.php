@@ -184,7 +184,6 @@ class Reconciler
                                 $new_types[$key_parts[0]] = [['=has-array-key-' . $key_parts[2]]];
                             }
                         }
-
                     }
                 }
             }
