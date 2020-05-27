@@ -253,7 +253,11 @@ class IssueBuffer
             }
         }
 
-        self::$issues_data[$file_path] = $filtered_issues;
+        if (empty($filtered_issues)) {
+            unset(self::$issues_data[$file_path]);
+        } else {
+            self::$issues_data[$file_path] = $filtered_issues;
+        }
     }
 
     public static function addFixableIssue(string $issue_type) : void
