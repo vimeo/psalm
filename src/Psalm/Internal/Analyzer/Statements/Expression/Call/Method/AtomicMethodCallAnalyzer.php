@@ -344,6 +344,20 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $codebase
                 );
 
+                $lhs_type_expanded = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $codebase,
+                    new Type\Union([$lhs_type_part]),
+                    $mixin_declaring_class_storage->name,
+                    $fq_class_name,
+                    $class_storage->parent_class
+                );
+
+                $new_lhs_type_part = array_values($lhs_type_expanded->getAtomicTypes())[0];
+
+                if ($new_lhs_type_part instanceof Type\Atomic\TNamedObject) {
+                    $lhs_type_part = $new_lhs_type_part;
+                }
+
                 $mixin_class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
 
                 $fq_class_name = $mixin_class_storage->name;
