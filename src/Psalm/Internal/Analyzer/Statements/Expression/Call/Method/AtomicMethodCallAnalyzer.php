@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\PropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
@@ -303,6 +304,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
         } elseif (!$naive_method_exists
+            && $class_storage->mixin_declaring_fqcln
             && $class_storage->mixin instanceof Type\Atomic\TNamedObject
         ) {
             $new_method_id = new MethodIdentifier(
@@ -322,10 +324,30 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     : null,
                 $statements_analyzer->getFilePath()
             )) {
-                $fq_class_name = $class_storage->mixin->value;
-                $lhs_type_part = clone $class_storage->mixin;
-                $class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
+                $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
+                    $class_storage->mixin_declaring_fqcln
+                );
 
+                $mixin_class_template_params = ClassTemplateParamCollector::collect(
+                    $codebase,
+                    $mixin_declaring_class_storage,
+                    $codebase->classlike_storage_provider->get($fq_class_name),
+                    null,
+                    $lhs_type_part,
+                    $lhs_var_id
+                );
+
+                $lhs_type_part = clone $class_storage->mixin;
+
+                $lhs_type_part->replaceTemplateTypesWithArgTypes(
+                    new \Psalm\Internal\Type\TemplateResult([], $mixin_class_template_params ?: []),
+                    $codebase
+                );
+
+                $mixin_class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
+
+                $fq_class_name = $mixin_class_storage->name;
+                $class_storage = $mixin_class_storage;
                 $naive_method_exists = true;
                 $method_id = $new_method_id;
             }
