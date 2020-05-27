@@ -111,6 +111,13 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
+        if (substr($assertion, 0, 14) === 'has-array-key-') {
+            return self::reconcileHasArrayKey(
+                $existing_var_type,
+                substr($assertion, 14)
+            );
+        }
+
         if ($assertion === 'falsy' || $assertion === 'empty') {
             return self::reconcileFalsyOrEmpty(
                 $assertion,
@@ -1259,6 +1266,38 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         $existing_var_type->removeType('null');
+
+        return $existing_var_type;
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileHasArrayKey(
+        Union $existing_var_type,
+        string $assertion
+    ) : Union {
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\ObjectLike) {
+                $is_class_string = false;
+
+                if (strpos($assertion, '::class')) {
+                    list($assertion) = explode('::', $assertion);
+                    $is_class_string = true;
+                }
+
+                if (isset($atomic_type->properties[$assertion])) {
+                    $atomic_type->properties[$assertion]->possibly_undefined = false;
+                } else {
+                    $atomic_type->properties[$assertion] = Type::getMixed();
+
+                    if ($is_class_string) {
+                        $atomic_type->class_strings[$assertion] = true;
+                    }
+                }
+            }
+        }
 
         return $existing_var_type;
     }

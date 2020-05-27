@@ -2021,6 +2021,29 @@ class AssertionFinder
                 }
             }
 
+            if ($expr->args[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $expr->args[0]->value->name instanceof PhpParser\Node\Identifier
+                && $expr->args[0]->value->name->name !== 'class'
+            ) {
+                $const_type = null;
+
+                if ($source instanceof StatementsAnalyzer) {
+                    $const_type = $source->node_data->getType($expr->args[0]->value);
+                }
+
+                if ($const_type) {
+                    if ($const_type->isSingleStringLiteral()) {
+                        $first_var_name = $const_type->getSingleStringLiteral()->value;
+                    } elseif ($const_type->isSingleIntLiteral()) {
+                        $first_var_name = (string) $const_type->getSingleIntLiteral()->value;
+                    } else {
+                        $first_var_name = null;
+                    }
+                } else {
+                    $first_var_name = null;
+                }
+            }
+
             if ($first_var_name !== null
                 && $array_root
                 && !strpos($first_var_name, '->')

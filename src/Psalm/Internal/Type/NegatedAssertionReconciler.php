@@ -120,6 +120,8 @@ class NegatedAssertionReconciler extends Reconciler
                 return Type::getEmpty();
             } elseif (substr($assertion, 0, 9) === 'in-array-') {
                 return $existing_var_type;
+            } elseif (substr($assertion, 0, 14) === 'has-array-key-') {
+                return $existing_var_type;
             }
         }
 
