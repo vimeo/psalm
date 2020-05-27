@@ -1335,6 +1335,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             || $mixin_type instanceof Type\Atomic\TTemplateParam
                         ) {
                             $storage->mixin = $mixin_type;
+                            $storage->mixin_declaring_fqcln = $storage->name;
                         }
                     }
                 }

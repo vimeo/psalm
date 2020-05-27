@@ -231,7 +231,7 @@ class ReturnAnalyzer
                         $found_generic_params = ClassTemplateParamCollector::collect(
                             $codebase,
                             $class_storage,
-                            $fq_class_name,
+                            $class_storage,
                             strtolower($method_name),
                             null,
                             '$this'

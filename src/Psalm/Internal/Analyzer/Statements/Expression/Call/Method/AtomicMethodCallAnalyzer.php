@@ -511,12 +511,14 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
         $parent_source = $statements_analyzer->getSource();
 
         $class_template_params = ClassTemplateParamCollector::collect(
             $codebase,
             $codebase->methods->getClassLikeStorageForMethod($method_id),
-            $fq_class_name,
+            $class_storage,
             $method_name_lc,
             $lhs_type_part,
             $lhs_var_id
@@ -538,7 +540,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $class_template_params = ClassTemplateParamCollector::collect(
                         $codebase,
                         $codebase->methods->getClassLikeStorageForMethod($trait_method_id),
-                        $fq_class_name,
+                        $class_storage,
                         $method_name_lc,
                         $lhs_type_part,
                         $lhs_var_id

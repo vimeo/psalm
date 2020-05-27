@@ -18,12 +18,12 @@ class ClassTemplateParamCollector
     public static function collect(
         Codebase $codebase,
         ClassLikeStorage $class_storage,
-        string $static_fq_class_name,
+        ClassLikeStorage $static_class_storage,
         string $method_name = null,
         Type\Atomic $lhs_type_part = null,
         string $lhs_var_id = null
     ) {
-        $static_class_storage = $codebase->classlike_storage_provider->get($static_fq_class_name);
+        $static_fq_class_name = $static_class_storage->name;
 
         $non_trait_class_storage = $class_storage->is_trait
             ? $static_class_storage

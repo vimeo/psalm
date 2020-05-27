@@ -487,7 +487,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        if ($storage->mixin) {
+        if ($storage->mixin && $storage->mixin_declaring_fqcln === $storage->name) {
             $union = new Type\Union([$storage->mixin]);
             $union->check(
                 $this,
@@ -1052,7 +1052,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $class_template_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $property_class_storage,
-                $fq_class_name,
+                $codebase->classlike_storage_provider->get($fq_class_name),
                 null,
                 new Type\Atomic\TNamedObject($fq_class_name),
                 '$this'
@@ -1878,7 +1878,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $class_template_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $class_storage,
-                $original_fq_classlike_name,
+                $codebase->classlike_storage_provider->get($original_fq_classlike_name),
                 strtolower($stmt->name->name),
                 $this_object_type
             ) ?: [];

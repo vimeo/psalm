@@ -791,7 +791,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $found_generic_params = ClassTemplateParamCollector::collect(
                     $codebase,
                     $class_storage,
-                    $fq_class_name,
+                    $class_storage,
                     $method_name_lc,
                     $lhs_type_part,
                     null

@@ -784,7 +784,7 @@ class ReturnTypeAnalyzer
             $class_template_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $classlike_storage,
-                $context->self,
+                $codebase->classlike_storage_provider->get($context->self),
                 strtolower($function->name->name),
                 new Type\Atomic\TNamedObject($context->self),
                 '$this'
