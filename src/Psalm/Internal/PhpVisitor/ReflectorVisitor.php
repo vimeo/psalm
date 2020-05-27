@@ -947,6 +947,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($first_arg_value !== null && $second_arg_value !== null) {
+                if ($first_arg_value[0] === '\\') {
+                    $first_arg_value = substr($first_arg_value, 1);
+                }
+
+                if ($second_arg_value[0] === '\\') {
+                    $second_arg_value = substr($second_arg_value, 1);
+                }
+
                 $second_arg_value = strtolower($second_arg_value);
 
                 $this->codebase->classlikes->addClassAlias(
