@@ -86,7 +86,7 @@ class TypeParser
             }
         }
 
-        $parse_tree = ParseTree::createFromTokens($type_tokens);
+        $parse_tree = (new ParseTreeCreator($type_tokens))->create();
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
         $parsed_type = self::getTypeFromTree(
             $parse_tree,

@@ -12,6 +12,7 @@ use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\ParseTree;
+use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -1043,13 +1044,15 @@ class CommentAnalyzer
                 $method_entry = preg_replace('/\[([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\]/', '[]', $method_entry);
 
                 try {
-                    $method_tree = ParseTree::createFromTokens(
+                    $parse_tree_creator = new ParseTreeCreator(
                         TypeTokenizer::getFullyQualifiedTokens(
                             $method_entry,
                             $aliases,
                             null
                         )
                     );
+
+                    $method_tree = $parse_tree_creator->create();
                 } catch (TypeParseTreeException $e) {
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
