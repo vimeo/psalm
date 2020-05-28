@@ -1087,14 +1087,8 @@ class Codebase
                     return '<?php ' . $function_storage->getSignature(true);
                 }
 
-                try {
-                    $function = $this->functions->getStorage(null, $function_id);
-                    return '<?php ' . $function->getSignature(true);
-                } catch (\UnexpectedValueException $exception) {
-
-                }
-
-                return null;
+                $function = $this->functions->getStorage(null, $function_id);
+                return '<?php ' . $function->getSignature(true);
             }
 
             $storage = $this->classlike_storage_provider->get($symbol);
@@ -1176,14 +1170,8 @@ class Codebase
                     return $file_storage->functions[$function_id]->location;
                 }
 
-                try {
-                    $function = $this->functions->getStorage(null, $function_id);
-                    return $function->location;
-                } catch (\UnexpectedValueException $exception) {
-
-                }
-
-                return null;
+                $function = $this->functions->getStorage(null, $function_id);
+                return $function->location;
             }
 
             $storage = $this->classlike_storage_provider->get($symbol);
