@@ -1086,6 +1086,10 @@ class Codebase
 
                     return '<?php ' . $function_storage->getSignature(true);
                 }
+                
+                if (!$function_id) {
+                    return null;
+                }
 
                 $function = $this->functions->getStorage(null, $function_id);
                 return '<?php ' . $function->getSignature(true);
@@ -1168,6 +1172,10 @@ class Codebase
 
                 if (isset($file_storage->functions[$function_id])) {
                     return $file_storage->functions[$function_id]->location;
+                }
+                
+                if (!$function_id) {
+                    return null;
                 }
 
                 $function = $this->functions->getStorage(null, $function_id);
