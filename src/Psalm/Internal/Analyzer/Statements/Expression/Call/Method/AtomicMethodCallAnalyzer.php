@@ -349,7 +349,10 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     new Type\Union([$lhs_type_part]),
                     $mixin_declaring_class_storage->name,
                     $fq_class_name,
-                    $class_storage->parent_class
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    $class_storage->final
                 );
 
                 $new_lhs_type_part = array_values($lhs_type_expanded->getAtomicTypes())[0];
