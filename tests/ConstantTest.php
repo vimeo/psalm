@@ -813,6 +813,13 @@ class ConstantTest extends TestCase
                         }
                     }'
             ],
+            'internalConstWildcard' => [
+                '<?php
+                    /**
+                     * @psalm-param \PDO::PARAM_* $type
+                     */
+                    function param(int $type): void {}'
+            ],
         ];
     }
 

@@ -202,7 +202,14 @@ class TypeExpander
                 if (strpos($return_type->const_name, '*') !== false) {
                     $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
 
-                    $matching_constants = \array_keys($class_storage->class_constant_locations);
+                    $all_class_constants = $class_storage->public_class_constants
+                        + $class_storage->protected_class_constants
+                        + $class_storage->private_class_constants
+                        + $class_storage->public_class_constant_nodes
+                        + $class_storage->protected_class_constant_nodes
+                        + $class_storage->private_class_constant_nodes;
+
+                    $matching_constants = \array_keys($all_class_constants);
 
                     $const_name_part = \substr($return_type->const_name, 0, -1);
 
