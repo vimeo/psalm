@@ -1083,102 +1083,115 @@ class PropertyFetchAnalyzer
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
     ) : bool {
-        if ($stmt->class instanceof PhpParser\Node\Expr\Variable ||
-            $stmt->class instanceof PhpParser\Node\Expr\ArrayDimFetch
-        ) {
-            // @todo check this
-            return true;
+        if (!$stmt->class instanceof PhpParser\Node\Name) {
+            $old_data_provider = $statements_analyzer->node_data;
+
+            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+            $fake_instance_property = new PhpParser\Node\Expr\PropertyFetch(
+                $stmt->class,
+                $stmt->name,
+                $stmt->getAttributes()
+            );
+
+            $analysis_result = self::analyzeInstance($statements_analyzer, $fake_instance_property, $context);
+
+            $stmt_type = $statements_analyzer->node_data->getType($fake_instance_property);
+
+            $statements_analyzer->node_data = $old_data_provider;
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type ?: Type::getMixed());
+
+            return $analysis_result;
         }
 
         $fq_class_name = null;
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (count($stmt->class->parts) === 1
-                && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
-            ) {
-                if ($stmt->class->parts[0] === 'parent') {
-                    $fq_class_name = $statements_analyzer->getParentFQCLN();
+        if (count($stmt->class->parts) === 1
+            && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
+        ) {
+            if ($stmt->class->parts[0] === 'parent') {
+                $fq_class_name = $statements_analyzer->getParentFQCLN();
 
-                    if ($fq_class_name === null) {
-                        if (IssueBuffer::accepts(
-                            new ParentNotFound(
-                                'Cannot check property fetch on parent as this class does not extend another',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-
-                        return true;
+                if ($fq_class_name === null) {
+                    if (IssueBuffer::accepts(
+                        new ParentNotFound(
+                            'Cannot check property fetch on parent as this class does not extend another',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        return false;
                     }
-                } else {
-                    $fq_class_name = (string)$context->self;
-                }
 
-                if ($context->isPhantomClass($fq_class_name)) {
                     return true;
                 }
             } else {
-                $aliases = $statements_analyzer->getAliases();
-
-                if ($context->calling_method_id
-                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
-                ) {
-                    $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                        $context->calling_method_id,
-                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
-                    );
-                }
-
-                $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
-                    $stmt->class,
-                    $aliases
-                );
-
-                if ($context->isPhantomClass($fq_class_name)) {
-                    return true;
-                }
-
-                if ($context->check_classes) {
-                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                        $statements_analyzer,
-                        $fq_class_name,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                        $context->self,
-                        $context->calling_method_id,
-                        $statements_analyzer->getSuppressedIssues(),
-                        false
-                    ) !== true) {
-                        return false;
-                    }
-                }
+                $fq_class_name = (string)$context->self;
             }
 
-            if ($fq_class_name
-                && $codebase->methods_to_move
-                && $context->calling_method_id
-                && isset($codebase->methods_to_move[$context->calling_method_id])
+            if ($context->isPhantomClass($fq_class_name)) {
+                return true;
+            }
+        } else {
+            $aliases = $statements_analyzer->getAliases();
+
+            if ($context->calling_method_id
+                && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
             ) {
-                $destination_method_id = $codebase->methods_to_move[$context->calling_method_id];
+                $codebase->file_reference_provider->addMethodReferenceToClassMember(
+                    $context->calling_method_id,
+                    'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
+                );
+            }
 
-                $codebase->classlikes->airliftClassLikeReference(
+            $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                $stmt->class,
+                $aliases
+            );
+
+            if ($context->isPhantomClass($fq_class_name)) {
+                return true;
+            }
+
+            if ($context->check_classes) {
+                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $statements_analyzer,
                     $fq_class_name,
-                    explode('::', $destination_method_id)[0],
-                    $statements_analyzer->getFilePath(),
-                    (int) $stmt->class->getAttribute('startFilePos'),
-                    (int) $stmt->class->getAttribute('endFilePos') + 1
-                );
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                    $context->self,
+                    $context->calling_method_id,
+                    $statements_analyzer->getSuppressedIssues(),
+                    false
+                ) !== true) {
+                    return false;
+                }
             }
+        }
 
-            if ($fq_class_name) {
-                $statements_analyzer->node_data->setType(
-                    $stmt->class,
-                    new Type\Union([new TNamedObject($fq_class_name)])
-                );
-            }
+        if ($fq_class_name
+            && $codebase->methods_to_move
+            && $context->calling_method_id
+            && isset($codebase->methods_to_move[$context->calling_method_id])
+        ) {
+            $destination_method_id = $codebase->methods_to_move[$context->calling_method_id];
+
+            $codebase->classlikes->airliftClassLikeReference(
+                $fq_class_name,
+                explode('::', $destination_method_id)[0],
+                $statements_analyzer->getFilePath(),
+                (int) $stmt->class->getAttribute('startFilePos'),
+                (int) $stmt->class->getAttribute('endFilePos') + 1
+            );
+        }
+
+        if ($fq_class_name) {
+            $statements_analyzer->node_data->setType(
+                $stmt->class,
+                new Type\Union([new TNamedObject($fq_class_name)])
+            );
         }
 
         if ($stmt->name instanceof PhpParser\Node\VarLikeIdentifier) {
@@ -1325,7 +1338,7 @@ class PropertyFetchAnalyzer
 
         $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
 
-        if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
+        if ($codebase->alter_code) {
             $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
                 $codebase,
                 $statements_analyzer,
