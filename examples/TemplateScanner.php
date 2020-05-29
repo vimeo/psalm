@@ -36,10 +36,10 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
         $first_stmt = $stmts[0];
 
         if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
-            $comment_block = DocComment::parse(trim($doc_comment->getText()));
+            $comment_block = DocComment::parsePreservingLength($doc_comment);
 
-            if (isset($comment_block['specials']['variablesfrom'])) {
-                $variables_from = trim($comment_block['specials']['variablesfrom'][0]);
+            if (isset($comment_block->tags['variablesfrom'])) {
+                $variables_from = trim($comment_block->tags['variablesfrom'][0]);
 
                 $first_line_regex = '/([A-Za-z\\\0-9]+::[a-z_A-Z]+)(\s+weak)?/';
 

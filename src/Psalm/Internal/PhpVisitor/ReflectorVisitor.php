@@ -411,17 +411,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if ($node_comment = $node->getDocComment()) {
                 $comments = DocComment::parsePreservingLength($node_comment);
 
-                if (isset($comments['specials']['template-use'])
-                    || isset($comments['specials']['use'])
-                    || isset($comments['specials']['phpstan-use'])
-                    || isset($comments['specials']['psalm-use'])
-                ) {
-                    $all_inheritance = ($comments['specials']['template-use'] ?? [])
-                        + ($comments['specials']['use'] ?? [])
-                        + ($comments['specials']['phpstan-use'] ?? [])
-                        + ($comments['specials']['psalm-use'] ?? []);
-
-                    foreach ($all_inheritance as $template_line) {
+                if (isset($comments->combined_tags['use'])) {
+                    foreach ($comments->combined_tags['use'] as $template_line) {
                         $this->useTemplatedType(
                             $storage,
                             $node,
@@ -430,10 +421,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
                 }
 
-                if (isset($comments['specials']['template-extends'])
-                    || isset($comments['specials']['extends'])
-                    || isset($comments['specials']['template-implements'])
-                    || isset($comments['specials']['implements'])
+                if (isset($comments->tags['template-extends'])
+                    || isset($comments->tags['extends'])
+                    || isset($comments->tags['template-implements'])
+                    || isset($comments->tags['implements'])
                 ) {
                     $storage->docblock_issues[] = new InvalidDocblock(
                         'You must use @use or @template-use to parameterize traits',
@@ -3468,7 +3459,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
             $comments = DocComment::parsePreservingLength($comment);
 
-            if (isset($comments['specials']['deprecated'])) {
+            if (isset($comments->tags['deprecated'])) {
                 $deprecated = true;
             }
         }

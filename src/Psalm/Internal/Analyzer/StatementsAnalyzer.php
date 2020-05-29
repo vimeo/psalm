@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
+use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -109,7 +110,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     public $byref_uses;
 
     /**
-     * @var array{description:string, specials:array<string, array<int, string>>}|null
+     * @var ParsedDocblock|null
      */
     private $parsed_docblock = null;
 
@@ -320,8 +321,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         if ($docblock = $stmt->getDocComment()) {
             $statements_analyzer->parseStatementDocblock($docblock, $stmt, $context);
 
-            if (isset($statements_analyzer->parsed_docblock['specials']['psalm-trace'])) {
-                foreach ($statements_analyzer->parsed_docblock['specials']['psalm-trace'] as $traced_variable_line) {
+            if (isset($statements_analyzer->parsed_docblock->tags['psalm-trace'])) {
+                foreach ($statements_analyzer->parsed_docblock->tags['psalm-trace'] as $traced_variable_line) {
                     $possible_traced_variable_names = preg_split('/[\s]+/', $traced_variable_line);
                     if ($possible_traced_variable_names) {
                         $traced_variables = array_merge(
@@ -332,15 +333,15 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
             }
 
-            if (isset($statements_analyzer->parsed_docblock['specials']['psalm-ignore-variable-method'])) {
+            if (isset($statements_analyzer->parsed_docblock->tags['psalm-ignore-variable-method'])) {
                 $context->ignore_variable_method = $ignore_variable_method = true;
             }
 
-            if (isset($statements_analyzer->parsed_docblock['specials']['psalm-ignore-variable-property'])) {
+            if (isset($statements_analyzer->parsed_docblock->tags['psalm-ignore-variable-property'])) {
                 $context->ignore_variable_property = $ignore_variable_property = true;
             }
 
-            if (isset($statements_analyzer->parsed_docblock['specials']['psalm-suppress'])) {
+            if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
                 $suppressed = array_filter(
                     array_map(
                         /**
@@ -351,7 +352,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         function ($line) {
                             return preg_split('/[\s]+/', $line)[0];
                         },
-                        $statements_analyzer->parsed_docblock['specials']['psalm-suppress']
+                        $statements_analyzer->parsed_docblock->tags['psalm-suppress']
                     )
                 );
 
@@ -574,8 +575,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
         $comments = $this->parsed_docblock;
 
-        if (isset($comments['specials']['psalm-scope-this'])) {
-            $trimmed = trim(\reset($comments['specials']['psalm-scope-this']));
+        if (isset($comments->tags['psalm-scope-this'])) {
+            $trimmed = trim(\reset($comments->tags['psalm-scope-this']));
 
             if (!$codebase->classExists($trimmed)) {
                 if (IssueBuffer::accepts(
@@ -827,10 +828,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this->function_analyzers[$function_id] ?? null;
     }
 
-    /**
-     * @return array{description:string, specials:array<string, array<int, string>>}|null
-     */
-    public function getParsedDocblock() : ?array
+    public function getParsedDocblock() : ?ParsedDocblock
     {
         return $this->parsed_docblock;
     }

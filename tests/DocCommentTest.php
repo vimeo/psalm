@@ -3,30 +3,30 @@ namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\DocComment;
+use Psalm\Internal\Scanner\ParsedDocblock;
 
 class DocCommentTest extends BaseTestCase
 {
     public function testNewLineIsAddedBetweenAnnotationsByDefault(): void
     {
-        $docComment = [
-            'description' => 'some desc',
-            'specials' =>
-                [
-                    'param' =>
-                        [
-                            2 => 'string $bli',
-                            3 => 'int $bla',
-                        ],
-                    'throws' =>
-                        [
-                            0 => '\Exception',
-                        ],
-                    'return' =>
-                        [
-                            0 => 'bool',
-                        ],
-                ],
-        ];
+        $docComment = new ParsedDocblock(
+            '* some desc' . "\n*",
+            [
+                'param' =>
+                    [
+                        2 => 'string $bli',
+                        3 => 'int $bla',
+                    ],
+                'throws' =>
+                    [
+                        0 => '\Exception',
+                    ],
+                'return' =>
+                    [
+                        0 => 'bool',
+                    ],
+            ]
+        );
 
         $expectedDoc = '/**
  * some desc
@@ -40,32 +40,31 @@ class DocCommentTest extends BaseTestCase
  */
 ';
 
-        $this->assertSame($expectedDoc, DocComment::render($docComment, ''));
+        $this->assertSame($expectedDoc, $docComment->render(''));
     }
 
     public function testNewLineIsNotAddedBetweenAnnotationsIfDisabled(): void
     {
-        DocComment::addNewLineBetweenAnnotations(false);
+        ParsedDocblock::addNewLineBetweenAnnotations(false);
 
-        $docComment = [
-            'description' => 'some desc',
-            'specials' =>
-                [
-                    'param' =>
-                        [
-                            2 => 'string $bli',
-                            3 => 'int $bla',
-                        ],
-                    'throws' =>
-                        [
-                            0 => '\Exception',
-                        ],
-                    'return' =>
-                        [
-                            0 => 'bool',
-                        ],
-                ],
-        ];
+        $docComment = new ParsedDocblock(
+            '* some desc' . "\n*",
+            [
+                'param' =>
+                    [
+                        2 => 'string $bli',
+                        3 => 'int $bla',
+                    ],
+                'throws' =>
+                    [
+                        0 => '\Exception',
+                    ],
+                'return' =>
+                    [
+                        0 => 'bool',
+                    ],
+            ]
+        );
 
         $expectedDoc = '/**
  * some desc
@@ -77,32 +76,31 @@ class DocCommentTest extends BaseTestCase
  */
 ';
 
-        $this->assertSame($expectedDoc, DocComment::render($docComment, ''));
+        $this->assertSame($expectedDoc, $docComment->render(''));
     }
 
     public function testNewLineIsAddedBetweenAnnotationsIfEnabled(): void
     {
-        DocComment::addNewLineBetweenAnnotations(true);
+        ParsedDocblock::addNewLineBetweenAnnotations(true);
 
-        $docComment = [
-            'description' => 'some desc',
-            'specials' =>
-                [
-                    'param' =>
-                        [
-                            2 => 'string $bli',
-                            3 => 'int $bla',
-                        ],
-                    'throws' =>
-                        [
-                            0 => '\Exception',
-                        ],
-                    'return' =>
-                        [
-                            0 => 'bool',
-                        ],
-                ],
-        ];
+        $docComment = new ParsedDocblock(
+            '* some desc' . "\n*",
+            [
+                'param' =>
+                    [
+                        2 => 'string $bli',
+                        3 => 'int $bla',
+                    ],
+                'throws' =>
+                    [
+                        0 => '\Exception',
+                    ],
+                'return' =>
+                    [
+                        0 => 'bool',
+                    ],
+            ]
+        );
 
         $expectedDoc = '/**
  * some desc
@@ -116,6 +114,6 @@ class DocCommentTest extends BaseTestCase
  */
 ';
 
-        $this->assertSame($expectedDoc, DocComment::render($docComment, ''));
+        $this->assertSame($expectedDoc, $docComment->render(''));
     }
 }

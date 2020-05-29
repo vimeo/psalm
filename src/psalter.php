@@ -380,7 +380,7 @@ if (isset($options['add-newline-between-docblock-annotations'])) {
         die('--add-newline-between-docblock-annotations expects a boolean value [true|false|1|0]' . PHP_EOL);
     }
 
-    DocComment::addNewLineBetweenAnnotations($doc_block_add_new_line_before_return);
+    Psalm\Internal\Scanner\ParsedDocblock::addNewLineBetweenAnnotations($doc_block_add_new_line_before_return);
 }
 
 $plugins = [];

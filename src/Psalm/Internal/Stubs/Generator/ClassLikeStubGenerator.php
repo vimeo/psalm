@@ -5,6 +5,7 @@ namespace Psalm\Internal\Stubs\Generator;
 use PhpParser;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Type;
 
 class ClassLikeStubGenerator
@@ -22,7 +23,7 @@ class ClassLikeStubGenerator
             )
         ];
 
-        $docblock = ['description' => '', 'specials' => []];
+        $docblock = new ParsedDocblock('', []);
 
         $template_offset = 0;
 
@@ -31,7 +32,7 @@ class ClassLikeStubGenerator
 
             $key = isset($storage->template_covariants[$template_offset]) ? 'template-covariant' : 'template';
 
-            $docblock['specials'][$key][] = $template_name . ' as ' . $type->toNamespacedString(
+            $docblock->tags[$key][] = $template_name . ' as ' . $type->toNamespacedString(
                 null,
                 [],
                 null,
@@ -42,10 +43,10 @@ class ClassLikeStubGenerator
         }
 
         $attrs = [
-            'comments' => $docblock['specials']
+            'comments' => $docblock->tags
                 ? [
                     new PhpParser\Comment\Doc(
-                        \rtrim(\Psalm\DocComment::render($docblock, '        '))
+                        \rtrim($docblock->render('        '))
                     )
                 ]
                 : []
@@ -179,12 +180,12 @@ class ClassLikeStubGenerator
                     break;
             }
 
-            $docblock = ['description' => '', 'specials' => []];
+            $docblock = new ParsedDocblock('', []);
 
             if ($property_storage->type
                 && $property_storage->signature_type !== $property_storage->type
             ) {
-                $docblock['specials']['var'][] = $property_storage->type->toNamespacedString(
+                $docblock->tags['var'][] = $property_storage->type->toNamespacedString(
                     $namespace_name,
                     [],
                     null,
@@ -203,10 +204,10 @@ class ClassLikeStubGenerator
                     )
                 ],
                 [
-                    'comments' => $docblock['specials']
+                    'comments' => $docblock->tags
                         ? [
                             new PhpParser\Comment\Doc(
-                                \rtrim(\Psalm\DocComment::render($docblock, '        '))
+                                \rtrim($docblock->render('        '))
                             )
                         ]
                         : []
@@ -244,12 +245,12 @@ class ClassLikeStubGenerator
                     break;
             }
 
-            $docblock = ['description' => '', 'specials' => []];
+            $docblock = new ParsedDocblock('', []);
 
             foreach ($method_storage->template_types ?: [] as $template_name => $map) {
                 $type = array_values($map)[0][0];
 
-                $docblock['specials']['template'][] = $template_name . ' as ' . $type->toNamespacedString(
+                $docblock->tags['template'][] = $template_name . ' as ' . $type->toNamespacedString(
                     $namespace_name,
                     [],
                     null,
@@ -259,7 +260,7 @@ class ClassLikeStubGenerator
 
             foreach ($method_storage->params as $param) {
                 if ($param->type && $param->type !== $param->signature_type) {
-                    $docblock['specials']['param'][] = $param->type->toNamespacedString(
+                    $docblock->tags['param'][] = $param->type->toNamespacedString(
                         $namespace_name,
                         [],
                         null,
@@ -271,7 +272,7 @@ class ClassLikeStubGenerator
             if ($method_storage->return_type
                 && $method_storage->signature_return_type !== $method_storage->return_type
             ) {
-                $docblock['specials']['return'][] = $method_storage->return_type->toNamespacedString(
+                $docblock->tags['return'][] = $method_storage->return_type->toNamespacedString(
                     $namespace_name,
                     [],
                     null,
@@ -280,7 +281,7 @@ class ClassLikeStubGenerator
             }
 
             foreach ($method_storage->throws ?: [] as $exception_name => $_) {
-                $docblock['specials']['throws'][] = Type::getStringFromFQCLN(
+                $docblock->tags['throws'][] = Type::getStringFromFQCLN(
                     $exception_name,
                     $namespace_name,
                     [],
@@ -302,10 +303,10 @@ class ClassLikeStubGenerator
                     'stmts' =>  $storage->is_interface || $method_storage->abstract ? null : [],
                 ],
                 [
-                    'comments' => $docblock['specials']
+                    'comments' => $docblock->tags
                         ? [
                             new PhpParser\Comment\Doc(
-                                \rtrim(\Psalm\DocComment::render($docblock, '        '))
+                                \rtrim($docblock->render('        '))
                             )
                         ]
                         : []

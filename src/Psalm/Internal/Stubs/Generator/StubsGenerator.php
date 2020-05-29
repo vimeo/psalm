@@ -4,6 +4,7 @@ namespace Psalm\Internal\Stubs\Generator;
 
 use PhpParser;
 use Psalm\Internal\Provider;
+use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
@@ -176,12 +177,12 @@ class StubsGenerator
         string $function_name,
         string $namespace_name
     ) : PhpParser\Node\Stmt\Function_ {
-        $docblock = ['description' => '', 'specials' => []];
+        $docblock = new ParsedDocblock('', []);
 
         foreach ($function_storage->template_types ?: [] as $template_name => $map) {
             $type = array_values($map)[0][0];
 
-            $docblock['specials']['template'][] = $template_name . ' as ' . $type->toNamespacedString(
+            $docblock->tags['template'][] = $template_name . ' as ' . $type->toNamespacedString(
                 $namespace_name,
                 [],
                 null,
@@ -191,7 +192,7 @@ class StubsGenerator
 
         foreach ($function_storage->params as $param) {
             if ($param->type && $param->type !== $param->signature_type) {
-                $docblock['specials']['param'][] = $param->type->toNamespacedString(
+                $docblock->tags['param'][] = $param->type->toNamespacedString(
                     $namespace_name,
                     [],
                     null,
@@ -203,7 +204,7 @@ class StubsGenerator
         if ($function_storage->return_type
             && $function_storage->signature_return_type !== $function_storage->return_type
         ) {
-            $docblock['specials']['return'][] = $function_storage->return_type->toNamespacedString(
+            $docblock->tags['return'][] = $function_storage->return_type->toNamespacedString(
                 $namespace_name,
                 [],
                 null,
@@ -212,7 +213,7 @@ class StubsGenerator
         }
 
         foreach ($function_storage->throws ?: [] as $exception_name => $_) {
-            $docblock['specials']['throws'][] = Type::getStringFromFQCLN(
+            $docblock->tags['throws'][] = Type::getStringFromFQCLN(
                 $exception_name,
                 $namespace_name,
                 [],
@@ -231,10 +232,10 @@ class StubsGenerator
                 'stmts' => [],
             ],
             [
-                'comments' => $docblock['specials']
+                'comments' => $docblock->tags
                     ? [
                         new PhpParser\Comment\Doc(
-                            \rtrim(\Psalm\DocComment::render($docblock, '        '))
+                            \rtrim($docblock->render('        '))
                         )
                     ]
                     : []
