@@ -19,6 +19,8 @@ use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type;
+use function array_column;
+use function array_unique;
 use function trim;
 use function substr_count;
 use function strlen;
@@ -368,6 +370,8 @@ class CommentAnalyzer
         $comment_text = $comment->getText();
 
         $info = new FunctionDocblockComment();
+
+        self::checkDuplicatedTags($parsed_docblock);
 
         if (isset($parsed_docblock->combined_tags['return'])) {
             self::extractReturnType(
@@ -1253,5 +1257,62 @@ class CommentAnalyzer
         }
 
         return [$type];
+    }
+
+    /**
+     * @param ParsedDocblock $parsed_docblock
+     *
+     * @return void
+     *
+     * @throws DocblockParseException if a duplicate is found
+     */
+    private static function checkDuplicatedTags(ParsedDocblock $parsed_docblock)
+    {
+        if (count($parsed_docblock->tags['return'] ?? []) > 1
+            || count($parsed_docblock->tags['psalm-return'] ?? []) > 1
+            || count($parsed_docblock->tags['phpstan-return'] ?? []) > 1
+        ) {
+            throw new DocblockParseException('Found duplicated @return or prefixed @return tag');
+        }
+
+        self::checkDuplicatedParams($parsed_docblock->tags['param'] ?? []);
+        self::checkDuplicatedParams($parsed_docblock->tags['psalm-param'] ?? []);
+        self::checkDuplicatedParams($parsed_docblock->tags['phpstan-param'] ?? []);
+    }
+
+    /**
+     * @param array<int, string> $param
+     *
+     * @return void
+     *
+     * @throws DocblockParseException  if a duplicate is found
+     */
+    private static function checkDuplicatedParams(array $param)
+    {
+        $list_names = self::extractAllParamNames($param);
+
+        if (count($list_names) !== count(array_unique($list_names))) {
+            throw new DocblockParseException('Found duplicated @param or prefixed @param tag');
+        }
+    }
+
+    /**
+     * @param array<int, string> $lines
+     *
+     * @return list<string>
+     */
+    private static function extractAllParamNames(array $lines)
+    {
+        $names = [];
+
+        foreach ($lines as $line) {
+            $split_by_dollar = explode('$', $line, 2);
+            if (count($split_by_dollar) > 1) {
+                $split_by_space = explode(' ', $split_by_dollar[1], 2);
+                $names[] = $split_by_space[0];
+            }
+        }
+
+        return $names;
     }
 }

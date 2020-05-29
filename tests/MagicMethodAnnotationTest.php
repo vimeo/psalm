@@ -25,8 +25,8 @@ class MagicMethodAnnotationTest extends TestCase
                  * @method  void setInteger(int $integer)
                  * @method setString(int $integer)
                  * @method  getBool(string $foo) : bool
-                 * @method (string|int)[] getArray() : array
-                 * @method (callable() : string) getCallable() : callable
+                 * @method (string|int)[] getArray()
+                 * @method (callable() : string) getCallable()
                  */
                 class Child {}
 
@@ -174,8 +174,8 @@ class MagicMethodAnnotationTest extends TestCase
                      * @method setAnotherImplicitMixed( $foo, $bar,$baz) dsa sada
                      * @method setYetAnotherImplicitMixed( $foo  ,$bar,  $baz    ) dsa sada
                      * @method  getBool(string $foo)  :   bool dsa sada
-                     * @method (string|int)[] getArray() : array with some text dsa sada
-                     * @method (callable() : string) getCallable() : callable dsa sada
+                     * @method (string|int)[] getArray() with some text dsa sada
+                     * @method (callable() : string) getCallable() dsa sada
                      */
                     class Child extends ParentClass {}
 
