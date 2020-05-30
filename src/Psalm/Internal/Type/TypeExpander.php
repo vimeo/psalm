@@ -79,7 +79,7 @@ class TypeExpander
      *
      * @return Type\Atomic|non-empty-array<int, Type\Atomic>
      */
-    private static function expandAtomic(
+    public static function expandAtomic(
         Codebase $codebase,
         Type\Atomic &$return_type,
         ?string $self_class,

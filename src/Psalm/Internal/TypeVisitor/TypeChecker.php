@@ -5,6 +5,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TScalarClassConstant;
@@ -311,17 +312,34 @@ class TypeChecker extends NodeVisitor
             return;
         }
 
-        $class_constant_type = $this->source->getCodebase()->classlikes->getConstantForClass(
-            $fq_classlike_name,
-            $atomic->const_name,
-            \ReflectionProperty::IS_PRIVATE,
-            null
-        );
+        $const_name = $atomic->const_name;
+        if (\strpos($const_name, '*') !== false) {
+            $expanded = TypeExpander::expandAtomic(
+                $this->source->getCodebase(),
+                $atomic,
+                $fq_classlike_name,
+                $fq_classlike_name,
+                null,
+                true,
+                true
+            );
 
-        if (!$class_constant_type) {
+            $is_defined = \is_array($expanded) && \count($expanded) > 0;
+        } else {
+            $class_constant_type = $this->source->getCodebase()->classlikes->getConstantForClass(
+                $fq_classlike_name,
+                $atomic->const_name,
+                \ReflectionProperty::IS_PRIVATE,
+                null
+            );
+
+            $is_defined = null !== $class_constant_type;
+        }
+
+        if (!$is_defined) {
             if (\Psalm\IssueBuffer::accepts(
                 new UndefinedConstant(
-                    'Constant ' . $fq_classlike_name . '::' . $atomic->const_name . ' is not defined',
+                    'Constant ' . $fq_classlike_name . '::' . $const_name . ' is not defined',
                     $this->code_location
                 ),
                 $this->source->getSuppressedIssues()
