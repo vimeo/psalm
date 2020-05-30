@@ -98,7 +98,7 @@ return [
         's' => 'integer',
         'f' => 'float', // only present from 7.1 onwards
         'invert' => 'integer',
-        'days' => 'mixed',
+        'days' => 'false|int',
     ],
     'tokyotyrantexception' => [
         'code' => 'int',
