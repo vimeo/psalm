@@ -1007,7 +1007,6 @@ class ArrayAccessTest extends TestCase
                 '<?php
                     /**
                      * @return array<int,array<string,float>>|string
-                     * @return string
                      */
                     function return_array() {
                         return rand() % 5 > 3 ? [["key" => 3.5]] : "key:3.5";
