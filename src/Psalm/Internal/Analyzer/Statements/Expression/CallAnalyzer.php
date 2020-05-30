@@ -711,6 +711,20 @@ class CallAnalyzer
         }
 
         if ($type_assertions) {
+            foreach (($statements_analyzer->getTemplateTypeMap() ?: []) as $template_name => $map) {
+                foreach ($map as $ref => list($type)) {
+                    $template_type_map[$template_name][$ref] = [
+                        new Type\Union([
+                            new Type\Atomic\TTemplateParam(
+                                $template_name,
+                                $type,
+                                $ref
+                            )
+                        ])
+                    ];
+                }
+            }
+
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             $op_vars_in_scope = \Psalm\Type\Reconciler::reconcileKeyedTypes(
@@ -720,7 +734,7 @@ class CallAnalyzer
                 $changed_var_ids,
                 $asserted_keys,
                 $statements_analyzer,
-                ($statements_analyzer->getTemplateTypeMap() ?: []) + $template_type_map,
+                $template_type_map,
                 $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $expr)
             );
