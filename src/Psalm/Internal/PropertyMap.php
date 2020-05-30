@@ -265,7 +265,6 @@ return [
         'server_info' => 'string',
         'server_version' => 'int',
         'sqlstate' => 'string',
-        'stat' => 'mixed',
         'thread_id' => 'int',
         'warning_count' => 'int',
     ],
