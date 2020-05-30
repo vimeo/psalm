@@ -302,7 +302,7 @@ return [
     'mysqli_warning' => [
         'errno' => 'int',
         'message' => 'string',
-        'sqlstate' => 'mixed',
+        'sqlstate' => 'string',
     ],
     'eventlistener' => [
         'fd' => 'int',
