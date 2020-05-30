@@ -22,6 +22,8 @@ use function str_replace;
 use function stripos;
 use function strpos;
 use function strtolower;
+use const GLOB_NOSORT;
+use const GLOB_ONLYDIR;
 
 class FileFilter
 {
@@ -116,10 +118,7 @@ class FileFilter
                 if (strpos($prospective_directory_path, '*') !== false) {
                     $globs = array_map(
                         'realpath',
-                        array_filter(
-                            glob($prospective_directory_path),
-                            'is_dir'
-                        )
+                        glob($prospective_directory_path, GLOB_ONLYDIR)
                     );
 
                     if (empty($globs)) {
@@ -231,7 +230,7 @@ class FileFilter
                     $globs = array_map(
                         'realpath',
                         array_filter(
-                            glob($prospective_file_path),
+                            glob($prospective_file_path, GLOB_NOSORT),
                             'file_exists'
                         )
                     );
