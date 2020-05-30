@@ -25,6 +25,7 @@ use function array_filter;
 use function array_sum;
 use function array_keys;
 use function max;
+use const GLOB_NOSORT;
 
 class Creator
 {
@@ -250,9 +251,9 @@ class Creator
 
         /** @var string[] */
         $php_files = array_merge(
-            glob($current_dir . DIRECTORY_SEPARATOR . '*.php'),
-            glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php'),
-            glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php')
+            glob($current_dir . DIRECTORY_SEPARATOR . '*.php', GLOB_NOSORT),
+            glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php', GLOB_NOSORT),
+            glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php', GLOB_NOSORT)
         );
 
         foreach ($php_files as $php_file) {

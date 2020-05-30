@@ -25,6 +25,7 @@ use function serialize;
 use function touch;
 use function unlink;
 use function unserialize;
+use const SCANDIR_SORT_NONE;
 
 /**
  * @internal
@@ -345,7 +346,7 @@ class ParserCacheProvider
         $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
         if (is_dir($cache_directory)) {
-            $directory_files = scandir($cache_directory);
+            $directory_files = scandir($cache_directory, SCANDIR_SORT_NONE);
 
             foreach ($directory_files as $directory_file) {
                 $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
@@ -380,7 +381,7 @@ class ParserCacheProvider
         $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
         if (is_dir($cache_directory)) {
-            $directory_files = scandir($cache_directory);
+            $directory_files = scandir($cache_directory, SCANDIR_SORT_NONE);
 
             foreach ($directory_files as $directory_file) {
                 $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;

@@ -21,6 +21,7 @@ use function trim;
 use function glob;
 use function str_replace;
 use function array_shift;
+use const GLOB_NOSORT;
 
 class DocumentationTest extends TestCase
 {
@@ -40,7 +41,7 @@ class DocumentationTest extends TestCase
 
         $issue_code = [];
 
-        foreach (glob($issues_dir . '/*.md') as $file_path) {
+        foreach (glob($issues_dir . '/*.md', GLOB_NOSORT) as $file_path) {
             $file_contents = file_get_contents($file_path);
 
             $file_lines = explode("\n", $file_contents);

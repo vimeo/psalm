@@ -9,6 +9,7 @@ use function scandir;
 use SimpleXMLElement;
 use function strtolower;
 use function substr;
+use const SCANDIR_SORT_NONE;
 
 class IssueHandler
 {
@@ -160,7 +161,7 @@ class IssueHandler
                 function ($file_name) {
                     return substr($file_name, 0, -4);
                 },
-                scandir(dirname(__DIR__) . '/Issue')
+                scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE)
             ),
             /**
              * @param string $issue_name
