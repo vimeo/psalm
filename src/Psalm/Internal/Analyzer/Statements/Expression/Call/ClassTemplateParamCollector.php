@@ -2,9 +2,13 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TScalarClassConstant;
+
 use function array_merge;
 use function array_search;
 use function array_keys;
@@ -201,6 +205,7 @@ class ClassTemplateParamCollector
                         $class_template_params[$type_name][$candidate_class_storage->name] = [
                             new Type\Union(
                                 self::expandType(
+                                    $codebase,
                                     $e[$candidate_class_storage->name][$type_name],
                                     $e,
                                     $static_class_storage->name,
@@ -227,6 +232,7 @@ class ClassTemplateParamCollector
      * @return non-empty-list<Type\Atomic>
      */
     private static function expandType(
+        Codebase $codebase,
         Type\Union $input_type_extends,
         array $e,
         string $static_fq_class_name,
@@ -243,12 +249,31 @@ class ClassTemplateParamCollector
                 $output_type_extends = array_merge(
                     $output_type_extends,
                     self::expandType(
+                        $codebase,
                         $e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name],
                         $e,
                         $static_fq_class_name,
                         $static_template_types
                     )
                 );
+            } elseif ($type_extends_atomic instanceof TScalarClassConstant) {
+                $expanded = TypeExpander::expandAtomic(
+                    $codebase,
+                    $type_extends_atomic,
+                    $type_extends_atomic->fq_classlike_name,
+                    $type_extends_atomic->fq_classlike_name,
+                    null,
+                    true,
+                    true
+                );
+
+                if ($expanded instanceof Atomic) {
+                    $output_type_extends[] = $expanded;
+                } else {
+                    foreach ($expanded as $type) {
+                        $output_type_extends[] = $type;
+                    }
+                }
             } else {
                 $output_type_extends[] = $type_extends_atomic;
             }
