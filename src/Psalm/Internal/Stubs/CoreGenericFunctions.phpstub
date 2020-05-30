@@ -560,11 +560,11 @@ function htmlspecialchars_decode(string $string, ?int $quote_style = null) : str
 /**
  * @psalm-pure
  *
- * @param string|string[] $search
- * @param string|string[] $replace
- * @param string|string[] $subject
+ * @param string|int|float|array<string|int|float> $search
+ * @param string|int|float|array<string|int|float> $replace
+ * @param string|int|float|array<string|int|float> $subject
  * @param int $count
- * @return string|string[]
+ * @return ($subject is array ? array<string> : string)
  *
  * @psalm-flow ($replace, $subject) -> return
  */
@@ -574,10 +574,10 @@ function str_replace($search, $replace, $subject, &$count = null) {}
  * @psalm-pure
  *
  * @param string|string[] $search
- * @param string|string[] $replace
- * @param string|string[] $subject
+ * @param string|int|float|array<string|int|float> $replace
+ * @param string|int|float|array<string|int|float> $subject
  * @param int $count
- * @return string|string[]
+ * @return ($subject is array ? array<string> : string)
  *
  * @psalm-flow ($replace, $subject) -> return
  */
