@@ -782,6 +782,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             );
                         }
 
+                        $existing_type->bustCache();
+
                         if ($has_param_match
                             && $existing_type_part->type_params[$i]->getId() !== $new_param->getId()
                         ) {
