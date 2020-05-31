@@ -514,16 +514,6 @@ class TypeAnalyzer
         $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
     ) {
-        if ($container_type_part instanceof TIterable
-            && !$container_type_part->extra_types
-            && !$input_type_part instanceof TIterable
-        ) {
-            $container_type_part = new TGenericObject(
-                'Traversable',
-                $container_type_part->type_params
-            );
-        }
-
         $intersection_input_types = $input_type_part->extra_types ?: [];
         $intersection_input_types[$input_type_part->getKey(false)] = $input_type_part;
 
@@ -2128,6 +2118,16 @@ class TypeAnalyzer
         bool $allow_interface_equality
     ) : bool {
         $all_types_contain = true;
+
+        if ($container_type_part instanceof TIterable
+            && !$container_type_part->extra_types
+            && !$input_type_part instanceof TIterable
+        ) {
+            $container_type_part = new TGenericObject(
+                'Traversable',
+                $container_type_part->type_params
+            );
+        }
 
         if ($container_type_part instanceof TGenericObject || $container_type_part instanceof TIterable) {
             if (!$input_type_part instanceof TGenericObject && !$input_type_part instanceof TIterable) {
