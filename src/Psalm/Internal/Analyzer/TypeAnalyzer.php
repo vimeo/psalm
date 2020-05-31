@@ -514,6 +514,16 @@ class TypeAnalyzer
         $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
     ) {
+        if ($container_type_part instanceof TIterable
+            && !$container_type_part->extra_types
+            && !$input_type_part instanceof TIterable
+        ) {
+            $container_type_part = new TGenericObject(
+                'Traversable',
+                $container_type_part->type_params
+            );
+        }
+
         $intersection_input_types = $input_type_part->extra_types ?: [];
         $intersection_input_types[$input_type_part->getKey(false)] = $input_type_part;
 
