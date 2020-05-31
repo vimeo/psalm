@@ -960,6 +960,15 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             null
                         );
 
+                        // Assign config flags for functions loaded in stubs
+                        if ($return_type->isNullable()) {
+                            $return_type->ignore_nullable_issues = $codebase->config->ignore_internal_nullable_issues;
+                        }
+
+                        if ($return_type->isFalsable()) {
+                            $return_type->ignore_falsable_issues = $codebase->config->ignore_internal_falsable_issues;
+                        }
+
                         $return_type_location = $function_storage->return_type_location;
 
                         if ($config->after_function_checks) {

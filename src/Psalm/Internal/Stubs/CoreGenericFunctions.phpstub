@@ -573,7 +573,7 @@ function str_replace($search, $replace, $subject, &$count = null) {}
 /**
  * @psalm-pure
  *
- * @param string|string[] $search
+ * @param string|array<string|int|float> $search
  * @param string|array<string|int|float> $replace
  * @param string|array<string|int|float> $subject
  * @param int $count
@@ -581,7 +581,59 @@ function str_replace($search, $replace, $subject, &$count = null) {}
  *
  * @psalm-flow ($replace, $subject) -> return
  */
-function preg_replace($search, $replace, $subject, int $limit = -1, &$count = null) {}
+function str_ireplace($search, $replace, $subject, &$count = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @param string|array<string|int|float> $string
+ * @param string|array<string|int|float> $replacement
+ * @param int|array<int> $start
+ * @param int|array<int>|null $length
+ * @return ($string is array ? array<string> : string)
+ *
+ * @psalm-flow ($replacement, $string) -> return
+ */
+function substr_replace($string, $replacement, $start, $length = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @param string|array<string> $pattern
+ * @param string|array<string|int|float> $replacement
+ * @param string|array<string|int|float> $subject
+ * @param int $limit
+ * @param int $count
+ * @return ($subject is array ? array<string>|null : string|null)
+ *
+ * @psalm-flow ($replacement, $subject) -> return
+ */
+function preg_replace($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @param string|array<string> $pattern
+ * @param string|array<string|int|float> $callback
+ * @param string|array<string|int|float> $subject
+ * @param int $limit
+ * @param int $count
+ * @return ($subject is array ? array<string>|null : string|null)
+ *
+ * @psalm-flow ($replacement, $subject) -> return
+ */
+function preg_replace_callback($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @param array<string,callable(array):string> $patterns_and_callbacks
+ * @param string|array<string|int|float> $subject
+ * @param int $limit
+ * @param int $count
+ * @return ($subject is array ? array<string>|null : string|null)
+ */
+function preg_replace_callback($patterns_and_callbacks, $subject, int $limit = -1, &$count = null) {}
 
 /**
  * @psalm-pure
