@@ -2207,7 +2207,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $line
             );
 
-            foreach (\array_map('trim', explode('|', $throw)) as $throw_class) {
+            $class_names = \array_filter(\array_map('trim', explode('|', $throw)));
+
+            foreach ($class_names as $throw_class) {
                 if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
                     $exception_fqcln = Type::getFQCLNFromString(
                         $throw_class,

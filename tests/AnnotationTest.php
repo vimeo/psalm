@@ -1149,6 +1149,13 @@ class AnnotationTest extends TestCase
                      */
                     function foo($c) : void {}'
             ],
+            'throwsAnnotationWithBarAndSpace' => [
+                '<?php
+                    /**
+                     * @throws \Exception| \InvalidArgumentException
+                     */
+                    function bar() : void {}'
+            ],
         ];
     }
 
