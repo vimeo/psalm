@@ -186,7 +186,7 @@ class YieldAnalyzer
 
             $storage = $source->getFunctionLikeStorage($statements_analyzer);
 
-            if ($storage->return_type) {
+            if ($storage->return_type && !$yield_type) {
                 foreach ($storage->return_type->getAtomicTypes() as $atomic_return_type) {
                     if ($atomic_return_type instanceof Type\Atomic\TNamedObject
                         && $atomic_return_type->value === 'Generator'
