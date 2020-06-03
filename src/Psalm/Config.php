@@ -827,7 +827,7 @@ class Config
 
         $config->global_cache_directory = $config->cache_directory;
 
-        $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
+        $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir . '::' . PSALM_VERSION);
 
         if (is_dir($config->cache_directory) === false && @mkdir($config->cache_directory, 0777, true) === false) {
             trigger_error('Could not create cache directory: ' . $config->cache_directory, E_USER_ERROR);
