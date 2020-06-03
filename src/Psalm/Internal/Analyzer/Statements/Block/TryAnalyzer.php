@@ -195,12 +195,6 @@ class TryAnalyzer
 
             $fq_catch_classes = [];
 
-            $catch_var_name = $catch->var->name;
-
-            if (!is_string($catch_var_name)) {
-                throw new \UnexpectedValueException('Catch var name must be a string');
-            }
-
             if (!$catch->types) {
                 throw new \UnexpectedValueException('Very bad');
             }
@@ -286,53 +280,56 @@ class TryAnalyzer
                 $catch_context->possibly_thrown_exceptions = [];
             }
 
-            $catch_var_id = '$' . $catch_var_name;
-
-            $catch_context->vars_in_scope[$catch_var_id] = new Union(
-                array_map(
-                    /**
-                     * @param string $fq_catch_class
-                     *
-                     * @return Type\Atomic
-                     */
-                    function ($fq_catch_class) use ($codebase) {
-                        $catch_class_type = new TNamedObject($fq_catch_class);
-
-                        if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
-                            && strtolower($fq_catch_class) !== 'throwable'
-                            && $codebase->interfaceExists($fq_catch_class)
-                            && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
-                        ) {
-                            $catch_class_type->addIntersectionType(new TNamedObject('Throwable'));
-                        }
-
-                        return $catch_class_type;
-                    },
-                    $fq_catch_classes
-                )
-            );
-
             // discard all clauses because crazy stuff may have happened in try block
             $catch_context->clauses = [];
 
-            $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
+            /** @psalm-suppress RedundantCondition due to PhpParser nullability */
+            if ($catch->var && is_string($catch->var->name)) {
+                $catch_var_id = '$' . $catch->var->name;
 
-            if (!$statements_analyzer->hasVariable($catch_var_id)) {
-                $location = new CodeLocation(
-                    $statements_analyzer,
-                    $catch->var,
-                    $context->include_location
+                $catch_context->vars_in_scope[$catch_var_id] = new Union(
+                    array_map(
+                        /**
+                         * @param string $fq_catch_class
+                         *
+                         * @return Type\Atomic
+                         */
+                        function ($fq_catch_class) use ($codebase) {
+                            $catch_class_type = new TNamedObject($fq_catch_class);
+
+                            if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
+                                && strtolower($fq_catch_class) !== 'throwable'
+                                && $codebase->interfaceExists($fq_catch_class)
+                                && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
+                            ) {
+                                $catch_class_type->addIntersectionType(new TNamedObject('Throwable'));
+                            }
+
+                            return $catch_class_type;
+                        },
+                        $fq_catch_classes
+                    )
                 );
-                $statements_analyzer->registerVariable(
-                    $catch_var_id,
-                    $location,
-                    $try_context->branch_point
-                );
-                $catch_context->unreferenced_vars[$catch_var_id] = [$location->getHash() => $location];
+
+                $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
+
+                if (!$statements_analyzer->hasVariable($catch_var_id)) {
+                    $location = new CodeLocation(
+                        $statements_analyzer,
+                        $catch->var,
+                        $context->include_location
+                    );
+                    $statements_analyzer->registerVariable(
+                        $catch_var_id,
+                        $location,
+                        $try_context->branch_point
+                    );
+                    $catch_context->unreferenced_vars[$catch_var_id] = [$location->getHash() => $location];
+                }
+
+                // this registers the variable to avoid unfair deadcode issues
+                $catch_context->hasVariable($catch_var_id, $statements_analyzer);
             }
-
-            // this registers the variable to avoid unfair deadcode issues
-            $catch_context->hasVariable($catch_var_id, $statements_analyzer);
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
