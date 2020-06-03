@@ -582,6 +582,15 @@ final class Vector implements Sequence
     public function toArray(): array
     {
     }
+
+    /**
+     * @template TValue2
+     * @param iterable<TValue2> $values
+     * @return Vector<TValue|TValue2>
+     */
+    public function merge(iterable $values): Sequence
+    {
+    }
 }
 
 /**
