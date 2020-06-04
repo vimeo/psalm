@@ -68,6 +68,44 @@ class MethodCallTest extends TestCase
     /**
      * @return void
      */
+    public function testPropertyMethodCallMemoize()
+    {
+        $this->project_analyzer->getConfig()->memoize_method_calls = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo
+                {
+                    private ?string $bar;
+
+                    public function __construct(?string $bar) {
+                        $this->bar = $bar;
+                    }
+
+                    public function getBar(): ?string {
+                        return $this->bar;
+                    }
+                }
+
+                function doSomething(Foo $foo): string {
+                    if ($foo->getBar() !== null){
+                        return $foo->getBar();
+                    }
+
+                    return "hello";
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+
+
+
+    /**
+     * @return void
+     */
     public function testUnchainedMethodCallMemoize()
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;

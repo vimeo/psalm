@@ -707,10 +707,18 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     && (isset($class_storage_for_method->methods[$method_name_lc]))
                     && !$class_storage_for_method->methods[$method_name_lc]->overridden_somewhere
                     && !$class_storage_for_method->methods[$method_name_lc]->overridden_downstream
-                    && ($plain_getter_property = $class_storage_for_method->methods[$method_name_lc]->plain_getter)
-                    && isset($context->vars_in_scope[$getter_var_id = $lhs_var_id . '->' . $plain_getter_property])
                 ) {
-                    $return_type_candidate = clone $context->vars_in_scope[$getter_var_id];
+                    $plain_getter_property = $class_storage_for_method->methods[$method_name_lc]->plain_getter;
+
+                    if ($plain_getter_property) {
+                        $getter_var_id = $lhs_var_id . '->' . $plain_getter_property;
+
+                        if (isset($context->vars_in_scope[$getter_var_id])) {
+                            $return_type_candidate = clone $context->vars_in_scope[$getter_var_id];
+                        } else {
+                            $plain_getter_property = null;
+                        }
+                    }
                 }
             }
 
