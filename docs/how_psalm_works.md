@@ -14,7 +14,7 @@ The first task is to convert a file into a set of [PHP Parser](https://github.co
 
 ### Deep scanning vs shallow scanning
 
-Psalm then uses a custom PHP Parser `NodeVisitor` called [`ReflectorVisitor`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Internal/Visitor/ReflectorVisitor.php) which has two modes when scanning a given file: a shallow scan, where it just gets function signatures, return types, constants, and inheritance, or a deep scan, where it drills into every function statement to get those dependencies too (e.g. the class names instantiated by a function). It only does a deep scan on files that it knows will be analysed later (so the vast majority of the vendor directory, for example, just gets a shallow scan).
+Psalm then uses a custom PHP Parser `NodeVisitor` called [`ReflectorVisitor`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php) which has two modes when scanning a given file: a shallow scan, where it just gets function signatures, return types, constants, and inheritance, or a deep scan, where it drills into every function statement to get those dependencies too (e.g. the class names instantiated by a function). It only does a deep scan on files that it knows will be analysed later (so the vast majority of the vendor directory, for example, just gets a shallow scan).
 
 So, when analysing the `src` directory, Psalm will deep scan the following file:
 
@@ -24,8 +24,9 @@ src/A.php
 use Vendor\VendorClass;
 use Vendor\OtherVendorClass;
 
-class A extends VendorClass {
-    public function foo(OtherVendorClass $c) : void {}
+class A extends VendorClass
+{
+    public function foo(OtherVendorClass $c): void {}
 }
 ```
 
@@ -39,11 +40,11 @@ To figure out the `ClassName` => `src/FileName.php` mapping it uses reflection f
 
 ### Storing data from scanning
 
-For each file that `ReflectorVisitor` visits, Psalm creates a `FileStorage` instance, along with `ClassLikeStorage` and `FunctionLikeStorage` instances depending on the file contents.
+For each file that `ReflectorVisitor` visits, Psalm creates a [`FileStorage`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Storage/FileStorage.php) instance, along with [`ClassLikeStorage`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Storage/ClassLikeStorage.php) and [`FunctionLikeStorage`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Storage/FunctionLikeStorage.php) instances depending on the file contents.
 
-Once we have a set of all files and their classes and function signatures, we calculate inheritance for everything in the `Psalm\Internal\Codebase\Populator` class and then move onto analysis.
+Once we have a set of all files and their classes and function signatures, we calculate inheritance for everything in the [`Populator`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Internal/Codebase/Populator.php) class and then move onto analysis.
 
-At the end of the scanning step we have populated all the necessary information in `Psalm\Internal\Codebase\ClassLikes`, `Psalm\Internal\Codebase\Functions` and `Psalm\Internal\Codebase\Methods` classes, and created a complete list of `FileStorage` and `ClassLikeStorage` objects (in `FileStorageProvider` and `ClassLikeStorageProvider` respectively) for all classes and files used in our project.
+At the end of the scanning step we have populated all the necessary information in [`ClassLikes`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Internal/Codebase/ClassLikes.php), [`Functions`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Internal/Codebase/Functions.php) and [`Methods`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Internal/Codebase/Methods.php) classes, and created a complete list of `FileStorage` and `ClassLikeStorage` objects (in [`FileStorageProvider`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Internal/Provider/FileStorageProvider.php) and [`ClassLikeStorageProvider`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Internal/Provider/ClassLikeStorageProvider.php) respectively) for all classes and files used in our project.
 
 ## Analysis
 
