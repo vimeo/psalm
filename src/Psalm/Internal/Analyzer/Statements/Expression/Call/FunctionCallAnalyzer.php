@@ -613,6 +613,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             $potential_method_id = null;
                         }
                     } elseif ($var_type_part instanceof Type\Atomic\TLiteralString) {
+                        if (!$var_type_part->value) {
+                            $invalid_function_call_types[] = '\'\'';
+                            continue;
+                        }
+
                         if (strpos($var_type_part->value, '::')) {
                             $parts = explode('::', strtolower($var_type_part->value));
                             $potential_method_id = new \Psalm\Internal\MethodIdentifier($parts[0], $parts[1]);

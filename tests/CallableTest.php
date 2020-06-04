@@ -1103,6 +1103,12 @@ class CallableTest extends TestCase
                     takesFunction("myFunction");',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'emptyCallable' => [
+                '<?php
+                    $a = "";
+                    $a();',
+                'error_message' => 'InvalidFunctionCall',
+            ],
         ];
     }
 }
