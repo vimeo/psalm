@@ -283,7 +283,7 @@ class TryAnalyzer
             // discard all clauses because crazy stuff may have happened in try block
             $catch_context->clauses = [];
 
-            /** @psalm-suppress RedundantCondition due to PhpParser nullability */
+            /** @psalm-suppress RedundantConditionGivenDocblockType */
             if ($catch->var && is_string($catch->var->name)) {
                 $catch_var_id = '$' . $catch->var->name;
 
