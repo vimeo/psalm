@@ -577,7 +577,7 @@ final class Vector implements Sequence
     }
 
     /**
-     * @return array<TValue>
+     * @return list<TValue>
      */
     public function toArray(): array
     {
@@ -723,7 +723,7 @@ final class Set implements Collection
     }
 
     /**
-     * @return array<TValue>
+     * @return list<TValue>
      */
     public function toArray(): array
     {
@@ -792,7 +792,7 @@ final class Stack implements Collection
     }
 
     /**
-     * @return array<TValue>
+     * @return list<TValue>
      */
     public function toArray(): array
     {
@@ -843,7 +843,7 @@ final class Queue implements Collection
     }
 
     /**
-     * @return array<TValue>
+     * @return list<TValue>
      */
     public function toArray(): array
     {
@@ -887,7 +887,7 @@ final class PriorityQueue implements Collection
     }
 
     /**
-     * @return array<TValue>
+     * @return list<TValue>
      */
     public function toArray(): array
     {
