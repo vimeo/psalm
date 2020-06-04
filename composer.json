@@ -22,7 +22,7 @@
         "ext-tokenizer": "*",
         "amphp/amp": "^2.1",
         "amphp/byte-stream": "^1.5",
-        "composer/semver": "^1.4",
+        "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^1.1",
         "felixfbecker/advanced-json-rpc": "^3.0.3",
         "felixfbecker/language-server-protocol": "^1.4",
