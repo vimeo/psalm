@@ -256,6 +256,8 @@ class ProjectAnalyzer
         $this->threads = $threads;
         $this->config = $config;
 
+        $this->clearCacheDirectoryIfConfigOrComposerLockfileChanged();
+
         $this->codebase = new Codebase(
             $config,
             $providers,
@@ -281,17 +283,38 @@ class ProjectAnalyzer
             $this->addProjectFile($file_path);
         }
 
-        if ($this->project_cache_provider && $this->project_cache_provider->hasLockfileChanged()) {
+        self::$instance = $this;
+    }
+
+    private function clearCacheDirectoryIfConfigOrComposerLockfileChanged() : void
+    {
+        if ($this->project_cache_provider
+            && $this->project_cache_provider->hasLockfileChanged()
+        ) {
             $this->progress->debug(
                 'Composer lockfile change detected, clearing cache' . "\n"
             );
 
-            Config::removeCacheDirectory($config->getCacheDirectory());
+            Config::removeCacheDirectory($this->config->getCacheDirectory());
+
+            if ($this->file_reference_provider->cache) {
+                $this->file_reference_provider->cache->hasConfigChanged();
+            }
 
             $this->project_cache_provider->updateComposerLockHash();
-        }
+        } elseif ($this->file_reference_provider->cache
+            && $this->file_reference_provider->cache->hasConfigChanged()
+        ) {
+            $this->progress->debug(
+                'Config change detected, clearing cache' . "\n"
+            );
 
-        self::$instance = $this;
+            Config::removeCacheDirectory($this->config->getCacheDirectory());
+
+            if ($this->project_cache_provider) {
+                $this->project_cache_provider->hasLockfileChanged();
+            }
+        }
     }
 
     /**

@@ -48,6 +48,7 @@ class PsalmEndToEndTest extends TestCase
         mkdir(self::$tmpDir . '/src');
 
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/composer.json', self::$tmpDir . '/composer.json');
+        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/composer.lock', self::$tmpDir . '/composer.lock');
 
         (new Process(['composer', 'install', '--no-plugins'], self::$tmpDir))->mustRun();
     }
@@ -63,6 +64,14 @@ class PsalmEndToEndTest extends TestCase
         @unlink(self::$tmpDir . '/psalm.xml');
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php', self::$tmpDir . '/src/FileWithErrors.php');
         parent::setUp();
+    }
+
+    public function tearDown(): void
+    {
+        if (\file_exists(self::$tmpDir . '/cache')) {
+            self::recursiveRemoveDirectory(self::$tmpDir . '/cache');
+        }
+        parent::tearDown();
     }
 
     public function testHelpReturnsMessage(): void
@@ -110,6 +119,27 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(1, $result['CODE']);
     }
 
+    public function testPsalmDiff(): void
+    {
+        $this->runPsalmInit(1);
+        $result = $this->runPsalm(['--diff', '-m'], self::$tmpDir, true);
+        $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
+        $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
+        $this->assertStringContainsString('2 errors', $result['STDOUT']);
+        $this->assertStringContainsString('E', $result['STDERR']);
+
+        $this->assertSame(1, $result['CODE']);
+
+        $result = $this->runPsalm(['--diff', '-m'], self::$tmpDir, true);
+
+        $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
+        $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
+        $this->assertStringContainsString('2 errors', $result['STDOUT']);
+        $this->assertStringNotContainsString('E', $result['STDERR']);
+
+        $this->assertSame(1, $result['CODE']);
+    }
+
     public function testLegacyConfigWithoutresolveFromConfigFile(): void
     {
         $this->runPsalmInit(1);
@@ -137,7 +167,18 @@ class PsalmEndToEndTest extends TestCase
             $args[] = 'src';
             $args[] = (string) $level;
         }
-        return $this->runPsalm($args, self::$tmpDir, false, false);
+
+        $ret = $this->runPsalm($args, self::$tmpDir, false, false);
+
+        $psalm_config_contents = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalm_config_contents = \str_replace(
+            'errorLevel="1"',
+            'errorLevel="1" cacheDirectory="' . self::$tmpDir . '/cache"',
+            $psalm_config_contents
+        );
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalm_config_contents);
+
+        return $ret;
     }
 
     /** from comment by itay at itgoldman dot com at
