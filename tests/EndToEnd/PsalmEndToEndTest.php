@@ -122,7 +122,7 @@ class PsalmEndToEndTest extends TestCase
     {
         $this->markTestSkipped('Only works on 7.4');
 
-        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/composer.lock', self::$tmpDir . '/composer.lock');
+        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/diff_composer.lock', self::$tmpDir . '/composer.lock');
 
         $this->runPsalmInit(1);
         $result = $this->runPsalm(['--diff', '-m'], self::$tmpDir, true);
