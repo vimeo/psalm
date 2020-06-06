@@ -289,6 +289,10 @@ class ReturnAnalyzer
                         return null;
                     }
 
+                    if ($local_return_type->isMixed()) {
+                        return null;
+                    }
+
                     if (!$context->collect_initializations
                         && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
