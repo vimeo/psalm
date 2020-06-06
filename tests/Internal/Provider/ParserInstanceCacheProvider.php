@@ -97,4 +97,8 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     {
         $this->file_contents_cache[$file_path] = $file_contents;
     }
+
+    public function saveFileContentHashes()
+    {
+    }
 }

@@ -55,7 +55,8 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      */
     private $cached_file_maps = [];
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->config = \Psalm\Config::getInstance();
     }
 
@@ -283,5 +284,14 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     public function setFileMapCache(array $file_maps)
     {
         $this->cached_file_maps = $file_maps;
+    }
+
+    /**
+     * @param array<string, array{int, int}> $mixed_counts
+     *
+     * @return void
+     */
+    public function setTypeCoverage(array $mixed_counts)
+    {
     }
 }

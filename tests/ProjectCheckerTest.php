@@ -187,7 +187,7 @@ class ProjectCheckerTest extends TestCase
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
         $this->assertSame(
-            'No files analyzed',
+            'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
                 $this->project_analyzer->getCodebase()
             )
