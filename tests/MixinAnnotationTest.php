@@ -333,6 +333,16 @@ class MixinAnnotationTest extends TestCase
                         return (new FooGrandChild)->getMixin();
                     }'
             ],
+            'mixinParseWithTextAfter' => [
+                '<?php
+                    class M {}
+
+                    /**
+                     * @mixin M
+                     * Hello
+                     */
+                    class C {}'
+            ],
         ];
     }
 

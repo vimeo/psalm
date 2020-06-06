@@ -857,7 +857,8 @@ class CommentAnalyzer
 
         if (isset($parsed_docblock->tags['mixin'])) {
             $mixin = trim(reset($parsed_docblock->tags['mixin']));
-            $mixin = explode(' ', $mixin)[0];
+            $doc_line_parts = self::splitDocLine($mixin);
+            $mixin = $doc_line_parts[0];
 
             if ($mixin) {
                 $info->mixin = $mixin;
