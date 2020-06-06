@@ -785,6 +785,7 @@ class ArgumentAnalyzer
             foreach ($param_type->getAtomicTypes() as $param_type_part) {
                 if ($param_type_part instanceof TClassString
                     && $input_expr instanceof PhpParser\Node\Scalar\String_
+                    && !$param_type->getLiteralStrings()
                 ) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,
