@@ -55,9 +55,6 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      */
     private $cached_file_maps = [];
 
-    /** @var \Psalm\Config */
-    private $config;
-
     public function __construct() {
         $this->config = \Psalm\Config::getInstance();
     }
