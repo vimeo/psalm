@@ -264,7 +264,8 @@ class CommentAnalyzer
     public static function getTypeAliasesFromComment(
         PhpParser\Comment\Doc $comment,
         Aliases $aliases,
-        array $type_aliases = null
+        ?array $type_aliases,
+        ?string $self_fqcln
     ) {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -275,7 +276,8 @@ class CommentAnalyzer
         return self::getTypeAliasesFromCommentLines(
             $parsed_docblock->tags['psalm-type'],
             $aliases,
-            $type_aliases
+            $type_aliases,
+            $self_fqcln
         );
     }
 
@@ -291,7 +293,8 @@ class CommentAnalyzer
     private static function getTypeAliasesFromCommentLines(
         array $type_alias_comment_lines,
         Aliases $aliases,
-        array $type_aliases = null
+        ?array $type_aliases,
+        ?string $self_fqcln
     ) {
         $type_alias_tokens = [];
 
@@ -344,7 +347,8 @@ class CommentAnalyzer
                     $type_string,
                     $aliases,
                     null,
-                    $type_alias_tokens + $type_aliases
+                    $type_alias_tokens + $type_aliases,
+                    $self_fqcln
                 );
             } catch (TypeParseTreeException $e) {
                 throw new DocblockParseException($type_string . ' is not a valid type');

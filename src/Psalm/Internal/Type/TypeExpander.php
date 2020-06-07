@@ -288,7 +288,32 @@ class TypeExpander
                     $resolved_type_alias = $class_storage->type_aliases[$type_alias_name];
 
                     if ($resolved_type_alias->replacement_atomic_types) {
-                        return $resolved_type_alias->replacement_atomic_types;
+                        $replacement_atomic_types = $resolved_type_alias->replacement_atomic_types;
+
+                        $recursively_fleshed_out_types = [];
+
+                        foreach ($replacement_atomic_types as $replacement_atomic_type) {
+                            $recursively_fleshed_out_type = self::expandAtomic(
+                                $codebase,
+                                $replacement_atomic_type,
+                                $self_class,
+                                $static_class_type,
+                                $parent_class,
+                                $evaluate_class_constants,
+                                $evaluate_conditional_types
+                            );
+
+                            if (is_array($recursively_fleshed_out_type)) {
+                                $recursively_fleshed_out_types = array_merge(
+                                    $recursively_fleshed_out_type,
+                                    $recursively_fleshed_out_types
+                                );
+                            } else {
+                                $recursively_fleshed_out_types[] = $recursively_fleshed_out_type;
+                            }
+                        }
+
+                        return $recursively_fleshed_out_types;
                     }
                 }
             }

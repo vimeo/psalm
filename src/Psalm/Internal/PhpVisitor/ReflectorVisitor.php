@@ -166,11 +166,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     {
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc) {
+                $self_fqcln = $node instanceof PhpParser\Node\Stmt\ClassLike
+                    && $node->name !== null
+                    ? ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name
+                    : null;
+
                 try {
                     $type_aliases = CommentAnalyzer::getTypeAliasesFromComment(
                         $comment,
                         $this->aliases,
-                        $this->type_aliases
+                        $this->type_aliases,
+                        $self_fqcln
                     );
 
                     foreach ($type_aliases as $type_alias) {
