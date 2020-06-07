@@ -461,6 +461,16 @@ class UnionTemplateHandler
                     $atomic_types[] = clone $as_atomic_type;
                 }
             } else {
+                if ($codebase) {
+                    $replacement_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $replacement_type,
+                        $calling_class,
+                        $calling_class,
+                        null
+                    );
+                }
+
                 if ($depth < 10) {
                     $replacement_type = self::replaceTemplateTypesWithStandins(
                         $replacement_type,
@@ -533,6 +543,16 @@ class UnionTemplateHandler
             }
 
             $matching_input_keys = [];
+
+            if ($codebase) {
+                $atomic_type->as = TypeExpander::expandUnion(
+                    $codebase,
+                    $atomic_type->as,
+                    $calling_class,
+                    $calling_class,
+                    null
+                );
+            }
 
             $atomic_type->as = self::replaceTemplateTypesWithStandins(
                 $atomic_type->as,

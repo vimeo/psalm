@@ -187,6 +187,19 @@ class TypeExpander
                 $return_type->as_type = $new_as_type;
                 $return_type->as = $return_type->as_type->value;
             }
+        } elseif ($return_type instanceof Type\Atomic\TTemplateParam) {
+            $new_as_type = self::expandUnion(
+                $codebase,
+                clone $return_type->as,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final
+            );
+
+            $return_type->as = $new_as_type;
         }
 
         if ($return_type instanceof Type\Atomic\TScalarClassConstant) {
@@ -327,8 +340,9 @@ class TypeExpander
             || $return_type instanceof Type\Atomic\TGenericObject
             || $return_type instanceof Type\Atomic\TIterable
         ) {
-            foreach ($return_type->type_params as &$type_param) {
-                $type_param = self::expandUnion(
+            foreach ($return_type->type_params as $k => $type_param) {
+                /** @psalm-suppress PropertyTypeCoercion */
+                $return_type->type_params[$k] = self::expandUnion(
                     $codebase,
                     $type_param,
                     $self_class,
