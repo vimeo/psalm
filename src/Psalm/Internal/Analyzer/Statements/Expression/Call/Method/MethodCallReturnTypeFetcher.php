@@ -27,6 +27,7 @@ class MethodCallReturnTypeFetcher
         Context $context,
         MethodIdentifier $method_id,
         ?MethodIdentifier $declaring_method_id,
+        MethodIdentifier $premixin_method_id,
         string $cased_method_id,
         Type\Atomic $lhs_type_part,
         ?Type\Atomic $static_type,
@@ -39,11 +40,11 @@ class MethodCallReturnTypeFetcher
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
-        if ($codebase->methods->return_type_provider->has($fq_class_name)) {
+        if ($codebase->methods->return_type_provider->has($premixin_method_id->fq_class_name)) {
             $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                 $statements_analyzer,
-                $fq_class_name,
-                $method_name,
+                $premixin_method_id->fq_class_name,
+                $premixin_method_id->method_name,
                 $stmt->args,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),

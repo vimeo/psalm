@@ -633,6 +633,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $context,
             $method_id,
             $declaring_method_id,
+            $naive_method_id,
             $cased_method_id,
             $lhs_type_part,
             $static_type,
