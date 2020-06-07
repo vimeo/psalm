@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\MethodExistenceProvider;
@@ -86,7 +87,7 @@ class Methods
      * @param lowercase-string|null $calling_method_id
      */
     public function methodExists(
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         ?string $calling_method_id = null,
         CodeLocation $code_location = null,
         StatementsSource $source = null,
@@ -307,7 +308,7 @@ class Methods
      * @return array<int, FunctionLikeParameter>
      */
     public function getMethodParams(
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         StatementsSource $source = null,
         array $args = null,
         Context $context = null
@@ -602,7 +603,7 @@ class Methods
     /**
      * @return bool
      */
-    public function isVariadic(\Psalm\Internal\MethodIdentifier $method_id)
+    public function isVariadic(MethodIdentifier $method_id)
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
@@ -620,7 +621,7 @@ class Methods
      * @return Type\Union|null
      */
     public function getMethodReturnType(
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         &$self_class,
         \Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
         array $args = null
@@ -688,11 +689,11 @@ class Methods
 
                     if ($atomic_type instanceof Type\Atomic\TNamedObject
                         && $this->methodExists(
-                            new \Psalm\Internal\MethodIdentifier($atomic_type->value, '__invoke')
+                            new MethodIdentifier($atomic_type->value, '__invoke')
                         )
                     ) {
                         $invokable_storage = $this->getStorage(
-                            new \Psalm\Internal\MethodIdentifier($atomic_type->value, '__invoke')
+                            new MethodIdentifier($atomic_type->value, '__invoke')
                         );
 
                         return new Type\Union([new Type\Atomic\TFn(
@@ -802,7 +803,7 @@ class Methods
     /**
      * @return bool
      */
-    public function getMethodReturnsByRef(\Psalm\Internal\MethodIdentifier $method_id)
+    public function getMethodReturnsByRef(MethodIdentifier $method_id)
     {
         $method_id = $this->getDeclaringMethodId($method_id);
 
@@ -827,7 +828,7 @@ class Methods
      * @return CodeLocation|null
      */
     public function getMethodReturnTypeLocation(
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         CodeLocation &$defined_location = null
     ) {
         $method_id = $this->getDeclaringMethodId($method_id);
@@ -870,7 +871,7 @@ class Methods
     ) {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
-        $class_storage->declaring_method_ids[$method_name_lc] = new \Psalm\Internal\MethodIdentifier(
+        $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
             $declaring_fq_class_name,
             $declaring_method_name_lc
         );
@@ -892,15 +893,15 @@ class Methods
     ) {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
-        $class_storage->appearing_method_ids[$method_name_lc] = new \Psalm\Internal\MethodIdentifier(
+        $class_storage->appearing_method_ids[$method_name_lc] = new MethodIdentifier(
             $appearing_fq_class_name,
             $appearing_method_name_lc
         );
     }
 
     public function getDeclaringMethodId(
-        \Psalm\Internal\MethodIdentifier $method_id
-    ) : ?\Psalm\Internal\MethodIdentifier {
+        MethodIdentifier $method_id
+    ) : ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
@@ -922,8 +923,8 @@ class Methods
      * Get the class this method appears in (vs is declared in, which could give a trait
      */
     public function getAppearingMethodId(
-        \Psalm\Internal\MethodIdentifier $method_id
-    ) : ?\Psalm\Internal\MethodIdentifier {
+        MethodIdentifier $method_id
+    ) : ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
@@ -938,9 +939,9 @@ class Methods
     }
 
     /**
-     * @return array<\Psalm\Internal\MethodIdentifier>
+     * @return array<MethodIdentifier>
      */
-    public function getOverriddenMethodIds(\Psalm\Internal\MethodIdentifier $method_id)
+    public function getOverriddenMethodIds(MethodIdentifier $method_id)
     {
         $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
         $method_name = $method_id->method_name;
@@ -955,7 +956,7 @@ class Methods
     /**
      * @return string
      */
-    public function getCasedMethodId(\Psalm\Internal\MethodIdentifier $original_method_id)
+    public function getCasedMethodId(MethodIdentifier $original_method_id)
     {
         $method_id = $this->getDeclaringMethodId($original_method_id);
 
@@ -983,7 +984,7 @@ class Methods
     /**
      * @return ?MethodStorage
      */
-    public function getUserMethodStorage(\Psalm\Internal\MethodIdentifier $method_id)
+    public function getUserMethodStorage(MethodIdentifier $method_id)
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
@@ -1003,7 +1004,7 @@ class Methods
     /**
      * @return ClassLikeStorage
      */
-    public function getClassLikeStorageForMethod(\Psalm\Internal\MethodIdentifier $method_id)
+    public function getClassLikeStorageForMethod(MethodIdentifier $method_id)
     {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -1037,7 +1038,7 @@ class Methods
     /**
      * @return MethodStorage
      */
-    public function getStorage(\Psalm\Internal\MethodIdentifier $method_id)
+    public function getStorage(MethodIdentifier $method_id)
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
