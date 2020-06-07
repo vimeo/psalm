@@ -282,6 +282,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                             $method_name_lc
                         );
 
+                        $mixin_class_storage = $codebase->classlike_storage_provider->get($lhs_type_part_new->value);
+
                         if ($codebase->methods->methodExists(
                             $new_method_id,
                             $context->calling_method_id,
@@ -295,9 +297,13 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                             $statements_analyzer->getFilePath()
                         )) {
                             $lhs_type_part = clone $lhs_type_part_new;
-                            $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+                            $class_storage = $mixin_class_storage;
 
                             $naive_method_exists = true;
+                            $method_id = $new_method_id;
+                        } elseif (isset($mixin_class_storage->pseudo_methods[$method_name_lc])) {
+                            $lhs_type_part = clone $lhs_type_part_new;
+                            $class_storage = $mixin_class_storage;
                             $method_id = $new_method_id;
                         }
                     }
