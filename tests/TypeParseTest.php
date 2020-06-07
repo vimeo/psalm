@@ -192,6 +192,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testStaticAndStatic()
+    {
+        $this->assertSame('static', (string) Type::parseString('static&static'));
+    }
+
+    /**
+     * @return void
+     */
     public function testTraversableAndIteratorOrNull()
     {
         $this->assertSame(

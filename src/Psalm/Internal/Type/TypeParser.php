@@ -492,6 +492,10 @@ class TypeParser
                     $intersect_static = true;
                 }
 
+                if (!$keyed_intersection_types && $intersect_static) {
+                    return new TNamedObject('static');
+                }
+
                 $first_type = array_shift($keyed_intersection_types);
 
                 if ($intersect_static
