@@ -1078,17 +1078,21 @@ class Codebase
             }
 
             if (strpos($symbol, '()')) {
-                $file_storage = $this->file_storage_provider->get($file_path);
-
                 $function_id = strtolower(substr($symbol, 0, -2));
+                $file_storage = $this->file_storage_provider->get($file_path);
 
                 if (isset($file_storage->functions[$function_id])) {
                     $function_storage = $file_storage->functions[$function_id];
 
                     return '<?php ' . $function_storage->getSignature(true);
                 }
+                
+                if (!$function_id) {
+                    return null;
+                }
 
-                return null;
+                $function = $this->functions->getStorage(null, $function_id);
+                return '<?php ' . $function->getSignature(true);
             }
 
             $storage = $this->classlike_storage_provider->get($symbol);
@@ -1169,8 +1173,13 @@ class Codebase
                 if (isset($file_storage->functions[$function_id])) {
                     return $file_storage->functions[$function_id]->location;
                 }
+                
+                if (!$function_id) {
+                    return null;
+                }
 
-                return null;
+                $function = $this->functions->getStorage(null, $function_id);
+                return $function->location;
             }
 
             $storage = $this->classlike_storage_provider->get($symbol);
