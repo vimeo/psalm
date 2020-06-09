@@ -442,7 +442,11 @@ function update_config_file(Config $config, string $config_file_path, string $ba
         return;
     }
 
-    $configFile = Config::locateConfigFile($config_file_path);
+    $configFile = $config_file_path;
+
+    if (is_dir($config_file_path)) {
+        $configFile = Config::locateConfigFile($config_file_path);
+    }
 
     if (!$configFile) {
         fwrite(STDERR, "Don't forget to set errorBaseline=\"{$baseline_path}\" to your config.");
