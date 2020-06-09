@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -389,7 +390,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             if ($stmt->name instanceof PhpParser\Node\Identifier && !$is_mock) {
                 $method_name_lc = strtolower($stmt->name->name);
-                $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, $method_name_lc);
+                $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
                 $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
                 if ($codebase->store_node_types
@@ -414,7 +415,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             continue;
                         }
 
-                        $intersection_method_id = new \Psalm\Internal\MethodIdentifier(
+                        $intersection_method_id = new MethodIdentifier(
                             $intersection_type->value,
                             $method_name_lc
                         );
@@ -430,7 +431,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                if (!$codebase->methods->methodExists(
+                $naive_method_exists = $codebase->methods->methodExists(
                     $method_id,
                     !$context->collect_initializations
                         && !$context->collect_mutations
@@ -441,7 +442,60 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         : null,
                     $statements_analyzer,
                     $statements_analyzer->getFilePath()
-                )
+                );
+
+                if (!$naive_method_exists
+                    && $class_storage->mixin_declaring_fqcln
+                    && $class_storage->mixin instanceof Type\Atomic\TNamedObject
+                ) {
+                    $new_method_id = new MethodIdentifier(
+                        $class_storage->mixin->value,
+                        $method_name_lc
+                    );
+
+                    if ($codebase->methods->methodExists(
+                        $new_method_id,
+                        $context->calling_method_id,
+                        $codebase->collect_locations
+                            ? new CodeLocation($source, $stmt->name)
+                            : null,
+                        !$context->collect_initializations
+                            && !$context->collect_mutations
+                            ? $statements_analyzer
+                            : null,
+                        $statements_analyzer->getFilePath()
+                    )) {
+                        $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
+                            $class_storage->mixin_declaring_fqcln
+                        );
+
+                        $lhs_type_expanded = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $codebase,
+                            new Type\Union([$lhs_type_part]),
+                            $mixin_declaring_class_storage->name,
+                            $fq_class_name,
+                            $class_storage->parent_class,
+                            true,
+                            false,
+                            $class_storage->final
+                        );
+
+                        $new_lhs_type_part = array_values($lhs_type_expanded->getAtomicTypes())[0];
+
+                        if ($new_lhs_type_part instanceof Type\Atomic\TNamedObject) {
+                            $lhs_type_part = $new_lhs_type_part;
+                        }
+
+                        $mixin_class_storage = $codebase->classlike_storage_provider->get($class_storage->mixin->value);
+
+                        $fq_class_name = $mixin_class_storage->name;
+                        $class_storage = $mixin_class_storage;
+                        $naive_method_exists = true;
+                        $method_id = $new_method_id;
+                    }
+                }
+
+                if (!$naive_method_exists
                     || !MethodAnalyzer::isMethodVisible(
                         $method_id,
                         $context,
@@ -450,7 +504,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     || (isset($class_storage->pseudo_static_methods[$method_name_lc])
                         && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class))
                 ) {
-                    $callstatic_id = new \Psalm\Internal\MethodIdentifier(
+                    $callstatic_id = new MethodIdentifier(
                         $fq_class_name,
                         '__callstatic'
                     );
@@ -513,7 +567,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
                         ];
 
-                        $method_id = new \Psalm\Internal\MethodIdentifier(
+                        $method_id = new MethodIdentifier(
                             $fq_class_name,
                             '__callstatic'
                         );
@@ -1281,7 +1335,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     private static function checkPseudoMethod(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         string $fq_class_name,
         array $args,
         \Psalm\Storage\ClassLikeStorage $class_storage,

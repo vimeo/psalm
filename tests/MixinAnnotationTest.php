@@ -20,6 +20,7 @@ class MixinAnnotationTest extends TestCase
                 '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
+                        public static function __callStatic(string $name, array $args) {}
                     }
 
                     class Provider {
@@ -28,6 +29,10 @@ class MixinAnnotationTest extends TestCase
                         }
 
                         public function setInteger(int $i) : void {}
+
+                        public static function getInt() : int {
+                            return 5;
+                        }
                     }
 
                     /** @mixin Provider */
@@ -36,9 +41,10 @@ class MixinAnnotationTest extends TestCase
                     $child = new Child();
 
                     $a = $child->getString();
-                    $child->setInteger(4);',
+                    $b = $child::getInt();',
                 'assertions' => [
                     '$a' => 'string',
+                    '$b' => 'int',
                 ],
             ],
             'anotherSimpleExample' => [
