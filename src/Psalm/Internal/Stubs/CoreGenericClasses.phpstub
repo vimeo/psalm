@@ -179,7 +179,7 @@ class IteratorIterator implements OuterIterator {
 }
 
 /**
- * @template TIterator as RecursiveIterator|IteratorAggregate
+ * @template TIterator of Traversable
  * @mixin TIterator
  */
 class RecursiveIteratorIterator implements OuterIterator {
