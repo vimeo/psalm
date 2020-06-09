@@ -480,7 +480,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $class_storage->final
                         );
 
-                        $new_lhs_type_part = array_values($lhs_type_expanded->getAtomicTypes())[0];
+                        $new_lhs_type_part = \array_values($lhs_type_expanded->getAtomicTypes())[0];
 
                         if ($new_lhs_type_part instanceof Type\Atomic\TNamedObject) {
                             $lhs_type_part = $new_lhs_type_part;
