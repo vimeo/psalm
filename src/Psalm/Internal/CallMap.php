@@ -9971,6 +9971,8 @@ return [
 'PharData::delMetadata' => ['bool'],
 'PharData::extractTo' => ['bool', 'pathto'=>'string', 'files='=>'string|array|null', 'overwrite='=>'bool'],
 'PharData::isWritable' => ['bool'],
+'PharData::offsetExists' => ['bool', 'offset'=>'string'],
+'PharData::offsetGet' => ['PharFileInfo', 'offset'=>'string'],
 'PharData::offsetSet' => ['void', 'offset'=>'string', 'value'=>'string'],
 'PharData::offsetUnset' => ['bool', 'offset'=>'string'],
 'PharData::setAlias' => ['bool', 'alias'=>'string'],
