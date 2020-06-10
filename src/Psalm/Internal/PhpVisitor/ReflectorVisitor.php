@@ -1310,6 +1310,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->deprecated = $docblock_info->deprecated;
                 $storage->internal = $docblock_info->internal;
                 $storage->psalm_internal = $docblock_info->psalm_internal;
+                $storage->final = $storage->final || $docblock_info->final;
 
                 if ($docblock_info->mixin) {
                     $mixin_type = TypeParser::parseTokens(
