@@ -86,7 +86,7 @@ function mirror($t) {
 }
 
 $a = 5;
-$b = mirror(5); // Psalm knows the result is an int
+$b = mirror($a); // Psalm knows the result is an int
 
 $c = "foo";
 $d = mirror($c); // Psalm knows the result is string
