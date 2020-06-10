@@ -48,6 +48,71 @@ final class Deque implements Sequence
     }
 
     /**
+     * @return list<TValue>
+     */
+    public function toArray(): array
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function first()
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \OutOfRangeException
+     */
+    public function get(int $index)
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function last()
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function pop()
+    {
+    }
+
+    /**
+     * @template TCarry
+     * @param callable(TCarry, TValue): TCarry $callback
+     * @param TCarry $initial
+     * @return TCarry
+     */
+    public function reduce(callable $callback, $initial = null)
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \OutOfRangeException
+     */
+    public function remove(int $index)
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function shift()
+    {
+    }
+
+    /**
      * @template TValue2
      * @param iterable<TValue2> $values
      * @return Deque<TValue|TValue2>
@@ -86,6 +151,14 @@ final class Deque implements Sequence
     public function slice(int $offset, ?int $length = null): Deque
     {
     }
+
+    /**
+     * @param (callable(TValue, TValue): int)|null $comparator
+     * @return Sequence<TValue>
+     */
+    public function sorted(callable $comparator = null): Deque
+    {
+    }
 }
 
 /**
@@ -112,7 +185,7 @@ final class Map implements Collection
     /**
      * @param callable(TKey, TValue): TValue $callback
      */
-    public function apply(callable $callback)
+    public function apply(callable $callback): void
     {
     }
 
@@ -389,7 +462,7 @@ interface Sequence extends Collection
     /**
      * @param callable(TValue): TValue $callback
      */
-    public function apply(callable $callback);
+    public function apply(callable $callback): void;
 
     /**
      * @param TValue ...$values
@@ -538,6 +611,71 @@ final class Vector implements Sequence
     }
 
     /**
+     * @return list<TValue>
+     */
+    public function toArray(): array
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function first()
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \OutOfRangeException
+     */
+    public function get(int $index)
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function last()
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function pop()
+    {
+    }
+
+    /**
+     * @template TCarry
+     * @param callable(TCarry, TValue): TCarry $callback
+     * @param TCarry $initial
+     * @return TCarry
+     */
+    public function reduce(callable $callback, $initial = null)
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \OutOfRangeException
+     */
+    public function remove(int $index)
+    {
+    }
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function shift()
+    {
+    }
+
+    /**
      * @return Vector<TValue>
      */
     public function reversed(): Vector
@@ -573,13 +711,6 @@ final class Vector implements Sequence
      * @return Vector<TNewValue>
      */
     public function map(callable $callback): Vector
-    {
-    }
-
-    /**
-     * @return list<TValue>
-     */
-    public function toArray(): array
     {
     }
 
