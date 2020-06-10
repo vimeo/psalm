@@ -94,6 +94,35 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
+    public function testCrossFileSymbolLookup()
+    {
+        $this->addFile(
+            'functions.php',
+            '<?php
+                function foo() : int {
+                    return 5;
+                }'
+        );
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $foo = foo();'
+        );
+
+        new FileAnalyzer($this->project_analyzer, 'functions.php', 'functions.php');
+        new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $context = new Context();
+        $this->analyzeFile('functions.php', $context );
+        $this->analyzeFile('somefile.php', $context );
+
+        $this->assertSame('<?php public function foo() : int', $codebase->getSymbolInformation('somefile.php', 'foo()'));
+    }
+
+    /**
+     * @return void
+     */
     public function testSimpleSymbolLocation()
     {
         $this->addFile(
