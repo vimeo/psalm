@@ -1016,6 +1016,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $has_string = true;
                 } elseif ($existing_var_atomic_type instanceof TTemplateParam) {
                     if ($existing_var_atomic_type->as->hasMixed()
+                        || $existing_var_atomic_type->as->hasString()
                         || $existing_var_atomic_type->as->hasScalar()
                         || $existing_var_atomic_type->as->hasArrayKey()
                     ) {
@@ -1023,7 +1024,20 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             return $existing_var_type;
                         }
 
-                        return new Type\Union([new Type\Atomic\TLiteralString($value)]);
+                        $existing_var_atomic_type = clone $existing_var_atomic_type;
+
+                        $existing_var_atomic_type->as = self::handleLiteralEquality(
+                            $assertion,
+                            $bracket_pos,
+                            $is_loose_equality,
+                            $existing_var_atomic_type->as,
+                            $old_var_type_string,
+                            $var_id,
+                            $code_location,
+                            $suppressed_issues
+                        );
+
+                        return new Type\Union([$existing_var_atomic_type]);
                     }
 
                     if ($existing_var_atomic_type->as->hasString()) {

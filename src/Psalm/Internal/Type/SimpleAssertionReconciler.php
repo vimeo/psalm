@@ -348,6 +348,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         if ($existing_var_type->isSingle()
             && $existing_var_type->hasTemplate()
             && strpos($assertion, '-') === false
+            && strpos($assertion, '(') === false
         ) {
             foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof TTemplateParam) {
