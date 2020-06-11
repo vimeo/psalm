@@ -185,9 +185,9 @@ new TNamedObject('Foo\Bar\SomeClass')
 Types within Psalm are always wrapped in a union as a convenience feature. Almost anywhere you may expect a type, you can get a union as well (property types, return types, argument types, etc). So wrapping a single atomic type (like TInt) in a union container allows to uniformly handle that type elsewhere, without repetitive checks like this:
 
 ``` php
-if ($type instanceof Union) 
-   foreach ($types->getTypes() as $atomic) 
-      handleAtomic($atomic); 
+if ($type instanceof Union)
+   foreach ($types->getTypes() as $atomic)
+      handleAtomic($atomic);
 else handleAtomic($type);
 
 // with union container it becomes
@@ -208,7 +208,7 @@ More complex types can be constructed as follows. The following represents an as
                 'key_3' => new Union([new TBool()])])]);
 ```
 
-The Type object includes some static helper methods, which automatically wrap the type in a Union. Thus this can be written more tersely: 
+The Type object includes some static helper methods, which automatically wrap the type in a Union. Thus this can be written more tersely:
 
 ``` php
 new Union([
@@ -228,6 +228,6 @@ Another way of creating these instances is to use the class `Psalm\Type` which i
 \Psalm\Type::parseString('int|null');
 ```
 
-You can find how psalm would represent a given type as objects, by specifying the type as an input to this function, and calling `var_dump` on the result.
+You can find how Psalm would represent a given type as objects, by specifying the type as an input to this function, and calling `var_dump` on the result.
 
 

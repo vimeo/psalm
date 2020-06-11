@@ -34,7 +34,7 @@ Configuration file may be split into several files using [XInclude](https://www.
 ```
 
 
-## Optional `<psalm />` attributes
+## Optional &lt;psalm /&gt; attributes
 
 ### Coding style
 
@@ -253,7 +253,7 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
   loadXdebugStub="[bool]"
 >
 ```
-If not present, Psalm will only load the Xdebug stub if psalm has unloaded the extension.
+If not present, Psalm will only load the Xdebug stub if Psalm has unloaded the extension.
 When `true`, Psalm will load the Xdebug extension stub (as the extension is unloaded when Psalm runs).
 Setting to `false` prevents the stub from loading.
 
@@ -271,7 +271,7 @@ When `true`, Psalm will complain when referencing an explicit string offset on a
   phpVersion="[string]"
 >
 ```
-Set the php version psalm should assume when checking and/or fixing the project. If this attribute is not set, psalm uses the declaration in `composer.json` if one is present. It will check against the earliest version of PHP that satisfies the declared `php` dependency
+Set the php version Psalm should assume when checking and/or fixing the project. If this attribute is not set, Psalm uses the declaration in `composer.json` if one is present. It will check against the earliest version of PHP that satisfies the declared `php` dependency
 
 This can be overridden on the command-line using the `--php-version=` flag which takes the highest precedence over both the `phpVersion` setting and the version derived from `composer.json`.
 
@@ -284,7 +284,7 @@ This can be overridden on the command-line using the `--php-version=` flag which
 
 When `true`, Psalm will skip checking classes, variables and functions after it comes across an `include` or `require` it cannot resolve. This allows code to reference functions and classes unknown to Psalm.
 
-For backwards compatibility, this defaults to `true`, but if you do not rely on dynamically generated includes to cause classes otherwise unknown to psalm to come into existence, it's recommended you set this to `false` in order to reliably detect errors that would be fatal to PHP at runtime.
+For backwards compatibility, this defaults to `true`, but if you do not rely on dynamically generated includes to cause classes otherwise unknown to Psalm to come into existence, it's recommended you set this to `false` in order to reliably detect errors that would be fatal to PHP at runtime.
 
 ### Running Psalm
 
