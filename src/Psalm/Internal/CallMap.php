@@ -11316,7 +11316,7 @@ return [
 'ReflectionGenerator::getFunction' => ['ReflectionFunctionAbstract'],
 'ReflectionGenerator::getThis' => ['?object'],
 'ReflectionGenerator::getTrace' => ['array', 'options='=>'int'],
-'ReflectionMethod::__construct' => ['void', 'class'=>'string|object', 'name'=>'string'],
+'ReflectionMethod::__construct' => ['void', 'class'=>'class-string|object', 'name'=>'string'],
 'ReflectionMethod::__construct\'1' => ['void', 'class_method'=>'string'],
 'ReflectionMethod::__toString' => ['string'],
 'ReflectionMethod::export' => ['?string', 'class'=>'string', 'name'=>'string', 'return='=>'bool'],
