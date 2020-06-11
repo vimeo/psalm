@@ -772,6 +772,21 @@ class MagicMethodAnnotationTest extends TestCase
                     class Foo {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'inheritSealedMethods' => [
+                '<?php
+                    /**
+                     * @psalm-seal-methods
+                     */
+                    class A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    class B extends A {}
+
+                    $b = new B();
+                    $b->foo();',
+                'error_message' => 'UndefinedMagicMethod',
+            ],
         ];
     }
 }

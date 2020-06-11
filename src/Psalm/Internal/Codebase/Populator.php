@@ -1060,11 +1060,14 @@ class Populator
      */
     protected function inheritMethodsFromParent(
         ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage,
-        bool $is_mixin = false
+        ClassLikeStorage $parent_storage
     ) {
         $fq_class_name = $storage->name;
         $fq_class_name_lc = strtolower($fq_class_name);
+
+        if ($parent_storage->sealed_methods) {
+            $storage->sealed_methods = true;
+        }
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name_lc => $appearing_method_id) {
@@ -1112,10 +1115,6 @@ class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_method_ids as $method_name_lc => $declaring_method_id) {
-            if ($is_mixin && isset($storage->declaring_method_ids[$method_name_lc])) {
-                continue;
-            }
-
             if ($method_name_lc !== '__construct') {
                 if ($parent_storage->is_trait) {
                     $declaring_class = $declaring_method_id->fq_class_name;
@@ -1182,9 +1181,12 @@ class Populator
      */
     private function inheritPropertiesFromParent(
         ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage,
-        bool $is_mixin = false
+        ClassLikeStorage $parent_storage
     ) {
+        if ($parent_storage->sealed_properties) {
+            $storage->sealed_properties = true;
+        }
+
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
             if (isset($storage->appearing_property_ids[$property_name])) {
@@ -1193,10 +1195,7 @@ class Populator
 
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && ($parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    || ($is_mixin
-                        && $parent_storage->properties[$property_name]->visibility
-                            === ClassLikeAnalyzer::VISIBILITY_PROTECTED))
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 continue;
             }
@@ -1215,10 +1214,7 @@ class Populator
 
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && ($parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    || ($is_mixin
-                        && $parent_storage->properties[$property_name]->visibility
-                            === ClassLikeAnalyzer::VISIBILITY_PROTECTED))
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 continue;
             }
@@ -1230,10 +1226,7 @@ class Populator
         foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && ($parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    || ($is_mixin
-                        && $parent_storage->properties[$property_name]->visibility
-                            === ClassLikeAnalyzer::VISIBILITY_PROTECTED))
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 continue;
             }
