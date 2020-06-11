@@ -10134,7 +10134,7 @@ return [
 'Postal\Parser::parse_address' => ['array<string,string>', 'address'=>'string', 'options='=>'array<string, string>'],
 'pow' => ['float|int', 'base'=>'int|float', 'exponent'=>'int|float'],
 'preg_filter' => ['null|string|string[]', 'regex'=>'mixed', 'replace'=>'mixed', 'subject'=>'mixed', 'limit='=>'int', '&w_count='=>'int'],
-'preg_grep' => ['array', 'regex'=>'string', 'input'=>'array', 'flags='=>'int'],
+'preg_grep' => ['array|false', 'regex'=>'string', 'input'=>'array', 'flags='=>'int'],
 'preg_last_error' => ['int'],
 'preg_match' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_subpatterns='=>'string[]', 'flags='=>'0|', 'offset='=>'int'],
 'preg_match\'1' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_subpatterns='=>'array', 'flags='=>'int', 'offset='=>'int'],
