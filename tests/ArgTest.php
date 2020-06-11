@@ -14,7 +14,8 @@ class ArgTest extends TestCase
         return [
             'callMapClassOptionalArg' => [
                 '<?php
-                    $m = new ReflectionMethod("hello", "goodbye");
+                    class Hello {}
+                    $m = new ReflectionMethod(Hello::class, "goodbye");
                     $m->invoke(null, "cool");',
             ],
             'sortFunctions' => [
