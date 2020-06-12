@@ -299,8 +299,8 @@ class Functions
             'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'closedir', 'copy', 'file_put_contents',
             'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
             'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
-            'fputcsv', 'umask', 'finfo_close', 'readline_add_history', 'stream_set_timeout', 'fflush',
-            'move_uploaded_file',
+            'fgetcsv', 'fputcsv', 'umask', 'finfo_close', 'readline_add_history', 'stream_set_timeout',
+            'fflush', 'move_uploaded_file',
 
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
