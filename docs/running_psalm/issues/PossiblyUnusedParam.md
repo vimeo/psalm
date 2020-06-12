@@ -14,3 +14,14 @@ class A {
 $a = new A();
 $a->foo(1, 2);
 ```
+
+Can be suppressed by prefixing the parameter name with an underscore:
+
+```php
+<?php
+class A {
+    public function foo(int $a, int $_b) : int {
+        return $a + 4;
+    }
+}
+```

@@ -9,3 +9,11 @@ function foo(int $a, int $b) : int {
     return $a + 4;
 }
 ```
+
+Can be suppressed by prefixing the parameter name with an underscore:
+
+```php
+function foo(int $_a, int $b) : int {
+    return $b + 4;
+}
+```
