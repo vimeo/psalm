@@ -1822,6 +1822,22 @@ class IfAnalyzer
      */
     private static function getDefinitelyEvaluatedExpressionAfterIf(PhpParser\Node\Expr $stmt)
     {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+        ) {
+            if ($stmt->left instanceof PhpParser\Node\Expr\ConstFetch
+                && $stmt->left->name->parts === ['true']
+            ) {
+                return self::getDefinitelyEvaluatedExpressionAfterIf($stmt->right);
+            }
+
+            if ($stmt->right instanceof PhpParser\Node\Expr\ConstFetch
+                && $stmt->right->name->parts === ['true']
+            ) {
+                return self::getDefinitelyEvaluatedExpressionAfterIf($stmt->left);
+            }
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
@@ -1854,6 +1870,22 @@ class IfAnalyzer
      */
     private static function getDefinitelyEvaluatedExpressionInsideIf(PhpParser\Node\Expr $stmt)
     {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+        ) {
+            if ($stmt->left instanceof PhpParser\Node\Expr\ConstFetch
+                && $stmt->left->name->parts === ['true']
+            ) {
+                return self::getDefinitelyEvaluatedExpressionInsideIf($stmt->right);
+            }
+
+            if ($stmt->right instanceof PhpParser\Node\Expr\ConstFetch
+                && $stmt->right->name->parts === ['true']
+            ) {
+                return self::getDefinitelyEvaluatedExpressionInsideIf($stmt->left);
+            }
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
