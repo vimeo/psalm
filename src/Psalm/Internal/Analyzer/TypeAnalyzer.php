@@ -2631,10 +2631,16 @@ class TypeAnalyzer
 
                 $all_types_contain = false;
             } else {
+                $input_return = $input_type_part->return_type;
+
+                if ($input_return->isVoid() && $container_type_part->return_type->isNullable()) {
+                    return;
+                }
+
                 if (!$container_type_part->return_type->isVoid()
                     && !self::isContainedBy(
                         $codebase,
-                        $input_type_part->return_type,
+                        $input_return,
                         $container_type_part->return_type,
                         false,
                         false,
