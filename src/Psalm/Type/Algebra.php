@@ -258,8 +258,11 @@ class Algebra
             }
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+        ) {
             $false_pos = AssertionFinder::hasFalseVariable($conditional);
+            $true_pos = AssertionFinder::hasTrueVariable($conditional);
 
             if ($false_pos === AssertionFinder::ASSIGNMENT_TO_RIGHT
                 && ($conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
@@ -276,12 +279,44 @@ class Algebra
                     $inside_negation,
                     $cache
                 );
-            } elseif ($false_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
+            }
+
+            if ($false_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
                 && ($conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
                     || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)
             ) {
                 $inside_negation = !$inside_negation;
 
+                return self::getFormula(
+                    $object_id,
+                    $conditional->right,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache
+                );
+            }
+
+            if ($true_pos === AssertionFinder::ASSIGNMENT_TO_RIGHT
+                && ($conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)
+            ) {
+                return self::getFormula(
+                    $object_id,
+                    $conditional->left,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache
+                );
+            }
+
+            if ($true_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
+                && ($conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)
+            ) {
                 return self::getFormula(
                     $object_id,
                     $conditional->right,
