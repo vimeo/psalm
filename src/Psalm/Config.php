@@ -302,6 +302,11 @@ class Config
     /**
      * @var bool
      */
+    public $seal_all_methods = false;
+
+    /**
+     * @var bool
+     */
     public $memoize_method_calls = false;
 
     /**
@@ -785,7 +790,8 @@ class Config
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'reportMixedIssues' => 'show_mixed_issues',
-            'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes'
+            'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
+            'sealAllMethods' => 'seal_all_methods'
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {

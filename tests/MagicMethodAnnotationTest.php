@@ -789,4 +789,31 @@ class MagicMethodAnnotationTest extends TestCase
             ],
         ];
     }
+
+    /**
+     * @return void
+     */
+    public function testSealAllMethods()
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              class A {
+                public function __call(string $method, array $args) {}
+              }
+
+              class B extends A {}
+
+              $b = new B();
+              $b->foo();
+              '
+        );
+
+        $error_message = 'UndefinedMagicMethod';
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }

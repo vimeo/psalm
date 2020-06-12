@@ -286,6 +286,16 @@ When `true`, Psalm will skip checking classes, variables and functions after it 
 
 For backwards compatibility, this defaults to `true`, but if you do not rely on dynamically generated includes to cause classes otherwise unknown to Psalm to come into existence, it's recommended you set this to `false` in order to reliably detect errors that would be fatal to PHP at runtime.
 
+#### sealAllMethods
+
+```xml
+<psalm
+  sealAllMethods="[bool]"
+>
+```
+
+When `true`, Psalm will treat all classes as if they had sealed methods, meaning that if you implement the magic method `__call`, you also have to add `@method` for each magic method. Defaults to false.
+
 ### Running Psalm
 
 #### autoloader
