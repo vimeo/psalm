@@ -14,6 +14,7 @@ use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
+use Psalm\Issue\InvalidExtendClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MissingConstructor;
@@ -261,6 +262,19 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $parent_fq_class_name . ' is not a class',
                             $code_location,
                             $parent_fq_class_name . ' as class'
+                        ),
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if ($parent_class_storage->final) {
+                    if (IssueBuffer::accepts(
+                        new InvalidExtendClass(
+                            'Class ' . $fq_class_name  . ' may not inherit from final class ' . $parent_fq_class_name,
+                            $code_location,
+                            $fq_class_name
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {

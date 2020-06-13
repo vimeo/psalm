@@ -846,6 +846,10 @@ class CommentAnalyzer
             $info->internal = true;
         }
 
+        if (isset($parsed_docblock->tags['final'])) {
+            $info->final = true;
+        }
+
         if (isset($parsed_docblock->tags['psalm-internal'])) {
             $psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
             if ($psalm_internal) {

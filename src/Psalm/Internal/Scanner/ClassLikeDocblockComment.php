@@ -21,6 +21,13 @@ class ClassLikeDocblockComment
     public $internal = false;
 
     /**
+     * Whether or not the class is final
+     *
+     * @var bool
+     */
+    public $final = false;
+
+    /**
      * If set, the class is internal to the given namespace.
      *
      * @var null|string

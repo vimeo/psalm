@@ -48,6 +48,7 @@
  - [InvalidCast](issues/InvalidCast.md)
  - [InvalidCatch](issues/InvalidCatch.md)
  - [InvalidClass](issues/InvalidClass.md)
+ - [InvalidExtendClass](issues/InvalidExtendClass.md)
  - [InvalidClone](issues/InvalidClone.md)
  - [InvalidDocblock](issues/InvalidDocblock.md)
  - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
