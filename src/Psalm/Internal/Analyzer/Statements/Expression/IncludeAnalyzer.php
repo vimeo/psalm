@@ -166,6 +166,12 @@ class IncludeAnalyzer
                     }
                 }
 
+                $included_return_type = $include_file_analyzer->getReturnType();
+
+                if ($included_return_type) {
+                    $statements_analyzer->node_data->setType($stmt, $included_return_type);
+                }
+
                 $context->has_returned = false;
 
                 foreach ($include_file_analyzer->getRequiredFilePaths() as $required_file_path) {
