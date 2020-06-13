@@ -11,3 +11,11 @@ function foo() : void {
     echo $b;
 }
 ```
+
+Can be suppressed by prefixing the variable name with an underscore:
+
+```php
+<?php
+
+$_a = 22;
+```
