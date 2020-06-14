@@ -1070,7 +1070,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $must_use = true;
 
             $callmap_function_pure = $function_id && $in_call_map
-                ? $codebase->functions->isCallMapFunctionPure($codebase, $function_id, $stmt->args, $must_use)
+                ? $codebase->functions->isCallMapFunctionPure(
+                    $codebase,
+                    $statements_analyzer->node_data,
+                    $function_id,
+                    $stmt->args,
+                    $must_use
+                )
                 : null;
 
             if ((!$in_call_map

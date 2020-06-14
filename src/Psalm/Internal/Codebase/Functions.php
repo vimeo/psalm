@@ -16,6 +16,8 @@ use function strpos;
 use function strtolower;
 use function substr;
 use Closure;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Internal\MethodIdentifier;
 
 /**
  * @internal
@@ -290,6 +292,7 @@ class Functions
      */
     public function isCallMapFunctionPure(
         Codebase $codebase,
+        ?\Psalm\NodeTypeProvider $type_provider,
         string $function_id,
         ?array $args,
         bool &$must_use = true
@@ -401,6 +404,28 @@ class Functions
         if ($function_id === 'assert') {
             $must_use = false;
             return true;
+        }
+
+        if ($function_id === 'count' && isset($args[0]) && $type_provider) {
+            $count_type = $type_provider->getType($args[0]->value);
+
+            if ($count_type) {
+                foreach ($count_type->getAtomicTypes() as $atomic_count_type) {
+                    if ($atomic_count_type instanceof TNamedObject) {
+                        $count_method_id = new MethodIdentifier(
+                            $atomic_count_type->value,
+                            'count'
+                        );
+
+                        try {
+                            $method_storage = $codebase->methods->getStorage($count_method_id);
+                            return $method_storage->mutation_free;
+                        } catch (\Exception $e) {
+                            // do nothing
+                        }
+                    }
+                }
+            }
         }
 
         $function_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(

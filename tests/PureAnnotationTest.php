@@ -301,6 +301,22 @@ class PureAnnotationTest extends TestCase
                         return $sum;
                     }'
             ],
+            'countMethodCanBePure' => [
+                '<?php
+                    class A implements Countable {
+                        /** @psalm-mutation-free */
+                        public function count(): int {
+                            return 2;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function thePurest(A $countable): int {
+                        return count($countable);
+                    }',
+            ],
         ];
     }
 
@@ -536,6 +552,23 @@ class PureAnnotationTest extends TestCase
                         return $a . $s;
                     }',
                 'error_message' => 'ImpureMethodCall'
+            ],
+            'countCanBeImpure' => [
+                '<?php
+                    class A implements Countable {
+                        public function count(): int {
+                            echo "oops";
+                            return 2;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function thePurest(A $countable): int {
+                        return count($countable);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
             ],
         ];
     }
