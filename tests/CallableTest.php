@@ -818,6 +818,16 @@ class CallableTest extends TestCase
 
                     takesCallable(function() { return; });',
             ],
+            'byRefUsesAlwaysMixed' => [
+                '<?php
+                    $callback = function() use (&$isCalled) : void {
+                        $isCalled = true;
+                    };
+                    $isCalled = false;
+                    $callback();
+
+                    if ($isCalled === true) {}'
+            ],
         ];
     }
 

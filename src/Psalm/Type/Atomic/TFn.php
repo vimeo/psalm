@@ -8,6 +8,9 @@ class TFn extends TNamedObject
 {
     use CallableTrait;
 
+    /** @var array<string, bool> */
+    public $byref_uses = [];
+
     /**
      * @return bool
      */

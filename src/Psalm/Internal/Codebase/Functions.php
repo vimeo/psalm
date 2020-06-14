@@ -11,7 +11,7 @@ use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\StatementsSource;
-use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -30,7 +30,7 @@ class Functions
     private $file_storage_provider;
 
     /**
-     * @var array<lowercase-string, FunctionLikeStorage>
+     * @var array<lowercase-string, FunctionStorage>
      */
     private static $stubbed_functions;
 
@@ -67,7 +67,7 @@ class Functions
         string $function_id,
         ?string $root_file_path = null,
         ?string $checked_file_path = null
-    ) : FunctionLikeStorage {
+    ) : FunctionStorage {
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
         }
@@ -143,11 +143,10 @@ class Functions
 
     /**
      * @param string $function_id
-     * @param FunctionLikeStorage $storage
      *
      * @return void
      */
-    public function addGlobalFunction($function_id, FunctionLikeStorage $storage)
+    public function addGlobalFunction($function_id, FunctionStorage $storage)
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }
@@ -163,7 +162,7 @@ class Functions
     }
 
     /**
-     * @return array<string, FunctionLikeStorage>
+     * @return array<string, FunctionStorage>
      */
     public function getAllStubbedFunctions()
     {

@@ -41,6 +41,7 @@ use function array_search;
 use function array_keys;
 use function end;
 use Psalm\Internal\Taint\TaintNode;
+use Psalm\Storage\FunctionStorage;
 
 /**
  * @internal
@@ -341,14 +342,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_return_type = Type::getMixed();
             }
 
+            $closure_type = new Type\Atomic\TFn(
+                'Closure',
+                $storage->params,
+                $closure_return_type
+            );
+
+            if ($storage instanceof FunctionStorage) {
+                $closure_type->byref_uses = $storage->byref_uses;
+            }
+
             $type_provider->setType(
                 $this->function,
                 new Type\Union([
-                    new Type\Atomic\TFn(
-                        'Closure',
-                        $storage->params,
-                        $closure_return_type
-                    ),
+                    $closure_type,
                 ])
             );
         }

@@ -6,7 +6,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\FunctionLikeParameter;
-use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -30,7 +30,7 @@ class Reflection
     private $codebase;
 
     /**
-     * @var array<string, FunctionLikeStorage>
+     * @var array<string, FunctionStorage>
      */
     private static $builtin_functions = [];
 
@@ -356,7 +356,7 @@ class Reflection
                 return;
             }
 
-            $storage = self::$builtin_functions[$function_id] = new FunctionLikeStorage();
+            $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
                 $callmap_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
@@ -508,7 +508,7 @@ class Reflection
     /**
      * @param  string  $function_id
      *
-     * @return FunctionLikeStorage
+     * @return FunctionStorage
      */
     public function getFunctionStorage($function_id)
     {

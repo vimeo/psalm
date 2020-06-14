@@ -7,7 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type;
 
-class FunctionLikeStorage
+abstract class FunctionLikeStorage
 {
     use CustomMetadataTrait;
 

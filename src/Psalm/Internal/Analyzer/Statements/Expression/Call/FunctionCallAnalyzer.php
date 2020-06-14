@@ -112,15 +112,18 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $byref_uses = [];
+
         if ($function_name instanceof PhpParser\Node\Expr) {
-            list($expr_function_exists, $expr_function_name, $expr_function_params) = self::getAnalyzeNamedExpression(
-                $statements_analyzer,
-                $codebase,
-                $stmt,
-                $real_stmt,
-                $function_name,
-                $context
-            );
+            list($expr_function_exists, $expr_function_name, $expr_function_params, $byref_uses)
+                = self::getAnalyzeNamedExpression(
+                    $statements_analyzer,
+                    $codebase,
+                    $stmt,
+                    $real_stmt,
+                    $function_name,
+                    $context
+                );
 
             if ($expr_function_exists === false) {
                 return true;
@@ -473,6 +476,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        if ($byref_uses) {
+            foreach ($byref_uses as $byref_use_var => $_) {
+                $context->vars_in_scope['$' . $byref_use_var] = Type::getMixed();
+                $context->vars_possibly_in_scope['$' . $byref_use_var] = true;
+            }
+        }
+
         if ($function_name instanceof PhpParser\Node\Name) {
             self::handleNamedFunction(
                 $statements_analyzer,
@@ -493,7 +503,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * @return  array{?bool, ?PhpParser\Node\Expr|PhpParser\Node\Name, array<int, FunctionLikeParameter>|null}
+     * @return  array{
+     *     ?bool,
+     *     ?PhpParser\Node\Expr|PhpParser\Node\Name,
+     *     array<int, FunctionLikeParameter>|null,
+     *     ?array<string, bool>
+     * }
      */
     private static function getAnalyzeNamedExpression(
         StatementsAnalyzer $statements_analyzer,
@@ -513,10 +528,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $function_name, $context) === false) {
             $context->inside_call = $was_in_call;
 
-            return [false, null, null];
+            return [false, null, null, null];
         }
 
         $context->inside_call = $was_in_call;
+
+        $byref_uses = [];
 
         if ($stmt_name_type = $statements_analyzer->node_data->getType($function_name)) {
             if ($stmt_name_type->isNull()) {
@@ -530,7 +547,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     // fall through
                 }
 
-                return [false, null, null];
+                return [false, null, null, null];
             }
 
             if ($stmt_name_type->isNullable()) {
@@ -567,6 +584,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             $real_stmt,
                             $var_type_part->return_type ?: Type::getMixed()
                         );
+                    }
+
+                    if ($var_type_part instanceof Type\Atomic\TFn) {
+                        $byref_uses += $var_type_part->byref_uses;
                     }
 
                     $function_exists = true;
@@ -689,7 +710,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 }
 
-                return [false, null, null];
+                return [false, null, null, null];
             }
         }
 
@@ -697,7 +718,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $statements_analyzer->node_data->setType($real_stmt, Type::getMixed());
         }
 
-        return [$function_exists, $explicit_function_name ?: $function_name, $function_params];
+        return [
+            $function_exists,
+            $explicit_function_name ?: $function_name,
+            $function_params,
+            $byref_uses
+        ];
     }
 
     private static function analyzeInvokeCall(
