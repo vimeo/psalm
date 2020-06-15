@@ -813,7 +813,7 @@ class MagicMethodAnnotationTest extends TestCase
 
         $error_message = 'UndefinedMagicMethod';
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageMatches('/\b' . \preg_quote($error_message, '/') . '\b/');
         $this->analyzeFile('somefile.php', new Context());
     }
 
