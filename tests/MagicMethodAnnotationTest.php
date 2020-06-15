@@ -793,7 +793,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testSealAllMethods()
+    public function testSealAllMethodsWithoutFoo()
     {
         Config::getInstance()->seal_all_methods = true;
 
@@ -814,6 +814,106 @@ class MagicMethodAnnotationTest extends TestCase
         $error_message = 'UndefinedMagicMethod';
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSealAllMethodsWithFoo()
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              class A {
+                public function __call(string $method, array $args) {}
+                public function foo(): void {}
+              }
+
+              class B extends A {}
+
+              $b = new B();
+              $b->foo();
+              '
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSealAllMethodsWithFooInSubclass()
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              class A {
+                public function __call(string $method, array $args) {}
+              }
+
+              class B extends A {
+                public function foo(): void {}
+              }
+
+              $b = new B();
+              $b->foo();
+              '
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSealAllMethodsWithFooAnnotated()
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              /** @method foo(): int */
+              class A {
+                public function __call(string $method, array $args) {}
+              }
+
+              class B extends A {}
+
+              $b = new B();
+              $b->foo();
+              '
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSealAllMethodsSetToFalse()
+    {
+        Config::getInstance()->seal_all_methods = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              class A {
+                public function __call(string $method, array $args) {}
+              }
+
+              class B extends A {}
+
+              $b = new B();
+              $b->foo();
+              '
+        );
+
         $this->analyzeFile('somefile.php', new Context());
     }
 }
