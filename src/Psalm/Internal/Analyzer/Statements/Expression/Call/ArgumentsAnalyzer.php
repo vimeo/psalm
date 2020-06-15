@@ -1064,8 +1064,18 @@ class ArgumentsAnalyzer
         }
 
         if (!$arg->value instanceof PhpParser\Node\Expr\Variable) {
+            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+            if (!in_array('EmptyArrayAccess', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
+            }
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                 return false;
+            }
+
+            if (!in_array('EmptyArrayAccess', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
             }
         }
     }
