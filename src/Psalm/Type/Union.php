@@ -377,9 +377,11 @@ class Union implements TypeNode
         }
         sort($types);
 
-        foreach ($types as $i => $type) {
-            if (strpos($type, ' as ') && strpos($type, '(') === false && \count($types) > 1) {
-                $types[$i] = '(' . $type . ')';
+        if (\count($types) > 1) {
+            foreach ($types as $i => $type) {
+                if (strpos($type, ' as ') && strpos($type, '(') === false) {
+                    $types[$i] = '(' . $type . ')';
+                }
             }
         }
 
