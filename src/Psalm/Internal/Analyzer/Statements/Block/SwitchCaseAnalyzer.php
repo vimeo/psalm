@@ -232,10 +232,20 @@ class SwitchCaseAnalyzer
             && is_string($stmt->cond->name)
             && isset($context->vars_in_scope['$' . $stmt->cond->name])
         ) {
-            $case_equality_expr = self::simplifyCaseEqualityExpression(
+            $new_case_equality_expr = self::simplifyCaseEqualityExpression(
                 $case_equality_expr,
                 $stmt->cond
             );
+
+            if ($new_case_equality_expr) {
+                ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $new_case_equality_expr->args[1]->value,
+                    $case_context
+                );
+
+                $case_equality_expr = $new_case_equality_expr;
+            }
         }
 
         $case_context->break_types[] = 'switch';
@@ -648,7 +658,7 @@ class SwitchCaseAnalyzer
     private static function simplifyCaseEqualityExpression(
         PhpParser\Node\Expr $case_equality_expr,
         PhpParser\Node\Expr\Variable $var
-    ) : PhpParser\Node\Expr {
+    ) : ?PhpParser\Node\Expr\FuncCall {
         if ($case_equality_expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
             $nested_or_options = self::getOptionsFromNestedOr($case_equality_expr, $var);
 
@@ -674,7 +684,7 @@ class SwitchCaseAnalyzer
             }
         }
 
-        return $case_equality_expr;
+        return null;
     }
 
     /**
