@@ -750,7 +750,7 @@ class TaintTest extends TestCase
     /**
      * @return void
      */
-    public function testUntaintedInputViaStaticFunction()
+    public function testUntaintedInputViaStaticFunctionWithSafePath()
     {
         $this->project_analyzer->trackTaintedInputs();
 
@@ -769,6 +769,41 @@ class TaintTest extends TestCase
                 class A {
                     public function foo() : void {
                         echo(htmlentities(Utils::shorten((string) $_GET["user_id"])));
+                    }
+
+                    public function bar() : void {
+                        echo(Utils::shorten("hello"));
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUntaintedInputViaStaticFunctionWithoutSafePath()
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Utils {
+                    /**
+                     * @psalm-pure
+                     */
+                    public static function shorten(string $str) : string {
+                        return $str;
+                    }
+                }
+
+                class A {
+                    public function foo() : void {
+                        echo(Utils::shorten((string) $_GET["user_id"]));
                     }
 
                     public function bar() : void {

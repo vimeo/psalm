@@ -168,81 +168,133 @@ class Taint
 
                 $visited_source_ids[$source->id][implode(',', $source_taints)] = true;
 
-                if (!isset($this->forward_edges[$source->id])) {
-                    $source = clone $source;
+                $generated_sources = $this->getSpecializedSources($source);
 
-                    if ($source->specialization_key && isset($this->specialized_calls[$source->specialization_key])) {
-                        $source->specialized_calls[$source->specialization_key]
-                            = $this->specialized_calls[$source->specialization_key];
-
-                        $source->id = substr($source->id, 0, -strlen($source->specialization_key) - 1);
-                    } elseif (isset($this->specializations[$source->id])) {
-                        foreach ($this->specializations[$source->id] as $specialization => $_) {
-                            // TODO: generate multiple new sources
-                            $source->id = $source->id . '-' . $specialization;
-                        }
-                    } else {
-                        foreach ($source->specialized_calls as $key => $map) {
-                            if (isset($map[$source->id]) && isset($this->forward_edges[$source->id . '-' . $key])) {
-                                $source->id = $source->id . '-' . $key;
-                            }
-                        }
-                    }
-
-                    if (!isset($this->forward_edges[$source->id])) {
-                        continue;
-                    }
-                }
-
-                foreach ($this->forward_edges[$source->id] as $to_id => [$added_taints, $removed_taints]) {
-                    if (!isset($this->nodes[$to_id])) {
-                        continue;
-                    }
-
-                    $new_taints = \array_unique(
-                        \array_diff(
-                            \array_merge($source_taints, $added_taints),
-                            $removed_taints
+                foreach ($generated_sources as $generated_source) {
+                    $new_sources = array_merge(
+                        $new_sources,
+                        $this->getChildNodes(
+                            $generated_source,
+                            $source_taints,
+                            $sinks,
+                            $visited_source_ids
                         )
                     );
-
-                    \sort($new_taints);
-
-                    $destination_node = $this->nodes[$to_id];
-
-                    if (isset($visited_source_ids[$to_id][implode(',', $new_taints)])) {
-                        continue;
-                    }
-
-                    if (isset($sinks[$to_id])) {
-                        $matching_taints = array_intersect($sinks[$to_id]->taints, $new_taints);
-
-                        if ($matching_taints && $source->code_location) {
-                            if (IssueBuffer::accepts(
-                                new TaintedInput(
-                                    'Detected tainted ' . implode(', ', $matching_taints)
-                                        . ' in path: ' . $this->getPredecessorPath($source)
-                                        . ' -> ' . $this->getSuccessorPath($sinks[$to_id]),
-                                    $sinks[$to_id]->code_location ?: $source->code_location
-                                )
-                            )) {
-                                // fall through
-                            }
-
-                            continue;
-                        }
-                    }
-
-                    $new_destination = clone $destination_node;
-                    $new_destination->previous = $source;
-                    $new_destination->taints = $new_taints;
-                    $new_destination->specialized_calls = $source->specialized_calls;
-
-                    $new_sources[$to_id] = $new_destination;
                 }
             }
 
             $sources = $new_sources;
         }
+    }
+
+    /**
+     * @param array<string> $source_taints
+     * @param array<Taintable> $sinks
+     * @return array<Taintable>
+     */
+    private function getChildNodes(
+        Taintable $generated_source,
+        array $source_taints,
+        array $sinks,
+        array $visited_source_ids
+    ) : array {
+        $new_sources = [];
+
+        foreach ($this->forward_edges[$generated_source->id] as $to_id => [$added_taints, $removed_taints]) {
+            if (!isset($this->nodes[$to_id])) {
+                continue;
+            }
+
+            $new_taints = \array_unique(
+                \array_diff(
+                    \array_merge($source_taints, $added_taints),
+                    $removed_taints
+                )
+            );
+
+            \sort($new_taints);
+
+            $destination_node = $this->nodes[$to_id];
+
+            if (isset($visited_source_ids[$to_id][implode(',', $new_taints)])) {
+                continue;
+            }
+
+            if (isset($sinks[$to_id])) {
+                $matching_taints = array_intersect($sinks[$to_id]->taints, $new_taints);
+
+                if ($matching_taints && $generated_source->code_location) {
+                    if (IssueBuffer::accepts(
+                        new TaintedInput(
+                            'Detected tainted ' . implode(', ', $matching_taints)
+                                . ' in path: ' . $this->getPredecessorPath($generated_source)
+                                . ' -> ' . $this->getSuccessorPath($sinks[$to_id]),
+                            $sinks[$to_id]->code_location ?: $generated_source->code_location
+                        )
+                    )) {
+                        // fall through
+                    }
+
+                    continue;
+                }
+            }
+
+            $new_destination = clone $destination_node;
+            $new_destination->previous = $generated_source;
+            $new_destination->taints = $new_taints;
+            $new_destination->specialized_calls = $generated_source->specialized_calls;
+
+            $new_sources[$to_id] = $new_destination;
+        }
+
+        return $new_sources;
+    }
+
+    /** @return array<Taintable> */
+    private function getSpecializedSources(Taintable $source) : array
+    {
+        $generated_sources = [];
+
+        if (isset($this->forward_edges[$source->id])) {
+            return [$source];
+        }
+
+        if ($source->specialization_key && isset($this->specialized_calls[$source->specialization_key])) {
+            $generated_source = clone $source;
+
+            $generated_source->specialized_calls[$source->specialization_key]
+                = $this->specialized_calls[$source->specialization_key];
+
+            $generated_source->id = substr($source->id, 0, -strlen($source->specialization_key) - 1);
+
+            $generated_sources[] = $generated_source;
+        } elseif (isset($this->specializations[$source->id])) {
+            foreach ($this->specializations[$source->id] as $specialization => $_) {
+                if (isset($source->specialized_calls[$specialization])) {
+                    $new_source = clone $source;
+
+                    $new_source->id = $source->id . '-' . $specialization;
+
+                    $generated_sources[] = $new_source;
+                }
+            }
+        } else {
+            foreach ($source->specialized_calls as $key => $map) {
+                if (isset($map[$source->id]) && isset($this->forward_edges[$source->id . '-' . $key])) {
+                    $new_source = clone $source;
+
+                    $new_source->id = $source->id . '-' . $key;
+
+                    $generated_sources[] = $new_source;
+                }
+            }
+        }
+
+        return \array_filter(
+            $generated_sources,
+            function ($new_source) {
+                return isset($this->forward_edges[$new_source->id]);
+            }
+        );
     }
 }
