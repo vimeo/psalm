@@ -18,6 +18,8 @@ Psalm uses the following PHPDoc tags to understand your code:
   Used to specify what properties can be read on object that uses `__get`
 - [`@property-write`](https://docs.phpdoc.org/references/phpdoc/tags/property-write.html)
   Used to specify what properties can be written on object that uses `__set`
+- [`@method`](https://docs.phpdoc.org/latest/references/phpdoc/tags/method.html)
+  Used to specify which magic methods are available on object that uses `__call`.
 - [`@deprecated`](https://docs.phpdoc.org/references/phpdoc/tags/deprecated.html)
   Used to mark functions, methods, classes and interfaces as being deprecated
 - [`@internal`](https://docs.phpdoc.org/references/phpdoc/tags/internal.html)
