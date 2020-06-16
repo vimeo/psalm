@@ -422,6 +422,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $method_id,
                     $class_storage,
                     $context,
+                    $config,
                     $all_intersection_return_type,
                     $result
                 );

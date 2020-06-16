@@ -20,6 +20,7 @@ class MissingMethodCallHandler
         MethodIdentifier $method_id,
         \Psalm\Storage\ClassLikeStorage $class_storage,
         Context $context,
+        \Psalm\Config $config,
         ?Type\Union $all_intersection_return_type,
         AtomicMethodCallAnalysisResult $result
     ) : ?AtomicCallContext {
@@ -92,7 +93,7 @@ class MissingMethodCallHandler
                 $context
             );
 
-            if ($class_storage->sealed_methods) {
+            if ($class_storage->sealed_methods || $config->seal_all_methods) {
                 $result->non_existent_magic_method_ids[] = $method_id;
 
                 return null;
