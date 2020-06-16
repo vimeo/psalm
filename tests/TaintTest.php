@@ -9,7 +9,7 @@ class TaintTest extends TestCase
     /**
      * @return void
      */
-    public function testTaintedInputFromReturnTypeSimple()
+    public function testTaintedInputFromMethodReturnTypeSimple()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('TaintedInput');
@@ -33,6 +33,29 @@ class TaintTest extends TestCase
                         $pdo->exec("delete from users where user_id = " . $userId);
                     }
                 }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testTaintedInputFromFunctionReturnType()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function getName() : string {
+                    return $_GET["name"] ?? "unknown";
+                }
+
+                echo getName();'
         );
 
         $this->analyzeFile('somefile.php', new Context());

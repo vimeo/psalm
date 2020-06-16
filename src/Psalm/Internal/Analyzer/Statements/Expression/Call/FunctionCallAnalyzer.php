@@ -1025,49 +1025,50 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->taint
             && $function_storage
-            && $function_storage->return_source_params
             && $stmt_type
             && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
         ) {
-            foreach ($function_storage->return_source_params as $i) {
-                if (!isset($stmt->args[$i])) {
-                    continue;
+            $return_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+            $function_return_sink = TaintNode::getForMethodReturn(
+                $function_id,
+                $function_id,
+                $return_location,
+                $function_storage->specialize_call ? $return_location : null
+            );
+
+            $codebase->taint->addTaintNode($function_return_sink);
+
+            $stmt_type->parent_nodes[] = $function_return_sink;
+
+            if ($function_storage->return_source_params) {
+                foreach ($function_storage->return_source_params as $i) {
+                    if (!isset($stmt->args[$i])) {
+                        continue;
+                    }
+
+                    $arg_location = new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $stmt->args[$i]->value
+                    );
+
+                    $function_param_sink = TaintNode::getForMethodArgument(
+                        $function_id,
+                        $function_id,
+                        $i,
+                        $arg_location,
+                        $function_storage->specialize_call ? $return_location : null
+                    );
+
+                    $codebase->taint->addTaintNode($function_param_sink);
+
+                    $codebase->taint->addPath(
+                        $function_param_sink,
+                        $function_return_sink,
+                        $function_storage->added_taints,
+                        $function_storage->removed_taints
+                    );
                 }
-
-                $arg_location = new CodeLocation(
-                    $statements_analyzer->getSource(),
-                    $stmt->args[$i]->value
-                );
-
-                $return_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                $function_param_sink = TaintNode::getForMethodArgument(
-                    $function_id,
-                    $function_id,
-                    $i,
-                    $arg_location,
-                    $function_storage->specialize_call ? $return_location : null
-                );
-
-                $codebase->taint->addTaintNode($function_param_sink);
-
-                $function_return_sink = TaintNode::getForMethodReturn(
-                    $function_id,
-                    $function_id,
-                    $return_location,
-                    $function_storage->specialize_call ? $return_location : null
-                );
-
-                $codebase->taint->addTaintNode($function_return_sink);
-
-                $codebase->taint->addPath(
-                    $function_param_sink,
-                    $function_return_sink,
-                    $function_storage->added_taints,
-                    $function_storage->removed_taints
-                );
-
-                $stmt_type->parent_nodes[] = $function_return_sink;
             }
         }
 
