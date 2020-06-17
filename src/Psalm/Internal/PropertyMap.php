@@ -326,7 +326,7 @@ return [
         'proprietary' => 'bool',
         'id' => 'int',
         'attribute' => 'array',
-        'child' => 'array',
+        'child' => '?array',
     ],
     'recursivecachingiterator' => [
         'name' => 'string',
