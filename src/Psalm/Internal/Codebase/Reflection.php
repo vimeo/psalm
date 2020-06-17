@@ -129,7 +129,7 @@ class Reflection
         }
 
         // have to do this separately as there can be new properties here
-        foreach ($public_mapped_properties as $property_name => $type) {
+        foreach ($public_mapped_properties as $property_name => $type_string) {
             $property_id = $class_name . '::$' . $property_name;
 
             if (!isset($storage->properties[$property_name])) {
@@ -141,11 +141,13 @@ class Reflection
                 $storage->inheritable_property_ids[$property_name] = $property_id;
             }
 
-            $storage->properties[$property_name]->type = Type::parseString($type);
+            $type = Type::parseString($type_string);
 
             if ($property_id === 'DateInterval::$days') {
-                $storage->properties[$property_name]->type->ignore_falsable_issues = true;
+                $type->ignore_falsable_issues = true;
             }
+
+            $storage->properties[$property_name]->type = $type;
         }
 
         /** @var array<string, int|string|float|null|array> */
