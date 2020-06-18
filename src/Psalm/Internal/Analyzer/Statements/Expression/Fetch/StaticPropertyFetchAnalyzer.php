@@ -24,7 +24,7 @@ use function explode;
  */
 class StaticPropertyFetchAnalyzer
 {
-        /**
+    /**
      * @param   StatementsAnalyzer                       $statements_analyzer
      * @param   PhpParser\Node\Expr\StaticPropertyFetch $stmt
      * @param   Context                                 $context
@@ -35,29 +35,8 @@ class StaticPropertyFetchAnalyzer
         Context $context
     ) : bool {
         if (!$stmt->class instanceof PhpParser\Node\Name) {
-            $old_data_provider = $statements_analyzer->node_data;
-
-            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-            $fake_instance_property = new PhpParser\Node\Expr\PropertyFetch(
-                $stmt->class,
-                $stmt->name,
-                $stmt->getAttributes()
-            );
-
-            $analysis_result = InstancePropertyFetchAnalyzer::analyze(
-                $statements_analyzer,
-                $fake_instance_property,
-                $context
-            );
-
-            $stmt_type = $statements_analyzer->node_data->getType($fake_instance_property);
-
-            $statements_analyzer->node_data = $old_data_provider;
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type ?: Type::getMixed());
-
-            return $analysis_result;
+            self::analyzeVariableStaticPropertyFetch($statements_analyzer, $stmt->class, $stmt, $context);
+            return true;
         }
 
         $fq_class_name = null;
@@ -370,5 +349,87 @@ class StaticPropertyFetchAnalyzer
         }
 
         return true;
+    }
+
+    private static function analyzeVariableStaticPropertyFetch(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt_class,
+        PhpParser\Node\Expr\StaticPropertyFetch $stmt,
+        Context $context
+    ) : void {
+        ExpressionAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt_class,
+            $context
+        );
+
+        $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class) ?: Type::getMixed();
+
+        $old_data_provider = $statements_analyzer->node_data;
+
+        $stmt_type = null;
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        foreach ($stmt_class_type->getAtomicTypes() as $class_atomic_type) {
+            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+            $string_type = ($class_atomic_type instanceof Type\Atomic\TClassString
+                    && $class_atomic_type->as_type !== null)
+                ? $class_atomic_type->as_type->value
+                : ($class_atomic_type instanceof Type\Atomic\TLiteralString
+                    ? $class_atomic_type->value
+                    : null);
+
+            if ($string_type) {
+                $new_stmt_name = new PhpParser\Node\Name\FullyQualified(
+                    $string_type,
+                    $stmt_class->getAttributes()
+                );
+
+                $fake_static_property = new PhpParser\Node\Expr\StaticPropertyFetch(
+                    $new_stmt_name,
+                    $stmt->name,
+                    $stmt->getAttributes()
+                );
+
+                self::analyze($statements_analyzer, $fake_static_property, $context);
+
+                $fake_stmt_type = $statements_analyzer->node_data->getType($fake_static_property)
+                    ?: Type::getMixed();
+            } else {
+                $fake_var_name = '__fake_var_' . (string) $stmt->getAttribute('startFilePos');
+
+                $fake_var = new PhpParser\Node\Expr\Variable(
+                    $fake_var_name,
+                    $stmt_class->getAttributes()
+                );
+
+                $context->vars_in_scope['$' . $fake_var_name] = new Type\Union([$class_atomic_type]);
+
+                $fake_instance_property = new PhpParser\Node\Expr\PropertyFetch(
+                    $fake_var,
+                    $stmt->name,
+                    $stmt->getAttributes()
+                );
+
+                InstancePropertyFetchAnalyzer::analyze(
+                    $statements_analyzer,
+                    $fake_instance_property,
+                    $context
+                );
+
+                $fake_stmt_type = $statements_analyzer->node_data->getType($fake_instance_property)
+                    ?: Type::getMixed();
+            }
+
+            $stmt_type = $stmt_type
+                ? Type::combineUnionTypes($stmt_type, $fake_stmt_type, $codebase)
+                : $fake_stmt_type;
+
+            $statements_analyzer->node_data = $old_data_provider;
+        }
+
+        $statements_analyzer->node_data->setType($stmt, $stmt_type);
     }
 }
