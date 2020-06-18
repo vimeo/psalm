@@ -516,9 +516,9 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 || !isset($class_storage->pseudo_methods[$method_name_lc])
             ) {
                 if ($is_interface) {
-                    $result->non_existent_interface_method_ids[] = $intersection_method_id ?: $method_id;
+                    $result->non_existent_interface_method_ids[] = $intersection_method_id ?: $cased_method_id;
                 } else {
-                    $result->non_existent_class_method_ids[] = $intersection_method_id ?: $method_id;
+                    $result->non_existent_class_method_ids[] = $intersection_method_id ?: $cased_method_id;
                 }
             }
 
