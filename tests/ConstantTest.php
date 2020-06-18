@@ -920,6 +920,65 @@ class ConstantTest extends TestCase
                         }
                     }'
             ],
+            'dirAndFileInConstInitializersAreNonEmptyString' => [
+                '<?php
+                    class C {
+                        const DIR = __DIR__;
+                        const FILE = __FILE__;
+                    }
+                    $dir = C::DIR;
+                    $file = C::FILE;
+                ',
+                [
+                    '$dir===' => 'non-empty-string',
+                    '$file===' => 'non-empty-string',
+                ]
+            ],
+            'lineInConstInitializersIsInt' => [
+                '<?php
+                    class C {
+                        const LINE = __LINE__;
+                    }
+                    $line = C::LINE;
+                ',
+                [
+                    '$line' => 'int',
+                ]
+            ],
+            'classMethodTraitAndFunctionInConstInitializersAreStrings' => [
+                '<?php
+                    class C {
+                        const CLS = __CLASS__;
+                        const MTD = __METHOD__;
+                        const TRT = __TRAIT__;
+                        const FCN = __FUNCTION__;
+                    }
+                    $cls = C::CLS;
+                    $mtd = C::MTD;
+                    $trt = C::TRT;
+                    $fcn = C::FCN;
+                ',
+                [
+                    '$cls' => 'string',
+                    '$mtd' => 'string',
+                    '$trt' => 'string',
+                    '$fcn' => 'string',
+                ]
+            ],
+            'concatWithMagicInConstInitializersIsNoEmptyString' => [
+                '<?php
+                    class C {
+                        const DIR = __DIR__ . " - dir";
+                        const FILE = "file:" . __FILE__;
+                    }
+                    $dir = C::DIR;
+                    $file = C::FILE;
+                ',
+                [
+                    '$dir===' => 'non-empty-string',
+                    '$file===' => 'non-empty-string',
+                ]
+            ]
         ];
     }
 

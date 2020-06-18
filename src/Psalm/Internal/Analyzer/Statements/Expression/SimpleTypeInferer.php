@@ -10,6 +10,7 @@ use Psalm\Type;
 use function strtolower;
 use function count;
 use function array_shift;
+use function reset;
 
 class SimpleTypeInferer
 {
@@ -52,12 +53,30 @@ class SimpleTypeInferer
 
                 if ($left
                     && $right
-                    && $left->isSingleStringLiteral()
-                    && $right->isSingleStringLiteral()
                 ) {
-                    $result = $left->getSingleStringLiteral()->value . $right->getSingleStringLiteral()->value;
+                    if ($left->isSingleStringLiteral()
+                        && $right->isSingleStringLiteral()
+                    ) {
+                        $result = $left->getSingleStringLiteral()->value . $right->getSingleStringLiteral()->value;
 
-                    return Type::getString($result);
+                        return Type::getString($result);
+                    }
+
+                    if ($left->isString()) {
+                        $left_string_types = $left->getAtomicTypes();
+                        $left_string_type = reset($left_string_types);
+                        if ($left_string_type instanceof Type\Atomic\TNonEmptyString) {
+                            return new Type\Union([new Type\Atomic\TNonEmptyString()]);
+                        }
+                    }
+
+                    if ($right->isString()) {
+                        $right_string_types = $right->getAtomicTypes();
+                        $right_string_type = reset($right_string_types);
+                        if ($right_string_type instanceof Type\Atomic\TNonEmptyString) {
+                            return new Type\Union([new Type\Atomic\TNonEmptyString()]);
+                        }
+                    }
                 }
 
                 return Type::getString();
@@ -163,6 +182,24 @@ class SimpleTypeInferer
             }
 
             return null;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir
+            || $stmt instanceof PhpParser\Node\Scalar\MagicConst\File
+        ) {
+            return new Type\Union([new Type\Atomic\TNonEmptyString()]);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Line) {
+            return Type::getInt();
+        }
+
+        if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Class_
+            || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Method
+            || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Trait_
+            || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_
+        ) {
+            return Type::getString();
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Namespace_) {
