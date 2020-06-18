@@ -204,11 +204,28 @@ class ArrayAnalyzer
 
             if ($codebase->taint) {
                 if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
-                    $parent_taint_nodes = array_merge($parent_taint_nodes, $item_value_type->parent_nodes ?: []);
-                }
+                    if ($item_value_type->parent_nodes) {
+                        $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
 
-                if ($item->key && ($item_key_type = $statements_analyzer->node_data->getType($item->key))) {
-                    $parent_taint_nodes = array_merge($parent_taint_nodes, $item_key_type->parent_nodes ?: []);
+                        $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment(
+                            'array'
+                                . ($item_key_value !== null ? '[\'' . $item_key_value . '\']' : ''),
+                            $var_location
+                        );
+
+                        $codebase->taint->addTaintNode($new_parent_node);
+
+                        foreach ($item_value_type->parent_nodes as $parent_node) {
+                            $codebase->taint->addPath(
+                                $parent_node,
+                                $new_parent_node,
+                                'array-assignment'
+                                    . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : '')
+                            );
+                        }
+
+                        $parent_taint_nodes = array_merge($parent_taint_nodes, [$new_parent_node]);
+                    }
                 }
             }
 

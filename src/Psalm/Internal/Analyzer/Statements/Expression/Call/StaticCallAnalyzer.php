@@ -1211,18 +1211,22 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     ) {
                         $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
+                        $method_location = $method_storage
+                            ? ($method_storage->signature_return_type_location ?: $method_storage->location)
+                            : null;
+
                         if ($method_storage && $method_storage->pure) {
                             $method_source = TaintNode::getForMethodReturn(
                                 (string) $method_id,
                                 $cased_method_id,
-                                $code_location,
+                                $method_location,
                                 $code_location
                             );
                         } else {
                             $method_source = TaintNode::getForMethodReturn(
                                 (string) $method_id,
                                 $cased_method_id,
-                                $code_location
+                                $method_location
                             );
                         }
 

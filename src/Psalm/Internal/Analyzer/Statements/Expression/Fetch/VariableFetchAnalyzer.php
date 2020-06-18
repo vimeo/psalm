@@ -367,7 +367,7 @@ class VariableFetchAnalyzer
                 $server_taint_source = new Source(
                     $var_name . ':' . $taint_location->file_name . ':' . $taint_location->raw_file_start,
                     $var_name,
-                    $taint_location,
+                    null,
                     null,
                     Type\TaintKindGroup::ALL_INPUT
                 );

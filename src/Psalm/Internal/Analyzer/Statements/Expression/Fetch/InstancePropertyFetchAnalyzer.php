@@ -1063,7 +1063,7 @@ class InstancePropertyFetchAnalyzer
 
             $codebase->taint->addTaintNode($property_node);
 
-            $codebase->taint->addPath($property_node, $localized_property_node);
+            $codebase->taint->addPath($property_node, $localized_property_node, 'property-fetch');
 
             $type->parent_nodes = [$localized_property_node];
         }

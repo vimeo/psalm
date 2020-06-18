@@ -1065,6 +1065,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $codebase->taint->addPath(
                         $function_param_sink,
                         $function_return_sink,
+                        'arg',
                         $function_storage->added_taints,
                         $function_storage->removed_taints
                     );

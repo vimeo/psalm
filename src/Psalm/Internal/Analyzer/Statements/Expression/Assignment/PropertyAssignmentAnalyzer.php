@@ -1098,11 +1098,11 @@ class PropertyAssignmentAnalyzer
 
         $codebase->taint->addTaintNode($property_node);
 
-        $codebase->taint->addPath($localized_property_node, $property_node);
+        $codebase->taint->addPath($localized_property_node, $property_node, 'property-assignment');
 
         if ($assignment_value_type->parent_nodes) {
             foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                $codebase->taint->addPath($parent_node, $localized_property_node);
+                $codebase->taint->addPath($parent_node, $localized_property_node, '=');
             }
         }
     }

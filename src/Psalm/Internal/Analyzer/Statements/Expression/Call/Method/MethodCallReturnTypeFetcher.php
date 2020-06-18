@@ -198,7 +198,7 @@ class MethodCallReturnTypeFetcher
             $method_call_node = TaintNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $node_location,
+                $method_storage->signature_return_type_location ?: $method_storage->location,
                 $method_storage->specialize_call ? $node_location : null
             );
 

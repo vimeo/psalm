@@ -162,6 +162,99 @@ class TaintTest extends TestCase
     /**
      * @return void
      */
+    public function testTaintedInputInCreatedArrayNotEchoed()
+    {
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $name = $_GET["name"] ?? "unknown";
+                $id = (int) $_GET["id"];
+
+                $data = ["name" => $name, "id" => $id];
+
+                echo "<h1>" . htmlentities($data["name"]) . "</h1>";
+                echo "<p>" . $data["id"] . "</p>";'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testTaintedInputInCreatedArrayIsEchoed()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $name = $_GET["name"] ?? "unknown";
+
+                $data = ["name" => $name];
+
+                echo "<h1>" . $data["name"] . "</h1>";'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testTaintedInputInAssignedArrayNotEchoed()
+    {
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $name = $_GET["name"] ?? "unknown";
+                $id = (int) $_GET["id"];
+
+                $data = [];
+                $data["name"] = $name;
+                $data["id"] = $id;
+
+                echo "<h1>" . htmlentities($data["name"]) . "</h1>";
+                echo "<p>" . $data["id"] . "</p>";'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testTaintedInputInAssignedArrayIsEchoed()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $name = $_GET["name"] ?? "unknown";
+
+                $data = [];
+                $data["name"] = $name;
+
+                echo "<h1>" . $data["name"] . "</h1>";'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testTaintedInputDirectly()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -330,7 +423,7 @@ class TaintTest extends TestCase
     public function testTaintedInputFromParam()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('TaintedInput - somefile.php:17:36 - Detected tainted sql in path: $_GET (somefile.php:4:41) -> A::getUserId (somefile.php:8:41) -> concat (somefile.php:8:32) -> A::getAppendedUserId (somefile.php:12:35) -> $userId (somefile.php:12:25) -> A::deleteUser#2 (somefile.php:13:49) -> concat (somefile.php:17:36) -> PDO::exec#1 (somefile.php:17:36)');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:17:36 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (somefile.php:4:41) -> A::getUserId (somefile.php:3:51) -> concat (somefile.php:8:32) -> A::getAppendedUserId (somefile.php:7:59) -> $userId (somefile.php:12:25) -> A::deleteUser#2 (somefile.php:16:65) -> concat (somefile.php:17:36) -> PDO::exec#1');
 
         $this->project_analyzer->trackTaintedInputs();
 
@@ -467,7 +560,7 @@ class TaintTest extends TestCase
     public function testTaintedInputToParamAlternatePath()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('TaintedInput - somefile.php:23:40 - Detected tainted sql in path: $_GET (somefile.php:7:63) -> A::getAppendedUserId#1 (somefile.php:7:54) -> concat (somefile.php:12:32) -> A::getAppendedUserId (somefile.php:11:37) -> A::deleteUser#3 (somefile.php:7:29) -> concat (somefile.php:23:40) -> PDO::exec#1 (somefile.php:23:40)');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:23:40 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (somefile.php:7:63) -> A::getAppendedUserId#1 (somefile.php:11:62) -> concat (somefile.php:12:32) -> A::getAppendedUserId (somefile.php:11:37) -> A::deleteUser#3 (somefile.php:19:81) -> concat (somefile.php:23:40) -> PDO::exec#1');
 
         $this->project_analyzer->trackTaintedInputs();
 
@@ -510,7 +603,7 @@ class TaintTest extends TestCase
     public function testTaintedInParentLoader()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('TaintedInput - somefile.php:16:40 - Detected tainted sql in path: $_GET (somefile.php:28:39) -> C::foo#1 (somefile.php:28:30) -> AGrandChild::loadFull#1 (somefile.php:24:47) -> A::loadFull#1 (somefile.php:24:47) -> A::loadPartial#1 (somefile.php:6:45) -> AChild::loadPartial#1 (somefile.php:6:45) -> concat (somefile.php:16:40) -> PDO::exec#1 (somefile.php:16:40)');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:16:40 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (somefile.php:28:39) -> C::foo#1 (somefile.php:23:48) -> AGrandChild::loadFull#1 (somefile.php:5:60) -> A::loadFull#1 (somefile.php:24:47) -> A::loadPartial#1 (somefile.php:3:72) -> AChild::loadPartial#1 (somefile.php:6:45) -> concat (somefile.php:16:40) -> PDO::exec#1');
 
         $this->project_analyzer->trackTaintedInputs();
 

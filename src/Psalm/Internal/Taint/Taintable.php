@@ -28,6 +28,9 @@ abstract class Taintable
     /** @var ?Taintable */
     public $previous;
 
+    /** @var list<string> */
+    public $path_types = [];
+
     /**
      * @var array<string, array<string, true>>
      */
@@ -63,8 +66,8 @@ abstract class Taintable
         string $method_id,
         string $cased_method_id,
         int $argument_offset,
-        ?CodeLocation $code_location,
-        ?CodeLocation $function_location = null
+        ?CodeLocation $arg_location,
+        ?CodeLocation $code_location = null
     ) {
         $arg_id = $method_id . '#' . ($argument_offset + 1);
 
@@ -72,14 +75,14 @@ abstract class Taintable
 
         $specialization_key = null;
 
-        if ($function_location) {
-            $specialization_key = strtolower($function_location->file_name) . ':' . $function_location->raw_file_start;
+        if ($code_location) {
+            $specialization_key = strtolower($code_location->file_name) . ':' . $code_location->raw_file_start;
         }
 
         return new static(
             \strtolower($arg_id),
             $label,
-            $code_location,
+            $arg_location,
             $specialization_key
         );
     }
@@ -91,7 +94,10 @@ abstract class Taintable
         string $var_id,
         CodeLocation $assignment_location
     ) {
-        $id = $var_id . '-' . $assignment_location->file_name . ':' . $assignment_location->raw_file_start;
+        $id = $var_id
+            . '-' . $assignment_location->file_name
+            . ':' . $assignment_location->raw_file_start
+            . '-' . $assignment_location->raw_file_end;
 
         return new static($id, $var_id, $assignment_location, null);
     }

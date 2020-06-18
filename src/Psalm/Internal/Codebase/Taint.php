@@ -23,6 +23,8 @@ use function implode;
 use function substr;
 use function strlen;
 use function array_intersect;
+use function strpos;
+use function array_reverse;
 
 class Taint
 {
@@ -35,7 +37,7 @@ class Taint
     /** @var array<string, Sink> */
     private $sinks = [];
 
-    /** @var array<string, array<string, array{array<string>, array<string>}>> */
+    /** @var array<string, array<string, array{string, array<string>, array<string>}>> */
     private $forward_edges = [];
 
     /** @var array<string, array<string, true>> */
@@ -73,13 +75,18 @@ class Taint
     public function addPath(
         Taintable $from,
         Taintable $to,
+        string $path_type,
         array $added_taints = [],
         array $removed_taints = []
     ) : void {
         $from_id = $from->id;
         $to_id = $to->id;
 
-        $this->forward_edges[$from_id][$to_id] = [$added_taints, $removed_taints];
+        if ($from_id === $to_id) {
+            return;
+        }
+
+        $this->forward_edges[$from_id][$to_id] = [$path_type, $added_taints, $removed_taints];
     }
 
     public function getPredecessorPath(Taintable $source) : string
@@ -159,7 +166,7 @@ class Taint
         $sources = $this->sources;
         $sinks = $this->sinks;
 
-        for ($i = 0; count($sinks) && count($sources) && $i < 20; $i++) {
+        for ($i = 0; count($sinks) && count($sources) && $i < 25; $i++) {
             $new_sources = [];
 
             foreach ($sources as $source) {
@@ -200,7 +207,9 @@ class Taint
     ) : array {
         $new_sources = [];
 
-        foreach ($this->forward_edges[$generated_source->id] as $to_id => [$added_taints, $removed_taints]) {
+        foreach ($this->forward_edges[$generated_source->id] as $to_id => $path_data) {
+            [$path_type, $added_taints, $removed_taints] = $path_data;
+
             if (!isset($this->nodes[$to_id])) {
                 continue;
             }
@@ -218,6 +227,24 @@ class Taint
 
             if (isset($visited_source_ids[$to_id][implode(',', $new_taints)])) {
                 continue;
+            }
+
+            if (strpos($path_type, 'array-fetch-') === 0) {
+                $previous_path_types = array_reverse($generated_source->path_types);
+
+                foreach ($previous_path_types as $previous_path_type) {
+                    if ($previous_path_type === 'array-assignment') {
+                        break;
+                    }
+
+                    if (strpos($previous_path_type, 'array-assignment-') === 0) {
+                        if (substr($previous_path_type, 17) === substr($path_type, 12)) {
+                            break;
+                        }
+
+                        continue 2;
+                    }
+                }
             }
 
             if (isset($sinks[$to_id])) {
@@ -243,6 +270,7 @@ class Taint
             $new_destination->previous = $generated_source;
             $new_destination->taints = $new_taints;
             $new_destination->specialized_calls = $generated_source->specialized_calls;
+            $new_destination->path_types = array_merge($generated_source->path_types, [$path_type]);
 
             $new_sources[$to_id] = $new_destination;
         }

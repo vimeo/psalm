@@ -125,13 +125,13 @@ class ArrayFetchAnalyzer
                 $stmt_type
             );
 
-            if ($codebase->taint) {
-                $sources = $stmt_var_type->parent_nodes ?: [];
-
-                if ($sources) {
-                    $stmt_type->parent_nodes = $sources;
-                }
-            }
+            self::taintArrayFetch(
+                $statements_analyzer,
+                $stmt,
+                $keyed_array_var_id,
+                $stmt_type,
+                $used_key_type
+            );
 
             return true;
         }
@@ -294,17 +294,55 @@ class ArrayFetchAnalyzer
             $context->hasVariable($keyed_array_var_id, $statements_analyzer);
         }
 
-        if ($codebase->taint && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))) {
-            $sources = [];
-
-            $sources = \array_merge($sources, $stmt_var_type->parent_nodes ?: []);
-
-            if ($sources) {
-                $stmt_type->parent_nodes = $sources;
-            }
-        }
+        self::taintArrayFetch(
+            $statements_analyzer,
+            $stmt,
+            $keyed_array_var_id,
+            $stmt_type,
+            $used_key_type
+        );
 
         return true;
+    }
+
+    private static function taintArrayFetch(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        ?string $keyed_array_var_id,
+        Type\Union $stmt_type,
+        Type\Union $offset_type
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($codebase->taint
+            && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
+            && $stmt_var_type->parent_nodes
+        ) {
+            $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+
+            $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment(
+                $keyed_array_var_id ?: 'array-fetch',
+                $var_location
+            );
+
+            $codebase->taint->addTaintNode($new_parent_node);
+
+            $dim_value = $offset_type->isSingleStringLiteral()
+                ? $offset_type->getSingleStringLiteral()->value
+                : ($offset_type->isSingleIntLiteral()
+                    ? $offset_type->getSingleIntLiteral()->value
+                    : null);
+
+            foreach ($stmt_var_type->parent_nodes as $parent_node) {
+                $codebase->taint->addPath(
+                    $parent_node,
+                    $new_parent_node,
+                    'array-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')
+                );
+            }
+
+            $stmt_type->parent_nodes = [$new_parent_node];
+        }
     }
 
     /**
