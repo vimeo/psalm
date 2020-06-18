@@ -1297,12 +1297,17 @@ class AssignmentAnalyzer
 
             return;
         }
-
         $var_id = ExpressionIdentifier::getVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
         );
+
+        //$var_id = '$f';
+        //$context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
+        //$context->vars_possibly_in_scope[$var_id] = true;
+        //$context->vars_in_scope[$var_id] = new Type\Union([new Type\Atomic\TInt()]);
+        //return;
 
         if ($var_id) {
             if (!$by_ref_type->hasMixed() && $constrain_type) {

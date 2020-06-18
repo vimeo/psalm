@@ -1016,6 +1016,10 @@ class PropertyAssignmentAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
+                    //var_dump($context);
+                    //$context->vars_in_scope['$this->t'] = new \Psalm\Type\Atomic\TNamedObject("Closed");
+                    //die;
+                    //throw new \Exception('here');
                     return false;
                 }
             } else {

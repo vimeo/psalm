@@ -85,6 +85,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             ? $context->vars_in_scope[$lhs_var_id]
             : null;
 
+        var_dump($class_type);
+
         if ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var)) {
             $class_type = $stmt_var_type;
         } elseif (!$class_type) {
@@ -360,6 +362,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             );
         }
 
+        var_dump($result->existent_method_ids);
         if (!$result->existent_method_ids) {
             return self::checkMethodArgs(
                 null,

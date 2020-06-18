@@ -1509,7 +1509,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
+                          //var_dump($actual_type->getId());
+                          //var_dump($context);
+                          //die;
                             // fall through
+                          //throw new \Exception('there');
                         }
                     }
                 }
