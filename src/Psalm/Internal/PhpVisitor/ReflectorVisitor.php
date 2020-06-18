@@ -2439,7 +2439,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $class_template_types = $this->class_template_types;
 
         foreach ($docblock_info->params_out as $docblock_param_out) {
-
             $param_name = substr($docblock_param_out['name'], 1);
 
             try {
@@ -2477,7 +2476,18 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         foreach ($docblock_info->self_out as $self_out) {
-          var_dump($self_out);
+            $out_type = TypeParser::parseTokens(
+                TypeTokenizer::getFullyQualifiedTokens(
+                    $self_out['type'],
+                    $this->aliases,
+                    $this->function_template_types + $class_template_types,
+                    $this->type_aliases
+                ),
+                null,
+                $this->function_template_types + $class_template_types,
+                $this->type_aliases
+            );
+            $storage->self_out_type = $out_type;
         }
 
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {

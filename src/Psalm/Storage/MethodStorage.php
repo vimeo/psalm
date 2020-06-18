@@ -72,4 +72,9 @@ class MethodStorage extends FunctionLikeStorage
      * @var ?string
      */
     public $plain_getter = null;
+
+    /**
+     * @var Type\Union|null
+     */
+    public $self_out_type = null;
 }
