@@ -8,7 +8,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\PropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -762,7 +762,7 @@ class PropertyAssignmentAnalyzer
                     if ($lhs_type_part instanceof Type\Atomic\TGenericObject) {
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                        $class_property_type = PropertyFetchAnalyzer::localizePropertyType(
+                        $class_property_type = InstancePropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
                             $class_property_type,
                             $lhs_type_part,

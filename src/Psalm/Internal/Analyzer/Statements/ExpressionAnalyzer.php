@@ -202,7 +202,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
-            return Expression\Fetch\PropertyFetchAnalyzer::analyzeInstance(
+            return Expression\Fetch\InstancePropertyFetchAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context
@@ -210,7 +210,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
-            return Expression\Fetch\PropertyFetchAnalyzer::analyzeStatic(
+            return Expression\Fetch\StaticPropertyFetchAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context

@@ -37,8 +37,6 @@ use Psalm\Type\Atomic\TList;
 use function strtolower;
 use function strpos;
 use function explode;
-use function in_array;
-use Psalm\Issue\TaintedInput;
 
 /**
  * @internal

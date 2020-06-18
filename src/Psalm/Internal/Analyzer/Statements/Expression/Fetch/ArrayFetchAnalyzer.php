@@ -57,7 +57,6 @@ use function strtolower;
 use function in_array;
 use function is_int;
 use function preg_match;
-use Psalm\Internal\Taint\TaintNode;
 use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Type\TemplateResult;
 
