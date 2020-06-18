@@ -703,6 +703,22 @@ class UnusedCodeTest extends TestCase
 
                     createFoo(Foo::class)->baz();'
             ],
+            'usedMethodReferencedByString' => [
+                '<?php
+                    class A {
+                        static function b(): void {}
+                    }
+                    $methodRef = "A::b";
+                    $methodRef();',
+            ],
+            'usedMethodReferencedByStringWithLeadingBackslash' => [
+                '<?php
+                    class A {
+                        static function b(): void {}
+                    }
+                    $methodRef = "\A::b";
+                    $methodRef();',
+            ],
         ];
     }
 
