@@ -641,7 +641,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
                         if (strpos($var_type_part->value, '::')) {
                             $parts = explode('::', strtolower($var_type_part->value));
-                            $potential_method_id = new \Psalm\Internal\MethodIdentifier($parts[0], $parts[1]);
+                            $fq_class_name = $parts[0];
+                            $fq_class_name = \preg_replace('/^\\\\/', '', $fq_class_name);
+                            $potential_method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, $parts[1]);
                         } else {
                             $explicit_function_name = new PhpParser\Node\Name\FullyQualified(
                                 $var_type_part->value,
