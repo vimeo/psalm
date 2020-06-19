@@ -8,11 +8,9 @@ There are a number of ways you can prevent them:
 
 ## Removing taints
 
-Some operations remove taints from data.
+Some operations remove taints from data – for example, wrapping `$_GET['name']` in an `htmlentities` call prevents cross-site-scripting attacks in that `$_GET` call.
 
-For example, wrapping `$_GET['name']` in an `htmlentities` call prevents cross-site-scripting attacks.
-
-Psalm allows you to remove taints via an annotation:
+Psalm allows you to remove taints via a `@psalm-taint-remove <taint-type>` annotation:
 
 ```php
 <?php // trackTaints
