@@ -4,7 +4,13 @@ You can define your own taint sinks two ways
 
 ## Using a docblock annotation
 
-`@psalm-taint-sink`
+The `@psalm-taint-sink <taint-type> <param-name>` annotation allows you to define a taint sink.
+
+Any tainted value matching the given [taint type](index.md#taint-types) will be reported as an error by Psalm.
+
+### Example
+
+Here the `PDOWrapper` class has an `exec` method that should not recieve tainted SQL, so we can prevent its insertion:
 
 ```php
 <?php
@@ -19,5 +25,5 @@ class PDOWrapper {
 
 ## Using a Psalm plugin
 
-or with a plugin
+TODO
 

@@ -6,6 +6,28 @@ Nobody likes false-positives!
 
 There are a number of ways you can prevent them:
 
+## Removing taints
+
+Some operations remove taints from data.
+
+For example, wrapping `$_GET['name']` in an `htmlentities` call prevents cross-site-scripting attacks.
+
+Psalm allows you to remove taints via an annotation:
+
+```php
+<?php // trackTaints
+
+function echoVar(string $str) : void {
+    /**
+     * @psalm-taint-remove html
+     */
+    $str = preg_replace('/[^a-z]/', '', $str);
+    echo $str;
+}
+
+echoVar($_GET["text"]);
+```
+
 ## Specializing taints in functions
 
 For functions, methods and classes you can use the `@psalm-taint-specialize` annotation.
