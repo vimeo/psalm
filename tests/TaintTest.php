@@ -1474,7 +1474,7 @@ class TaintTest extends TestCase
 
         $this->addFile(
             'somefile.php',
-            '<?phps
+            '<?php
                 /** @psalm-immutable */
                 class User {
                     public string $id;
@@ -1510,7 +1510,7 @@ class TaintTest extends TestCase
 
         $this->addFile(
             'somefile.php',
-            '<?phps
+            '<?php
                 /** @psalm-taint-specialize */
                 class User {
                     public string $id;
