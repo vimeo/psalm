@@ -10,6 +10,7 @@
     <xs:complexType name="PsalmType">
         <xs:choice maxOccurs="unbounded">
             <xs:element name="projectFiles" type="ProjectFilesType" minOccurs="1" maxOccurs="1" />
+            <xs:element name="extraFiles" type="ProjectFilesType" minOccurs="0" maxOccurs="1" />
             <xs:element name="taintAnalysis" type="TaintAnalysisType" minOccurs="0" maxOccurs="1" />
             <xs:element name="fileExtensions" type="FileExtensionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="mockClasses" type="MockClassesType" minOccurs="0" maxOccurs="1" />

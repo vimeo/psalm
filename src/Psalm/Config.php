@@ -184,6 +184,11 @@ class Config
     protected $project_files;
 
     /**
+     * @var ProjectFileFilter|null
+     */
+    protected $extra_files;
+
+    /**
      * The base directory of this config file
      *
      * @var string
@@ -908,6 +913,10 @@ class Config
             $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $base_dir, true);
         }
 
+        if (isset($config_xml->extraFiles)) {
+            $config->extra_files = ProjectFileFilter::loadFromXMLElement($config_xml->extraFiles, $base_dir, true);
+        }
+
         if (isset($config_xml->taintAnalysis->ignoreFiles)) {
             $config->taint_analysis_ignored_files = TaintAnalysisFileFilter::loadFromXMLElement(
                 $config_xml->taintAnalysis->ignoreFiles,
@@ -1366,6 +1375,16 @@ class Config
      *
      * @return  bool
      */
+    public function isInExtraDirs($file_path)
+    {
+        return $this->extra_files && $this->extra_files->allows($file_path);
+    }
+
+    /**
+     * @param   string $file_path
+     *
+     * @return  bool
+     */
     public function mustBeIgnored($file_path)
     {
         return $this->project_files && $this->project_files->forbids($file_path);
@@ -1628,6 +1647,18 @@ class Config
         }
 
         return $this->project_files->getFiles();
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getExtraDirectories()
+    {
+        if (!$this->extra_files) {
+            return [];
+        }
+
+        return $this->extra_files->getDirectories();
     }
 
     /**
