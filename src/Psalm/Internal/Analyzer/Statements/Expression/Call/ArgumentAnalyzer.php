@@ -1138,7 +1138,7 @@ class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $function_param->location,
+                $function_param->location
             );
 
             if (strpos($cased_method_id, '::')) {
@@ -1193,7 +1193,7 @@ class ArgumentAnalyzer
                     $cased_method_id,
                     $cased_method_id,
                     $argument_offset,
-                    $function_param->location,
+                    $function_param->location
                 );
             }
 
