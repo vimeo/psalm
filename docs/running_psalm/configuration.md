@@ -362,6 +362,9 @@ Contains a list of all the directories that Psalm should inspect. You can also s
 </projectFiles>
 ```
 
+#### &lt;extraFiles&gt;
+Optional. Same format as `<projectFiles>`. Directories Psalm should load but not inspect.
+
 #### &lt;fileExtensions&gt;
 Optional.  A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
 
