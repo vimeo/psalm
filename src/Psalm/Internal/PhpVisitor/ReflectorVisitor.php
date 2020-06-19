@@ -1350,6 +1350,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->mutation_free = $docblock_info->mutation_free;
                 $storage->external_mutation_free = $docblock_info->external_mutation_free;
+                $storage->specialize_instance = $docblock_info->taint_specialize;
 
                 $storage->override_property_visibility = $docblock_info->override_property_visibility;
                 $storage->override_method_visibility = $docblock_info->override_method_visibility;

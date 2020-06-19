@@ -5,7 +5,8 @@ use PhpParser;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Assignment\PropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
@@ -824,7 +825,7 @@ class AssignmentAnalyzer
             }
 
             if ($prop_name) {
-                PropertyAssignmentAnalyzer::analyzeInstance(
+                InstancePropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $assign_var,
                     $prop_name,
@@ -885,7 +886,7 @@ class AssignmentAnalyzer
             }
 
             if ($context->check_classes) {
-                PropertyAssignmentAnalyzer::analyzeStatic(
+                StaticPropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $assign_var,
                     $assign_value,
@@ -1285,7 +1286,7 @@ class AssignmentAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $stmt->name->name;
 
-            PropertyAssignmentAnalyzer::analyzeInstance(
+            InstancePropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $prop_name,

@@ -242,6 +242,14 @@ class Populator
             }
         }
 
+        if ($storage->specialize_instance) {
+            foreach ($storage->methods as $method) {
+                if (!$method->is_static) {
+                    $method->specialize_call = true;
+                }
+            }
+        }
+
         if ($storage->internal
             && !$storage->is_interface
             && !$storage->is_trait

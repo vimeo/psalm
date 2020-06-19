@@ -177,7 +177,13 @@ class InstancePropertyFetchAnalyzer
 
                         $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
 
-                        self::processTaints($statements_analyzer, $stmt, $stmt_type, $property_id);
+                        self::processTaints(
+                            $statements_analyzer,
+                            $stmt,
+                            $stmt_type,
+                            $property_id,
+                            $codebase->classlike_storage_provider->get($lhs_type_part->value)
+                        );
 
                         $codebase->properties->propertyExists(
                             $property_id,
@@ -558,7 +564,13 @@ class InstancePropertyFetchAnalyzer
 
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-                    self::processTaints($statements_analyzer, $stmt, $stmt_type, $property_id);
+                    self::processTaints(
+                        $statements_analyzer,
+                        $stmt,
+                        $stmt_type,
+                        $property_id,
+                        $class_storage
+                    );
                     continue;
                 }
 
@@ -663,7 +675,13 @@ class InstancePropertyFetchAnalyzer
 
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-                    self::processTaints($statements_analyzer, $stmt, $stmt_type, $property_id);
+                    self::processTaints(
+                        $statements_analyzer,
+                        $stmt,
+                        $stmt_type,
+                        $property_id,
+                        $class_storage
+                    );
                     continue;
                 }
 
@@ -894,7 +912,13 @@ class InstancePropertyFetchAnalyzer
                 }
             }
 
-            self::processTaints($statements_analyzer, $stmt, $class_property_type, $property_id);
+            self::processTaints(
+                $statements_analyzer,
+                $stmt,
+                $class_property_type,
+                $property_id,
+                $class_storage
+            );
 
             if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
                 $statements_analyzer->node_data->setType(
@@ -1038,11 +1062,68 @@ class InstancePropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Type\Union $type,
-        string $property_id
+        string $property_id,
+        \Psalm\Storage\ClassLikeStorage $class_storage
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($codebase->taint && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())) {
+        if (!$codebase->taint || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())) {
+            return;
+        }
+
+        $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        if ($class_storage->specialize_instance) {
+            $var_id = ExpressionIdentifier::getArrayVarId(
+                $stmt->var,
+                null,
+                $statements_analyzer
+            );
+
+            $var_property_id = ExpressionIdentifier::getArrayVarId(
+                $stmt,
+                null,
+                $statements_analyzer
+            );
+
+            if ($var_id) {
+                $var_node = TaintNode::getForAssignment(
+                    $var_id,
+                    $var_location
+                );
+
+                $codebase->taint->addTaintNode($var_node);
+
+                $property_node = TaintNode::getForAssignment(
+                    $var_property_id ?: $var_id . '->$property',
+                    $property_location
+                );
+
+                $codebase->taint->addTaintNode($property_node);
+
+                $codebase->taint->addPath(
+                    $var_node,
+                    $property_node,
+                    'property-fetch'
+                        . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : '')
+                );
+
+                $var_type = $statements_analyzer->node_data->getType($stmt->var);
+
+                if ($var_type && $var_type->parent_nodes) {
+                    foreach ($var_type->parent_nodes as $parent_node) {
+                        $codebase->taint->addPath(
+                            $parent_node,
+                            $var_node,
+                            '='
+                        );
+                    }
+                }
+
+                $type->parent_nodes = [$property_node];
+            }
+        } else {
             $code_location = new CodeLocation($statements_analyzer, $stmt->name);
 
             $localized_property_node = new TaintNode(
@@ -1065,7 +1146,7 @@ class InstancePropertyFetchAnalyzer
 
             $codebase->taint->addPath($property_node, $localized_property_node, 'property-fetch');
 
-            $type->parent_nodes = [$localized_property_node];
+            $type->parent_nodes[] = $localized_property_node;
         }
     }
 }

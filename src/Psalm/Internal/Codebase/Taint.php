@@ -247,6 +247,24 @@ class Taint
                 }
             }
 
+            if (strpos($path_type, 'property-fetch-') === 0) {
+                $previous_path_types = array_reverse($generated_source->path_types);
+
+                foreach ($previous_path_types as $previous_path_type) {
+                    if ($previous_path_type === 'property-assignment') {
+                        break;
+                    }
+
+                    if (strpos($previous_path_type, 'property-assignment-') === 0) {
+                        if (substr($previous_path_type, 20) === substr($path_type, 15)) {
+                            break;
+                        }
+
+                        continue 2;
+                    }
+                }
+            }
+
             if (isset($sinks[$to_id])) {
                 $matching_taints = array_intersect($sinks[$to_id]->taints, $new_taints);
 

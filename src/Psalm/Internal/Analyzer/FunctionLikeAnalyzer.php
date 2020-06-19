@@ -748,6 +748,30 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        if ($codebase->taint
+            && $this->function instanceof ClassMethod
+            && $cased_method_id
+            && $this->function->name->name === '__construct'
+            && isset($context->vars_in_scope['$this'])
+            && $context->vars_in_scope['$this']->parent_nodes
+        ) {
+            $method_source = TaintNode::getForMethodReturn(
+                (string) $method_id,
+                $cased_method_id,
+                $storage->location
+            );
+
+            $codebase->taint->addTaintNode($method_source);
+
+            foreach ($context->vars_in_scope['$this']->parent_nodes as $parent_node) {
+                $codebase->taint->addPath(
+                    $parent_node,
+                    $method_source,
+                    '$this'
+                );
+            }
+        }
+
         if ($add_mutations) {
             if ($this->return_vars_in_scope !== null) {
                 $context->vars_in_scope = TypeAnalyzer::combineKeyedTypes(

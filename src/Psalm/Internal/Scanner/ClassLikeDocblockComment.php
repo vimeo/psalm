@@ -100,6 +100,11 @@ class ClassLikeDocblockComment
     public $external_mutation_free = false;
 
     /**
+     * @var bool
+     */
+    public $taint_specialize = false;
+
+    /**
      * @var array<int, string>
      */
     public $suppressed_issues = [];

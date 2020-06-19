@@ -888,10 +888,15 @@ class CommentAnalyzer
         ) {
             $info->mutation_free = true;
             $info->external_mutation_free = true;
+            $info->taint_specialize = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
             $info->external_mutation_free = true;
+        }
+
+        if (isset($parsed_docblock->tags['psalm-taint-specialize'])) {
+            $info->taint_specialize = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-override-property-visibility'])) {

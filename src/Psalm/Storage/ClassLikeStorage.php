@@ -252,6 +252,11 @@ class ClassLikeStorage
     public $mutation_free = false;
 
     /**
+     * @var bool
+     */
+    public $specialize_instance = false;
+
+    /**
      * @var array<lowercase-string, MethodStorage>
      */
     public $methods = [];

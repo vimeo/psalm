@@ -690,7 +690,7 @@ class ArrayAssignmentAnalyzer
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch) {
             if ($root_array_expr->name instanceof PhpParser\Node\Identifier) {
-                PropertyAssignmentAnalyzer::analyzeInstance(
+                InstancePropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $root_array_expr,
                     $root_array_expr->name->name,
@@ -711,7 +711,7 @@ class ArrayAssignmentAnalyzer
         } elseif ($root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
             && $root_array_expr->name instanceof PhpParser\Node\Identifier
         ) {
-            PropertyAssignmentAnalyzer::analyzeStatic(
+            StaticPropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $root_array_expr,
                 null,
