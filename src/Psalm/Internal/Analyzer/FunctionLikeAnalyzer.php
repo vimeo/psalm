@@ -751,7 +751,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($codebase->taint
             && $this->function instanceof ClassMethod
             && $cased_method_id
-            && $this->function->name->name === '__construct'
+            && $storage->specialize_call
             && isset($context->vars_in_scope['$this'])
             && $context->vars_in_scope['$this']->parent_nodes
         ) {
