@@ -1,6 +1,6 @@
 # InvalidExtendClass
 
-Emitted when attempting to extends a final class or annotated as final.
+Emitted when attempting to extends a final class or a class annotated with `@final`.
 
 ```php
 <?php
