@@ -447,6 +447,11 @@ class Populator
                     $trait_storage->template_type_extends
                 );
             }
+
+            $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
+            $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
+
+            $storage->pseudo_methods += $trait_storage->pseudo_methods;
         }
     }
 
