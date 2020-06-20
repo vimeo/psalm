@@ -928,6 +928,8 @@ class CommentAnalyzer
 
                 $is_static = false;
 
+                $has_return = false;
+
                 if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     $doc_line_parts = self::splitDocLine($method_entry);
 
@@ -938,6 +940,7 @@ class CommentAnalyzer
 
                     if (count($doc_line_parts) > 1) {
                         $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
+                        $has_return = true;
 
                         $method_entry = implode(' ', $doc_line_parts);
                     }
@@ -983,10 +986,13 @@ class CommentAnalyzer
                 }
 
                 if ($method_tree instanceof ParseTree\MethodWithReturnTypeTree) {
-                    $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
-                        $method_tree->children[1],
-                        $codebase
-                    )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
+                    if (!$has_return) {
+                        $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
+                            $method_tree->children[1],
+                            $codebase
+                        )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
+                    }
+
                     $method_tree = $method_tree->children[0];
                 }
 

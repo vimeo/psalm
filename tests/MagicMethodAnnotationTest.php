@@ -624,12 +624,15 @@ class MagicMethodAnnotationTest extends TestCase
                     interface FooInterface {}
 
                     /**
-                     * @method  getAll():\IteratorAggregate
+                     * @method \IteratorAggregate<int, FooInterface> getAll():\IteratorAggregate
                      */
                     class Foo
                     {
                         private \IteratorAggregate $items;
 
+                        /**
+                         * @psalm-suppress MixedReturnTypeCoercion
+                         */
                         public function getAll(): \IteratorAggregate
                         {
                             return $this->items;
@@ -643,7 +646,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /**
                      * @psalm-suppress MixedReturnTypeCoercion
-                     * @method \IteratorAggregate<int, FooInterface> getAll()
+                     * @method \IteratorAggregate<int, FooInterface> getAll():\IteratorAggregate
                      */
                     class Bar
                     {
