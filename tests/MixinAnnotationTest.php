@@ -267,6 +267,10 @@ class MixinAnnotationTest extends TestCase
                         public function __call(string $name, array $args) {
                             return $this->obj->$name(...$args);
                         }
+
+                        public function __callStatic(string $name, array $args) {
+                            return (new static)->obj->$name(...$args);
+                        }
                     }
 
                     /**
@@ -278,6 +282,10 @@ class MixinAnnotationTest extends TestCase
                      * @psalm-suppress MissingConstructor
                      */
                     final class FooGrandChild extends FooChild {}
+
+                    function test2() : FooGrandChild {
+                        return FooGrandChild::type();
+                    }
 
                     function test() : FooGrandChild {
                         return (new FooGrandChild)->type();
