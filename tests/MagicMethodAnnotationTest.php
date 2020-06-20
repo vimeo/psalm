@@ -615,6 +615,54 @@ class MagicMethodAnnotationTest extends TestCase
                      */
                     final class B extends A {}'
             ],
+            'namespacedMethod' => [
+                '<?php
+                    declare(strict_types = 1);
+
+                    namespace App;
+
+                    interface FooInterface {}
+
+                    /**
+                     * @method  getAll():\IteratorAggregate
+                     */
+                    class Foo
+                    {
+                        private \IteratorAggregate $items;
+
+                        public function getAll(): \IteratorAggregate
+                        {
+                            return $this->items;
+                        }
+
+                        public function __construct(\IteratorAggregate $foos)
+                        {
+                            $this->items = $foos;
+                        }
+                    }
+
+                    /**
+                     * @psalm-suppress MixedReturnTypeCoercion
+                     * @method \IteratorAggregate<int, FooInterface> getAll()
+                     */
+                    class Bar
+                    {
+                        private \IteratorAggregate $items;
+
+                        /**
+                         * @psalm-suppress MixedReturnTypeCoercion
+                         */
+                        public function getAll(): \IteratorAggregate
+                        {
+                            return $this->items;
+                        }
+
+                        public function __construct(\IteratorAggregate $foos)
+                        {
+                            $this->items = $foos;
+                        }
+                    }'
+            ],
         ];
     }
 

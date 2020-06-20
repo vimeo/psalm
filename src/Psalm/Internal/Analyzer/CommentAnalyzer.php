@@ -986,7 +986,7 @@ class CommentAnalyzer
                     $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
                         $method_tree->children[1],
                         $codebase
-                    );
+                    )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
                     $method_tree = $method_tree->children[0];
                 }
 
