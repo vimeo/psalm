@@ -482,7 +482,7 @@ class Reconciler
                 list($fq_class_name, $const_name) = explode('::', $base_key);
 
                 if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
-                    return false;
+                    return null;
                 }
 
                 $class_constant = $codebase->classlikes->getConstantForClass(
