@@ -1043,93 +1043,95 @@ class FunctionCallAnalyzer extends CallAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($codebase->taint
-            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+        if (!$codebase->taint
+            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
         ) {
-            $return_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+            return;
+        }
 
-            $function_return_sink = TaintNode::getForMethodReturn(
-                $function_id,
-                $function_id,
-                $return_location,
-                $function_storage->specialize_call ? $return_location : null
-            );
+        $return_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            $codebase->taint->addTaintNode($function_return_sink);
+        $function_return_sink = TaintNode::getForMethodReturn(
+            $function_id,
+            $function_id,
+            $return_location,
+            $function_storage->specialize_call ? $return_location : null
+        );
 
-            $stmt_type->parent_nodes[] = $function_return_sink;
+        $codebase->taint->addTaintNode($function_return_sink);
 
-            if ($function_storage->return_source_params) {
-                $removed_taints = $function_storage->removed_taints;
+        $stmt_type->parent_nodes[] = $function_return_sink;
 
-                if ($function_id === 'preg_replace' && count($stmt->args) > 2) {
-                    $first_stmt_type = $statements_analyzer->node_data->getType($stmt->args[0]->value);
-                    $second_stmt_type = $statements_analyzer->node_data->getType($stmt->args[1]->value);
+        if ($function_storage->return_source_params) {
+            $removed_taints = $function_storage->removed_taints;
 
-                    if ($first_stmt_type
-                        && $second_stmt_type
-                        && $first_stmt_type->isSingleStringLiteral()
-                        && $second_stmt_type->isSingleStringLiteral()
+            if ($function_id === 'preg_replace' && count($stmt->args) > 2) {
+                $first_stmt_type = $statements_analyzer->node_data->getType($stmt->args[0]->value);
+                $second_stmt_type = $statements_analyzer->node_data->getType($stmt->args[1]->value);
+
+                if ($first_stmt_type
+                    && $second_stmt_type
+                    && $first_stmt_type->isSingleStringLiteral()
+                    && $second_stmt_type->isSingleStringLiteral()
+                ) {
+                    $first_arg_value = $first_stmt_type->getSingleStringLiteral()->value;
+
+                    $pattern = \substr($first_arg_value, 1, -1);
+
+                    if ($pattern[0] === '['
+                        && $pattern[1] === '^'
+                        && \substr($pattern, -1) === ']'
                     ) {
-                        $first_arg_value = $first_stmt_type->getSingleStringLiteral()->value;
+                        $pattern = \substr($pattern, 2, -1);
 
-                        $pattern = \substr($first_arg_value, 1, -1);
-
-                        if ($pattern[0] === '['
-                            && $pattern[1] === '^'
-                            && \substr($pattern, -1) === ']'
-                        ) {
-                            $pattern = \substr($pattern, 2, -1);
-
-                            if (self::simpleExclusion($pattern, $first_arg_value[0])) {
-                                $removed_taints[] = 'html';
-                                $removed_taints[] = 'sql';
-                            }
+                        if (self::simpleExclusion($pattern, $first_arg_value[0])) {
+                            $removed_taints[] = 'html';
+                            $removed_taints[] = 'sql';
                         }
                     }
                 }
-
-                foreach ($function_storage->return_source_params as $i) {
-                    if (!isset($stmt->args[$i])) {
-                        continue;
-                    }
-
-                    $arg_location = new CodeLocation(
-                        $statements_analyzer->getSource(),
-                        $stmt->args[$i]->value
-                    );
-
-                    $function_param_sink = TaintNode::getForMethodArgument(
-                        $function_id,
-                        $function_id,
-                        $i,
-                        $arg_location,
-                        $function_storage->specialize_call ? $return_location : null
-                    );
-
-                    $codebase->taint->addTaintNode($function_param_sink);
-
-                    $codebase->taint->addPath(
-                        $function_param_sink,
-                        $function_return_sink,
-                        'arg',
-                        $function_storage->added_taints,
-                        $removed_taints
-                    );
-                }
             }
 
-            if ($function_storage->taint_source_types) {
-                $method_node = Source::getForMethodReturn(
-                    $function_id,
-                    $function_id,
-                    $return_location
+            foreach ($function_storage->return_source_params as $i) {
+                if (!isset($stmt->args[$i])) {
+                    continue;
+                }
+
+                $arg_location = new CodeLocation(
+                    $statements_analyzer->getSource(),
+                    $stmt->args[$i]->value
                 );
 
-                $method_node->taints = $function_storage->taint_source_types;
+                $function_param_sink = TaintNode::getForMethodArgument(
+                    $function_id,
+                    $function_id,
+                    $i,
+                    $arg_location,
+                    $function_storage->specialize_call ? $return_location : null
+                );
 
-                $codebase->taint->addSource($method_node);
+                $codebase->taint->addTaintNode($function_param_sink);
+
+                $codebase->taint->addPath(
+                    $function_param_sink,
+                    $function_return_sink,
+                    'arg',
+                    $function_storage->added_taints,
+                    $removed_taints
+                );
             }
+        }
+
+        if ($function_storage->taint_source_types) {
+            $method_node = Source::getForMethodReturn(
+                $function_id,
+                $function_id,
+                $return_location
+            );
+
+            $method_node->taints = $function_storage->taint_source_types;
+
+            $codebase->taint->addSource($method_node);
         }
     }
 

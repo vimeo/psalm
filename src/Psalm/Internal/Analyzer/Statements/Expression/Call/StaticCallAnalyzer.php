@@ -393,6 +393,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if ($stmt->name instanceof PhpParser\Node\Identifier && !$is_mock) {
                 $method_name_lc = strtolower($stmt->name->name);
                 $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
+
                 $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
                 if ($codebase->store_node_types
@@ -1239,46 +1240,14 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if ($return_type_candidate) {
-                    if ($codebase->taint
-                        && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-                    ) {
-                        $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                        $method_location = $method_storage
-                            ? ($method_storage->signature_return_type_location ?: $method_storage->location)
-                            : null;
-
-                        if ($method_storage && $method_storage->pure) {
-                            $method_source = TaintNode::getForMethodReturn(
-                                (string) $method_id,
-                                $cased_method_id,
-                                $method_location,
-                                $code_location
-                            );
-                        } else {
-                            $method_source = TaintNode::getForMethodReturn(
-                                (string) $method_id,
-                                $cased_method_id,
-                                $method_location
-                            );
-                        }
-
-                        $codebase->taint->addTaintNode($method_source);
-
-                        $return_type_candidate->parent_nodes = [$method_source];
-
-                        if ($method_storage && $method_storage->taint_source_types) {
-                            $method_node = Source::getForMethodReturn(
-                                (string) $method_id,
-                                $cased_method_id,
-                                $method_storage->signature_return_type_location ?: $method_storage->location
-                            );
-
-                            $method_node->taints = $method_storage->taint_source_types;
-
-                            $codebase->taint->addSource($method_node);
-                        }
-                    }
+                    self::taintReturnType(
+                        $statements_analyzer,
+                        $stmt,
+                        $method_id,
+                        $cased_method_id,
+                        $return_type_candidate,
+                        $method_storage
+                    );
 
                     if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
                         $statements_analyzer->node_data->setType(
@@ -1377,6 +1346,60 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         return true;
     }
 
+    private static function taintReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        MethodIdentifier $method_id,
+        string $cased_method_id,
+        Type\Union $return_type_candidate,
+        ?\Psalm\Storage\MethodStorage $method_storage
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!$codebase->taint
+            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+        ) {
+            return;
+        }
+
+        $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $method_location = $method_storage
+            ? ($method_storage->signature_return_type_location ?: $method_storage->location)
+            : null;
+
+        if ($method_storage && $method_storage->pure) {
+            $method_source = TaintNode::getForMethodReturn(
+                (string) $method_id,
+                $cased_method_id,
+                $method_location,
+                $code_location
+            );
+        } else {
+            $method_source = TaintNode::getForMethodReturn(
+                (string) $method_id,
+                $cased_method_id,
+                $method_location
+            );
+        }
+
+        $codebase->taint->addTaintNode($method_source);
+
+        $return_type_candidate->parent_nodes = [$method_source];
+
+        if ($method_storage && $method_storage->taint_source_types) {
+            $method_node = Source::getForMethodReturn(
+                (string) $method_id,
+                $cased_method_id,
+                $method_storage->signature_return_type_location ?: $method_storage->location
+            );
+
+            $method_node->taints = $method_storage->taint_source_types;
+
+            $codebase->taint->addSource($method_node);
+        }
+    }
+
     /**
      * @param  array<int, PhpParser\Node\Arg> $args
      * @return false|null
@@ -1401,6 +1424,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             return false;
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         if (ArgumentsAnalyzer::checkArgumentsMatch(
             $statements_analyzer,
             $args,
@@ -1415,6 +1440,36 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             return false;
         }
 
+        $method_storage = null;
+
+        if ($codebase->taint) {
+            try {
+                $method_storage = $codebase->methods->getStorage($method_id);
+
+                ArgumentsAnalyzer::analyze(
+                    $statements_analyzer,
+                    $args,
+                    $method_storage->params,
+                    (string) $method_id,
+                    $context
+                );
+
+                ArgumentsAnalyzer::checkArgumentsMatch(
+                    $statements_analyzer,
+                    $args,
+                    $method_id,
+                    $method_storage->params,
+                    $method_storage,
+                    null,
+                    null,
+                    new CodeLocation($statements_analyzer, $stmt),
+                    $context
+                );
+            } catch (\Exception $e) {
+                // do nothing
+            }
+        }
+
         if ($pseudo_method_storage->return_type) {
             $return_type_candidate = clone $pseudo_method_storage->return_type;
 
@@ -1425,6 +1480,17 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $fq_class_name,
                 $class_storage->parent_class
             );
+
+            if ($method_storage) {
+                self::taintReturnType(
+                    $statements_analyzer,
+                    $stmt,
+                    $method_id,
+                    (string) $method_id,
+                    $return_type_candidate,
+                    $method_storage
+                );
+            }
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
