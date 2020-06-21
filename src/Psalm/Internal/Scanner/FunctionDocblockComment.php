@@ -42,7 +42,7 @@ class FunctionDocblockComment
     public $params_out = [];
 
     /**
-     * @var array<int, array{type:string, line_number: int}>
+     * @var array{type:string, line_number: int}
      */
     public $self_out = [];
 

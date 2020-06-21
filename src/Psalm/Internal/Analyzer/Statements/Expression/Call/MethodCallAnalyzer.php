@@ -85,8 +85,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             ? $context->vars_in_scope[$lhs_var_id]
             : null;
 
-        var_dump($class_type);
-
         if ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var)) {
             $class_type = $stmt_var_type;
         } elseif (!$class_type) {
@@ -362,7 +360,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             );
         }
 
-        var_dump($result->existent_method_ids);
         if (!$result->existent_method_ids) {
             return self::checkMethodArgs(
                 null,
@@ -406,6 +403,26 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             $context->vars_in_scope[$lhs_var_id] = $class_type;
         }
+
+        /*
+        var_dump($lhs_var_id);
+        var_dump($stmt->name);
+        var_dump($stmt->var);
+        var_dump($class_type);
+        $fq_class_name = (string)$source->getFQCLN();
+        var_dump($fq_class_name);
+        die;
+        $lhs_types = $class_type->getAtomicTypes();
+        $method_name = $stmt->name->name;
+        $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, strtolower($method_name));
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+        var_dump($declaring_method_id);
+        $storage = $codebase->methods->getStorage($declaring_method_id);
+        die;
+         */
+        $foo_id = '$foo';
+        $context->vars_possibly_in_scope[$foo_id] = true;
+        $context->vars_in_scope[$foo_id] = new Type\Union([new Type\Atomic\TInt()]);
 
         return true;
     }

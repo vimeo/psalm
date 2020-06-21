@@ -2475,10 +2475,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
-        foreach ($docblock_info->self_out as $self_out) {
+        if ($docblock_info->self_out) {
             $out_type = TypeParser::parseTokens(
                 TypeTokenizer::getFullyQualifiedTokens(
-                    $self_out['type'],
+                    $docblock_info->self_out['type'],
                     $this->aliases,
                     $this->function_template_types + $class_template_types,
                     $this->type_aliases

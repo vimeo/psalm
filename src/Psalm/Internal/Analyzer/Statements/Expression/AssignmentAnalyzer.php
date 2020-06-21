@@ -1303,10 +1303,11 @@ class AssignmentAnalyzer
             $statements_analyzer
         );
 
-        //$var_id = '$f';
-        //$context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
-        //$context->vars_possibly_in_scope[$var_id] = true;
-        //$context->vars_in_scope[$var_id] = new Type\Union([new Type\Atomic\TInt()]);
+        $foo_id = '$foo';
+        $context->byref_constraints[$foo_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
+        $context->vars_possibly_in_scope[$foo_id] = true;
+        $context->vars_in_scope[$foo_id] = new Type\Union([new Type\Atomic\TInt()]);
+        die;
         //return;
 
         if ($var_id) {

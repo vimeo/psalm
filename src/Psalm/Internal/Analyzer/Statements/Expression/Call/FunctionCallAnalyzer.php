@@ -62,6 +62,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         Context $context
     ) : bool {
         $function_name = $stmt->name;
+        var_dump($function_name);
 
         $function_id = null;
         $function_params = null;
