@@ -1,6 +1,6 @@
 <?php
 
-interface Bar {}
+interface Bar { public function makeBar(): void; }
 
 class Foo
 {

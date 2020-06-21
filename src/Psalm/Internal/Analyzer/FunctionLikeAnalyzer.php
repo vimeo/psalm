@@ -125,7 +125,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $add_mutations = false,
         array $byref_uses = null
     ) {
-        var_dump('FunctionLikeAnalyzer::analyze');
         $storage = $this->storage;
 
         $function_stmts = $this->function->getStmts() ?: [];
@@ -169,14 +168,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if (!$storage instanceof MethodStorage || !$this instanceof MethodAnalyzer) {
                 throw new \UnexpectedValueException('$storage must be MethodStorage');
             }
-
-            //var_dump($context->vars_in_scope);
-            //var_dump($storage->self_out_type);
-            //$var_id = '$foo';
-            //$context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
-            //$context->vars_possibly_in_scope[$var_id] = true;
-            //$context->vars_in_scope[$var_id] = new Type\Union([new Type\Atomic\TInt()]);
-            //return;
 
             $real_method_id = $this->getMethodId();
 
@@ -550,8 +541,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
 
         $this->examineParamTypes($statements_analyzer, $context, $codebase);
-
-        $this->examineSelfOut($statements_analyzer, $context, $codebase);
 
         foreach ($storage->params as $offset => $function_param) {
             // only complain if there's no type defined by a parent type
@@ -1520,27 +1509,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                          //var_dump($actual_type->getId());
-                          //var_dump($context);
-                          //die;
                             // fall through
-                          //throw new \Exception('there');
                         }
                     }
                 }
             }
-        }
-    }
-
-    public function examineSelfOut(
-        StatementsAnalyzer $statements_analyzer,
-        Context $context,
-        Codebase $codebase,
-        PhpParser\Node $stmt = null
-    ) {
-        $storage = $this->getFunctionLikeStorage($statements_analyzer);
-        if ($storage->self_out_type) {
-            var_dump($context->vars_in_scope);
         }
     }
 

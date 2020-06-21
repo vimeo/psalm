@@ -829,12 +829,8 @@ class ArgumentsAnalyzer
                     ]);
                 }
             }
-            //var_dump($by_ref_type);die;
 
             $by_ref_type = $by_ref_type ?: Type::getMixed();
-
-            //var_dump($by_ref_type);
-            //var_dump($by_ref_out_type);
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,

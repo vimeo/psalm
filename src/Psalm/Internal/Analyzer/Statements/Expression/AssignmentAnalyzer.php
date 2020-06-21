@@ -1303,13 +1303,6 @@ class AssignmentAnalyzer
             $statements_analyzer
         );
 
-        $foo_id = '$foo';
-        $context->byref_constraints[$foo_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
-        $context->vars_possibly_in_scope[$foo_id] = true;
-        $context->vars_in_scope[$foo_id] = new Type\Union([new Type\Atomic\TInt()]);
-        die;
-        //return;
-
         if ($var_id) {
             if (!$by_ref_type->hasMixed() && $constrain_type) {
                 $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);

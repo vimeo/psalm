@@ -167,6 +167,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $result = new Method\AtomicMethodCallAnalysisResult();
 
         $possible_new_class_types = [];
+        $fq_class_name = null;
         foreach ($lhs_types as $lhs_type_part) {
             Method\AtomicMethodCallAnalyzer::analyze(
                 $statements_analyzer,
@@ -187,6 +188,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 && !$possible_new_class_type->equals($class_type)) {
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
+            // TODO: How?
+            $fq_class_name = $lhs_type_part->value;
         }
 
         if (count($possible_new_class_types) > 0) {
@@ -404,25 +407,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $context->vars_in_scope[$lhs_var_id] = $class_type;
         }
 
-        /*
-        var_dump($lhs_var_id);
-        var_dump($stmt->name);
-        var_dump($stmt->var);
-        var_dump($class_type);
-        $fq_class_name = (string)$source->getFQCLN();
-        var_dump($fq_class_name);
-        die;
-        $lhs_types = $class_type->getAtomicTypes();
         $method_name = $stmt->name->name;
         $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, strtolower($method_name));
-        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-        var_dump($declaring_method_id);
-        $storage = $codebase->methods->getStorage($declaring_method_id);
-        die;
-         */
-        $foo_id = '$foo';
-        $context->vars_possibly_in_scope[$foo_id] = true;
-        $context->vars_in_scope[$foo_id] = new Type\Union([new Type\Atomic\TInt()]);
+        $storage = $codebase->methods->getStorage($method_id);
+        if ($storage->self_out_type) {
+          // TODO: Nedd clone?
+          $context->vars_in_scope[$lhs_var_id] = clone $storage->self_out_type;
+        }
 
         return true;
     }
