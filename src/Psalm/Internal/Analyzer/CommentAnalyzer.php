@@ -197,7 +197,7 @@ class CommentAnalyzer
                 || isset($parsed_docblock->tags['readonly'])
                 || isset($parsed_docblock->tags['psalm-readonly'])
                 || isset($parsed_docblock->tags['psalm-readonly-allow-private-mutation'])
-                || isset($parsed_docblock->tags['psalm-taint-remove'])
+                || isset($parsed_docblock->tags['psalm-taint-escape'])
                 || isset($parsed_docblock->tags['psalm-internal']))
         ) {
             $var_comment = new VarDocblockComment();
@@ -224,8 +224,8 @@ class CommentAnalyzer
             = isset($parsed_docblock->tags['psalm-allow-private-mutation'])
             || isset($parsed_docblock->tags['psalm-readonly-allow-private-mutation']);
 
-        if (isset($parsed_docblock->tags['psalm-taint-remove'])) {
-            foreach ($parsed_docblock->tags['psalm-taint-remove'] as $param) {
+        if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
+            foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
                 $var_comment->removed_taints[] = $param;
             }
@@ -477,7 +477,32 @@ class CommentAnalyzer
                 $param_parts = preg_split('/\s+/', trim($param));
 
                 if (count($param_parts) === 2) {
-                    $info->taint_sink_params[] = ['name' => trim($param_parts[1]), 'taint' => trim($param_parts[0])];
+                    $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $param_parts[0]];
+                }
+            }
+        }
+
+        // support for MediaWiki taint plugin
+        if (isset($parsed_docblock->tags['param-taint'])) {
+            foreach ($parsed_docblock->tags['param-taint'] as $param) {
+                $param_parts = preg_split('/\s+/', trim($param));
+
+                if (count($param_parts) === 2) {
+                    $taint_type = $param_parts[1];
+
+                    if (substr($taint_type, 0, 5) === 'exec_') {
+                        $taint_type = substr($taint_type, 5);
+
+                        if ($taint_type === 'tainted') {
+                            $taint_type = 'input';
+                        }
+
+                        if ($taint_type === 'misc') {
+                            $taint_type = 'text';
+                        }
+
+                        $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $taint_type];
+                    }
                 }
             }
         }
@@ -486,21 +511,42 @@ class CommentAnalyzer
             foreach ($parsed_docblock->tags['psalm-taint-source'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
 
-                if (trim($param_parts[0])) {
-                    $info->taint_source_types[] = trim($param_parts[0]);
+                if ($param_parts[0]) {
+                    $info->taint_source_types[] = $param_parts[0];
                 }
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-taint-add'])) {
-            foreach ($parsed_docblock->tags['psalm-taint-add'] as $param) {
+        // support for MediaWiki taint plugin
+        if (isset($parsed_docblock->tags['return-taint'])) {
+            foreach ($parsed_docblock->tags['return-taint'] as $param) {
+                $param_parts = preg_split('/\s+/', trim($param));
+
+                if ($param_parts[0]) {
+                    if ($param_parts[0] === 'tainted') {
+                        $param_parts[0] = 'input';
+                    }
+
+                    if ($param_parts[0] === 'misc') {
+                        $param_parts[0] = 'text';
+                    }
+
+                    if ($param_parts[0] !== 'none') {
+                        $info->taint_source_types[] = $param_parts[0];
+                    }
+                }
+            }
+        }
+
+        if (isset($parsed_docblock->tags['psalm-taint-unescape'])) {
+            foreach ($parsed_docblock->tags['psalm-taint-unescape'] as $param) {
                 $param = trim($param);
                 $info->added_taints[] = $param;
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-taint-remove'])) {
-            foreach ($parsed_docblock->tags['psalm-taint-remove'] as $param) {
+        if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
+            foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
                 $info->removed_taints[] = $param;
             }

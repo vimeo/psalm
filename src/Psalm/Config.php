@@ -238,7 +238,7 @@ class Config
     private $mock_classes = [];
 
     /**
-     * @var array<int, string>
+     * @var array<string, string>
      */
     private $stub_files = [];
 
@@ -2043,11 +2043,16 @@ class Config
     /** @return void */
     public function addStubFile(string $stub_file)
     {
-        $this->stub_files[] = $stub_file;
+        $this->stub_files[$stub_file] = $stub_file;
+    }
+
+    public function hasStubFile(string $stub_file) : bool
+    {
+        return isset($this->stub_files[$stub_file]);
     }
 
     /**
-     * @return array<int, string>
+     * @return array<string, string>
      */
     public function getStubFiles(): array
     {

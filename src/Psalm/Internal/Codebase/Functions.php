@@ -170,6 +170,7 @@ class Functions
     }
 
     /**
+     * @param lowercase-string $function_id
      * @return bool
      */
     public function functionExists(
@@ -194,7 +195,7 @@ class Functions
             return true;
         }
 
-        if (isset(self::$stubbed_functions[strtolower($function_id)])) {
+        if (isset(self::$stubbed_functions[$function_id])) {
             return true;
         }
 

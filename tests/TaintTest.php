@@ -343,7 +343,7 @@ class TaintTest extends TestCase
             '<?php
                 class A {
                     public function deleteUser(PDO $pdo) : void {
-                        /** @psalm-taint-remove sql */
+                        /** @psalm-taint-escape sql */
                         $userId = (string) $_GET["user_id"];
                         $pdo->exec("delete from users where user_id = " . $userId);
                     }
@@ -366,7 +366,7 @@ class TaintTest extends TestCase
                 class A {
                     public function deleteUser(PDOWrapper $pdo) : void {
                         /**
-                         * @psalm-taint-remove sql
+                         * @psalm-taint-escape sql
                          */
                         $userId = (string) $_GET["user_id"];
                         $pdo->exec("delete from users where user_id = " . $userId);
@@ -1297,7 +1297,7 @@ class TaintTest extends TestCase
                 class U {
                     /**
                      * @psalm-pure
-                     * @psalm-taint-remove html
+                     * @psalm-taint-escape html
                      */
                     public static function shorten(string $s) : string {
                         return str_replace("foo", "bar", $s);
@@ -1380,7 +1380,7 @@ class TaintTest extends TestCase
                 class V1 extends V {
                     public function foo(O1 $o) : void {
                         /**
-                         * @psalm-taint-remove html
+                         * @psalm-taint-escape html
                          */
                         $a = str_replace("foo", "bar", $o->s);
                         echo $a;

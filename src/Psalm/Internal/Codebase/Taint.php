@@ -69,15 +69,15 @@ class Taint
     }
 
     /**
-     * @param array<string> $added_taints
-     * @param array<string> $removed_taints
+     * @param array<string> $unescaped_taints
+     * @param array<string> $escaped_taints
      */
     public function addPath(
         Taintable $from,
         Taintable $to,
         string $path_type,
-        array $added_taints = [],
-        array $removed_taints = []
+        array $unescaped_taints = [],
+        array $escaped_taints = []
     ) : void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -86,7 +86,7 @@ class Taint
             return;
         }
 
-        $this->forward_edges[$from_id][$to_id] = [$path_type, $added_taints, $removed_taints];
+        $this->forward_edges[$from_id][$to_id] = [$path_type, $unescaped_taints, $escaped_taints];
     }
 
     public function getPredecessorPath(Taintable $source) : string
@@ -208,7 +208,7 @@ class Taint
         $new_sources = [];
 
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path_data) {
-            [$path_type, $added_taints, $removed_taints] = $path_data;
+            [$path_type, $unescaped_taints, $escaped_taints] = $path_data;
 
             if (!isset($this->nodes[$to_id])) {
                 continue;
@@ -216,8 +216,8 @@ class Taint
 
             $new_taints = \array_unique(
                 \array_diff(
-                    \array_merge($source_taints, $added_taints),
-                    $removed_taints
+                    \array_merge($source_taints, $unescaped_taints),
+                    $escaped_taints
                 )
             );
 

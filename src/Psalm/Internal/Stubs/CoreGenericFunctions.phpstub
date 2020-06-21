@@ -531,7 +531,7 @@ function htmlentities(string $string, ?int $quote_style = null, ?string $charset
 /**
  * @psalm-pure
  *
- * @psalm-taint-add html
+ * @psalm-taint-unescape html
  *
  * @psalm-flow ($string) -> return
  */
@@ -540,8 +540,8 @@ function html_entity_decode(string $string, ?int $quote_style = null, ?string $c
 /**
  * @psalm-pure
  *
- * @psalm-taint-remove html
- * @psalm-taint-remove sql
+ * @psalm-taint-escape html
+ * @psalm-taint-escape sql
  *
  * @psalm-flow ($string) -> return
  */
@@ -550,8 +550,8 @@ function htmlspecialchars(string $string, int $flags = ENT_COMPAT | ENT_HTML401,
 /**
  * @psalm-pure
  *
- * @psalm-taint-add html
- * @psalm-taint-add sql
+ * @psalm-taint-unescape html
+ * @psalm-taint-unescape sql
  *
  * @psalm-flow ($string) -> return
  */

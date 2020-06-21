@@ -10,14 +10,14 @@ There are a number of ways you can prevent them:
 
 Some operations remove taints from data – for example, wrapping `$_GET['name']` in an `htmlentities` call prevents cross-site-scripting attacks in that `$_GET` call.
 
-Psalm allows you to remove taints via a `@psalm-taint-remove <taint-type>` annotation:
+Psalm allows you to remove taints via a `@psalm-taint-escape <taint-type>` annotation:
 
 ```php
 <?php // trackTaints
 
 function echoVar(string $str) : void {
     /**
-     * @psalm-taint-remove html
+     * @psalm-taint-escape html
      */
     $str = preg_replace('/[^a-z]/', '', $str);
     echo $str;
