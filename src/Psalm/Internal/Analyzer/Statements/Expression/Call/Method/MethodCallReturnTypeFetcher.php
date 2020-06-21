@@ -13,6 +13,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use function strtolower;
+use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Taint\TaintNode;
 
 class MethodCallReturnTypeFetcher
@@ -242,6 +243,18 @@ class MethodCallReturnTypeFetcher
 
                     $context->vars_in_scope[$var_id] = $stmt_var_type;
                 }
+            }
+
+            if ($method_storage->taint_source_types) {
+                $method_node = Source::getForMethodReturn(
+                    (string) $method_id,
+                    $cased_method_id,
+                    $method_storage->signature_return_type_location ?: $method_storage->location
+                );
+
+                $method_node->taints = $method_storage->taint_source_types;
+
+                $codebase->taint->addSource($method_node);
             }
         }
 

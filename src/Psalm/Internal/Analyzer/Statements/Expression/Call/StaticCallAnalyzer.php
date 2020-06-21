@@ -35,6 +35,7 @@ use function strpos;
 use function is_string;
 use function strlen;
 use function substr;
+use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Taint\TaintNode;
 
 /**
@@ -1265,6 +1266,18 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $codebase->taint->addTaintNode($method_source);
 
                         $return_type_candidate->parent_nodes = [$method_source];
+
+                        if ($method_storage && $method_storage->taint_source_types) {
+                            $method_node = Source::getForMethodReturn(
+                                (string) $method_id,
+                                $cased_method_id,
+                                $method_storage->signature_return_type_location ?: $method_storage->location
+                            );
+
+                            $method_node->taints = $method_storage->taint_source_types;
+
+                            $codebase->taint->addSource($method_node);
+                        }
                     }
 
                     if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {

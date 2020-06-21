@@ -1744,7 +1744,7 @@ class Codebase
             return;
         }
 
-        $property_source = new \Psalm\Internal\Taint\Source(
+        $source = new \Psalm\Internal\Taint\Source(
             $taint_id,
             $taint_id,
             $code_location,
@@ -1752,10 +1752,10 @@ class Codebase
             $taints
         );
 
-        $this->taint->addSource($property_source);
+        $this->taint->addSource($source);
 
         $expr_type->parent_nodes = [
-            $property_source,
+            $source,
         ];
     }
 }

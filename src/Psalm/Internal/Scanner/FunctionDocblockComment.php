@@ -111,6 +111,11 @@ class FunctionDocblockComment
     public $taint_sink_params = [];
 
     /**
+     * @var array<string>
+     */
+    public $taint_source_types = [];
+
+    /**
      * @var array<int, array{name:string}>
      */
     public $assert_untainted_params = [];

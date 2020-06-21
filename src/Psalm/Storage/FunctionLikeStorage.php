@@ -192,6 +192,11 @@ abstract class FunctionLikeStorage
     /**
      * @var array<string>
      */
+    public $taint_source_types = [];
+
+    /**
+     * @var array<string>
+     */
     public $added_taints = [];
 
     /**

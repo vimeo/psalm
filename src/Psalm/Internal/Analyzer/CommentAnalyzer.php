@@ -482,6 +482,16 @@ class CommentAnalyzer
             }
         }
 
+        if (isset($parsed_docblock->tags['psalm-taint-source'])) {
+            foreach ($parsed_docblock->tags['psalm-taint-source'] as $param) {
+                $param_parts = preg_split('/\s+/', trim($param));
+
+                if (trim($param_parts[0])) {
+                    $info->taint_source_types[] = trim($param_parts[0]);
+                }
+            }
+        }
+
         if (isset($parsed_docblock->tags['psalm-taint-add'])) {
             foreach ($parsed_docblock->tags['psalm-taint-add'] as $param) {
                 $param = trim($param);

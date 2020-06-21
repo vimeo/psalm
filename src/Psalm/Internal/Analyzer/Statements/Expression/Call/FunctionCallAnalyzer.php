@@ -14,6 +14,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Taint\TaintNode;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
@@ -1116,6 +1117,18 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $removed_taints
                     );
                 }
+            }
+
+            if ($function_storage->taint_source_types) {
+                $method_node = Source::getForMethodReturn(
+                    $function_id,
+                    $function_id,
+                    $return_location
+                );
+
+                $method_node->taints = $function_storage->taint_source_types;
+
+                $codebase->taint->addSource($method_node);
             }
         }
     }

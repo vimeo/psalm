@@ -64,6 +64,61 @@ class TaintTest extends TestCase
     /**
      * @return void
      */
+    public function testTaintedInputFromExplicitTaintSource()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @psalm-taint-source input
+                 */
+                function getName() : string {
+                    return "";
+                }
+
+                echo getName();'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testTaintedInputFromExplicitTaintSourceStaticMethod()
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Request {
+                    /**
+                     * @psalm-taint-source input
+                     */
+                    public static function getName() : string {
+                        return "";
+                    }
+                }
+
+
+                echo Request::getName();'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testTaintedInputFromGetArray()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);

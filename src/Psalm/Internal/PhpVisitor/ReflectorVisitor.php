@@ -2501,6 +2501,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
+        foreach ($docblock_info->taint_source_types as $taint_source_type) {
+            if ($taint_source_type === 'input') {
+                $storage->taint_source_types = array_merge(
+                    $storage->taint_source_types,
+                    \Psalm\Type\TaintKindGroup::ALL_INPUT
+                );
+            } else {
+                $storage->taint_source_types[] = $taint_source_type;
+            }
+        }
+
         $storage->added_taints = $docblock_info->added_taints;
         $storage->removed_taints = $docblock_info->removed_taints;
 
