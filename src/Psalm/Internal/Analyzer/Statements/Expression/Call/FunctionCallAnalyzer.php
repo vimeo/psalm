@@ -1025,9 +1025,24 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        if ($function_storage && $stmt_type) {
+            self::taintReturnType($statements_analyzer, $stmt, $function_id, $function_storage, $stmt_type);
+        }
+
+
+        return $stmt_type;
+    }
+
+    private static function taintReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        FunctionLikeStorage $function_storage,
+        Type\Union $stmt_type
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($codebase->taint
-            && $function_storage
-            && $stmt_type
             && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
         ) {
             $return_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -1044,6 +1059,35 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $stmt_type->parent_nodes[] = $function_return_sink;
 
             if ($function_storage->return_source_params) {
+                $removed_taints = $function_storage->removed_taints;
+
+                if ($function_id === 'preg_replace' && count($stmt->args) > 2) {
+                    $first_stmt_type = $statements_analyzer->node_data->getType($stmt->args[0]->value);
+                    $second_stmt_type = $statements_analyzer->node_data->getType($stmt->args[1]->value);
+
+                    if ($first_stmt_type
+                        && $second_stmt_type
+                        && $first_stmt_type->isSingleStringLiteral()
+                        && $second_stmt_type->isSingleStringLiteral()
+                    ) {
+                        $first_arg_value = $first_stmt_type->getSingleStringLiteral()->value;
+
+                        $pattern = \substr($first_arg_value, 1, -1);
+
+                        if ($pattern[0] === '['
+                            && $pattern[1] === '^'
+                            && \substr($pattern, -1) === ']'
+                        ) {
+                            $pattern = \substr($pattern, 2, -1);
+
+                            if (self::simpleExclusion($pattern, $first_arg_value[0])) {
+                                $removed_taints[] = 'html';
+                                $removed_taints[] = 'sql';
+                            }
+                        }
+                    }
+                }
+
                 foreach ($function_storage->return_source_params as $i) {
                     if (!isset($stmt->args[$i])) {
                         continue;
@@ -1069,13 +1113,80 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $function_return_sink,
                         'arg',
                         $function_storage->added_taints,
-                        $function_storage->removed_taints
+                        $removed_taints
                     );
                 }
             }
         }
+    }
 
-        return $stmt_type;
+    private static function simpleExclusion(string $pattern, string $escape_char) : bool
+    {
+        $str_length = \strlen($pattern);
+
+        for ($i = 0; $i < $str_length; $i++) {
+            $current = $pattern[$i];
+            $next = $pattern[$i + 1] ?? null;
+
+            if ($current === '\\') {
+                if ($next == null
+                    || $next === 'x'
+                    || $next === 'u'
+                ) {
+                    return false;
+                }
+
+                if ($next === '.'
+                    || $next === '('
+                    || $next === ')'
+                    || $next === '['
+                    || $next === ']'
+                    || $next === 's'
+                    || $next === 'w'
+                    || $next === $escape_char
+                ) {
+                    $i++;
+                    continue;
+                }
+
+                return false;
+            }
+
+            if ($next !== '-') {
+                if ($current === '_'
+                    || $current === '-'
+                    || $current === '|'
+                    || $current === ':'
+                    || $current === '#'
+                    || $current === ' '
+                ) {
+                    continue;
+                }
+
+                return false;
+            }
+
+            if ($current === ']') {
+                return false;
+            }
+
+            if (!isset($pattern[$i + 2]) || $next !== '-') {
+                return false;
+            }
+
+            if (($current === 'a' && $pattern[$i + 2] === 'z')
+                || ($current === 'a' && $pattern[$i + 2] === 'Z')
+                || ($current === 'A' && $pattern[$i + 2] === 'Z')
+                || ($current === '0' && $pattern[$i + 2] === '9')
+            ) {
+                $i += 2;
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     private static function checkFunctionCallPurity(
