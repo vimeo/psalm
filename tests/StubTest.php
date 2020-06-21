@@ -160,7 +160,7 @@ class StubTest extends TestCase
 
         $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.php');
         $stub_files = $this->project_analyzer->getConfig()->getStubFiles();
-        $this->assertStringContainsString($path, reset($stub_files));
+        $this->assertStringContainsString($path, \reset($stub_files));
     }
 
     /**
@@ -185,7 +185,7 @@ class StubTest extends TestCase
 
         $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.php');
         $stub_files = $this->project_analyzer->getConfig()->getStubFiles();
-        $this->assertStringContainsString($path, reset($stub_files));
+        $this->assertStringContainsString($path, \reset($stub_files));
     }
 
     /**
