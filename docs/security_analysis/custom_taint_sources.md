@@ -1,6 +1,21 @@
 # Custom Taint Sources
 
-You can define your own taint sources with a plugin.
+You can define your own taint sources with an annotation or a plugin.
+
+## Custom taint sourcce annotation
+
+You can use the annotation `@psalm-taint-source <taint-type>` to indicate a function or method that provides user input.
+
+In the below example the `input` taint type is specified as a standin for the four input taints `text`, `html`, `sql` and `shell`.
+
+```php
+/**
+ * @psalm-taint-source input
+ */
+function getQueryParam(string $name) : string {}
+```
+
+## Custom taint plugin
 
 For example this plugin treats all variables named `$bad_data` as taint sources.
 
