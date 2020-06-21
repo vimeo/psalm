@@ -1404,7 +1404,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if (ArgumentsAnalyzer::checkArgumentsMatch(
             $statements_analyzer,
             $args,
-            null,
+            $method_id,
             $pseudo_method_storage->params,
             $pseudo_method_storage,
             null,
