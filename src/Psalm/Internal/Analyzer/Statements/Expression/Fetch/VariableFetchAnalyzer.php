@@ -361,7 +361,11 @@ class VariableFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($codebase->taint && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())) {
-            if ($var_name === '$_GET' || $var_name === '$_POST' || $var_name === '$_COOKIE') {
+            if ($var_name === '$_GET'
+                || $var_name === '$_POST'
+                || $var_name === '$_COOKIE'
+                || $var_name === '$_REQUEST'
+            ) {
                 $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $server_taint_source = new Source(
