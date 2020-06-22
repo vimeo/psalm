@@ -70,6 +70,8 @@ $valid_long_options = [
     'include-php-versions', // used for baseline
     'pretty-print', // used for JSON reports
     'track-tainted-input',
+    'taint-analysis',
+    'security-analysis',
     'find-unused-psalm-suppress',
     'error-level:',
 ];
@@ -573,7 +575,10 @@ if ($config->find_unused_variables || $find_unused_variables) {
     $project_analyzer->getCodebase()->reportUnusedVariables();
 }
 
-if (isset($options['track-tainted-input'])) {
+if (isset($options['track-tainted-input'])
+    || isset($options['security-analysis'])
+    || isset($options['taint-analysis'])
+) {
     $project_analyzer->trackTaintedInputs();
 }
 
