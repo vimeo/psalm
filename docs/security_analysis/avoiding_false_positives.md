@@ -13,7 +13,7 @@ Some operations remove taints from data – for example, wrapping `$_GET['name']
 Psalm allows you to remove taints via a `@psalm-taint-escape <taint-type>` annotation:
 
 ```php
-<?php // trackTaints
+<?php
 
 function echoVar(string $str) : void {
     /**
@@ -31,7 +31,7 @@ echoVar($_GET["text"]);
 For functions, methods and classes you can use the `@psalm-taint-specialize` annotation.
 
 ```php
-<?php // trackTaints
+<?php
 
 function takesInput(string $s) : string {
     return $s;
@@ -44,7 +44,7 @@ echo takesInput("hello"); // Psalm detects tainted HTML here
 Adding a `@psalm-taint-specialize` annotation solves the problem, by telling Psalm that each invocation of the function should be treated separately.
 
 ```php
-<?php // trackTaints
+<?php
 
 /**
  * @psalm-taint-specialize
@@ -60,7 +60,7 @@ echo takesInput("hello"); // No error
 A specialized function or method will still track tainted input:
 
 ```php
-<?php // trackTaints
+<?php
 
 /**
  * @psalm-taint-specialize
@@ -78,7 +78,7 @@ Here we’re telling Psalm that a function’s taintedness is wholly depenedent 
 If you're familiar with [immutability in Psalm](https://psalm.dev/articles/immutability-and-beyond) then this general idea should be familiar, since a pure function is one where the output is wholly dependent on its input. Unsurprisingly, all functions marked `@psalm-pure` _also_ specialize the taintedness of their output based on input:
 
 ```php
-<?php // trackTaints
+<?php
 
 /**
  * @psalm-pure
@@ -96,7 +96,7 @@ echo takesInput("hello"); // No error
 Just as taints can be specialized in function calls, tainted properties can also be specialized to a given class.
 
 ```php
-<?php // trackTaints
+<?php
 
 class User {
     public string $name;
@@ -122,7 +122,7 @@ echoUserName($user1);
 Adding `@psalm-taint-specialize` to the class fixes the issue.
 
 ```php
-<?php // trackTaints
+<?php
 
 /**
  * @psalm-taint-specialize
@@ -151,7 +151,7 @@ echoUserName($user1);
 And, because it’s form of purity enforcement, `@psalm-immutable` can also be used:
 
 ```php
-<?php // trackTaints
+<?php
 
 /**
  * @psalm-immutable
