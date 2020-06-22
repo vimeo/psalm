@@ -2,7 +2,7 @@
 
 You can define your own taint sources with an annotation or a plugin.
 
-## Custom taint sourcce annotation
+## Taint source annotation
 
 You can use the annotation `@psalm-taint-source <taint-type>` to indicate a function or method that provides user input.
 

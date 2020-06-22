@@ -6,7 +6,7 @@ Nobody likes false-positives!
 
 There are a number of ways you can prevent them:
 
-## Removing taints
+## Escaping tainted input
 
 Some operations remove taints from data – for example, wrapping `$_GET['name']` in an `htmlentities` call prevents cross-site-scripting attacks in that `$_GET` call.
 
@@ -19,7 +19,7 @@ function echoVar(string $str) : void {
     /**
      * @psalm-taint-escape html
      */
-    $str = preg_replace('/[^a-z]/', '', $str);
+    $str = str_replace(['<', '>'], '', $str);
     echo $str;
 }
 
