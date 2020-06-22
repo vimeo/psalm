@@ -123,6 +123,29 @@ class AssertionFinder
             return $if_types;
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\Assign) {
+            $var_name = ExpressionIdentifier::getArrayVarId(
+                $conditional->var,
+                $this_class_name,
+                $source
+            );
+
+            $if_types = self::scrapeAssertions(
+                $conditional->expr,
+                $this_class_name,
+                $source,
+                $codebase,
+                $inside_negation,
+                $cache
+            );
+
+            if ($var_name) {
+                $if_types[$var_name] = [['!falsy']];
+            }
+
+            return $if_types;
+        }
+
         $var_name = ExpressionIdentifier::getArrayVarId(
             $conditional,
             $this_class_name,
@@ -137,20 +160,6 @@ class AssertionFinder
             ) {
                 return $if_types;
             }
-        }
-
-        if ($conditional instanceof PhpParser\Node\Expr\Assign) {
-            $var_name = ExpressionIdentifier::getArrayVarId(
-                $conditional->var,
-                $this_class_name,
-                $source
-            );
-
-            if ($var_name) {
-                $if_types[$var_name] = [['!falsy']];
-            }
-
-            return $if_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
