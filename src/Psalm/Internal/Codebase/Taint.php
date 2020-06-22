@@ -166,7 +166,7 @@ class Taint
         $sources = $this->sources;
         $sinks = $this->sinks;
 
-        for ($i = 0; count($sinks) && count($sources) && $i < 25; $i++) {
+        for ($i = 0; count($sinks) && count($sources) && $i < 30; $i++) {
             $new_sources = [];
 
             foreach ($sources as $source) {

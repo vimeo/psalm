@@ -1179,6 +1179,17 @@ class ArgumentAnalyzer
             }
         }
 
+        $codebase->taint->addTaintNode($method_node);
+
+        $argument_value_node = TaintNode::getForAssignment(
+            'call to ' . $cased_method_id,
+            $arg_location
+        );
+
+        $codebase->taint->addTaintNode($argument_value_node);
+
+        $codebase->taint->addPath($argument_value_node, $method_node, 'arg');
+
         if ($function_param->sinks) {
             if ($specialize_taint) {
                 $sink = Sink::getForMethodArgument(
@@ -1202,12 +1213,10 @@ class ArgumentAnalyzer
             $codebase->taint->addSink($sink);
         }
 
-        $codebase->taint->addTaintNode($method_node);
-
         if ($input_type->parent_nodes) {
             foreach ($input_type->parent_nodes as $parent_node) {
                 $codebase->taint->addTaintNode($method_node);
-                $codebase->taint->addPath($parent_node, $method_node, 'arg');
+                $codebase->taint->addPath($parent_node, $argument_value_node, 'arg');
             }
         }
 
