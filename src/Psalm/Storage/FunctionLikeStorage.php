@@ -205,7 +205,7 @@ abstract class FunctionLikeStorage
     public $removed_taints = [];
 
     /**
-     * @var list<int>
+     * @var array<int, string>
      */
     public $return_source_params = [];
 

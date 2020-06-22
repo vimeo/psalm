@@ -468,8 +468,9 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock->tags['psalm-flow'])) {
-            $flow = trim(reset($parsed_docblock->tags['psalm-flow']));
-            $info->flow = $flow;
+            foreach ($parsed_docblock->tags['psalm-flow'] as $param) {
+                $info->flows[] = trim($param);
+            }
         }
 
         if (isset($parsed_docblock->tags['psalm-taint-sink'])) {

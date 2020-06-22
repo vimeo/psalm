@@ -1698,4 +1698,23 @@ class TaintTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testImplodeExplode() : void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $a = $_GET["name"];
+                $b = explode(" ", $a);
+                $c = implode(" ", $b);
+                echo $c;'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }

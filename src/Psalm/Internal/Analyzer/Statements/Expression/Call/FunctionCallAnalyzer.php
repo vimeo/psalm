@@ -1092,7 +1092,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            foreach ($function_storage->return_source_params as $i) {
+            foreach ($function_storage->return_source_params as $i => $path_type) {
                 if (!isset($stmt->args[$i])) {
                     continue;
                 }
@@ -1115,7 +1115,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $codebase->taint->addPath(
                     $function_param_sink,
                     $function_return_sink,
-                    'arg',
+                    $path_type,
                     $function_storage->added_taints,
                     $removed_taints
                 );

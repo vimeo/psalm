@@ -91,9 +91,9 @@ class FunctionDocblockComment
     /**
      * Represents the flow from function params to return type
      *
-     * @var ?string
+     * @var array<string>
      */
-    public $flow;
+    public $flows = [];
 
     /**
      * @var array<string>
