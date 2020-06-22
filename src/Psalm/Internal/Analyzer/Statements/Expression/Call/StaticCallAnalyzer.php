@@ -1368,7 +1368,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             ? ($method_storage->signature_return_type_location ?: $method_storage->location)
             : null;
 
-        if ($method_storage && $method_storage->pure) {
+        if ($method_storage && $method_storage->specialize_call) {
             $method_source = TaintNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
