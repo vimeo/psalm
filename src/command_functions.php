@@ -315,6 +315,9 @@ Surfacing issues:
     --no-suggestions
         Hide suggestions
 
+    --taint-analysis
+        Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
+
 Issue baselines:
     --set-baseline=PATH
         Save all current error level issues to a file, to mark them as info in subsequent runs
