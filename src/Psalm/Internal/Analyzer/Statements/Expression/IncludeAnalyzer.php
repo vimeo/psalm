@@ -112,7 +112,6 @@ class IncludeAnalyzer
                 'include',
                 'include',
                 0,
-                $arg_location,
                 $arg_location
             );
 

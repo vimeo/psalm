@@ -44,7 +44,7 @@ class TaintTest extends TestCase
     public function testTaintedInputFromFunctionReturnType()
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('TaintedInput');
+        $this->expectExceptionMessage('TaintedInput - somefile.php:6:22 - Detected tainted html in path: $_GET -> $_GET[\'name\'] (somefile.php:3:28) -> getname (somefile.php:6:22) -> call to echo (somefile.php:6:22) -> echo#1');
 
         $this->project_analyzer->trackTaintedInputs();
 

@@ -37,7 +37,7 @@ class Taint
     /** @var array<string, Sink> */
     private $sinks = [];
 
-    /** @var array<string, array<string, array{string, array<string>, array<string>}>> */
+    /** @var array<string, array<string, Path>> */
     private $forward_edges = [];
 
     /** @var array<string, array<string, true>> */
@@ -86,7 +86,7 @@ class Taint
             return;
         }
 
-        $this->forward_edges[$from_id][$to_id] = [$path_type, $added_taints, $removed_taints];
+        $this->forward_edges[$from_id][$to_id] = new Path($path_type, $added_taints, $removed_taints);
     }
 
     public function getPredecessorPath(Taintable $source) : string
@@ -166,7 +166,7 @@ class Taint
         $sources = $this->sources;
         $sinks = $this->sinks;
 
-        for ($i = 0; count($sinks) && count($sources) && $i < 30; $i++) {
+        for ($i = 0; count($sinks) && count($sources) && $i < 40; $i++) {
             $new_sources = [];
 
             foreach ($sources as $source) {
@@ -207,8 +207,10 @@ class Taint
     ) : array {
         $new_sources = [];
 
-        foreach ($this->forward_edges[$generated_source->id] as $to_id => $path_data) {
-            [$path_type, $added_taints, $removed_taints] = $path_data;
+        foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
+            $path_type = $path->type;
+            $added_taints = $path->unescaped_taints;
+            $removed_taints = $path->escaped_taints;
 
             if (!isset($this->nodes[$to_id])) {
                 continue;
