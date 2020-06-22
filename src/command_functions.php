@@ -396,6 +396,9 @@ Miscellaneous:
     --debug-by-line
         Debug information on a line-by-line level
 
+    --debug-emitted-issues
+        Print a php backtrace to stderr when emitting issues.
+
     -r, --root
         If running Psalm globally you'll need to specify a project root. Defaults to cwd
 

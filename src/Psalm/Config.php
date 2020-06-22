@@ -568,6 +568,11 @@ class Config
      */
     protected $taint_analysis_ignored_files;
 
+    /**
+     * @var bool whether to emit a backtrace of emitted issues to stderr
+     */
+    public $debug_emitted_issues = false;
+
     protected function __construct()
     {
         self::$instance = $this;

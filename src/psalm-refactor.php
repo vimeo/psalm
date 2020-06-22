@@ -22,7 +22,7 @@ $args = array_slice($argv, 1);
 
 $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
 $valid_long_options = [
-    'help', 'debug', 'config:', 'root:',
+    'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:',
     'threads:', 'move:', 'into:', 'rename:', 'to:',
 ];
 
@@ -92,7 +92,7 @@ Options:
     -h, --help
         Display this help message
 
-    --debug, --debug-by-line
+    --debug, --debug-by-line, --debug-emitted-issues
         Debug information
 
     -c, --config=psalm.xml
@@ -247,10 +247,14 @@ $providers = new Psalm\Internal\Provider\Providers(
     new Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
 );
 
-$debug = array_key_exists('debug', $options);
+$debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 $progress = $debug
     ? new DebugProgress()
     : new DefaultProgress();
+
+if (array_key_exists('debug-emitted-issues', $options)) {
+    $config->debug_emitted_issues = true;
+}
 
 $project_analyzer = new ProjectAnalyzer(
     $config,
@@ -260,6 +264,10 @@ $project_analyzer = new ProjectAnalyzer(
     $threads,
     $progress
 );
+
+if (array_key_exists('debug-by-line', $options)) {
+    $project_analyzer->debug_lines = true;
+}
 
 $config->visitComposerAutoloadFiles($project_analyzer);
 

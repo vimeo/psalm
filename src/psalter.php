@@ -27,7 +27,7 @@ $args = array_slice($argv, 1);
 
 $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
 $valid_long_options = [
-    'help', 'debug', 'debug-by-line', 'config:', 'file:', 'root:',
+    'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:',
     'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
     'find-unused-code', 'threads:', 'codeowner:',
     'allow-backwards-incompatible-changes:',
@@ -105,7 +105,7 @@ Options:
     -h, --help
         Display this help message
 
-    --debug, --debug-by-line
+    --debug, --debug-by-line, --debug-emitted-issues
         Debug information
 
     -c, --config=psalm.xml
@@ -223,7 +223,7 @@ if (array_key_exists('list-supported-issues', $options)) {
     exit();
 }
 
-$debug = array_key_exists('debug', $options);
+$debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 $progress = $debug
     ? new DebugProgress()
     : new DefaultProgress();
@@ -242,6 +242,10 @@ $project_analyzer = new ProjectAnalyzer(
 
 if (array_key_exists('debug-by-line', $options)) {
     $project_analyzer->debug_lines = true;
+}
+
+if (array_key_exists('debug-emitted-issues', $options)) {
+    $config->debug_emitted_issues = true;
 }
 
 $config->visitComposerAutoloadFiles($project_analyzer);
