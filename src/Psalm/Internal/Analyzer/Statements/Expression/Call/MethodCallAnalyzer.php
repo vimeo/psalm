@@ -167,7 +167,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $result = new Method\AtomicMethodCallAnalysisResult();
 
         $possible_new_class_types = [];
-        $fq_class_name = null;
         foreach ($lhs_types as $lhs_type_part) {
             Method\AtomicMethodCallAnalyzer::analyze(
                 $statements_analyzer,
@@ -188,8 +187,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 && !$possible_new_class_type->equals($class_type)) {
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
-            // TODO: How?
-            $fq_class_name = $lhs_type_part->value;
         }
 
         if (count($possible_new_class_types) > 0) {
@@ -407,12 +404,15 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $context->vars_in_scope[$lhs_var_id] = $class_type;
         }
 
-        $method_name = $stmt->name->name;
-        $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, strtolower($method_name));
-        $storage = $codebase->methods->getStorage($method_id);
-        if ($storage->self_out_type) {
-          // TODO: Nedd clone?
-          $context->vars_in_scope[$lhs_var_id] = clone $storage->self_out_type;
+        // TODO: Always defined? Always correct?
+        $method_id = $result->existent_method_ids[0];
+        try {
+            $storage = $codebase->methods->getStorage($method_id);
+            if ($storage->self_out_type) {
+                $context->vars_in_scope[$lhs_var_id] = $storage->self_out_type;
+            }
+        } catch (\UnexpectedValueException $e) {
+            // TODO: No storage for this method? How to check?
         }
 
         return true;
