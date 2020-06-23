@@ -467,8 +467,8 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($parsed_docblock->tags['self-out'])) {
-            foreach ($parsed_docblock->tags['self-out'] as $offset => $param) {
+        if (isset($parsed_docblock->tags['psalm-self-out'])) {
+            foreach ($parsed_docblock->tags['psalm-self-out'] as $offset => $param) {
                 $line_parts = self::splitDocLine($param);
 
                 if (count($line_parts) > 0) {
