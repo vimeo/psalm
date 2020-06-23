@@ -194,7 +194,6 @@
             <xs:element name="ImplementedParamTypeMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementedReturnTypeMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplicitToStringCast" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="ImpureArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureByReferenceAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureMethodCall" type="IssueHandlerType" minOccurs="0" />
@@ -237,7 +236,6 @@
             <xs:element name="InvalidScalarArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidScope" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStaticInvocation" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="InvalidStaticVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStringClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidTemplateParam" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidThrow" type="ClassIssueHandlerType" minOccurs="0" />
