@@ -687,6 +687,7 @@ class InstancePropertyFetchAnalyzer
 
                 if ($fq_class_name !== $context->self
                     && $context->self
+                    && $codebase->classlikes->classExtends($fq_class_name, $context->self)
                     && $codebase->properties->propertyExists(
                         $context->self . '::$' . $prop_name,
                         true,

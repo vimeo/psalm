@@ -3071,6 +3071,19 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor'
             ],
+            'propertyWithSameNameUndefined' => [
+                '<?php
+                    class Foo {}
+
+                    class Bar {
+                        public int $id = 3;
+
+                        public function __construct(Foo $model) {
+                            echo $model->id;
+                        }
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
         ];
     }
 }
