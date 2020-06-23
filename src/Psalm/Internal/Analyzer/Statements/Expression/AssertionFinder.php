@@ -901,9 +901,9 @@ class AssertionFinder
                     $source->getAliases()
                 );
 
-                if ($var_type === 'self') {
+                if ($var_type === 'self' || $var_type === 'static') {
                     $var_type = $this_class_name;
-                } elseif ($var_type === 'parent' || $var_type === 'static') {
+                } elseif ($var_type === 'parent') {
                     $var_type = null;
                 }
 
@@ -1506,9 +1506,9 @@ class AssertionFinder
                     $source->getAliases()
                 );
 
-                if ($var_type === 'self') {
+                if ($var_type === 'self' || $var_type === 'static') {
                     $var_type = $this_class_name;
-                } elseif ($var_type === 'parent' || $var_type === 'static') {
+                } elseif ($var_type === 'parent') {
                     $var_type = null;
                 }
             } else {
