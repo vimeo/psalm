@@ -169,13 +169,16 @@ class InternalCallMapHandler
                     }
                 }
 
+                $arg_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+
                 if (TypeAnalyzer::isContainedBy(
                     $codebase,
                     $arg_type,
                     $param_type,
                     true,
-                    true
-                )) {
+                    true,
+                    $arg_result
+                ) || $arg_result->type_coerced) {
                     continue;
                 }
 

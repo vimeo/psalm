@@ -1174,6 +1174,21 @@ class FunctionCallTest extends TestCase
                         );
                     }',
             ],
+            'pregReplaceCallbackWithArray' => [
+                '<?php
+                    /**
+                     * @param string[] $ids
+                     * @psalm-suppress MissingClosureReturnType
+                     * @psalm-suppress MixedArgumentTypeCoercion
+                     */
+                    function(array $ids): array {
+                        return \preg_replace_callback(
+                            "",
+                            fn (array $matches) => $matches[4],
+                            $ids
+                        );
+                    };'
+            ],
             'compactDefinedVariable' => [
                 '<?php
                     /**
