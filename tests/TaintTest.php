@@ -1749,4 +1749,30 @@ class TaintTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testTaintThroughPregReplaceCallback() : void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $a = $_GET["bad"];
+
+                $b = preg_replace_callback(
+                    \'/foo/\',
+                    function (array $matches) : string {
+                        return $matches[1];
+                    },
+                    $a
+                );
+
+                echo $b;'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }
