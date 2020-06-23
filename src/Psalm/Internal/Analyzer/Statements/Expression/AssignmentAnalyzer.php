@@ -1297,6 +1297,7 @@ class AssignmentAnalyzer
 
             return;
         }
+
         $var_id = ExpressionIdentifier::getVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
