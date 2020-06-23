@@ -1239,24 +1239,24 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
-                if ($return_type_candidate) {
-                    self::taintReturnType(
-                        $statements_analyzer,
-                        $stmt,
-                        $method_id,
-                        $cased_method_id,
-                        $return_type_candidate,
-                        $method_storage
-                    );
+                $return_type_candidate = $return_type_candidate ?: Type::getMixed();
 
-                    if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
-                        $statements_analyzer->node_data->setType(
-                            $stmt,
-                            Type::combineUnionTypes($stmt_type, $return_type_candidate)
-                        );
-                    } else {
-                        $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
-                    }
+                self::taintReturnType(
+                    $statements_analyzer,
+                    $stmt,
+                    $method_id,
+                    $cased_method_id,
+                    $return_type_candidate,
+                    $method_storage
+                );
+
+                if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        Type::combineUnionTypes($stmt_type, $return_type_candidate)
+                    );
+                } else {
+                    $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
                 }
             } else {
                 if ($stmt->name instanceof PhpParser\Node\Expr) {

@@ -1775,4 +1775,68 @@ class TaintTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testTaintedFunctionWithNoTypes() : void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function rawinput() {
+                    return $_GET[\'rawinput\'];
+                }
+
+                echo rawinput();'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testTaintedStaticCallWithNoTypes() : void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    public static function rawinput() {
+                        return $_GET[\'rawinput\'];
+                    }
+                }
+
+                echo A::rawinput();'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testTaintedInstanceCallWithNoTypes() : void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    public function rawinput() {
+                        return $_GET[\'rawinput\'];
+                    }
+                }
+
+                echo (new A())->rawinput();'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }
