@@ -37,8 +37,6 @@ use Psalm\Type\Atomic\TList;
 use function strtolower;
 use function strpos;
 use function explode;
-use function in_array;
-use Psalm\Issue\TaintedInput;
 
 /**
  * @internal
@@ -56,7 +54,7 @@ class ArgumentAnalyzer
         ?string $cased_method_id,
         ?string $self_fq_class_name,
         ?string $static_fq_class_name,
-        CodeLocation $function_location,
+        CodeLocation $function_call_location,
         ?FunctionLikeParameter $function_param,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
@@ -129,7 +127,7 @@ class ArgumentAnalyzer
             $cased_method_id,
             $self_fq_class_name,
             $static_fq_class_name,
-            $function_location,
+            $function_call_location,
             $function_param,
             $arg_value_type,
             $argument_offset,
@@ -158,7 +156,7 @@ class ArgumentAnalyzer
         ?string $cased_method_id,
         ?string $self_fq_class_name,
         ?string $static_fq_class_name,
-        CodeLocation $function_location,
+        CodeLocation $function_call_location,
         FunctionLikeParameter $function_param,
         Type\Union $arg_type,
         int $argument_offset,
@@ -406,7 +404,7 @@ class ArgumentAnalyzer
             $unpacked_atomic_array,
             $specialize_taint,
             $in_call_map,
-            $function_location
+            $function_call_location
         ) === false) {
             return false;
         }
@@ -423,7 +421,7 @@ class ArgumentAnalyzer
         ?Type\Union $signature_param_type,
         ?string $cased_method_id,
         int $argument_offset,
-        CodeLocation $code_location,
+        CodeLocation $arg_location,
         PhpParser\Node\Expr $input_expr,
         Context $context,
         FunctionLikeParameter $function_param,
@@ -431,7 +429,7 @@ class ArgumentAnalyzer
         ?Type\Atomic $unpacked_atomic_array,
         bool $specialize_taint,
         bool $in_call_map,
-        CodeLocation $function_location
+        CodeLocation $function_call_location
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -470,8 +468,8 @@ class ArgumentAnalyzer
                     $statements_analyzer,
                     $cased_method_id,
                     $argument_offset,
-                    $code_location,
-                    $function_location,
+                    $arg_location,
+                    $function_call_location,
                     $function_param,
                     $input_type,
                     $specialize_taint
@@ -499,7 +497,7 @@ class ArgumentAnalyzer
                     'Argument ' . ($argument_offset + 1) . $method_identifier
                         . ' cannot be ' . $input_type->getId() . ', expecting ' .
                         $param_type,
-                    $code_location,
+                    $arg_location,
                     $cased_method_id
                 ),
                 $statements_analyzer->getSuppressedIssues()
@@ -533,8 +531,8 @@ class ArgumentAnalyzer
                     $statements_analyzer,
                     $cased_method_id,
                     $argument_offset,
-                    $code_location,
-                    $function_location,
+                    $arg_location,
+                    $function_call_location,
                     $function_param,
                     $input_type,
                     $specialize_taint
@@ -550,7 +548,7 @@ class ArgumentAnalyzer
             if (IssueBuffer::accepts(
                 new NoValue(
                     'This function or method call never returns output',
-                    $code_location
+                    $arg_location
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {
@@ -619,8 +617,8 @@ class ArgumentAnalyzer
                 $statements_analyzer,
                 $cased_method_id,
                 $argument_offset,
-                $code_location,
-                $function_location,
+                $arg_location,
+                $function_call_location,
                 $function_param,
                 $input_type,
                 $specialize_taint
@@ -691,7 +689,7 @@ class ArgumentAnalyzer
                     new MixedArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', parent type ' . $input_type->getId() . ' provided',
-                        $code_location,
+                        $arg_location,
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -703,7 +701,7 @@ class ArgumentAnalyzer
                     new ArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', parent type ' . $input_type->getId() . ' provided',
-                        $code_location,
+                        $arg_location,
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -718,7 +716,7 @@ class ArgumentAnalyzer
                 new ImplicitToStringCast(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
                         $param_type->getId() . ', ' . $input_type->getId() . ' provided with a __toString method',
-                    $code_location
+                    $arg_location
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {
@@ -741,7 +739,7 @@ class ArgumentAnalyzer
                         new InvalidScalarArgument(
                             'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
                                 $param_type->getId() . ', ' . $input_type->getId() . ' provided',
-                            $code_location,
+                            $arg_location,
                             $cased_method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -754,7 +752,7 @@ class ArgumentAnalyzer
                     new PossiblyInvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', possibly different type ' . $input_type->getId() . ' provided',
-                        $code_location,
+                        $arg_location,
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -766,7 +764,7 @@ class ArgumentAnalyzer
                     new InvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', ' . $input_type->getId() . ' provided',
-                        $code_location,
+                        $arg_location,
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -790,7 +788,7 @@ class ArgumentAnalyzer
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,
                         $input_expr->value,
-                        $code_location,
+                        $arg_location,
                         $context->self,
                         $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues()
@@ -808,7 +806,7 @@ class ArgumentAnalyzer
                                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                         $statements_analyzer,
                                         $item->value->value,
-                                        $code_location,
+                                        $arg_location,
                                         $context->self,
                                         $context->calling_method_id,
                                         $statements_analyzer->getSuppressedIssues()
@@ -856,7 +854,7 @@ class ArgumentAnalyzer
                                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                     $statements_analyzer,
                                     $callable_fq_class_name,
-                                    $code_location,
+                                    $arg_location,
                                     $context->self,
                                     $context->calling_method_id,
                                     $statements_analyzer->getSuppressedIssues()
@@ -892,7 +890,7 @@ class ArgumentAnalyzer
                                 if (MethodAnalyzer::checkMethodExists(
                                     $codebase,
                                     $non_existent_method_ids[0],
-                                    $code_location,
+                                    $arg_location,
                                     $statements_analyzer->getSuppressedIssues()
                                 ) === false
                                 ) {
@@ -905,7 +903,7 @@ class ArgumentAnalyzer
                                 && CallAnalyzer::checkFunctionExists(
                                     $statements_analyzer,
                                     $function_id,
-                                    $code_location,
+                                    $arg_location,
                                     false
                                 ) === false
                             ) {
@@ -923,7 +921,7 @@ class ArgumentAnalyzer
                     new NullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
                             'null value provided to parameter with type ' . $param_type->getId(),
-                        $code_location,
+                        $arg_location,
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -939,7 +937,7 @@ class ArgumentAnalyzer
                     new PossiblyNullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
                             'null value provided',
-                        $code_location,
+                        $arg_location,
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -958,7 +956,7 @@ class ArgumentAnalyzer
                 new PossiblyFalseArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
                         'false value provided',
-                    $code_location,
+                    $arg_location,
                     $cased_method_id
                 ),
                 $statements_analyzer->getSuppressedIssues()
@@ -1115,8 +1113,8 @@ class ArgumentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
         int $argument_offset,
-        CodeLocation $code_location,
-        CodeLocation $function_location,
+        CodeLocation $arg_location,
+        CodeLocation $function_call_location,
         FunctionLikeParameter $function_param,
         Type\Union &$input_type,
         bool $specialize_taint
@@ -1132,15 +1130,15 @@ class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $code_location,
-                $function_location
+                $function_param->location,
+                $function_call_location
             );
         } else {
             $method_node = TaintNode::getForMethodArgument(
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $code_location
+                $function_param->location
             );
 
             if (strpos($cased_method_id, '::')) {
@@ -1156,12 +1154,12 @@ class ArgumentAnalyzer
                         $dependent_classlike_lc . '::' . $method_name,
                         $dependent_classlike_storage->name . '::' . $cased_method_name,
                         $argument_offset,
-                        $code_location,
+                        $arg_location,
                         null
                     );
 
                     $codebase->taint->addTaintNode($new_sink);
-                    $codebase->taint->addPath($method_node, $new_sink);
+                    $codebase->taint->addPath($method_node, $new_sink, 'arg');
                 }
 
                 if (isset($class_storage->overridden_method_ids[$method_name])) {
@@ -1170,16 +1168,27 @@ class ArgumentAnalyzer
                             (string) $parent_method_id,
                             $codebase->methods->getCasedMethodId($parent_method_id),
                             $argument_offset,
-                            $code_location,
+                            $arg_location,
                             null
                         );
 
                         $codebase->taint->addTaintNode($new_sink);
-                        $codebase->taint->addPath($method_node, $new_sink);
+                        $codebase->taint->addPath($method_node, $new_sink, 'arg');
                     }
                 }
             }
         }
+
+        $codebase->taint->addTaintNode($method_node);
+
+        $argument_value_node = TaintNode::getForAssignment(
+            'call to ' . $cased_method_id,
+            $arg_location
+        );
+
+        $codebase->taint->addTaintNode($argument_value_node);
+
+        $codebase->taint->addPath($argument_value_node, $method_node, 'arg');
 
         if ($function_param->sinks) {
             if ($specialize_taint) {
@@ -1187,15 +1196,15 @@ class ArgumentAnalyzer
                     $cased_method_id,
                     $cased_method_id,
                     $argument_offset,
-                    $code_location,
-                    $function_location
+                    $function_param->location,
+                    $function_call_location
                 );
             } else {
                 $sink = Sink::getForMethodArgument(
                     $cased_method_id,
                     $cased_method_id,
                     $argument_offset,
-                    $code_location
+                    $function_param->location
                 );
             }
 
@@ -1204,12 +1213,10 @@ class ArgumentAnalyzer
             $codebase->taint->addSink($sink);
         }
 
-        $codebase->taint->addTaintNode($method_node);
-
         if ($input_type->parent_nodes) {
             foreach ($input_type->parent_nodes as $parent_node) {
                 $codebase->taint->addTaintNode($method_node);
-                $codebase->taint->addPath($parent_node, $method_node);
+                $codebase->taint->addPath($parent_node, $argument_value_node, 'arg');
             }
         }
 

@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -12,6 +13,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use function strtolower;
+use Psalm\Internal\Taint\Source;
 use Psalm\Internal\Taint\TaintNode;
 
 class MethodCallReturnTypeFetcher
@@ -193,12 +195,12 @@ class MethodCallReturnTypeFetcher
                 $declaring_method_id
             );
 
-            $node_location = new CodeLocation($statements_analyzer, $stmt);
+            $node_location = new CodeLocation($statements_analyzer, $stmt->name);
 
             $method_call_node = TaintNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $node_location,
+                $method_storage->signature_return_type_location ?: $method_storage->location,
                 $method_storage->specialize_call ? $node_location : null
             );
 
@@ -207,6 +209,53 @@ class MethodCallReturnTypeFetcher
             $return_type_candidate->parent_nodes = [
                 $method_call_node
             ];
+
+            if ($method_storage->specialize_call) {
+                $var_id = ExpressionIdentifier::getArrayVarId(
+                    $stmt->var,
+                    null,
+                    $statements_analyzer
+                );
+
+                if ($var_id && isset($context->vars_in_scope[$var_id])) {
+                    $var_node = TaintNode::getForAssignment(
+                        $var_id,
+                        new CodeLocation($statements_analyzer, $stmt->var)
+                    );
+
+                    $codebase->taint->addTaintNode($var_node);
+
+                    $codebase->taint->addPath(
+                        $method_call_node,
+                        $var_node,
+                        'method-call-' . $method_id->method_name
+                    );
+
+                    $stmt_var_type = clone $context->vars_in_scope[$var_id];
+
+                    if ($context->vars_in_scope[$var_id]->parent_nodes) {
+                        foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
+                            $codebase->taint->addPath($parent_node, $var_node, '=');
+                        }
+                    }
+
+                    $stmt_var_type->parent_nodes = [$var_node];
+
+                    $context->vars_in_scope[$var_id] = $stmt_var_type;
+                }
+            }
+
+            if ($method_storage->taint_source_types) {
+                $method_node = Source::getForMethodReturn(
+                    (string) $method_id,
+                    $cased_method_id,
+                    $method_storage->signature_return_type_location ?: $method_storage->location
+                );
+
+                $method_node->taints = $method_storage->taint_source_types;
+
+                $codebase->taint->addSource($method_node);
+            }
         }
 
         return $return_type_candidate;

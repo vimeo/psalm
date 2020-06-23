@@ -242,6 +242,14 @@ class Populator
             }
         }
 
+        if ($storage->specialize_instance) {
+            foreach ($storage->methods as $method) {
+                if (!$method->is_static) {
+                    $method->specialize_call = true;
+                }
+            }
+        }
+
         if ($storage->internal
             && !$storage->is_interface
             && !$storage->is_trait
@@ -439,6 +447,11 @@ class Populator
                     $trait_storage->template_type_extends
                 );
             }
+
+            $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
+            $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
+
+            $storage->pseudo_methods += $trait_storage->pseudo_methods;
         }
     }
 

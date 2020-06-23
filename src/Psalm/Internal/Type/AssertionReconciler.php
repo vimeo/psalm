@@ -802,6 +802,52 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     }
                 }
 
+                if (($new_type_part instanceof Type\Atomic\TArray
+                        || $new_type_part instanceof Type\Atomic\TIterable)
+                    && $existing_type_part instanceof Type\Atomic\TList
+                ) {
+                    $has_any_param_match = false;
+
+                    $new_param = $new_type_part->type_params[1];
+                    $existing_param = $existing_type_part->type_param;
+
+                    $has_param_match = true;
+
+                    $new_param = self::filterTypeWithAnother(
+                        $codebase,
+                        $existing_param,
+                        $new_param,
+                        $template_type_map,
+                        $has_param_match,
+                        $any_scalar_type_match_found
+                    );
+
+                    if ($template_type_map) {
+                        $new_param->replaceTemplateTypesWithArgTypes(
+                            new TemplateResult([], $template_type_map),
+                            $codebase
+                        );
+                    }
+
+                    $existing_type->bustCache();
+
+                    if ($has_param_match
+                        && $existing_type_part->type_param->getId() !== $new_param->getId()
+                    ) {
+                        $existing_type_part->type_param = $new_param;
+
+                        if (!$has_local_match) {
+                            $has_any_param_match = true;
+                        }
+                    }
+
+                    if ($has_any_param_match) {
+                        $has_local_match = true;
+                        $matching_atomic_types[] = $existing_type_part;
+                        $atomic_comparison_results->type_coerced = true;
+                    }
+                }
+
                 if ($atomic_contained_by || $atomic_comparison_results->type_coerced) {
                     if ($atomic_contained_by
                         && $existing_type_part instanceof TNamedObject

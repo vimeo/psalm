@@ -334,6 +334,12 @@ class ToStringTest extends TestCase
                     }',
                 'error_message' => 'InvalidCast',
             ],
+            'alwaysEvaluateToStringVar' => [
+                '<?php
+                    /** @psalm-suppress UndefinedFunction */
+                    fora((string) $address);',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
         ];
     }
 }

@@ -8,7 +8,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\PropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -50,7 +50,7 @@ use Psalm\Internal\Taint\TaintNode;
 /**
  * @internal
  */
-class PropertyAssignmentAnalyzer
+class InstancePropertyAssignmentAnalyzer
 {
     /**
      * @param   StatementsAnalyzer               $statements_analyzer
@@ -63,7 +63,7 @@ class PropertyAssignmentAnalyzer
      *
      * @return  false|null
      */
-    public static function analyzeInstance(
+    public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         $stmt,
         $prop_name,
@@ -402,7 +402,17 @@ class PropertyAssignmentAnalyzer
                             $has_regular_setter = true;
                             $property_exists = true;
 
-                            self::taintProperty($statements_analyzer, $stmt, $property_id, $assignment_value_type);
+                            if (!$context->collect_initializations) {
+                                self::taintProperty(
+                                    $statements_analyzer,
+                                    $stmt,
+                                    $property_id,
+                                    $class_storage,
+                                    $assignment_value_type,
+                                    $context
+                                );
+                            }
+
                             continue;
                         }
                     }
@@ -463,7 +473,16 @@ class PropertyAssignmentAnalyzer
                      * not in that list, fall through
                      */
                     if (!$var_id || !$class_storage->sealed_properties) {
-                        self::taintProperty($statements_analyzer, $stmt, $property_id, $assignment_value_type);
+                        if (!$context->collect_initializations) {
+                            self::taintProperty(
+                                $statements_analyzer,
+                                $stmt,
+                                $property_id,
+                                $class_storage,
+                                $assignment_value_type,
+                                $context
+                            );
+                        }
 
                         continue;
                     }
@@ -506,7 +525,18 @@ class PropertyAssignmentAnalyzer
                     }
                 }
 
-                self::taintProperty($statements_analyzer, $stmt, $property_id, $assignment_value_type);
+                if ($codebase->taint && !$context->collect_initializations) {
+                    $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                    self::taintProperty(
+                        $statements_analyzer,
+                        $stmt,
+                        $property_id,
+                        $class_storage,
+                        $assignment_value_type,
+                        $context
+                    );
+                }
 
                 if (!$codebase->properties->propertyExists(
                     $property_id,
@@ -762,7 +792,7 @@ class PropertyAssignmentAnalyzer
                     if ($lhs_type_part instanceof Type\Atomic\TGenericObject) {
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                        $class_property_type = PropertyFetchAnalyzer::localizePropertyType(
+                        $class_property_type = InstancePropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
                             $class_property_type,
                             $lhs_type_part,
@@ -1055,7 +1085,7 @@ class PropertyAssignmentAnalyzer
                 ExpressionAnalyzer::analyze($statements_analyzer, $prop->default, $context);
 
                 if ($prop_default_type = $statements_analyzer->node_data->getType($prop->default)) {
-                    if (self::analyzeInstance(
+                    if (self::analyze(
                         $statements_analyzer,
                         $prop,
                         $prop->name->name,
@@ -1074,7 +1104,9 @@ class PropertyAssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $property_id,
-        Type\Union $assignment_value_type
+        \Psalm\Storage\ClassLikeStorage $class_storage,
+        Type\Union $assignment_value_type,
+        Context $context
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1082,309 +1114,90 @@ class PropertyAssignmentAnalyzer
             return;
         }
 
-        $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+        $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $localized_property_node = new TaintNode(
-            $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
-            $property_id,
-            $code_location,
-            null
-        );
-
-        $codebase->taint->addTaintNode($localized_property_node);
-
-        $property_node = new TaintNode(
-            $property_id,
-            $property_id,
-            null,
-            null
-        );
-
-        $codebase->taint->addTaintNode($property_node);
-
-        $codebase->taint->addPath($localized_property_node, $property_node);
-
-        if ($assignment_value_type->parent_nodes) {
-            foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                $codebase->taint->addPath($parent_node, $localized_property_node);
-            }
-        }
-    }
-
-    /**
-     * @param   StatementsAnalyzer                         $statements_analyzer
-     * @param   PhpParser\Node\Expr\StaticPropertyFetch   $stmt
-     * @param   PhpParser\Node\Expr|null                  $assignment_value
-     * @param   Type\Union                                $assignment_value_type
-     * @param   Context                                   $context
-     *
-     * @return  false|null
-     */
-    public static function analyzeStatic(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\StaticPropertyFetch $stmt,
-        $assignment_value,
-        Type\Union $assignment_value_type,
-        Context $context
-    ) {
-        $var_id = ExpressionIdentifier::getArrayVarId(
-            $stmt,
-            $context->self,
-            $statements_analyzer
-        );
-
-        $fq_class_name = (string) $statements_analyzer->node_data->getType($stmt->class);
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        $prop_name = $stmt->name;
-
-        if (!$prop_name instanceof PhpParser\Node\Identifier) {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $prop_name, $context) === false) {
-                return false;
-            }
-
-            if ($fq_class_name && !$context->ignore_variable_property) {
-                $codebase->analyzer->addMixedMemberName(
-                    strtolower($fq_class_name) . '::$',
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
-                );
-            }
-
-            return;
-        }
-
-        $property_id = $fq_class_name . '::$' . $prop_name;
-
-        if (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)) {
-            if (IssueBuffer::accepts(
-                new UndefinedPropertyAssignment(
-                    'Static property ' . $property_id . ' is not defined',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $property_id
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
-
-            return;
-        }
-
-        if (ClassLikeAnalyzer::checkPropertyVisibility(
-            $property_id,
-            $context,
-            $statements_analyzer,
-            new CodeLocation($statements_analyzer->getSource(), $stmt),
-            $statements_analyzer->getSuppressedIssues()
-        ) === false) {
-            return false;
-        }
-
-        $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
-            $fq_class_name . '::$' . $prop_name->name,
-            false
-        );
-
-        $declaring_property_id = strtolower((string) $declaring_property_class) . '::$' . $prop_name;
-
-        if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
-            $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
-                $codebase,
-                $statements_analyzer,
-                $stmt->class,
-                $fq_class_name,
-                $context->calling_method_id
+        if ($class_storage->specialize_instance) {
+            $var_id = ExpressionIdentifier::getArrayVarId(
+                $stmt->var,
+                null,
+                $statements_analyzer
             );
 
-            if (!$moved_class) {
-                foreach ($codebase->property_transforms as $original_pattern => $transformation) {
-                    if ($declaring_property_id === $original_pattern) {
-                        list($old_declaring_fq_class_name) = explode('::$', $declaring_property_id);
-                        list($new_fq_class_name, $new_property_name) = explode('::$', $transformation);
+            $var_property_id = ExpressionIdentifier::getArrayVarId(
+                $stmt,
+                null,
+                $statements_analyzer
+            );
 
-                        $file_manipulations = [];
+            if ($var_id) {
+                $var_node = TaintNode::getForAssignment(
+                    $var_id,
+                    $var_location
+                );
 
-                        if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
-                            $file_manipulations[] = new \Psalm\FileManipulation(
-                                (int) $stmt->class->getAttribute('startFilePos'),
-                                (int) $stmt->class->getAttribute('endFilePos') + 1,
-                                Type::getStringFromFQCLN(
-                                    $new_fq_class_name,
-                                    $statements_analyzer->getNamespace(),
-                                    $statements_analyzer->getAliasedClassesFlipped(),
-                                    null
-                                )
-                            );
-                        }
+                $codebase->taint->addTaintNode($var_node);
 
-                        $file_manipulations[] = new \Psalm\FileManipulation(
-                            (int) $stmt->name->getAttribute('startFilePos'),
-                            (int) $stmt->name->getAttribute('endFilePos') + 1,
-                            '$' . $new_property_name
-                        );
+                $property_node = TaintNode::getForAssignment(
+                    $var_property_id ?: $var_id . '->$property',
+                    $property_location
+                );
 
-                        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+                $codebase->taint->addTaintNode($property_node);
+
+                $codebase->taint->addPath(
+                    $property_node,
+                    $var_node,
+                    'property-assignment'
+                        . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : '')
+                );
+
+                if ($assignment_value_type->parent_nodes) {
+                    foreach ($assignment_value_type->parent_nodes as $parent_node) {
+                        $codebase->taint->addPath($parent_node, $property_node, '=');
                     }
                 }
-            }
-        }
 
-        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
+                $stmt_var_type = clone $context->vars_in_scope[$var_id];
 
-        $property_storage = $class_storage->properties[$prop_name->name];
-
-        if ($var_id) {
-            $context->vars_in_scope[$var_id] = $assignment_value_type;
-        }
-
-        $class_property_type = $codebase->properties->getPropertyType(
-            $property_id,
-            true,
-            $statements_analyzer,
-            $context
-        );
-
-        if (!$class_property_type) {
-            $class_property_type = Type::getMixed();
-
-            if (!$assignment_value_type->hasMixed()) {
-                if ($property_storage->suggested_type) {
-                    $property_storage->suggested_type = Type::combineUnionTypes(
-                        $assignment_value_type,
-                        $property_storage->suggested_type
-                    );
-                } else {
-                    $property_storage->suggested_type = Type::combineUnionTypes(
-                        Type::getNull(),
-                        $assignment_value_type
-                    );
+                if ($context->vars_in_scope[$var_id]->parent_nodes) {
+                    foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
+                        $codebase->taint->addPath($parent_node, $var_node, '=');
+                    }
                 }
+
+                $stmt_var_type->parent_nodes = [$var_node];
+
+                $context->vars_in_scope[$var_id] = $stmt_var_type;
             }
         } else {
-            $class_property_type = clone $class_property_type;
-        }
+            $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        if ($assignment_value_type->hasMixed()) {
-            return null;
-        }
+            $localized_property_node = new TaintNode(
+                $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
+                $property_id,
+                $code_location,
+                null
+            );
 
-        if ($class_property_type->hasMixed()) {
-            return null;
-        }
+            $codebase->taint->addTaintNode($localized_property_node);
 
-        $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-            $codebase,
-            $class_property_type,
-            $fq_class_name,
-            $fq_class_name,
-            $class_storage->parent_class
-        );
+            $property_node = new TaintNode(
+                $property_id,
+                $property_id,
+                null,
+                null
+            );
 
-        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+            $codebase->taint->addTaintNode($property_node);
 
-        $type_match_found = TypeAnalyzer::isContainedBy(
-            $codebase,
-            $assignment_value_type,
-            $class_property_type,
-            true,
-            true,
-            $union_comparison_results
-        );
+            $codebase->taint->addPath($localized_property_node, $property_node, 'property-assignment');
 
-        if ($union_comparison_results->type_coerced) {
-            if ($union_comparison_results->type_coerced_from_mixed) {
-                if (IssueBuffer::accepts(
-                    new MixedPropertyTypeCoercion(
-                        $var_id . ' expects \'' . $class_property_type->getId() . '\', '
-                            . ' parent type `' . $assignment_value_type->getId() . '` provided',
-                        new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $assignment_value ?: $stmt,
-                            $context->include_location
-                        ),
-                        $property_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // keep soldiering on
-                }
-            } else {
-                if (IssueBuffer::accepts(
-                    new PropertyTypeCoercion(
-                        $var_id . ' expects \'' . $class_property_type->getId() . '\', '
-                            . ' parent type \'' . $assignment_value_type->getId() . '\' provided',
-                        new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $assignment_value ?: $stmt,
-                            $context->include_location
-                        ),
-                        $property_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // keep soldiering on
+            if ($assignment_value_type->parent_nodes) {
+                foreach ($assignment_value_type->parent_nodes as $parent_node) {
+                    $codebase->taint->addPath($parent_node, $localized_property_node, '=');
                 }
             }
         }
-
-        if ($union_comparison_results->to_string_cast) {
-            if (IssueBuffer::accepts(
-                new ImplicitToStringCast(
-                    $var_id . ' expects \'' . $class_property_type . '\', '
-                        . '\'' . $assignment_value_type . '\' provided with a __toString method',
-                    new CodeLocation(
-                        $statements_analyzer->getSource(),
-                        $assignment_value ?: $stmt,
-                        $context->include_location
-                    )
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
-        }
-
-        if (!$type_match_found && !$union_comparison_results->type_coerced) {
-            if (TypeAnalyzer::canBeContainedBy($codebase, $assignment_value_type, $class_property_type)) {
-                if (IssueBuffer::accepts(
-                    new PossiblyInvalidPropertyAssignmentValue(
-                        $var_id . ' with declared type \''
-                            . $class_property_type->getId() . '\' cannot be assigned type \''
-                            . $assignment_value_type->getId() . '\'',
-                        new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $assignment_value ?: $stmt
-                        ),
-                        $property_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            } else {
-                if (IssueBuffer::accepts(
-                    new InvalidPropertyAssignmentValue(
-                        $var_id . ' with declared type \'' . $class_property_type->getId()
-                            . '\' cannot be assigned type \''
-                            . $assignment_value_type->getId() . '\'',
-                        new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $assignment_value ?: $stmt
-                        ),
-                        $property_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            }
-        }
-
-        if ($var_id) {
-            $context->vars_in_scope[$var_id] = $assignment_value_type;
-        }
-
-        return null;
     }
 }

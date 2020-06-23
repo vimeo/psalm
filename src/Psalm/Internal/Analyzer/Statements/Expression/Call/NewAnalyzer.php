@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Taint\TaintNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\AbstractInstantiation;
@@ -568,6 +569,32 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt_type->reference_free = true;
                     }
                 }
+
+                if ($codebase->taint
+                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                    && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+                ) {
+                    $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                    if ($storage->external_mutation_free) {
+                        $method_source = TaintNode::getForMethodReturn(
+                            (string) $method_id,
+                            $fq_class_name . '::__construct',
+                            $storage->location,
+                            $code_location
+                        );
+                    } else {
+                        $method_source = TaintNode::getForMethodReturn(
+                            (string) $method_id,
+                            $fq_class_name . '::__construct',
+                            $storage->location
+                        );
+                    }
+
+                    $codebase->taint->addTaintNode($method_source);
+
+                    $stmt_type->parent_nodes = [$method_source];
+                }
             } else {
                 ArgumentsAnalyzer::analyze(
                     $statements_analyzer,
@@ -578,6 +605,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 );
             }
         }
+
+
 
         if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
             $context->removeAllObjectVars();

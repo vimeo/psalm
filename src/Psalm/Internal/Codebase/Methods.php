@@ -469,7 +469,8 @@ class Methods
 
         foreach ($type->getAtomicTypes() as $key => $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam
-                && $atomic_type->defining_class === $base_fq_class_name
+                && ($atomic_type->defining_class === $base_fq_class_name
+                    || isset($extends[$atomic_type->defining_class]))
             ) {
                 $types_to_add = self::getExtendedTemplatedTypes(
                     $atomic_type,

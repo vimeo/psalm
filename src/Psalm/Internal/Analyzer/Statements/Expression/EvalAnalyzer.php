@@ -44,7 +44,7 @@ class EvalAnalyzer
                 $codebase->taint->addSink($eval_param_sink);
 
                 foreach ($expr_type->parent_nodes as $parent_node) {
-                    $codebase->taint->addPath($parent_node, $eval_param_sink);
+                    $codebase->taint->addPath($parent_node, $eval_param_sink, 'arg');
                 }
             }
         }

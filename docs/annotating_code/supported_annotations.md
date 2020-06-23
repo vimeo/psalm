@@ -6,21 +6,23 @@ Psalm supports a wide range of docblock annotations.
 
 Psalm uses the following PHPDoc tags to understand your code:
 
-- [`@var`](https://docs.phpdoc.org/references/phpdoc/tags/var.html)
+- [`@var`](https://docs.phpdoc.org/latest/references/phpdoc/tags/var.html)
   Used for specifying the types of properties and variables
-- [`@return`](https://docs.phpdoc.org/references/phpdoc/tags/return.html)
+- [`@return`](https://docs.phpdoc.org/latest/references/phpdoc/tags/return.html)
   Used for specifying the return types of functions, methods and closures
-- [`@param`](https://docs.phpdoc.org/references/phpdoc/tags/param.html)
+- [`@param`](https://docs.phpdoc.org/latest/references/phpdoc/tags/param.html)
   Used for specifying types of parameters passed to functions, methods and closures
-- [`@property`](https://docs.phpdoc.org/references/phpdoc/tags/property.html)
+- [`@property`](https://docs.phpdoc.org/latest/references/phpdoc/tags/property.html)
   Used to specify what properties can be accessed on an object that uses `__get` and `__set`
-- [`@property-read`](https://docs.phpdoc.org/references/phpdoc/tags/property-read.html)
+- [`@property-read`](https://docs.phpdoc.org/latest/references/phpdoc/tags/property-read.html)
   Used to specify what properties can be read on object that uses `__get`
-- [`@property-write`](https://docs.phpdoc.org/references/phpdoc/tags/property-write.html)
+- [`@property-write`](https://docs.phpdoc.org/latest/references/phpdoc/tags/property-write.html)
   Used to specify what properties can be written on object that uses `__set`
-- [`@deprecated`](https://docs.phpdoc.org/references/phpdoc/tags/deprecated.html)
+- [`@method`](https://docs.phpdoc.org/latest/references/phpdoc/tags/method.html)
+  Used to specify which magic methods are available on object that uses `__call`.
+- [`@deprecated`](https://docs.phpdoc.org/latest/references/phpdoc/tags/deprecated.html)
   Used to mark functions, methods, classes and interfaces as being deprecated
-- [`@internal`](https://docs.phpdoc.org/references/phpdoc/tags/internal.html)
+- [`@internal`](https://docs.phpdoc.org/latest/references/phpdoc/tags/internal.html)
    used to mark classes, functions and properties that are internal to an application or library.
 
 ### Off-label usage of the `@var` tag
@@ -398,6 +400,10 @@ $username = $_GET['username']; // prints something like "test.php:4 $username: m
 ```
 
 *Note*: it throws [special low-level issue](../running_psalm/issues/Trace.md), so you have to set errorLevel to 1, override it in config or invoke Psalm with `--show-info=true`.
+
+### `@psalm-taint-*`
+
+See [Security Analysis annotations](../security_analysis/annotations.md).
 
 ## Type Syntax
 

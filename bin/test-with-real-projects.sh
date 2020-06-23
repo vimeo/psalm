@@ -29,7 +29,14 @@ proxymanager)
 	composer install
 	~/project/psalm --monochrome
 	;;
+
+laravel)
+	git clone git@github.com:muglug/framework.git
+	cd framework
+	composer install
+	~/project/psalm --monochrome
+	;;
 *)
-	echo "Usage: test-with-real-projects.sh {phpunit|collections|proxymanager}"
+	echo "Usage: test-with-real-projects.sh {phpunit|collections|proxymanager|laravel}"
 	exit 1
 esac

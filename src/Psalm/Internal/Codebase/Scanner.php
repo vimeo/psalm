@@ -488,6 +488,27 @@ class Scanner
             $this->codebase->statements_provider->parser_cache_provider->saveFileContentHashes();
         }
 
+        foreach ($files_to_scan as $scanned_file) {
+            if ($this->config->hasStubFile($scanned_file)) {
+                $file_storage = $this->file_storage_provider->get($scanned_file);
+
+                foreach ($file_storage->functions as $function_storage) {
+                    if ($function_storage->cased_name
+                        && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
+                    ) {
+                        $this->codebase->functions->addGlobalFunction(
+                            $function_storage->cased_name,
+                            $function_storage
+                        );
+                    }
+                }
+
+                foreach ($file_storage->constants as $name => $type) {
+                    $this->codebase->addGlobalConstantType($name, $type);
+                }
+            }
+        }
+
         $this->file_reference_provider->addClassLikeFiles($this->classlike_files);
 
         return true;

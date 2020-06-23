@@ -65,11 +65,10 @@ class IncludeAnalyzer
             $context->inside_call = false;
         }
 
-        $stmt_expr_type = null;
+        $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
         if ($stmt->expr instanceof PhpParser\Node\Scalar\String_
-            || (($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))
-                && $stmt_expr_type->isSingleStringLiteral())
+            || ($stmt_expr_type && $stmt_expr_type->isSingleStringLiteral())
         ) {
             if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
                 $path_to_file = $stmt->expr->value;
@@ -100,6 +99,29 @@ class IncludeAnalyzer
                 $statements_analyzer->getFileName(),
                 $config
             );
+        }
+
+        if ($stmt_expr_type
+            && $codebase->taint
+            && $stmt_expr_type->parent_nodes
+            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+        ) {
+            $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
+
+            $include_param_sink = Sink::getForMethodArgument(
+                'include',
+                'include',
+                0,
+                $arg_location
+            );
+
+            $include_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
+
+            $codebase->taint->addSink($include_param_sink);
+
+            foreach ($stmt_expr_type->parent_nodes as $parent_node) {
+                $codebase->taint->addPath($parent_node, $include_param_sink, 'arg');
+            }
         }
 
         if ($path_to_file) {
@@ -164,6 +186,12 @@ class IncludeAnalyzer
                         $context->check_variables = false;
                         $context->check_functions = false;
                     }
+                }
+
+                $included_return_type = $include_file_analyzer->getReturnType();
+
+                if ($included_return_type) {
+                    $statements_analyzer->node_data->setType($stmt, $included_return_type);
                 }
 
                 $context->has_returned = false;
@@ -258,33 +286,6 @@ class IncludeAnalyzer
             }
 
             return $stmt_type->getSingleStringLiteral()->value;
-        }
-
-        if ($stmt_type && $statements_analyzer) {
-            $codebase = $statements_analyzer->getCodebase();
-
-            if ($codebase->taint
-                && $stmt_type->parent_nodes
-                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-            ) {
-                $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                $include_param_sink = Sink::getForMethodArgument(
-                    'include',
-                    'include',
-                    0,
-                    $arg_location,
-                    $arg_location
-                );
-
-                $include_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
-
-                $codebase->taint->addSink($include_param_sink);
-
-                foreach ($stmt_type->parent_nodes as $parent_node) {
-                    $codebase->taint->addPath($parent_node, $include_param_sink);
-                }
-            }
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {

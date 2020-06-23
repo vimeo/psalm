@@ -483,6 +483,27 @@ function strtoupper(string $str) : string {}
 /**
  * @psalm-pure
  *
+ * @psalm-flow ($str) -> return
+ */
+function trim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function ltrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function rtrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
+
+/**
+ * @psalm-pure
+ *
  * @param string|array $glue
  *
  * @return (
@@ -493,9 +514,17 @@ function strtoupper(string $str) : string {}
  *     : string
  * )
  *
- * @psalm-flow ($glue, $pieces) -> return
+ * @psalm-flow ($glue) -> return
+ * @psalm-flow ($pieces) -(array-fetch)-> return
  */
 function implode($glue, array $pieces = []) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -(array-assignment)-> return
+ */
+function explode(string $delimiter, string $string, int $limit = -1) : array {}
 
 /**
  * @param array $input
@@ -514,7 +543,7 @@ function array_sum(array $input) {}
 /**
  * @psalm-pure
  *
- * @psalm-taint-remove html
+ * @psalm-taint-escape html
  * @psalm-flow ($str) -> return
  */
 function strip_tags(string $str, ?string $allowable_tags = null) : string {}
@@ -522,7 +551,7 @@ function strip_tags(string $str, ?string $allowable_tags = null) : string {}
 /**
  * @psalm-pure
  *
- * @psalm-taint-remove html
+ * @psalm-taint-escape html
  *
  * @psalm-flow ($string) -> return
  */
@@ -531,7 +560,7 @@ function htmlentities(string $string, ?int $quote_style = null, ?string $charset
 /**
  * @psalm-pure
  *
- * @psalm-taint-add html
+ * @psalm-taint-unescape html
  *
  * @psalm-flow ($string) -> return
  */
@@ -540,8 +569,8 @@ function html_entity_decode(string $string, ?int $quote_style = null, ?string $c
 /**
  * @psalm-pure
  *
- * @psalm-taint-remove html
- * @psalm-taint-remove sql
+ * @psalm-taint-escape html
+ * @psalm-taint-escape sql
  *
  * @psalm-flow ($string) -> return
  */
@@ -550,8 +579,8 @@ function htmlspecialchars(string $string, int $flags = ENT_COMPAT | ENT_HTML401,
 /**
  * @psalm-pure
  *
- * @psalm-taint-add html
- * @psalm-taint-add sql
+ * @psalm-taint-unescape html
+ * @psalm-taint-unescape sql
  *
  * @psalm-flow ($string) -> return
  */

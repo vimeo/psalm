@@ -106,6 +106,9 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /** @var ?\Psalm\Internal\Provider\NodeDataProvider */
     private $node_data;
 
+    /** @var ?Type\Union */
+    private $return_type;
+
     /**
      * @param string  $file_path
      * @param string  $file_name
@@ -188,6 +191,19 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         // in turn causing the classes/interfaces be evaluated
         if ($leftover_stmts) {
             $statements_analyzer->analyze($leftover_stmts, $this->context, $global_context, true);
+
+            foreach ($leftover_stmts as $leftover_stmt) {
+                if ($leftover_stmt instanceof PhpParser\Node\Stmt\Return_) {
+                    if ($leftover_stmt->expr) {
+                        $this->return_type = $statements_analyzer->node_data->getType($leftover_stmt->expr)
+                            ?: Type::getMixed();
+                    } else {
+                        $this->return_type = Type::getVoid();
+                    }
+
+                    break;
+                }
+            }
         }
 
         // check any leftover interfaces not already evaluated
@@ -661,6 +677,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         return $this->node_data;
+    }
+
+    public function getReturnType() : ?Type\Union
+    {
+        return $this->return_type;
     }
 
     public function clearSourceBeforeDestruction() : void

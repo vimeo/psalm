@@ -1086,7 +1086,7 @@ class Codebase
 
                     return '<?php ' . $function_storage->getSignature(true);
                 }
-                
+
                 if (!$function_id) {
                     return null;
                 }
@@ -1173,7 +1173,7 @@ class Codebase
                 if (isset($file_storage->functions[$function_id])) {
                     return $file_storage->functions[$function_id]->location;
                 }
-                
+
                 if (!$function_id) {
                     return null;
                 }
@@ -1727,5 +1727,35 @@ class Codebase
         array $phantom_classes = []
     ): void {
         $this->scanner->queueClassLikeForScanning($fq_classlike_name, $analyze_too, $store_failure, $phantom_classes);
+    }
+
+    /**
+     * @param array<string> $taints
+     *
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public function addTaintSource(
+        Type\Union $expr_type,
+        string $taint_id,
+        array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
+        ?CodeLocation $code_location = null
+    ) : void {
+        if (!$this->taint) {
+            return;
+        }
+
+        $source = new \Psalm\Internal\Taint\Source(
+            $taint_id,
+            $taint_id,
+            $code_location,
+            null,
+            $taints
+        );
+
+        $this->taint->addSource($source);
+
+        $expr_type->parent_nodes = [
+            $source,
+        ];
     }
 }

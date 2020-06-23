@@ -197,7 +197,7 @@ class CommentAnalyzer
                 || isset($parsed_docblock->tags['readonly'])
                 || isset($parsed_docblock->tags['psalm-readonly'])
                 || isset($parsed_docblock->tags['psalm-readonly-allow-private-mutation'])
-                || isset($parsed_docblock->tags['psalm-taint-remove'])
+                || isset($parsed_docblock->tags['psalm-taint-escape'])
                 || isset($parsed_docblock->tags['psalm-internal']))
         ) {
             $var_comment = new VarDocblockComment();
@@ -224,8 +224,8 @@ class CommentAnalyzer
             = isset($parsed_docblock->tags['psalm-allow-private-mutation'])
             || isset($parsed_docblock->tags['psalm-readonly-allow-private-mutation']);
 
-        if (isset($parsed_docblock->tags['psalm-taint-remove'])) {
-            foreach ($parsed_docblock->tags['psalm-taint-remove'] as $param) {
+        if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
+            foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
                 $var_comment->removed_taints[] = $param;
             }
@@ -483,8 +483,9 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock->tags['psalm-flow'])) {
-            $flow = trim(reset($parsed_docblock->tags['psalm-flow']));
-            $info->flow = $flow;
+            foreach ($parsed_docblock->tags['psalm-flow'] as $param) {
+                $info->flows[] = trim($param);
+            }
         }
 
         if (isset($parsed_docblock->tags['psalm-taint-sink'])) {
@@ -492,20 +493,76 @@ class CommentAnalyzer
                 $param_parts = preg_split('/\s+/', trim($param));
 
                 if (count($param_parts) === 2) {
-                    $info->taint_sink_params[] = ['name' => trim($param_parts[1]), 'taint' => trim($param_parts[0])];
+                    $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $param_parts[0]];
                 }
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-taint-add'])) {
-            foreach ($parsed_docblock->tags['psalm-taint-add'] as $param) {
+        // support for MediaWiki taint plugin
+        if (isset($parsed_docblock->tags['param-taint'])) {
+            foreach ($parsed_docblock->tags['param-taint'] as $param) {
+                $param_parts = preg_split('/\s+/', trim($param));
+
+                if (count($param_parts) === 2) {
+                    $taint_type = $param_parts[1];
+
+                    if (substr($taint_type, 0, 5) === 'exec_') {
+                        $taint_type = substr($taint_type, 5);
+
+                        if ($taint_type === 'tainted') {
+                            $taint_type = 'input';
+                        }
+
+                        if ($taint_type === 'misc') {
+                            $taint_type = 'text';
+                        }
+
+                        $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $taint_type];
+                    }
+                }
+            }
+        }
+
+        if (isset($parsed_docblock->tags['psalm-taint-source'])) {
+            foreach ($parsed_docblock->tags['psalm-taint-source'] as $param) {
+                $param_parts = preg_split('/\s+/', trim($param));
+
+                if ($param_parts[0]) {
+                    $info->taint_source_types[] = $param_parts[0];
+                }
+            }
+        }
+
+        // support for MediaWiki taint plugin
+        if (isset($parsed_docblock->tags['return-taint'])) {
+            foreach ($parsed_docblock->tags['return-taint'] as $param) {
+                $param_parts = preg_split('/\s+/', trim($param));
+
+                if ($param_parts[0]) {
+                    if ($param_parts[0] === 'tainted') {
+                        $param_parts[0] = 'input';
+                    }
+
+                    if ($param_parts[0] === 'misc') {
+                        $param_parts[0] = 'text';
+                    }
+
+                    if ($param_parts[0] !== 'none') {
+                        $info->taint_source_types[] = $param_parts[0];
+                    }
+                }
+            }
+        }
+
+        if (isset($parsed_docblock->tags['psalm-taint-unescape'])) {
+            foreach ($parsed_docblock->tags['psalm-taint-unescape'] as $param) {
                 $param = trim($param);
                 $info->added_taints[] = $param;
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-taint-remove'])) {
-            foreach ($parsed_docblock->tags['psalm-taint-remove'] as $param) {
+        if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
+            foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
                 $info->removed_taints[] = $param;
             }
@@ -861,6 +918,10 @@ class CommentAnalyzer
             $info->internal = true;
         }
 
+        if (isset($parsed_docblock->tags['final'])) {
+            $info->final = true;
+        }
+
         if (isset($parsed_docblock->tags['psalm-internal'])) {
             $psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
             if ($psalm_internal) {
@@ -899,10 +960,15 @@ class CommentAnalyzer
         ) {
             $info->mutation_free = true;
             $info->external_mutation_free = true;
+            $info->taint_specialize = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
             $info->external_mutation_free = true;
+        }
+
+        if (isset($parsed_docblock->tags['psalm-taint-specialize'])) {
+            $info->taint_specialize = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-override-property-visibility'])) {
@@ -934,6 +1000,8 @@ class CommentAnalyzer
 
                 $is_static = false;
 
+                $has_return = false;
+
                 if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     $doc_line_parts = self::splitDocLine($method_entry);
 
@@ -944,6 +1012,7 @@ class CommentAnalyzer
 
                     if (count($doc_line_parts) > 1) {
                         $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
+                        $has_return = true;
 
                         $method_entry = implode(' ', $doc_line_parts);
                     }
@@ -989,10 +1058,13 @@ class CommentAnalyzer
                 }
 
                 if ($method_tree instanceof ParseTree\MethodWithReturnTypeTree) {
-                    $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
-                        $method_tree->children[1],
-                        $codebase
-                    );
+                    if (!$has_return) {
+                        $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
+                            $method_tree->children[1],
+                            $codebase
+                        )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
+                    }
+
                     $method_tree = $method_tree->children[0];
                 }
 

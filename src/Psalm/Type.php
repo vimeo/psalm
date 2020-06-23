@@ -204,8 +204,12 @@ abstract class Type
                 }
             }
 
-            if (!$type && strlen($value) < $config->max_string_length) {
-                $type = new TLiteralString($value);
+            if (!$type) {
+                if (strlen($value) < $config->max_string_length) {
+                    $type = new TLiteralString($value);
+                } else {
+                    $type = new Type\Atomic\TNonEmptyString();
+                }
             }
         }
 

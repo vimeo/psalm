@@ -11,11 +11,13 @@ use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\StatementsSource;
-use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use function strpos;
 use function strtolower;
 use function substr;
 use Closure;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Internal\MethodIdentifier;
 
 /**
  * @internal
@@ -28,7 +30,7 @@ class Functions
     private $file_storage_provider;
 
     /**
-     * @var array<lowercase-string, FunctionLikeStorage>
+     * @var array<lowercase-string, FunctionStorage>
      */
     private static $stubbed_functions;
 
@@ -65,7 +67,7 @@ class Functions
         string $function_id,
         ?string $root_file_path = null,
         ?string $checked_file_path = null
-    ) : FunctionLikeStorage {
+    ) : FunctionStorage {
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
         }
@@ -141,11 +143,10 @@ class Functions
 
     /**
      * @param string $function_id
-     * @param FunctionLikeStorage $storage
      *
      * @return void
      */
-    public function addGlobalFunction($function_id, FunctionLikeStorage $storage)
+    public function addGlobalFunction($function_id, FunctionStorage $storage)
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }
@@ -161,7 +162,7 @@ class Functions
     }
 
     /**
-     * @return array<string, FunctionLikeStorage>
+     * @return array<string, FunctionStorage>
      */
     public function getAllStubbedFunctions()
     {
@@ -169,6 +170,7 @@ class Functions
     }
 
     /**
+     * @param lowercase-string $function_id
      * @return bool
      */
     public function functionExists(
@@ -193,7 +195,7 @@ class Functions
             return true;
         }
 
-        if (isset(self::$stubbed_functions[strtolower($function_id)])) {
+        if (isset(self::$stubbed_functions[$function_id])) {
             return true;
         }
 
@@ -290,6 +292,7 @@ class Functions
      */
     public function isCallMapFunctionPure(
         Codebase $codebase,
+        ?\Psalm\NodeTypeProvider $type_provider,
         string $function_id,
         ?array $args,
         bool &$must_use = true
@@ -299,8 +302,8 @@ class Functions
             'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'closedir', 'copy', 'file_put_contents',
             'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
             'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
-            'fputcsv', 'umask', 'finfo_close', 'readline_add_history', 'stream_set_timeout', 'fflush',
-            'move_uploaded_file',
+            'fgetcsv', 'fputcsv', 'umask', 'finfo_close', 'readline_add_history', 'stream_set_timeout',
+            'fflush', 'move_uploaded_file',
 
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
@@ -364,8 +367,9 @@ class Functions
             'openlog', 'syslog', 'error_log', 'define_syslog_variables',
 
             // session
-            'session_id', 'session_name', 'session_set_cookie_params', 'session_set_save_handler',
-            'session_regenerate_id', 'mb_internal_encoding', 'session_start',
+            'session_id', 'session_decode', 'session_name', 'session_set_cookie_params',
+            'session_set_save_handler', 'session_regenerate_id', 'mb_internal_encoding',
+            'session_start',
 
             // ldap
             'ldap_set_option',
@@ -400,6 +404,28 @@ class Functions
         if ($function_id === 'assert') {
             $must_use = false;
             return true;
+        }
+
+        if ($function_id === 'count' && isset($args[0]) && $type_provider) {
+            $count_type = $type_provider->getType($args[0]->value);
+
+            if ($count_type) {
+                foreach ($count_type->getAtomicTypes() as $atomic_count_type) {
+                    if ($atomic_count_type instanceof TNamedObject) {
+                        $count_method_id = new MethodIdentifier(
+                            $atomic_count_type->value,
+                            'count'
+                        );
+
+                        try {
+                            $method_storage = $codebase->methods->getStorage($count_method_id);
+                            return $method_storage->mutation_free;
+                        } catch (\Exception $e) {
+                            // do nothing
+                        }
+                    }
+                }
+            }
         }
 
         $function_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(

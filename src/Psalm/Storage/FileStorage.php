@@ -36,7 +36,7 @@ class FileStorage
     public $file_path;
 
     /**
-     * @var array<string, FunctionLikeStorage>
+     * @var array<string, FunctionStorage>
      */
     public $functions = [];
 

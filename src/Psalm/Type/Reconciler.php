@@ -481,6 +481,10 @@ class Reconciler
             if (strpos($base_key, '::')) {
                 list($fq_class_name, $const_name) = explode('::', $base_key);
 
+                if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
+                    return null;
+                }
+
                 $class_constant = $codebase->classlikes->getConstantForClass(
                     $fq_class_name,
                     $const_name,

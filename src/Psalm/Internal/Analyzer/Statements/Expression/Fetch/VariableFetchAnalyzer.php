@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Taint\Source;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidScope;
@@ -128,12 +129,18 @@ class VariableFetchAnalyzer
             $var_name = '$' . $stmt->name;
 
             if (isset($context->vars_in_scope[$var_name])) {
-                $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$var_name]);
+                $type = clone $context->vars_in_scope[$var_name];
+
+                self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
+
+                $statements_analyzer->node_data->setType($stmt, $type);
 
                 return true;
             }
 
             $type = self::getGlobalType($var_name);
+
+            self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
 
             $statements_analyzer->node_data->setType($stmt, $type);
             $context->vars_in_scope[$var_name] = clone $type;
@@ -343,6 +350,39 @@ class VariableFetchAnalyzer
         }
 
         return true;
+    }
+
+    private static function taintVariable(
+        StatementsAnalyzer $statements_analyzer,
+        string $var_name,
+        Type\Union $type,
+        PhpParser\Node\Expr\Variable $stmt
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($codebase->taint && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())) {
+            if ($var_name === '$_GET'
+                || $var_name === '$_POST'
+                || $var_name === '$_COOKIE'
+                || $var_name === '$_REQUEST'
+            ) {
+                $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                $server_taint_source = new Source(
+                    $var_name . ':' . $taint_location->file_name . ':' . $taint_location->raw_file_start,
+                    $var_name,
+                    null,
+                    null,
+                    Type\TaintKindGroup::ALL_INPUT
+                );
+
+                $codebase->taint->addSource($server_taint_source);
+
+                $type->parent_nodes = [
+                    $server_taint_source
+                ];
+            }
+        }
     }
 
     public static function isSuperGlobal(string $var_id) : bool

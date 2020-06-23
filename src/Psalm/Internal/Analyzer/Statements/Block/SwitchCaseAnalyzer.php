@@ -227,6 +227,27 @@ class SwitchCaseAnalyzer
             );
         }
 
+        if ($case_equality_expr
+            && $stmt->cond instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->cond->name)
+            && isset($context->vars_in_scope['$' . $stmt->cond->name])
+        ) {
+            $new_case_equality_expr = self::simplifyCaseEqualityExpression(
+                $case_equality_expr,
+                $stmt->cond
+            );
+
+            if ($new_case_equality_expr) {
+                ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $new_case_equality_expr->args[1]->value,
+                    $case_context
+                );
+
+                $case_equality_expr = $new_case_equality_expr;
+            }
+        }
+
         $case_context->break_types[] = 'switch';
 
         $switch_scope->leftover_statements = [];
@@ -632,5 +653,77 @@ class SwitchCaseAnalyzer
                 }
             }
         }
+    }
+
+    private static function simplifyCaseEqualityExpression(
+        PhpParser\Node\Expr $case_equality_expr,
+        PhpParser\Node\Expr\Variable $var
+    ) : ?PhpParser\Node\Expr\FuncCall {
+        if ($case_equality_expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            $nested_or_options = self::getOptionsFromNestedOr($case_equality_expr, $var);
+
+            if ($nested_or_options) {
+                return new PhpParser\Node\Expr\FuncCall(
+                    new PhpParser\Node\Name\FullyQualified(['in_array']),
+                    [
+                        new PhpParser\Node\Arg(
+                            $var
+                        ),
+                        new PhpParser\Node\Arg(
+                            new PhpParser\Node\Expr\Array_(
+                                $nested_or_options
+                            )
+                        ),
+                        new PhpParser\Node\Arg(
+                            new PhpParser\Node\Expr\ConstFetch(
+                                new PhpParser\Node\Name\FullyQualified(['true'])
+                            )
+                        ),
+                    ]
+                );
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<PhpParser\Node\Expr\ArrayItem> $in_array_values
+     * @return ?array<PhpParser\Node\Expr\ArrayItem>
+     */
+    private static function getOptionsFromNestedOr(
+        PhpParser\Node\Expr $case_equality_expr,
+        PhpParser\Node\Expr\Variable $var,
+        array $in_array_values = []
+    ) : ?array {
+        if ($case_equality_expr instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && $case_equality_expr->left instanceof PhpParser\Node\Expr\Variable
+            && $case_equality_expr->left->name === $var->name
+        ) {
+            $in_array_values[] = new PhpParser\Node\Expr\ArrayItem(
+                $case_equality_expr->right
+            );
+
+            return $in_array_values;
+        }
+
+        if (!$case_equality_expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            return null;
+        }
+
+        if (!$case_equality_expr->right instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || !$case_equality_expr->right->left instanceof PhpParser\Node\Expr\Variable
+            || $case_equality_expr->right->left->name !== $var->name
+        ) {
+            return null;
+        }
+
+        $in_array_values[] = new PhpParser\Node\Expr\ArrayItem($case_equality_expr->right->right);
+
+        return self::getOptionsFromNestedOr(
+            $case_equality_expr->left,
+            $var,
+            $in_array_values
+        );
     }
 }

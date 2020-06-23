@@ -376,6 +376,15 @@ class Union implements TypeNode
             $types[] = strval($type->getId());
         }
         sort($types);
+
+        if (\count($types) > 1) {
+            foreach ($types as $i => $type) {
+                if (strpos($type, ' as ') && strpos($type, '(') === false) {
+                    $types[$i] = '(' . $type . ')';
+                }
+            }
+        }
+
         $id = implode('|', $types);
 
         $this->id = $id;
@@ -1526,13 +1535,20 @@ class Union implements TypeNode
     /**
      * @return bool true if this is an int
      */
-    public function isInt()
+    public function isInt(bool $check_templates = false)
     {
-        if (!$this->isSingle()) {
-            return false;
-        }
-
-        return isset($this->types['int']) || $this->literal_int_types;
+        return count(
+            array_filter(
+                $this->types,
+                function ($type) use ($check_templates) {
+                    return $type instanceof TInt
+                        || ($check_templates
+                            && $type instanceof TTemplateParam
+                            && $type->as->isInt()
+                        );
+                }
+            )
+        ) === count($this->types);
     }
 
     /**
@@ -1550,17 +1566,20 @@ class Union implements TypeNode
     /**
      * @return bool true if this is a string
      */
-    public function isString()
+    public function isString(bool $check_templates = false)
     {
-        if (!$this->isSingle()) {
-            return false;
-        }
-
-        return isset($this->types['string'])
-            || isset($this->types['class-string'])
-            || isset($this->types['trait-string'])
-            || isset($this->types['numeric-string'])
-            || $this->literal_string_types;
+        return count(
+            array_filter(
+                $this->types,
+                function ($type) use ($check_templates) {
+                    return $type instanceof TString
+                        || ($check_templates
+                            && $type instanceof TTemplateParam
+                            && $type->as->isString()
+                        );
+                }
+            )
+        ) === count($this->types);
     }
 
     /**

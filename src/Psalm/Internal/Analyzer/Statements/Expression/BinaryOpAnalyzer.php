@@ -10,7 +10,6 @@ use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use function array_merge;
 
 /**
  * @internal
@@ -121,13 +120,13 @@ class BinaryOpAnalyzer
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                     foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                        $codebase->taint->addPath($parent_node, $new_parent_node);
+                        $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
                     }
                 }
 
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                     foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                        $codebase->taint->addPath($parent_node, $new_parent_node);
+                        $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
                     }
                 }
             }

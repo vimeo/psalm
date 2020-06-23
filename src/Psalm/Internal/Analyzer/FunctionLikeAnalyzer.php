@@ -41,6 +41,7 @@ use function array_search;
 use function array_keys;
 use function end;
 use Psalm\Internal\Taint\TaintNode;
+use Psalm\Storage\FunctionStorage;
 
 /**
  * @internal
@@ -341,14 +342,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_return_type = Type::getMixed();
             }
 
+            $closure_type = new Type\Atomic\TFn(
+                'Closure',
+                $storage->params,
+                $closure_return_type
+            );
+
+            if ($storage instanceof FunctionStorage) {
+                $closure_type->byref_uses = $storage->byref_uses;
+            }
+
             $type_provider->setType(
                 $this->function,
                 new Type\Union([
-                    new Type\Atomic\TFn(
-                        'Closure',
-                        $storage->params,
-                        $closure_return_type
-                    ),
+                    $closure_type,
                 ])
             );
         }
@@ -738,6 +745,30 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         // fall through
                     }
                 }
+            }
+        }
+
+        if ($codebase->taint
+            && $this->function instanceof ClassMethod
+            && $cased_method_id
+            && $storage->specialize_call
+            && isset($context->vars_in_scope['$this'])
+            && $context->vars_in_scope['$this']->parent_nodes
+        ) {
+            $method_source = TaintNode::getForMethodReturn(
+                (string) $method_id,
+                $cased_method_id,
+                $storage->location
+            );
+
+            $codebase->taint->addTaintNode($method_source);
+
+            foreach ($context->vars_in_scope['$this']->parent_nodes as $parent_node) {
+                $codebase->taint->addPath(
+                    $parent_node,
+                    $method_source,
+                    '$this'
+                );
             }
         }
 

@@ -30,6 +30,7 @@ $valid_long_options = [
     'config:',
     'debug',
     'debug-by-line',
+    'debug-emitted-issues',
     'diff',
     'diff-methods',
     'disable-extension:',
@@ -70,6 +71,8 @@ $valid_long_options = [
     'include-php-versions', // used for baseline
     'pretty-print', // used for JSON reports
     'track-tainted-input',
+    'taint-analysis',
+    'security-analysis',
     'find-unused-psalm-suppress',
     'error-level:',
 ];
@@ -243,6 +246,7 @@ if (isset($options['i'])) {
                 && $arg !== '--init'
                 && $arg !== '--debug'
                 && $arg !== '--debug-by-line'
+                && $arg !== '--debug-emitted-issues'
                 && strpos($arg, '--disable-extension=') !== 0
                 && strpos($arg, '--root=') !== 0
                 && strpos($arg, '--r=') !== 0;
@@ -386,6 +390,10 @@ $ini_handler->check();
 
 if (is_null($config->load_xdebug_stub) && '' !== $ini_handler->getSkippedVersion()) {
     $config->load_xdebug_stub = true;
+}
+
+if (isset($options['debug-emitted-issues'])) {
+    $config->debug_emitted_issues = true;
 }
 
 setlocale(LC_CTYPE, 'C');
@@ -573,7 +581,10 @@ if ($config->find_unused_variables || $find_unused_variables) {
     $project_analyzer->getCodebase()->reportUnusedVariables();
 }
 
-if (isset($options['track-tainted-input'])) {
+if (isset($options['track-tainted-input'])
+    || isset($options['security-analysis'])
+    || isset($options['taint-analysis'])
+) {
     $project_analyzer->trackTaintedInputs();
 }
 

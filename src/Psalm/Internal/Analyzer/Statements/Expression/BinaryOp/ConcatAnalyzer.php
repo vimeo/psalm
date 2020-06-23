@@ -19,7 +19,6 @@ use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use function array_merge;
 use function strtolower;
 use function strlen;
 

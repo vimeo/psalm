@@ -6,7 +6,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\PropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -147,7 +147,7 @@ class YieldAnalyzer
 
                 if ($classlike_storage->yield) {
                     if ($expression_atomic_type instanceof Type\Atomic\TGenericObject) {
-                        $yield_candidate_type = PropertyFetchAnalyzer::localizePropertyType(
+                        $yield_candidate_type = InstancePropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
                             clone $classlike_storage->yield,
                             $expression_atomic_type,

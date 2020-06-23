@@ -150,15 +150,6 @@ class ArrayAssignmentAnalyzer
 
         $child_stmt = null;
 
-        $parent_taint_nodes = [];
-
-        if ($codebase->taint
-            && $assign_value
-            && ($assign_value_type = $statements_analyzer->node_data->getType($assign_value))
-        ) {
-            $parent_taint_nodes = $assign_value_type->parent_nodes;
-        }
-
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
         while ($child_stmts) {
@@ -169,6 +160,8 @@ class ArrayAssignmentAnalyzer
             }
 
             $child_stmt_dim_type = null;
+
+            $dim_value = null;
 
             if ($child_stmt->dim) {
                 if (ExpressionAnalyzer::analyze(
@@ -189,27 +182,28 @@ class ArrayAssignmentAnalyzer
                        && $child_stmt_dim_type->isSingleStringLiteral())
                 ) {
                     if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_) {
-                        $value = $child_stmt->dim->value;
+                        $dim_value = $child_stmt->dim->value;
                     } else {
-                        $value = $child_stmt_dim_type->getSingleStringLiteral()->value;
+                        $dim_value = $child_stmt_dim_type->getSingleStringLiteral()->value;
                     }
 
-                    if (preg_match('/^(0|[1-9][0-9]*)$/', $value)) {
-                        $var_id_additions[] = '[' . $value . ']';
+                    if (preg_match('/^(0|[1-9][0-9]*)$/', $dim_value)) {
+                        $var_id_additions[] = '[' . $dim_value . ']';
+                    } else {
+                        $var_id_additions[] = '[\'' . $dim_value . '\']';
                     }
-                    $var_id_additions[] = '[\'' . $value . '\']';
                 } elseif ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber
                     || (($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
                             || $child_stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch)
                         && $child_stmt_dim_type->isSingleIntLiteral())
                 ) {
                     if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
-                        $value = $child_stmt->dim->value;
+                        $dim_value = $child_stmt->dim->value;
                     } else {
-                        $value = $child_stmt_dim_type->getSingleIntLiteral()->value;
+                        $dim_value = $child_stmt_dim_type->getSingleIntLiteral()->value;
                     }
 
-                    $var_id_additions[] = '[' . $value . ']';
+                    $var_id_additions[] = '[' . $dim_value . ']';
                 } elseif ($child_stmt->dim instanceof PhpParser\Node\Expr\Variable
                     && is_string($child_stmt->dim->name)
                 ) {
@@ -302,6 +296,15 @@ class ArrayAssignmentAnalyzer
 
                 $child_stmt_type = $assignment_type;
                 $statements_analyzer->node_data->setType($child_stmt, $assignment_type);
+
+                self::taintArrayAssignment(
+                    $statements_analyzer,
+                    $child_stmt->var,
+                    $array_type,
+                    $assignment_type,
+                    $array_var_id,
+                    $dim_value
+                );
             }
 
             $current_type = $child_stmt_type;
@@ -440,10 +443,23 @@ class ArrayAssignmentAnalyzer
 
             array_pop($var_id_additions);
 
+            $array_var_id = null;
+
             if ($root_var_id) {
                 $array_var_id = $root_var_id . implode('', $var_id_additions);
                 $context->vars_in_scope[$array_var_id] = clone $child_stmt_type;
                 $context->possibly_assigned_var_ids[$array_var_id] = true;
+            }
+
+            if ($codebase->taint) {
+                self::taintArrayAssignment(
+                    $statements_analyzer,
+                    $child_stmt->var,
+                    $statements_analyzer->node_data->getType($child_stmt->var) ?: Type::getMixed(),
+                    $new_child_type,
+                    $array_var_id,
+                    $key_value
+                );
             }
         }
 
@@ -670,15 +686,11 @@ class ArrayAssignmentAnalyzer
             $root_type = $new_child_type;
         }
 
-        if ($codebase->taint && $parent_taint_nodes) {
-            $root_type->parent_nodes = \array_merge($parent_taint_nodes, $root_type->parent_nodes ?: []);
-        }
-
         $statements_analyzer->node_data->setType($root_array_expr, $root_type);
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch) {
             if ($root_array_expr->name instanceof PhpParser\Node\Identifier) {
-                PropertyAssignmentAnalyzer::analyzeInstance(
+                InstancePropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $root_array_expr,
                     $root_array_expr->name->name,
@@ -699,7 +711,7 @@ class ArrayAssignmentAnalyzer
         } elseif ($root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
             && $root_array_expr->name instanceof PhpParser\Node\Identifier
         ) {
-            PropertyAssignmentAnalyzer::analyzeStatic(
+            StaticPropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $root_array_expr,
                 null,
@@ -729,5 +741,43 @@ class ArrayAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * @param int|string|null $item_key_value
+     */
+    private static function taintArrayAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        Type\Union $stmt_type,
+        Type\Union $child_stmt_type,
+        ?string $array_var_id,
+        $item_key_value
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($codebase->taint
+            && $child_stmt_type->parent_nodes
+        ) {
+            $var_location = new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt);
+
+            $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment(
+                $array_var_id ?: 'array-assignment',
+                $var_location
+            );
+
+            $codebase->taint->addTaintNode($new_parent_node);
+
+            foreach ($child_stmt_type->parent_nodes as $parent_node) {
+                $codebase->taint->addPath(
+                    $parent_node,
+                    $new_parent_node,
+                    'array-assignment'
+                        . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : '')
+                );
+            }
+
+            $stmt_type->parent_nodes[] = $new_parent_node;
+        }
     }
 }

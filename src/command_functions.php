@@ -315,6 +315,9 @@ Surfacing issues:
     --no-suggestions
         Hide suggestions
 
+    --taint-analysis
+        Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
+
 Issue baselines:
     --set-baseline=PATH
         Save all current error level issues to a file, to mark them as info in subsequent runs
@@ -353,7 +356,8 @@ Output:
 Reports:
     --report=PATH
         The path where to output report file. The output format is based on the file extension.
-        (Currently supported format: ".json", ".xml", ".txt", ".emacs")
+        (Currently supported formats: ".json", ".xml", ".txt", ".emacs", ".pylint", "checkstyle.xml", "sonarqube.json",
+        "summary.json", "junit.xml")
 
     --report-show-info[=BOOLEAN]
         Whether the report should include non-errors in its output (defaults to true)
@@ -392,6 +396,9 @@ Miscellaneous:
 
     --debug-by-line
         Debug information on a line-by-line level
+
+    --debug-emitted-issues
+        Print a php backtrace to stderr when emitting issues.
 
     -r, --root
         If running Psalm globally you'll need to specify a project root. Defaults to cwd

@@ -5,7 +5,8 @@ use PhpParser;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Assignment\PropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
@@ -37,7 +38,6 @@ use function is_string;
 use function strpos;
 use function strtolower;
 use function substr;
-use function array_merge;
 
 /**
  * @internal
@@ -203,7 +203,7 @@ class AssignmentAnalyzer
                                     . $var_comment->var_id . ' is unnecessary',
                                 $type_location
                             ),
-                            [],
+                            $statements_analyzer->getSuppressedIssues(),
                             true
                         )) {
                             // fall through
@@ -825,7 +825,7 @@ class AssignmentAnalyzer
             }
 
             if ($prop_name) {
-                PropertyAssignmentAnalyzer::analyzeInstance(
+                InstancePropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $assign_var,
                     $prop_name,
@@ -886,7 +886,7 @@ class AssignmentAnalyzer
             }
 
             if ($context->check_classes) {
-                PropertyAssignmentAnalyzer::analyzeStatic(
+                StaticPropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $assign_var,
                     $assign_value,
@@ -952,7 +952,7 @@ class AssignmentAnalyzer
                     $codebase->taint->addTaintNode($new_parent_node);
 
                     foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                        $codebase->taint->addPath($parent_node, $new_parent_node, [], $removed_taints);
+                        $codebase->taint->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
                     }
 
                     $context->vars_in_scope[$var_id]->parent_nodes = [$new_parent_node];
@@ -1134,13 +1134,13 @@ class AssignmentAnalyzer
 
                     if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                         foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                            $codebase->taint->addPath($parent_node, $new_parent_node);
+                            $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
 
                     if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                         foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                            $codebase->taint->addPath($parent_node, $new_parent_node);
+                            $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
                 }
@@ -1286,7 +1286,7 @@ class AssignmentAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $stmt->name->name;
 
-            PropertyAssignmentAnalyzer::analyzeInstance(
+            InstancePropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $prop_name,

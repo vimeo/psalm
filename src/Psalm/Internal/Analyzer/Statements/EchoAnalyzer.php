@@ -37,14 +37,13 @@ class EchoAnalyzer
             if ($codebase->taint
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             ) {
-                $expr_location = new CodeLocation($statements_analyzer->getSource(), $expr);
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $echo_param_sink = Sink::getForMethodArgument(
                     'echo',
                     'echo',
                     (int) $i,
-                    $expr_location,
+                    null,
                     $call_location
                 );
 
