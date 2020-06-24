@@ -404,13 +404,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $context->vars_in_scope[$lhs_var_id] = $class_type;
         }
 
-        // TODO: Always defined? Always correct?
-        $method_id = $result->existent_method_ids[0];
-        // TODO: When should a method have a storage?
-        if ($codebase->methods->hasStorage($method_id)) {
-            $storage = $codebase->methods->getStorage($method_id);
-            if ($storage->self_out_type) {
-                $context->vars_in_scope[$lhs_var_id] = $storage->self_out_type;
+        if ($lhs_var_id) {
+            // TODO: Always defined? Always correct?
+            /** @var \Psalm\Internal\MethodIdentifier  */
+            $method_id = $result->existent_method_ids[0];
+            // TODO: When should a method have a storage?
+            if ($codebase->methods->hasStorage($method_id)) {
+                $storage = $codebase->methods->getStorage($method_id);
+                if ($storage->self_out_type) {
+                    $context->vars_in_scope[$lhs_var_id] = $storage->self_out_type;
+                }
             }
         }
 
