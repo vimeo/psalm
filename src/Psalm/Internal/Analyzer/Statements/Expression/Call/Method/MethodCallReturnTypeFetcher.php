@@ -85,8 +85,7 @@ class MethodCallReturnTypeFetcher
 
         if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
             if (($template_result->upper_bounds || $class_storage->stubbed)
-                && isset($class_storage->methods[$method_id->method_name])
-                && ($method_storage = $class_storage->methods[$method_id->method_name])
+                && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
                 && $method_storage->return_type
             ) {
                 $return_type_candidate = clone $method_storage->return_type;

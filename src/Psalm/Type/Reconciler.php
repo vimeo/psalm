@@ -265,6 +265,25 @@ class Reconciler
                 $orred_type = null;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
+                    if ($new_type_part_part[0] === '>') {
+                        /** @var array<string, array<array<string>>> */
+                        $data = \json_decode(substr($new_type_part_part, 1), true);
+
+                        $existing_types = self::reconcileKeyedTypes(
+                            $data,
+                            $data,
+                            $existing_types,
+                            $changed_var_ids,
+                            $referenced_var_ids,
+                            $statements_analyzer,
+                            $template_type_map,
+                            $inside_loop,
+                            $code_location
+                        );
+
+                        $new_type_part_part = '!falsy';
+                    }
+
                     $result_type_candidate = AssertionReconciler::reconcile(
                         $new_type_part_part,
                         $result_type ? clone $result_type : null,

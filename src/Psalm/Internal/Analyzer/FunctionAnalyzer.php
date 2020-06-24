@@ -193,8 +193,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                     return clone $array_type->type_param;
                                 }
                             } elseif ($first_arg_type->hasScalarType()
-                                && isset($call_args[1])
-                                && ($second_arg = $call_args[1]->value)
+                                && ($second_arg = ($call_args[1]->value ?? null))
                                 && ($second_arg_type = $statements_analyzer->node_data->getType($second_arg))
                                 && $second_arg_type->hasScalarType()
                             ) {
