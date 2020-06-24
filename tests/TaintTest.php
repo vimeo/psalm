@@ -62,7 +62,7 @@ class TaintTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string, array{string}>
      */
     public function providerValidCodeParse()
     {
@@ -422,7 +422,7 @@ class TaintTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string, array{0: string, error_message: string}>
      */
     public function providerInvalidCodeParse()
     {
@@ -1217,7 +1217,7 @@ class TaintTest extends TestCase
                     echo identity($_GET[\'userinput\']);',
                 'error_message' => 'TaintedInput',
             ],
-            'namespacedFunction' => [
+            'print' => [
                 '<?php
                     print($_GET["name"]);',
                 'error_message' => 'TaintedInput - src/somefile.php:2:27 - Detected tainted html in path: $_GET -> $_GET[\'name\'] (src/somefile.php:2:27) -> call to print (src/somefile.php:2:27) -> print#1',
