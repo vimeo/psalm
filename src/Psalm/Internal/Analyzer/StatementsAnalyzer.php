@@ -623,7 +623,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
 
             if ((!$function_storage
-                || !array_key_exists(substr($var_id, 1), $function_storage->param_types))
+                || !array_key_exists(substr($var_id, 1), $function_storage->param_lookup))
                 && !isset($this->byref_uses[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
             ) {

@@ -850,7 +850,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $unused_params = [];
 
         foreach ($statements_analyzer->getUnusedVarLocations() as list($var_name, $original_location)) {
-            if (!array_key_exists(substr($var_name, 1), $storage->param_types)) {
+            if (!array_key_exists(substr($var_name, 1), $storage->param_lookup)) {
                 continue;
             }
 
@@ -858,7 +858,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 continue;
             }
 
-            $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);
+            $position = array_search(substr($var_name, 1), array_keys($storage->param_lookup), true);
 
             if ($position === false) {
                 throw new \UnexpectedValueException('$position should not be false here');
@@ -1511,11 +1511,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         foreach ($storage->params as $i => $param) {
             if ($param->by_ref && isset($context->vars_in_scope['$' . $param->name]) && !$param->is_variadic) {
                 $actual_type = $context->vars_in_scope['$' . $param->name];
-                $param_out_type = $param->type;
-
-                if (isset($storage->param_out_types[$i])) {
-                    $param_out_type = $storage->param_out_types[$i];
-                }
+                $param_out_type = $param->out_type ?: $param->type;
 
                 if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
                     if (!TypeAnalyzer::isContainedBy(

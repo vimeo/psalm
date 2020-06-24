@@ -1912,7 +1912,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             $existing_params['$' . $param_array->name] = $i;
-            $storage->param_types[$param_array->name] = $param_array->type;
+            $storage->param_lookup[$param_array->name] = true;
             $storage->params[] = $param_array;
 
             if (!$param_array->is_optional && !$param_array->is_variadic) {
@@ -2486,7 +2486,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             foreach ($storage->params as $i => $param_storage) {
                 if ($param_storage->name === $param_name) {
-                    $storage->param_out_types[$i] = $out_type;
+                    $param_storage->out_type = $out_type;
                 }
             }
         }
@@ -2810,15 +2810,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\Variable
                 && is_string($function_stmt->expr->expr->name)
                 && ($param_name = $function_stmt->expr->expr->name)
-                && array_key_exists($param_name, $storage->param_types)
+                && isset($storage->param_lookup[$param_name])
             ) {
                 if ($class_storage->properties[$property_name]->type
-                    || !isset($storage->param_types[$param_name])
+                    || !isset($storage->param_lookup[$param_name])
                 ) {
                     continue;
                 }
 
-                $param_index = \array_search($param_name, \array_keys($storage->param_types), true);
+                $param_index = \array_search($param_name, \array_keys($storage->param_lookup), true);
 
                 if ($param_index === false || !isset($storage->params[$param_index]->type)) {
                     continue;

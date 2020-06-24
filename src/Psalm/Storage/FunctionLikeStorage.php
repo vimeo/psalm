@@ -27,14 +27,9 @@ abstract class FunctionLikeStorage
     public $params = [];
 
     /**
-     * @var array<string, Type\Union|null>
+     * @var array<string, bool>
      */
-    public $param_types = [];
-
-    /**
-     * @var array<int, Type\Union|null>
-     */
-    public $param_out_types = [];
+    public $param_lookup = [];
 
     /**
      * @var Type\Union|null

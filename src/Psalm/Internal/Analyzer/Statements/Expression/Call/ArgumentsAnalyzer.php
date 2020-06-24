@@ -761,14 +761,7 @@ class ArgumentsAnalyzer
                 }
 
                 $by_ref_type = $function_param->type;
-
-                if (isset($function_storage->param_out_types[$argument_offset])) {
-                    $by_ref_out_type = $function_storage->param_out_types[$argument_offset];
-                } elseif ($argument_offset >= count($function_params)
-                    && isset($function_storage->param_out_types[count($function_params) - 1])
-                ) {
-                    $by_ref_out_type = $function_storage->param_out_types[count($function_params) - 1];
-                }
+                $by_ref_out_type = $function_param->out_type;
 
                 if ($by_ref_type && $by_ref_type->isNullable()) {
                     $check_null_ref = false;
