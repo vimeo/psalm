@@ -1912,7 +1912,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             $existing_params['$' . $param_array->name] = $i;
-            $storage->param_lookup[$param_array->name] = true;
+            $storage->param_lookup[$param_array->name] = !!$param->type;
             $storage->params[] = $param_array;
 
             if (!$param_array->is_optional && !$param_array->is_variadic) {
@@ -2813,7 +2813,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 && isset($storage->param_lookup[$param_name])
             ) {
                 if ($class_storage->properties[$property_name]->type
-                    || !isset($storage->param_lookup[$param_name])
+                    || !$storage->param_lookup[$param_name]
                 ) {
                     continue;
                 }

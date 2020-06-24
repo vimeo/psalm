@@ -290,7 +290,7 @@ class InternalCallMapHandler
 
                 $out_type = null;
 
-                if ($arg_name[0] === 'w' && $arg_name[1] === '_') {
+                if (\strlen($arg_name) > 2 && $arg_name[0] === 'w' && $arg_name[1] === '_') {
                     $out_type = $param_type;
                     $param_type = Type::getMixed();
                 }
