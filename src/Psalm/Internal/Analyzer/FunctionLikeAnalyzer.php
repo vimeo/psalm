@@ -1508,7 +1508,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     ) {
         $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
-        foreach ($storage->params as $i => $param) {
+        foreach ($storage->params as $param) {
             if ($param->by_ref && isset($context->vars_in_scope['$' . $param->name]) && !$param->is_variadic) {
                 $actual_type = $context->vars_in_scope['$' . $param->name];
                 $param_out_type = $param->out_type ?: $param->type;

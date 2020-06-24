@@ -16,6 +16,9 @@ class DateTimeZone
     public function __construct(string $tz) {}
 }
 
+/**
+ * @psalm-taint-specialize
+ */
 interface Throwable
 {
     /**
@@ -56,6 +59,9 @@ interface Throwable
     public function getTraceAsString() : string;
 }
 
+/**
+ * @psalm-taint-specialize
+ */
 class Exception implements Throwable
 {
     /**
@@ -124,6 +130,9 @@ class Exception implements Throwable
     public final function getTraceAsString() : string {}
 }
 
+/**
+ * @psalm-taint-specialize
+ */
 class Error implements Throwable
 {
     /**

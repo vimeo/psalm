@@ -513,7 +513,6 @@ class ArgumentsAnalyzer
                     $cased_method_id,
                     $last_param,
                     $function_params,
-                    $function_storage,
                     $argument_offset,
                     $arg,
                     $context,
@@ -692,7 +691,6 @@ class ArgumentsAnalyzer
      * @param  string|null $cased_method_id
      * @param  FunctionLikeParameter|null $last_param
      * @param  array<int, FunctionLikeParameter> $function_params
-     * @param  FunctionLikeStorage|null $function_storage
      * @return false|null
      */
     private static function handlePossiblyMatchingByRefParam(
@@ -702,7 +700,6 @@ class ArgumentsAnalyzer
         $cased_method_id,
         $last_param,
         $function_params,
-        $function_storage,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
