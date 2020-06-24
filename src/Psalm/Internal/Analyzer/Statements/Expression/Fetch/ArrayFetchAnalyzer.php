@@ -127,7 +127,7 @@ class ArrayFetchAnalyzer
 
             self::taintArrayFetch(
                 $statements_analyzer,
-                $stmt,
+                $stmt->var,
                 $keyed_array_var_id,
                 $stmt_type,
                 $used_key_type
@@ -296,7 +296,7 @@ class ArrayFetchAnalyzer
 
         self::taintArrayFetch(
             $statements_analyzer,
-            $stmt,
+            $stmt->var,
             $keyed_array_var_id,
             $stmt_type,
             $used_key_type
@@ -305,9 +305,9 @@ class ArrayFetchAnalyzer
         return true;
     }
 
-    private static function taintArrayFetch(
+    public static function taintArrayFetch(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        PhpParser\Node\Expr $var,
         ?string $keyed_array_var_id,
         Type\Union $stmt_type,
         Type\Union $offset_type
@@ -315,10 +315,10 @@ class ArrayFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($codebase->taint
-            && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
+            && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
         ) {
-            $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+            $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
 
             $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment(
                 $keyed_array_var_id ?: 'array-fetch',

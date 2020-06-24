@@ -1230,6 +1230,15 @@ class TaintTest extends TestCase
                     test(...$_GET["other"]);',
                 'error_message' => 'TaintedInput',
             ],
+            'foreachArg' => [
+                '<?php
+                    $a = $_GET["bad"];
+
+                    foreach ($a as $arg) {
+                        echo $arg;
+                    }',
+                'error_message' => 'TaintedInput',
+            ],
         ];
     }
 }
