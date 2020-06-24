@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Taint\Sink;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
@@ -22,6 +23,28 @@ class PrintAnalyzer
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
+        }
+
+        if ($codebase->taint
+            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+        ) {
+            $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+            $print_param_sink = Sink::getForMethodArgument(
+                'print',
+                'print',
+                0,
+                null,
+                $call_location
+            );
+
+            $print_param_sink->taints = [
+                Type\TaintKind::INPUT_HTML,
+                Type\TaintKind::USER_SECRET,
+                Type\TaintKind::SYSTEM_SECRET
+            ];
+
+            $codebase->taint->addSink($print_param_sink);
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {

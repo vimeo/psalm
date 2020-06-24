@@ -1878,4 +1878,20 @@ class TaintTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testTaintedInstancePrint() : void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('TaintedInput - somefile.php:2:23 - Detected tainted html in path: $_GET -> $_GET[\'name\'] (somefile.php:2:23) -> call to print (somefile.php:2:23) -> print#1');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                print($_GET["name"]);'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }
