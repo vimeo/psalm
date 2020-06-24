@@ -343,6 +343,21 @@ class ArgumentAnalyzer
                     // fall through
                 }
 
+                if ($cased_method_id) {
+                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $arg->value);
+
+                    self::processTaintedness(
+                        $statements_analyzer,
+                        $cased_method_id,
+                        $argument_offset,
+                        $arg_location,
+                        $function_call_location,
+                        $function_param,
+                        $arg_type,
+                        $specialize_taint
+                    );
+                }
+
                 return;
             }
 

@@ -1222,6 +1222,14 @@ class TaintTest extends TestCase
                     print($_GET["name"]);',
                 'error_message' => 'TaintedInput - src/somefile.php:2:27 - Detected tainted html in path: $_GET -> $_GET[\'name\'] (src/somefile.php:2:27) -> call to print (src/somefile.php:2:27) -> print#1',
             ],
+            'unpackArgs' => [
+                '<?php
+                    function test(...$args) {
+                        echo $args[0];
+                    }
+                    test(...$_GET["other"]);',
+                'error_message' => 'TaintedInput',
+            ],
         ];
     }
 }
