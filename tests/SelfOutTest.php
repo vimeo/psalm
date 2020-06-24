@@ -10,29 +10,29 @@ class ReferenceConstraintTest extends TestCase
      */
     public function providerValidCodeParse()
     {
-      return [
-          'changeInterface' => [
-              '<?php
-                  interface Foo {
-                      /**
-                       * @return void
-                       */
-                      public function far() {
+        return [
+            'changeInterface' => [
+                '<?php
+                      interface Foo {
+                          /**
+                           * @return void
+                           */
+                          public function far() {
+                          }
                       }
-                  }
-                  class Bar {
-                      /**
-                       * @psalm-self-out Foo
-                       * @return void
-                       */
-                      public function baz() {
+                      class Bar {
+                          /**
+                           * @psalm-self-out Foo
+                           * @return void
+                           */
+                          public function baz() {
+                          }
                       }
-                  }
-                  $bar = new Bar();
-                  $bar->baz();
-                  $bar->far();
-                  '
-          ]
-      ];
+                      $bar = new Bar();
+                      $bar->baz();
+                      $bar->far();
+                '
+            ]
+        ];
     }
 }
