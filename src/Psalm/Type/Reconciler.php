@@ -325,14 +325,11 @@ class Reconciler
             }
 
             if ($before_adjustment
-                && ($result_type->parent_nodes || $before_adjustment->parent_nodes)
+                && $before_adjustment->parent_nodes
                 && !$result_type->isInt()
                 && !$result_type->isFloat()
             ) {
-                $result_type->parent_nodes = array_merge(
-                    $result_type->parent_nodes ?: [],
-                    $before_adjustment->parent_nodes ?: []
-                );
+                $result_type->parent_nodes = $before_adjustment->parent_nodes;
             }
 
             $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);

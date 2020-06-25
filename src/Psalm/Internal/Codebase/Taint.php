@@ -76,8 +76,8 @@ class Taint
         Taintable $from,
         Taintable $to,
         string $path_type,
-        array $added_taints = [],
-        array $removed_taints = []
+        ?array $added_taints = null,
+        ?array $removed_taints = null
     ) : void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -209,8 +209,8 @@ class Taint
 
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             $path_type = $path->type;
-            $added_taints = $path->unescaped_taints;
-            $removed_taints = $path->escaped_taints;
+            $added_taints = $path->unescaped_taints ?: [];
+            $removed_taints = $path->escaped_taints ?: [];
 
             if (!isset($this->nodes[$to_id])) {
                 continue;

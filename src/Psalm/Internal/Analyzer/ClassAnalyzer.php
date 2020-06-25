@@ -1786,8 +1786,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();
 
-        $time = \microtime(true);
-
         $method_analyzer->analyze(
             $method_context,
             $type_provider,
@@ -1811,11 +1809,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $method_context->has_returned
             );
         }
-
-        $project_analyzer->progress->debug(
-            'Analyzing method ' . $stmt->name . ' took '
-                . \number_format(\microtime(true) - $time, 4) . "seconds \n"
-        );
 
         if (!$method_already_analyzed
             && !$class_context->collect_initializations
