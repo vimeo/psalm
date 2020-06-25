@@ -427,6 +427,13 @@ class TaintTest extends TestCase
                         echo $m["b"];
                     }'
             ],
+            'taintFreeNestedArrayWithOffsetAccessedExplicitly' => [
+                '<?php
+                    $a = [];
+                    $a[] = ["a" => $_GET["name"], "b" => "foo"];
+
+                    echo $a[0]["b"];',
+            ],
         ];
     }
 
@@ -1265,6 +1272,24 @@ class TaintTest extends TestCase
                     $m = new Magic();
                     $m->taint = $_GET["input"];
                     echo $m->taint;',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintNestedArrayWithOffsetAccessedInForeach' => [
+                '<?php
+                    $a = [];
+                    $a[0] = ["a" => $_GET["name"], "b" => "foo"];
+
+                    foreach ($a as $m) {
+                        echo $m["a"];
+                    }',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintNestedArrayWithOffsetAccessedExplicitly' => [
+                '<?php
+                    $a = [];
+                    $a[] = ["a" => $_GET["name"], "b" => "foo"];
+
+                    echo $a[0]["a"];',
                 'error_message' => 'TaintedInput',
             ],
         ];

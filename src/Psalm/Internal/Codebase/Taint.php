@@ -245,11 +245,16 @@ class Taint
                         $fetch_nesting--;
                     }
 
-                    if ($previous_path_type === 'array-fetch') {
+                    if (substr($previous_path_type, 0, 11) === 'array-fetch') {
                         $fetch_nesting++;
                     }
 
                     if (strpos($previous_path_type, 'array-assignment-') === 0) {
+                        if ($fetch_nesting > 0) {
+                            $fetch_nesting--;
+                            continue;
+                        }
+
                         if (substr($previous_path_type, 17) === substr($path_type, 12)) {
                             break;
                         }
