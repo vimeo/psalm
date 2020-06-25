@@ -231,55 +231,12 @@ class Taint
                 continue;
             }
 
-            if (strpos($path_type, 'array-fetch-') === 0) {
-                $fetch_nesting = 0;
-
-                $previous_path_types = array_reverse($generated_source->path_types);
-
-                foreach ($previous_path_types as $previous_path_type) {
-                    if ($previous_path_type === 'array-assignment') {
-                        if ($fetch_nesting === 0) {
-                            break;
-                        }
-
-                        $fetch_nesting--;
-                    }
-
-                    if (substr($previous_path_type, 0, 11) === 'array-fetch') {
-                        $fetch_nesting++;
-                    }
-
-                    if (strpos($previous_path_type, 'array-assignment-') === 0) {
-                        if ($fetch_nesting > 0) {
-                            $fetch_nesting--;
-                            continue;
-                        }
-
-                        if (substr($previous_path_type, 17) === substr($path_type, 12)) {
-                            break;
-                        }
-
-                        continue 2;
-                    }
-                }
+            if (self::shouldIgnoreFetch($path_type, 'array', $generated_source->path_types)) {
+                continue;
             }
 
-            if (strpos($path_type, 'property-fetch-') === 0) {
-                $previous_path_types = array_reverse($generated_source->path_types);
-
-                foreach ($previous_path_types as $previous_path_type) {
-                    if ($previous_path_type === 'property-assignment') {
-                        break;
-                    }
-
-                    if (strpos($previous_path_type, 'property-assignment-') === 0) {
-                        if (substr($previous_path_type, 20) === substr($path_type, 15)) {
-                            break;
-                        }
-
-                        continue 2;
-                    }
-                }
+            if (self::shouldIgnoreFetch($path_type, 'property', $generated_source->path_types)) {
+                continue;
             }
 
             if (isset($sinks[$to_id])) {
@@ -321,6 +278,49 @@ class Taint
         }
 
         return $new_sources;
+    }
+
+    private static function shouldIgnoreFetch(
+        string $path_type,
+        string $expression_type,
+        array $previous_path_types
+    ) : bool {
+        $el = \strlen($expression_type);
+
+        if (substr($path_type, 0, $el + 7) === $expression_type . '-fetch-') {
+            $fetch_nesting = 0;
+
+            $previous_path_types = array_reverse($previous_path_types);
+
+            foreach ($previous_path_types as $previous_path_type) {
+                if ($previous_path_type === $expression_type . '-assignment') {
+                    if ($fetch_nesting === 0) {
+                        return false;
+                    }
+
+                    $fetch_nesting--;
+                }
+
+                if (substr($previous_path_type, 0, $el + 6) === $expression_type . '-fetch') {
+                    $fetch_nesting++;
+                }
+
+                if (substr($previous_path_type, 0, $el + 12) === $expression_type . '-assignment-') {
+                    if ($fetch_nesting > 0) {
+                        $fetch_nesting--;
+                        continue;
+                    }
+
+                    if (substr($previous_path_type, $el + 12) === substr($path_type, $el + 7)) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /** @return array<Taintable> */
