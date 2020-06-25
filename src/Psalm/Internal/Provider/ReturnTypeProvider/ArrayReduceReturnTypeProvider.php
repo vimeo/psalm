@@ -262,7 +262,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                         } else {
                             if (!$codebase->functions->functionExists(
                                 $statements_source,
-                                $mapping_function_id_part
+                                strtolower($mapping_function_id_part)
                             )
                             ) {
                                 return Type::getMixed();
@@ -272,7 +272,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
                             $function_storage = $codebase->functions->getStorage(
                                 $statements_source,
-                                $mapping_function_id_part
+                                strtolower($mapping_function_id_part)
                             );
 
                             $return_type = $function_storage->return_type ?: Type::getMixed();

@@ -121,8 +121,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         $mapping_function_ids,
                         $context,
                         $function_call_arg,
-                        $array_arg,
-                        $array_arg_type
+                        $array_arg
                     );
                 }
 
@@ -302,8 +301,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         array $mapping_function_ids,
         Context $context,
         PhpParser\Node\Arg $function_call_arg,
-        PhpParser\Node\Arg $array_arg,
-        ?\Psalm\Internal\Type\ArrayType $array_arg_type
+        PhpParser\Node\Arg $array_arg
     ) : Type\Union {
         $mapping_return_type = null;
 
