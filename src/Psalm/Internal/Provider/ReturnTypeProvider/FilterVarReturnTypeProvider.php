@@ -150,6 +150,5 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
         }
 
         return $filter_type;
-
     }
 }

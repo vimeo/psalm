@@ -434,6 +434,13 @@ class TaintTest extends TestCase
 
                     echo $a[0]["b"];',
             ],
+            'intUntainted' => [
+                '<?php
+                    $input = $_GET[\'input\'];
+                    if (is_int($input)) {
+                        echo "$input";
+                    }',
+            ],
         ];
     }
 
@@ -1322,6 +1329,14 @@ class TaintTest extends TestCase
                     $get = filter_var($_GET, FILTER_CALLBACK, ["options" => "trim"]);
 
                     echo $get["test"];',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintAfterReconciledType' => [
+                '<?php
+                    $input = $_GET[\'input\'];
+                    if (is_string($input)) {
+                        echo "$input";
+                    }',
                 'error_message' => 'TaintedInput',
             ],
         ];
