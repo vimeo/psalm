@@ -280,6 +280,7 @@ class Taint
         return $new_sources;
     }
 
+    /** @param array<string> $previous_path_types */
     private static function shouldIgnoreFetch(
         string $path_type,
         string $expression_type,
