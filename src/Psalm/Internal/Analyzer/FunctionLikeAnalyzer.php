@@ -602,28 +602,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $closure_yield_types = [];
 
-            $ignore_nullable_issues = false;
-            $ignore_falsable_issues = false;
-
             $closure_return_types = ReturnTypeCollector::getReturnTypes(
                 $codebase,
                 $type_provider,
                 $function_stmts,
                 $closure_yield_types,
-                $ignore_nullable_issues,
-                $ignore_falsable_issues,
                 true
             );
 
             $closure_return_type = $closure_return_types
-                ? \Psalm\Internal\Type\TypeCombination::combineTypes(
+                ? \Psalm\Type::combineUnionTypeArray(
                     $closure_return_types,
                     $codebase
                 )
                 : null;
 
             $closure_yield_type = $closure_yield_types
-                ? \Psalm\Internal\Type\TypeCombination::combineTypes(
+                ? \Psalm\Type::combineUnionTypeArray(
                     $closure_yield_types,
                     $codebase
                 )

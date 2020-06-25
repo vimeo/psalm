@@ -438,6 +438,20 @@ abstract class Type
     }
 
     /**
+     * @param non-empty-list<Type\Union> $union_types
+     */
+    public static function combineUnionTypeArray(array $union_types, ?Codebase $codebase) : Type\Union
+    {
+        $first_type = array_pop($union_types);
+
+        foreach ($union_types as $type) {
+            $first_type = self::combineUnionTypes($first_type, $type, $codebase);
+        }
+
+        return $first_type;
+    }
+
+    /**
      * Combines two union types into one
      *
      * @param  Union  $type_1

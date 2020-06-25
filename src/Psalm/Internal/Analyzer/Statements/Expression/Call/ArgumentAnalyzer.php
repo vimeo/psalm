@@ -841,6 +841,10 @@ class ArgumentAnalyzer
 
                     foreach ($function_ids as $function_id) {
                         if (strpos($function_id, '::') !== false) {
+                            if ($function_id[0] === '$') {
+                                $function_id = \substr($function_id, 1);
+                            }
+
                             $function_id_parts = explode('&', $function_id);
 
                             $non_existent_method_ids = [];

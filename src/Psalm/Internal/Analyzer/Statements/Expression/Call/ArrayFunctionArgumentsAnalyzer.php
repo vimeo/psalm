@@ -501,6 +501,10 @@ class ArrayFunctionArgumentsAnalyzer
                 $function_id = strtolower($function_id);
 
                 if (strpos($function_id, '::') !== false) {
+                    if ($function_id[0] === '$') {
+                        $function_id = \substr($function_id, 1);
+                    }
+
                     $function_id_parts = explode('&', $function_id);
 
                     foreach ($function_id_parts as $function_id_part) {
@@ -529,7 +533,7 @@ class ArrayFunctionArgumentsAnalyzer
 
                         $function_id_part = new \Psalm\Internal\MethodIdentifier(
                             $callable_fq_class_name,
-                            $method_name
+                            strtolower($method_name)
                         );
 
                         try {
