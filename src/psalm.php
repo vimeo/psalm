@@ -56,6 +56,7 @@ $valid_long_options = [
     'stats',
     'threads:',
     'update-baseline',
+    'use-baseline:',
     'use-ini-defaults',
     'version',
     'php-version:',
@@ -672,11 +673,22 @@ if (isset($options['update-baseline'])) {
     }
 }
 
-if (!empty(Config::getInstance()->error_baseline) && !isset($options['ignore-baseline'])) {
+if (isset($options['use-baseline'])) {
+    if (!is_string($options['use-baseline'])) {
+        fwrite(STDERR, '--use-baseline must be a string' . PHP_EOL);
+        exit(1);
+    }
+
+    $baseline_file_path = $options['use-baseline'];
+} else {
+    $baseline_file_path = Config::getInstance()->error_baseline;
+}
+
+if ($baseline_file_path && !isset($options['ignore-baseline'])) {
     try {
         $issue_baseline = ErrorBaseline::read(
             new \Psalm\Internal\Provider\FileProvider,
-            (string)Config::getInstance()->error_baseline
+            $baseline_file_path
         );
     } catch (\Psalm\Exception\ConfigException $exception) {
         fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);

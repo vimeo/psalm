@@ -324,6 +324,9 @@ Issue baselines:
 
         Add --include-php-versions to also include a list of PHP extension versions
 
+    --use-baseline=PATH
+        Allows you to use a baseline other than the default baseline provided in your config
+
     --ignore-baseline
         Ignore the error baseline
 
