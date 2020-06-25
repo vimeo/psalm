@@ -1317,6 +1317,13 @@ class TaintTest extends TestCase
                     echo $get["test"];',
                 'error_message' => 'TaintedInput',
             ],
+            'taintFilterVar' => [
+                '<?php
+                    $get = filter_var($_GET, FILTER_CALLBACK, ["options" => "trim"]);
+
+                    echo $get["test"];',
+                'error_message' => 'TaintedInput',
+            ],
         ];
     }
 }
