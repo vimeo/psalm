@@ -1762,6 +1762,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                          * @psalm-suppress MixedArrayAccess
                          * @psalm-suppress MixedReturnStatement
                          * @psalm-suppress MixedInferredReturnType
+                         * @psalm-suppress MixedArrayAssignment
                          */
                         public function foo() : stdClass {
                             if (isset($this->arr[0])) {
