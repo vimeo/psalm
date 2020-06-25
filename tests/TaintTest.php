@@ -1339,6 +1339,15 @@ class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedInput',
             ],
+            'taintExit' => [
+                '<?php
+                    if (rand(0, 1)) {
+                        exit($_GET[\'a\']);
+                    } else {
+                        die($_GET[\'b\']);
+                    }',
+                'error_message' => 'TaintedInput',
+            ],
         ];
     }
 }
