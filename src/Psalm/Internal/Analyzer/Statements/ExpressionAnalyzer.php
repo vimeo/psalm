@@ -205,7 +205,8 @@ class ExpressionAnalyzer
             return Expression\Fetch\InstancePropertyFetchAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
-                $context
+                $context,
+                $array_assignment
             );
         }
 
