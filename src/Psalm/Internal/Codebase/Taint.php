@@ -232,11 +232,21 @@ class Taint
             }
 
             if (strpos($path_type, 'array-fetch-') === 0) {
+                $fetch_nesting = 0;
+
                 $previous_path_types = array_reverse($generated_source->path_types);
 
                 foreach ($previous_path_types as $previous_path_type) {
                     if ($previous_path_type === 'array-assignment') {
-                        break;
+                        if ($fetch_nesting === 0) {
+                            break;
+                        }
+
+                        $fetch_nesting--;
+                    }
+
+                    if ($previous_path_type === 'array-fetch') {
+                        $fetch_nesting++;
                     }
 
                     if (strpos($previous_path_type, 'array-assignment-') === 0) {

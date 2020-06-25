@@ -418,6 +418,15 @@ class TaintTest extends TestCase
 
                     echo StringUtility::slugify("hello");'
             ],
+            'taintFreeNestedArray' => [
+                '<?php
+                    $a = [];
+                    $a[] = ["a" => $_GET["name"], "b" => "foo"];
+
+                    foreach ($a as $m) {
+                        echo $m["b"];
+                    }'
+            ],
         ];
     }
 
