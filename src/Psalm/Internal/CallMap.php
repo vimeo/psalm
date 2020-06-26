@@ -9745,7 +9745,7 @@ return [
 'PDO::pgsqlLOBUnlink' => ['bool', 'oid'=>'string'],
 'PDO::prepare' => ['PDOStatement|false', 'statement'=>'string', 'options='=>'array'],
 'PDO::query' => ['PDOStatement|false', 'sql'=>'string'],
-'PDO::query\'1' => ['PDOStatement|false', 'sql'=>'string', 'fetch_column'=>'int', 'colno'=>'int'],
+'PDO::query\'1' => ['PDOStatement|false', 'sql'=>'string', 'fetch_column'=>'int', 'colno='=>'int'],
 'PDO::query\'2' => ['PDOStatement|false', 'sql'=>'string', 'fetch_class'=>'int', 'classname'=>'string', 'ctorargs'=>'array'],
 'PDO::query\'3' => ['PDOStatement|false', 'sql'=>'string', 'fetch_into'=>'int', 'object'=>'object'],
 'PDO::quote' => ['string|false', 'string'=>'string', 'paramtype='=>'int'],

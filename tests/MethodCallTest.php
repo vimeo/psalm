@@ -768,6 +768,11 @@ class MethodCallTest extends TestCase
                 [],
                 '7.4'
             ],
+            'pdoQueryTwoArgs' => [
+                '<?php
+                    $pdo = new PDO("test");
+                    $pdo->query("SELECT * FROM projects", PDO::FETCH_NAMED);'
+            ],
         ];
     }
 
