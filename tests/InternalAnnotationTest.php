@@ -52,6 +52,30 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'internalClassWithInstanceCall' => [
+                '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         */
+                        class Foo {
+                            public function barBar(): void {
+                            }
+                        }
+
+                        function getFoo(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    namespace A\B {
+                        class Bat {
+                            public function batBat(): void {
+                                \A\getFoo()->barBar();
+                            }
+                        }
+                    }',
+            ],
             'internalClassExtendingNamespaceWithStaticCall' => [
                 '<?php
                     namespace A {
@@ -243,6 +267,31 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'InternalClass',
+            ],
+            'internalClassWithInstanceCall' => [
+                '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         */
+                        class Foo {
+                            public function barBar(): void {
+                            }
+                        }
+
+                        function getFoo(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    namespace B {
+                        class Bat {
+                            public function batBat(): void {
+                                \A\getFoo()->barBar();
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
             ],
             'internalClassWithNew' => [
                 '<?php

@@ -68,6 +68,7 @@ use function substr;
 use function trim;
 use function preg_split;
 use php_user_filter;
+use function strlen;
 
 /**
  * @internal
@@ -2133,6 +2134,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $doc_comment = $stmt->getDocComment();
 
+
+        if ($class_storage && ! $class_storage->is_trait) {
+            $storage->internal = $class_storage->internal;
+            $storage->psalm_internal = $class_storage->psalm_internal;
+        }
+
         if (!$doc_comment) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && $stmt->name->name === '__construct'
@@ -2190,7 +2197,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->internal = true;
         }
 
-        if ($docblock_info->psalm_internal) {
+        if (null === $class_storage ||
+            null === $class_storage->psalm_internal ||
+            (null !== $docblock_info->psalm_internal &&
+                strlen($docblock_info->psalm_internal) > strlen($class_storage->psalm_internal)
+            )
+        ) {
             $storage->psalm_internal = $docblock_info->psalm_internal;
         }
 

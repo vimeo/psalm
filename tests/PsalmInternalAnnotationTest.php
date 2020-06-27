@@ -64,7 +64,7 @@ class PsalmInternalAnnotationTest extends TestCase
                              */
                             public static function barBar(): void {
                             }
-                            
+
                             public static function foo(): void {
                                 self::barBar();
                             }
@@ -88,6 +88,31 @@ class PsalmInternalAnnotationTest extends TestCase
                         class Bat {
                             public function batBat() : void {
                                 \A\B\Foo::barBar();
+                            }
+                        }
+                    }',
+            ],
+            'internalClassWithInstanceCall' => [
+                '<?php
+                    namespace A\B {
+                        /**
+                         * @internal
+                         * @psalm-internal A\B
+                         */
+                        class Foo {
+                            public function barBar(): void {
+                            }
+                        }
+
+                        function getFoo(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    namespace A\B\C {
+                        class Bat {
+                            public function batBat(\A\B\Foo $instance): void {
+                                \A\B\getFoo()->barBar();
                             }
                         }
                     }',
@@ -294,6 +319,32 @@ class PsalmInternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InternalClass',
             ],
+            'internalClassWithInstanceCall' => [
+                '<?php
+                    namespace A\B {
+                        /**
+                         * @internal
+                         * @psalm-internal A\B
+                         */
+                        class Foo {
+                            public function barBar(): void {
+                            }
+                        }
+
+                        function getFoo(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    namespace A\C {
+                        class Bat {
+                            public function batBat(): void {
+                                \A\B\getFoo()->barBar();
+                            }
+                        }
+                    }',
+                'error_message' => 'The method A\B\Foo::barBar has been marked as internal to A\B',
+            ],
             'internalClassWithNew' => [
                 '<?php
                     namespace A\B {
@@ -387,10 +438,10 @@ class PsalmInternalAnnotationTest extends TestCase
             'internalPropertyMissingNamespace' => [
                 '<?php
                     class Foo {
-                        /** 
+                        /**
                           * @var int
                           * @internal
-                          * @psalm-internal 
+                          * @psalm-internal
                           */
                         var $bar;
                     }
@@ -401,8 +452,8 @@ class PsalmInternalAnnotationTest extends TestCase
                 '<?php
                     class Foo {
                         /**
-                         * @internal 
-                         * @psalm-internal 
+                         * @internal
+                         * @psalm-internal
                          */
                         function Bar(): void {}
                     }
@@ -429,7 +480,7 @@ class PsalmInternalAnnotationTest extends TestCase
                              * @var int
                              * @psalm-internal A\B
                              */
-                             public $foo; 
+                             public $foo;
                         }
                     }
                     ',
@@ -438,13 +489,13 @@ class PsalmInternalAnnotationTest extends TestCase
             'internalFunctionMissingInternalAnnotation' => [
                 '<?php
                     namespace A\B {
-                        class Foo { 
+                        class Foo {
                             /**
                              * @psalm-internal A\B
                              */
                              public function foo()
                              {
-                             } 
+                             }
                         }
                     }
                     ',
