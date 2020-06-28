@@ -1229,6 +1229,30 @@ class TaintTest extends TestCase
                     echo "$unsafe";',
                 'error_message' => 'TaintedInput',
             ],
+            'encapsulatedToStringMagic' => [
+                '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    $unsafe = new MyClass();
+                    echo "unsafe: $unsafe";',
+                'error_message' => 'TaintedInput',
+            ],
+            'castToStringMagic' => [
+                '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    $unsafe = new MyClass();
+                    echo (string) $unsafe;',  // Psalm does not yet warn without a (string) cast.
+                'error_message' => 'TaintedInput',
+            ],
+            // TODO: This is not implemented for the majority of param type casts to strings such as `echo $unsafeStringableObject;`.
+            // It may be possible to patch TypeComparisonResult to add taintedness to the expression based on the observed __toString implementations.
             'namespacedFunction' => [
                 '<?php
                     namespace ns;

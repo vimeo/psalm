@@ -51,6 +51,7 @@ use function strpos;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\FunctionLikeParameter;
 use function explode;
+use RuntimeException;
 
 /**
  * @internal
@@ -1050,8 +1051,32 @@ class FunctionCallAnalyzer extends CallAnalyzer
         ) {
             return;
         }
-
         $return_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $stmt_type->parent_nodes[] = self::createTaintParentNode(
+            $statements_analyzer,
+            $function_id,
+            $function_storage,
+            $return_location,
+            $stmt
+        );
+    }
+
+    /**
+     * @internal
+     */
+    public static function createTaintParentNode(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id,
+        FunctionLikeStorage $function_storage,
+        CodeLocation $return_location,
+        ?PhpParser\Node\Expr\FuncCall $stmt = null
+    ) : TaintNode {
+        $codebase = $statements_analyzer->getCodebase();
+        if (!$codebase->taint) {
+            // Overall taint and whether the location is in the path is checked by the caller
+            throw new RuntimeException('Taint detection is disabled');
+        }
 
         $function_return_sink = TaintNode::getForMethodReturn(
             $function_id,
@@ -1062,12 +1087,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $codebase->taint->addTaintNode($function_return_sink);
 
-        $stmt_type->parent_nodes[] = $function_return_sink;
-
         if ($function_storage->return_source_params) {
             $removed_taints = $function_storage->removed_taints;
 
-            if ($function_id === 'preg_replace' && count($stmt->args) > 2) {
+            if ($function_id === 'preg_replace' && $stmt && count($stmt->args) > 2) {
                 $first_stmt_type = $statements_analyzer->node_data->getType($stmt->args[0]->value);
                 $second_stmt_type = $statements_analyzer->node_data->getType($stmt->args[1]->value);
 
@@ -1135,6 +1158,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             $codebase->taint->addSource($method_node);
         }
+        return $function_return_sink;
     }
 
     private static function simpleExclusion(string $pattern, string $escape_char) : bool

@@ -2,8 +2,10 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidCast;
@@ -21,6 +23,8 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TaintKindGroup;
+use Psalm\Internal\Taint\TaintNode;
 use Psalm\Internal\Type\TypeCombination;
 use function get_class;
 use function count;
@@ -100,7 +104,11 @@ class CastAnalyzer
             if (($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))
                 && $codebase->taint
             ) {
-                $stmt_type->parent_nodes = $stmt_expr_type->parent_nodes;
+                if ($stmt_expr_type->parent_nodes) {
+                    foreach ($stmt_expr_type->parent_nodes as $parent_node) {
+                        $stmt_type->parent_nodes[] = $parent_node;
+                    }
+                }
             }
 
             return true;
@@ -194,6 +202,7 @@ class CastAnalyzer
         $invalid_casts = [];
         $valid_strings = [];
         $castable_types = [];
+        $parent_nodes = [];
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
@@ -244,15 +253,30 @@ class CastAnalyzer
                             '__tostring'
                         );
 
+                        $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
                         if ($codebase->methods->methodExists(
                             $intersection_method_id,
                             $context->calling_method_id,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            $location
                         )) {
                             $return_type = $codebase->methods->getMethodReturnType(
                                 $intersection_method_id,
                                 $self_class
                             );
+                            if ($codebase->taint
+                                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                            ) {
+                                $tostring_storage = $codebase->methods->getStorage(
+                                    $intersection_method_id
+                                );
+                                // Analyze taint as if there were an explicit call to __toString() here instead.
+                                $parent_nodes[] = FunctionCallAnalyzer::createTaintParentNode(
+                                    $statements_analyzer,
+                                    (string) $intersection_method_id,
+                                    $tostring_storage,
+                                    $location
+                                );
+                            }
 
                             if ($return_type) {
                                 $castable_types = array_merge(
@@ -314,13 +338,19 @@ class CastAnalyzer
 
         $valid_types = array_merge($valid_strings, $castable_types);
 
-        if (!$valid_types) {
-            return Type::getString();
+        if ($valid_types) {
+            $result = \Psalm\Internal\Type\TypeCombination::combineTypes(
+                $valid_types,
+                $codebase
+            );
+        } else {
+            $result = Type::getString();
         }
-
-        return \Psalm\Internal\Type\TypeCombination::combineTypes(
-            $valid_types,
-            $codebase
-        );
+        if ($parent_nodes) {
+            foreach ($parent_nodes as $parent_node) {
+                $result->parent_nodes[] = $parent_node;
+            }
+        }
+        return $result;
     }
 }

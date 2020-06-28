@@ -27,7 +27,7 @@ class EncapsulatedStringAnalyzer
             $part_type = $statements_analyzer->node_data->getType($part);
 
             if ($part_type) {
-                CastAnalyzer::castStringAttempt($statements_analyzer, $context, $part);
+                $part_type_after_cast = CastAnalyzer::castStringAttempt($statements_analyzer, $context, $part);
 
                 if ($codebase->taint
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
@@ -41,6 +41,11 @@ class EncapsulatedStringAnalyzer
 
                     if ($part_type->parent_nodes) {
                         foreach ($part_type->parent_nodes as $parent_node) {
+                            $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
+                        }
+                    }
+                    if ($part_type_after_cast->parent_nodes) {
+                        foreach ($part_type_after_cast->parent_nodes as $parent_node) {
                             $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
