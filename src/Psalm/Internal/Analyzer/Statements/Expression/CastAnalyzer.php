@@ -36,8 +36,6 @@ class CastAnalyzer
         PhpParser\Node\Expr\Cast $stmt,
         Context $context
     ) : bool {
-        $codebase = $statements_analyzer->getCodebase();
-
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -184,7 +182,9 @@ class CastAnalyzer
     ) : Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))) {
+        $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+        if (!$stmt_type) {
             return Type::getString();
         }
 
@@ -209,7 +209,10 @@ class CastAnalyzer
 
             if ($atomic_type instanceof TString) {
                 $valid_strings[] = $atomic_type;
-                $parent_nodes = array_merge($parent_nodes, $stmt_type->parent_nodes);
+                if ($codebase->taint) {
+                    $parent_nodes = array_merge($parent_nodes, $stmt_type->parent_nodes ?: []);
+                }
+
                 continue;
             }
 
@@ -225,7 +228,9 @@ class CastAnalyzer
                 || $atomic_type instanceof Type\Atomic\Scalar
             ) {
                 $castable_types[] = new TString();
-                $parent_nodes = array_merge($parent_nodes, $stmt_type->parent_nodes);
+                if ($codebase->taint) {
+                    $parent_nodes = array_merge($parent_nodes, $stmt_type->parent_nodes ?: []);
+                }
 
                 continue;
             }
@@ -267,7 +272,9 @@ class CastAnalyzer
                                 $context
                             );
 
-                            $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
+                            if ($codebase->taint) {
+                                $parent_nodes = array_merge($return_type->parent_nodes ?: [], $parent_nodes);
+                            }
 
                             $castable_types = array_merge(
                                 $castable_types,
