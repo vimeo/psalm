@@ -186,6 +186,32 @@ class MethodCallReturnTypeFetcher
             $return_type_candidate = $method_name === '__tostring' ? Type::getString() : Type::getMixed();
         }
 
+        self::taintMethodCallResult(
+            $statements_analyzer,
+            $return_type_candidate,
+            $stmt->name,
+            $stmt->var,
+            $method_id,
+            $declaring_method_id,
+            $cased_method_id,
+            $context
+        );
+
+        return $return_type_candidate;
+    }
+
+    public static function taintMethodCallResult(
+        StatementsAnalyzer $statements_analyzer,
+        Type\Union $return_type_candidate,
+        PhpParser\Node $name_expr,
+        PhpParser\Node\Expr $var_expr,
+        MethodIdentifier $method_id,
+        ?MethodIdentifier $declaring_method_id,
+        string $cased_method_id,
+        Context $context
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($codebase->taint
             && $declaring_method_id
             && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
@@ -194,7 +220,7 @@ class MethodCallReturnTypeFetcher
                 $declaring_method_id
             );
 
-            $node_location = new CodeLocation($statements_analyzer, $stmt->name);
+            $node_location = new CodeLocation($statements_analyzer, $name_expr);
 
             $method_call_node = TaintNode::getForMethodReturn(
                 (string) $method_id,
@@ -211,7 +237,7 @@ class MethodCallReturnTypeFetcher
 
             if ($method_storage->specialize_call) {
                 $var_id = ExpressionIdentifier::getArrayVarId(
-                    $stmt->var,
+                    $var_expr,
                     null,
                     $statements_analyzer
                 );
@@ -219,7 +245,7 @@ class MethodCallReturnTypeFetcher
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {
                     $var_node = TaintNode::getForAssignment(
                         $var_id,
-                        new CodeLocation($statements_analyzer, $stmt->var)
+                        new CodeLocation($statements_analyzer, $var_expr)
                     );
 
                     $codebase->taint->addTaintNode($var_node);
@@ -256,8 +282,6 @@ class MethodCallReturnTypeFetcher
                 $codebase->taint->addSource($method_node);
             }
         }
-
-        return $return_type_candidate;
     }
 
     private static function replaceTemplateTypes(
