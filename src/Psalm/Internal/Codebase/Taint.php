@@ -344,7 +344,7 @@ class Taint
             $generated_sources[] = $generated_source;
         } elseif (isset($this->specializations[$source->id])) {
             foreach ($this->specializations[$source->id] as $specialization => $_) {
-                if (isset($source->specialized_calls[$specialization])) {
+                if (!$source->specialized_calls || isset($source->specialized_calls[$specialization])) {
                     $new_source = clone $source;
 
                     $new_source->id = $source->id . '-' . $specialization;

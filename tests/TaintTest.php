@@ -1411,6 +1411,18 @@ class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedInput',
             ],
+            'taintSpecializedMethod' => [
+                '<?php
+                    /** @psalm-taint-specialize */
+                    class Unsafe {
+                        public function isUnsafe() {
+                            return $_GET["unsafe"];
+                        }
+                    }
+                    $a = new Unsafe();
+                    echo $a->isUnsafe();',
+                'error_message' => 'TaintedInput',
+            ],
         ];
     }
 }
