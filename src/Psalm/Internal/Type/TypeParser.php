@@ -342,6 +342,10 @@ class TypeParser
 
             foreach ($parse_tree->children as $child_tree) {
                 if ($child_tree instanceof ParseTree\NullableTree) {
+                    if (!isset($child_tree->children[0])) {
+                        throw new TypeParseTreeException('Invalid ? character');
+                    }
+
                     $atomic_type = self::getTypeFromTree(
                         $child_tree->children[0],
                         $codebase,

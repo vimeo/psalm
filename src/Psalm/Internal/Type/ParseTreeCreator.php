@@ -563,6 +563,10 @@ class ParseTreeCreator
             } else {
                 $new_parent = !$this->current_leaf instanceof ParseTree\Root ? $this->current_leaf : null;
 
+                if (!$next_token) {
+                    throw new TypeParseTreeException('Unexpected token ?');
+                }
+
                 $new_leaf = new ParseTree\NullableTree(
                     $new_parent
                 );

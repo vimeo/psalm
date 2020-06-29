@@ -103,6 +103,24 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testBadNullableCharacterInUnion()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('int|array|?');
+    }
+
+    /**
+     * @return void
+     */
+    public function testBadNullableCharacterInUnionWithFollowing()
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('int|array|?|bool');
+    }
+
+    /**
+     * @return void
+     */
     public function testArrayWithClosingBracket()
     {
         $this->assertSame('array<int, int>', (string) Type::parseString('array<int, int>'));
