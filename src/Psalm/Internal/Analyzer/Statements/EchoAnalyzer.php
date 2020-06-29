@@ -41,6 +41,7 @@ class EchoAnalyzer
                 $expr_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
+                    $expr_type,
                     $expr,
                     false
                 );

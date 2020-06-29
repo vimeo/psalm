@@ -91,7 +91,13 @@ class CastAnalyzer
             $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
             if ($stmt_expr_type) {
-                $stmt_type = self::castStringAttempt($statements_analyzer, $context, $stmt->expr, true);
+                $stmt_type = self::castStringAttempt(
+                    $statements_analyzer,
+                    $context,
+                    $stmt_expr_type,
+                    $stmt->expr,
+                    true
+                );
             } else {
                 $stmt_type = Type::getString();
             }
@@ -177,16 +183,11 @@ class CastAnalyzer
     public static function castStringAttempt(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
+        Type\Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false
     ) : Type\Union {
         $codebase = $statements_analyzer->getCodebase();
-
-        $stmt_type = $statements_analyzer->node_data->getType($stmt);
-
-        if (!$stmt_type) {
-            return Type::getString();
-        }
 
         $invalid_casts = [];
         $valid_strings = [];

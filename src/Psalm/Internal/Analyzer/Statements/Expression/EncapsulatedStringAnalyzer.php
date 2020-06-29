@@ -27,7 +27,12 @@ class EncapsulatedStringAnalyzer
             $part_type = $statements_analyzer->node_data->getType($part);
 
             if ($part_type) {
-                $casted_part_type = CastAnalyzer::castStringAttempt($statements_analyzer, $context, $part);
+                $casted_part_type = CastAnalyzer::castStringAttempt(
+                    $statements_analyzer,
+                    $context,
+                    $part_type,
+                    $part
+                );
 
                 if ($codebase->taint
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
