@@ -37,7 +37,7 @@ class EchoAnalyzer
 
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
-            if ($expr_type) {
+            if ($codebase->taint && $expr_type) {
                 $expr_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
