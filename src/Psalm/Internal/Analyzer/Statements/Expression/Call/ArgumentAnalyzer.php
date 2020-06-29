@@ -347,7 +347,7 @@ class ArgumentAnalyzer
                 if ($cased_method_id) {
                     $arg_location = new CodeLocation($statements_analyzer->getSource(), $arg->value);
 
-                    $arg_type = self::processTaintedness(
+                    self::processTaintedness(
                         $statements_analyzer,
                         $cased_method_id,
                         $argument_offset,
@@ -482,7 +482,7 @@ class ArgumentAnalyzer
             }
 
             if ($cased_method_id) {
-                $input_type = self::processTaintedness(
+                self::processTaintedness(
                     $statements_analyzer,
                     $cased_method_id,
                     $argument_offset,
