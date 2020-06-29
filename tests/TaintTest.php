@@ -1259,7 +1259,7 @@ class TaintTest extends TestCase
                         }
                     }
                     $unsafe = new MyClass();
-                    echo (string) $unsafe;',  // Psalm does not yet warn without a (string) cast.
+                    echo $unsafe;',
                 'error_message' => 'TaintedInput',
             ],
             'namespacedFunction' => [
