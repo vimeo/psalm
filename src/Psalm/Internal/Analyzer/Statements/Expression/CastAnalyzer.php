@@ -261,13 +261,15 @@ class CastAnalyzer
                                 $self_class
                             ) ?: Type::getString();
 
+                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
+
                             MethodCallReturnTypeFetcher::taintMethodCallResult(
                                 $statements_analyzer,
                                 $return_type,
                                 $stmt,
                                 $stmt,
                                 $intersection_method_id,
-                                $intersection_method_id,
+                                $declaring_method_id,
                                 $intersection_type->value . '::__toString',
                                 $context
                             );
