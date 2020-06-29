@@ -8,6 +8,7 @@ return [
 'file_put_contents' => [['shell']],
 'fopen' => [['shell']],
 'header' => [['text']],
+'igbinary_unserialize' => [['text']],
 'ldap_search' => [['text']],
 'mysqli_query' => [[], ['sql']],
 'passthru' => [['shell']],
@@ -19,4 +20,5 @@ return [
 'setcookie' => [['text'], ['text']],
 'shell_exec' => [['shell']],
 'system' => [['shell']],
+'unserialize' => [['text']],
 ];
