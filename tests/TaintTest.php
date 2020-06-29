@@ -1229,6 +1229,39 @@ class TaintTest extends TestCase
                     echo "$unsafe";',
                 'error_message' => 'TaintedInput',
             ],
+            'encapsulatedToStringMagic' => [
+                '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    $unsafe = new MyClass();
+                    echo "unsafe: $unsafe";',
+                'error_message' => 'TaintedInput',
+            ],
+            'castToStringMagic' => [
+                '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    $unsafe = new MyClass();
+                    echo (string) $unsafe;',  // Psalm does not yet warn without a (string) cast.
+                'error_message' => 'TaintedInput',
+            ],
+            'implicitToStringMagic' => [
+                '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    $unsafe = new MyClass();
+                    echo (string) $unsafe;',  // Psalm does not yet warn without a (string) cast.
+                'error_message' => 'TaintedInput',
+            ],
             'namespacedFunction' => [
                 '<?php
                     namespace ns;
