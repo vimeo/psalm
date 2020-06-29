@@ -161,7 +161,7 @@ class ToStringTest extends TestCase
                 '<?php
                     class A {}
                     echo (new A);',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidCast',
             ],
             'echoCastClass' => [
                 '<?php
