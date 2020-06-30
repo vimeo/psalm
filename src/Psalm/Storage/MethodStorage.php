@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Storage;
 
+use Psalm\Type;
+
 class MethodStorage extends FunctionLikeStorage
 {
     /**

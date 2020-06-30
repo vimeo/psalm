@@ -2491,7 +2491,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
-        if ($docblock_info->self_out) {
+        if ($docblock_info->self_out
+            && $storage instanceof MethodStorage) {
             $out_type = TypeParser::parseTokens(
                 TypeTokenizer::getFullyQualifiedTokens(
                     $docblock_info->self_out['type'],
