@@ -1762,6 +1762,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                          * @psalm-suppress MixedArrayAccess
                          * @psalm-suppress MixedReturnStatement
                          * @psalm-suppress MixedInferredReturnType
+                         * @psalm-suppress MixedArrayAssignment
                          */
                         public function foo() : stdClass {
                             if (isset($this->arr[0])) {
@@ -2780,6 +2781,53 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     if (($a !== null && $a->format("Y") === "2020") == true) {
                         $a->format("d-m-Y");
                     }',
+            ],
+            'getClassIsStatic' => [
+                '<?php
+                    class A {}
+
+                    class AChild extends A {
+                        public static function compare(A $other_type) : AChild {
+                            if (get_class($other_type) !== static::class) {
+                                throw new \Exception();
+                            }
+
+                            return $other_type;
+                        }
+                    }',
+            ],
+            'applyTruthyAssertionsToRightHandSideOfAssignment' => [
+                '<?php
+                    function takesAString(string $name): void {}
+
+                    function randomReturn(): ?string {
+                        return rand(1,2) === 1 ? "foo" : null;
+                    }
+
+                    $name = randomReturn();
+
+                    if ($foo = ($name !== null)) {
+                        takesAString($name);
+                    }'
+            ],
+            'maintainTruthinessInsideAssignment' => [
+                '<?php
+                    class C {
+                        public function foo() : void {}
+                    }
+
+                    class B {
+                        public ?C $c = null;
+                    }
+
+                    function updateBackgroundClip(?B $b): void {
+                        if (!$b || !($a = $b->c)) {
+                            // do something
+                        } else {
+                            /** @psalm-suppress MixedMethodCall */
+                            $a->foo();
+                        }
+                    }'
             ],
         ];
     }

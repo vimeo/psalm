@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Taint\Sink;
@@ -343,6 +344,23 @@ class ArgumentAnalyzer
                     // fall through
                 }
 
+                if ($cased_method_id) {
+                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $arg->value);
+
+                    self::processTaintedness(
+                        $statements_analyzer,
+                        $cased_method_id,
+                        $argument_offset,
+                        $arg_location,
+                        $function_call_location,
+                        $function_param,
+                        $arg_type,
+                        $arg->value,
+                        $context,
+                        $specialize_taint
+                    );
+                }
+
                 return;
             }
 
@@ -472,6 +490,8 @@ class ArgumentAnalyzer
                     $function_call_location,
                     $function_param,
                     $input_type,
+                    $input_expr,
+                    $context,
                     $specialize_taint
                 );
             }
@@ -527,7 +547,7 @@ class ArgumentAnalyzer
             }
 
             if ($cased_method_id) {
-                self::processTaintedness(
+                $input_type = self::processTaintedness(
                     $statements_analyzer,
                     $cased_method_id,
                     $argument_offset,
@@ -535,6 +555,8 @@ class ArgumentAnalyzer
                     $function_call_location,
                     $function_param,
                     $input_type,
+                    $input_expr,
+                    $context,
                     $specialize_taint
                 );
             }
@@ -613,7 +635,7 @@ class ArgumentAnalyzer
         if ($cased_method_id) {
             $old_input_type = $input_type;
 
-            self::processTaintedness(
+            $input_type = self::processTaintedness(
                 $statements_analyzer,
                 $cased_method_id,
                 $argument_offset,
@@ -621,6 +643,8 @@ class ArgumentAnalyzer
                 $function_call_location,
                 $function_param,
                 $input_type,
+                $input_expr,
+                $context,
                 $specialize_taint
             );
 
@@ -826,6 +850,10 @@ class ArgumentAnalyzer
 
                     foreach ($function_ids as $function_id) {
                         if (strpos($function_id, '::') !== false) {
+                            if ($function_id[0] === '$') {
+                                $function_id = \substr($function_id, 1);
+                            }
+
                             $function_id_parts = explode('&', $function_id);
 
                             $non_existent_method_ids = [];
@@ -1116,13 +1144,25 @@ class ArgumentAnalyzer
         CodeLocation $arg_location,
         CodeLocation $function_call_location,
         FunctionLikeParameter $function_param,
-        Type\Union &$input_type,
+        Type\Union $input_type,
+        PhpParser\Node\Expr $expr,
+        Context $context,
         bool $specialize_taint
-    ) : void {
+    ) : Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$codebase->taint || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())) {
-            return;
+            return $input_type;
+        }
+
+        if ($function_param->type && $function_param->type->isString()) {
+            $input_type = CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $input_type,
+                $expr,
+                false
+            );
         }
 
         if ($specialize_taint) {
@@ -1224,5 +1264,7 @@ class ArgumentAnalyzer
             $input_type = clone $input_type;
             $input_type->parent_nodes = [];
         }
+
+        return $input_type;
     }
 }

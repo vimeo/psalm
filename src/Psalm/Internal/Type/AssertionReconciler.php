@@ -81,6 +81,11 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $is_equality = true;
         }
 
+        if ($assertion[0] === '>') {
+            $assertion = 'falsy';
+            $is_negation = true;
+        }
+
         if ($existing_var_type === null
             && is_string($key)
             && VariableFetchAnalyzer::isSuperGlobal($key)

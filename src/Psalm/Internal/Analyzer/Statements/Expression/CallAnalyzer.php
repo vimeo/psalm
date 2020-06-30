@@ -500,7 +500,7 @@ class CallAnalyzer
                     }
                 }
 
-                $method_ids[] = $method_id;
+                $method_ids[] = '$' . $method_id;
             }
         }
 

@@ -76,8 +76,8 @@ class Taint
         Taintable $from,
         Taintable $to,
         string $path_type,
-        array $added_taints = [],
-        array $removed_taints = []
+        ?array $added_taints = null,
+        ?array $removed_taints = null
     ) : void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -209,8 +209,8 @@ class Taint
 
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             $path_type = $path->type;
-            $added_taints = $path->unescaped_taints;
-            $removed_taints = $path->escaped_taints;
+            $added_taints = $path->unescaped_taints ?: [];
+            $removed_taints = $path->escaped_taints ?: [];
 
             if (!isset($this->nodes[$to_id])) {
                 continue;
@@ -231,40 +231,12 @@ class Taint
                 continue;
             }
 
-            if (strpos($path_type, 'array-fetch-') === 0) {
-                $previous_path_types = array_reverse($generated_source->path_types);
-
-                foreach ($previous_path_types as $previous_path_type) {
-                    if ($previous_path_type === 'array-assignment') {
-                        break;
-                    }
-
-                    if (strpos($previous_path_type, 'array-assignment-') === 0) {
-                        if (substr($previous_path_type, 17) === substr($path_type, 12)) {
-                            break;
-                        }
-
-                        continue 2;
-                    }
-                }
+            if (self::shouldIgnoreFetch($path_type, 'array', $generated_source->path_types)) {
+                continue;
             }
 
-            if (strpos($path_type, 'property-fetch-') === 0) {
-                $previous_path_types = array_reverse($generated_source->path_types);
-
-                foreach ($previous_path_types as $previous_path_type) {
-                    if ($previous_path_type === 'property-assignment') {
-                        break;
-                    }
-
-                    if (strpos($previous_path_type, 'property-assignment-') === 0) {
-                        if (substr($previous_path_type, 20) === substr($path_type, 15)) {
-                            break;
-                        }
-
-                        continue 2;
-                    }
-                }
+            if (self::shouldIgnoreFetch($path_type, 'property', $generated_source->path_types)) {
+                continue;
             }
 
             if (isset($sinks[$to_id])) {
@@ -308,6 +280,50 @@ class Taint
         return $new_sources;
     }
 
+    /** @param array<string> $previous_path_types */
+    private static function shouldIgnoreFetch(
+        string $path_type,
+        string $expression_type,
+        array $previous_path_types
+    ) : bool {
+        $el = \strlen($expression_type);
+
+        if (substr($path_type, 0, $el + 7) === $expression_type . '-fetch-') {
+            $fetch_nesting = 0;
+
+            $previous_path_types = array_reverse($previous_path_types);
+
+            foreach ($previous_path_types as $previous_path_type) {
+                if ($previous_path_type === $expression_type . '-assignment') {
+                    if ($fetch_nesting === 0) {
+                        return false;
+                    }
+
+                    $fetch_nesting--;
+                }
+
+                if (substr($previous_path_type, 0, $el + 6) === $expression_type . '-fetch') {
+                    $fetch_nesting++;
+                }
+
+                if (substr($previous_path_type, 0, $el + 12) === $expression_type . '-assignment-') {
+                    if ($fetch_nesting > 0) {
+                        $fetch_nesting--;
+                        continue;
+                    }
+
+                    if (substr($previous_path_type, $el + 12) === substr($path_type, $el + 7)) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /** @return array<Taintable> */
     private function getSpecializedSources(Taintable $source) : array
     {
@@ -328,7 +344,7 @@ class Taint
             $generated_sources[] = $generated_source;
         } elseif (isset($this->specializations[$source->id])) {
             foreach ($this->specializations[$source->id] as $specialization => $_) {
-                if (isset($source->specialized_calls[$specialization])) {
+                if (!$source->specialized_calls || isset($source->specialized_calls[$specialization])) {
                     $new_source = clone $source;
 
                     $new_source->id = $source->id . '-' . $specialization;

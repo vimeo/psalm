@@ -613,6 +613,18 @@ function str_replace($search, $replace, $subject, &$count = null) {}
 function preg_replace($search, $replace, $subject, int $limit = -1, &$count = null) {}
 
 /**
+ * @param string|string[] $search
+ * @param callable(array<int, string>):string $replace
+ * @param string|array<string|int|float> $subject
+ * @param int $count
+ * @return ($subject is array ? array<string> : string)
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($subject) -> return
+ */
+function preg_replace_callback($search, $replace, $subject, int $limit = -1, &$count = null) {}
+
+/**
  * @psalm-pure
  *
  * @return string|false

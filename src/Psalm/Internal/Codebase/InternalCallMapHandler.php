@@ -96,6 +96,7 @@ class InternalCallMapHandler
         }
 
         $matching_param_count_callable = null;
+        $matching_coerced_param_count_callable = null;
 
         foreach ($callables as $possible_callable) {
             $possible_function_params = $possible_callable->params;
@@ -103,6 +104,7 @@ class InternalCallMapHandler
             assert($possible_function_params !== null);
 
             $all_args_match = true;
+            $type_coerced = false;
 
             $last_param = count($possible_function_params)
                 ? $possible_function_params[count($possible_function_params) - 1]
@@ -179,6 +181,10 @@ class InternalCallMapHandler
                     true,
                     $arg_result
                 ) || $arg_result->type_coerced) {
+                    if ($arg_result->type_coerced) {
+                        $type_coerced = true;
+                    }
+
                     continue;
                 }
 
@@ -190,9 +196,17 @@ class InternalCallMapHandler
                 $matching_param_count_callable = $possible_callable;
             }
 
-            if ($all_args_match) {
+            if ($all_args_match && !$type_coerced) {
                 return $possible_callable;
             }
+
+            if ($all_args_match) {
+                $matching_coerced_param_count_callable = $possible_callable;
+            }
+        }
+
+        if ($matching_coerced_param_count_callable) {
+            return $matching_coerced_param_count_callable;
         }
 
         if ($matching_param_count_callable) {
@@ -274,6 +288,13 @@ class InternalCallMapHandler
                     ? Type::parseString($arg_type)
                     : Type::getMixed();
 
+                $out_type = null;
+
+                if (\strlen($arg_name) > 2 && $arg_name[0] === 'w' && $arg_name[1] === '_') {
+                    $out_type = $param_type;
+                    $param_type = Type::getMixed();
+                }
+
                 $function_param = new FunctionLikeParameter(
                     $arg_name,
                     $by_reference,
@@ -284,6 +305,10 @@ class InternalCallMapHandler
                     false,
                     $variadic
                 );
+
+                if ($out_type) {
+                    $function_param->out_type = $out_type;
+                }
 
                 if (isset(self::$taint_sink_map[$call_map_key][$arg_offset])) {
                     $function_param->sinks = self::$taint_sink_map[$call_map_key][$arg_offset];

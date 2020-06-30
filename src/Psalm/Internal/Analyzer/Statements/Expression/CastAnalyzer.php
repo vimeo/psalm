@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidCast;
@@ -35,8 +36,6 @@ class CastAnalyzer
         PhpParser\Node\Expr\Cast $stmt,
         Context $context
     ) : bool {
-        $codebase = $statements_analyzer->getCodebase();
-
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -89,19 +88,21 @@ class CastAnalyzer
                 return false;
             }
 
-            if ($statements_analyzer->node_data->getType($stmt->expr)) {
-                $stmt_type = self::castStringAttempt($statements_analyzer, $context, $stmt->expr, true);
+            $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+            if ($stmt_expr_type) {
+                $stmt_type = self::castStringAttempt(
+                    $statements_analyzer,
+                    $context,
+                    $stmt_expr_type,
+                    $stmt->expr,
+                    true
+                );
             } else {
                 $stmt_type = Type::getString();
             }
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
-            if (($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))
-                && $codebase->taint
-            ) {
-                $stmt_type->parent_nodes = $stmt_expr_type->parent_nodes;
-            }
 
             return true;
         }
@@ -182,20 +183,19 @@ class CastAnalyzer
     public static function castStringAttempt(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
+        Type\Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false
     ) : Type\Union {
         $codebase = $statements_analyzer->getCodebase();
-
-        if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))) {
-            return Type::getString();
-        }
 
         $invalid_casts = [];
         $valid_strings = [];
         $castable_types = [];
 
         $atomic_types = $stmt_type->getAtomicTypes();
+
+        $parent_nodes = [];
 
         while ($atomic_types) {
             $atomic_type = \array_pop($atomic_types);
@@ -210,6 +210,10 @@ class CastAnalyzer
 
             if ($atomic_type instanceof TString) {
                 $valid_strings[] = $atomic_type;
+                if ($codebase->taint) {
+                    $parent_nodes = array_merge($parent_nodes, $stmt_type->parent_nodes ?: []);
+                }
+
                 continue;
             }
 
@@ -225,6 +229,10 @@ class CastAnalyzer
                 || $atomic_type instanceof Type\Atomic\Scalar
             ) {
                 $castable_types[] = new TString();
+                if ($codebase->taint) {
+                    $parent_nodes = array_merge($parent_nodes, $stmt_type->parent_nodes ?: []);
+                }
+
                 continue;
             }
 
@@ -252,16 +260,29 @@ class CastAnalyzer
                             $return_type = $codebase->methods->getMethodReturnType(
                                 $intersection_method_id,
                                 $self_class
+                            ) ?: Type::getString();
+
+                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
+
+                            MethodCallReturnTypeFetcher::taintMethodCallResult(
+                                $statements_analyzer,
+                                $return_type,
+                                $stmt,
+                                $stmt,
+                                $intersection_method_id,
+                                $declaring_method_id,
+                                $intersection_type->value . '::__toString',
+                                $context
                             );
 
-                            if ($return_type) {
-                                $castable_types = array_merge(
-                                    $castable_types,
-                                    array_values($return_type->getAtomicTypes())
-                                );
-                            } else {
-                                $castable_types[] = new TString();
+                            if ($codebase->taint) {
+                                $parent_nodes = array_merge($return_type->parent_nodes ?: [], $parent_nodes);
                             }
+
+                            $castable_types = array_merge(
+                                $castable_types,
+                                array_values($return_type->getAtomicTypes())
+                            );
 
                             continue 2;
                         }
@@ -315,12 +336,18 @@ class CastAnalyzer
         $valid_types = array_merge($valid_strings, $castable_types);
 
         if (!$valid_types) {
-            return Type::getString();
+            $str_type = Type::getString();
+        } else {
+            $str_type = \Psalm\Internal\Type\TypeCombination::combineTypes(
+                $valid_types,
+                $codebase
+            );
         }
 
-        return \Psalm\Internal\Type\TypeCombination::combineTypes(
-            $valid_types,
-            $codebase
-        );
+        if ($codebase->taint) {
+            $str_type->parent_nodes = $parent_nodes;
+        }
+
+        return $str_type;
     }
 }

@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -461,10 +462,18 @@ class ForeachAnalyzer
                 }
 
                 if (!$value_type) {
-                    $value_type = $iterator_atomic_type->type_params[1];
+                    $value_type = clone $iterator_atomic_type->type_params[1];
                 } else {
                     $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
                 }
+
+                ArrayFetchAnalyzer::taintArrayFetch(
+                    $statements_analyzer,
+                    $stmt->expr,
+                    null,
+                    $value_type,
+                    Type::getMixed()
+                );
 
                 $key_type_part = $iterator_atomic_type->type_params[0];
 
@@ -473,6 +482,14 @@ class ForeachAnalyzer
                 } else {
                     $key_type = Type::combineUnionTypes($key_type, $key_type_part);
                 }
+
+                ArrayFetchAnalyzer::taintArrayFetch(
+                    $statements_analyzer,
+                    $stmt->expr,
+                    null,
+                    $key_type,
+                    Type::getMixed()
+                );
 
                 $has_valid_iterator = true;
                 continue;
@@ -492,6 +509,14 @@ class ForeachAnalyzer
             ) {
                 $has_valid_iterator = true;
                 $value_type = Type::getMixed();
+
+                ArrayFetchAnalyzer::taintArrayFetch(
+                    $statements_analyzer,
+                    $stmt->expr,
+                    null,
+                    $value_type,
+                    Type::getMixed()
+                );
             } elseif ($iterator_atomic_type instanceof Type\Atomic\TIterable) {
                 if ($iterator_atomic_type->extra_types) {
                     $iterator_atomic_type_copy = clone $iterator_atomic_type;

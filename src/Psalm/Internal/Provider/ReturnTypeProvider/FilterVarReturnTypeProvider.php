@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use Psalm\Internal\Taint\TaintNode;
 
 class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -25,8 +26,10 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
         CodeLocation $code_location
     ) : Type\Union {
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
-            return Type::getMixed();
+            throw new \UnexpectedValueException();
         }
+
+        $filter_type = null;
 
         if (isset($call_args[1])
             && ($second_arg_type = $statements_source->node_data->getType($call_args[1]->value))
@@ -109,10 +112,43 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
             if (!$has_object_like && !$filter_null && $filter_type) {
                 $filter_type->addType(new Type\Atomic\TFalse);
             }
-
-            return $filter_type ?: Type::getMixed();
         }
 
-        return Type::getMixed();
+        if (!$filter_type) {
+            $filter_type = Type::getMixed();
+        }
+
+        $codebase = $statements_source->getCodebase();
+
+        if ($codebase->taint) {
+            $function_return_sink = TaintNode::getForMethodReturn(
+                $function_id,
+                $function_id,
+                null,
+                $code_location
+            );
+
+            $codebase->taint->addTaintNode($function_return_sink);
+
+            $function_param_sink = TaintNode::getForMethodArgument(
+                $function_id,
+                $function_id,
+                0,
+                null,
+                $code_location
+            );
+
+            $codebase->taint->addTaintNode($function_param_sink);
+
+            $codebase->taint->addPath(
+                $function_param_sink,
+                $function_return_sink,
+                'arg'
+            );
+
+            $filter_type->parent_nodes = [$function_return_sink];
+        }
+
+        return $filter_type;
     }
 }

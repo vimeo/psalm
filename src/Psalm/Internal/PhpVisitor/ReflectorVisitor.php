@@ -68,6 +68,7 @@ use function substr;
 use function trim;
 use function preg_split;
 use php_user_filter;
+use function strlen;
 
 /**
  * @internal
@@ -1912,7 +1913,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             $existing_params['$' . $param_array->name] = $i;
-            $storage->param_types[$param_array->name] = $param_array->type;
+            $storage->param_lookup[$param_array->name] = !!$param->type;
             $storage->params[] = $param_array;
 
             if (!$param_array->is_optional && !$param_array->is_variadic) {
@@ -2133,6 +2134,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $doc_comment = $stmt->getDocComment();
 
+
+        if ($class_storage && ! $class_storage->is_trait) {
+            $storage->internal = $class_storage->internal;
+            $storage->psalm_internal = $class_storage->psalm_internal;
+        }
+
         if (!$doc_comment) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && $stmt->name->name === '__construct'
@@ -2190,7 +2197,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->internal = true;
         }
 
-        if ($docblock_info->psalm_internal) {
+        if (null === $class_storage ||
+            null === $class_storage->psalm_internal ||
+            (null !== $docblock_info->psalm_internal &&
+                strlen($docblock_info->psalm_internal) > strlen($class_storage->psalm_internal)
+            )
+        ) {
             $storage->psalm_internal = $docblock_info->psalm_internal;
         }
 
@@ -2486,7 +2498,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             foreach ($storage->params as $i => $param_storage) {
                 if ($param_storage->name === $param_name) {
-                    $storage->param_out_types[$i] = $out_type;
+                    $param_storage->out_type = $out_type;
                 }
             }
         }
@@ -2826,15 +2838,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\Variable
                 && is_string($function_stmt->expr->expr->name)
                 && ($param_name = $function_stmt->expr->expr->name)
-                && array_key_exists($param_name, $storage->param_types)
+                && isset($storage->param_lookup[$param_name])
             ) {
                 if ($class_storage->properties[$property_name]->type
-                    || !isset($storage->param_types[$param_name])
+                    || !$storage->param_lookup[$param_name]
                 ) {
                     continue;
                 }
 
-                $param_index = \array_search($param_name, \array_keys($storage->param_types), true);
+                $param_index = \array_search($param_name, \array_keys($storage->param_lookup), true);
 
                 if ($param_index === false || !isset($storage->params[$param_index]->type)) {
                     continue;

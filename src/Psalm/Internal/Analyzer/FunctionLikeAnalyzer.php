@@ -324,11 +324,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->calling_method_id = strtolower((string) $method_id);
             }
         } elseif ($this->function instanceof Function_) {
-            $cased_method_id = $this->function->name->name;
+            $function_name = $this->function->name->name;
             $namespace_prefix = $this->getNamespace();
-            $context->calling_function_id = strtolower(
-                ($namespace_prefix !== null ? $namespace_prefix . '\\' : '') . $cased_method_id
-            );
+            $cased_method_id = ($namespace_prefix !== null ? $namespace_prefix . '\\' : '') . $function_name;
+            $context->calling_function_id = strtolower($cased_method_id);
         } else { // Closure
             if ($storage->return_type) {
                 $closure_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
@@ -603,28 +602,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $closure_yield_types = [];
 
-            $ignore_nullable_issues = false;
-            $ignore_falsable_issues = false;
-
             $closure_return_types = ReturnTypeCollector::getReturnTypes(
                 $codebase,
                 $type_provider,
                 $function_stmts,
                 $closure_yield_types,
-                $ignore_nullable_issues,
-                $ignore_falsable_issues,
                 true
             );
 
             $closure_return_type = $closure_return_types
-                ? \Psalm\Internal\Type\TypeCombination::combineTypes(
+                ? \Psalm\Type::combineUnionTypeArray(
                     $closure_return_types,
                     $codebase
                 )
                 : null;
 
             $closure_yield_type = $closure_yield_types
-                ? \Psalm\Internal\Type\TypeCombination::combineTypes(
+                ? \Psalm\Type::combineUnionTypeArray(
                     $closure_yield_types,
                     $codebase
                 )
@@ -851,7 +845,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $unused_params = [];
 
         foreach ($statements_analyzer->getUnusedVarLocations() as list($var_name, $original_location)) {
-            if (!array_key_exists(substr($var_name, 1), $storage->param_types)) {
+            if (!array_key_exists(substr($var_name, 1), $storage->param_lookup)) {
                 continue;
             }
 
@@ -859,7 +853,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 continue;
             }
 
-            $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);
+            $position = array_search(substr($var_name, 1), array_keys($storage->param_lookup), true);
 
             if ($position === false) {
                 throw new \UnexpectedValueException('$position should not be false here');
@@ -1509,14 +1503,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     ) {
         $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
-        foreach ($storage->params as $i => $param) {
+        foreach ($storage->params as $param) {
             if ($param->by_ref && isset($context->vars_in_scope['$' . $param->name]) && !$param->is_variadic) {
                 $actual_type = $context->vars_in_scope['$' . $param->name];
-                $param_out_type = $param->type;
-
-                if (isset($storage->param_out_types[$i])) {
-                    $param_out_type = $storage->param_out_types[$i];
-                }
+                $param_out_type = $param->out_type ?: $param->type;
 
                 if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
                     if (!TypeAnalyzer::isContainedBy(

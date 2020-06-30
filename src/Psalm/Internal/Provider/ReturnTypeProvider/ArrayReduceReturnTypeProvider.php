@@ -193,7 +193,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             $call_map = InternalCallMapHandler::getCallMap();
 
             foreach ($mapping_function_ids as $mapping_function_id) {
-                $mapping_function_id = strtolower($mapping_function_id);
+                $mapping_function_id = $mapping_function_id;
 
                 $mapping_function_id_parts = explode('&', $mapping_function_id);
 
@@ -214,6 +214,10 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                         }
                     } elseif ($mapping_function_id_part) {
                         if (strpos($mapping_function_id_part, '::') !== false) {
+                            if ($mapping_function_id_part[0] === '$') {
+                                $mapping_function_id_part = \substr($mapping_function_id_part, 1);
+                            }
+
                             list($callable_fq_class_name, $method_name) = explode('::', $mapping_function_id_part);
 
                             if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
@@ -222,7 +226,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
                             $method_id = new \Psalm\Internal\MethodIdentifier(
                                 $callable_fq_class_name,
-                                $method_name
+                                strtolower($method_name)
                             );
 
                             if (!$codebase->methods->methodExists(
@@ -258,7 +262,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                         } else {
                             if (!$codebase->functions->functionExists(
                                 $statements_source,
-                                $mapping_function_id_part
+                                strtolower($mapping_function_id_part)
                             )
                             ) {
                                 return Type::getMixed();
@@ -268,7 +272,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
                             $function_storage = $codebase->functions->getStorage(
                                 $statements_source,
-                                $mapping_function_id_part
+                                strtolower($mapping_function_id_part)
                             );
 
                             $return_type = $function_storage->return_type ?: Type::getMixed();

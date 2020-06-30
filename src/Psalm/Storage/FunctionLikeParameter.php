@@ -26,6 +26,11 @@ class FunctionLikeParameter
     /**
      * @var Type\Union|null
      */
+    public $out_type;
+
+    /**
+     * @var Type\Union|null
+     */
     public $signature_type;
 
     /**

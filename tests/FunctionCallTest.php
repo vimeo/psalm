@@ -1291,6 +1291,15 @@ class FunctionCallTest extends TestCase
                     '$n' => 'int',
                 ]
             ],
+            'writeArgsAllowed' => [
+                '<?php
+                    /** @return false|int */
+                    function safeMatch(string $pattern, string $subject, ?array $matches = null, int $flags = 0) {
+                        return \preg_match($pattern, $subject, $matches, $flags);
+                    }
+
+                    safeMatch("/a/", "b");'
+            ],
         ];
     }
 

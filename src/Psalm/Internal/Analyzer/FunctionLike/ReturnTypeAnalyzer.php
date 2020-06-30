@@ -124,16 +124,11 @@ class ReturnTypeAnalyzer
 
         $inferred_yield_types = [];
 
-        $ignore_nullable_issues = false;
-        $ignore_falsable_issues = false;
-
         $inferred_return_type_parts = ReturnTypeCollector::getReturnTypes(
             $codebase,
             $type_provider,
             $function_stmts,
             $inferred_yield_types,
-            $ignore_nullable_issues,
-            $ignore_falsable_issues,
             true
         );
 
@@ -153,10 +148,10 @@ class ReturnTypeAnalyzer
         ) {
             // only add null if we have a return statement elsewhere and it wasn't void
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
-                if (!$inferred_return_type_part instanceof Type\Atomic\TVoid) {
+                if (!$inferred_return_type_part->isVoid()) {
                     $atomic_null = new Type\Atomic\TNull();
                     $atomic_null->from_docblock = true;
-                    $inferred_return_type_parts[] = $atomic_null;
+                    $inferred_return_type_parts[] = new Type\Union([$atomic_null]);
                     break;
                 }
             }
@@ -213,9 +208,11 @@ class ReturnTypeAnalyzer
         }
 
         $inferred_return_type = $inferred_return_type_parts
-            ? TypeCombination::combineTypes($inferred_return_type_parts)
+            ? \Psalm\Type::combineUnionTypeArray($inferred_return_type_parts, $codebase)
             : Type::getVoid();
-        $inferred_yield_type = $inferred_yield_types ? TypeCombination::combineTypes($inferred_yield_types) : null;
+        $inferred_yield_type = $inferred_yield_types
+            ? \Psalm\Type::combineUnionTypeArray($inferred_yield_types, $codebase)
+            : null;
 
         if ($inferred_yield_type) {
             $inferred_return_type = $inferred_yield_type;
@@ -233,7 +230,7 @@ class ReturnTypeAnalyzer
             && !$inferred_yield_types
         ) {
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
-                if ($inferred_return_type_part instanceof Type\Atomic\TVoid) {
+                if ($inferred_return_type_part->isVoid()) {
                     $unsafe_return_type = true;
                 }
             }
@@ -592,7 +589,7 @@ class ReturnTypeAnalyzer
                 }
             }
 
-            if (!$ignore_nullable_issues
+            if (!$inferred_return_type->ignore_nullable_issues
                 && $inferred_return_type->isNullable()
                 && !$declared_return_type->isNullable()
                 && !$declared_return_type->hasTemplate()
@@ -631,7 +628,7 @@ class ReturnTypeAnalyzer
                 }
             }
 
-            if (!$ignore_falsable_issues
+            if (!$inferred_return_type->ignore_falsable_issues
                 && $inferred_return_type->isFalsable()
                 && !$declared_return_type->isFalsable()
                 && !$declared_return_type->hasBool()

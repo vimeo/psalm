@@ -69,7 +69,7 @@ abstract class Taintable
         ?CodeLocation $arg_location,
         ?CodeLocation $code_location = null
     ) {
-        $arg_id = $method_id . '#' . ($argument_offset + 1);
+        $arg_id = strtolower($method_id) . '#' . ($argument_offset + 1);
 
         $label = $cased_method_id . '#' . ($argument_offset + 1);
 
@@ -80,7 +80,7 @@ abstract class Taintable
         }
 
         return new static(
-            \strtolower($arg_id),
+            $arg_id,
             $label,
             $arg_location,
             $specialization_key

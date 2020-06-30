@@ -122,8 +122,6 @@ class ArrayAssignmentAnalyzer
                     // fall through
                 }
             }
-
-            return null;
         }
 
         $child_stmts = array_reverse($child_stmts);

@@ -939,9 +939,10 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
 
         $mock = $this->getMockBuilder(\stdClass::class)->setMethods(['check'])->getMock();
-        $mock->expects($this->exactly(3))
+        $mock->expects($this->exactly(4))
             ->method('check')
             ->withConsecutive(
+                [$this->equalTo('b')],
                 [$this->equalTo('array_map')],
                 [$this->equalTo('fopen')],
                 [$this->equalTo('a')]

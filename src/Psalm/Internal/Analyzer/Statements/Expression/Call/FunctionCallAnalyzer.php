@@ -359,9 +359,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $context
                 );
 
-                if ($stmt_type) {
-                    $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
-                }
+                $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
 
                 if ($config->after_every_function_checks) {
                     foreach ($config->after_every_function_checks as $plugin_fq_class_name) {
@@ -897,7 +895,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         ?FunctionLikeStorage $function_storage,
         TemplateResult $template_result,
         Context $context
-    ) : ?Type\Union {
+    ) : Type\Union {
         $stmt_type = null;
         $config = $codebase->config;
 
@@ -1026,7 +1024,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($function_storage && $stmt_type) {
+        if (!$stmt_type) {
+            $stmt_type = Type::getMixed();
+        }
+
+        if ($function_storage) {
             self::taintReturnType($statements_analyzer, $stmt, $function_id, $function_storage, $stmt_type);
         }
 

@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 use function array_keys;
 use function count;
 use const DIRECTORY_SEPARATOR;
+use const LIBXML_NONET;
 use function dirname;
 use function explode;
 use function file_exists;
@@ -21,6 +22,9 @@ use function trim;
 use function glob;
 use function str_replace;
 use function array_shift;
+use DOMDocument;
+use DOMXPath;
+use DOMAttr;
 
 class DocumentationTest extends TestCase
 {
@@ -88,6 +92,29 @@ class DocumentationTest extends TestCase
         );
 
         $this->project_analyzer->setPhpVersion('7.3');
+    }
+
+    public function testAllIssuesCoveredInConfigSchema(): void
+    {
+        $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
+        $all_issues[] = 'PluginIssue'; // not an ordinary issue
+        sort($all_issues);
+
+        $schema = new DOMDocument();
+        $schema->load(__DIR__ . '/../config.xsd', LIBXML_NONET);
+
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+
+        /** @var iterable<mixed, DOMAttr> $handlers */
+        $handlers = $xpath->query('//xs:complexType[@name="IssueHandlersType"]/xs:choice/xs:element/@name');
+        $handler_types = [];
+        foreach ($handlers as $handler) {
+            $handler_types[] = $handler->value;
+        }
+        sort($handler_types);
+
+        $this->assertSame(implode("\n", $all_issues), implode("\n", $handler_types));
     }
 
     /**
