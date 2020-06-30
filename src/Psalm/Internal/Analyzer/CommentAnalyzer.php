@@ -474,10 +474,10 @@ class CommentAnalyzer
                 if (count($line_parts) > 0) {
                     $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
 
-                  $info->self_out = [
-                      'type' => str_replace("\n", '', $line_parts[0]),
-                      'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
-                  ];
+                    $info->self_out = [
+                        'type' => str_replace("\n", '', $line_parts[0]),
+                        'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
+                    ];
                 }
             }
         }
