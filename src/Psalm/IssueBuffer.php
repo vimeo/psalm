@@ -232,11 +232,15 @@ class IssueBuffer
         if ($config->throw_exception) {
             \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
 
+            $message = $e instanceof \Psalm\Issue\TaintedInput
+                ? $e->getJourneyMessage()
+                : $e->getMessage();
+
             throw new Exception\CodeException(
                 $issue_type
                     . ' - ' . $e->getShortLocationWithPrevious()
                     . ':' . $e->getLocation()->getColumn()
-                    . ' - ' . $e->getMessage()
+                    . ' - ' . $message
             );
         }
 

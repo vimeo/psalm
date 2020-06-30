@@ -3,6 +3,7 @@ namespace Psalm\Report;
 
 use Psalm\Config;
 use Psalm\Report;
+use Psalm\Internal\Analyzer\TaintNodeData;
 use function substr;
 
 class ConsoleReport extends Report
@@ -38,7 +39,9 @@ class ConsoleReport extends Report
             . ' - ' . $issue_data->file_name . ':' . $issue_data->line_from . ':' . $issue_data->column_from
             . ' - ' . $issue_data->message . $issue_reference . "\n";
 
-        if ($this->show_snippet) {
+        if ($issue_data->taint_trace) {
+            $issue_string .= $this->getTaintSnippets($issue_data->taint_trace);
+        } elseif ($this->show_snippet) {
             $snippet = $issue_data->snippet;
 
             if (!$this->use_color) {
@@ -54,5 +57,42 @@ class ConsoleReport extends Report
         }
 
         return $issue_string;
+    }
+
+    /**
+     * @param non-empty-list<TaintNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     */
+    private function getTaintSnippets(array $taint_trace) : string
+    {
+        $snippets = '';
+
+        foreach ($taint_trace as $node_data) {
+            if ($node_data instanceof TaintNodeData) {
+                $snippets .= '  ' . $node_data->label
+                    . ' - ' . $node_data->file_name
+                    . ':' . $node_data->line_from
+                    . ':' . $node_data->column_from . "\n";
+
+                if ($this->show_snippet) {
+                    $snippet = $node_data->snippet;
+
+                    if (!$this->use_color) {
+                        $snippets .= $snippet . "\n\n";
+                    } else {
+                        $selection_start = $node_data->from - $node_data->snippet_from;
+                        $selection_length = $node_data->to - $node_data->from;
+
+                        $snippets .= substr($snippet, 0, $selection_start)
+                            . "\e[30;47m" . substr($snippet, $selection_start, $selection_length)
+                            . "\e[0m" . substr($snippet, $selection_length + $selection_start) . "\n\n";
+                    }
+                }
+            } else {
+                $snippets .= '  ' . $node_data['label'] . "\n";
+                $snippets .= '    <no known location>' . "\n\n";
+            }
+        }
+
+        return $snippets;
     }
 }
