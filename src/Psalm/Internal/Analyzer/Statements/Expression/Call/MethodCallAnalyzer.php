@@ -412,7 +412,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if ($codebase->methods->hasStorage($method_id)) {
                 $storage = $codebase->methods->getStorage($method_id);
                 if ($storage->self_out_type) {
-                    $context->vars_in_scope[$lhs_var_id] = $storage->self_out_type;
+                    // TODO: Safe cast?
+                    /** @var \Psalm\Type\Union  */
+                    $self_out_type = $storage->self_out_type;
+                    $context->vars_in_scope[$lhs_var_id] = $self_out_type;
                 }
             }
         }
