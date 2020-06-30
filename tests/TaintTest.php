@@ -441,6 +441,22 @@ class TaintTest extends TestCase
                         echo "$input";
                     }',
             ],
+            'dontTaintSpecializedInstanceProperty' => [
+                '<?php
+                    /** @psalm-taint-specialize */
+                    class StringHolder {
+                        public $x;
+
+                        public function __construct(string $x) {
+                            $this->x = $x;
+                        }
+                    }
+
+                    $a = new StringHolder("a");
+                    $b = new StringHolder($_GET["x"]);
+
+                    echo $a->x;'
+            ],
         ];
     }
 
@@ -1421,6 +1437,22 @@ class TaintTest extends TestCase
                     }
                     $a = new Unsafe();
                     echo $a->isUnsafe();',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintSpecializedInstanceProperty' => [
+                '<?php
+                    /** @psalm-taint-specialize */
+                    class StringHolder {
+                        public $x;
+
+                        public function __construct(string $x) {
+                            $this->x = $x;
+                        }
+                    }
+
+                    $b = new StringHolder($_GET["x"]);
+
+                    echo $b->x;',
                 'error_message' => 'TaintedInput',
             ],
         ];

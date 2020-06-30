@@ -576,7 +576,17 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 ) {
                     $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                    if ($storage->external_mutation_free) {
+                    $method_storage = null;
+
+                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+                    if ($declaring_method_id) {
+                        $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                    }
+
+                    if ($storage->external_mutation_free
+                        || ($method_storage && $method_storage->specialize_call)
+                    ) {
                         $method_source = TaintNode::getForMethodReturn(
                             (string) $method_id,
                             $fq_class_name . '::__construct',
