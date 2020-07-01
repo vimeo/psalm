@@ -90,12 +90,16 @@ class InstancePropertyAssignmentAnalyzer
 
             $property_exists = true;
 
-            $class_property_type = $codebase->properties->getPropertyType(
-                $property_id,
-                true,
-                $statements_analyzer,
-                $context
-            );
+            try {
+                $class_property_type = $codebase->properties->getPropertyType(
+                    $property_id,
+                    true,
+                    $statements_analyzer,
+                    $context
+                );
+            } catch (\UnexpectedValueException $e) {
+                return false;
+            }
 
             if ($class_property_type) {
                 $class_storage = $codebase->classlike_storage_provider->get($context->self);

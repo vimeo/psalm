@@ -1680,7 +1680,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             return null;
         }
 
-        $method_analyzer = new MethodAnalyzer($stmt, $source);
+        try {
+            $method_analyzer = new MethodAnalyzer($stmt, $source);
+        } catch (\UnexpectedValueException $e) {
+            \Psalm\IssueBuffer::add(
+                new \Psalm\Issue\ParseError(
+                    'Problem loading method: ' . $e->getMessage(),
+                    new CodeLocation($this, $stmt)
+                )
+            );
+
+            return null;
+        }
 
         $actual_method_id = $method_analyzer->getMethodId();
 
