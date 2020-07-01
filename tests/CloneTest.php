@@ -125,7 +125,20 @@ class CloneTest extends TestCase
                         $cloned = clone $a;
                     }',
                 'error_message' => 'MixedAssignment',
-            ]
+            ],
+            'missingClass' => [
+                '<?php
+                    /**
+                     * @psalm-suppress UndefinedDocblockClass
+                     * @psalm-suppress InvalidReturnType
+                     * @return Editable
+                     */
+                    function get() {}
+
+                    /** @psalm-suppress UndefinedDocblockClass */
+                    clone get();',
+                'error_message' => 'InvalidClone',
+            ],
         ];
     }
 }
