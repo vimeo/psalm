@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\DocComment;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
 class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
