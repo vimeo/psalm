@@ -20,6 +20,10 @@ class TaintTest extends TestCase
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
+        if (\strtoupper(\substr(\PHP_OS, 0, 3)) === 'WIN') {
+            $this->markTestSkipped('Skip taint tests in Windows for now');
+        }
+
         $file_path = self::$src_dir_path . 'somefile.php';
 
         $this->addFile(
@@ -44,6 +48,10 @@ class TaintTest extends TestCase
     {
         if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
+        }
+
+        if (\strtoupper(\substr(\PHP_OS, 0, 3)) === 'WIN') {
+            $this->markTestSkipped('Skip taint tests in Windows for now');
         }
 
         $this->expectException(\Psalm\Exception\CodeException::class);
