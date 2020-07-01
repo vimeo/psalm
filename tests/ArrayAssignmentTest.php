@@ -361,7 +361,7 @@ class ArrayAssignmentTest extends TestCase
                     $c[$b][$b][] = "bam";',
                 'assertions' => [
                     '$a' => 'array{boop: non-empty-list<string>}',
-                    '$c' => 'array{boop: non-empty-array<string, non-empty-list<string>>}',
+                    '$c' => 'array{boop: array{boop: non-empty-list<string>}}',
                 ],
             ],
             'assignExplicitValueToGeneric' => [
@@ -491,7 +491,7 @@ class ArrayAssignmentTest extends TestCase
                     $d[$int] = 3;
                     $d["a"] = 5;',
                 'assertions' => [
-                    '$d' => 'non-empty-array<int|string, int>',
+                    '$d' => 'array{5: int, a: int}',
                 ],
             ],
             'updateStringIntKey5' => [
@@ -504,7 +504,7 @@ class ArrayAssignmentTest extends TestCase
                     $e[$int] = 3;
                     $e[$string] = 5;',
                 'assertions' => [
-                    '$e' => 'non-empty-array<int|string, int>',
+                    '$e' => 'array{5: int, c: int}',
                 ],
             ],
             'updateStringIntKeyWithIntRootAndNumberOffset' => [
@@ -545,10 +545,10 @@ class ArrayAssignmentTest extends TestCase
                     $e[0][$int] = 3;
                     $e[0][$string] = 5;',
                 'assertions' => [
-                    '$b' => 'array{0: non-empty-array<int|string, int>}',
-                    '$c' => 'array{0: non-empty-array<int|string, int>}',
-                    '$d' => 'array{0: non-empty-array<int|string, int>}',
-                    '$e' => 'array{0: non-empty-array<int|string, int>}',
+                    '$b' => 'array{0: array{0: int, c: int}}',
+                    '$c' => 'array{0: array{0: int, c: int}}',
+                    '$d' => 'array{0: array{5: int, a: int}}',
+                    '$e' => 'array{0: array{5: int, c: int}}',
                 ],
             ],
             'updateStringIntKeyWithObjectLikeRootAndNumberOffset' => [
@@ -589,10 +589,10 @@ class ArrayAssignmentTest extends TestCase
                     $e["root"][$int] = 3;
                     $e["root"][$string] = 5;',
                 'assertions' => [
-                    '$b' => 'array{root: non-empty-array<int|string, int>}',
-                    '$c' => 'array{root: non-empty-array<int|string, int>}',
-                    '$d' => 'array{root: non-empty-array<int|string, int>}',
-                    '$e' => 'array{root: non-empty-array<int|string, int>}',
+                    '$b' => 'array{root: array{0: int, c: int}}',
+                    '$c' => 'array{root: array{0: int, c: int}}',
+                    '$d' => 'array{root: array{5: int, a: int}}',
+                    '$e' => 'array{root: array{5: int, c: int}}',
                 ],
             ],
             'mixedArrayAssignmentWithStringKeys' => [
@@ -706,6 +706,17 @@ class ArrayAssignmentTest extends TestCase
                     '$a' => 'A',
                 ],
                 'error_levels' => ['MixedMethodCall'],
+            ],
+            'mixedSwallowsArrayAssignment' => [
+                '<?php
+                    /** @psalm-suppress MixedAssignment */
+                    $a = $_GET["foo"];
+
+                    /** @psalm-suppress MixedArrayAssignment */
+                    $a["bar"] = "cool";
+
+                    /** @psalm-suppress MixedMethodCall */
+                    $a->offsetExists("baz");',
             ],
             'implementsArrayAccessInheritingDocblock' => [
                 '<?php
@@ -1430,8 +1441,19 @@ class ArrayAssignmentTest extends TestCase
                     /** @psalm-suppress MixedArrayAssignment */
                     $options[\'b\'][\'c\'] = 2;',
                 [
-                    '$options[\'b\']' => 'array{c: int}|mixed'
+                    '$options[\'b\']' => 'mixed'
                 ]
+            ],
+            'assignWithLiteralStringKey' => [
+                '<?php
+                    /**
+                     * @param array<int, array{internal: bool, ported: bool}> $i
+                     * @return array<int, array{internal: bool, ported: bool}>
+                     */
+                    function addOneEntry(array $i, int $id): array {
+                        $i[$id][rand(0, 1) ? "internal" : "ported"] = true;
+                        return $i;
+                    }'
             ],
         ];
     }
