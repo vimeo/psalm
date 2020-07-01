@@ -25,8 +25,7 @@ class CloneAnalyzer
         Context $context
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
-
-        $codebase_methods = $statements_analyzer->getCodebase()->methods;
+        $codebase_methods = $codebase->methods;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
@@ -52,7 +51,7 @@ class CloneAnalyzer
                 } elseif ($clone_type_part instanceof TObject) {
                     $possibly_valid = true;
                 } elseif ($clone_type_part instanceof TNamedObject) {
-                    if (!$codebase->classlikes->classExists($clone_type_part->value)) {
+                    if (!$codebase->classlikes->classOrInterfaceExists($clone_type_part->value)) {
                         $invalid_clones[] = $clone_type_part->getId();
                     } else {
                         $clone_method_id = new \Psalm\Internal\MethodIdentifier(
@@ -65,17 +64,11 @@ class CloneAnalyzer
                             $context->calling_method_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
-
-                        $is_method_visible = false;
-
-                        if ($does_method_exist) {
-                            $is_method_visible = MethodAnalyzer::isMethodVisible(
-                                $clone_method_id,
-                                $context,
-                                $statements_analyzer->getSource()
-                            );
-                        }
-
+                        $is_method_visible = MethodAnalyzer::isMethodVisible(
+                            $clone_method_id,
+                            $context,
+                            $statements_analyzer->getSource()
+                        );
                         if ($does_method_exist && !$is_method_visible) {
                             $invalid_clones[] = $clone_type_part->getId();
                         } else {
