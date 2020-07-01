@@ -483,6 +483,10 @@ class ArrayFunctionArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$closure_type instanceof Type\Atomic\TFn) {
+            if ($method_id === 'array_map') {
+                return;
+            }
+
             if (!$closure_arg->value instanceof PhpParser\Node\Scalar\String_
                 && !$closure_arg->value instanceof PhpParser\Node\Expr\Array_
                 && !$closure_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
@@ -697,11 +701,6 @@ class ArrayFunctionArgumentsAnalyzer
 
         // abandon attempt to validate closure params if we have an extra arg for ARRAY_FILTER
         if ($method_id === 'array_filter' && $max_closure_param_count > 1) {
-            return;
-        }
-
-        // we pick up errors for string closures elsewhere
-        if ($method_id === 'array_map' && $closure_type instanceof Type\Atomic\TString) {
             return;
         }
 
