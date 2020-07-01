@@ -1057,4 +1057,24 @@ class Methods
 
         return $class_storage->methods[$method_name];
     }
+
+    /**
+     * @return bool
+     */
+    public function hasStorage(MethodIdentifier $method_id)
+    {
+        try {
+            $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+
+        $method_name = $method_id->method_name;
+
+        if (!isset($class_storage->methods[$method_name])) {
+            return false;
+        }
+
+        return true;
+    }
 }

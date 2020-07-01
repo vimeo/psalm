@@ -467,6 +467,21 @@ class CommentAnalyzer
             }
         }
 
+        if (isset($parsed_docblock->tags['psalm-self-out'])) {
+            foreach ($parsed_docblock->tags['psalm-self-out'] as $offset => $param) {
+                $line_parts = self::splitDocLine($param);
+
+                if (count($line_parts) > 0) {
+                    $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+
+                    $info->self_out = [
+                        'type' => str_replace("\n", '', $line_parts[0]),
+                        'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
+                    ];
+                }
+            }
+        }
+
         if (isset($parsed_docblock->tags['psalm-flow'])) {
             foreach ($parsed_docblock->tags['psalm-flow'] as $param) {
                 $info->flows[] = trim($param);

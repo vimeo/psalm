@@ -2503,6 +2503,22 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
+        if ($docblock_info->self_out
+            && $storage instanceof MethodStorage) {
+            $out_type = TypeParser::parseTokens(
+                TypeTokenizer::getFullyQualifiedTokens(
+                    $docblock_info->self_out['type'],
+                    $this->aliases,
+                    $this->function_template_types + $class_template_types,
+                    $this->type_aliases
+                ),
+                null,
+                $this->function_template_types + $class_template_types,
+                $this->type_aliases
+            );
+            $storage->self_out_type = $out_type;
+        }
+
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {
             $param_name = substr($taint_sink_param['name'], 1);
 
