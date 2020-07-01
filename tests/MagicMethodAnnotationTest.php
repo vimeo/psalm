@@ -838,6 +838,14 @@ class MagicMethodAnnotationTest extends TestCase
                     $b->foo();',
                 'error_message' => 'UndefinedMagicMethod',
             ],
+            'lonelyMethod' => [
+                '<?php
+                    /**
+                     * @method
+                     */
+                    class C {}',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 

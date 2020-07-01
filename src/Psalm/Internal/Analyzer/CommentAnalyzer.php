@@ -1023,6 +1023,10 @@ class CommentAnalyzer
                 // replace array bracket contents
                 $method_entry = preg_replace('/\[([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\]/', '[]', $method_entry);
 
+                if (!$method_entry) {
+                    throw new DocblockParseException('No @method entry specified');
+                }
+
                 try {
                     $parse_tree_creator = new ParseTreeCreator(
                         TypeTokenizer::getFullyQualifiedTokens(
