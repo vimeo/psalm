@@ -55,8 +55,14 @@ interface Throwable
 
     /**
      * @psalm-mutation-free
+     * @psalm-taint-source input
      */
     public function getTraceAsString() : string;
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function __toString() : string;
 }
 
 /**
@@ -126,8 +132,14 @@ class Exception implements Throwable
 
     /**
      * @psalm-mutation-free
+     * @psalm-taint-source input
      */
     public final function getTraceAsString() : string {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function __toString() : string {}
 }
 
 /**
@@ -195,6 +207,12 @@ class Error implements Throwable
 
     /**
      * @psalm-mutation-free
+     * @psalm-taint-source input
      */
     public final function getTraceAsString() : string {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function __toString() : string {}
 }

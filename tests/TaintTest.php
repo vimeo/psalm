@@ -1473,6 +1473,42 @@ class TaintTest extends TestCase
                     $cb = create_function(\'$a\', $_GET[\'x\']);',
                 'error_message' => 'TaintedInput',
             ],
+            'taintException' => [
+                '<?php
+                    $e = new Exception();
+                    echo $e;',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintError' => [
+                '<?php
+                    function foo() {}
+                    try {
+                        foo();
+                    } catch (TypeError $e) {
+                        echo "Caught: {$e->getTraceAsString()}\n";
+                    }',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintThrowable' => [
+                '<?php
+                    function foo() {}
+                    try {
+                        foo();
+                    } catch (Throwable $e) {
+                        echo "Caught: $e";  // TODO: ("Caught" . $e) does not work.
+                    }',
+                'error_message' => 'TaintedInput',
+            ],
+            /*
+            // TODO: Stubs do not support this type of inference even with $this->message = $message.
+            // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
+            'taintException' => [
+                '<?php
+                    $x = new Exception($_GET["x"]);
+                    echo $x->getMessage();',
+                'error_message' => 'TaintedInput',
+            ],
+            */
         ];
     }
 }
