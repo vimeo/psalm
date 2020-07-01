@@ -700,6 +700,11 @@ class ArrayFunctionArgumentsAnalyzer
             return;
         }
 
+        // we pick up errors for string closures elsewhere
+        if ($method_id === 'array_map' && $closure_type instanceof Type\Atomic\TString) {
+            return;
+        }
+
         foreach ($closure_params as $i => $closure_param) {
             if (!isset($array_arg_types[$i])) {
                 continue;
