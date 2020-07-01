@@ -4,6 +4,7 @@
 
 return [
 'exec' => [['shell']],
+'create_function' => [['text'], ['text']],
 'file_get_contents' => [['text']],
 'file_put_contents' => [['shell']],
 'fopen' => [['shell']],

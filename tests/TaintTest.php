@@ -1463,6 +1463,16 @@ class TaintTest extends TestCase
                     echo $b->x;',
                 'error_message' => 'TaintedInput',
             ],
+            'taintUnserialize' => [
+                '<?php
+                    $cb = unserialize($_POST[\'x\']);',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintCreateFunction' => [
+                '<?php
+                    $cb = create_function(\'$a\', $_GET[\'x\']);',
+                'error_message' => 'TaintedInput',
+            ],
         ];
     }
 }
