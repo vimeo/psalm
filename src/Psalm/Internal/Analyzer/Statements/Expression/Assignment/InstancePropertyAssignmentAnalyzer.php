@@ -1178,6 +1178,12 @@ class InstancePropertyAssignmentAnalyzer
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
             }
         } else {
+            if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+                $assignment_value_type->parent_nodes = [];
+                return;
+            }
+
+
             $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
             $localized_property_node = new TaintNode(
