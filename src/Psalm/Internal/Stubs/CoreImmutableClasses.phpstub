@@ -60,9 +60,10 @@ interface Throwable
     public function getTraceAsString() : string;
 
     /**
+     * @return string
      * @psalm-taint-source input
      */
-    public function __toString() : string;
+    public function __toString();
 }
 
 /**
@@ -137,9 +138,10 @@ class Exception implements Throwable
     public final function getTraceAsString() : string {}
 
     /**
+     * @return string
      * @psalm-taint-source input
      */
-    public function __toString() : string {}
+    public function __toString() {}
 }
 
 /**
@@ -212,7 +214,8 @@ class Error implements Throwable
     public final function getTraceAsString() : string {}
 
     /**
+     * @return string
      * @psalm-taint-source input
      */
-    public function __toString() : string {}
+    public function __toString() {}
 }
