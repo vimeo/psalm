@@ -1112,7 +1112,6 @@ class InstancePropertyAssignmentAnalyzer
 
         if (!$codebase->taint
             || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-            || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
         }
@@ -1134,6 +1133,11 @@ class InstancePropertyAssignmentAnalyzer
             );
 
             if ($var_id) {
+                if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+                    $context->vars_in_scope[$var_id]->parent_nodes = [];
+                    return;
+                }
+
                 $var_node = TaintNode::getForAssignment(
                     $var_id,
                     $var_location

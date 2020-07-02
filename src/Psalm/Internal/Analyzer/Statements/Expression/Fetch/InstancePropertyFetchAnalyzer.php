@@ -1076,7 +1076,6 @@ class InstancePropertyFetchAnalyzer
 
         if (!$codebase->taint
             || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-            || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
         }
@@ -1098,6 +1097,13 @@ class InstancePropertyFetchAnalyzer
             );
 
             if ($var_id) {
+                $var_type = $statements_analyzer->node_data->getType($stmt->var);
+
+                if ($var_type && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+                    $var_type->parent_nodes = [];
+                    return;
+                }
+
                 $var_node = TaintNode::getForAssignment(
                     $var_id,
                     $var_location
@@ -1118,8 +1124,6 @@ class InstancePropertyFetchAnalyzer
                     'property-fetch'
                         . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : '')
                 );
-
-                $var_type = $statements_analyzer->node_data->getType($stmt->var);
 
                 if ($var_type && $var_type->parent_nodes) {
                     foreach ($var_type->parent_nodes as $parent_node) {

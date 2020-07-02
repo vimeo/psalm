@@ -474,6 +474,18 @@ class TaintTest extends TestCase
                         echo $_GET["x"];
                     }'
             ],
+            'suppressTaintedAssignment' => [
+                '<?php
+                    $b = $_GET["x"];
+
+                    /**
+                     * @psalm-suppress TaintedInput
+                     */
+                    $a = $b;
+
+
+                    echo $a;'
+            ]
         ];
     }
 

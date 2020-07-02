@@ -318,8 +318,12 @@ class ArrayFetchAnalyzer
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
             && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-            && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
+            if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+                $stmt_var_type->parent_nodes = [];
+                return;
+            }
+
             $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
 
             $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment(
