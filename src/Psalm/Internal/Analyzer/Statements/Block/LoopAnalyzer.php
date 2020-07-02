@@ -582,7 +582,8 @@ class LoopAnalyzer
                         && !isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
                         && isset($inner_context->unreferenced_vars[$var_id])
                     ) {
-                        $loop_scope->loop_parent_context->unreferenced_vars[$var_id] = $inner_context->unreferenced_vars[$var_id];
+                        $loop_scope->loop_parent_context->unreferenced_vars[$var_id]
+                            = $inner_context->unreferenced_vars[$var_id];
                     }
 
                     $loop_scope->loop_parent_context->vars_in_scope[$var_id] = $type;
