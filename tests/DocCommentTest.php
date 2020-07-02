@@ -10,7 +10,7 @@ class DocCommentTest extends BaseTestCase
     public function testNewLineIsAddedBetweenAnnotationsByDefault(): void
     {
         $docComment = new ParsedDocblock(
-            '* some desc' . "\n*",
+            'some desc',
             [
                 'param' =>
                     [
@@ -48,7 +48,7 @@ class DocCommentTest extends BaseTestCase
         ParsedDocblock::addNewLineBetweenAnnotations(false);
 
         $docComment = new ParsedDocblock(
-            '* some desc' . "\n*",
+            'some desc',
             [
                 'param' =>
                     [
@@ -84,7 +84,7 @@ class DocCommentTest extends BaseTestCase
         ParsedDocblock::addNewLineBetweenAnnotations(true);
 
         $docComment = new ParsedDocblock(
-            '* some desc' . "\n*",
+            'some desc',
             [
                 'param' =>
                     [
@@ -113,6 +113,74 @@ class DocCommentTest extends BaseTestCase
  * @return bool
  */
 ';
+
+        $this->assertSame($expectedDoc, $docComment->render(''));
+    }
+
+    public function testParsingRoundtrip(): void
+    {
+        ParsedDocblock::addNewLineBetweenAnnotations(true);
+
+        $expectedDoc = '/**
+ * some desc
+ *
+ * @param string $bli
+ * @param int $bla
+ *
+ * @throws \Exception
+ *
+ * @return bool
+ */
+';
+        $docComment = DocComment::parsePreservingLength(
+            new \PhpParser\Comment\Doc($expectedDoc)
+        );
+
+        $this->assertSame($expectedDoc, $docComment->render(''));
+    }
+
+    public function testParsingWithIndentation(): void
+    {
+        ParsedDocblock::addNewLineBetweenAnnotations(true);
+
+        $expectedDoc = '/**
+     * some desc
+     *
+     * @param string $bli
+     * @param int $bla
+     *
+     * @throws \Exception
+     *
+     * @return bool
+     */
+    ';
+        $docComment = DocComment::parsePreservingLength(
+            new \PhpParser\Comment\Doc($expectedDoc)
+        );
+
+        $this->assertSame($expectedDoc, $docComment->render('    '));
+    }
+
+    public function testParsingWithCommonPrefixes(): void
+    {
+        ParsedDocblock::addNewLineBetweenAnnotations(true);
+
+        $expectedDoc = '/**
+ * some self-referential desc with " * @return bool
+ * " as part of it.
+ *
+ * @param string $bli
+ * @param string $bli_this_suffix_is_kept
+ * @param int $bla
+ *
+ * @throws \Exception
+ *
+ * @return bool
+ */
+';
+        $docComment = DocComment::parsePreservingLength(
+            new \PhpParser\Comment\Doc($expectedDoc)
+        );
 
         $this->assertSame($expectedDoc, $docComment->render(''));
     }
