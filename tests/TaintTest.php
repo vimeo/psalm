@@ -465,6 +465,15 @@ class TaintTest extends TestCase
 
                     echo $a->x;'
             ],
+            'suppressTaintedInput' => [
+                '<?php
+                    function unsafe() {
+                        /**
+                         * @psalm-suppress TaintedInput
+                         */
+                        echo $_GET["x"];
+                    }'
+            ],
         ];
     }
 

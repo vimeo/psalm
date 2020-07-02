@@ -100,6 +100,10 @@ class IssueBuffer
 
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
     {
+        if ($issue_type === 'TaintedInput') {
+            return;
+        }
+
         if (isset(self::$used_suppressions[$file_path][$offset])) {
             return;
         }

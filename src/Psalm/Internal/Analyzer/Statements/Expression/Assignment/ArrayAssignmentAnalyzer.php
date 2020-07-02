@@ -790,6 +790,7 @@ class ArrayAssignmentAnalyzer
 
         if ($codebase->taint
             && $child_stmt_type->parent_nodes
+            && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             $var_location = new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt);
 

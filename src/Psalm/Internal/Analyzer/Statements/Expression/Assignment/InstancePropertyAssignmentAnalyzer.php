@@ -1110,7 +1110,10 @@ class InstancePropertyAssignmentAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->taint || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())) {
+        if (!$codebase->taint
+            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+            || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+        ) {
             return;
         }
 

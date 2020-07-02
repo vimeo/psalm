@@ -107,6 +107,7 @@ class BinaryOpAnalyzer
 
             if ($codebase->taint
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
                 $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);

@@ -943,6 +943,7 @@ class AssignmentAnalyzer
 
             if ($codebase->taint
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
                     $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
@@ -1121,6 +1122,7 @@ class AssignmentAnalyzer
 
                 if ($codebase->taint
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                    && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $stmt_left_type = $statements_analyzer->node_data->getType($stmt->var);
                     $stmt_right_type = $statements_analyzer->node_data->getType($stmt->expr);
