@@ -319,6 +319,30 @@ class DoTest extends \Psalm\Tests\TestCase
                         } while ($c && $e);
                     }',
             ],
+            'doConditionInWhileAndIfWithSingleVar' => [
+                '<?php
+                    $b = !!rand(0, 1);
+
+                    do {
+                        if (!$b) {
+                           $b = !rand(0, 1);
+                        }
+                    } while (!$b);',
+                [
+                    '$b' => 'true'
+                ]
+            ],
+            'doConditionInWhileAndIfWithTwoVars' => [
+                '<?php
+                    $b = !!rand(0, 1);
+
+                    do {
+                        $s = rand(0, 1);
+                        if (!$b && $s) {}
+                    } while (!$b && $s);
+
+                    if ($b) {}'
+            ],
         ];
     }
 
@@ -375,9 +399,7 @@ class DoTest extends \Psalm\Tests\TestCase
                 '<?php
                     do {
                         $array[] = "hello";
-                    } while (rand(0, 1));
-
-                    echo $array;',
+                    } while (rand(0, 1));',
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Possibly undefined ' .
                     'global variable $array, first seen on line 3',
             ],

@@ -42,47 +42,7 @@ class DoAnalyzer
         $loop_scope = new LoopScope($do_context, $context);
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
-        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-        }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
-        }
-
-        $do_context->loop_scope = $loop_scope;
-
-        $statements_analyzer->analyze($stmt->stmts, $do_context);
-
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-        }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
-        }
-
-        $loop_scope->iteration_count++;
-
-        foreach ($context->vars_in_scope as $var => $type) {
-            if ($type->hasMixed()) {
-                continue;
-            }
-
-            if (isset($do_context->vars_in_scope[$var])) {
-                if (!$do_context->vars_in_scope[$var]->equals($type)) {
-                    $was_possibly_undefined = $do_context->vars_in_scope[$var]->possibly_undefined_from_try;
-                    $do_context->vars_in_scope[$var] = Type::combineUnionTypes($do_context->vars_in_scope[$var], $type);
-                    $do_context->vars_in_scope[$var]->possibly_undefined_from_try = $was_possibly_undefined;
-                }
-            }
-        }
+        self::analyzeDoNaively($statements_analyzer, $stmt, $do_context, $loop_scope);
 
         $mixed_var_ids = [];
 
@@ -126,34 +86,6 @@ class DoAnalyzer
             $while_clauses = [new Clause([], true)];
         }
 
-        $reconcilable_while_types = \Psalm\Type\Algebra::getTruthsFromFormula($while_clauses);
-
-        if ($reconcilable_while_types) {
-            $changed_var_ids = [];
-            $while_vars_in_scope_reconciled =
-                Type\Reconciler::reconcileKeyedTypes(
-                    $reconcilable_while_types,
-                    [],
-                    $do_context->vars_in_scope,
-                    $changed_var_ids,
-                    [],
-                    $statements_analyzer,
-                    [],
-                    true,
-                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond)
-                );
-
-            $do_context->vars_in_scope = $while_vars_in_scope_reconciled;
-        }
-
-        foreach ($do_context->vars_in_scope as $var_id => $type) {
-            if (isset($context->vars_in_scope[$var_id])) {
-                $was_possibly_undefined = $type->possibly_undefined_from_try;
-                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
-                $context->vars_in_scope[$var_id]->possibly_undefined_from_try = $was_possibly_undefined;
-            }
-        }
-
         LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
@@ -161,6 +93,7 @@ class DoAnalyzer
             [],
             $loop_scope,
             $inner_loop_context,
+            true,
             true
         );
 
@@ -176,6 +109,8 @@ class DoAnalyzer
                 array_merge($context->clauses, $negated_while_clauses)
             )
         );
+
+        //var_dump($do_context->vars_in_scope);
 
         if ($negated_while_types) {
             $changed_var_ids = [];
@@ -228,6 +163,41 @@ class DoAnalyzer
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);
+        }
+    }
+
+    private static function analyzeDoNaively(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Do_ $stmt,
+        Context $context,
+        LoopScope $loop_scope
+    ) : void {
+        $do_context = clone $context;
+
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
+        }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
+        }
+
+        $do_context->loop_scope = $loop_scope;
+
+        $statements_analyzer->analyze($stmt->stmts, $do_context);
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
+        }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
         }
     }
 }
