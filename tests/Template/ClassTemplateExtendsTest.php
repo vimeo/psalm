@@ -4160,7 +4160,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }'
             ],
-            'SKIPPED-classStringTemplatedExtends' => [
+            'classStringTemplatedExtends' => [
                 '<?php
                     /** @template T */
                     interface CrudRequest {}

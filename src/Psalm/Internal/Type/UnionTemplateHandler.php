@@ -342,6 +342,43 @@ class UnionTemplateHandler
                 continue;
             }
 
+            if ($atomic_input_type instanceof Atomic\TLiteralClassString
+                && $base_type instanceof Atomic\TClassString
+                && $base_type->as_type
+            ) {
+                try {
+                    $classlike_storage =
+                        $codebase->classlike_storage_provider->get($atomic_input_type->value);
+
+                    if (isset($classlike_storage->template_type_extends[$base_type->as_type->value])) {
+                        $extends_list = $classlike_storage->template_type_extends[$base_type->as_type->value];
+
+                        $new_generic_params = [];
+
+                        foreach ($extends_list as $extends_key => $value) {
+                            if (is_string($extends_key)) {
+                                $new_generic_params[] = $value;
+                            }
+                        }
+
+                        if ($new_generic_params) {
+                            $atomic_input_type = new Atomic\TClassString(
+                                $base_type->as_type->value,
+                                new Atomic\TGenericObject(
+                                    $base_type->as_type->value,
+                                    $new_generic_params
+                                )
+                            );
+                        }
+
+                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
+                        continue;
+                    }
+                } catch (\InvalidArgumentException $e) {
+                    // do nothing
+                }
+            }
+
             if ($base_type instanceof Atomic\TCallable) {
                 $matching_atomic_type = TypeAnalyzer::getCallableFromAtomic(
                     $codebase,

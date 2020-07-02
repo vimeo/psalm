@@ -1176,6 +1176,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     || $current === '|'
                     || $current === ':'
                     || $current === '#'
+                    || $current === '.'
                     || $current === ' '
                 ) {
                     continue;
