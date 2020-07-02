@@ -168,7 +168,7 @@ class TClassString extends TString
 
         $as_type_types = \array_values($as_type->getAtomicTypes());
 
-        $class_string->as_type = count($as_type_types) === 1
+        $class_string->as_type = \count($as_type_types) === 1
             && $as_type_types[0] instanceof TNamedObject
             ? $as_type_types[0]
             : null;
