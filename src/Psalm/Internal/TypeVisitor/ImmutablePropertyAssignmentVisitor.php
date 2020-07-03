@@ -8,6 +8,7 @@ use Psalm\IssueBuffer;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\Union;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TypeNode;
 
@@ -27,6 +28,10 @@ class ImmutablePropertyAssignmentVisitor extends NodeVisitor
     public function enterNode(TypeNode $type) : ?int
     {
         if ($type instanceof Union && $type->reference_free) {
+            return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+        }
+
+        if ($type instanceof TClassString) {
             return NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
