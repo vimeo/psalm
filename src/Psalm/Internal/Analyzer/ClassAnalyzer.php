@@ -1912,7 +1912,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase,
                 null,
                 null,
-                null
+                null,
+                $original_fq_classlike_name
             );
         }
 

@@ -1694,6 +1694,9 @@ class ClassTemplateExtendsTest extends TestCase
                             $this->elements = $elements;
                         }
 
+                        /**
+                         * @psalm-suppress InvalidReturnType
+                         */
                         public function getIterator()
                         {
                             /**
@@ -4179,6 +4182,38 @@ class ClassTemplateExtendsTest extends TestCase
                         public function foo($crudNew): void {
                             $crudNew->handle(StringRequest::class);
                         }
+                    }'
+            ],
+            'extendTemplateTypeInParamAsType' => [
+                '<?php
+                    /**
+                     * @template TKey as object
+                     * @template-implements Operation<TKey>
+                     */
+                    final class Apply implements Operation
+                    {
+                        /**
+                         * @return \Closure(array<TKey>): void
+                         */
+                        public function i(): Closure
+                        {
+                            return
+                                /**
+                                 * @psalm-param array<TKey> $collection
+                                 */
+                                static function (array $collection): void{};
+                        }
+                    }
+
+                    /**
+                     * @template TKey as object
+                     */
+                    interface Operation
+                    {
+                        /**
+                         * @psalm-return \Closure(array<TKey>): void
+                         */
+                        public function i(): Closure;
                     }'
             ],
         ];
