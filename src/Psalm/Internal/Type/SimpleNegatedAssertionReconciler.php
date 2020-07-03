@@ -158,6 +158,17 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
+        if ($assertion === 'false' && !$existing_var_type->hasMixed()) {
+            return self::reconcileFalse(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality
+            );
+        }
+
         if ($assertion === 'non-empty-countable') {
             return self::reconcileNonEmptyCountable(
                 $existing_var_type,
@@ -390,6 +401,68 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $old_var_type_string,
                     $key,
                     '!null',
+                    !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+
+            if (!$did_remove_type) {
+                $failed_reconciliation = 1;
+            }
+        }
+
+        if ($existing_var_type->getAtomicTypes()) {
+            return $existing_var_type;
+        }
+
+        $failed_reconciliation = 2;
+
+        return Type::getMixed();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileFalse(
+        Type\Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ) : Type\Union {
+        $old_var_type_string = $existing_var_type->getId();
+        $did_remove_type = false;
+
+        if ($existing_var_type->hasType('false')) {
+            $did_remove_type = true;
+            $existing_var_type->removeType('false');
+        }
+
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TTemplateParam) {
+                $type->as = self::reconcileFalse(
+                    $type->as,
+                    null,
+                    null,
+                    $suppressed_issues,
+                    $failed_reconciliation,
+                    $is_equality
+                );
+
+                $existing_var_type->bustCache();
+            }
+        }
+
+        if (!$did_remove_type || empty($existing_var_type->getAtomicTypes())) {
+            if ($key && $code_location && !$is_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    '!false',
                     !$did_remove_type,
                     $code_location,
                     $suppressed_issues

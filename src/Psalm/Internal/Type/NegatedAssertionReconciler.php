@@ -127,19 +127,27 @@ class NegatedAssertionReconciler extends Reconciler
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
-        $simple_negated_type = SimpleNegatedAssertionReconciler::reconcile(
-            $assertion,
-            $existing_var_type,
-            $key,
-            $code_location,
-            $suppressed_issues,
-            $failed_reconciliation,
-            $is_equality,
-            $is_strict_equality
-        );
+        if ($assertion === 'false' && isset($existing_var_atomic_types['bool'])) {
+            $existing_var_type->removeType('bool');
+            $existing_var_type->addType(new TTrue);
+        } elseif ($assertion === 'true' && isset($existing_var_atomic_types['bool'])) {
+            $existing_var_type->removeType('bool');
+            $existing_var_type->addType(new TFalse);
+        } else {
+            $simple_negated_type = SimpleNegatedAssertionReconciler::reconcile(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+                $is_strict_equality
+            );
 
-        if ($simple_negated_type) {
-            return $simple_negated_type;
+            if ($simple_negated_type) {
+                return $simple_negated_type;
+            }
         }
 
         if ($assertion === 'iterable' || $assertion === 'countable') {
@@ -162,14 +170,6 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->from_calculation = false;
 
             return $existing_var_type;
-        }
-
-        if ($assertion === 'false' && isset($existing_var_atomic_types['bool'])) {
-            $existing_var_type->removeType('bool');
-            $existing_var_type->addType(new TTrue);
-        } elseif ($assertion === 'true' && isset($existing_var_atomic_types['bool'])) {
-            $existing_var_type->removeType('bool');
-            $existing_var_type->addType(new TFalse);
         }
 
         if (strtolower($assertion) === 'traversable'
