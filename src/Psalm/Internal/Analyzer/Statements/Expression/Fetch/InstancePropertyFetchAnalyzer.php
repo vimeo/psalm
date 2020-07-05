@@ -1003,7 +1003,7 @@ class InstancePropertyFetchAnalyzer
             $declaring_class_storage,
             $declaring_class_storage->name,
             $calling_class_storage,
-            $calling_class_storage->template_types ?: [],
+            $calling_class_storage->template_types ?: []
         );
 
         $extended_types = $calling_class_storage->template_type_extends;
