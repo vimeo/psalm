@@ -979,6 +979,7 @@ class ArgumentAnalyzer
             && !$param_type->hasBool()
             && !$param_type->hasScalar()
             && !$input_type->ignore_falsable_issues
+            && $cased_method_id !== 'echo'
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyFalseArgument(
