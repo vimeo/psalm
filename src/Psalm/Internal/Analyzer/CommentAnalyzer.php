@@ -531,10 +531,8 @@ class CommentAnalyzer
                     $info->taint_source_types[] = $param_parts[0];
                 }
             }
-        }
-
-        // support for MediaWiki taint plugin
-        if (isset($parsed_docblock->tags['return-taint'])) {
+        } elseif (isset($parsed_docblock->tags['return-taint'])) {
+            // support for MediaWiki taint plugin
             foreach ($parsed_docblock->tags['return-taint'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
 

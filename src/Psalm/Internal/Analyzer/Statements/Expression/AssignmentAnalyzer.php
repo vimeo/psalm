@@ -525,6 +525,7 @@ class AssignmentAnalyzer
 
                 $new_assign_type = null;
                 $assigned = false;
+                $has_null = false;
 
                 foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
                     if ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike
@@ -587,6 +588,8 @@ class AssignmentAnalyzer
                             // fall through
                         }
                     } elseif ($assign_value_atomic_type instanceof Type\Atomic\TNull) {
+                        $has_null = true;
+
                         if (IssueBuffer::accepts(
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on null variable ' . $array_var_id,
@@ -787,7 +790,9 @@ class AssignmentAnalyzer
                     if ($list_var_id) {
                         $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
 
-                        if ($context->error_suppressing && ($offset || $can_be_empty)) {
+                        if (($context->error_suppressing && ($offset || $can_be_empty))
+                            || $has_null
+                        ) {
                             $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
                         }
                     }
