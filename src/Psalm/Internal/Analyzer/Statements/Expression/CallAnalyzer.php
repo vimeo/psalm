@@ -330,8 +330,10 @@ class CallAnalyzer
      * @param array<string, non-empty-array<string, array{Type\Union}>> $existing_template_types
      */
     public static function getTemplateTypesForCall(
-        ClassLikeStorage $declaring_class_storage = null,
-        ClassLikeStorage $calling_class_storage = null,
+        \Psalm\Codebase $codebase,
+        ?ClassLikeStorage $declaring_class_storage,
+        ?string $appearing_class_name,
+        ?ClassLikeStorage $calling_class_storage,
         array $existing_template_types = []
     ) : array {
         $template_types = $existing_template_types;
@@ -390,7 +392,16 @@ class CallAnalyzer
 
         foreach ($template_types as $key => $type_map) {
             foreach ($type_map as $class => $type) {
-                $template_types[$key][$class][0] = clone $type[0];
+                $template_types[$key][$class][0] = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $codebase,
+                    $type[0],
+                    $appearing_class_name,
+                    $calling_class_storage ? $calling_class_storage->name : null,
+                    null,
+                    true,
+                    false,
+                    $calling_class_storage ? $calling_class_storage->final : false
+                );
             }
         }
 

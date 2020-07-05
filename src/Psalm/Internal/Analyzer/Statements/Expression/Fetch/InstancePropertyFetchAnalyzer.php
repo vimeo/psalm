@@ -999,9 +999,11 @@ class InstancePropertyFetchAnalyzer
         ClassLikeStorage $declaring_class_storage
     ) : Type\Union {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
+            $codebase,
             $declaring_class_storage,
+            $declaring_class_storage->name,
             $calling_class_storage,
-            $calling_class_storage->template_types ?: []
+            $calling_class_storage->template_types ?: [],
         );
 
         $extended_types = $calling_class_storage->template_type_extends;
