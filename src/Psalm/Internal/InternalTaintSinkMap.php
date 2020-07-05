@@ -14,7 +14,6 @@ return [
 'mysqli_query' => [[], ['sql']],
 'passthru' => [['shell']],
 'pcntl_exec' => [['shell']],
-'printr' => [['html', 'user_secret', 'system_secret']],
 'PDO::prepare' => [['sql']],
 'PDO::query' => [['sql']],
 'PDO::exec' => [['sql']],
