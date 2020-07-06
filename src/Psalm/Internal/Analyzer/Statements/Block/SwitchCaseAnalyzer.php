@@ -505,11 +505,6 @@ class SwitchCaseAnalyzer
             }
         }
 
-        $vars = array_diff_key(
-            $case_context->vars_possibly_in_scope,
-            $original_context->vars_possibly_in_scope
-        );
-
         // if we're leaving this block, add vars to outer for loop scope
         if ($case_exit_type === 'continue') {
             if (!$context->loop_scope) {
