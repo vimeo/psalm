@@ -512,12 +512,7 @@ class SwitchCaseAnalyzer
 
         // if we're leaving this block, add vars to outer for loop scope
         if ($case_exit_type === 'continue') {
-            if ($context->loop_scope) {
-                $context->loop_scope->vars_possibly_in_scope = array_merge(
-                    $vars,
-                    $context->loop_scope->vars_possibly_in_scope
-                );
-            } else {
+            if (!$context->loop_scope) {
                 if (IssueBuffer::accepts(
                     new ContinueOutsideLoop(
                         'Continue called when not in loop',
