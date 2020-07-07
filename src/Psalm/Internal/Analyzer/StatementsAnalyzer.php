@@ -805,9 +805,14 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $is_expected = false;
 
                     foreach ($ignored_exceptions_and_descendants as $expected_exception => $_) {
-                        if ($expected_exception === strtolower($possibly_thrown_exception)
-                            || $this->codebase->classExtends($possibly_thrown_exception, $expected_exception)
-                        ) {
+                        try {
+                            if ($expected_exception === strtolower($possibly_thrown_exception)
+                                || $this->codebase->classExtends($possibly_thrown_exception, $expected_exception)
+                            ) {
+                                $is_expected = true;
+                                break;
+                            }
+                        } catch (\InvalidArgumentException $e) {
                             $is_expected = true;
                             break;
                         }
