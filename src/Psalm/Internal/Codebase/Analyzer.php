@@ -6,6 +6,7 @@ use function array_intersect_key;
 use function array_merge;
 use function count;
 use function explode;
+use InvalidArgumentException;
 use function number_format;
 use function pathinfo;
 use PhpParser;
@@ -669,9 +670,15 @@ class Analyzer
                             if ($referencing_base_classlike === $unchanged_signature_classlike) {
                                 $newly_invalidated_methods[$referencing_method_id] = true;
                             } else {
-                                $referencing_storage = $codebase->classlike_storage_provider->get(
-                                    $referencing_base_classlike
-                                );
+                                try {
+                                    $referencing_storage = $codebase->classlike_storage_provider->get(
+                                        $referencing_base_classlike
+                                    );
+                                } catch (InvalidArgumentException $_) {
+                                    // Workaround for #3671
+                                    $newly_invalidated_methods[$referencing_method_id] = true;
+                                    $referencing_storage = null;
+                                }
 
                                 if (isset($referencing_storage->used_traits[$unchanged_signature_classlike])
                                     || isset($referencing_storage->parent_classes[$unchanged_signature_classlike])
