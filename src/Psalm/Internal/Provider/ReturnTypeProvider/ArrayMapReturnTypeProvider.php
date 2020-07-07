@@ -182,6 +182,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     )
                 );
                 $atomic_type->is_list = $array_arg_atomic_type->is_list;
+                $atomic_type->sealed = $array_arg_atomic_type->sealed;
 
                 return new Type\Union([$atomic_type]);
             }

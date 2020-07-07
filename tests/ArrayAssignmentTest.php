@@ -1455,6 +1455,20 @@ class ArrayAssignmentTest extends TestCase
                         return $i;
                     }'
             ],
+            'binaryOperation' => [
+                '<?php
+                    $a = array_map(
+                        function (string $x) {
+                            return new RuntimeException($x);
+                        },
+                        ["c" => ""]
+                    );
+
+                    $a += ["e" => new RuntimeException()];',
+                [
+                    '$a' => 'array{c: RuntimeException, e: RuntimeException}',
+                ]
+            ],
         ];
     }
 
