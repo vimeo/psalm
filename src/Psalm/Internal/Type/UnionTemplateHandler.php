@@ -877,6 +877,7 @@ class UnionTemplateHandler
 
             if ($input_template_types
                 && (!$input_type_part instanceof Atomic\TGenericObject || !$input_type_part->remapped_params)
+                && (!$container_type_part instanceof Atomic\TGenericObject || !$container_type_part->remapped_params)
             ) {
                 foreach ($input_template_types as $template_name => $_) {
                     if (!isset($input_type_params[$i])) {
