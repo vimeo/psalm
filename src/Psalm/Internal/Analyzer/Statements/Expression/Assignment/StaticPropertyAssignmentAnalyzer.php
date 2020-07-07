@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\PropertyProperty;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -173,8 +174,6 @@ class StaticPropertyAssignmentAnalyzer
 
         $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
-        $property_storage = $class_storage->properties[$prop_name->name];
-
         if ($var_id) {
             $context->vars_in_scope[$var_id] = $assignment_value_type;
         }
@@ -189,14 +188,21 @@ class StaticPropertyAssignmentAnalyzer
         if (!$class_property_type) {
             $class_property_type = Type::getMixed();
 
-            if (!$assignment_value_type->hasMixed()) {
-                if ($property_storage->suggested_type) {
-                    $property_storage->suggested_type = Type::combineUnionTypes(
+            $source_analyzer = $statements_analyzer->getSource()->getSource();
+
+            $prop_name_name = $prop_name->name;
+
+            if (!$assignment_value_type->hasMixed()
+                && $source_analyzer instanceof ClassAnalyzer
+                && $fq_class_name === $source_analyzer->getFQCLN()
+            ) {
+                if (isset($source_analyzer->inferred_property_types[$prop_name_name])) {
+                    $source_analyzer->inferred_property_types[$prop_name_name] = Type::combineUnionTypes(
                         $assignment_value_type,
-                        $property_storage->suggested_type
+                        $source_analyzer->inferred_property_types[$prop_name_name]
                     );
                 } else {
-                    $property_storage->suggested_type = Type::combineUnionTypes(
+                    $source_analyzer->inferred_property_types[$prop_name_name] = Type::combineUnionTypes(
                         Type::getNull(),
                         $assignment_value_type
                     );

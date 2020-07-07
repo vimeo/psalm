@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\PropertyProperty;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -660,8 +661,6 @@ class InstancePropertyAssignmentAnalyzer
 
                 $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
-                $property_storage = null;
-
                 if (isset($declaring_class_storage->properties[$prop_name])) {
                     $property_storage = $declaring_class_storage->properties[$prop_name];
 
@@ -763,16 +762,20 @@ class InstancePropertyAssignmentAnalyzer
                 if (!$class_property_type) {
                     $class_property_type = Type::getMixed();
 
-                    if (!$assignment_value_type->hasMixed() && $property_storage) {
-                        if ($property_storage->suggested_type) {
-                            $property_storage->suggested_type = Type::combineUnionTypes(
+                    $source_analyzer = $statements_analyzer->getSource()->getSource();
+
+                    if (!$assignment_value_type->hasMixed()
+                        && $lhs_var_id === '$this'
+                        && $source_analyzer instanceof ClassAnalyzer
+                    ) {
+                        if (isset($source_analyzer->inferred_property_types[$prop_name])) {
+                            $source_analyzer->inferred_property_types[$prop_name] = Type::combineUnionTypes(
                                 $assignment_value_type,
-                                $property_storage->suggested_type
+                                $source_analyzer->inferred_property_types[$prop_name]
                             );
                         } else {
-                            $property_storage->suggested_type =
-                                $lhs_var_id === '$this' &&
-                                    ($context->inside_constructor || $context->collect_initializations)
+                            $source_analyzer->inferred_property_types[$prop_name] =
+                                ($context->inside_constructor || $context->collect_initializations)
                                     ? $assignment_value_type
                                     : Type::combineUnionTypes(Type::getNull(), $assignment_value_type);
                         }

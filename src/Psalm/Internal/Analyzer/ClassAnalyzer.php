@@ -56,6 +56,11 @@ use function array_keys;
 class ClassAnalyzer extends ClassLikeAnalyzer
 {
     /**
+     * @var array<string, Type\Union>
+     */
+    public $inferred_property_types = [];
+
+    /**
      * @param PhpParser\Node\Stmt\Class_    $class
      * @param SourceAnalyzer                $source
      * @param string|null                   $fq_class_name
@@ -1630,11 +1635,23 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $property_storage = $class_storage->properties[$property_name];
 
-            if ($property_storage->suggested_type && !$property_storage->suggested_type->isNull()) {
+            $suggested_type = $property_storage->suggested_type;
+
+            if (isset($this->inferred_property_types[$property_name])) {
+                $suggested_type = $suggested_type
+                    ? Type::combineUnionTypes(
+                        $suggested_type,
+                        $this->inferred_property_types[$property_name],
+                        $codebase
+                    )
+                    : $this->inferred_property_types[$property_name];
+            }
+
+            if ($suggested_type && !$suggested_type->isNull()) {
                 $message .= ' - consider ' . str_replace(
-                    ['<mixed, mixed>', '<empty, empty>'],
+                    ['<array-key, mixed>', '<empty, empty>'],
                     '',
-                    (string)$property_storage->suggested_type
+                    (string)$suggested_type
                 );
             }
 
