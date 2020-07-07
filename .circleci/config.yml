@@ -99,6 +99,9 @@ jobs:
       - run:
           name: Analyse ProxyManager
           command: bin/test-with-real-projects.sh proxymanager
+      - run:
+          name: Analyse Psl
+          command: bin/test-with-real-projects.sh psl
 
 # Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
 workflows:
