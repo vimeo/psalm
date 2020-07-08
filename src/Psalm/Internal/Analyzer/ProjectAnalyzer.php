@@ -1000,9 +1000,9 @@ class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
-
         $this->config->visitStubFiles($this->codebase, $this->progress);
+
+        $this->codebase->scanFiles($this->threads);
 
         $this->progress->startAnalyzingFiles();
 
@@ -1153,9 +1153,10 @@ class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
+        $this->config->visitStubFiles($this->codebase, $this->progress);
+
         $this->codebase->scanFiles($this->threads);
 
-        $this->config->visitStubFiles($this->codebase, $this->progress);
 
         $this->progress->startAnalyzingFiles();
 
@@ -1192,9 +1193,9 @@ class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
-
         $this->config->visitStubFiles($this->codebase, $this->progress);
+
+        $this->codebase->scanFiles($this->threads);
 
         $this->progress->startAnalyzingFiles();
 

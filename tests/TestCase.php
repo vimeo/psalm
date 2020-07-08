@@ -107,9 +107,9 @@ class TestCase extends BaseTestCase
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
 
-        $codebase->scanFiles();
-
         $codebase->config->visitStubFiles($codebase);
+
+        $codebase->scanFiles();
 
         if ($codebase->alter_code) {
             $this->project_analyzer->interpretRefactors();

@@ -130,6 +130,54 @@ class StubTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testStubFileChildClassInvalidMethodOverride()
+    {
+        $this->expectExceptionMessage('ImplementedParamTypeMismatch');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/systemclass.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace A\B\C;
+
+                class SomeClass extends \SystemClass {
+                    /**
+                     * @param string    $a
+                     * @param string    $b
+                     *
+                     * @return string
+                     */
+                    public function foo($a, $b)
+                    {
+                    }
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
      * @param string $file
      *
      * @return string
@@ -618,6 +666,48 @@ class StubTest extends TestCase
             '<?php
                 function_exists("fooBar");
                 echo barBar("hello");'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+       /**
+     * @return void
+     */
+    public function testStubFunctionOverwritingDeclaredFunction()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/custom_functions.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param int $a
+                 * @return integer
+                 */
+                function barBar( int $a ) : int
+                {
+                    return 0;
+                }
+                barBar( 1 );'
         );
 
         $this->analyzeFile($file_path, new Context());

@@ -215,13 +215,13 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 $this->clientStatus('initializing', 'getting code base');
                 $codebase = $this->project_analyzer->getCodebase();
 
-                $this->verboseLog("Initializing: Scanning files...");
-                $this->clientStatus('initializing', 'scanning files');
-                $codebase->scanFiles($this->project_analyzer->threads);
-
                 $this->verboseLog("Initializing: Registering stub files...");
                 $this->clientStatus('initializing', 'registering stub files');
                 $codebase->config->visitStubFiles($codebase, null);
+
+                $this->verboseLog("Initializing: Scanning files...");
+                $this->clientStatus('initializing', 'scanning files');
+                $codebase->scanFiles($this->project_analyzer->threads);
 
                 if ($this->textDocument === null) {
                     $this->textDocument = new TextDocument(
