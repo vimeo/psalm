@@ -4,10 +4,7 @@ function barBar(string $a) : string
 {
 }
 
-/**
- * @param string ...$bar
- */
-function variadic()
+function variadic(string ...$bar)
 {
 }
 
