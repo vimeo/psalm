@@ -671,48 +671,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-       /**
-     * @return void
-     */
-    public function testStubFunctionOverwritingDeclaredFunction()
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__),
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-
-                    <stubs>
-                        <file name="tests/fixtures/stubs/custom_functions.php" />
-                    </stubs>
-                </psalm>'
-            )
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                /**
-                 * @param int $a
-                 * @return integer
-                 */
-                function barBar( int $a ) : int
-                {
-                    return 0;
-                }
-                barBar( 1 );'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
     /**
      * @return void
      */
