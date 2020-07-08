@@ -134,7 +134,7 @@ class PropertyDocblockManipulator
         bool $is_php_compatible,
         ?string $description = null
     ) : void {
-        $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>'], '', $new_type);
+        $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<empty, empty>'], '', $new_type);
 
         $this->new_php_type = $php_type;
         $this->new_phpdoc_type = $phpdoc_type;

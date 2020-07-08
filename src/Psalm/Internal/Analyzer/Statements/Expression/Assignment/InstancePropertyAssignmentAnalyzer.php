@@ -764,8 +764,7 @@ class InstancePropertyAssignmentAnalyzer
 
                     $source_analyzer = $statements_analyzer->getSource()->getSource();
 
-                    if (!$assignment_value_type->hasMixed()
-                        && $lhs_var_id === '$this'
+                    if ($lhs_var_id === '$this'
                         && $source_analyzer instanceof ClassAnalyzer
                     ) {
                         if (isset($source_analyzer->inferred_property_types[$prop_name])) {
