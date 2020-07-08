@@ -1655,6 +1655,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     : $this->inferred_property_types[$property_name];
             }
 
+            if ($suggested_type && !$property_storage->has_default && $property_storage->is_static) {
+                $suggested_type->addType(new Type\Atomic\TNull());
+            }
+
             if ($suggested_type && !$suggested_type->isNull()) {
                 $message .= ' - consider ' . str_replace(
                     ['<array-key, mixed>', '<empty, empty>'],

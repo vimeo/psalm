@@ -240,6 +240,27 @@ class MissingPropertyTypeTest extends FileManipulationTest
                 ['MissingPropertyType'],
                 true,
             ],
+            'addMissingTypehintWithDefault' => [
+                '<?php
+                    class A {
+                        public $u = false;
+
+                        public function bar() {
+                            $this->u = true;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        public bool $u = false;
+
+                        public function bar() {
+                            $this->u = true;
+                        }
+                    }',
+                '7.4',
+                ['MissingPropertyType'],
+                true,
+            ],
         ];
     }
 }

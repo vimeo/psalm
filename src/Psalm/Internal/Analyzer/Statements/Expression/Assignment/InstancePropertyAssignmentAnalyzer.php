@@ -778,10 +778,7 @@ class InstancePropertyAssignmentAnalyzer
                                 $source_analyzer->inferred_property_types[$prop_name]
                             );
                         } else {
-                            $source_analyzer->inferred_property_types[$prop_name] =
-                                ($context->inside_constructor || $context->collect_initializations)
-                                    ? $assignment_value_type
-                                    : Type::combineUnionTypes(Type::getNull(), $assignment_value_type);
+                            $source_analyzer->inferred_property_types[$prop_name] = $assignment_value_type;
                         }
                     }
                 }

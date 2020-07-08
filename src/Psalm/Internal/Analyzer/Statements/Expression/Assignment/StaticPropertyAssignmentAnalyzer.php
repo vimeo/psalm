@@ -201,10 +201,7 @@ class StaticPropertyAssignmentAnalyzer
                         $source_analyzer->inferred_property_types[$prop_name_name]
                     );
                 } else {
-                    $source_analyzer->inferred_property_types[$prop_name_name] = Type::combineUnionTypes(
-                        Type::getNull(),
-                        $assignment_value_type
-                    );
+                    $source_analyzer->inferred_property_types[$prop_name_name] = $assignment_value_type;
                 }
             }
         } else {
