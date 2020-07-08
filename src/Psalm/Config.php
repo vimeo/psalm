@@ -1792,7 +1792,7 @@ class Config
 
         foreach ($stub_files as $file_path) {
             $file_path = \str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
-            $codebase->scanner->addFileToShallowScan($file_path);
+            $codebase->scanner->addFileToDeepScan($file_path);
         }
 
         $progress->debug('Registering stub files' . "\n");
