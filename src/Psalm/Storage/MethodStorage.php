@@ -79,4 +79,9 @@ class MethodStorage extends FunctionLikeStorage
      * @var Type\Union|null
      */
     public $self_out_type = null;
+
+    /**
+     * @var Type\Union|null
+     */
+    public $if_this_is_type = null;
 }
